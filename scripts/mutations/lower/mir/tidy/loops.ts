@@ -757,4 +757,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
     snapshots: true,
   },
+  {
+    name: "loop-exit-break-moved-past-the-loop",
+    breaks:
+      "a loop's way out that leaves by the loop's own `break` where a test holds, `if (!eq) { break; } return ..;`, is moved past the `for` as it is: its `break` in no loop, the JS a syntax error, rand 0.7's `update_weights` (#1422)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if breaks(&exit, label.as_deref()) || js::continues(&exit, label.as_deref()) {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],
+  },
+  {
+    name: "loop-exit-break-tested-left-a-loop",
+    breaks:
+      "a loop's way out that leaves by the loop's own `break` where a test holds stays a `while (true)` of its steps, not a `for` and the rest after it where the test doesn't hold (#1422)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if let Some(at) = exit.iter().position(|s| own_break(s).is_some())\n",
+    replace: "    if let Some(at) = exit.iter().position(|s| own_break(s).is_some()).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],
+    snapshots: true,
+  },
 ];

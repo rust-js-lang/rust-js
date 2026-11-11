@@ -551,3 +551,20 @@ ends with `tail jumps` and `unlabeled`, and the stage still ensures each
 label is named, so a debug build refuses what would come back. **The pass
 and its mutation are removed** (ADR 0093). `settle_jumps` stays where the
 `loops` and `chains` stages run it. Case: N.
+
+## Amendment: a loop's way out that leaves by the loop's own `break` (2026-11-12, #1422)
+
+`loops` makes MIR's `while (true) { const t = $next(it); if (t == null) {
+exit } body }` a `for` of what it steps with `exit` after it. An exit that
+left by the loop's own `break` from inside, rand 0.7's `if
+(!XPartialEq.eq(total, zero)) { break; } return Err(..);` once the `return`
+past the loop is that `break`, was moved past the `for` as it was: its
+`break` in no loop. The `names` stage's contract "each jump lands" caught it
+in a debug build, a panic compiling rand; a release build would have written
+JS that doesn't parse. **An exit whose own `break` is a branch of a test,
+then ends, is the rest under the test's negation after the `for`, `if
+(XPartialEq.eq(total, zero)) { return Err(..); }`, going on past the loop
+where the test holds; another exit that still leaves or goes on with the
+loop keeps its `while`.** Held by `test/corpus/loop_exit_tested_after_the_loop.rs`
+against native Rust in both builds, and the mutations
+`loop-exit-break-moved-past-the-loop` and `loop-exit-break-tested-left-a-loop`.

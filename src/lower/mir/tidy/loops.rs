@@ -226,6 +226,33 @@ pub(super) fn for_of(
     {
         exit.pop();
     }
+    // One that leaves by the loop's own `break` where a test holds, then
+    // ends, rand 0.7's `if (!XPartialEq.eq(total, zero)) { break; } return
+    // ..;` once its `return` past the loop is that `break`: after the `for`,
+    // the rest where the test doesn't hold, `if (XPartialEq.eq(total, zero))
+    // { return ..; }`, going on past the loop where it does (#1422).
+    let own_break = |s: &Stmt| match &s.kind {
+        StmtKind::If(test, then, None) if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(l), .. }] if l.is_none() || l == label) => {
+            Some(test.clone())
+        }
+        _ => None,
+    };
+    if let Some(at) = exit.iter().position(|s| own_break(s).is_some())
+        && let Some(test) = own_break(&exit[at])
+        && !breaks(&exit[..at], label.as_deref())
+        && !js::continues(&exit[..at], label.as_deref())
+        && exit.last().is_some_and(ends)
+        && at + 1 < exit.len()
+    {
+        let rest = exit.split_off(at + 1);
+        let span = exit.pop().expect("its test").span;
+        exit.push(StmtKind::If(test.negated_test(), rest, None).at(span));
+    }
+    // Another that leaves or goes on with the loop from inside: after the
+    // `for`, its jump would be in no loop. Left as it is.
+    if breaks(&exit, label.as_deref()) || js::continues(&exit, label.as_deref()) {
+        return None;
+    }
     // Going on to the exit where it ends: a `break`, which `unreachable`
     // drops after what leaves already, a `continue` say.
     if falls_out {
