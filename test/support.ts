@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 import { tempRoot } from "./bounded";
 import { runSync, stopped } from "./child";
-import { keptApps, markUsed, mayKeep, nativeCache } from "./kept";
+import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
@@ -466,8 +466,13 @@ function sweepFixtures(bases: string[]) {
 }
 
 /** The kept apps this process claimed given up, kept, as its tests end. */
+/** Release this process's apps, then keep the store within its cap: what a
+ * run makes is kept past its cap while its processes hold it, never past
+ * their end (#1213), which waited for the next run's start before. */
 function releaseKeptApps() {
-  for (const owner of keptClaims?.splice(0) ?? []) rmSync(owner, { force: true });
+  const released = keptClaims?.splice(0) ?? [];
+  for (const owner of released) rmSync(owner, { force: true });
+  if (released.length > 0) pruneKeptApps();
 }
 
 /** Remove the fixtures this process claimed, as its tests end. */
