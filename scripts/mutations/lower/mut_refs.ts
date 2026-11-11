@@ -195,11 +195,10 @@ export const mutations: Mutation[] = [
   {
     name: "nested-mut-object-fields-unread",
     breaks:
-      "a generic struct's `r: &mut T` field, built of an object by the caller, is read as a cell",
+      "a generic struct's `r: Option<&mut T>` field, built of an object by the caller, is read as a cell",
     file: "src/lower/mut_refs.rs",
-    find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));",
-    replace:
-      "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)).filter(|_| false));",
+    find: "                                None => todo.push(ty),\n",
+    replace: "                                None => {}\n",
     tests: ["test/diagnostics.test.ts", "-t", "in a struct"],
   },
   {
@@ -320,7 +319,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/limitations.test.ts",
       "-t",
-      "inside what generic code takes or gives, an .Option. or a struct.s field",
+      "inside what generic code takes or gives, an .Option. or a field.s part",
     ],
   },
   {
@@ -356,9 +355,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function's fields are read in its caller's terms, whose type parameters it doesn't have, and rustc panics",
     file: "src/lower/mut_refs.rs",
-    find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));\n",
-    replace:
-      "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));\n",
+    find: "                            let ty = field_ty(field, args);\n",
+    replace: "                            let ty = self.field_ty(field, args);\n",
     tests: ["test/corpus.test.ts", "-t", "^callee_field_own_terms.rs$"],
   },
   {
@@ -428,5 +426,21 @@ export const mutations: Mutation[] = [
     find: "        if !self.krate.foreign.compiled_by_rust_js(bound.def_id())\n",
     replace: "        if !bound.def_id().is_local()\n",
     tests: ["test/crates.test.ts", "-t", "Vec of &mut objects through generic code"],
+  },
+  {
+    name: "boxed-field-still-refused",
+    breaks: "a struct's `&mut T` field given a `&mut` to an object is refused across a generic function, `hold(&mut shape.at)` (#1405)",
+    file: "src/lower/mut_refs.rs",
+    find: "                                Some(_) => todo.extend(match *ty.kind() {\n",
+    replace: "                                Some(_) => todo.extend(match *ty.kind() {\n                                    _ if true => Some(ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "crate-type-arguments-walked",
+    breaks: "a crate's type's arguments are walked beside its fields, so `ParserI<&mut Parser>`'s holder is refused though its field holds generic code's box (#1405)",
+    file: "src/lower/mut_refs.rs",
+    find: "                {\n                    walk.skip_current_subtree();\n                    let here = self.instantiated(part, generic_args);\n",
+    replace: "                {\n                    let here = self.instantiated(part, generic_args);\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
   },
 ];

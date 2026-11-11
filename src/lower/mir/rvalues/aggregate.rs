@@ -6,6 +6,16 @@ use super::*;
 use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a struct's or a variant's `field` of `ty` is given, `value`:
+    /// where it's held as generic code's box, the object's in-place cell,
+    /// `Slot { at: $cellOf(point) }` (`field_crossing`, #1405).
+    fn given_boxed_field(&self, ty: Ty<'tcx>, variant: VariantIdx, field: usize, value: Expr) -> Expr {
+        match self.field_crossing(ty, variant, FieldIdx::from_usize(field)) {
+            Some(crossing) => self.form_given(Form::Box, crossing, value),
+            None => value,
+        }
+    }
+
     pub(super) fn mir_aggregate(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -50,6 +60,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let field = &self.tcx.adt_def(did).non_enum_variant().fields[FieldIdx::from_usize(i)];
                 let value = self.given_field(state, field, &operands[FieldIdx::from_usize(i)], value, out);
                 let value = self.holding(value, Some(field), names[i].1);
+                let value = self.given_boxed_field(ty, VariantIdx::ZERO, i, value);
                 // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
                 props.push(match names[i].0.symbol_item() {
                     Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), value),
@@ -112,6 +123,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.value_expr(v, span),
                     })
                     .collect::<R<Vec<_>>>()?;
+                let exprs: Vec<Expr> = (exprs.into_iter().enumerate())
+                    .map(|(i, e)| self.given_boxed_field(ty, *variant_index, i, e))
+                    .collect();
                 // A nested field's, held as its payload (#470).
                 let exprs = match self.tcx.adt_def(*did).is_struct() {
                     true => {

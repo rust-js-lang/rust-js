@@ -714,10 +714,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Some(Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee));
                     }
                 }
+                // A field held as generic code's box wherever its type is,
+                // `Slot { at: &mut T }`'s (`field_crossing`, #1405): only
+                // what it's to walked, which may hold another `&mut`. Its
+                // type's arguments are its fields', walked there alone:
+                // `ParserI<&mut Parser>`'s is its field's.
                 if let ty::Adt(adt, args) = *part.kind()
                     && !self.is_std(adt.did())
                 {
-                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));
+                    walk.skip_current_subtree();
+                    let here = self.instantiated(part, generic_args);
+                    for (variant, fields) in adt.variants().iter_enumerated() {
+                        for (i, field) in fields.fields.iter_enumerated() {
+                            let ty = field_ty(field, args);
+                            match self.field_crossing(here, variant, i) {
+                                None => todo.push(ty),
+                                Some(_) => todo.extend(match *ty.kind() {
+                                    ty::Ref(_, pointee, Mutability::Mut) => Some(pointee),
+                                    _ => None,
+                                }),
+                            }
+                        }
+                    }
                 }
             }
         }

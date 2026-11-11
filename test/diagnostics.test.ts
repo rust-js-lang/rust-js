@@ -302,7 +302,13 @@ for (const [name, source, message, crate] of [
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
   ["a collection of the crate's given to generic code", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\nfn count<I: IntoIterator>(i: I) -> usize { i.into_iter().count() }\npub fn f(b: Bag) -> usize { count(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
-  ["a generic &mut T to an object in a struct", "pub struct C { pub n: i32 }\npub struct H<'a, T> { pub r: &'a mut T }\nfn get<'a, T>(h: H<'a, T>) -> &'a mut T { h.r }\npub fn f(c: &mut C) { get(H { r: c }).n += 1; }", "a `&mut C` inside a generic function's parameters or result"],
+  // A `&mut` to an object within a struct's field, an `Option<&mut T>`,
+  // where generic code has the box and its caller the object; one the
+  // field holds whole is generic code's box everywhere (#1405).
+  ["a generic &mut T to an object in a struct's Option", "pub struct C { pub n: i32 }\npub struct H<'a, T> { pub r: Option<&'a mut T> }\nfn touch<'a, T>(h: H<'a, T>) -> bool { h.r.is_some() }\npub fn f(c: &mut C) -> bool { touch(H { r: Some(c) }) }", "a `&mut C` inside a generic function's parameters or result"],
+  // A `&mut` to a field that holds generic code's box of an object, which
+  // would be to the box (#1405).
+  ["a &mut to a field held as generic code's box", "pub struct Slot<'a, T> { pub at: &'a mut T }\npub struct P { pub x: i32 }\nfn repoint<'a, T>(r: &mut &'a mut T, q: &'a mut T) { *r = q; }\npub fn f(p: &mut P, q: &mut P) { let mut s = Slot { at: p }; repoint(&mut s.at, q); s.at.x = 2; }", "a `&mut` to a field that holds a `&mut` generic code has as its box"],
   // A closure's parameter that holds a `&mut` to an object, `F: FnOnce(Vec<&mut T>)`, past its own `&mut` (ADR 0454).
   ["a Vec of generic &mut Ts to objects given to a closure", "pub struct C { pub n: i32 }\nfn first<T, F: FnOnce(Vec<&mut T>)>(t: &mut T, f: F) { f(vec![t]) }\npub fn f(c: &mut C) { first(c, |v| { for x in v { x.n += 1; } }) }", "a `&mut C` inside a generic function's parameters or result"],
   ["generic &mut Ts to objects returned in a Vec", "pub struct C { pub n: i32 }\nfn to_vec<T>(a: &mut T) -> Vec<&mut T> { vec![a] }\npub fn f(c: &mut C) -> usize { to_vec(c).len() }", "a `&mut C` inside a generic function's parameters or result"],

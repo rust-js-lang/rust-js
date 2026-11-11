@@ -243,4 +243,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
   },
+  {
+    name: "boxed-field-not-read-through",
+    breaks: "a write through a struct's field held as generic code's box writes the box, `slot.at.x = ..`, not the object (#1405)",
+    file: "src/lower/mir/places.rs",
+    find: "                        .is_some())\n",
+    replace: "                        .is_some_and(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "boxed-field-alias-not-followed",
+    breaks: "`let r = &mut slot.at; *r = &mut d` writes the object into the field held as generic code's box, and `r.x` the box (#1405)",
+    file: "src/lower/mir/places.rs",
+    find: "            && state.refs.contains_key(&place.local)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
 ];

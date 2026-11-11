@@ -733,4 +733,20 @@ export const mutations: Mutation[] = [
     replace: "                            return Ok(Value::Expr(self.dyn_debug_pair((from, *to), value, span)?));\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug|nullable_field_of_undefined)\\.rs$"],
   },
+  {
+    name: "boxed-field-shared-borrow-as-box",
+    breaks: "a shared borrow of a struct's field held as generic code's box, `&slot.at`, is the box, shown as `undefined` fields (#1405)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    return Ok(Value::Expr(self.form_back(Form::Box, crossing, read)));\n",
+    replace: "                    return Ok(Value::Expr({ let _ = crossing; read }));\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "boxed-field-mut-borrow-allowed",
+    breaks: "a `&mut` to a struct's field held as generic code's box, `repoint(&mut s.at, q)`, is given the box's object, and the write of the whole is lost (#1405)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    if let BorrowKind::Mut { .. } = kind {\n",
+    replace: "                    if let BorrowKind::Fake(_) = kind {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a &mut to a field held as generic code"],
+  },
 ];

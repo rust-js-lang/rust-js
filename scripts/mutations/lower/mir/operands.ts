@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Generic)?;",
     tests: ["test/crates.test.ts", "-t", "library_fn_values_take_their_callers_forms"],
   },
+  {
+    name: "boxed-field-read-whole-as-box",
+    breaks: "a struct's field held as generic code's box, moved out whole, `let Slot { at } = slot`, is the box, not the object (#1405)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    Some(crossing) => self.form_back(Form::Box, crossing, read),\n",
+    replace: "                    Some(_) => read,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
 ];

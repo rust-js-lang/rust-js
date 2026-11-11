@@ -279,6 +279,9 @@ caller would hold the object, rule 2's own case (the `PhantomData`
 amendment above). Revisit it once #527's `moved_out` owner (above) has
 settled.
 
+Superseded (2026-11-12, #1405): the field holds generic code's box
+wherever the struct is, decided for the user; see the amendment below.
+
 ## Amendment: generic code's box of an object holds the object (#606)
 
 The #527 amendment kept the copy an object's box held where it's given,
@@ -893,3 +896,32 @@ A std struct that holds a `&mut` to an object as the object, a
 `AsRef`, which std's of the `&mut` passes it on to. Case C of ADR 0262:
 results change, so Rust's behaviour is kept. Corpus case
 mut_ref_given_for_a_bound covers each, against native Rust in both builds.
+
+## Amendment: a struct's field of a `&mut T` holds generic code's box everywhere (#1405)
+
+A field of the crate's own struct or enum whose declared type is generic
+code's box, `at: &'a mut T` or `parser: P` given a `&mut`, held the box
+where generic code made it and the object where its caller did, and it
+was refused wherever one crossed into the other: `fn hold<T>(at: &mut T)
+-> Slot<'_, T>`, a guard, regex-syntax's `ParserI<&mut Parser>`, 945 of
+the Crater's tests. The field has one form now, decided by its declared
+type, the user's decision: **generic code's box wherever the type is**.
+Code that knows `T` adapts it at the field's crossing, `field_crossing`,
+the boundary API of a call's `Form::Box`:
+
+- it's made the object's in-place cell, `Slot { at: $cellOf(point) }`, and
+  written whole so too, `slot.at = $cellOf(other)`;
+- it's read through `.value`, `slot.at.value.x += 10`, and read whole as
+  what the box holds, `let Slot { at } = slot`, `&slot.at`;
+- a `ref mut` that names the field where it's used, `let r = &mut
+  slot.at`, reads and writes `*r` at that crossing too.
+
+A `&mut` to the field given to a function, `repoint(&mut slot.at, q)`,
+would be to the box: it's refused, naming the field. A number's field is
+a cell either way and doesn't change. What a field holds within a part,
+`Option<&mut T>`, a `Vec<&mut T>`, is still refused across generic code.
+The cost is one `.value` deeper where `T` is known. Case C of ADR 0262:
+results change, so Rust's behaviour is kept. Corpus case
+mut_ref_fields_of_a_type_parameter covers a slot, a guard, a holder,
+regex-syntax's parser holder, an enum, and impls bound by `Iterator` and
+`FnMut`, against native Rust in both builds.

@@ -72,7 +72,7 @@ use rustc_index::IndexVec;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
-    Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp, UnwindAction,
+    Place, PlaceElem, PlaceRef, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp, UnwindAction,
 };
 use rustc_middle::thir;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -80,6 +80,7 @@ use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
 use super::combinators::{IterComb, StepOp};
+use super::generic_facts::{Crossing, Form};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{

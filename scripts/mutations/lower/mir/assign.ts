@@ -1017,4 +1017,12 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
   },
+  {
+    name: "boxed-field-written-whole-as-object",
+    breaks: "a struct's field held as generic code's box, written whole, `slot.at = &mut b`, holds the object, which its generic methods read as a box (#1405)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Some(crossing) => self.form_given(Form::Box, crossing, value),\n",
+    replace: "            Some(_) => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
 ];

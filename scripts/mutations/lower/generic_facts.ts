@@ -191,4 +191,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "field-crossing-unasked",
+    breaks: "a struct's `&mut T` field made where `T` is known holds the object, where its generic methods read generic code's box: `slot.set(..)` writes `undefined` (#1405)",
+    file: "src/lower/generic_facts.rs",
+    find: "        self.form_differs(Form::Box, crossing).then_some(crossing)\n",
+    replace: "        None.filter(|_: &Crossing<'tcx>| self.form_differs(Form::Box, crossing))\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
 ];

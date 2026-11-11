@@ -75,10 +75,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::CopyForDeref(place) if self.through_values(state.body, place, true) => {
                 return self.read_local_value(state, place.local, out);
             }
-            Rvalue::CopyForDeref(place) => self.mir_place(state, *place, span, out)?,
+            // A field held as generic code's box: what it's to (#1405).
+            Rvalue::CopyForDeref(place) => match self.boxed_field(state, place.as_ref()) {
+                Some(crossing) => {
+                    let read = self.mir_place(state, *place, span, out)?;
+                    self.form_back(Form::Box, crossing, read)
+                }
+                None => self.mir_place(state, *place, span, out)?,
+            },
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
+                // A field held as generic code's box (#1405): through a
+                // shared reference, what it's to, as this code has it; a
+                // `&mut` to it would be to the box.
+                if let Some(crossing) = self.boxed_field(state, place.as_ref()) {
+                    if let BorrowKind::Mut { .. } = kind {
+                        return Err(self.unsupported(
+                            span,
+                            "a `&mut` to a field that holds a `&mut` generic code has as its box, `&mut slot.at` of `struct Slot<'a, T> { at: &'a mut T }`: write it whole, `slot.at = &mut other`, or reborrow what it's to, `&mut *slot.at`",
+                        ));
+                    }
+                    let read = self.mir_place(state, *place, span, out)?;
+                    return Ok(Value::Expr(self.form_back(Form::Box, crossing, read)));
+                }
                 // A field held where it's made (#470, rd645): through a
                 // shared reference, the box code that doesn't hold it so
                 // reads, where `assign` hasn't read it as it's held; never

@@ -234,6 +234,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Operand::Copy(place) | Operand::Move(place) => {
                 let span = state.body.local_decls[place.local].source_info.span;
                 let read = self.mir_place(state, *place, span, out)?;
+                // A field held as generic code's box, read whole: what it's
+                // to, as this code has it (#1405).
+                let read = match self.boxed_field(state, place.as_ref()) {
+                    Some(crossing) => self.form_back(Form::Box, crossing, read),
+                    None => read,
+                };
                 Ok(Value::Expr(self.with_default(state, *place, read, span)))
             }
             // A function given by reference, `&hello`, a promoted constant:

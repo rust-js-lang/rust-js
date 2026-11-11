@@ -157,10 +157,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             // Through a handle, or a box, of a `&mut` to a number: its
-            // `value`, but where the place is already named.
+            // `value`, but where the place is already named. And through a
+            // field held as generic code's box, `slot.at.value` (#1405).
             if elem == PlaceElem::Deref
                 && let ty::Ref(_, pointee, ty::Mutability::Mut) = ty.ty.kind()
-                && self.mut_ref_form(*pointee).is_cell()
+                && (self.mut_ref_form(*pointee).is_cell()
+                    || self
+                        .boxed_field(
+                            state,
+                            PlaceRef {
+                                local: place.local,
+                                projection: &place.projection[..at],
+                            },
+                        )
+                        .is_some())
             {
                 if !std::mem::take(&mut placed) {
                     value = Expr::held(value);
@@ -195,6 +205,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = ty.projection_ty(self.tcx, elem);
         }
         Ok(value)
+    }
+
+    /// The crossing of the field `place` ends at, where it's held as
+    /// generic code's box and this code has another form of it, the object
+    /// (`field_crossing`, #1405): read through `.value`, written and made as
+    /// the object's in-place cell.
+    /// And `*r` of a `r` that names one where it's used (`refs`), its one
+    /// write `r = &mut slot.at`.
+    pub(super) fn boxed_field(&self, state: &State<'_, 'tcx>, place: PlaceRef<'tcx>) -> Option<Crossing<'tcx>> {
+        if let [PlaceElem::Deref] = place.projection
+            && state.refs.contains_key(&place.local)
+        {
+            let lent = (state.body.basic_blocks.iter())
+                .flat_map(|data| &data.statements)
+                .find_map(|statement| match &statement.kind {
+                    StatementKind::Assign(assign)
+                        if assign.0.local == place.local && assign.0.projection.is_empty() =>
+                    {
+                        match &assign.1 {
+                            Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) => Some(*lent),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                })?;
+            return self.boxed_field(state, lent.as_ref());
+        }
+        let (base, PlaceElem::Field(field, _)) = place.last_projection()? else {
+            return None;
+        };
+        let base = base.ty(state.body, self.tcx);
+        self.field_crossing(base.ty, base.variant_index.unwrap_or(VariantIdx::ZERO), field)
     }
 
     fn project_mir(

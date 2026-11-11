@@ -283,6 +283,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !self.is_callable(pointee) && !self.implements_iterator(pointee) && !pointee.is_trait())
     }
 
+    /// The crossing of a field of the crate's own type `ty`, variant
+    /// `variant`'s `field`, declared generic code's box, `&mut T` or a `T`
+    /// given a `&mut` to an object, `Slot { at: &mut point }`: held as that
+    /// box wherever the type is, the object's in-place cell, `$cellOf(point)`,
+    /// so its generic code and the code that knows `T` hold one value, as
+    /// a call's `Form::Box` is; read through it, written and made at its
+    /// crossing (#1405). `None` where this code holds the field as it's
+    /// declared, a number's cell or generic code's own box.
+    pub(in crate::lower) fn field_crossing(
+        &self,
+        ty: Ty<'tcx>,
+        variant: rustc_abi::VariantIdx,
+        field: rustc_abi::FieldIdx,
+    ) -> Option<Crossing<'tcx>> {
+        let ty::Adt(adt, args) = *ty.kind() else {
+            return None;
+        };
+        if adt.is_union() || self.is_std(adt.did()) {
+            return None;
+        }
+        let def = &adt.variant(variant).fields[field];
+        let declared = def.ty(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, adt.did()));
+        let instantiated = def.ty(self.tcx, args).skip_normalization();
+        let instantiated = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(instantiated))
+            .unwrap_or(instantiated);
+        let crossing = (adt.did(), declared.skip_normalization(), instantiated);
+        self.form_differs(Form::Box, crossing).then_some(crossing)
+    }
+
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {

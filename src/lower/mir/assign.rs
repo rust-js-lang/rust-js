@@ -964,6 +964,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => (Expr::held(target), Expr::held(value)),
             false => (target, value),
         };
+        // A field held as generic code's box, written whole: the object's
+        // in-place cell, `slot.at = $cellOf(other)` (#1405).
+        let value = match self.boxed_field(state, place.as_ref()) {
+            Some(crossing) => self.form_given(Form::Box, crossing, value),
+            None => value,
+        };
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
         // name for it sees it. Not of one MIR has as its place,
