@@ -625,7 +625,7 @@ test("when a collect asks its hint is hint_asks's alone", () => {
 // type. A guard that forgot to reveal answered of the opaque type, and its
 // value was stepped and dropped as another's.
 test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
-  expect(read("src/lower/mir.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
+  expect(read("src/lower/mir/prepared.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
   const expanding = files("src").filter((file) => file.endsWith(".rs") && read(file).includes("try_expand_impl_trait_type"));
   expect(expanding).toEqual(["src/lower/mir/revealed.rs"]);
   const revealing = ["src/lower/mir", "src/lower/iterators", "src/lower/combinators"]

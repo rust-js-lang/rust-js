@@ -3,29 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "impl-trait-unrevealed",
-    breaks:
-      "a body's `impl Trait` stays the opaque type, so what it hides is asked as no iterator: the crate's own iterator given back as `impl DoubleEndedIterator` is closed by a drop given its JS iterator, `TypeError` where Rust counts it, and a peeked `peekable()`'s `enumerate().count()` drops what it peeked at first (#1142)",
-    file: "src/lower/mir.rs",
-    find: "        (body, promoted) = revealed::revealed(tcx, (body, promoted));\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "test/crates.test.ts",
-      "-t",
-      "^((impl_trait_hides_std_adapters|impl_trait_hides_own_iterator|rc_of_impl_fn_returned|closures_made_and_folded|returned_impl_ends|lazy_iterator_clone|consumed_own_iterator_dropped_once|try_folds_of_stages_unwind).rs|two crates: impl_iterator_of_a_library)$",
-    ],
-  },
-  {
-    name: "optimized-boxes-read-through-pointer",
-    breaks:
-      "a library's generic body, from its optimized MIR, reads a box through the pointer rustc makes of it, which its consumer refuses (#378)",
-    file: "src/lower/mir.rs",
-    find: "            boxes_read_as_values(tcx, &mut body);\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: generic_boxed_drop"],
-  },
-  {
     name: "mir-drop-uses-unnoted",
     breaks:
       "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
@@ -76,20 +53,6 @@ export const mutations: Mutation[] = [
     find: "                    && !t.has_escaping_bound_vars()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "fn_pointer_of_borrowed_struct"],
-  },
-  {
-    name: "mir-await-loop-kept",
-    breaks:
-      "an `.await`'s poll loop is lowered as it is, its `yield` none JS has",
-    file: "src/lower/mir.rs",
-    find: "            true => awaits::awaits(tcx, &mut body),\n",
-    replace: "            true => Default::default(),\n",
-    tests: [
-      "test/lowering-functions.test.ts",
-      "test/lowering-matches.test.ts",
-      "-t",
-      "an awaited reference given to a generic function is awaited|an async fn",
-    ],
   },
   {
     name: "mir-async-fn-arrow-called",
@@ -279,16 +242,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "js::directive! in a body"],
   },
   {
-    name: "mir-cannot-throw-unwinds",
-    breaks:
-      "MIR's call of what can't throw cleans up, its library function taking a drop",
-    file: "src/lower/mir.rs",
-    find: "                *unwind = UnwindAction::Unreachable;\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(drop_temporaries|allocator|refcell_vec_bounds).rs$"],
-    snapshots: true,
-  },
-  {
     name: "mir-fn-directives-dropped",
     breaks: "a function's `js::directive!` is written nowhere",
     file: "src/lower/mir.rs",
@@ -344,35 +297,6 @@ export const mutations: Mutation[] = [
     find: "        out.extend(state.settled_lets().chain(lowered));\n",
     replace: "        out.extend(lowered);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
-  },
-  {
-    name: "dead-switch-kept",
-    breaks:
-      "a std body's switch that goes one way whatever it tests, which drop elaboration leaves, is kept, and its discriminant read as a value",
-    file: "src/lower/mir.rs",
-    find: "                    if let [way] = ways[..] {\n",
-    replace:
-      "                    if let [way] = ways[..]\n                        && false\n                    {\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "dead-discriminant-kept",
-    breaks:
-      "the discriminant a std body read for a switch that went is kept, read as a value",
-    file: "src/lower/mir.rs",
-    find: "tested != Some(local) && !read.0.contains(&local)))\n",
-    replace: "false))\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "assume-kept",
-    breaks:
-      "an `assume` of what an inlined `?` knows of its residual is kept in a std body, and the discriminant it compares read as a value",
-    file: "src/lower/mir.rs",
-    find: "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)))\n",
-    replace:
-      "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)) && false)\n",
-    tests: ["test/std-package.test.ts"],
   },
   {
     name: "noinline-unmarked",
@@ -530,61 +454,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "called-once-drops-nothing-returning",
-    breaks:
-      "a closure a binding calls once, rustc's `Fn`, drops nothing of what it took as its call returns, where Rust's `call_once` drops it (ADR 1020)",
-    file: "src/lower/mir.rs",
-    find: "                TerminatorKind::Return => *kind = dropped(returned, UnwindAction::Continue),\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
-    name: "called-once-own-cleanup-resumes",
-    breaks:
-      "a closure a binding calls once, rustc's `Fn`, whose body drops a value of its own as it unwinds, resumes after it, dropping nothing of what it took (ADR 1020)",
-    file: "src/lower/mir.rs",
-    find: "                TerminatorKind::UnwindResume => *kind = TerminatorKind::Goto { target: unwound },\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
-    name: "called-once-self-left-a-reference",
-    breaks:
-      "a closure a binding calls once, taken by value, reads what it took through itself as a reference still (ADR 1020)",
-    file: "src/lower/mir.rs",
-    find: "                        place.projection = self.tcx.mk_place_elems(&place.projection[1..]);\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
     name: "scope-fields-kept-an-object",
     breaks: "a function's scope struct's fields stay its object's properties, `reply.nextPartId`, not its variables",
     file: "src/lower/mir.rs",
     find: "            scopes::scope_fields(&value, &params, &mut out);",
     replace: "            let _ = (value, &params);",
     tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
-    snapshots: true,
-  },
-  {
-    name: "unreachable-hint-a-call",
-    breaks:
-      "`hint::unreachable_unchecked()` stays a call, not MIR's unreachable code, so a `match`'s arm of only it keeps its test and a throw (rd643)",
-    file: "src/lower/mir.rs",
-    find: "                data.terminator_mut().kind = TerminatorKind::Unreachable;\n            }\n        }\n        // An optimized body's",
-    replace: "            }\n        }\n        // An optimized body's",
-    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
   },
   {

@@ -1,7 +1,6 @@
 //! An operand as JS, and a constant: its value tree, or its MIR lowered
 //! as code.
 
-use super::dispatch::Forms;
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
