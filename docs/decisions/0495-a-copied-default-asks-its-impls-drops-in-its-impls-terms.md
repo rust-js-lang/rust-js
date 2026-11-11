@@ -306,3 +306,14 @@ The condition and its mutation are taken off: a type of a parameter that
 can't be normalized where it's read is no type there, the bounds' one
 answer. The libraries test of #794's `from_iter::<I>` still holds what it
 gave.
+
+Taking the condition off left the method's bounds alone to say an entry's
+facts, which mutation `entry-facts-without-the-methods-bounds` showed: with
+the condition, an entry made without them was refused, and
+collect_fallible_into caught it; without, its items were no type there,
+dropping nothing, and the case passed by luck (main's mutations, run
+42974257083). It's held now by what the method's bounds decide, corpus case
+`from_iter_entry_drops_its_items`: a crate's `FromIterator` impl collecting
+a `Vec` of items with a destructor through generic code's dictionary,
+whose drops, and those of a step that panics, are native Rust's only where
+the entry knows its items (Refs #1239).

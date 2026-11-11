@@ -749,7 +749,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "            let outer_env = std::mem::replace(&mut self.typing_env, own_env);\n",
     replace: "            let outer_env = self.typing_env;\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_fallible_into.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(collect_fallible_into|from_iter_entry_drops_its_items).rs$"],
   },
   {
     name: "entry-facts-under-the-impls-bounds",
