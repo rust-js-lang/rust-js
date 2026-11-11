@@ -41,7 +41,7 @@ function main() {
   console.log(`${set(given)} ${given}`);
   console.log(`${flip(true)} ${flip(false)}`);
   const start = { x: 1, y: 2 };
-  console.log(`${pointDebug_fmt(moved(start, 10))}`);
+  console.log(`${pointDebug_fmt(moved({ ...start }, 10))} ${pointDebug_fmt(start)}`);
   console.log(`${readOnly(21n)}`);
 }
 //# sourceMappingURL=case.js.map

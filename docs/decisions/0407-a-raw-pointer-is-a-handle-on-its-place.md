@@ -281,4 +281,27 @@ Case C of [0262](0262-when-rust-and-js-disagree.md). Held by the corpus case
 `u64`, a field of a `Copy` struct) against native Rust in both builds, and by
 the mutation `pointed-param-assumed-a-cell` (`lower/mir.ts`). A write through
 a pointer to a field of a struct parameter taken by value still reaches its
-caller's object, filed apart.
+caller's object, filed apart as #1386, below.
+
+## Amendment: a raw pointer to a part of a value changes that value in place (#1386)
+
+`fn moved(mut point: Point, by: i32) -> Point { let p = &raw mut point.x;
+unsafe { *p += by }; point }` changed its caller's `Copy` struct (P0, found
+by audit of #1381): the pointer is `$ptr(point, "x", 0)`, a handle on the
+caller's object's field, and neither side copied, because the copy policy's
+census of what's changed in place (`analysis/mutation.rs`, ADR 0052) counted
+a `&mut` of a part, `&mut point.x`, as a change of the value holding it, but
+not `&raw mut point.x`. A raw pointer's `&raw mut` of a field, an item or a
+tuple's part now counts as the `&mut`'s does, so `Point` is changed in place
+and `moved(start, 10)` is given `{ ...start }`, as a `let` copying `start` is.
+Unlike a `&mut`, it counts an object-like part too, `&raw mut segment.to`: a
+write of a whole `Point` through it replaces the field on the segment, where
+a `&mut`'s `*r = v` replaces the `Point` in place (ADR 0147). `&raw const`
+isn't counted: a write through it is undefined behaviour in Rust. Case C of
+[0262](0262-when-rust-and-js-disagree.md). Held by the corpus case
+`raw_pointer_writes_a_copy` (a struct's field, a nested struct's, a whole
+field replaced and one written through it, an array's item and one past it by
+`add`, a tuple's parts, an item of an array of arrays, and copies a `let`
+made) and `pointer_to_a_parameter_taken_by_value`, now printing its caller's
+value too, against native Rust in both builds and through `METAMORPHIC=all`;
+mutation `raw-pointer-part-write-unseen` (`lower/analysis/mutation.ts`).

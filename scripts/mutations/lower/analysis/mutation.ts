@@ -246,4 +246,12 @@ export const mutations: Mutation[] = [
     replace: "                (ProjectionKind::Deref, None) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_captured_written.rs$"],
   },
+  {
+    name: "raw-pointer-part-write-unseen",
+    breaks: "a raw pointer to a part of a `Copy` value taken by value, `&raw mut point.y`, isn't counted as changing the value in place, so `moved(start, 10)`'s write through it changes the caller's `start` (#1386)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                ExprKind::RawBorrow {\n                    mutability: Mutability::Mut,\n                    arg,\n                } => Some(arg),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(raw_pointer_writes_a_copy|pointer_to_a_parameter_taken_by_value).rs$"],
+  },
 ];

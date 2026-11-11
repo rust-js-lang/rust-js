@@ -36,6 +36,6 @@ fn main() {
     println!("{} {given}", set(given));
     println!("{} {}", flip(true), flip(false));
     let start = Point { x: 1, y: 2 };
-    println!("{:?}", moved(start, 10));
+    println!("{:?} {start:?}", moved(start, 10));
     println!("{}", read_only(21));
 }

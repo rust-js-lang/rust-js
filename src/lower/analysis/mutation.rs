@@ -155,13 +155,20 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             }
             // `a[i] = ..` changes the array `a` the same way, and so does a
             // `&mut` of a part that's its place, text or a number, not an
-            // object changed in place: `a.0.push('!')`'s, `a[0] += "!"`.
+            // object changed in place: `a.0.push('!')`'s, `a[0] += "!"`. So
+            // does a raw pointer to any part, `&raw mut p.x`, whose writes
+            // are the part's place's, `$ptr(p, "x", 0)`'s, an object's too:
+            // a write of one through it replaces the field (#1386).
             let place = match expr.kind {
                 ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => Some(lhs),
                 ExprKind::Borrow {
                     borrow_kind: BorrowKind::Mut { .. },
                     arg,
                 } if !object_like(tcx, body.thir[arg].ty) => Some(arg),
+                ExprKind::RawBorrow {
+                    mutability: Mutability::Mut,
+                    arg,
+                } => Some(arg),
                 _ => None,
             };
             if let Some(place) = place
