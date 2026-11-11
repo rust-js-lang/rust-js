@@ -720,6 +720,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// A parameter of a body lowered from its MIR, as JS names it: `_` of
+    /// one the program names nothing and reads nowhere; the box its caller
+    /// gives of a `&mut` to a value JS can't change in place, added to
+    /// `boxes`; and of one taken by value whose address is taken, its name,
+    /// its cell a fresh one, added to `cell_params` (#1381).
+    fn mir_param(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (mir_body, local, closure): (&mir::Body<'tcx>, Local, bool),
+        boxes: &mut IndexSet<String>,
+        cell_params: &mut Vec<(String, String)>,
+    ) -> js::Pattern {
+        state.locals.declared[local] = true;
+        // One the program names nothing and reads nowhere, `_: Ref`,
+        // is `_`.
+        if unnamed(&state.locals, local) {
+            state.locals.names[local] = String::new();
+        }
+        let name = match state.locals.names[local].as_str() {
+            "" => self.fresh("_"),
+            name => name.to_string(),
+        };
+        state.locals.names[local].clone_from(&name);
+        // A `&mut` to a value JS can't change in place: the box its
+        // caller gives, its place the box's `value` (ADR 0074).
+        let boxed = match closure {
+            // A closure's, by what it points at.
+            true => matches!(mir_body.local_decls[local].ty.kind(),
+                ty::Ref(_, pointee, ty::Mutability::Mut) if self.mut_ref_form(*pointee).is_cell()),
+            false => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
+        };
+        if boxed {
+            boxes.insert(name.clone());
+        }
+        // One taken by value whose address is taken, `&raw mut n`:
+        // a cell of its own, made of what it's given, as a local
+        // one a pointer is taken to is (ADR 0407, #1381). Its
+        // callers give the value.
+        if !boxed && state.facts.pointed().locals.contains(&local) {
+            let cell = self.fresh(&name);
+            state.locals.names[local].clone_from(&cell);
+            cell_params.push((cell, name.clone()));
+            return js::Pattern::Name(name);
+        }
+        js::Pattern::Name(name)
+    }
+
     /// A function's last parameters, as JS takes them. A C-variadic
     /// function's last, its `VaList`, gathers what it's given past the rest,
     /// `...args`: the array of them (ADR 0428); and so does a function's
@@ -924,34 +971,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let def_span = self.tcx.def_span(mir_body.source.def_id());
         self.check_signature_types(mir_body, (skip, formatter), def_span)?;
         let mut boxes = IndexSet::default();
+        let mut cell_params: Vec<(String, String)> = Vec::new();
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
             .filter(|&local| Some(local) != formatter)
             .map(|local| {
-                state.locals.declared[local] = true;
-                // One the program names nothing and reads nowhere, `_: Ref`,
-                // is `_`.
-                if unnamed(&state.locals, local) {
-                    state.locals.names[local] = String::new();
-                }
-                let name = match state.locals.names[local].as_str() {
-                    "" => self.fresh("_"),
-                    name => name.to_string(),
-                };
-                state.locals.names[local].clone_from(&name);
-                // A `&mut` to a value JS can't change in place: the box its
-                // caller gives, its place the box's `value` (ADR 0074).
-                let boxed = match captures {
-                    // A closure's, by what it points at.
-                    Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
-                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.mut_ref_form(*pointee).is_cell()),
-                    None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
-                };
-                if boxed {
-                    boxes.insert(name.clone());
-                }
-                js::Pattern::Name(name)
+                self.mir_param(
+                    &mut state,
+                    (mir_body, local, captures.is_some()),
+                    &mut boxes,
+                    &mut cell_params,
+                )
             })
             .collect();
         // Where each part a pattern binds is a local MIR moves out of the
@@ -1030,6 +1061,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let mut out = self.held_parameters(&state);
+        // Each parameter a pointer is taken to, its cell, of what it's given.
+        for (name, given) in cell_params {
+            let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);
+            out.push(StmtKind::Const(name, cell).at(js::Span::NONE));
+        }
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
         let mut flagged = vec![false; mir_body.local_decls.len()];

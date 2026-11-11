@@ -263,3 +263,22 @@ way, of `ptr::swap`, `ptr::copy`, `copy_within`, `rotate_*`, a slice's
 builds and under Miri; the memory net's `arith/swap-overlapping-array`
 and `overlaps` family (ADR 0092); test/lowering-pointers.test.ts holds
 the refusal.
+
+## Amendment: a parameter taken by value whose address is taken is a cell of its own (#1381)
+
+`fn set(mut n: u32) -> u32 { let p = &raw mut n; unsafe { *p = 7 }; n }`
+threw (P0, found by m3-max's Rustlantis experiment): `n` is a local a
+pointer is taken to, so it's read as its cell, `$ptr(n, "value", 0)` and
+`n.value`, but a parameter is what its callers give, the number itself,
+which no caller makes a cell. With a `bool`, "Cannot create property 'value'
+on boolean". A parameter taken by value that `pointed().locals` names is now
+a cell of the function's own, made of what it's given, as a local one is:
+`function set(n) { const n$1 = { value: n }; .. return n$1.value; }`. The
+parameter keeps its name, and the cell takes a fresh one (`cell_params`). A
+`&mut` parameter its callers give a box of (ADR 0074) is that box, as before.
+Case C of [0262](0262-when-rust-and-js-disagree.md). Held by the corpus case
+`pointer_to_a_parameter_taken_by_value` (a `u32`, a `bool`, a `*const` of a
+`u64`, a field of a `Copy` struct) against native Rust in both builds, and by
+the mutation `pointed-param-assumed-a-cell` (`lower/mir.ts`). A write through
+a pointer to a field of a struct parameter taken by value still reaches its
+caller's object, filed apart.

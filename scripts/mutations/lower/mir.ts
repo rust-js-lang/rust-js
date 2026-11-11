@@ -145,8 +145,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
     file: "src/lower/mir.rs",
-    find: "                if unnamed(&state.locals, local) {\n",
-    replace: "                if false && unnamed(&state.locals, local) {\n",
+    find: "        if unnamed(&state.locals, local) {\n",
+    replace: "        if false && unnamed(&state.locals, local) {\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -469,5 +469,13 @@ export const mutations: Mutation[] = [
     find: "        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());\n",
     replace: "        plain.extend(imports.values().filter(|name| changing.len() < usize::MAX || !changing.contains(*name)).cloned());\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+  },
+  {
+    name: "pointed-param-assumed-a-cell",
+    breaks: "a parameter taken by value whose address is taken is read as the cell its callers never make, `$ptr(n, \"value\", 0)` of a number, which throws (#1381)",
+    file: "src/lower/mir.rs",
+    find: "        if !boxed && state.facts.pointed().locals.contains(&local) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_parameter_taken_by_value\\.rs$"],
   },
 ];
