@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
+  crateFiles,
   judge,
   judgeUnit,
   lists,
@@ -30,6 +31,32 @@ import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./cor
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { fixture, limitations, root, run } from "./support";
+
+// What the crate includes from beyond `src/`, `include_str!("../../../test/
+// vec-collect-ways.txt")`, is in the crate the mutations build, or its unit
+// tests don't build there and no mutation held by one runs (#1355).
+test("the crate the mutations build has each file the compiler includes", () => {
+  const { readdirSync } = require("node:fs") as typeof import("node:fs");
+  const { dirname, join: joined, normalize, relative } = require("node:path") as typeof import("node:path");
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(joined(root, dir), { withFileTypes: true })) {
+      const path = joined(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (path.endsWith(".rs")) files.push(path);
+    }
+  };
+  walk("src");
+  const outside = new Set<string>();
+  for (const file of files) {
+    for (const [, included] of readFileSync(joined(root, file), "utf8").matchAll(/include_(?:str|bytes)!\("([^"]+)"\)/g)) {
+      const path = relative(root, normalize(joined(root, dirname(file), included)));
+      if (!path.startsWith("src/")) outside.add(path);
+    }
+  }
+  const copied = (path: string) => crateFiles.some((kept) => path === kept || path.startsWith(`${kept}/`));
+  expect([...outside].filter((path) => !copied(path))).toEqual([]);
+});
 
 test("every mutation applies to the compiler as it is, once", () => {
   expect(mutations.length).toBeGreaterThan(0);

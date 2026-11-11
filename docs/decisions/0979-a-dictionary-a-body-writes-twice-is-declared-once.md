@@ -146,9 +146,15 @@ its trait declares of its associated type, `SSource.PairsIntoIterator()`
 (ADR 0106): what each call gives does the same, as a generic impl's call
 does, and making it runs nothing of the program's. Read once at the body's
 top, even ahead of a branch not taken, it gives what each place it's
-asked gave. No such entry is called of a dictionary that may be
-`undefined`, a `Copy`'s: none is in the corpus, the snapshots or
-`@rust-js/std`.
+asked gave, of a dictionary always given. A `Copy` bound's is
+`undefined` where each value is its own copy (ADR 0289), read only behind
+the test of it, `TCopy ? TCopy.copy(x) : x`: an entry of it read at the
+top, ahead of that test, would throw. So only an entry of a dictionary
+its owner says is always given is declared (`dictionaries.rs`'
+`always_given`, every bound's but a `Copy`'s); another stays where it's
+written. The unit test
+`a_dictionary_that_may_be_undefined_keeps_its_entry_inline` and the
+mutation `entry-of-a-maybe-undefined-dictionary-declared` hold it.
 
 Generic code wrote such a call at each place it read the dictionary, the
 `IntoIterator`'s twice for each inner item a flatten makes,

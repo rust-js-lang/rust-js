@@ -243,6 +243,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, value)| value.clone())
     }
 
+    /// The names of the dictionaries this function was given whose bound
+    /// `keep` says, `SSource` of an `S: Source`, each a variable it reads.
+    pub(in crate::lower) fn given_dictionaries(&self, keep: impl Fn(ty::TraitRef<'tcx>) -> bool) -> IndexSet<String> {
+        (self.given.evidence.iter())
+            .filter(|(tr, _)| keep(*tr))
+            .filter_map(|(_, value)| match &value.kind {
+                js::ExprKind::Var(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// The names what this function was given reads, its parameters after
     /// its own or, in a copied default, its impl's, which its body's top
     /// can read: its dictionaries, `TTouch`, and what one made of them reads,

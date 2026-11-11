@@ -44,22 +44,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What each call gives is the same, as a generic impl's call's is, so
     /// one written twice is declared once at the top, named by its entry,
     /// `const PairsIntoIterator = SSource.PairsIntoIterator();` (ADR 0979,
-    /// amended, #1355), through `declare_repeated` as the kept are.
+    /// amended, #1355), through `declare_repeated` as the kept are. Only of a
+    /// dictionary always given (`always_given`): read at the top, ahead of
+    /// a branch that tests one that may be `undefined`, its call would throw.
     pub(in crate::lower) fn given_entries(&self, body: &mut [js::Stmt]) -> Vec<(String, Expr)> {
-        let given = self.given_names();
-        let mut found: Vec<(String, Expr)> = Vec::new();
-        js::each_expr_mut(body, &mut |e: &mut Expr| {
-            if e.facts.has(js::Known::Evidence)
-                && let js::ExprKind::Call(callee, args) = &e.kind
-                && args.is_empty()
-                && let js::ExprKind::Member(_, entry) = &callee.kind
-                && reads_only_at_top(e, &given)
-                && !found.iter().any(|(_, seen)| seen == e)
-            {
-                found.push((entry.clone(), e.clone()));
-            }
-        });
-        found
+        let present = self.given_dictionaries(|tr| super::always_given(self.tcx, tr));
+        entries_to_declare(body, &self.given_names(), &present)
     }
 
     /// The name of a declared dictionary of `tr`: its type's and its
@@ -146,4 +136,78 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
         }
     });
     only
+}
+
+/// `given_entries`' of `body`: each entry call of a dictionary marked given
+/// (`Known::Evidence`), of no arguments, that reads only what the top can,
+/// `given`, and whose dictionary is one of `present`, always given; in the
+/// order they're written, each once.
+fn entries_to_declare(
+    body: &mut [js::Stmt],
+    given: &IndexSet<String>,
+    present: &IndexSet<String>,
+) -> Vec<(String, Expr)> {
+    let mut found: Vec<(String, Expr)> = Vec::new();
+    js::each_expr_mut(body, &mut |e: &mut Expr| {
+        if e.facts.has(js::Known::Evidence)
+            && let js::ExprKind::Call(callee, args) = &e.kind
+            && args.is_empty()
+            && let js::ExprKind::Member(_, entry) = &callee.kind
+            && root_name(e).is_some_and(|root| present.contains(root))
+            && reads_only_at_top(e, given)
+            && !found.iter().any(|(_, seen)| seen == e)
+        {
+            found.push((entry.clone(), e.clone()));
+        }
+    });
+    found
+}
+
+/// The name of the dictionary an entry call is of, through each entry
+/// before it, `S` of `S.A().B()`.
+fn root_name(e: &Expr) -> Option<&String> {
+    match &e.kind {
+        js::ExprKind::Var(name) => Some(name),
+        js::ExprKind::Call(callee, _) => root_name(callee),
+        js::ExprKind::Member(object, _) => root_name(object),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `S.Pairs()`, an entry of a given dictionary, called.
+    fn entry(of: &str, name: &str) -> Expr {
+        Expr::call(Expr::member(Expr::var(of), name), Vec::new()).evidence()
+    }
+
+    fn body_writing(e: Expr) -> Vec<js::Stmt> {
+        vec![
+            StmtKind::Expr(Expr::call(Expr::var("f"), vec![e.clone()])).at(js::Span::NONE),
+            StmtKind::Expr(Expr::call(Expr::var("f"), vec![e])).at(js::Span::NONE),
+        ]
+    }
+
+    #[test]
+    fn an_always_given_dictionarys_entry_is_declared() {
+        let given = IndexSet::from_iter(["S".to_string()]);
+        let mut body = body_writing(entry("S", "PairsIntoIterator"));
+        let found = entries_to_declare(&mut body, &given, &given);
+        assert_eq!(
+            found.iter().map(|(name, _)| name.as_str()).collect::<Vec<_>>(),
+            ["PairsIntoIterator"]
+        );
+    }
+
+    /// A `Copy` bound's dictionary may be `undefined` (ADR 0289): its
+    /// entry, called behind the branch that tests it, stays there, never
+    /// read at the top, where it would throw (#1355).
+    #[test]
+    fn a_dictionary_that_may_be_undefined_keeps_its_entry_inline() {
+        let given = IndexSet::from_iter(["TCopy".to_string()]);
+        let mut body = body_writing(entry("TCopy", "Clone"));
+        assert!(entries_to_declare(&mut body, &given, &IndexSet::default()).is_empty());
+    }
 }

@@ -6,6 +6,14 @@ use super::*;
 mod declared;
 use declared::{holds_a_function, is_impl_call, reads_only_at_top};
 
+/// Whether a bound's dictionary is always given, so what's read of it may
+/// be read anywhere in its function: every bound's but a `Copy`'s, which
+/// is `undefined` where each value is its own copy (ADR 0289), read only
+/// behind the test of it, `TCopy ? TCopy.copy(x) : x` (#1355).
+pub(super) fn always_given(tcx: TyCtxt<'_>, tr: ty::TraitRef<'_>) -> bool {
+    !tcx.is_lang_item(tr.def_id, LangItem::Copy)
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std collection's `Extend`, `{ extend(collection, items) }`, what
     /// generic code calls, `c.extend(items)` of a `C: Extend<A>` (ADR 0445):
