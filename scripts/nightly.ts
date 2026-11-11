@@ -9,14 +9,22 @@
 //   bun run nightly --fuzz-start=N  # the generated programs from seed N,
 //                                   # not today's, as tonight's nightly's
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { join } from "node:path";
 
 import { run } from "../test/child";
 import { shown } from "./timing";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
-const cores = availableParallelism();
+// The machine's cores (scripts/shard.ts' `machine`): each net split in a
+// part a core of what each part keeps busy, the pool starting as many as
+// they free; never a fixed count, which left a net run alone on a larger
+// machine its cores idle.
+const cores = machine().cores;
+const perCores = (each: number) => Math.max(1, Math.floor(cores / each));
+// The day's 600 seeds, `n` parts' shares of them.
+const seedParts = perCores(1);
+const seedsEach = Math.ceil(600 / seedParts);
 const minutes = 60_000;
 
 /** A part of a job: its command, what it needs done first, how many cores
@@ -52,26 +60,26 @@ export const jobs: Record<string, Part[]> = {
     timeout: 30 * minutes,
   })),
   // The day's generated programs through the same (ADR 1087).
-  programs: parts("programs", 6, (i) => ({
+  programs: parts("programs", seedParts, (i) => ({
     cmd: ["bun", "test", "--timeout=900000", "test/tidy-stages.test.ts"],
-    env: { ...compiler, TIDY_STAGES: "programs", FUZZ_START: String(fuzzStart + (i - 1) * 100), FUZZ_SEEDS: "100" },
+    env: { ...compiler, TIDY_STAGES: "programs", FUZZ_START: String(fuzzStart + (i - 1) * seedsEach), FUZZ_SEEDS: String(Math.max(1, Math.min(seedsEach, 600 - (i - 1) * seedsEach))) },
     after: ["build"],
     cores: 1,
     timeout: 40 * minutes,
   })),
   // Each corpus case with std's iterator structs alone (ADR 0908).
-  forms: parts("forms", 4, (i) => ({
+  forms: parts("forms", perCores(1), (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/iterator-forms.test.ts"],
-    env: { ...compiler, ITERATOR_FORMS: "corpus", RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, ITERATOR_FORMS: "corpus", RUST_JS_CASES: `${i}/${perCores(1)}` },
     after: ["build"],
     cores: 1,
     timeout: 20 * minutes,
   })),
   // Each corpus case compiled twice, as a program and as a library, the
   // same JS, map and manifest each time (ADR 1003, #866).
-  determinism: parts("determinism", 4, (i) => ({
+  determinism: parts("determinism", perCores(3), (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/determinism.test.ts"],
-    env: { ...compiler, DETERMINISM: "corpus", RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, DETERMINISM: "corpus", RUST_JS_CASES: `${i}/${perCores(3)}` },
     after: ["build"],
     cores: 3,
     timeout: 20 * minutes,
@@ -97,9 +105,9 @@ export const jobs: Record<string, Part[]> = {
   })),
   // Each `Option` place's form, written each way and read each way, all 580
   // programs (#855, ADR 1096).
-  nones: parts("nones", 4, (i) => ({
+  nones: parts("nones", perCores(3), (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/none-matrix.test.ts"],
-    env: { ...compiler, NONE_MATRIX: "all", RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, NONE_MATRIX: "all", RUST_JS_CASES: `${i}/${perCores(3)}` },
     after: ["build"],
     cores: 3,
     timeout: 20 * minutes,
@@ -115,16 +123,16 @@ export const jobs: Record<string, Part[]> = {
   })),
   // The memory net's 400 seeds from the day's, each under Miri (#1172).
   // The Rustlantis net (ADR 1125): 1,000 custom MIR programs of the day's.
-  rustlantis: parts("rustlantis", 4, (i) => ({
+  rustlantis: parts("rustlantis", perCores(1), (i) => ({
     cmd: ["bun", "test", "--timeout=900000", "test/rustlantis.test.ts"],
-    env: { ...compiler, RUSTLANTIS_SEEDS: "1000", RUSTLANTIS_START: String(fuzzStart), RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, RUSTLANTIS_SEEDS: "1000", RUSTLANTIS_START: String(fuzzStart), RUST_JS_CASES: `${i}/${perCores(1)}` },
     after: ["build"],
     cores: 1,
     timeout: 15 * minutes,
   })),
-  memory: parts("memory", 4, (i) => ({
+  memory: parts("memory", perCores(1), (i) => ({
     cmd: ["bun", "test", "--timeout=1800000", "test/memory-net.test.ts"],
-    env: { ...compiler, MEMORY_NET: "all", MEMORY_NET_START: String(fuzzStart), RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, MEMORY_NET: "all", MEMORY_NET_START: String(fuzzStart), RUST_JS_CASES: `${i}/${perCores(1)}` },
     after: ["build"],
     cores: 1,
     timeout: 30 * minutes,
@@ -233,9 +241,9 @@ export const jobs: Record<string, Part[]> = {
     },
   ],
   // The day's 600 generated programs (ADR 0092).
-  fuzz: parts("fuzz", 12, (i) => ({
+  fuzz: parts("fuzz", seedParts, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],
-    env: { ...compiler, FUZZ_START: String(fuzzStart + (i - 1) * 50), FUZZ_SEEDS: "50" },
+    env: { ...compiler, FUZZ_START: String(fuzzStart + (i - 1) * seedsEach), FUZZ_SEEDS: String(Math.max(1, Math.min(seedsEach, 600 - (i - 1) * seedsEach))) },
     after: ["build"],
     cores: 1,
     timeout: 20 * minutes,
@@ -247,8 +255,8 @@ export const jobs: Record<string, Part[]> = {
     // rustc's tests at the toolchain's commit, fetched once, as the setup
     // action does: the shards each fetching them raced for the same folder.
     { id: "rustc:tests", cmd: ["bun", "scripts/rustc-tests.ts"], cores: 1, timeout: 15 * minutes },
-    ...parts("rustc", 6, (i) => ({
-      cmd: ["bun", "scripts/rustc-suite.ts", "--compiler=target/release/rust-js", `--shard=${i}/6`, `--out=target/nightly/rustc-${i}.json`],
+    ...parts("rustc", perCores(2), (i) => ({
+      cmd: ["bun", "scripts/rustc-suite.ts", "--compiler=target/release/rust-js", `--shard=${i}/${perCores(2)}`, `--out=target/nightly/rustc-${i}.json`],
       after: ["rustc:release", "rustc:tests"],
       cores: 2,
       timeout: 40 * minutes,
@@ -256,7 +264,7 @@ export const jobs: Record<string, Part[]> = {
     {
       id: "rustc:merge",
       cmd: ["sh", "-c", "bun scripts/rustc-suite.ts --merge target/nightly/rustc-*.json"],
-      after: Array.from({ length: 6 }, (_, i) => `rustc:${i + 1}/6`),
+      after: Array.from({ length: perCores(2) }, (_, i) => `rustc:${i + 1}/${perCores(2)}`),
       cores: 1,
       timeout: 5 * minutes,
     },

@@ -18,8 +18,8 @@
 // sums its file, a line a compile, and its `decision-coverage` job merges
 // them, a file a job, the net its name before its first dot.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { join } from "node:path";
+import { atOnce } from "./shard";
 
 const root = join(import.meta.dir, "..");
 const out = join(root, "target", "decision-coverage");
@@ -263,9 +263,9 @@ if (!merging) {
   // A run of the nets named keeps the others' counts of the last run.
   mkdirSync(counts, { recursive: true });
   for (const file of readdirSync(counts)) if (names.includes(netOf(file))) rmSync(join(counts, file));
-  // Each net's tests run compiles of their own at once; half the cores'
-  // nets at a time keeps every core busy without starving them.
-  runs = await pool(jobs(names), Math.max(2, Math.floor(availableParallelism() / 2)));
+  // A net's part is a test file, a compile at a time: as many at once as
+  // the machine's cores and memory hold (scripts/shard.ts' `atOnce`).
+  runs = await pool(jobs(names), atOnce("test"));
 }
 if (!existsSync(dir)) throw new Error(`no counts in ${dir}: run it without --merge first`);
 const text = report(merge(dir), runs);

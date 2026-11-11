@@ -22,7 +22,6 @@
 //   bun scripts/reduce.ts --check <file> --build .. --edition ..
 //
 // is one variant's failure, as JSON, which the parallel tries run.
-import { availableParallelism } from "node:os";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -32,7 +31,7 @@ import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show } from "../
 import { buildRewriter, rewriter } from "../test/metamorphic";
 import { root, target } from "../test/support";
 import { installMiri, mayBeUndefined, miriInstalled, miriSysroot, undefinedBehaviour } from "../test/miri";
-import { memoryBudget, peakGB } from "./shard";
+import { atOnce, memoryBudget, peakGB } from "./shard";
 
 /** How a program fails: rust-js refuses or crashes on it, with its first
  * error; or its JS ends otherwise than native Rust, a throw where it
@@ -96,7 +95,7 @@ export const size = (text: string) => {
 /** How many jobs at once: one a core, each a test's, a compile at a time,
  * no more than the run's memory budget holds (`memoryBudget`, #1084). */
 export function reduceJobs(): number {
-  return Math.max(1, Math.min(availableParallelism(), Math.floor(memoryBudget() / peakGB.test)));
+  return atOnce("test");
 }
 
 /** The rewriter's reductions of `file`: how many, or the program with the

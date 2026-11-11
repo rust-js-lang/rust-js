@@ -36,7 +36,6 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { availableParallelism } from "node:os";
 import { cargoHome } from "./disk";
 import {
   cpSync,
@@ -54,7 +53,7 @@ import { floorBytes } from "../test/bounded";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { corpusRows, type Crate } from "./crate-corpus";
 import { cut, cutFor, dropped, errorsAt, items, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, underItems } from "./crater-cuts";
-import { memoryBudget } from "./shard";
+import { atOnce } from "./shard";
 
 const root = join(import.meta.dir, "..");
 const work = join(root, "target", "crater");
@@ -846,15 +845,9 @@ if (import.meta.main) {
     const build = currentBuild(compiler);
     if (!build) throw new Error(`no compiler at ${compiler}: run cargo build`);
     // A crate's native test build and its JS one, each a Cargo build of its
-    // graph: half the cores' crates at once, and no more than the memory
-    // holds at about 2 GB a crate (scripts/shard.ts).
-    const width = Math.max(
-      1,
-      Math.min(
-        Math.floor(availableParallelism() / 2),
-        Math.floor(memoryBudget() / 2),
-      ),
-    );
+    // graph: as many crates at once as the cores, about two a crate, and the
+    // memory, about 2 GB a crate, hold (scripts/shard.ts' `atOnce`).
+    const width = atOnce("crateBuild");
     const verdicts = new Map<string, Verdict>();
     let next = 0;
     await Promise.all(

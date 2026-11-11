@@ -24,13 +24,13 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { availableParallelism } from "node:os";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
 import { floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
+import { atOnce } from "./shard";
 
 /** Where each crate's Cargo project and targets are kept between runs,
  * `<crate>/`, so a run builds only what changed. */
@@ -366,8 +366,9 @@ async function main() {
     }
     return result;
   };
-  // Half the cores' crates at once, each `cargo check` of its graph on more.
-  const width = Math.max(1, Math.floor(availableParallelism() / 2));
+  // As many crates at once as the cores and memory hold, each `cargo
+  // check` of its graph keeping about two busy (scripts/shard.ts' `atOnce`).
+  const width = atOnce("crateCheck");
   const measured: Promise<Result>[] = [];
   let next = 0;
   const workers = Array.from({ length: Math.min(width, chosen.length) }, async () => {

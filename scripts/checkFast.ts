@@ -20,12 +20,12 @@
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { availableParallelism, cpus, loadavg } from "node:os";
+import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
-import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
+import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { expected, readJobTimes, recordJobTimes } from "./jobTimes";
 import { elapsed, loadScale, median, timed } from "./timing";
@@ -797,10 +797,10 @@ if (import.meta.main) {
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
-    ? changePicks(caseParts(availableParallelism())).reduce((sum, p) => sum + p.rows, 0)
+    ? changePicks(caseParts(machine().cores)).reduce((sum, p) => sum + p.rows, 0)
     : undefined;
-  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked, forms, rows });
-  const cores = availableParallelism();
+  const check = jobs({ all, changed, branch, added, extra, cores: machine().cores, picked, forms, rows });
+  const cores = machine().cores;
   const clock: Clock = { began: Date.now(), samples: [] };
   const results = await run(check.jobs, compiler, cores, clock);
   const failed = results.filter((r) => r.code !== 0);

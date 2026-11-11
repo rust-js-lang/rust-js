@@ -7,8 +7,9 @@
 //
 // A step records itself, `timed(step, seconds)`, and says how it compares.
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { availableParallelism, loadavg } from "node:os";
+import { loadavg } from "node:os";
 import { join } from "node:path";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
 const file = join(root, "target", "timings.jsonl");
@@ -84,7 +85,7 @@ export function loadScale(load: number, cores: number): number {
  * then said about ×1, and a 60 s test failed at 63 s (#857). */
 export function underLoad(ms: number): number {
   const given = Number(process.env.RUST_JS_LOAD_SCALE);
-  const now = loadScale(loadavg()[0], availableParallelism());
+  const now = loadScale(loadavg()[0], machine().cores);
   return Math.round(ms * Math.max(now, given >= 1 ? given : 1));
 }
 

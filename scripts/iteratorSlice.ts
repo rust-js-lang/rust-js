@@ -38,13 +38,13 @@
 // #1171), `std-net`; and to the iterators' code, the runtime's among it,
 // the twin net (test/twin-net.ts, #1205), `twin-net`.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
 import { caseParts } from "./shard";
 import { twinHelpers } from "../test/iterator-matrix";
 import { helpersOf, sharedProblems } from "../test/twin-net";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -459,6 +459,6 @@ function changeRows(parts: number): Run[] {
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
   if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
-  const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
+  const parts = count === undefined ? caseParts(machine().cores * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

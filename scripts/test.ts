@@ -8,13 +8,13 @@
 // splits the suite across its machines (DEVELOPMENT.md). The files only the
 // nightly runs (scripts/shard.ts's `nightly`) run with `--nightly`.
 import { existsSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKeptStores } from "../test/kept";
 import { browsers, caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -46,7 +46,7 @@ const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
 // A shard of `m` runs its `1/m` of the parts.
 const corpus = "test/corpus.test.ts";
 const { index, count } = shardArg(shard) ?? { index: 1, count: 1 };
-const corpusParts = caseShardParts(index, count, caseParts(availableParallelism()));
+const corpusParts = caseShardParts(index, count, caseParts(machine().cores));
 // How long each file took, this checkout's, and the last CI run's shards'
 // where `bun scripts/ci.ts timings` put them: `bun test` balances the
 // shards by them all, and writes this run's to the first.

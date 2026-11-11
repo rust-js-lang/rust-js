@@ -17,11 +17,12 @@
 // test/rustc-out-of-scope.txt, which change only by a bless too.
 
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { availableParallelism, homedir } from "node:os";
+import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { compileFailure, printed, run, stopped, type Exit } from "../test/child";
 import { rustcCommit, rustcTests } from "./rustc-tests";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -487,7 +488,7 @@ async function runAll(ui: string, tests: string[]): Promise<Result[]> {
       if (results.length % 250 === 0) console.error(`${results.length}/${tests.length}`);
     }
   };
-  await Promise.all(Array.from({ length: availableParallelism() }, worker));
+  await Promise.all(Array.from({ length: machine().cores }, worker));
   return results.sort((a, b) => a.test.localeCompare(b.test));
 }
 

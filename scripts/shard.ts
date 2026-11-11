@@ -4,7 +4,7 @@
 // of a machine's cores and memory the work run at once on it may hold.
 
 import { spawnSync } from "node:child_process";
-import { freemem, platform, totalmem } from "node:os";
+import { availableParallelism, freemem, platform, totalmem } from "node:os";
 
 /** Shard `index`, from 1, of `count`: the items, sorted, dealt out in turn,
  * so each is in exactly one shard, whatever order they're given in. */
@@ -70,16 +70,52 @@ export function memoryBudget(total = totalmem(), free = availableMemory()): numb
   return Math.max(peakGB.compilerBuild, Math.min(total / 2 ** 30 - 6, free / 2 ** 30 - 2));
 }
 
+/** The machine a run sizes itself by, as it starts: its cores,
+ * `availableParallelism()`, a container's share of them where it has one,
+ * and its memory, in GB, all of it and what's free (`availableMemory`).
+ * The one authority on how much of the machine there is: every runner asks
+ * `atOnce` how many of a kind of job to start together, or `machine()`
+ * itself, never the OS (test/ci.test.ts holds it). */
+export type Machine = { cores: number; totalGB: number; freeGB: number };
+export function machine(): Machine {
+  return { cores: availableParallelism(), totalGB: totalmem() / 2 ** 30, freeGB: availableMemory() / 2 ** 30 };
+}
+
+/** Each kind of job a runner starts many of, what it keeps busy and what
+ * it holds at most (`peakGB`): a test file or a part of one, a compile at
+ * a time, one core; a build of the compiler's crate, two; a crate's
+ * native and JS Cargo builds and tests, the Crater's, two and some 2 GB
+ * (2.1 GB of four at once, `peakGB`); a crate's `cargo check` and compile,
+ * the crate corpus's, two and 0.6 GB. */
+export const jobKinds = {
+  test: { cores: 1, gb: peakGB.test },
+  compilerBuild: { cores: 2, gb: peakGB.compilerBuild },
+  crateBuild: { cores: 2, gb: 2 },
+  crateCheck: { cores: 2, gb: peakGB.crate },
+} as const;
+
+/** How many jobs of `kind` a run starts at once on `on`: as many as its
+ * cores keep busy and its memory budget (`memoryBudget`) holds, or `room`
+ * GB of it where the run holds some apart, at least one. Fourteen tests
+ * on 14 cores and 36 GB, eight on 8 and 16 GB, four on CI's four and 16
+ * GB; seven of the compiler's builds on 14 cores, two on CI's. */
+export function atOnce(kind: keyof typeof jobKinds, on: Machine = machine(), room = memoryBudget(on.totalGB * 2 ** 30, on.freeGB * 2 ** 30)): number {
+  const job = jobKinds[kind];
+  return Math.max(1, Math.min(Math.floor(on.cores / job.cores), Math.floor(room / job.gb)));
+}
+
 /** How many builds of the compiler's crate a run makes at once on `cores`,
  * each in a target of its own, as mutations' `--jobs` workers do: one for
- * each two cores, as a build keeps about two busy, up to four (DEVELOPMENT.md's
- * timings of sixteen mutations), and no more
- * than the memory holds beside a test on each core. Four on 12 cores and
- * 32 GB, two on CI's four cores and 16 GB, and two on 8 cores and 16 GB,
- * where the cores alone said four; one there with 9 GB of it free. */
+ * each two cores, as a build keeps about two busy (`atOnce`), up to four,
+ * and no more than the memory holds beside a test on each core. Past four
+ * a build's own threads fill the cores: on 14 cores and 36 GB, seven builds
+ * ran 656 mutations in 533 s where four ran 643 in 540 s, the load at 114
+ * where it was 24 (2026-11-11). Two on CI's four cores and 16 GB, two on
+ * 8 cores and 16 GB, where the cores alone said four; one there with 9 GB
+ * of it free. */
 export function compilerBuilds(cores: number, total = totalmem(), free = availableMemory()): number {
   const room = memoryBudget(total, free) - cores * peakGB.test;
-  return Math.max(1, Math.min(4, Math.floor(cores / 2), Math.floor(room / peakGB.compilerBuild)));
+  return Math.min(4, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
 }
 
 /** The parts, `i/n`, of a file of cases that shard `index` of `count`

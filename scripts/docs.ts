@@ -20,10 +20,10 @@
 // with its tests, `rust-js --test`, and a fence headed `// src/x.test.js` is
 // that module's test file (ADR 1076).
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { run } from "../test/child";
 import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, KeptApp, root, target } from "../test/support";
+import { machine } from "./shard";
 
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
@@ -268,7 +268,7 @@ async function main() {
   const results: { page: string; example: Example; bodies: string[] }[] = [];
   let next = 0;
   await Promise.all(
-    Array.from({ length: availableParallelism() }, async () => {
+    Array.from({ length: machine().cores }, async () => {
       while (next < jobs.length) {
         const job = jobs[next++];
         const { bodies, problem } = await compile(job.example, job.n);

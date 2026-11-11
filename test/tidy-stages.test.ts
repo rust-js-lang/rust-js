@@ -18,7 +18,6 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { basename, join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
@@ -26,6 +25,7 @@ import { generate, print, type Program } from "./generate";
 import { agree, compileJs, compileJsAsync, jsLimit, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
 import { reduce, size } from "./reduce";
 import { buildCompiler, caseShard, compiler, contentDirectory, fixture, run, target, writeWhole } from "./support";
+import { machine } from "../scripts/shard";
 import { record, runKey, shared, verified } from "./verified-runs";
 import { partSetting } from "./part-settings";
 
@@ -176,7 +176,7 @@ async function eachAtOnce<T, U>(items: T[], f: (item: T) => Promise<U>): Promise
   const worker = async () => {
     for (let at = next++; at < items.length; at = next++) results[at] = await f(items[at]);
   };
-  await Promise.all(Array.from({ length: Math.min(availableParallelism(), items.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(machine().cores, items.length) }, worker));
   return results;
 }
 

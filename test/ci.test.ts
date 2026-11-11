@@ -31,7 +31,7 @@ import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/itera
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
-import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
+import { atOnce, caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -55,6 +55,7 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   // On a quiet machine, 85% of it free, the memory whole says.
   const quiet = (total: number) => compilerBuilds(total === 16 ? 8 : 12, total * gb, 0.85 * total * gb);
   expect(quiet(16)).toBe(2);
+  // Up to four: past it a build's own threads fill the cores (shard.ts).
   expect(quiet(32)).toBe(4);
   expect(quiet(64)).toBe(4);
   expect(compilerBuilds(4, 16 * gb, 14 * gb)).toBe(2);
@@ -74,7 +75,45 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
   expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
   expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
-  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(availableParallelism());");
+  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(machine().cores);");
+});
+
+// How many of each kind of job a run starts at once, from the machine as
+// it is (scripts/shard.ts' `atOnce`, the one authority): a 16 GB Mac of 8
+// cores, the M3 Max's 36 GB of 14, and CI's 16 GB of 4, each 85% free.
+test("each kind of job runs as many at once as the machine's cores and memory hold", () => {
+  const on = (cores: number, totalGB: number) => ({ cores, totalGB, freeGB: 0.85 * totalGB });
+  const sizes = (cores: number, totalGB: number) =>
+    Object.fromEntries((["test", "compilerBuild", "crateBuild", "crateCheck"] as const).map((kind) => [kind, atOnce(kind, on(cores, totalGB))]));
+  expect(sizes(8, 16)).toEqual({ test: 8, compilerBuild: 2, crateBuild: 4, crateCheck: 4 });
+  expect(sizes(14, 36)).toEqual({ test: 14, compilerBuild: 7, crateBuild: 7, crateCheck: 7 });
+  expect(sizes(4, 16)).toEqual({ test: 4, compilerBuild: 2, crateBuild: 2, crateCheck: 2 });
+  // Where little is free, the memory says, at least one.
+  expect(atOnce("compilerBuild", { cores: 14, totalGB: 36, freeGB: 6 })).toBe(1);
+  expect(atOnce("test", { cores: 14, totalGB: 36, freeGB: 3 })).toBe(11);
+  expect(atOnce("test", { cores: 1, totalGB: 2, freeGB: 1 })).toBe(1);
+});
+
+// No runner counts the machine itself or fixes how many jobs it starts:
+// each asks scripts/shard.ts (`machine`, `atOnce`), where a fixed count left
+// a larger machine's cores idle, decision coverage's half the cores, the
+// mutations' four builds, a net run alone in four parts. CI's workflows
+// say their parts, as their machines are fixed.
+test("no runner counts the machine's cores or fixes how many jobs run at once itself", () => {
+  const files = [...new Bun.Glob("{scripts,test,tooling}/**/*.{ts,js}").scanSync(root)].filter(
+    (file) => file !== "scripts/shard.ts" && !file.startsWith("test/corpus/") && !file.startsWith("test/crates/") && !file.includes("/fixtures/"),
+  );
+  const code = (file: string) => readFileSync(join(root, file), "utf8").split("\n").filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line)).join("\n");
+  const found = files.flatMap((file) => {
+    const text = code(file);
+    return [
+      ...[...text.matchAll(/availableParallelism\(|cpus\(\)\.length/g)].map(() => `${file}: counts the cores itself`),
+      ...[...text.matchAll(/--at-once=\d/g)].map(() => `${file}: a fixed --at-once`),
+      ...[...text.matchAll(/\bparts\("[^"]+", \d+/g)].map(() => `${file}: a fixed part count`),
+    ];
+  });
+  // This test's own patterns aside.
+  expect(found.filter((f) => !f.startsWith("test/ci.test.ts"))).toEqual([]);
 });
 
 // The corpus runs in parts, one for each two cores where they all run at

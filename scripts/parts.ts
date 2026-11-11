@@ -13,17 +13,22 @@
 // exit 143, and its neighbour shuffle in the runner's shutdown, and neither
 // said where.
 //
-//   bun scripts/parts.ts 4 test/neighbours.test.ts --timeout=1800000
+//   bun scripts/parts.ts auto test/neighbours.test.ts --timeout=1800000
+//   bun scripts/parts.ts 4 test/neighbours.test.ts
 //   bun scripts/parts.ts 8 --at-once=4 test/neighbours.test.ts
 //   bun scripts/parts.ts 5-8/24 test/iterator-matrix.test.ts
 //
-// runs the file in 4 parts at once; in 8, 4 at once; or the 5th to the
-// 8th of 24, a machine's share of a job split across machines; with
-// `bun test`'s flags given after the file.
+// runs the file in as many parts as the machine's cores and memory hold
+// at once (scripts/shard.ts' `atOnce`); in 4; in 8, 4 at once; or the
+// 5th to the 8th of 24, a machine's share of a job split across
+// machines; with `bun test`'s flags given after the file. Parts run as
+// many at once as the machine holds, of those named, unless `--at-once`
+// says fewer.
 import { freemem, totalmem } from "node:os";
 import { join } from "node:path";
 
 import { processTree, stopGroup } from "../test/child";
+import { atOnce } from "./shard";
 import { passed } from "./test-summary";
 
 const root = join(import.meta.dir, "..");
@@ -178,11 +183,12 @@ export async function lines(stream: ReadableStream<Uint8Array>, each: (line: str
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
-  const atOnce = args.find((arg) => arg.startsWith("--at-once="));
-  const [spec, file, ...flags] = args.filter((arg) => arg !== atOnce);
-  if (spec === undefined || file === undefined) throw new Error("usage: bun scripts/parts.ts <n | a-b/n> [--at-once=<k>] <test file> [bun test's flags]");
-  const parts = partsOf(spec);
-  const together = atOnce === undefined ? parts.parts.length : Number(atOnce.slice("--at-once=".length));
-  if (!Number.isInteger(together) || together < 1) throw new Error(`${atOnce}: how many parts run at once, from 1`);
+  const said = args.find((arg) => arg.startsWith("--at-once="));
+  const [spec, file, ...flags] = args.filter((arg) => arg !== said);
+  if (spec === undefined || file === undefined) throw new Error("usage: bun scripts/parts.ts <auto | n | a-b/n> [--at-once=<k>] <test file> [bun test's flags]");
+  const held = atOnce("test");
+  const parts = partsOf(spec === "auto" ? String(held) : spec);
+  const together = said === undefined ? Math.min(parts.parts.length, held) : Number(said.slice("--at-once=".length));
+  if (!Number.isInteger(together) || together < 1) throw new Error(`${said}: how many parts run at once, from 1`);
   process.exit((await runParts(file, parts, together, flags)) ? 0 : 1);
 }

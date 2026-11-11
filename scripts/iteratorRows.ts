@@ -347,9 +347,8 @@ if (import.meta.main) {
   const range = head === undefined ? [base] : [base, head];
   const files = Bun.spawnSync(["git", "diff", "--name-only", ...range], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const globs = iteratorPaths.map((path) => new Bun.Glob(path));
-  const { availableParallelism } = await import("node:os");
-  const { caseParts } = await import("./shard");
-  const parts = caseParts(availableParallelism() * 2);
+  const { caseParts, machine } = await import("./shard");
+  const parts = caseParts(machine().cores * 2);
   for (const p of pick(base, head, files.filter((file) => globs.some((glob) => glob.match(file))), parts)) {
     for (const line of p.why) console.log(`  ${line}`);
     console.log(`${p.table}: ${p.rows} rows, ITERATOR_MATRIX='${p.setting}'`);

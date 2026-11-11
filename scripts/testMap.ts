@@ -38,7 +38,6 @@
 // HEAD's ancestor, or of another version or toolchain, is never read.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
@@ -46,6 +45,7 @@ import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { readJobTimes } from "./jobTimes";
 import { plainSuiteFiles, shard } from "./shard";
+import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
 /** What records a map, the worktree's: its counting build and a recording's
@@ -634,7 +634,7 @@ async function record(keep: boolean) {
   const { names, functions } = functionTable(binary, recording, tools);
   writeFileSync(join(recording, "names.json"), JSON.stringify(names));
 
-  const cores = availableParallelism();
+  const cores = machine().cores;
   const files = mappedFiles();
   const parts = cores;
   const units = [

@@ -17,13 +17,13 @@
 
 import { createHash } from "node:crypto";
 import { chmodSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { availableParallelism, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, memoryBudget, shard, shardArg } from "./shard";
+import { caseParts, compilerBuilds, machine, memoryBudget, shard, shardArg } from "./shard";
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -976,7 +976,7 @@ async function main() {
     for (const file of new Set(ofMode.flatMap((set) => set.files))) {
       const naming = ofMode.filter((set) => set.files.includes(file));
       const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
-      const parts = file === "test/corpus.test.ts" ? caseParts(availableParallelism()) : 1;
+      const parts = file === "test/corpus.test.ts" ? caseParts(machine().cores) : 1;
       for (const compiler of [unmutated, broken]) {
         for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
       }
@@ -987,7 +987,7 @@ async function main() {
   let reports = 0;
   const printedBy = new Map<string, string>();
   await Promise.all(
-    Array.from({ length: Math.min(availableParallelism(), runs.length) }, async () => {
+    Array.from({ length: Math.min(machine().cores, runs.length) }, async () => {
       for (let run = runs.shift(); run !== undefined; run = runs.shift()) {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
@@ -1036,7 +1036,7 @@ async function main() {
   // on a CI machine's four cores, the second's first build cold, a minute or
   // two of the hours its shard takes.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const jobs = said >= 1 ? said : compilerBuilds(availableParallelism());
+  const jobs = said >= 1 ? said : compilerBuilds(machine().cores);
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
@@ -1066,7 +1066,7 @@ async function main() {
   const waiters: (() => void)[] = [];
   const wake = () => waiters.splice(0).forEach((resume) => resume());
   const turn = () => new Promise<void>((resume) => waiters.push(resume));
-  const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || availableParallelism();
+  const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || machine().cores;
   const beside = async <T>(work: () => Promise<T>) => {
     while (testing >= testsAtOnce) await turn();
     testing++;
@@ -1091,7 +1091,7 @@ async function main() {
     const chosen = reached.kind === "picked" ? reached.cases : caseNames;
     if (chosen.length === 0) return { caught: false, said: `${reached.why}: no case reaches it`, output: "" };
     const named = (names: string[]) => `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
-    const parts = Math.max(1, Math.min(caseParts(availableParallelism()), Math.ceil(chosen.length / 50)));
+    const parts = Math.max(1, Math.min(caseParts(machine().cores), Math.ceil(chosen.length / 50)));
     const ran = await Promise.all(
       Array.from({ length: parts }, (_, i) =>
         beside(() => test(["test/corpus.test.ts", "-t", named(chosen)], mutant, "alone", { env: { RUST_JS_CASES: `${i + 1}/${parts}` } })),

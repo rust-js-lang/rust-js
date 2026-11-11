@@ -12,12 +12,11 @@
 //   NET_REDUCE=0          the command to reduce it, not reduced
 //   NET_REDUCE_BUDGET=<s> how long each may take, 300 s unless it's given
 import { spawn } from "node:child_process";
-import { availableParallelism } from "node:os";
 import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { root, target } from "./support";
-import { memoryBudget } from "../scripts/shard";
+import { machine, memoryBudget } from "../scripts/shard";
 
 /** A failing program to reduce, kept as it was found (`toReduce`): its
  * file, the build it goes wrong in and its edition. */
@@ -51,7 +50,7 @@ export async function reducedRepros(reductions: Reduction[], deadline: number): 
   if (reductions.length === 0) return [];
   const parts = Number((process.env.RUST_JS_CASES ?? "1/1").split("/")[1]) || 1;
   const share = parts * reductions.length;
-  const jobs = Math.max(1, Math.floor(availableParallelism() / share));
+  const jobs = Math.max(1, Math.floor(machine().cores / share));
   const memory = (memoryBudget() / share).toFixed(1);
   const asked = Number(process.env.NET_REDUCE_BUDGET ?? "300");
   const budget = Math.min(asked, Math.floor((deadline - Date.now()) / 1000) - overrun);
