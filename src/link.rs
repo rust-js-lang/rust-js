@@ -27,7 +27,9 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             resolve(&mut item.module, &item.imports, item.reserved_names);
             // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
+            let mut finds_places_by_address = false;
             crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
+                finds_places_by_address |= matches!(e.helper_name(), Some("$ptrFrom" | "$ptrAt"));
                 // And what a handle's storage writes with, which preparation
                 // writes out (`Storage::helper`, #968).
                 let stored = match &e.kind {
@@ -40,6 +42,17 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });
+            // A module that finds places by their addresses exposes each as
+            // it's asked, from when it loads, before anything asks one
+            // (ADR 0562, amended, #1426).
+            if finds_places_by_address {
+                let expose = crate::js::Expr::call_helper("$exposeAddresses", Vec::new());
+                let statement = crate::js::StmtKind::Expr(expose).at(crate::js::Span::NONE);
+                item.module
+                    .items
+                    .insert(0, crate::js::Item::Statements(vec![statement]));
+                written.extend(crate::runtime::helper_of("$exposeAddresses"));
+            }
             written.sort();
             written.dedup();
             item.module.runtime = written;

@@ -5,6 +5,7 @@ import {
   $apart,
   $cleanup,
   $debugStr,
+  $exposeAddresses,
   $part,
   $ptr,
   $ptrAdd,
@@ -17,6 +18,8 @@ import {
   $ptrWhole,
   $traitImpl,
 } from "@rust-js/std";
+
+$exposeAddresses();
 
 export function entry() {
   main();

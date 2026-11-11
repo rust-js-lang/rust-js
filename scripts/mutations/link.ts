@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "                for name in e.helper_name().into_iter().chain(stored.filter(|_| false)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
+  {
+    name: "addresses-unexposed",
+    breaks: "a module that makes addresses pointers again never exposes them, so `addr as *const u8` is a pointer to no place, read as refused (#1426)",
+    file: "src/link.rs",
+    find: "            if finds_places_by_address {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^addresses_of_short_lived_allocations.rs$"],
+  },
 ];

@@ -197,16 +197,47 @@ function $ptrShown(pointer, size) {
 // exact within its allocation, the JS array, object, cell or function a
 // handle is on: the allocation's base plus the handle's byte offset, an
 // item's its index times `size`, the pointee's. A base is given when an
-// address is first asked of the allocation, the next free multiple of 4096,
-// which reserves the allocation's bytes, rounded up to 4096, and never
-// gives them back: no two live allocations overlap, every base is aligned
-// past any type's alignment, and addresses rise in the order they're
-// asked. Asking exposes the allocation, as Rust's `expose_provenance` does:
-// `$ptrFrom` finds a place in it by its address.
+// address is first asked of the allocation, aligned as its items' size is,
+// 16 at least, 4096 at most, past wasm32's every type's alignment, which
+// reserves the allocation's bytes and the room past them: no two live
+// allocations overlap, nor share an address, one past the end's too. An
+// allocation nothing holds any more gives its range back, as Rust's
+// allocator reuses what it frees, once the program yields (#1426).
+// Asking exposes the allocation, as Rust's `expose_provenance` does, in a
+// program that finds places by address, `$ptrFrom`'s, alone: its modules
+// call `$exposeAddresses()` as they load, before any address is asked, so
+// another program's allocations aren't kept for it.
 const $ranges = new WeakMap();
 const $exposed = [];
 const $exposedPlaces = new Map();
 let $nextBase = 0x10000;
+let $exposing = false;
+// Whether an address was asked before exposing began: a place then may not
+// be found by its address, and `$ptrFrom` refuses rather than guess.
+let $exposedLate = false;
+let $asked = false;
+// The bases each length of range given back can be given again at, of
+// ranges aligned at 16.
+const $freedBases = new Map();
+const $released = /* @__PURE__ */ new FinalizationRegistry(({ base, end }) => {
+  const bases = $freedBases.get(end - base);
+  if (bases === undefined) $freedBases.set(end - base, [base]);
+  else bases.push(base);
+});
+
+// A module that finds places by their addresses, as it loads.
+function $exposeAddresses() {
+  if (!$exposing && $asked) $exposedLate = true;
+  $exposing = true;
+}
+
+// The alignment of a range of items of `size` bytes: the largest power of
+// two dividing it, as a type's alignment divides its size, 16 at least and
+// 4096 at most.
+function $rangeAlign(size) {
+  if (!(size > 0)) return 16;
+  return Math.min(4096, Math.max(16, size & -size));
+}
 
 // The allocation a pointer is into, and the handle its address is of: a
 // `$ptrTo` of an object that's an array's item or a tuple's field, that
@@ -386,19 +417,41 @@ function $storedItems(items, stride, within) {
 // `$ptrOuter`'s, is (#1114).
 const $outerRoom = 64;
 
-function $addresses(allocation, bytes) {
+function $addresses(allocation, bytes, align = 16) {
   let range = $ranges.get(allocation);
   if (range === undefined) {
-    const length = Math.max(4096, Math.ceil((bytes + $outerRoom) / 4096) * 4096);
-    if ($nextBase + length > 0x1_0000_0000) {
-      throw $unsupported("rust-js does not support more addresses than wasm32 has: the address space is used up");
+    $asked = true;
+    const length = Math.ceil((bytes + $outerRoom) / align) * align;
+    // A range an allocation gave back, else the next free one.
+    let base = align === 16 ? $freedBases.get(length)?.pop() : undefined;
+    if (base === undefined) {
+      base = Math.ceil($nextBase / align) * align;
+      if (base + length > 0x1_0000_0000) {
+        throw $unsupported("rust-js does not support more addresses than wasm32 has: the address space is used up");
+      }
+      $nextBase = base + length;
     }
-    range = { base: $nextBase, end: $nextBase + length, of: allocation, stride: undefined };
-    $nextBase += length;
+    range = { base, end: base + length, of: allocation, stride: undefined };
     $ranges.set(allocation, range);
-    $exposed.push(range);
+    if (align === 16) $released.register(allocation, { base, end: base + length });
+    // Kept in order of base, for `$ptrFrom`, where it's asked.
+    if ($exposing) {
+      let low = 0;
+      let high = $exposed.length;
+      while (low < high) {
+        const mid = (low + high) >> 1;
+        if ($exposed[mid].base < base) low = mid + 1;
+        else high = mid;
+      }
+      $exposed.splice(low, 0, range);
+    }
   }
   return range;
+}
+
+// `pointer` exposed at `addr`, where places are found by address.
+function $exposePlace(addr, pointer) {
+  if ($exposing) $exposedPlaces.set(addr, pointer);
 }
 
 // An empty array at `addr`, a slice of no items made of a pointer with no
@@ -455,7 +508,7 @@ function $addr(pointer, size, inner) {
       throw $unsupported("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
     }
     const addr = $addr($ptrTo(pointer.of), 0, true) - pointer.outer;
-    if (!inner) $exposedPlaces.set(addr, pointer);
+    if (!inner) $exposePlace(addr, pointer);
     return addr;
   }
   // A place reached through more than one field or item: at its offset in
@@ -464,7 +517,7 @@ function $addr(pointer, size, inner) {
   // Not where the object it's on was moved out of its root since (#1113).
   if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {
     const addr = $addr($ptrTo(pointer.root), 0, true) + pointer.rootAt;
-    if (!inner) $exposedPlaces.set(addr, pointer);
+    if (!inner) $exposePlace(addr, pointer);
     return addr;
   }
   // A field of an object stored in another, as its records say, an
@@ -495,7 +548,7 @@ function $addr(pointer, size, inner) {
           : undefined;
     if (start !== undefined) {
       const addr = start + (item.within ?? 0) + offset;
-      if (!inner) $exposedPlaces.set(addr, pointer);
+      if (!inner) $exposePlace(addr, pointer);
       return addr;
     }
   }
@@ -508,10 +561,10 @@ function $addr(pointer, size, inner) {
     ((pointer.of !== undefined && typeof pointer.at === "number" && pointer.offset === undefined) || view);
   const stride = view ? pointer.stride : size;
   if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);
-  const range = $addresses(allocation, items ? allocation.length * stride : 0);
+  const range = $addresses(allocation, items ? allocation.length * stride : 0, $rangeAlign(items ? stride : size));
   if (items && range.stride === undefined) range.stride = stride;
   const addr = range.base + $offsetIn(pointer, range);
-  if (!items && !inner) $exposedPlaces.set(addr, pointer);
+  if (!items && !inner) $exposePlace(addr, pointer);
   return addr;
 }
 
@@ -565,6 +618,9 @@ function $ptrFrom(addr, size, zero) {
   addr >>>= 0;
   if (addr === 0) return null;
   const range = $addressesAt(addr);
+  if (range === undefined && $exposedLate) {
+    throw $unsupported("rust-js does not support a pointer made of an address asked before the module that makes it was loaded, which reads memory by where it is");
+  }
   const provenance = range?.of === undefined ? null : $ptrTo(range.of);
   return (range && $placeAt(addr, range, size)) ?? $ptrNone(addr, provenance, size, zero);
 }

@@ -4,6 +4,7 @@ import {
   $addr,
   $borrow,
   $borrowMut,
+  $exposeAddresses,
   $fieldCell,
   $lock,
   $lockRead,
@@ -20,6 +21,8 @@ import {
   $storedValue,
   $unborrow,
 } from "@rust-js/std";
+
+$exposeAddresses();
 
 export function entry() {
   main();

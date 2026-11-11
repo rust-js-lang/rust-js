@@ -1297,3 +1297,40 @@ of two such slices' `as_ptr() as usize`, was billions (P0, #1424). The
 copy now records its place in the array, `$partPlaced`, as a part made
 by indexing does (#1185), so its pointer is the array's item's, at its
 address. Case C of ADR 0262: results change, so Rust's behaviour is kept.
+
+## Amendment: addresses are given back, and kept only where they're read (#1426)
+
+Every allocation whose address was asked took 4096 bytes of addresses and
+an entry in `$exposed`, kept for good. So a loop that asks the address of
+each of many short-lived allocations ran out of heap, about 3 KB kept
+apiece, and past a million ran out of wasm32's addresses. httparse's unit
+tests died this way. The user's decision (2026-11-12):
+
+- **A range is its bytes and the room past them**, at the alignment its
+  items' size gives, the largest power of two dividing it, 16 at least and
+  4096 at most. wasm32's every type is aligned so, an over-aligned type
+  too, `#[repr(align(64))]`'s 64. No two live allocations overlap or share
+  an address, one past the end's too.
+- **Allocations are exposed only in a program that reads it**: a module
+  that makes an address a pointer again, `$ptrFrom`'s and `$ptrAt`'s, calls
+  `$exposeAddresses()` as it loads, before any address is asked. Only
+  then does `$exposed` keep the allocations it finds places in. Elsewhere
+  an allocation's range is in `$ranges` alone, a `WeakMap`, which keeps
+  nothing.
+- **A module that exposes after an address was asked**, one imported
+  dynamically, may not find a place asked before it. Its `$ptrFrom` of
+  such an address is refused at run time, never made another place's.
+- **A range nothing holds any more is given back**, by a
+  `FinalizationRegistry`, once the program yields, as Rust's allocator
+  reuses what it frees. Within one synchronous run nothing can be seen
+  freed: a `WeakRef` keeps its target to the run's end, and a registry's
+  callbacks wait for it. So a run's addresses are bounded by wasm32's,
+  about 40 million allocations of a few bytes each.
+
+Rust's addresses are unspecified and its allocator reuses memory, so no
+specified result changes: Case A of ADR 0262, the same values. A live
+address stays unique and the same. A million and more short-lived
+addresses run in a 384 MB heap (`test/lowering.test.ts`). Corpus case
+addresses_of_short_lived_allocations covers live allocations that never
+overlap, an over-aligned type's alignment, an address made a pointer
+again, and a loop of short-lived ones, against native Rust.

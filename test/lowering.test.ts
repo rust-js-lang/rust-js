@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { underLoad } from "../scripts/timing";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -786,4 +787,50 @@ pub fn main() {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const a = bump($cellOf(parser), mutParserBorrowMut);");
   expect(js).toContain("const c = bump({ depth: 0 }, parserBorrowMut);");
+});
+
+// A program that asks the address of each of 1.2 million short-lived
+// allocations, httparse's count of what it parsed, and never makes an
+// address a pointer again, keeps none of them: it runs in a bounded heap,
+// and its addresses fit wasm32's (#1426).
+test("a million short-lived addresses run in a bounded heap", () => {
+  const dir = fixture("short-lived-addresses");
+  writeFileSync(join(dir, "lib.rs"), `pub fn main() {
+    let mut total = 0usize;
+    for i in 0..1_200_000u32 {
+        let v: Vec<u8> = format!("GET /{} HTTP/1.1", i % 97).into_bytes();
+        total = total.wrapping_add(v[4..].as_ptr() as usize - v.as_ptr() as usize);
+    }
+    println!("{total}");
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$exposeAddresses");
+  const ran = Bun.spawnSync(["node", "--max-old-space-size=384", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  expect([ran.exitCode, ran.stdout.toString()]).toEqual([0, "4800000\n"]);
+}, underLoad(120_000));
+
+// A module that makes addresses pointers again, loaded after an address
+// was asked, a dynamically imported one's: an address asked before isn't
+// found, so its pointer is refused, never another place's (#1426).
+test("a pointer of an address asked before exposing began is refused", () => {
+  const dir = fixture("late-exposed-addresses");
+  writeFileSync(join(dir, "asks.rs"), `pub fn asked() -> usize {
+    let items: &'static [u8] = Box::leak(vec![1u8, 2, 3].into_boxed_slice());
+    items[1..].as_ptr() as usize
+}
+`);
+  writeFileSync(join(dir, "reads.rs"), `pub fn read(addr: usize) -> u8 {
+    unsafe { *(addr as *const u8) }
+}
+`);
+  run([compiler, join(dir, "asks.rs"), "-o", join(dir, "asks.js")]);
+  run([compiler, join(dir, "reads.rs"), "-o", join(dir, "reads.js")]);
+  const script = `const { asked } = await import(${JSON.stringify(join(dir, "asks.js"))});
+const addr = asked();
+const { read } = await import(${JSON.stringify(join(dir, "reads.js"))});
+try { console.log(read(addr)); } catch (error) { console.log(String(error.message)); }`;
+  const ran = Bun.spawnSync(["node", "--input-type=module", "-e", script], { cwd: dir });
+  expect(ran.stdout.toString()).toContain("an address asked before the module that makes it was loaded");
 });

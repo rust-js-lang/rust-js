@@ -2,6 +2,7 @@
 
 import {
   $addr,
+  $exposeAddresses,
   $fromBytes,
   $ptrAt,
   $ptrBytes,
@@ -11,6 +12,8 @@ import {
   $ptrTo,
   $toBytes,
 } from "@rust-js/std";
+
+$exposeAddresses();
 
 export function entry() {
   main();

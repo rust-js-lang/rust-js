@@ -3,6 +3,7 @@
 import {
   $SipHasher,
   $addr,
+  $exposeAddresses,
   $ptr,
   $ptrAdd,
   $ptrAt,
@@ -15,6 +16,8 @@ import {
   $sort,
   $stored,
 } from "@rust-js/std";
+
+$exposeAddresses();
 
 export function entry() {
   main();
