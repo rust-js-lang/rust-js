@@ -145,4 +145,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
+  {
+    name: "range-hash-exhausted-unwritten",
+    breaks: "a hashed `a..=b` writes its bounds alone, never whether it's exhausted, so one stepped to its end hashes as a fresh one of its bounds, where std's derive writes its `exhausted` (#1361)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                if kind == crate::lower::std_types::range::RangeKind::Inclusive {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_hashed_as_std_derives.rs$"],
+  },
+  {
+    name: "range-hash-bounds-unwritten",
+    breaks: "a hashed range writes none of its bounds, so every range of a kind hashes alike (#1361)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                if let Some(bound) = bound {\n                    for each in bounds {\n",
+    replace: "                if let Some(bound) = bound.filter(|_| false) {\n                    for each in bounds {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_hashed_as_std_derives.rs$"],
+  },
+
 ];

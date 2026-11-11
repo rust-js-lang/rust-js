@@ -151,3 +151,32 @@ Case N: the hashes are native Rust's.
 Held by the corpus case `build_hasher_default.rs`, against native Rust in
 both builds, and the mutations `build-hasher-default-refused`,
 `hash-one-of-nothing` and `build-hasher-unrecognized`, caught.
+
+## Amendment: std's ranges (2026-11-11, #1361)
+
+itertools' probe, once #1346 let it compile, was refused at "implementation
+evidence for `<Range<i32> as Hash>`", and a `HashSet<Range<i32>>` too: no
+range had a `Hash` rust-js writes. std's ranges derive theirs, so a range
+writes each bound in its field's order, `start` then `end`, `a..` its start,
+`..b` and `..=b` their end, `..` nothing; and `a..=b` then its `exhausted`,
+a `bool`. Each is what `range_state` says Rust's range holds, the one
+answer `==` reads too: of one stepped to its end, its bounds and `true`,
+so it hashes, as it compares, otherwise than a fresh one of its bounds.
+`Hashed::Range(kind, bound)` (`recognition/types.rs`'s `hashed_as`) says
+it, and a range's bounds whose own `Hash` runs code make it a key found
+by its own `Hash` and `Eq` (ADR 1120). Case N: the hashes are native
+Rust's.
+
+Held by the corpus case `ranges_hashed_as_std_derives.rs` (each kind's
+hash, keys of a set, a map's entry, generic code's, inside a derived key,
+of `char`, `String` and printing bounds, an `a..=b` stepped to its end and
+one past its type's last) against native Rust in both builds, and the
+mutations `range-hash-unrecognized`, `range-hash-bounds-unwritten`,
+and `range-hash-exhausted-unwritten`. Not mutated: whether a range's
+`hash` runs code, its bounds', which nothing reads that sees it: a range is
+never a key JS finds by value, so a map of them finds them by their own
+`Hash` and `Eq` whatever it says, as std's generic branch said of
+`Range`'s `Idx: Hash` before.
+The case hashes no slice: its length is a `usize`, four bytes as
+`wasm32`'s, where the host's native run writes eight.
+

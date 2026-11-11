@@ -72,6 +72,10 @@ pub(in crate::lower) enum Hashed<'tcx> {
     Result(Ty<'tcx>, Ty<'tcx>),
     /// A raw pointer's address, a `usize`, of a pointer to the type (ADR 0562).
     Address(Ty<'tcx>),
+    /// One of std's ranges, of bounds of its type, `None` of `..`: its
+    /// derived `Hash`, each bound by its field's order, then of `a..=b`
+    /// whether it's exhausted, a `bool` (#1361).
+    Range(crate::lower::std_types::range::RangeKind, Option<Ty<'tcx>>),
 }
 
 /// A hasher, as hashing writes to it: given to a type's `hash<H>` as
@@ -221,6 +225,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Hashed::Tuple(parts) => parts.into_iter().any(|part| self.hash_runs_code(part, seen)),
                 Hashed::Result(ok, err) => self.hash_runs_code(ok, seen) || self.hash_runs_code(err, seen),
+                Hashed::Range(_, bound) => bound.is_some_and(|bound| self.hash_runs_code(bound, seen)),
                 Hashed::Number(_) | Hashed::Bool | Hashed::Char | Hashed::Text | Hashed::Address(_) => false,
             };
         }
@@ -391,6 +396,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let none = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(0)])];
                 let present = Expr::presence(value, true);
                 out.push(StmtKind::If(present, some, Some(none)).at(js::Span::NONE));
+            }
+            // Its state as Rust's is, `range_state`'s: its bounds, then of
+            // `a..=b` its `exhausted`, which one never stepped isn't.
+            Hashed::Range(kind, bound) => {
+                let (bounds, exhausted) = self.range_state(value, ty, out);
+                if let Some(bound) = bound {
+                    for each in bounds {
+                        self.hash_writes(each, bound, hasher, span, out)?;
+                    }
+                }
+                if kind == crate::lower::std_types::range::RangeKind::Inclusive {
+                    let exhausted = exhausted.unwrap_or_else(|| Expr::bool(false));
+                    out.push(hasher.write(
+                        &self.hasher_key("write_u8"),
+                        vec![Expr::call(Expr::var("Number"), vec![exhausted])],
+                    ));
+                }
             }
             Hashed::Result(ok, err) => {
                 let value = self.spilled(value, out);

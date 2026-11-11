@@ -88,6 +88,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::String) => Hashed::Text,
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => Hashed::Tuple(Vec::new()),
+            ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => Hashed::Range(kind, args.types().next()),
             _ => return None,
         })
     }

@@ -412,4 +412,12 @@ export const mutations: Mutation[] = [
     replace: "        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => None,\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "range-hash-unrecognized",
+    breaks: "std's ranges have no `Hash` rust-js writes, refused as a key or hashed (#1361)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => Hashed::Range(kind, args.types().next()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_hashed_as_std_derives.rs$"],
+  },
 ];
