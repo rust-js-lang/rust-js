@@ -222,4 +222,12 @@ export const mutations: Mutation[] = [
     replace: "                ) && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^lanes_read_through_a_byte_array_pointer.rs$"],
   },
+  {
+    name: "slice-pointer-recast-refused",
+    breaks: "a `[u64]` slice's pointer as a `[u32]` slice's is refused as addressable memory, rand_core's `next_u32` (#1419)",
+    file: "src/lower/pointers/casts.rs",
+    find: "                    && value.reads_same() =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^integer_slices_read_as_another_width.rs$"],
+  },
 ];

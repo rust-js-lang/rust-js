@@ -43,6 +43,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let first = Expr::call(Expr::helper("$ptr"), vec![value, Expr::int(0)]);
                 Ok(Some(self.recast(first, item, b, span)?))
             }
+            // A slice's as one of another item's, rand_core's `results as
+            // *const [u64] as *const [u32]`, its length kept: a view of as
+            // many of them from where its first item is, that item's pointer
+            // `recast`, as `slice::from_raw_parts_mut` of it is (#1419). Read
+            // once for each, so a slice a variable holds.
+            mir::CastKind::PtrToPtr
+                if let (Some((ty::Slice(a), _)), Some((ty::Slice(b), _))) = (
+                    raw_pointee(self.tcx, from).map(|(a, m)| (*a.kind(), m)),
+                    raw_pointee(self.tcx, to).map(|(b, m)| (*b.kind(), m)),
+                ) && !self.same_place(a, b)
+                    && value.reads_same() =>
+            {
+                let first = Expr::call(Expr::helper("$ptr"), vec![value.clone(), Expr::int(0)]);
+                let retyped = self.recast(first, a, b, span)?;
+                let length = Expr::member(value, "length");
+                Ok(Some(Expr::call(Expr::helper("$ptrSliceMut"), vec![retyped, length])))
+            }
             // A slice's, which is the slice, as its first item's: `$ptr(items, 0)`.
             mir::CastKind::PtrToPtr
                 if let (Some((ty::Slice(item), _)), Some((b, _))) = (

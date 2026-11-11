@@ -1256,3 +1256,22 @@ are, the slice's own or a view's of part of an array; of another item,
 (little- and big-endian `u32` and `u64` lanes read and written through a
 view, a `[u32]` read and written as a `[u32; 4]`) against native Rust in
 both builds, and the mutation `slice-pointer-as-an-array-pointer-refused`.
+
+## Amendment: a slice's pointer as one of another item type's (#1419)
+
+rand_core 0.5.1 reads its `[u64]` results as `[u32]`, `&*(results as *const
+[u64] as *const [u32])`, the slice's length kept, which was refused as
+addressable memory of `*const [u32]`. **A slice's pointer as one of another
+item type's is a view of as many of the new items from where its first item
+is**, that item's pointer `recast` (`$ptrBytes` then `$ptrRetyped`, through
+the bytes, as between integers of two widths), as
+`slice::from_raw_parts_mut` of it is: `$ptrSliceMut(recast($ptr(s, 0)),
+s.length)`, a view, so a write through it changes the wider items where they
+are and a read sees what they hold then. Rust keeps the length, not the
+bytes, as the cast does; one longer than the bytes is Rust's undefined
+behaviour too. The other readings rand_core makes, two `u32`s read as a
+`u64` and `copy_nonoverlapping` between integers and bytes, were read
+already. `test/corpus/integer_slices_read_as_another_width.rs` holds each,
+read and written, against native Rust on wasm32 in both builds; the mutation
+`slice-pointer-recast-refused` puts the refusal back.
+
