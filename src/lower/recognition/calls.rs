@@ -1141,9 +1141,15 @@ pub(super) fn format_args_method(name: &str, arguments: bool) -> Option<Std> {
 
 /// A `Cell`'s or a `RefCell`'s method that reads, writes or lends what it
 /// holds, of its name (ADRs 0025, 0074, 0153): `None` of another, `new` and
-/// a `RefCell`'s borrows, which are their kinds'.
-pub(super) fn cell_method(name: &str, refcell: bool) -> Option<Std> {
+/// a `RefCell`'s borrows, which are their kinds'. Or an `UnsafeCell`'s,
+/// `{ value }` as a `Cell` is: its `new`, its `get()`, the cell itself, a
+/// pointer's handle on its value, its `get_mut()` and `into_inner()` (#1420).
+pub(super) fn cell_method(name: &str, refcell: bool, unsafe_cell: bool) -> Option<Std> {
     Some(match name {
+        "new" if unsafe_cell => Std::CellNew,
+        "get" if unsafe_cell => Std::CellPointer,
+        "get_mut" | "into_inner" if unsafe_cell => return cell_method(name, false, false),
+        _ if unsafe_cell => return None,
         "get" | "set" | "update" | "from_mut" | "as_slice_of_cells" | "as_array_of_cells" if refcell => return None,
         "get" | "into_inner" => Std::CellGet,
         "set" => Std::CellSet,

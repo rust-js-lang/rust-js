@@ -732,6 +732,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::LocalWith
             | Std::LocalBorrow { .. }
             | Std::CellGetMut
+            | Std::CellPointer
             | Std::CellSwap
             | Std::CellUpdate
             | Std::CellFromMut

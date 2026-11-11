@@ -38,8 +38,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             vacant: self.is_vacant_entry(owner),
         };
         let name = tcx.item_name(def_id);
-        if (adt(StdItem::Cell) || adt(StdItem::RefCell))
-            && let Some(cell) = cell_method(name.as_str(), adt(StdItem::RefCell))
+        if (adt(StdItem::Cell) || adt(StdItem::RefCell) || adt(StdItem::UnsafeCell))
+            && let Some(cell) = cell_method(name.as_str(), adt(StdItem::RefCell), adt(StdItem::UnsafeCell))
         {
             return Some(cell);
         }

@@ -179,6 +179,9 @@ pub(super) enum Std {
     /// A `Cell`'s or `RefCell`'s `get_mut()`, `swap(&other)`, and a `Cell`'s
     /// `update(f)` (ADR 0327).
     CellGetMut,
+    /// `UnsafeCell::get()`: the cell itself, `{ value }`, the handle a raw
+    /// pointer to what it holds is (ADR 0407, #1420).
+    CellPointer,
     CellSwap,
     CellUpdate,
     /// `Cell::from_mut(r)`, a `&mut` as a `&Cell` (ADR 0153).

@@ -134,3 +134,27 @@ clone copies it, as its `to_vec()` does, so the rule and its mutation
 the corpus that reaches `to_owned_of`, 20 of them, `slice_to_owned` and
 `to_owned_is_clone` among them, runs as native Rust and writes its
 snapshot. Held by those cases and `blanket-to-owned-shared`.
+
+## Amended (2026-11-12, #1420): an `UnsafeCell<T>` is `{ value }`
+
+rand 0.7's `ThreadRng`, `Rc<UnsafeCell<ReseedingRng<..>>>`, which quickcheck
+uses, was refused: "calling `std::cell::UnsafeCell::<T>::new`". **An
+`UnsafeCell<T>` is `{ value }`, as a `Cell` is** (`StdItem::UnsafeCell`, a
+lang item):
+- `new(v)` is `{ value: v }`;
+- `into_inner()` is `.value`;
+- `get_mut()` is its value's place, as a `Cell`'s is;
+- `get()` is the cell itself, the handle a raw pointer to its value is (ADR
+  0407), so `*c.get() += 1` and `&mut *c.get()` reach the value every owner
+  of the cell shares.
+
+Its `Default` is `{ value: <default> }`, and its `Debug` is std's
+`UnsafeCell { .. }`, which shows nothing of what it holds. What it holds
+drops as it drops or is written over through `get()`. A struct's
+`UnsafeCell` field is `{ value }` of its own, not the property itself as a
+`Cell`'s is (ADR 0288). That reads the same and changes nothing a program
+sees. ADR 0262's case C: the same values, shared as Rust shares them. Held
+by the corpus case `unsafe_cell_values`, both builds, and the mutations
+`unsafe-cell-get-is-a-cells`, `unsafe-cell-pointer-is-its-value`,
+`unsafe-cell-default-unboxed` and `unsafe-cell-debug-unshown`. `From` of
+one is #1284's.

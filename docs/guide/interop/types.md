@@ -38,7 +38,7 @@ from your crate and what a binding must be given.
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
-| `Cell<T>`, `RefCell<T>` | `{ value }`; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object | [Cells](#cell-and-refcell) |
+| `Cell<T>`, `RefCell<T>`, `UnsafeCell<T>` | `{ value }`, an `UnsafeCell`'s `get()` the cell itself; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object | [Cells](#cell-and-refcell) |
 | `OnceCell<T>`, `OnceLock<T>` | `{ value }` of an `Option`; in a field, the property, absent until it's set | [OnceCell](#oncecell-and-oncelock) |
 | `&T` | the value | [References](#references) |
 | `&mut` to an object | the object, changed in place | [References](#references) |

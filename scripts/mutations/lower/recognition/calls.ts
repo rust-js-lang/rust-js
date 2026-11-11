@@ -655,4 +655,12 @@ export const mutations: Mutation[] = [
     replace: "        let boxed = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
+  {
+    name: "unsafe-cell-get-is-a-cells",
+    breaks: "an `UnsafeCell`'s `get()` is a `Cell`'s, a copy of what it holds, not the cell, a pointer's handle on it, so `*c.get() += 1` changes nothing the cell holds (#1420)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        \"get\" if unsafe_cell => Std::CellPointer,\n",
+    replace: "        \"get\" if unsafe_cell => Std::CellGet,\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
 ];

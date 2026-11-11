@@ -611,6 +611,8 @@ pub(crate) enum StdItem {
     LinkedList,
     LocalKey,
     MaybeUninit,
+    /// `UnsafeCell`, a lang item: `{ value }`, as a `Cell` is (#1420).
+    UnsafeCell,
     Mutex,
     MutexGuard,
     /// `std::ptr::NonNull`, which is its pointer (ADR 0407).
@@ -684,6 +686,7 @@ impl StdItem {
             StdItem::LinkedList => Symbol::intern("LinkedList"),
             StdItem::LocalKey => Symbol::intern("LocalKey"),
             StdItem::MaybeUninit => Symbol::intern("MaybeUninit"),
+            StdItem::UnsafeCell => Symbol::intern("UnsafeCell"),
             StdItem::Mutex => Symbol::intern("Mutex"),
             StdItem::MutexGuard => Symbol::intern("MutexGuard"),
             StdItem::NonNull => Symbol::intern("NonNull"),
@@ -766,6 +769,7 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         }
         // A lang item, which has no diagnostic item.
         StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
+        StdItem::UnsafeCell => tcx.is_lang_item(id, LangItem::UnsafeCell),
         // A crate's whose maps are std's (ADRs 0423, 0424).
         StdItem::HashMap | StdItem::HashSet | StdItem::HashMapEntry if let Some(bound) = bound_map_item(tcx, id) => {
             let name = match item {

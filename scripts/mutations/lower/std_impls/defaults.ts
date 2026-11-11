@@ -192,4 +192,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "unsafe-cell-default-unboxed",
+    breaks: "an `UnsafeCell`'s `Default` is the default of what it holds, not `{ value }`, so a write through its `get()` reads `undefined.value` (#1420)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                if std(StdItem::Cell) || std(StdItem::UnsafeCell) || std(StdItem::RefCell) || std(StdItem::Atomic) =>\n",
+    replace: "                if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
 ];

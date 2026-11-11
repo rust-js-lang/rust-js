@@ -552,6 +552,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![value, show, name, Expr::bool(mutex)],
                 ))
             }
+            // An `UnsafeCell`'s, which shows nothing of what it holds, as
+            // std's `Debug` of one doesn't (#1420).
+            ty::Adt(..) if std(StdItem::UnsafeCell) => Ok(Expr::str("UnsafeCell { .. }")),
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
                 let shown = match std(StdItem::RefCell) {

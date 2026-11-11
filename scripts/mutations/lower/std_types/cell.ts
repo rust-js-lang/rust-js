@@ -759,4 +759,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
   },
+  {
+    name: "unsafe-cell-pointer-is-its-value",
+    breaks: "an `UnsafeCell`'s `get()` is the value it holds, not the cell, the handle a pointer to it is, so `*c.get() += 1` changes a copy and the cell keeps 5 (#1420)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellPointer => arg(),\n",
+    replace: "            Std::CellPointer => Expr::held(arg()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
 ];

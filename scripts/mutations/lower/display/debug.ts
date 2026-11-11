@@ -590,4 +590,12 @@ export const mutations: Mutation[] = [
     replace: "                \"FileType\" => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
   },
+  {
+    name: "unsafe-cell-debug-unshown",
+    breaks: "`{:?}` of an `UnsafeCell` isn't std's `UnsafeCell { .. }` (#1420)",
+    file: "src/lower/display/debug.rs",
+    find: "            ty::Adt(..) if std(StdItem::UnsafeCell) => Ok(Expr::str(\"UnsafeCell { .. }\")),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
 ];

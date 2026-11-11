@@ -253,6 +253,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // says its call gives (`nulled::reads_nullable_local`, ADR 0949).
             Std::CellGet if self.is_value_cell(tys[0]) => arg(),
             Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
+            // An `UnsafeCell`'s pointer to what it holds: the cell, the
+            // handle on its `value` (ADR 0407, #1420).
+            Std::CellPointer => arg(),
             // Of a value with a destructor, the old dropped once the new is
             // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {

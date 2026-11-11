@@ -67,6 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.is_rc(ty)
                     || self.counted_rc(ty).is_some()
                     || std(StdItem::Cell)
+                    || std(StdItem::UnsafeCell)
                     || std(StdItem::RefCell)
                     || std(StdItem::Atomic) =>
             {
@@ -172,9 +173,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
                 self.default_value(args.type_at(0), span)?
             }
-            ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => Expr::object(
-                vec![Prop::Field(js::HELD.into(), self.default_value(args.type_at(0), span)?)],
-            ),
+            ty::Adt(_, args)
+                if std(StdItem::Cell) || std(StdItem::UnsafeCell) || std(StdItem::RefCell) || std(StdItem::Atomic) =>
+            {
+                Expr::object(vec![Prop::Field(
+                    js::HELD.into(),
+                    self.default_value(args.type_at(0), span)?,
+                )])
+            }
             ty::Adt(adt, _) if adt.is_enum() && !self.is_std(adt.did()) => {
                 let variant = self
                     .default_variant(default, ty)
