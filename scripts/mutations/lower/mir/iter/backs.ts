@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a `map` cloned apart shares its source, stepped by both",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            self.clone_in_place(Expr::var(&a), part_tys[0], span, &mut cloned)?,\n",
-    replace: "            Expr::var(&a),\n",
+    find: "            clones.push(self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?);\n",
+    replace: "            let _ = ty;\n            clones.push(Expr::var(part));\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
@@ -226,8 +226,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a `map` cloned apart shares its closure, which changes what it took for both",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            self.clone_in_place(Expr::var(&b), part_tys[1], span, &mut cloned)?,\n",
-    replace: "            Expr::var(&b),\n",
+    find: "            clones.push(self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?);\n",
+    replace: "            let clone = match clones.is_empty() {\n                true => self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?,\n                false => Expr::var(part),\n            };\n            clones.push(clone);\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {

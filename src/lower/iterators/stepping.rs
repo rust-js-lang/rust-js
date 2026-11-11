@@ -635,13 +635,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 0522). The one answer, of what's made and what's cloned, of one made
     /// in place: a `Map` held is std's struct (ADR 0871), whose clone is
     /// its compiled `Clone` (`clone_value`'s).
+    /// Not a copy that's its source, of items whose copy is themselves
+    /// (`is_its_source`), numbers, as it's made: a copy cloned apart is one
+    /// made of a map of each item's copy, a struct's or generic code's
+    /// (#1181).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
         cloned_apart(
             (self.tcx, self.recognition().typing_env),
             self.krate.cloned,
             ty,
             self.frame.owner,
-        )
+        ) && !self.is_its_source(ty)
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>

@@ -358,3 +358,46 @@ Held by corpus case `generic_map_beside_a_cloned_one_of_other_bounds.rs`
 against native Rust in both builds; both pairs run as native Rust does
 and are taken off test/neighbours-known.txt. Mutations
 `cloned-owners-bounds-unasked` and `cloned-owners-unrecorded`.
+
+## Amendment (2026-11-12, #1181): a `copied()` or `cloned()` the crate clones, of items whose copy isn't the item, is made apart
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; two
+refusals lifted. A `copied()` or a `cloned()` of items whose copy is the
+item, numbers, is its source in JS (ADR 0547), and its clone is its
+source's. One of items whose copy is another value, a struct's, or generic
+code's `T`, whose copy is its caller's to say, is a map of its source by
+each item's copy, `src.map((item) => TCopy.copy(item))`, which hides the
+source a clone has to clone. So `v.iter().copied()` cloned in generic code
+(#1181), and of a concrete struct, was refused, "whose items are copied as
+it steps".
+
+Such a one the crate clones is now made apart by a function of its source,
+which its clone calls again with a clone of it, as a `map` cloned apart
+is:
+
+```js
+const makeCopied = (it) =>
+  $cloning(
+    it.map((item) => (TCopy ? TCopy.copy(item) : item)),
+    () => makeCopied($iter(it.items.slice(it.at, it.end))),
+  );
+const it = makeCopied($iter(v));
+const again = $clone(it);
+```
+
+`cloned_parts` knows a `Copied` or a `Cloned` as made of one part, its
+source (`Parted::Copied`), and `cloned_apart_adapter` takes any number of
+parts. `iterator_cloned_apart` says no of a copy that's its source
+(`is_its_source`), numbers a generic source or the crate's own gives,
+which is made as its source.
+
+Held by corpus case `generic_copied_cloned.rs` (a clone before and after
+stepping, a struct's copies changed apart, a concrete struct's, a `cloned()`
+of `String`s) against native Rust in both builds, and
+`copied_clone_of_its_own.rs`, whose numbers stay their source's. Guide
+limitations.md loses the concrete struct's entry. Mutations
+`copied-parts-unknown`, `copied-made-unparted` and
+`copied-source-cloned-apart`; m6 approved the form before it was built.
+`copied_clone`'s refusal of a copy whose items are copied as it steps
+stays, guarding what no clone apart covers, but nothing known reaches it
+now, so `copied-copying-clone-allowed`, which its limitation held, goes.

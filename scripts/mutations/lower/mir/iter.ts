@@ -874,4 +874,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(source) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
   },
+  {
+    name: "copied-made-unparted",
+    breaks: "generic code's `copied()` the crate clones isn't made by a function of its source, so its clone is `$clone` of a map that carries none, and throws (#1181)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if !self.iterator_cloned_apart(output) {\n            return self.copied_items(it, item, output, span);\n",
+    replace: "        if true {\n            return self.copied_items(it, item, output, span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_copied_cloned.rs$"],
+  },
 ];

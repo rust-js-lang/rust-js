@@ -176,20 +176,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.stepped_items_of(items, iter_ty))
     }
 
-    /// An adapter cloned apart (ADR 0525), `name`'s, `map`'s or `chain`'s,
-    /// of its two `parts`, a source and its function or two sources: made by
-    /// a function of them, `make`, which `build` writes the adapter of, and
-    /// which its clone, `$cloning`'s, calls again with a clone of each, as a
-    /// closure cloned apart is (ADR 0522). Its sources' positions are all its
-    /// state, a JS iterator helper's, so a clone of it is where it is.
+    /// An adapter cloned apart (ADR 0525), `name`'s, `map`'s, `chain`'s or
+    /// `copied`'s, of its `parts`, a source and its function, two sources, or
+    /// a source alone: made by a function of them, `make`, which `build`
+    /// writes the adapter of, and which its clone, `$cloning`'s, calls again
+    /// with a clone of each, as a closure cloned apart is (ADR 0522). Its
+    /// sources' positions are all its state, a JS iterator helper's, so a
+    /// clone of it is where it is.
     pub(super) fn cloned_apart_adapter(
         &mut self,
-        (name, parts, names): (&str, [Expr; 2], [&str; 2]),
-        (part_tys, output): ([Ty<'tcx>; 2], Ty<'tcx>),
+        (name, parts, names): (&str, Vec<Expr>, &[&str]),
+        (part_tys, output): (Vec<Ty<'tcx>>, Ty<'tcx>),
         lent: bool,
         span: Span,
         made: &mut Vec<Stmt>,
-        build: impl FnOnce(&mut Self, Expr, Expr) -> R<Expr>,
+        build: impl FnOnce(&mut Self, Vec<Expr>) -> R<Expr>,
     ) -> R<Expr> {
         let dropping = self
             .iterator_item(output)
@@ -202,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of generic code's source or function, cloned by its `Clone`'s
         // dictionary, which it's given only where it's bound by one.
-        let unbound = part_tys.into_iter().find(|&ty| {
+        let unbound = part_tys.iter().copied().find(|&ty| {
             self.is_unknown(ty)
                 && self
                     .evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))
@@ -214,24 +215,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("cloning a `{output}` made where `{ty}` isn't bound by `Clone`"),
             ));
         }
-        let (a, b) = (self.fresh(names[0]), self.fresh(names[1]));
-        // `makeMap`, `makeChain`.
+        let named: Vec<String> = names.iter().map(|name| self.fresh(name)).collect();
+        // `makeMap`, `makeChain`, `makeCopied`.
         let make = self.fresh(&format!("make{}{}", name[..1].to_uppercase(), &name[1..]));
-        let adapter = build(self, Expr::var(&a), Expr::var(&b))?;
+        let adapter = build(self, named.iter().map(|part| Expr::var(part)).collect())?;
         let mut cloned = Vec::new();
-        let clones = vec![
-            self.clone_in_place(Expr::var(&a), part_tys[0], span, &mut cloned)?,
-            self.clone_in_place(Expr::var(&b), part_tys[1], span, &mut cloned)?,
-        ];
+        let mut clones = Vec::new();
+        for (part, &ty) in named.iter().zip(&part_tys) {
+            clones.push(self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?);
+        }
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let carried = Expr::call_helper("$cloning", vec![adapter, Expr::arrow(Vec::new(), cloned)]);
         let maker = Expr::arrow(
-            vec![a.as_str().into(), b.as_str().into()],
+            named.iter().map(|part| part.as_str().into()).collect(),
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
         made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
-        let [first, second] = parts;
-        Ok(Expr::call(Expr::var(&make), vec![first, second]))
+        Ok(Expr::call(Expr::var(&make), parts))
     }
 
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:

@@ -57,17 +57,4 @@ export const mutations: Mutation[] = [
       "A clone of a .copied... of an iterator dropped",
     ],
   },
-  {
-    name: "copied-copying-clone-allowed",
-    breaks:
-      "a clone of a `copied()` of items something changes in place, `source.map(copy)`, is cloned as its source, which throws (#384)",
-    file: "src/lower/iterators/clones.rs",
-    find: "        if !self.is_its_source(ty) {\n",
-    replace: "        if !self.is_its_source(ty) && false {\n",
-    tests: [
-      "test/limitations.test.ts",
-      "-t",
-      "A clone of a .copied... whose items",
-    ],
-  },
 ];

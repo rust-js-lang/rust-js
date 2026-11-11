@@ -331,7 +331,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let parted = crate::lower::recognition::cloned_parts(self.tcx, output);
-        let (Some((parted, _, _)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
+        let (Some((parted @ (Parted::Map | Parted::Filter | Parted::Chain), _, _)), [receiver_ty, other_ty, ..]) =
+            (parted, arg_tys)
+        else {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
         };
         if values.len() != 2 || !self.iterator_cloned_apart(output) {
@@ -369,21 +371,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         };
-        let parts = [receiver, other];
+        let parts = vec![receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
-        let names = match parted {
-            Parted::Map | Parted::Filter => ["it", "f"],
-            Parted::Chain => ["a", "b"],
+        let names: &[&str] = match parted {
+            Parted::Chain => &["a", "b"],
+            _ => &["it", "f"],
         };
         let own = self.is_called_as_written(other_ty);
         let back = self.stepped_from_its_back(output);
         let adapter = self.cloned_apart_adapter(
             (name.as_str(), parts, names),
-            ([receiver_ty, other_ty], output),
+            (vec![receiver_ty, other_ty], output),
             lent,
             span,
             made,
-            |cx, a, b| {
+            |cx, parts| {
+                let mut parts = parts.into_iter();
+                let (a, b) = (
+                    parts.next().expect("its first part"),
+                    parts.next().expect("its second part"),
+                );
                 // One stepped from its back, its source made knowing it, a map
                 // `$mapEnds` and a filter `$filterEnds`, as one not cloned
                 // apart is (ADRs 0455, 0526, 0984).
@@ -400,8 +407,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let a_value = a.clone();
                 let a = cx.as_js_iterator(a, receiver_ty, span)?;
                 Ok(match parted {
-                    // Its source given its function, `it.map(f)`.
-                    Parted::Map | Parted::Filter => {
+                    // Its source given its function, `it.map(f)`; a copy's,
+                    // which has none, is `copied_cloned_apart`'s.
+                    Parted::Map | Parted::Filter | Parted::Copied => {
                         let callback = cx.unary_callback(b, own);
                         Expr::call(Expr::member(a, name.as_str()), vec![callback])
                     }
@@ -1069,8 +1077,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.accumulated((it, def_id), (output, item), sum, span)?
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
-            Some(IterMethod::Copied | IterMethod::Cloned) => match item {
-                Some(item) => self.copied_items(it, item, output, span)?,
+            Some(m @ (IterMethod::Copied | IterMethod::Cloned)) => match item {
+                Some(item) => self.copied_called((it, m, item), (iter_ty, receiver_ty, output), span, made)?,
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
@@ -1114,6 +1122,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// no length, and `.map` has no back to step (#850).
     /// Its source made knowing its back where it's to know its own, as a
     /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851).
+    /// `it.copied()` or `it.cloned()`, `method`, of `item`s whose copy isn't
+    /// the item: a map of its source by each item's copy (`copied_items`);
+    /// of one the crate clones, made by a function of its source, which its
+    /// clone calls again with a clone of it, `makeCopied` (ADR 0525, #1181).
+    fn copied_called(
+        &mut self,
+        (it, method, item): (Expr, IterMethod, Ty<'tcx>),
+        (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if !self.iterator_cloned_apart(output) {
+            return self.copied_items(it, item, output, span);
+        }
+        let name = if method == IterMethod::Copied {
+            "copied"
+        } else {
+            "cloned"
+        };
+        let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        self.cloned_apart_adapter(
+            (name, vec![it], &["it"]),
+            (vec![iter_ty], output),
+            lent,
+            span,
+            made,
+            |cx, parts| {
+                let source = parts.into_iter().next().expect("its source");
+                let source = cx.as_js_iterator(source, iter_ty, span)?;
+                cx.copied_items(source, item, output, span)
+            },
+        )
+    }
+
     fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
         let back = self.knows_its_back(output);
         let ends = back || self.knows_its_length(output);

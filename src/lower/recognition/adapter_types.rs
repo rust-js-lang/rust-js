@@ -96,29 +96,36 @@ pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
     }
 }
 
-/// Of std's adapter of type `ty` made of two parts alone, its parts: a
+/// Of std's adapter of type `ty` made of its parts alone, its parts: a
 /// `Map<I, F>`'s or a `Filter<I, P>`'s source and function, a `Chain<A,
-/// B>`'s two sources. Not a `Zip`, std's struct where it's cloned, which
-/// its compiled `Clone` clones (#382). What it keeps besides is where
-/// they are, a JS iterator's state being its sources' (ADR 0525), and a
-/// chain's, which half it's on, which an ended first half says (#181).
-pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Ty<'tcx>)> {
+/// B>`'s two sources; and a `Copied<I>`'s or a `Cloned<I>`'s source, a map
+/// of it by each item's copy, where that copy isn't its source, a number's
+/// (`iterator_cloned_apart`, #1181). Not a `Zip`,
+/// std's struct where it's cloned, which its compiled `Clone` clones
+/// (#382). What it keeps besides is where they are, a JS iterator's state
+/// being its sources' (ADR 0525), and a chain's, which half it's on, which
+/// an ended first half says (#181).
+pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Option<Ty<'tcx>>)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
     let parted = match std_path(tcx, adt.did()) {
         "std::iter::Map" => Parted::Map,
         "std::iter::Filter" => Parted::Filter,
         "std::iter::Chain" => Parted::Chain,
+        "std::iter::Copied" | "std::iter::Cloned" => return Some((Parted::Copied, args.type_at(0), None)),
         _ => return None,
     };
-    Some((parted, args.type_at(0), args.type_at(1)))
+    Some((parted, args.type_at(0), Some(args.type_at(1))))
 }
 
-/// Which of the adapters made of two parts alone, `cloned_parts`', one is.
+/// Which of the adapters made of their parts alone, `cloned_parts`', one is.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum Parted {
     Map,
     Filter,
     Chain,
+    /// A `copied()` or a `cloned()` of generic code's items, of its source
+    /// alone, each item's copy its maker's.
+    Copied,
 }
 
 /// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.

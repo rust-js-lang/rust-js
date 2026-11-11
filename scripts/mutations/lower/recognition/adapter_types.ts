@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
+  {
+    name: "copied-parts-unknown",
+    breaks: "a `copied()` or a `cloned()` isn't an adapter made of its parts, so generic code's clone of one is refused (#1181)",
+    file: "src/lower/recognition/adapter_types.rs",
+    find: "        \"std::iter::Copied\" | \"std::iter::Cloned\" => return Some((Parted::Copied, args.type_at(0), None)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_copied_cloned.rs$"],
+  },
 ];
