@@ -387,3 +387,59 @@ pub fn main() {
   const lib = await import(join(dir, "within", "lib.js"));
   expect([lib.main(), lib.seven()]).toEqual([undefined, 7]);
 });
+
+// rand_chacha 0.2.2's `pub use rand_core;` was refused, "a `pub use` of
+// another crate's module", and quickcheck with it, so itertools' 284
+// quickcheck tests (#1420): a library's module is its namespace too,
+// `export * as randCore from` its file, as its manifest says, as a `pub
+// use` of the crate's own module gives it; a glob's too (#1102). One of
+// types alone, with no JS, is nothing.
+test("a pub use of a library's module is its namespace, from its file", async () => {
+  const dir = fixture("reexport-library-module");
+  writeFileSync(join(dir, "dep.rs"), `pub mod rng {
+    pub fn next(n: u32) -> u32 {
+        n * 3 + 1
+    }
+}
+
+pub mod shapes {
+    pub type Seed = u32;
+}
+
+pub mod outer {
+    pub mod inner {
+        pub fn twice(n: u32) -> u32 {
+            n * 2
+        }
+    }
+}
+
+pub fn seed() -> shapes::Seed {
+    5
+}
+`);
+  run([compiler, "--declarations", join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  writeFileSync(join(dir, "app.rs"), `pub use dep;
+pub use dep::rng;
+pub use dep::shapes;
+pub use dep::outer::*;
+
+pub fn total() -> u32 {
+    rng::next(dep::seed()) + inner::twice(1)
+}
+`);
+  const p = runSync([compiler, "--declarations", join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js], root, 60_000);
+  expect([p.code, p.stderr]).toEqual([0, ""]);
+  // Of types alone, `shapes`'s file is its declarations'.
+  expect(readFileSync(join(dir, "dep", "shapes.d.ts"), "utf8")).toContain("export type Seed = number;");
+  expect(readFileSync(join(dir, "app", "lib.d.ts"), "utf8")).toContain('export * as rng from "../dep/rng.js";\n');
+  const lib = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(lib).toContain('export * as dep from "../dep/lib.js";\n');
+  expect(lib).toContain('export * as rng from "../dep/rng.js";\n');
+  expect(lib).toContain('export * as inner from "../dep/outer/inner.js";\n');
+  expect(lib).not.toContain("shapes");
+  const app = await import(join(dir, "app", "lib.js"));
+  expect([app.total(), app.dep.seed(), app.rng.next(2), app.inner.twice(4)]).toEqual([18, 5, 7, 8]);
+});

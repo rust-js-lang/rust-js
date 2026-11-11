@@ -190,4 +190,13 @@ export const mutations: Mutation[] = [
     replace: "            makes_dropping_anys,\n            makes_dropping_errors: { let _ = makes_dropping_errors; false },\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
     tests: ["test/crates.test.ts", "-t", "two crates: library_makes_a_dropping_dyn_error"],
   },
+  {
+    name: "library-types-only-module-namespaced",
+    breaks:
+      "a library's module of types alone, which has no JS, is a namespace a consumer's `pub use` of it re-exports from a file that isn't there, so the consumer's JS fails to load (#1420)",
+    file: "src/library.rs",
+    find: "m.module == named.module && !m.types_only);\n",
+    replace: "m.module == named.module);\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
+  },
 ];

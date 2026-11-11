@@ -303,6 +303,16 @@ pub struct Held {
     pub name: String,
 }
 
+/// One of the library's modules (#1420): by its key,
+/// which a consumer's path names, and its path, whose file its manifest
+/// says, where it has JS.
+#[derive(Clone, Serialize, Deserialize)]
+pub struct NamedModule {
+    /// rustc's `DefPathHash` of the module.
+    pub key: String,
+    pub module: Vec<String>,
+}
+
 /// An item a module of the library re-exports by a `pub use` of another
 /// of its modules' (ADR 0874), which a consumer naming it through that
 /// module imports from that module's file, by what it exports it as
@@ -429,6 +439,13 @@ pub struct Library {
     /// modules.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reexported: Vec<Reexported>,
+    /// Its modules, each a namespace a consumer's
+    /// `pub use` of it, `pub use rand_core;`, re-exports, `export * as
+    /// randCore from` its file, as a `pub use` of the crate's own module
+    /// does (ADR 0240, amended; #1420). A library a compiler wrote before
+    /// said none, and a consumer's `pub use` of one was refused.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub modules: Vec<NamedModule>,
     /// What the `Rc`s it counts point at, each `{ value, strong, weak }`
     /// (ADR 0320), and every one that may be one of them; each other the
     /// value itself (ADRs 0844, 0852): a crate it hands one counts as it
@@ -764,6 +781,10 @@ pub struct Exports {
     /// its `pub use` gives it: the item's key, and where it's imported from
     /// through it, by what (rd704).
     pub reexported: IndexMap<(String, String), (String, (String, String))>,
+    /// Each module a consumer can name that has JS, by key: its file's
+    /// specifier, relative to the consumer's output, which a `pub use` of
+    /// the module re-exports as a namespace (#1420).
+    pub modules: IndexMap<String, String>,
     /// Each type its declarations export, by key: the `.d.ts` that declares
     /// it, by its JS file's specifier, relative to the consumer's output,
     /// its name there, and whether it's its default (ADR 0210, amended).
@@ -783,6 +804,7 @@ struct Unread {
     types: Vec<DeclaredType>,
     held: Vec<Held>,
     reexported: Vec<Reexported>,
+    modules: Vec<NamedModule>,
     package: Option<crate::packages::Package>,
 }
 
@@ -818,6 +840,7 @@ impl Exports {
             dyns_drop_nothing,
             held,
             reexported,
+            modules,
             counted_rcs,
             with_this_arguments,
             changed,
@@ -878,6 +901,7 @@ impl Exports {
             types,
             held,
             reexported,
+            modules,
             package,
         };
         (exports, unread)
@@ -939,6 +963,7 @@ impl Dependencies {
                     types,
                     held,
                     reexported,
+                    modules,
                     package,
                 },
             ) = Exports::read(library, None);
@@ -1050,6 +1075,14 @@ impl Dependencies {
                     .is_some()
                 {
                     return Err("duplicate dependency export".into());
+                }
+            }
+            // A module's namespace, where it has JS: its file, as a glob of
+            // it is `export * from` of (#1420).
+            for named in modules {
+                let has_js = (manifest.modules.iter()).any(|m| m.module == named.module && !m.types_only);
+                if has_js && exports.modules.insert(named.key, specifier(&named.module)?).is_some() {
+                    return Err("duplicate dependency module".into());
                 }
             }
             result.libraries.insert(key, exports);

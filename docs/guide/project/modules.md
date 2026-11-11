@@ -441,8 +441,13 @@ A module a glob gives is its namespace, `export * as support from
 "./math/support.js"`, as a `pub use` of it by its name gives it, libm's
 `pub use self::math::*;`
 ([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-module-is-its-namespace-1102)).
+A library's module is its namespace too, from its file, as its manifest
+says: rand_chacha's `pub use rand_core;` is `export * as randCore from
+"../rand_core/lib.js";`, and a glob's module of a library's the same; one
+of types alone, with no JS, is nothing
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-librarys-module-is-its-namespace-1420)).
 One that has JS but can't be re-exported yet,
-a glob's class, another crate's module, or std's function, is refused, never left out
+a glob's class or std's function, is refused, never left out
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)):
 
 ```rust

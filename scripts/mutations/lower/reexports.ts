@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use` of a module is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: 'js::ImportFrom::Module(from.clone()), ("*".to_string(), alias)));\n',
-    replace: 'js::ImportFrom::Module(from.clone()), ("default".to_string(), alias)));\n',
+    find: '                    found.push((written, from, ("*".to_string(), alias)));\n',
+    replace: '                    found.push((written, from, ("default".to_string(), alias)));\n',
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -485,9 +485,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a glob's module, libm's `support` of `pub use self::math::*;`, isn't re-exported, so a JS importer of `support` gets `undefined`, where a `pub use` of it by its name gives its namespace (#1102)",
     file: "src/lower/reexports.rs",
-    find: "            DefKind::Mod => match id\n",
-    replace: "            DefKind::Mod if false => match id\n",
+    find: "            DefKind::Mod => {\n",
+    replace: "            DefKind::Mod if false => {\n",
     tests: ["test/glob-reexports.test.ts", "-t", "glob's module is its namespace"],
+  },
+  {
+    name: "library-module-namespace-left-out",
+    breaks:
+      "a `pub use` of a library's module, rand_chacha's `pub use rand_core;`, re-exports nothing, so a JS importer of `randCore` gets `undefined`, where the crate's own module is its namespace (#1420)",
+    file: "src/lower/reexports.rs",
+    find: "        None => Some(js::ImportFrom::Specifier(foreign.module_file(module)?.clone())),\n",
+    replace: "        None => None,\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
   },
   {
     name: "glob-class-left-out",

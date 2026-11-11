@@ -358,4 +358,13 @@ export const mutations: Mutation[] = [
     replace: "        dyn_debug_hex: false,\n",
     tests: ["test/crates.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
   },
+  {
+    name: "library-modules-unlisted",
+    breaks:
+      "a library's contract lists none of its modules, so a consumer's `pub use` of one, rand_chacha's `pub use rand_core;`, re-exports nothing (#1420)",
+    file: "src/lower/library/exports.rs",
+    find: "        .filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)\n",
+    replace: "        .filter(|&id| false && tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
+  },
 ];

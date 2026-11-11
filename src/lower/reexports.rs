@@ -227,21 +227,12 @@ pub(super) fn reexports(
                     found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                     continue;
                 }
-                let from = (named.as_local()).and_then(|local| paths.get(&LocalModId::new_unchecked(local)));
-                match from {
-                    Some(from) => {
-                        let alias = super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name);
-                        found.push((written, js::ImportFrom::Module(from.clone()), ("*".to_string(), alias)));
-                    }
-                    // One with no JS of its own, of types alone, a binding
-                    // crate's or std's, is nothing; another crate's of
-                    // rust-js's has no namespace a consumer knows.
-                    None if !named.is_local() && foreign.is_library(named.krate) => refuse(
-                        statement,
-                        "a `pub use` of another crate's module",
-                        "`pub use` each of its items by its name",
-                    ),
-                    None => {}
+                // The crate's, of its file; a library's, of its file, as its
+                // manifest says (#1420); one with no JS of its own, of types
+                // alone, a binding crate's or std's, nothing.
+                if let Some(from) = namespace_file(foreign, paths, named) {
+                    let alias = super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name);
+                    found.push((written, from, ("*".to_string(), alias)));
                 }
             }
             // A class, its constructor function (ADR 0761): the crate's,
@@ -345,6 +336,23 @@ pub(super) fn type_reexports(
         found.push((statement_of(item), from, (export, ident.to_string())));
     }
     found
+}
+
+/// Where a `pub use` of `module` re-exports its namespace from, `export *
+/// as ns from`: the crate's module's file; a library's, its file as its
+/// manifest says (#1420); none of one with no JS of its own, of types
+/// alone, a binding crate's or std's (difference 50).
+fn namespace_file(
+    foreign: &super::library::Foreign<'_, '_>,
+    paths: &IndexMap<LocalModId, Vec<String>>,
+    module: DefId,
+) -> Option<js::ImportFrom> {
+    match module.as_local() {
+        Some(local) => Some(js::ImportFrom::Module(
+            paths.get(&LocalModId::new_unchecked(local))?.clone(),
+        )),
+        None => Some(js::ImportFrom::Specifier(foreign.module_file(module)?.clone())),
+    }
 }
 
 /// A `pub use`'s whole statement, from its `pub`, which each of a tree's
@@ -550,24 +558,12 @@ fn globbed(
                 }
             }
             // A module, its namespace, `export * as support from`, as a
-            // `pub use` of it by its name gives it (#1102): the crate's, of
-            // its file; one with no JS, of types alone, nothing; another
-            // crate's of rust-js's has no namespace a consumer knows.
-            DefKind::Mod => match id
-                .as_local()
-                .and_then(|local| paths.get(&LocalModId::new_unchecked(local)))
-            {
-                Some(from) => found.push((
-                    written,
-                    js::ImportFrom::Module(from.clone()),
-                    ("*".to_string(), super::camel_case(&name)),
-                )),
-                None if !id.is_local() && foreign.is_library(id.krate) => refuse(
-                    format!("a `pub use` of every name of a module, of another crate's module `{name}`"),
-                    "`pub use` each of its items by its name",
-                ),
-                None => {}
-            },
+            // `pub use` of it by its name gives it (#1102, #1420).
+            DefKind::Mod => {
+                if let Some(from) = namespace_file(foreign, paths, id) {
+                    found.push((written, from, ("*".to_string(), super::camel_case(&name))));
+                }
+            }
             DefKind::Struct if super::classes::is_class(tcx, id) => {
                 refuse(
                     format!("a `pub use` of every name of a module, of its class `{name}`"),

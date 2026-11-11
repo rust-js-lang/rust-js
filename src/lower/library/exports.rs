@@ -160,6 +160,16 @@ pub(in crate::lower) fn exports<'tcx>(
         })
         .collect();
     reexported.sort_by(|a, b| (&a.module, &a.rust_name).cmp(&(&b.module, &b.rust_name)));
+    // Its modules, whose namespaces a consumer's `pub use` of one
+    // re-exports (#1420).
+    let mut modules: Vec<NamedModule> = (tcx.hir_crate_items(()).definitions())
+        .filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)
+        .map(|id| NamedModule {
+            key: key(tcx, id.to_def_id()),
+            module: module_path(tcx, LocalModId::new_unchecked(id)),
+        })
+        .collect();
+    modules.sort_by(|a, b| a.module.cmp(&b.module));
     Library {
         version: VERSION,
         name: crate_name.to_string(),
@@ -196,6 +206,7 @@ pub(in crate::lower) fn exports<'tcx>(
             .map_or(Vec::new(), |(_, traits)| sorted_keys(tcx, traits.iter())),
         held,
         reexported,
+        modules,
         counted_rcs: {
             let mut shapes: Vec<RcShape> = match counted.all {
                 true => vec![RcShape {

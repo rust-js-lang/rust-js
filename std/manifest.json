@@ -13548,7 +13548,31 @@
     "dyn_debug_hex": false,
     "makes_dropping_anys": false,
     "makes_dropping_errors": false,
-    "makes_dropping_fn_dyns": false
+    "makes_dropping_fn_dyns": false,
+    "modules": [
+      {
+        "key": "4241c159ba5c03934241c159ba5c0393",
+        "module": []
+      },
+      {
+        "key": "4241c159ba5c0393b79d1a60b1f7e861",
+        "module": [
+          "io"
+        ]
+      },
+      {
+        "key": "4241c159ba5c0393b8f8c6f6166651be",
+        "module": [
+          "iter"
+        ]
+      },
+      {
+        "key": "4241c159ba5c0393d220006e3ecc59fa",
+        "module": [
+          "ops"
+        ]
+      }
+    ]
   },
   "input": "lib.rs",
   "output": "std.js",

@@ -12,7 +12,9 @@ pub(super) use exports::exports;
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
 use crate::collections::{IndexMap, IndexSet};
-use crate::library::{Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, RcShape, Reexported, VERSION};
+use crate::library::{
+    Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, NamedModule, RcShape, Reexported, VERSION,
+};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::BTreeSet;
@@ -713,6 +715,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             (*reexported == key(self.tcx, id)).then(|| imported.clone())
         });
         Some(through.unwrap_or_else(|| (item.from.clone(), item.export.clone())))
+    }
+
+    /// The file of a library's module `id`, where it has JS, which a
+    /// consumer's `pub use` of it re-exports as a namespace (#1420); none
+    /// of one of types alone.
+    pub(super) fn module_file(&self, id: DefId) -> Option<&'a String> {
+        self.library(id.krate)?.modules.get(&key(self.tcx, id))
     }
 
     pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {

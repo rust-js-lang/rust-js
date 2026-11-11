@@ -669,3 +669,34 @@ name is. A class a glob gives stays refused. Held by
 `test/glob-reexports.test.ts` (libm's shape, its namespace imported and
 called) and the mutation `glob-module-left-out`; the class's refusal by
 `test/diagnostics.test.ts` and `glob-class-left-out`.
+
+## Amendment: a library's module is its namespace (#1420)
+
+rand_chacha 0.2.2's `pub use rand_core;` was refused, "a `pub use` of
+another crate's module": a library's module had no namespace a consumer
+knew, as its manifest said where each of its items is but not where its
+modules are. So rand_chacha was types alone, and rand, quickcheck and
+itertools' 284 quickcheck tests with it.
+
+A library's contract now lists its modules, each by its key and path
+(`Library::modules`), and its consumer reads each that has JS as its
+file's specifier, as a glob of the module is `export * from` of (#629). A
+`pub use` of a library's module is then what one of the crate's own
+module is (ADR 0240, amended): its namespace, `export * as randCore from
+"../rand_core/lib.js";`, by the name the `use` gives it, in the module's
+declarations too; and a glob's module of a library's, the same (#1102).
+One of types alone, with no JS, is nothing, as the crate's own is; std's
+modules, in no JS module, stay nothing (difference 50).
+
+This extends the form a local module's `pub use` already has to a
+library's module, no new form (the coordinator's decision for the user,
+2026-11-12). Rust's behaviour has no observable counterpart a JS importer
+could differ on but the namespace's presence, which this gives (ADR 0262,
+no difference).
+
+Held by `test/glob-reexports.test.ts`'s "a pub use of a library's module
+is its namespace, from its file" (a root, a module, a glob's nested module
+and a module of types alone, imported and called), and the mutations
+`library-module-namespace-left-out` (`lower/reexports.ts`),
+`library-modules-unlisted` (`lower/library/exports.ts`) and
+`library-types-only-module-namespaced` (`library.ts`).
