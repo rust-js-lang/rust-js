@@ -42,7 +42,7 @@ function replaceWith(slot, other) {
 }
 
 function main() {
-  const cursorRead = $mutReader($cursorReader({ asRef: (value) => value }));
+  const mutCursorRead = $mutReader($cursorReader({ asRef: (value) => value }));
   const v = [];
   putByValue($cellOf(v), $mutWriter($vecWriter));
   let by = v;
@@ -97,7 +97,7 @@ function main() {
   const r$1 = { value: $cellOf(rc) };
   let tmp;
   try {
-    tmp = first(r$1, cursorRead);
+    tmp = first(r$1, mutCursorRead);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -108,7 +108,7 @@ function main() {
   const r$2 = { value: $cellOf(rc) };
   let tmp$1;
   try {
-    tmp$1 = first(r$2, cursorRead);
+    tmp$1 = first(r$2, mutCursorRead);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

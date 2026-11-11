@@ -754,3 +754,36 @@ pub fn mutable() -> u32 {
   expect(lib.shared()).toEqual([1, 2, 3]);
   expect(() => lib.mutable()).toThrow("rust-js does not support a mutable slice past a vector's length");
 });
+
+// A `&mut`'s dictionary reads generic code's box of what it's to, so it's
+// another than the value's, named `mut` first, never `parserBorrowMut$1`
+// beside `parserBorrowMut` (#1414).
+test("a &mut's dictionary is named apart from its value's", () => {
+  const dir = fixture("mut-dictionary-name");
+  writeFileSync(join(dir, "lib.rs"), `use std::borrow::BorrowMut;
+
+#[derive(Default)]
+pub struct Parser {
+    depth: u32,
+}
+
+fn bump<P: BorrowMut<Parser>>(mut p: P) -> u32 {
+    let parser = p.borrow_mut();
+    parser.depth += 1;
+    parser.depth
+}
+
+pub fn main() {
+    let mut parser = Parser::default();
+    let a = bump(&mut parser);
+    let b = bump(&mut parser);
+    let c = bump(Parser::default());
+    let d = bump(Parser::default());
+    println!("{a} {b} {c} {d}");
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const a = bump($cellOf(parser), mutParserBorrowMut);");
+  expect(js).toContain("const c = bump({ depth: 0 }, parserBorrowMut);");
+});

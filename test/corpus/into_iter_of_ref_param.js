@@ -74,7 +74,7 @@ function main() {
     intoIter: (cell) => $iter($mutItems(cell.value)),
     IntoIterIterator: () => ({ next: $next }),
   };
-  const optionIntoIterator = {
+  const mutOptionIntoIterator = {
     intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
     IntoIterIterator: () => ({ next: $next }),
   };
@@ -88,11 +88,11 @@ function main() {
 
   let some = 7;
   const c = { value: some };
-  doubleAll(c, optionIntoIterator);
+  doubleAll(c, mutOptionIntoIterator);
   some = c.value;
   let none;
   const c$1 = { value: none };
-  doubleAll(c$1, optionIntoIterator);
+  doubleAll(c$1, mutOptionIntoIterator);
   none = c$1.value;
   const arg$1 = total(some, {
     intoIter: (x) => $iter(x == null ? [] : [x]),

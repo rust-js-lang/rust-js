@@ -64,7 +64,7 @@ function fields(r, RBufRead) {
 function main() {
   const bufRead$1 = $cursorReader({ asRef: (value) => value });
   const bufRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
-  const cursorBufRead = $mutReader(bufRead);
+  const mutCursorBufRead = $mutReader(bufRead);
   const text = { inner: "a\nbb\r\n\nccc", pos: 0n };
   let line = "";
   while (true) {
@@ -92,8 +92,8 @@ function main() {
   console.log(`[${parts.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const c = { inner: "x\ny\n", pos: 0n };
-  console.log(`${countLines($cellOf(c), cursorBufRead)} ${c.pos}`);
-  console.log(`${countLines($cellOf(c), cursorBufRead)}`);
+  console.log(`${countLines($cellOf(c), mutCursorBufRead)} ${c.pos}`);
+  console.log(`${countLines($cellOf(c), mutCursorBufRead)}`);
   const bytes = [102, 105, 114, 115, 116, 10, 115, 101, 99, 111, 110, 100];
   console.log(`${$debugStr(firstLine({ value: { inner: bytes, pos: 0n }, impl: bufRead$1 }))}`);
   let slice = [111, 110, 108, 121];

@@ -60,4 +60,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
     snapshots: true,
   },
+  {
+    name: "mut-dictionary-named-as-the-value",
+    breaks: "a `&mut`'s dictionary, which reads generic code's box, is named as its value's, `parserBorrowMut$1` beside `parserBorrowMut` (#1414)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "            true => \"mut\",\n",
+    replace: "            true => \"\",\n",
+    tests: ["test/lowering.test.ts", "-t", "a &mut.s dictionary is named apart from its value.s"],
+  },
 ];

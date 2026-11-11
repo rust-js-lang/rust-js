@@ -54,8 +54,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The name of a declared dictionary of `tr`: its type's and its
     /// trait's, `chainDoubleEndedIterator` or `u32Clone`, or its trait's
-    /// alone of a type with no one name, `intoIterator`.
+    /// alone of a type with no one name, `intoIterator`. Of a `&mut` whose
+    /// dictionary reads generic code's box of what it's to, `mut` first,
+    /// `mutParserBorrowMut` beside the parser's own (#1414).
     pub(super) fn dictionary_name(&self, tr: ty::TraitRef<'tcx>) -> String {
+        let boxed = match self.in_generic_box(tr.self_ty()) {
+            true => "mut",
+            false => "",
+        };
         let of = tr.self_ty().peel_refs();
         let of = match of.kind() {
             ty::Adt(adt, _) => self.tcx.item_name(adt.did()).to_string(),
@@ -65,7 +71,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Array(..) | ty::Slice(_) => "items".to_string(),
             _ => String::new(),
         };
-        crate::lower::lower_first(&format!("{of}{}", self.tcx.item_name(tr.def_id)))
+        crate::lower::lower_first(&format!("{boxed}{of}{}", self.tcx.item_name(tr.def_id)))
     }
 }
 
