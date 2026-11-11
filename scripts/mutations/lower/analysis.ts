@@ -378,11 +378,11 @@ export const mutations: Mutation[] = [
   {
     name: "rc-drop-params-unsettled",
     breaks:
-      "the `Rc`s counted are taken before any type parameter is given a drop, so a generic `Rc<T>` whose callers can't be seen, a `pub` trait's method's given a `Loud`, isn't counted and its first clone's drop drops it; where they're seen, the `Loud` is one of its instances, which #1009 counts anyway (ADR 0914, amended)",
+      "the `Rc`s counted are taken before any type parameter is given a drop, so a generic `Rc<T>` whose instances no caller shows, of an impl's own parameter a dictionary gives, a `dyn Keep`'s `Wrap<Loud>`, isn't counted and its first clone's drop drops it; where callers are seen, a program's `pub` function's since #1112, the `Loud` is one of its instances, which #1009 counts anyway (ADR 0914, amended)",
     file: "src/lower/analysis.rs",
     find: "            if more.is_subset(&given) {\n",
     replace: "            if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rc_generic_given_drops|rc_dropped_where_callers_unseen|rc_dropped_in_a_closure_where_callers_unseen).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rc_generic_given_drops|rc_dropped_where_callers_unseen|rc_dropped_in_a_closure_where_callers_unseen|rc_of_an_impls_param_dropped_last).rs$"],
   },
   {
     name: "namespace-library-not-imported",
