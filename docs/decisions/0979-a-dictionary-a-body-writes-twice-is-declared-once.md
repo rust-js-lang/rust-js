@@ -124,7 +124,11 @@ module reads it (ADR 0352, `names::is_js_global`), so it counts as a
 helper does. A std collection's `from_iter`, the collect generic code's own
 is (ADR 0445, amended), reads `Array.from` and `new Set`, and was written
 out at each use; `generic_collect`'s `vecFromIterator` is declared once
-again. Held by the mutation `dictionary-reading-a-global-unkept`.
+again. Held by the mutation `dictionary-reading-a-global-unkept`, whose
+case is `dictionary_of_a_global_class_declared_once.rs`, an impl's
+dictionary given the `Map` its own parameter's map class is, made twice,
+`const BagTally = bagTally(colorHash, .., Map)`: generic_maps.rs held it
+till #1363 made its `tCounting` one dictionary, given no class.
 
 ## Amendment: a runtime helper's of an impl's dictionary is named as that impl's (2026-11-11, #1156)
 

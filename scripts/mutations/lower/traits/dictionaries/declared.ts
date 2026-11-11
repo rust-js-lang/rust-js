@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dictionaries/declared.rs",
     find: "                || crate::names::is_js_global(name)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_maps\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^dictionary_of_a_global_class_declared_once\\.rs$"],
     snapshots: true,
   },
   {
