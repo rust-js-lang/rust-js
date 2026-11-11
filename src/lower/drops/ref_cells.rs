@@ -449,7 +449,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for body in bodies {
             // Each body's own facts, asked where it is, of its own type
             // parameters, with no dictionaries: a type parameter's drop is
-            // then a maybe, and its borrow counted.
+            // then a maybe, and its borrow counted: each the function is
+            // given a drop for, as its lowering is (`drops_taken`), a
+            // trait's default's `Self` too (#1321).
             let owner = tcx.typeck_root_def_id(body.def_id);
             let recognition = crate::lower::recognition::Recognition {
                 tcx,
@@ -457,7 +459,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 trait_impls: self.krate.trait_impls,
                 foreign: self.krate.foreign,
             };
-            let state = TypeDrops::default();
+            let mut state = TypeDrops::default();
+            for index in self.drops_taken(owner) {
+                state.give(crate::lower::traits::drop_slot(tcx, self.slots(), owner, index));
+            }
             let query = without_dictionaries(
                 recognition,
                 (false, self.krate.closure_facts),

@@ -630,4 +630,13 @@ export const mutations: Mutation[] = [
     replace: "                Some(Std::TryBorrow { lock: false, .. }) => receiver.is_some_and(refcell),\n                Some(Std::Borrow { lock: false, .. }) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
   },
+  {
+    name: "walked-params-drop-nothing",
+    breaks:
+      "a type parameter a function is given a drop for drops nothing where its cells' borrows are counted, so a guard held while `let _it = it;` drops a `T` whose destructor asks of the cell isn't counted, and its `try_borrow()` is `Ok` (a wrong answer, #1321)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                state.give(crate::lower::traits::drop_slot(tcx, self.slots(), owner, index));\n",
+    replace: "                _ = index;\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_held_while_a_type_parameters_value_drops.rs$"],
+  },
 ];

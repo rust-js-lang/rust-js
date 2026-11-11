@@ -1468,3 +1468,41 @@ it with the metamorphic net's tuple-struct rewrites of
 `refcell_generic_field_made` (off the known list) and
 `written_breaks_beside_an_else`; mutation `tuple-struct-field-holds-value`
 (`lower/drops/ref_cells.ts`).
+
+## Amendment: a type parameter's drop counts a guard held while it runs (#1321)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds. Which cells' borrows are counted is found by
+walking each body in its own terms, a type parameter's drop "then a
+maybe". But the walk gave no type parameter a drop, so its value dropped
+nothing there. A guard held while a `T`'s value, or a trait's default's
+`Self`, dropped, `counts.borrow_mut().push({ let _it = it; 1 })`, was
+taken as momentary, its cell's type as one no borrow of which meets
+another. So the guard wasn't made, and the destructor's
+`counts.try_borrow()` read `Ok`, `free: true`, where native Rust prints
+`free: false`. This happened in a generic function, a closure in one, and
+a trait's default of a concrete, generic, const-generic or blanket impl,
+called directly or through generic code.
+
+**The walk gives each body the drops its function is given**,
+`drops_taken`'s, as its lowering has them: a trait's default's `Self`, and
+each type parameter a caller gives a drop for. A `T` no caller gives a
+drop for (ADR 0300) drops nothing still, so `signal<T>`'s cell stays
+unchecked. A type parameter's value with a drop is now counted as a
+concrete type's with a destructor already was, by `Quiet`'s rules. Those
+rules take a call given a value with a destructor as one that may drop it,
+and a value with a destructor made while a guard is held as one that may
+drop while it's held. So `scope_struct_of_type_parameters`' generic
+`Stack<K>` and `Pile<K>`, `self.items.borrow_mut().push(k)` with `dropK`
+given, gain `$borrowMut` and `$unborrow` where no drop of `K` runs while
+they're held. That's correct, only noisier: the coordinator's decision
+(A), with `Quiet`'s precision for std calls that store what they're given
+and values a `let` keeps filed as a P3 readability gap. Copies and writes
+that may fail were checked across the same shapes against native Rust and
+needed no change.
+
+Corpus case `guard_held_while_a_type_parameters_value_drops`, against
+native Rust in both builds, has eight shapes, each with a cell type and a
+trait of its own: a borrow counted of one type counts every cell of it, a
+generic one's too, so shapes sharing one masked each other. Mutation
+`walked-params-drop-nothing` (`lower/drops/ref_cells.ts`).
