@@ -1259,6 +1259,20 @@ test("a test file is at most the cap", () => {
   expect(sizes.filter(([, lines]) => lines > LARGE)).toEqual([]);
 });
 
+// A file over 1,350 lines, the compiler's or a test's, doesn't grow since
+// where the change left main: it's split by concept first, in a commit of
+// its own (the user's rule, #1334). 23 files sat at 1,480 to 1,500 lines,
+// squeezed under the cap, an import moved or lines joined to fit. One over
+// it that doesn't grow is left as it is, so whoever next adds to it splits
+// it. A checkout of main itself, CI's, measures nothing: the push's check
+// on the Mac, `check:fast --all`, is where a change is measured.
+test("a file near the cap doesn't grow: it's split by concept first", () => {
+  const { COMPILER, TESTS, mergeBase, grownNearCap, splitFirst } = require("../scripts/file-sizes.ts") as typeof import("../scripts/file-sizes.ts");
+  const base = mergeBase();
+  if (base === undefined) return;
+  expect(grownNearCap([...COMPILER, ...TESTS], base).map(splitFirst)).toEqual([]);
+});
+
 // A test that says the JS has no block label, `bb12`, asks for one at a
 // word's start, `/\bbb\d+/`: the header names the fixture's directory,
 // whose hash may hold `3bb5`, which a bare `/bb\d+/` matches (#296).

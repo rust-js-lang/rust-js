@@ -228,3 +228,29 @@ refusals left; and `jsx.test.ts` into six `jsx-<concept>.test.ts`, its
 snapshots' tests left. With them the list and its ratchet went:
 `test/architecture.test.ts`, "a test file is at most the cap", holds
 every test file at 1,500 lines.
+
+## Amendment: a file near the cap doesn't grow (2026-11-11, #1334)
+
+The cap was met by squeezing. On 2026-11-11, 66 files were over 1,350
+lines and 23 sat at 1,480 to 1,500: `src/lower/mir.rs` at exactly 1,500
+after an import was moved into `mir/operands.rs` to fit, `analysis.rs` at
+1,494, `mir/queries.rs` at 1,499, `test/modules.test.ts` at 1,500. A
+file held at the cap by moving imports, joining lines or cutting comments
+is as hard to read as one past it, and the next change squeezes it again.
+
+The user's rule (2026-11-10) is never to squeeze: a file near the cap is
+split by concept, in a commit of its own, before the change. **A
+compiler or test file over 1,350 lines (`NEAR` in
+`scripts/file-sizes.ts`) doesn't grow since where the change left
+`main`**, its merge base with `origin/main`, nor is one made that long:
+`test/architecture.test.ts`, "a file near the cap doesn't grow: it's
+split by concept first", names each such file and tells its author to
+split it by concept first, and `bun run file-sizes` lists them. A file
+already over 1,350 that doesn't grow is left as it is: whoever next adds
+to it splits it first, so the 66 aren't split at once. The 1,500-line cap
+stays. A checkout of `main` itself, CI's, has nothing to measure; the
+push's check on the Mac, `check:fast --all`, measures the change. Held by
+`test/file-sizes.test.ts`, of a repository made for it: a file over the
+line that grew in a commit, one made in one and one not yet committed are
+named, one that shrank or stays under it isn't, and one split under it
+leaves the list.

@@ -66,6 +66,13 @@ When contributing code:
 - **Give each piece one coherent responsibility.** Make clear what it
   receives, what it produces or changes, and what it guarantees. Splitting
   files alone does not create boundaries.
+- **Split a file near the cap by concept before it grows.** A compiler or
+  test file is at most 1,500 lines (ADR 0572), and one over 1,350 doesn't
+  grow: split it by concept, one module per concept named for it, in a
+  commit of its own, then make your change. Never squeeze it to fit by
+  moving imports, joining lines or cutting comments.
+  `test/architecture.test.ts` fails on a file over 1,350 lines that grew
+  since your change left `main`, and `bun run file-sizes` lists them (#1334).
 - **Give each decision and state one owner.** Other pieces ask that owner
   through a clear API. Do not duplicate its rules or reach into its internal
   state.
