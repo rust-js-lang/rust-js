@@ -1,0 +1,37 @@
+diff --git a/generate/src/literal.rs b/generate/src/literal.rs
+index 661097f..e02292b 100644
+--- a/generate/src/literal.rs
++++ b/generate/src/literal.rs
+@@ -49,8 +49,9 @@ pub trait GenLiteral: Rng {
+                 }
+             }
+             TyKind::Uint(UintTy::Usize) => {
++                // wasm32, rust-js's target: a usize is 32 bits.
+                 let i: usize = Sombrero.sample(self);
+-                i.try_into().expect("usize isn't greater than 128 bits")
++                (i as u32 as usize).try_into().expect("usize isn't greater than 128 bits")
+             }
+             TyKind::Uint(UintTy::U8) => self.random_range(u8::MIN..=u8::MAX).into(),
+             TyKind::Uint(UintTy::U16) => self.random_range(u16::MIN..=u16::MAX).into(),
+@@ -59,7 +60,7 @@ pub trait GenLiteral: Rng {
+             TyKind::Uint(UintTy::U128) => self.random_range(u128::MIN..=u128::MAX).into(),
+             TyKind::Int(IntTy::Isize) => {
+                 let i: isize = Sombrero.sample(self);
+-                i.try_into().expect("isize isn't greater than 128 bits")
++                (i as i32 as isize).try_into().expect("isize isn't greater than 128 bits")
+             }
+             TyKind::Int(IntTy::I8) => self.random_range(i8::MIN..=i8::MAX).into(),
+             TyKind::Int(IntTy::I16) => self.random_range(i16::MIN..=i16::MAX).into(),
+diff --git a/generate/src/mem/mod.rs b/generate/src/mem/mod.rs
+index b5f0627..1a9040e 100644
+--- a/generate/src/mem/mod.rs
++++ b/generate/src/mem/mod.rs
+@@ -355,7 +355,7 @@ pub struct BasicMemory {
+ }
+ 
+ impl BasicMemory {
+-    const PTR_SIZE: Size = Size::from_bytes_const(mem::size_of::<*const ()>() as u64);
++    const PTR_SIZE: Size = Size::from_bytes_const(4); // wasm32, rust-js's target
+ 
+     pub fn new() -> Self {
+         Self {

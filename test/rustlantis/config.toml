@@ -1,0 +1,18 @@
+# Rustlantis's generation (test/rustlantis.test.ts): small programs, 3
+# functions of at most 8 blocks of 8 statements, about 150 lines, which
+# rust-js compiles where its default's 12,000 lines meet a refusal (ADR 1125).
+bb_max_len = 8
+max_switch_targets = 8
+max_bb_count = 8
+max_bb_count_hard = 16
+max_fn_count = 3
+max_args_count = 4
+var_dump_chance = 0.5
+tuple_max_len = 4
+array_max_len = 8
+struct_max_fields = 8
+adt_max_variants = 4
+composite_count = 8
+adt_count = 2
+
+[backends]

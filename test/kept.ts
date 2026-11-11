@@ -20,6 +20,12 @@ const day = 24 * 60 * 60;
  * (`nativeBinary`, #1047). */
 export const nativeCache = join(machineStore, "native-cache");
 
+/** Where the Rustlantis net's generator is built (ADR 1125): the
+ * machine's, one build of its pinned commit and patch, some 120 MB, an
+ * earlier one removed as a build starts (test/rustlantis.ts). */
+export const rustlantisStore = join(machineStore, "rustlantis");
+export const rustlantisCap = 512 * 2 ** 20;
+
 /** Where runs verified by what they ran are kept (ADR 0567): the
  * machine's, every worktree's, as a run's key is what it ran, not where
  * (#1047); but a target's own given one, `RUST_JS_TARGET`, a mutant's,

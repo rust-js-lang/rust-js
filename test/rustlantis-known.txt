@@ -1,0 +1,21 @@
+# What the Rustlantis net knows (test/rustlantis.test.ts, ADR 1125): each
+# line a kind, what holds it, an open issue or `custom-mir`, a form only
+# custom MIR writes, which Rust can't, refused for good; and a pattern, of
+# a refusal's message, a wrong answer's program, a throw's JS error or a
+# crash's message. A program the list doesn't hold fails the night; an
+# issue fixed takes its lines off, which only shrinks it.
+#
+# Refused.
+refused custom-mir a use of a local before any write of it whole
+refused custom-mir arithmetic checked for overflow, from its MIR
+refused custom-mir a `&mut` of a number kept or given, from its MIR
+refused #1384 calling `std::intrinsics::(bswap|fmaf32|fmaf64|arith_offset)`
+#
+# Wrong: a wide literal cast to a narrower type, through a lossy Number.
+wrong #1380 \d+_(i64|u64|i128|u128)\)? as (i8|u8|i16|u16|i32|u32|isize|usize|char)\b
+#
+# Threw: a raw pointer to a by-value parameter, a cell its callers never make.
+threw #1381 Cannot create property 'value' on|Invalid value used as weak map key|Cannot convert -?\d+ to a BigInt
+#
+# Crashed: rust-js's stack, of a program's size.
+crashed #1383 has overflowed its stack

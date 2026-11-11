@@ -24,7 +24,7 @@ import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
-import { keptAppsCap, keptStores, pruneKeptStores } from "../test/kept";
+import { keptAppsCap, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
 import { boundCrateProjects, crateProjectsCap } from "./crate-corpus";
 import { boundCrater, craterCap } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
@@ -125,6 +125,7 @@ export function stores(): Store[] {
     { name: ".cache/test-maps", dir: mapStore, cap: keptMaps * 64 * 2 ** 20, bound: (free) => void pruneMaps(mapStore, keptMaps, free) },
     { name: ".cache/tasks", dir: join(machineStore, "tasks"), cap: 16 * 2 ** 20, bound: (free) => void boundEntries(join(machineStore, "tasks"), 16 * 2 ** 20, free) },
     { name: ".cache/job-times", dir: jobTimesStore, cap: jobTimesCap, bound: (free) => void boundEntries(jobTimesStore, jobTimesCap, free) },
+    { name: ".cache/rustlantis", dir: rustlantisStore, cap: rustlantisCap, bound: (free) => void boundEntries(rustlantisStore, rustlantisCap, free) },
     { name: "the temp root", dir: tempRoot, cap: tempCap, bound: (free) => void boundEntries(tempRoot, tempCap, free) },
   ];
   // What rustc writes of a long type's name, or of its own crash, where it

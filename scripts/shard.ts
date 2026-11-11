@@ -270,6 +270,7 @@ export const parts: Part[] = [
   { setting: "NONE_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 580 programs: check:fast runs six where a `None`'s form changes" },
   { setting: "OBJECT_MODEL", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case's library run with its values proxied, some 1,900: check:fast runs one case in 64 where the object model's owners or the readability passes change (#891)" },
   { setting: "NEIGHBOURS", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every group of the day's seed, some 120 crates of the corpus's cases: a push runs seed 0's first two and each listed pair (#853)" },
+  { setting: "RUSTLANTIS_SEEDS", value: "200", runs: "nightly", by: ".github/workflows/nightly.yml", why: "200 of Rustlantis's custom MIR programs from the day's seed, its generator built first: a push runs the net's list's own tests (ADR 1125)" },
   { setting: "RUST_JS_DISTRIBUTION", value: "dist", runs: "nightly", by: "scripts/qualify.ts", why: "a release's packaged binary, which only qualification builds" },
 ];
 
@@ -297,6 +298,7 @@ export const harness = [
   "PATH",
   "PILOT_API",
   "RUSTC_BOOTSTRAP",
+  "RUSTLANTIS_START",
   "RUST_JS_APPS_SEED",
   "RUST_JS_CASES",
   "RUST_JS_COMPILE_CACHE_MB",
