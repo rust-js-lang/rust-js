@@ -163,14 +163,13 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
         // Its stages run again where its passes found they must, each
         // through this runner, named `again/<stage>`.
-        if !stage.again.is_empty() && hints.again.must.take() {
-            hints.again.running.set(true);
+        if !stage.again.is_empty() && hints.again.take() {
             for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
                 if run_stage(body, hints, again, &again_name(again)) {
                     return stopped(body);
                 }
             }
-            hints.again.running.set(false);
+            hints.again.done();
         }
     }
 }

@@ -376,3 +376,21 @@ is: no write there goes, whatever the `finally` reads. So
 `field-write-read-in-finally-dropped`, which judged the body's writes
 without the `finally`'s reads, survived main's check, and is removed; the
 rule stays for a `finally` of drops no program sees.
+
+## Amendment: whether the stages run again is one state of three (#872)
+
+Whether tidy's stages run again was two `Cell<bool>`s, `must` and
+`running`: idle, must, running, and a fourth, must while running, that no
+stage makes, as none of the stages run again (`UNWOUND`) is one that asks
+for it, but that the two flags could hold. **`tidy::Again` is one
+`Cell` of a three-state enum, `Idle`, `Must`, `Running`, in its own
+module, `mir/tidy/again.rs`, changed only by its transitions: a pass's
+`found(bool)`, which keeps what an earlier pass found; tidy's `take()`, of
+`Must` to `Running`; and `done()`, back to `Idle`. A pass asks
+`running()`.** The fourth state can't be written, and a pass that found it
+anyway is `unreachable!`. The JS is byte for byte what it was, the corpus
+in both builds; each transition has a mutation, `again-found-unrecorded`,
+`again-found-forgotten-by-a-later-pass`, `again-taken-not-running`,
+`again-running-unasked`, `again-done-still-running` and
+`again-taken-of-nothing`, the last three held by the unit test
+`found_is_kept_until_taken_and_done_ends_the_run`.

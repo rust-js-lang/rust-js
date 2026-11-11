@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the stages a stage asks to run again, `scopes`'s, don't, so what a guard's `try` held apart stays apart",
     file: "src/lower/mir/tidy.rs",
-    find: "        if !stage.again.is_empty() && hints.again.must.take() {\n",
+    find: "        if !stage.again.is_empty() && hints.again.take() {\n",
     replace: "        if false {\n",
     tests: [
       "test/lowering-drop-guards.test.ts",

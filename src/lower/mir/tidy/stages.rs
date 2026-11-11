@@ -214,9 +214,7 @@ pub(super) const STAGES: &[Stage] = &[
         name: "names",
         passes: &[
             pass("alias variables", |b, h| alias_variables(b, &h.made.fixed)),
-            pass("read handles", |b, h| {
-                read_handles(b, false, h.lets, h.again.running.get())
-            }),
+            pass("read handles", |b, h| read_handles(b, false, h.lets, h.again.running())),
             pass("plain reads", |b, h| {
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
             }),
@@ -281,7 +279,7 @@ pub(super) const STAGES: &[Stage] = &[
             // of a flattened state, declared before its `if` and written in
             // it: its place, where its `value` is read (rd533).
             pass("declared handles", |b, h| {
-                read_handles(b, true, h.lets, h.again.running.get())
+                read_handles(b, true, h.lets, h.again.running())
             }),
             // A temporary of a variable those made a `const`, `const _42 =
             // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
@@ -951,14 +949,14 @@ pub(super) const STAGES: &[Stage] = &[
             // drops it (rd191).
             pass("looped drops", |b, h| {
                 let looped = looped_drops_of_made(b, h, false);
-                h.again.must.set(h.again.must.get() || looped);
+                h.again.found(looped);
             }),
             pass("drop scopes", |b, h| {
                 let mut scoped = false;
                 js::statement_lists(b, &mut |stmts| {
                     scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)
                 });
-                h.again.must.set(h.again.must.get() || scoped);
+                h.again.found(scoped);
             }),
             pass("returns through finally", |b, _| {
                 js::statement_lists(b, &mut unwinds::returned_through_finally)
@@ -976,7 +974,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unthrown catches", |b, h| {
                 let mut unthrown = false;
                 js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
-                h.again.must.set(h.again.must.get() || unthrown);
+                h.again.found(unthrown);
             }),
             // And an `unwrap()`'s, its test and panic, as an `assert!`'s:
             // where its drops' flags are known again (ADR 0873, amended).
@@ -986,7 +984,7 @@ pub(super) const STAGES: &[Stage] = &[
                 if tested {
                     flags::settled_flags(b, h.flags);
                 }
-                h.again.must.set(h.again.must.get() || tested);
+                h.again.found(tested);
             }),
         ],
         ensures: &[
