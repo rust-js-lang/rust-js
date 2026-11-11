@@ -742,4 +742,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
     snapshots: true,
   },
+  {
+    name: "pending-before-a-loop-dropped",
+    breaks: "a call's argument made before a later `loop` argument is dropped as the loop begins, its name kept, a `ReferenceError` where the loop breaks (#1395)",
+    file: "src/lower/mir/structure.rs",
+    find: "            // name nothing made (#1395).\n            let mut out = Vec::new();\n            self.flush(state, &mut out)?;\n",
+    replace: "            // name nothing made (#1395).\n            let mut out = Vec::new();\n            self.flush(state, &mut Vec::new())?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^value_made_before_a_loop_argument.rs$"],
+  },
 ];

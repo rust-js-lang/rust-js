@@ -15,6 +15,3 @@ refused custom-mir addressable memory yet: a raw pointer to this place
 #
 # Wrong: a copy of a value whose type isn't `Copy`, `_5 = RET;` of an enum, one object in JS.
 wrong #1396 \n_\d+ = RET;\n
-#
-# Threw: an entry block's value lost before a loop, read after it.
-threw #1395 ReferenceError: _\d+ is not defined

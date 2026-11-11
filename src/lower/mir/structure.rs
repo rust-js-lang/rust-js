@@ -10,7 +10,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_tree(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let merges = state.facts.graph().merge_children(block);
         if state.facts.graph().headers.contains(&block) {
-            self.flush(state, &mut Vec::new())?;
+            // What's pending before the loop is made before it, where it
+            // was made: a `const` of what isn't read the same anywhere,
+            // `pair(200 - 1, loop { .. })`'s first argument, which was
+            // dropped with its name declared, so the loop's `break` read a
+            // name nothing made (#1395).
+            let mut out = Vec::new();
+            self.flush(state, &mut out)?;
             state.labels.push(block);
             let mut body = self.mir_statements(state, block)?;
             body.extend(self.mir_within(state, block, &merges)?);
@@ -25,14 +31,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     )
                 })
                 .map_or(data.terminator().source_info.span, |s| s.source_info.span);
-            return Ok(vec![
+            out.push(
                 StmtKind::While {
                     label: Some(label(block)),
                     cond: Expr::bool(true),
                     body,
                 }
                 .at(self.js_span(start.source_callsite())),
-            ]);
+            );
+            return Ok(out);
         }
         let mut out = self.mir_statements(state, block)?;
         out.extend(self.mir_within(state, block, &merges)?);

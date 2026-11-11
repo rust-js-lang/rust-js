@@ -161,3 +161,17 @@ Not reproduced here: the Flight client's `const {value: _12} =
 $borrow($fieldCell(handler, 'chunk', true)); const chunk = _12;`, which
 reads the value right away (correct) but leaks MIR's name. That's a
 counted guard's form, another cause, left for naming.
+
+## Amendment: what's pending before a loop is made before it (#1395)
+
+A value kept to be made where it's read (`mir/temporaries.rs`' pending
+values), the loop's header reached right after it, was flushed into
+nothing as the loop began: `flush` writes a value not read the same
+anywhere as a `const` and marks its name declared, and the header's call
+of it was given a list it dropped. `pair(200 - 1, loop { k += 1; if k ==
+3 { break k; } })`, a call's argument made before a later argument that's
+a `loop`, read the name in the `break`, a `ReferenceError` where Rust
+prints `(199, 3)`, in both builds; Rustlantis's seeds 1909 and 2471 were
+it of custom MIR. What's flushed at a loop's header is now written before
+the loop, where Rust makes it: `const value = 200 - 1;` then `while
+(true)`. Case C of ADR 0262.
