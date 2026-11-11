@@ -33,6 +33,9 @@ pub(super) struct Writing {
     dyn_debug: Pretty,
     /// The options a `{:?}` being shown gives each part of it (ADR 0058).
     options: Option<Options>,
+    /// What's shown with options of the type whose writer this is, which
+    /// a library's function shows pretty or in hex (#1331).
+    shown: crate::lower::analysis::Shown,
 }
 
 /// The options a `fmt` is given (ADRs 0058, 0137): none, `{:#?}`'s, a
@@ -305,7 +308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0914).
     pub(super) fn takes_options(&self, writer: DefId) -> bool {
         match writer.is_local() || self.krate.foreign.is_instance(writer) {
-            true => self.writers_take_options(),
+            true => self.compiled_writer_takes_options(writer),
             false => self.krate.foreign.writers_take_options(writer.krate),
         }
     }
@@ -326,12 +329,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.writers_take_options()
     }
 
-    /// `lower`, a writer's body, given its `Formatter`'s options, `given`,
-    /// the parameter that has them, where the crate gives any (ADR 0137).
-    pub(super) fn with_given<T>(&mut self, given: Option<Expr>, lower: impl FnOnce(&mut Self) -> T) -> T {
+    /// Does `writer`, one this build compiles, its own or a body of
+    /// another crate's it compiles itself (ADRs 0561, 0914), take its
+    /// `Formatter`'s options: the crate's writers do, or it's of a type a
+    /// library's function shows with them (#1331)?
+    pub(super) fn compiled_writer_takes_options(&self, writer: DefId) -> bool {
+        self.writers_take_options() || self.krate.shown.of_writer(self.tcx, writer).any()
+    }
+
+    /// Does the writer being lowered apply a placeholder's options to what
+    /// it shows (ADR 0058): the crate's do, or it's of a type a library's
+    /// function shows in hex (#1331)?
+    pub(super) fn format_options(&self) -> bool {
+        self.krate.format_options || self.writing.shown.hex
+    }
+
+    /// Does the writer being lowered show an integer's `{:?}` in hex where
+    /// its options say (ADR 0559): the crate's do, or it's of a type a
+    /// library's function shows in hex (#1331)?
+    fn debug_hex(&self) -> bool {
+        self.krate.debug_hex || self.writing.shown.hex
+    }
+
+    /// The parameter of `writer`'s `Formatter`'s options, where it has a
+    /// `Formatter` and takes them (`compiled_writer_takes_options`).
+    pub(super) fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<String> {
+        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh("options"))
+    }
+
+    /// `lower`, `writer`'s body, given its `Formatter`'s options, `given`,
+    /// the parameter that has them, where the crate gives any (ADR 0137),
+    /// and what's shown so of its type, which a library's function shows
+    /// with options (#1331).
+    pub(super) fn with_given<T>(
+        &mut self,
+        given: Option<Expr>,
+        writer: DefId,
+        lower: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let shown = self.krate.shown.of_writer(self.tcx, writer);
         let outer = std::mem::replace(&mut self.writing.given, given);
+        let outer_shown = std::mem::replace(&mut self.writing.shown, shown);
         let made = lower(self);
         self.writing.given = outer;
+        self.writing.shown = outer_shown;
+        made
+    }
+
+    /// `lower`, a writer's body of a type what's `shown` of which a
+    /// library's function shows with options (#1331).
+    pub(super) fn with_shown<T>(
+        &mut self,
+        shown: crate::lower::analysis::Shown,
+        lower: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let outer = std::mem::replace(&mut self.writing.shown, shown);
+        let made = lower(self);
+        self.writing.shown = outer;
         made
     }
 
@@ -355,7 +409,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a crate that gives none but `{:#?}`'s has none to apply.
     fn formatted(&mut self, value: Expr, (kind, ty): (Std, Ty<'tcx>), pretty: &Pretty) -> Option<Expr> {
         let Pretty::When(options) = pretty else { return None };
-        if !self.krate.format_options {
+        if !self.format_options() {
             return None;
         }
         let num = Num::of(ty);
@@ -377,7 +431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the options say, as `{:x}` shows it, `0x` and all where it's
             // alternate (ADR 0559).
             Std::FmtDebug
-                if self.krate.debug_hex
+                if self.debug_hex()
                     && let Some(num) = num.filter(|n| !n.float()) =>
             {
                 let hex = Radix::LowerHex.digits(value.clone(), num);
@@ -460,7 +514,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         match pretty {
-            Pretty::When(options) if self.krate.format_options => Expr::call(
+            Pretty::When(options) if self.format_options() => Expr::call(
                 Expr::helper("$formatted"),
                 vec![text, options.clone(), Expr::bool(true)],
             ),
@@ -498,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
         // A class's, its prototype's `toString`, given no `Formatter`'s
         // options, which JS's template gives it none of (#358).
-        if self.is_shown_class(ty) && !self.writers_take_options() {
+        if self.is_shown_class(ty) && !self.writers_take_options() && !self.krate.shown.of_type(self.tcx, ty).any() {
             return true;
         }
         let Some(fmt) = self.recognition().display_fmt() else {
@@ -578,7 +632,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// take options (ADRs 0058, 0137): `undefined` for a plain one, which
     /// the printer leaves out where it's last.
     pub(super) fn options_arg(&self, pretty: &Pretty) -> Option<Expr> {
-        self.writers_take_options().then(|| pretty.options())
+        // Or a writer of a type a library's function shows with options,
+        // which gives its parts its own (#1331).
+        (self.writers_take_options() || self.writing.shown.any()).then(|| pretty.options())
     }
 
     /// A call of the crate's own `fmt`, `Debug`'s or `Display`'s, given
@@ -648,15 +704,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(value) => <its string>` for a dictionary's `fmt`, or the function
     /// itself: `String`, `$displayF64`.
     pub(super) fn display_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        // Given a `Formatter`'s options, where the crate's writers are (ADR 0058).
-        let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
+        // Given a `Formatter`'s options, where the crate's writers are (ADR
+        // 0058), or a library's function shows the type with them (#1331).
+        let shown_so = self.krate.shown.of_type(self.tcx, ty);
+        let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
             true => (
                 vec!["value".into(), "options".into()],
                 Pretty::When(Expr::var("options")),
             ),
             false => (vec!["value".into()], Pretty::Plain),
         };
-        let shown = self.display_string_with(Expr::var("value"), ty, span, &pretty)?;
+        let shown = self.with_shown(shown_so, |cx| {
+            cx.display_string_with(Expr::var("value"), ty, span, &pretty)
+        })?;
         // `String(value)` of a number is the function `String`, and so is
         // JS's text of the value, \`${value}\`, a class's `toString`'s (#358).
         let text_of = match &shown.kind {

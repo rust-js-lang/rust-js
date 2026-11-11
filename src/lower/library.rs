@@ -53,6 +53,31 @@ pub(super) fn instances_take_options(
     })
 }
 
+/// The type parameters `id`, a library's function, shows pretty or in
+/// hex, by index, as its manifest says (#1331): none of another.
+pub(super) fn shown_marks(
+    tcx: TyCtxt<'_>,
+    dependencies: &Dependencies,
+    id: DefId,
+) -> Vec<(u32, super::analysis::Shown)> {
+    use crate::library::ParamFact;
+    let Some(item) =
+        (dependencies.libraries.get(&library_key(tcx, id.krate))).and_then(|library| library.items.get(&key(tcx, id)))
+    else {
+        return Vec::new();
+    };
+    (item.calling.params.iter())
+        .map(|param| {
+            let shown = super::analysis::Shown {
+                pretty: param.has(ParamFact::ShownPretty),
+                hex: param.has(ParamFact::ShownHex),
+            };
+            (param.index, shown)
+        })
+        .filter(|(_, shown)| shown.any())
+        .collect()
+}
+
 /// The key of the library `krate`'s items are of, by which `Dependencies`
 /// knows it: `@rust-js/std`'s name, which no crate has, of std's crates,
 /// not their names, which a program's crate may have, a workspace's `core`
@@ -95,6 +120,8 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// its type parameters (ADR 0145).
 pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
+    /// The type parameters each function shows pretty or in hex (#1331).
+    pub(super) shown_params: &'a IndexMap<DefId, IndexMap<u32, super::analysis::Shown>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
     /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
     /// amended), and which are stepped by a trait (ADR 0548).
@@ -203,6 +230,15 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
     }
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::NoDrop);
+    }
+    for (&index, &shown) in contracts.shown_params.get(&id).into_iter().flatten() {
+        let marks = &mut param(&mut params, index).marks;
+        if shown.pretty {
+            marks.insert(ParamFact::ShownPretty);
+        }
+        if shown.hex {
+            marks.insert(ParamFact::ShownHex);
+        }
     }
     for &(index, fact) in contracts.type_facts.get(&id).into_iter().flatten() {
         param(&mut params, index).facts.push(fact.word().to_string());

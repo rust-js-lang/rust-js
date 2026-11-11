@@ -67,8 +67,10 @@ use std::path::Path;
 /// `crate_id` (#1130). 26: whether each closure it clones, or gives a
 /// consumer to clone, is cloned apart, `cloned_closures`, which a
 /// consumer's clone of one asks, as its own compile can't see what one
-/// captures (#1202).
-pub const VERSION: u32 = 26;
+/// captures (#1202). 27: which type parameters each function shows pretty
+/// or in hex, `shown_pretty` and `shown_hex`, whose writers a consumer
+/// makes take those options (#1331).
+pub const VERSION: u32 = 27;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -254,6 +256,13 @@ pub enum ParamFact {
     /// nothing that may look like `None`, and a consumer that gives one
     /// compiles its own (ADR 0051, amended; library ABI 10).
     Unboxed,
+    /// It's shown pretty, `{:#?}`, here or by what it's given to: a
+    /// consumer's writer of a type it gives it takes whether (#1331).
+    ShownPretty,
+    /// It's shown in hex, `{:x?}`, here or by what it's given to: a
+    /// consumer's writer of a type it gives it shows its integers so where
+    /// its options say (#1331).
+    ShownHex,
 }
 
 impl TypeParam {

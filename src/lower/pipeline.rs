@@ -120,6 +120,7 @@ pub fn lower_crate<'tcx>(
         asks_capacity,
         generic_consts,
         writer_facts,
+        shown_params,
         reads_fn_identity,
         quiet_locals,
         quiet_library_keys,
@@ -362,6 +363,7 @@ pub fn lower_crate<'tcx>(
         pretty_debug: writer_facts.pretty_debug,
         format_options: writer_facts.format_options,
         debug_hex: writer_facts.debug_hex,
+        shown: &shown_params,
         tidy_until,
         ref_cells: &ref_cells,
         own_callbacks: &own_callbacks,
@@ -1296,6 +1298,7 @@ pub fn lower_crate<'tcx>(
                     (&fns, &exported),
                     &super::library::Contracts {
                         drop_params: &kept_drop_params,
+                        shown_params: &shown_params.params,
                         given,
                         failing: &failing,
                         writes_may_fail,

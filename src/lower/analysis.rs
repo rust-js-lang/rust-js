@@ -46,6 +46,7 @@ mod resolvers;
 mod scopes;
 pub(super) use scopes::Scopes;
 mod self_handles;
+mod shown_params;
 pub(super) use self_handles::SelfHandles;
 mod stored_places;
 pub(in crate::lower) use stored_places::StoredPlaces;
@@ -91,6 +92,7 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
+pub(super) use shown_params::{Shown, ShownParams};
 use std::collections::BTreeMap;
 use type_facts::type_fact_params;
 use validation::{
@@ -580,6 +582,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What its writers take beyond their arguments, and which of its
     /// functions read a `Formatter`'s options (ADRs 0058, 0137, 0559).
     pub writer_facts: WriterFacts,
+    /// The type parameters each function shows with options, and each type it gives one (#1331).
+    pub shown_params: ShownParams<'tcx>,
     /// Whether it reads a function's identity, of which its libraries'
     /// JS may merge two where Rust has two (`Foreign::merges_identities`,
     /// #1052).
@@ -649,9 +653,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
     // Before its libraries are asked, whose writers it reaches are
     // compiled here where they take less (ADR 0914, amended; #1026).
-    let instances_take_options =
-        super::library::instances_take_options(tcx, dependencies, all_bodies.iter().map(|body| body.def_id));
-    let writer_facts = WriterFacts::of(tcx, &all_bodies, (library, std_bodies), instances_take_options);
+    let (writer_facts, shown_params) = debug::writer_facts(tcx, &all_bodies, dependencies, (library, std_bodies));
     // And whether it compares a function's identity, of which its libraries'
     // functions that may merge two are compiled here (#1052).
     let reads_fn_identity = rc_counts::reads_fn_identity(tcx, &all_bodies);
@@ -1458,6 +1460,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         asks_capacity,
         generic_consts,
         writer_facts,
+        shown_params,
         reads_fn_identity,
         quiet_locals,
         quiet_library_keys,

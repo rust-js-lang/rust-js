@@ -35,7 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             WriteCall::PadIntegral => {
                 let (non_negative, prefix, digits) = (values.remove(0), values.remove(0), values.remove(0));
                 match &pretty {
-                    Pretty::When(options) if self.krate.format_options => Expr::call(
+                    Pretty::When(options) if self.format_options() => Expr::call(
                         Expr::helper("$padIntegral"),
                         vec![non_negative, prefix, digits, options.clone()],
                     ),
@@ -76,7 +76,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A number's `{:e}`, of the precision it's given, padded by
                     // the options it's given.
                     match &pretty {
-                        Pretty::When(options) if self.krate.format_options => {
+                        Pretty::When(options) if self.format_options() => {
                             let precision = Expr::optional_member(options.clone(), "precision");
                             let text =
                                 crate::lower::format_spec::exp_text(values.remove(0), num, upper, Some(precision));

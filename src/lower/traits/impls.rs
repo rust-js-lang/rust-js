@@ -444,7 +444,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .len()
                 - usize::from(self.formatter_param(method).is_some())
                 // A writer's options, where the crate's take them (ADRs 0058, 0137).
-                + usize::from(self.writers_take_options() && self.formatter_param(method).is_some());
+                + usize::from(self.compiled_writer_takes_options(method) && self.formatter_param(method).is_some());
             let mut params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
             let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
             // Where it's called, after its arguments, of one whose entries take

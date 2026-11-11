@@ -19,6 +19,7 @@ pub(in crate::lower) fn exports<'tcx>(
     let Contracts {
         // What each type parameter is asked, `type_params`'s.
         drop_params: _,
+        shown_params: _,
         no_drops: _,
         type_facts: _,
         // `associated`'s.

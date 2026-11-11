@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a number a `fmt` hands its `Formatter` on to ignores the options it's given at run time",
     file: "src/lower/display.rs",
-    find: "        if !self.krate.format_options {\n            return None;\n        }",
+    find: "        if !self.format_options() {\n            return None;\n        }",
     replace: "        if true {\n            return None;\n        }",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that gives no options but `{:#?}`'s applies them to each number its writers show: right, but not the JS a person writes",
     file: "src/lower/display.rs",
-    find: "        if !self.krate.format_options {\n            return None;\n        }",
+    find: "        if !self.format_options() {\n            return None;\n        }",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
     snapshots: true,
@@ -107,9 +107,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `T`'s `{:>6}` of a number shows it unpadded: std's `Display` dictionary ignores the options",
     file: "src/lower/display.rs",
-    find: '                Pretty::When(Expr::var("options")),\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(',
+    find: '                Pretty::When(Expr::var("options")),\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
     replace:
-      '                Pretty::Plain,\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(',
+      '                Pretty::Plain,\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
@@ -142,9 +142,9 @@ export const mutations: Mutation[] = [
     name: "std-radix-unpadded",
     breaks: "`{:04x}` through a delegating impl isn't padded",
     file: "src/lower/display.rs",
-    find: '            Pretty::When(options) if self.krate.format_options => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
+    find: '            Pretty::When(options) if self.format_options() => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
     replace:
-      '            Pretty::When(options) if false && self.krate.format_options => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
+      '            Pretty::When(options) if false && self.format_options() => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `{p}` is `p.toString()`, not JS's text of it, `${p}` (#358)",
     file: "src/lower/display.rs",
-    find: "        if self.is_shown_class(ty) && !self.writers_take_options() {\n",
+    find: "        if self.is_shown_class(ty) && !self.writers_take_options() && !self.krate.shown.of_type(self.tcx, ty).any() {\n",
     replace: "        if false {\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
@@ -366,5 +366,35 @@ export const mutations: Mutation[] = [
     find: "            || !self.has_user_impl(trait_id, ty) && self.has_evidence(ty::TraitRef::new(self.tcx, trait_id, [ty]))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_trait_fmt_called_by_path.rs$"],
+  },
+  {
+    name: "compiled-writer-shown-ignored",
+    breaks:
+      "a writer of a type a library's function shows with options takes them only where the crate's own writers do, so `Plain`'s `{:#?}` through its library is on one line (#1331)",
+    file: "src/lower/display.rs",
+    find: "        self.writers_take_options() || self.krate.shown.of_writer(self.tcx, writer).any()\n",
+    replace: "        self.writers_take_options()\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+  },
+  {
+    name: "shown-hex-unformatted",
+    breaks:
+      "a writer of a type a library's function shows in hex applies no placeholder's options, so its integers aren't hex, `Plain { n: 255 }` (#1331)",
+    file: "src/lower/display.rs",
+    find: "        self.krate.format_options || self.writing.shown.hex\n",
+    replace: "        self.krate.format_options\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+  },
+  {
+    name: "mir-writer-options-dropped",
+    breaks: "MIR's writer takes no options, a `{:>6}` of it unpadded",
+    file: "src/lower/display.rs",
+    find: "        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(\"options\"))\n",
+    replace: "        (formatter && false).then(|| self.fresh(\"options\"))\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer from its MIR takes its Formatter's options",
+    ],
   },
 ];

@@ -247,7 +247,10 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   ([0064](../decisions/0064-numbers.md)).
 - **`{:?}` is Rust's `Debug`:** a type's name and fields, a string's
   escapes, `{:#?}` pretty ([0060](../decisions/0060-debug.md),
-  [0137](../decisions/0137-pretty-debug.md)).
+  [0137](../decisions/0137-pretty-debug.md)), a library's `{:#?}` or
+  `{:x?}` of a value you give it too: your writer of its type takes
+  those options where it reaches such a function, and only there
+  ([0137](../decisions/0137-pretty-debug.md), amended, #1331).
 - **A type's own `Display` and `Debug` are given the placeholder's
   options,** and can ask its `Formatter` for them, `f.width()`, `f.pad(s)`
   ([0143](../decisions/0143-formatter-options.md)).

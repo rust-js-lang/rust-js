@@ -458,6 +458,9 @@ struct CrateFacts<'a, 'tcx> {
     /// Whether the crate asks `{:x?}` of anything: then an integer a writer
     /// shows is in hex where its options say (ADR 0559).
     debug_hex: bool,
+    /// What's shown with options of each type it gives a parameter shown
+    /// so, pretty or in hex, whose writers then take them (#1331).
+    shown: &'a analysis::ShownParams<'tcx>,
     /// The pass tidy stops after, `--tidy-until`'s (ADR 0659).
     tidy_until: Option<&'a str>,
     /// The `RefCell`s a field holds as their value, never counted (ADR

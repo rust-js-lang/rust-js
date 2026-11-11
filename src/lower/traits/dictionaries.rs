@@ -398,8 +398,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (!self.has_user_impl(tr.def_id, ty) || shown)
         {
             if debug {
-                // Given a `Formatter`'s options, where the crate's writers are (ADRs 0058, 0137).
-                let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
+                // Given a `Formatter`'s options, where the crate's writers are
+                // (ADRs 0058, 0137), or a library's function shows it with
+                // them (#1331).
+                let shown_so = self.krate.shown.of_type(self.tcx, ty);
+                let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
                     true => (
                         vec!["value".into(), "options".into()],
                         crate::lower::display::Pretty::When(Expr::var("options")),
@@ -407,7 +410,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => (vec!["value".into()], crate::lower::display::Pretty::Plain),
                 };
                 let mut body = Vec::new();
-                let shown = self.debug_string_with(Expr::var("value"), ty, span, &pretty)?;
+                let shown = self.with_shown(shown_so, |cx| {
+                    cx.debug_string_with(Expr::var("value"), ty, span, &pretty)
+                })?;
                 body.push(StmtKind::Return(Some(shown)).at(js::Span::NONE));
                 let fmt = Expr::arrow(params, body);
                 return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
@@ -1142,7 +1147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Without a `Formatter`, which isn't a JS parameter (ADR 0054), and
             // with a writer's options, where the crate's take them (ADRs 0058, 0137).
             let writer = self.formatter_param(item.def_id).is_some();
-            let count = inputs.len() - usize::from(writer) + usize::from(self.writers_take_options() && writer);
+            // Or a type's a library's function shows with them, whose entry
+            // takes them, passed on where it does (#1331).
+            let options = self.writers_take_options() || self.krate.shown.reached().any();
+            let count = inputs.len() - usize::from(writer) + usize::from(options && writer);
             // A `&mut self` method is given a box of the pair, as generic code
             // has a `&mut T` (ADR 0099), and gives the pair, as a call on the
             // `dyn` does: `object.value.impl.scale(object.value, k)`.

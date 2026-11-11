@@ -1223,7 +1223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its `Formatter`'s options, where the crate gives any (ADRs 0058,
         // 0137): a parameter after the others.
-        let options = (formatter.is_some() && self.writers_take_options()).then(|| self.fresh("options"));
+        let options = self.options_param(mir_body.source.def_id(), formatter.is_some());
         // A closure's first argument is its environment, read through its fields.
         // A coroutine's are that and what it's resumed with, which an async
         // function has neither of.
@@ -1388,7 +1388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.last_params(mir_body, (&state.locals, options.is_some()), &mut params);
         let start = BasicBlock::from_usize(0);
         let given = self.writer_options(&state, options.as_deref());
-        let lowered = self.with_given(given, |cx| cx.mir_tree(&mut state, start))?;
+        let lowered = self.with_given(given, mir_body.source.def_id(), |cx| cx.mir_tree(&mut state, start))?;
         out.extend(state.settled_lets().chain(lowered));
         // Its scope struct's methods, declared after its `let` (ADR 1043).
         self.declare_scope_functions(&state, captures.is_none(), &mut out)?;

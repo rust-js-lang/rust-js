@@ -86,3 +86,59 @@ function pointDebug_fmt(point, alternate) {
   (Amended: it compiles, [ADR 0532](0532-a-debug-builder-held-in-a-variable.md).)
 - The rustc suite compiles a test natively and as JS as at its own path,
   for what `file!()` and `dbg!` print to be the same.
+
+## Amendment: a library's `{:#?}` or `{:x?}` of a consumer's value (#1331)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds. Whether the crate's writers take a `Formatter`'s
+options was one answer for the whole crate, asked of its own THIR: its
+`{:#?}` and `{:x?}`. A library's generic function that shows what it's
+given so, `pub fn pretty<T: Debug>(held: &T) -> String { format!("{:#?}",
+held) }`, gives the consumer's dictionary `TDebug.fmt(held, { alternate:
+true })`. The consumer's own code showed nothing so, so its derived
+`plainDebug_fmt(plain)` took no options. It printed `Plain { n: 2 }` where
+native Rust prints `Plain {\n    n: 2,\n}`, and `Plain { n: 255 }` where
+`{:x?}` shows `Plain { n: ff }`.
+
+**A writer takes options where its crate's writers do, or where its type
+reaches a parameter a function shows with them** (`analysis/shown_params.rs`,
+an Instances fact of [1115](1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)'s catalogue):
+
+- Each function's type parameters it shows pretty or in hex are found:
+  those its own placeholders show, `{:#?}`, `{:x?}`, `{:#x?}`, and those it
+  gives a function that shows them so, to a fixed point through its calls.
+  A library's are its manifest's `shown_pretty` and `shown_hex` marks of
+  each function's type parameters (library ABI 27).
+- Each type the crate gives such a parameter at a call it sees, each type
+  it's made of, and each field of the crate's own, which its `Debug`
+  shows, is shown so. Its writer, and a std type's dictionary of it, takes
+  the options. A writer of one shown in hex applies a placeholder's options
+  to its integers, `$debugInt`.
+- A type that reaches no such parameter keeps its plain writer,
+  `untouchedDebug_fmt(untouched)`. Every app's derived `Debug` isn't given
+  the options its libraries might show.
+
+This was decided for the user by the coordinator. The alternative, making
+every consumer's writer take options whenever any library shows anything
+so, would add the plumbing to every derived `Debug` in every app.
+
+- A library that gives one of its own types to such a parameter makes
+  each of its writers take options, as its manifest's
+  `writers_take_options` says of them all: its consumers count a writer's
+  arguments by it, and a writer's options come before its dictionaries.
+- A writer this build compiles, its own or a body of another crate's
+  (ADRs 0561, 0914), answers by this build's facts
+  (`compiled_writer_takes_options`). A writer it calls of a library's
+  answers by that library's manifest, as before.
+- Not covered: a value given as a `&dyn Debug` to a library's function that
+  shows it with options. A `dyn` reaches no type parameter, so its writer
+  takes options only where the crate's do.
+
+Held by `test/crates/pairs/library_shows_a_consumers_value_with_options`,
+against native Rust: `{:x?}`, `{:#?}` and `{:#x?}`, a chain of two library
+functions, a field's type reached only through its struct, a `Vec<u32>`'s
+std dictionary, and an untouched type whose writer stays plain. Mutations
+`shown-params-of-no-calls` and `shown-fields-unreached`
+(`lower/analysis/shown_params.ts`), `shown-params-unexported`
+(`lower/library.ts`), and `compiled-writer-shown-ignored` and
+`shown-hex-unformatted` (`lower/display.ts`).

@@ -289,18 +289,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-writer-options-dropped",
-    breaks: "MIR's writer takes no options, a `{:>6}` of it unpadded",
-    file: "src/lower/mir.rs",
-    find: "let options = (formatter.is_some() && self.writers_take_options())",
-    replace: "let options = (formatter.is_some() && false)",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a writer from its MIR takes its Formatter's options",
-    ],
-  },
-  {
     name: "mir-fn-directives-dropped",
     breaks: "a function's `js::directive!` is written nowhere",
     file: "src/lower/mir.rs",

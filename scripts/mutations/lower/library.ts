@@ -361,4 +361,13 @@ export const mutations: Mutation[] = [
     replace: "            .is_some_and(|library| !library.builtin && library.writers_take_options && false)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
   },
+  {
+    name: "shown-params-unexported",
+    breaks:
+      "a library's manifest marks no type parameter its functions show pretty or in hex, so its consumer's `Plain` shows `Plain { n: 255 }` of its `{:x?}` (#1331)",
+    file: "src/lower/library.rs",
+    find: "        if shown.pretty {\n            marks.insert(ParamFact::ShownPretty);\n        }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+  },
 ];

@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
     file: "src/lower/analysis/debug.rs",
-    find: "        let pretty_debug = std_bodies || instances || uses_pretty_debug(tcx, all_bodies);",
-    replace: "        let pretty_debug = std_bodies || instances || (false && uses_pretty_debug(tcx, all_bodies));",
+    find: "        let pretty_debug = std_bodies || instances || given.any() || uses_pretty_debug(tcx, all_bodies);",
+    replace: "        let pretty_debug = std_bodies || instances || given.any() || (false && uses_pretty_debug(tcx, all_bodies));",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
 ];

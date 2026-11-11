@@ -188,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let receiver = !inputs.is_empty() && super::classes::body_receiver(self.tcx, def_id) != Receiver::First;
         let formatter = self.formatter_param(def_id).is_some();
-        let options = formatter && self.writers_take_options();
+        let options = formatter && self.compiled_writer_takes_options(def_id);
         let evidence = self.evidence_slots(def_id, Scope::Whole).len();
         Some(inputs.len() - usize::from(receiver) - usize::from(formatter) + usize::from(options) + evidence)
     }

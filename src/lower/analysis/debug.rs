@@ -226,6 +226,34 @@ pub(super) fn reads_formatter_options(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool 
     })
 }
 
+/// What `all_bodies`' writers take, and which type parameters each of
+/// their functions shows pretty or in hex, with the types it gives them,
+/// whose writers take those options (#1331). Of a library, each of its
+/// writers takes what any type it gives one is shown with, as its
+/// manifest says of them all; and a library's function the crate compiles
+/// itself is asked of its manifest, its MIR saying nothing of what it
+/// formats (#1325).
+pub(super) fn writer_facts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    dependencies: &crate::library::Dependencies,
+    (library, std_bodies): (bool, bool),
+) -> (WriterFacts, super::ShownParams<'tcx>) {
+    let ids = all_bodies.iter().map(|body| body.def_id);
+    let instances = crate::lower::library::instances_take_options(tcx, dependencies, ids);
+    let marks = |id| crate::lower::library::shown_marks(tcx, dependencies, id);
+    let shown = super::shown_params::shown_params(tcx, all_bodies, &marks);
+    let given = if library {
+        shown.reached()
+    } else {
+        super::Shown::default()
+    };
+    (
+        WriterFacts::of(tcx, all_bodies, (library, std_bodies), (instances, given)),
+        shown,
+    )
+}
+
 /// What a crate's writers take beyond their arguments, its own answer of
 /// what its code formats, and which of its functions read a `Formatter`'s
 /// options, which a library's manifest says (ADRs 0058, 0137, 0559).
@@ -247,14 +275,18 @@ pub(in crate::lower) struct WriterFacts {
 impl WriterFacts {
     /// `instances`, whether the writers of a library a function of which
     /// the crate compiles itself take a `Formatter`'s options, which its
-    /// body's MIR doesn't say (`library::instances_take_options`, #1325).
-    pub(super) fn of<'tcx>(
+    /// body's MIR doesn't say (`library::instances_take_options`, #1325);
+    /// and `given`, of a library, what it shows of a type it gives a
+    /// parameter shown with options (#1331): then each of its writers takes
+    /// them, as its manifest says of them all, which its consumers count
+    /// their arguments by.
+    fn of<'tcx>(
         tcx: TyCtxt<'tcx>,
         all_bodies: &[&Body<'tcx>],
         (library, std_bodies): (bool, bool),
-        instances: bool,
+        (instances, given): (bool, super::Shown),
     ) -> Self {
-        let pretty_debug = std_bodies || instances || uses_pretty_debug(tcx, all_bodies);
+        let pretty_debug = std_bodies || instances || given.any() || uses_pretty_debug(tcx, all_bodies);
         WriterFacts {
             pretty_debug,
             // A library's writers that take a `Formatter`'s options, its
@@ -262,7 +294,7 @@ impl WriterFacts {
             // `+`, as its manifest says they take them: its consumers, which
             // it can't see, give any (#1164).
             format_options: uses_format_options(tcx, all_bodies) || (library && pretty_debug),
-            debug_hex: uses_debug_hex(tcx, all_bodies),
+            debug_hex: given.hex || uses_debug_hex(tcx, all_bodies),
             reads_options: (all_bodies.iter())
                 .filter(|body| reads_formatter_options(tcx, body))
                 .map(|body| tcx.typeck_root_def_id(body.def_id))
