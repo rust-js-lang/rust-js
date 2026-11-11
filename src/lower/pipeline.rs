@@ -283,8 +283,10 @@ pub fn lower_crate<'tcx>(
         .chain(forwarded_from)
         .collect();
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
-    // it, as what it gives that library may be asked (ADR 0419).
-    let keeps_capacity = asks_capacity || foreign.keeps_capacity();
+    // it, as what it gives that library may be asked (ADR 0419); and by
+    // `@rust-js/std`'s bodies, which every consumer's `capacity()` may ask
+    // of what they grow, as its manifest says (#1339).
+    let keeps_capacity = asks_capacity || foreign.keeps_capacity() || std_bodies;
     let takes_used_drops = super::drops::TakesUsed::new(tcx, &foreign, &drop_params);
     // What each function's lowering found of drops, gathered in the order
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).

@@ -4,8 +4,10 @@ import {
   $apart,
   $appendToString,
   $formatted,
+  $grew,
   $index,
   $ioThrow,
+  $keepCapacity,
   $live,
   $memchr,
   $partialEq,
@@ -72,6 +74,7 @@ export function splitIterator_next(split, BBufRead, dropB) {
     if (readUntil._0 !== 0) {
       const _n = readUntil._0;
       if ($index(buf, (buf.length - 1) >>> 0) === split.delim) {
+        $keepCapacity(buf);
         buf.pop();
       }
       return { TAG: "Ok", _0: buf };
@@ -168,17 +171,21 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
       let tmp;
       if (i != null) {
         available = $slice(available, 0, i + 1);
+        const length = buf.length;
         for (let i = 0; i < available.length; i++) {
           buf.push(available[i]);
         }
+        $grew(buf, 1, length);
         tmp = available.length;
         used = tmp;
         RBufRead.consume(r, tmp);
         read = (read + tmp) >>> 0;
       } else {
+        const length = buf.length;
         for (let i = 0; i < available.length; i++) {
           buf.push(available[i]);
         }
+        $grew(buf, 1, length);
         tmp = available.length;
         used = tmp;
         RBufRead.consume(r, tmp);

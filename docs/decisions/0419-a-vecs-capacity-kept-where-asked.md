@@ -372,3 +372,32 @@ It also has a nested chain, an enumeration skipped, a map of a chain, an
 `extend` and an empty set, all against native Rust in both builds.
 Mutations `chain-of-exact-parts-refused`, `chain-parts-unmarked`,
 `chain-part-sources-unmarked` and `counted-part-made-knowing-uncounted`.
+
+## Amendment: `@rust-js/std`'s bodies keep what they grow, as its manifest says (#1339)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds. Whether `@rust-js/std`'s bodies keep a `Vec`'s
+capacity was answered two ways. Its build kept none, `keeps_capacity`
+false, so `BufRead::read_until`'s default's `extend_from_slice` was a bare
+`push` loop. Yet a consumer's `unkept_by` exempted a builtin library and
+trusted it, marking nothing `$untracked`. `read_until` into an empty `Vec`
+then gave `4 4` where native Rust gives `4 8`.
+
+**`@rust-js/std` is built keeping what its bodies grow, and its manifest
+says so; a consumer trusts each library, std too, by that flag alone.** The
+build's `keeps_capacity` is `std_bodies ||` the rest, as its `pretty_debug`
+is. `unkept_by` asks only the manifest's flag, with no exemption for
+`builtin`. The flag's other reading, "what the crate gives this library
+may be asked, so keep yours" (`Foreign::keeps_capacity`), leaves std out:
+it asks no consumer to keep its capacities, so no program gains `$grew`.
+
+The std package changed seven lines of `io.js`: `$grew` around
+`defaultReadUntil`'s two `push` loops, and `$keepCapacity` before
+`Split::next`'s `pop`. Its manifest says `keeps_capacity: true`.
+
+Corpus case `capacity_of_what_std_bodies_grow` (`read_until` into an empty
+`Vec` and into one of capacity 2, and `split`'s items), against native Rust
+in both builds. Mutations `std-bodies-keep-no-capacity`
+(`lower/pipeline.ts`, by the committed package's test) and
+`std-asks-consumers-keep-capacity` (`lower/library.ts`, form only); two
+refitted.

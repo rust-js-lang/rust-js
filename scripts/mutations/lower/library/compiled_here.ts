@@ -123,8 +123,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer that reads a `Vec`'s capacity calls the JS of a library that keeps none, so each `Vec` that library grows has its length for its capacity, silently: `squares(5)`'s 5 where std's is 8 (#1180's (5))",
     file: "src/lower/library/compiled_here.rs",
-    find: "            .is_some_and(|library| !library.builtin && !library.keeps_capacity)\n",
-    replace: "            .is_some_and(|library| !library.builtin && library.keeps_capacity)\n",
+    find: "        self.library(id.krate).is_some_and(|library| !library.keeps_capacity)\n",
+    replace: "        self.library(id.krate).is_some_and(|library| library.keeps_capacity)\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
   {

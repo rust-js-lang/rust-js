@@ -849,12 +849,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.get(key)).map_or(key, |library| library.name.as_str())
     }
 
-    /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?
+    /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419), as
+    /// what the crate gives it may be asked? Not `@rust-js/std`, which
+    /// keeps what its own bodies grow for every program (#1339), and asks
+    /// no consumer to.
     pub(super) fn keeps_capacity(&self) -> bool {
-        self.dependencies
-            .libraries
-            .values()
-            .any(|library| library.keeps_capacity)
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.keeps_capacity)
     }
 
     /// Of `of`, a library's item, whose own types are `tys`, given `args`:

@@ -13084,7 +13084,7 @@
         "hash": "45db80831bd0cc06"
       }
     ],
-    "keeps_capacity": false,
+    "keeps_capacity": true,
     "writes_may_fail": false,
     "writers_take_options": true,
     "debug_hex": false,
@@ -13516,8 +13516,8 @@
       ],
       "links": [
         {
-          "start": 231,
-          "end": 243,
+          "start": 257,
+          "end": 269,
           "file": "runtime.js"
         }
       ],
@@ -13535,7 +13535,7 @@
     },
     {
       "file": "io.js",
-      "hash": "057a996fba7575ad"
+      "hash": "d52cba11526fedfb"
     },
     {
       "file": "io.js.map",

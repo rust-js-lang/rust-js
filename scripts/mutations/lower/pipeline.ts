@@ -291,8 +291,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer of a library that asks capacity keeps none, so what it gives the library has its length's",
     file: "src/lower/pipeline.rs",
-    find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
-    replace: "    let keeps_capacity = asks_capacity;\n",
+    find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity() || std_bodies;\n",
+    replace: "    let keeps_capacity = asks_capacity || std_bodies;\n",
     tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
   },
   {
@@ -592,5 +592,14 @@ export const mutations: Mutation[] = [
     find: "            .asking_capacity(asks_capacity);\n",
     replace: "            .asking_capacity(false);\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "std-bodies-keep-no-capacity",
+    breaks:
+      "`@rust-js/std`'s bodies grow a `Vec` as a JS array does, though its manifest says they keep capacities, so `read_until` into an empty `Vec` gives `4 4` where std gives `4 8` (#1339)",
+    file: "src/lower/pipeline.rs",
+    find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity() || std_bodies;\n",
+    replace: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
 ];

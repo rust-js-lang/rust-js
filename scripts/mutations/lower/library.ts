@@ -370,4 +370,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
+  {
+    name: "std-asks-consumers-keep-capacity",
+    breaks:
+      "`@rust-js/std`'s manifest's `keeps_capacity` makes every consumer keep each `Vec`'s capacity, though std asks none of what they give it: right, but `$grew` beside every push of every program (#1339)",
+    file: "src/lower/library.rs",
+    find: "        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.keeps_capacity)\n",
+    replace: "        (self.dependencies.libraries.values()).any(|library| library.keeps_capacity)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed\\.rs$"],
+    snapshots: true,
+  },
 ];

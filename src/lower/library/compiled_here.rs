@@ -121,14 +121,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Whether `id`, a library's, grows a `Vec` as a JS array does, where
     /// the crate keeps capacities, as it or a library it uses reads one
-    /// (ADR 0419): its library, not `@rust-js/std`, keeps none, so no
-    /// `capacity()` of the crate's can tell its growth from std's.
+    /// (ADR 0419): its library keeps none, as its manifest says, `@rust-js/std`
+    /// keeping what its bodies grow (#1339), so no `capacity()` of the
+    /// crate's can tell its growth from std's.
     fn unkept_by(&self, id: DefId) -> bool {
         if id.is_local() || !self.is_library(id.krate) || !(self.asks_capacity || self.keeps_capacity()) {
             return false;
         }
-        self.library(id.krate)
-            .is_some_and(|library| !library.builtin && !library.keeps_capacity)
+        self.library(id.krate).is_some_and(|library| !library.keeps_capacity)
     }
 
     /// `instances::copy_reaches` of `id`, found once.
