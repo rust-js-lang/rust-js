@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_an_inspect_counted_where_capacity_is_read.rs$"],
   },
+  {
+    name: "back-as-front-of-a-rev-unknown",
+    breaks: "a `rev()` of a `repeat_n` that MIR holds in a temporary isn't known to have a length, so its `rposition` is refused (#1139)",
+    file: "src/lower/recognition/adapter_types.rs",
+    find: "        || reversed_source(tcx, ty).is_some_and(|source| steps_back_as_front(tcx, source.peel_refs()))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
 ];

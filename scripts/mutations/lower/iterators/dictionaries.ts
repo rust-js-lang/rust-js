@@ -85,17 +85,16 @@ export const mutations: Mutation[] = [
     name: "extension-js-len-refused",
     breaks: "a `$iter`'s `ExactSizeIterator` dictionary is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            (false, None) if self.steps_an_array(ty) || self.knows_its_length(ty) => Some(returned(Expr::call(\n",
-    replace:
-      "            (false, None) if false => Some(returned(Expr::call(\n",
+    find: "            (false, None)\n                if self.steps_an_array(ty)\n                    || self.knows_its_length(ty)\n",
+    replace: "            (false, None)\n                if false\n                    || self.knows_its_length(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
     name: "extension-js-back-refused",
     breaks: "a `$iter`'s `DoubleEndedIterator` dictionary is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            (true, None) if self.steps_an_array(ty) || self.knows_its_back(ty) => {\n",
-    replace: "            (true, None) if false => {\n",
+    find: "            (true, None)\n                if self.steps_an_array(ty)\n                    || self.knows_its_back(ty)\n",
+    replace: "            (true, None)\n                if false\n                    || self.knows_its_back(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
@@ -131,9 +130,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-array-unstepped",
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n                let boxed",
-    replace:
-      "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it)) && false => {\n                let boxed",
+    find: "            None if self.steps_an_array(ty)\n                || self.iterator_cloned_apart(ty)\n",
+    replace: "            None if false\n                || self.iterator_cloned_apart(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -169,9 +167,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-cloned-apart-refused",
     breaks: "`cycle()` of a `map` or a `filter` is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n",
-    replace:
-      "            None if self.steps_an_array(ty) || self.compiled_struct(ty, &it) => {\n",
+    find: "                || self.iterator_cloned_apart(ty)\n                || self.compiled_struct(ty, &it)\n",
+    replace: "                || self.compiled_struct(ty, &it)\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
@@ -280,9 +277,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`cycle()` of std's struct, a `rev()`'s, is refused where it steps it as the JS iterator it is (#308, ADR 0915)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n",
-    replace:
-      "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
+    find: "                || self.compiled_struct(ty, &it)\n                || crate::lower::recognition::is_repeat(self.tcx, ty) =>\n",
+    replace: "                || crate::lower::recognition::is_repeat(self.tcx, ty) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
@@ -336,5 +332,29 @@ export const mutations: Mutation[] = [
     find: "        if self.slice_seen(ty, true).is_some() {\n",
     replace: "        if false && self.slice_seen(ty, true).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
+  {
+    name: "repeat-cycle-refused",
+    breaks: "`cycle()` of a `repeat` finds no `next` for it, and is refused (#1139)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                || crate::lower::recognition::is_repeat(self.tcx, ty) =>\n",
+    replace: "                || false =>\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
+  {
+    name: "back-as-front-dictionary-backless",
+    breaks: "std's compiled `Rev` of a `repeat_n` is given no `next_back` of it, and is refused (#1139)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    || self.knows_its_back(ty)\n                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>\n",
+    replace: "                    || self.knows_its_back(ty) =>\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
+  {
+    name: "back-as-front-dictionary-lengthless",
+    breaks: "std's compiled code asking a `repeat_n`'s length is given no `len` of it, and is refused (#1139)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    || self.knows_its_length(ty)\n                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>\n",
+    replace: "                    || self.knows_its_length(ty) =>\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
 ];

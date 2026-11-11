@@ -458,4 +458,12 @@ export const mutations: Mutation[] = [
     replace: "                let owns = self.array_source(ty).unwrap_or(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
   },
+  {
+    name: "repeat-clone-refused",
+    breaks: "a `repeat`'s `clone()` is refused, where std's derived `Clone` clones its value (#1139)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            ty::Adt(..) if crate::lower::recognition::is_repeat(self.tcx, ty) => {\n",
+    replace: "            ty::Adt(..) if false && crate::lower::recognition::is_repeat(self.tcx, ty) => {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
 ];

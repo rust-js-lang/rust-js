@@ -99,14 +99,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let len = self.exact_len_of(Expr::var("iterator"), ty, span, &mut made)?;
                 made.is_empty().then(|| returned(len))
             }
-            (true, None) if self.steps_an_array(ty) || self.knows_its_back(ty) => {
+            // And a `repeat_n`'s or a `take(n)` of a `repeat`'s, whose runtime
+            // form steps its back as its front (#1139).
+            (true, None)
+                if self.steps_an_array(ty)
+                    || self.knows_its_back(ty)
+                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>
+            {
                 let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
                 Some(Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }))
             }
-            (false, None) if self.steps_an_array(ty) || self.knows_its_length(ty) => Some(returned(Expr::call(
-                Expr::member(Expr::var("iterator"), "len"),
-                Vec::new(),
-            ))),
+            (false, None)
+                if self.steps_an_array(ty)
+                    || self.knows_its_length(ty)
+                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>
+            {
+                Some(returned(Expr::call(
+                    Expr::member(Expr::var("iterator"), "len"),
+                    Vec::new(),
+                )))
+            }
             (_, None) => None,
         };
         let Some(entry) = entry else {
@@ -196,8 +208,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // an adapter cloned apart, a `map`'s or a `filter`'s, the JS
             // iterator it is, which its clone makes again (ADR 0525), and
             // std's struct, a `rev()`'s, which its compiled `Clone` clones
-            // (ADR 0915).
-            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {
+            // (ADR 0915). And a `repeat(x)`'s, which carries its clone
+            // (#1139).
+            None if self.steps_an_array(ty)
+                || self.iterator_cloned_apart(ty)
+                || self.compiled_struct(ty, &it)
+                || crate::lower::recognition::is_repeat(self.tcx, ty) =>
+            {
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 (Expr::helper(if boxed { "$nextSome" } else { "$next" }), boxed)
             }

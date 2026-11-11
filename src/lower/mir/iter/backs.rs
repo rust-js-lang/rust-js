@@ -665,7 +665,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Not std's compiled struct, which has a back only given it,
         // `$knowing`'s (#856), as `knows_its_back_beneath` says.
-        (self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value))
+        // An array's, or a `repeat_n`'s, whose back steps are its front
+        // steps (#1139), by its type, as its runtime form has them.
+        let by_its_type = self.steps_an_array(iter_ty)
+            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs());
+        (by_its_type || structural() && !crate::lower::iterators::form_lacks_a_back(value))
             && !self.compiled_struct(iter_ty.peel_refs(), value)
     }
 

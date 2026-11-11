@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        (self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value))\n",
-    replace: "        (self.steps_an_array(iter_ty) || false && !crate::lower::iterators::form_lacks_a_back(value))\n",
+    find: "        (by_its_type || structural() && !crate::lower::iterators::form_lacks_a_back(value))\n",
+    replace: "        (by_its_type || false && !crate::lower::iterators::form_lacks_a_back(value))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -829,5 +829,13 @@ export const mutations: Mutation[] = [
     find: "                let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;\n                let it = self.closing(it, held, span)?;\n",
     replace: "                let it = self.closing(receiver.clone(), held, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+  },
+  {
+    name: "back-as-front-variable-backless",
+    breaks: "`next_back()` of a `repeat_n` a variable holds is refused (#1139)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs());\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
 ];

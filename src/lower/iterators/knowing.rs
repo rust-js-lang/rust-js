@@ -329,6 +329,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.exact_size_param(self.generics_fn(), ty)
     }
 
+    /// Whether `len()` of an iterator of type `ty` is its own, `it.len()`:
+    /// one that knows its length (`knows_its_length`), or a `repeat_n`'s, a
+    /// `take(n)` of a `repeat`'s or a `rev()` of one, whose runtime form
+    /// knows what it has left, as an array's `$iter` does (#1139).
+    pub(in crate::lower) fn len_of_its_own(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.knows_its_length(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty.peel_refs())
+    }
+
     /// Whether `value`, an iterator of type `ty`, knows its length, its
     /// `len()`: where its type says so (`knows_its_length`), or where it's
     /// an adapter that keeps its length, a map, a copy, an enumeration or a
@@ -425,6 +433,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             let value = stepped_value(&value).unwrap_or(value);
             return self.user_iterator_knowing(value, ty, (back, true), span);
+        }
+        // A `repeat_n`'s or a `take(n)` of a `repeat`'s, or a `rev()` of one,
+        // whose runtime form knows its length, what it has left, and steps its
+        // back as its front, as an array's `$iter` has them where it's used
+        // (#1139).
+        if crate::lower::recognition::steps_back_as_front(self.tcx, ty.peel_refs()) {
+            return Ok(value);
         }
         // A `rev()` of it made in place, as `reversed_user_knowing` makes it.
         if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
@@ -789,7 +804,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return self.user_iterator_knowing(value, ty, (true, false), span);
         }
-        if self.knows_its_back(ty) {
+        // And a `repeat_n`'s or a `take(n)` of a `repeat`'s, whose runtime
+        // form steps its back as its front, as an array's `$iter` has its
+        // back where it's used (#1139).
+        if self.knows_its_back(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty) {
             return Ok(value);
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {

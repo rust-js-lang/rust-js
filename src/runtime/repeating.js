@@ -10,6 +10,13 @@ function $repeating(value, clone = (value) => value, drop) {
     () => ({ done: false, value: clone(value) }),
     () => $close(it, () => drop?.(value)),
   );
+  // Its value, std's `Repeat`'s one field, `element`, which std's compiled
+  // code reads where it inlines `Repeat::next`, a held `Take<Repeat<T>>`'s
+  // `next_back` (take.rs:338), cloned there as `next` clones it (#1139).
+  it.element = value;
+  // Its clone, std's derived `Clone`, of a clone of its value, as a closure
+  // cloned apart carries its own, `$clone`'s (repeat.rs:71, #1139).
+  $cloning(it, () => $repeating(clone(value), clone, drop));
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   // Std's `Repeat::advance_by`, which makes no item, so clones none: what
   // a `take(n)`'s `count` asks, and an `nth`, a clone of the next alone,
@@ -25,7 +32,27 @@ function $repeating(value, clone = (value) => value, drop) {
       () => it.return(),
     );
   $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });
+  // Std's `Take<Repeat<T>>`, of `n` items each alike: its back steps its
+  // front steps, its length what it has left (take.rs:335, #1139).
+  const take = it.take;
+  it.take = (n) => {
+    const taken = take.call(it, n);
+    return $backAsFront(taken, () => taken.sizeHint()[0]);
+  };
   return $owns(it, "nth", "last", "count");
+}
+
+// `it`, whose every step from its back is its step from its front, as
+// std's `RepeatN` and `Take<Repeat<T>>` write theirs, of items each alike:
+// `next_back` its `next`, `nth_back` its `nth`, `advance_back_by` its
+// `advance_by`; and its length, `len` (repeat_n.rs:175, take.rs:335,
+// #1139). Its `rfold` and `try_rfold`, std's `fold` and `try_fold`, are
+// what folding it by `next_back` gives, which is `next`.
+function $backAsFront(it, len) {
+  it.back = () => it.next();
+  it.len = len;
+  $forward(it, it, { nthBack: "nth", advanceBackBy: "advanceBy" });
+  return it;
 }
 
 // `iter::repeat_n(value, count)`: a clone of `value` each step but the
@@ -81,5 +108,6 @@ function $repeatingN(value, count, clone = (value) => value, drop) {
     return counted;
   };
   $forward(it, undefined, { advanceBy, last, count: countLeft });
+  $backAsFront(it, () => left);
   return $owns(it, "nth", "last", "count");
 }

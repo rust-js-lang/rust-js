@@ -212,6 +212,9 @@ const few = [
   // A `&mut` to the crate's iterator, `self.by_ref().take(1)` in std's
   // `Take`, given as it is, never read through generic code's box (#1414).
   "match_moves_a_part_or_the_whole.rs",
+  // `repeat_n` and a `take` of a `repeat` stepped from their backs, std's
+  // compiled `Rev` asking their `next_back` and `len` (#1139).
+  "repeats_stepped_from_their_backs.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")

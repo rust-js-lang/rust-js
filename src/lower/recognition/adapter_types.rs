@@ -59,13 +59,32 @@ pub(crate) fn chained_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
     }
 }
 
-/// Of std's `Skip<I>` or `Take<I>` of type `ty`, its source, and whether
-/// it's a `Skip`.
+/// Whether `ty` is std's `Repeat`, `repeat(x)`'s, its clones without end.
+pub(crate) fn is_repeat(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::Repeat")
+}
+
 /// Whether `ty` is std's `RepeatN`, `repeat_n(x, n)`'s, `n` items.
 pub(crate) fn is_repeat_n(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::RepeatN")
 }
 
+/// Whether `ty` is a std iterator of items each alike whose every step from
+/// its back is its step from its front, `next_back` its `next`, `nth_back`
+/// its `nth`, `rfold` its `fold`, and whose `len()` is what it has left:
+/// `RepeatN` and `Take<Repeat<T>>` (repeat_n.rs:175, take.rs:335, #1139),
+/// and a `rev()` of one, whose `next` is its source's `next_back`, its
+/// `next`. Their runtime forms, `$repeatingN`, `$repeating(x).take(n)` and
+/// `$rev` of one, step them so, so each knows its back and its length as
+/// it's made.
+pub(crate) fn steps_back_as_front<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    is_repeat_n(tcx, ty)
+        || counted_source(tcx, ty).is_some_and(|(source, skip)| !skip && is_repeat(tcx, source))
+        || reversed_source(tcx, ty).is_some_and(|source| steps_back_as_front(tcx, source.peel_refs()))
+}
+
+/// Of std's `Skip<I>` or `Take<I>` of type `ty`, its source, and whether
+/// it's a `Skip`.
 pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, bool)> {
     match ty.kind() {
         ty::Adt(adt, args) => match std_path(tcx, adt.did()) {

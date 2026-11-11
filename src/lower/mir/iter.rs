@@ -938,7 +938,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),
                 // A generic one's, a JS iterator that knows it, which may be a
                 // range's (ADR 0456).
-                (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {
+                (Some(IterMethod::Len), None) if self.len_of_its_own(iter_ty) => {
                     Expr::call(Expr::member(it, "len"), Vec::new())
                 }
                 // Of a `&mut`, `by_ref()`'s, `$lent`'s, which passes on the

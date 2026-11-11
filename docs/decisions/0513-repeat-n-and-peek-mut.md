@@ -103,3 +103,50 @@ Rust in both builds. Mutations `repeat-count-steps-forever`,
 `repeat-infinite-undropped` (`runtime/repeating.ts`) and
 `repeat-own-count-unknown` (`lower/recognition/own_steps.ts`);
 `repeat-advance-clones` and `repeat-own-nth-unflagged` refitted.
+
+## Amendment: stepped from their backs, a `repeat`'s field, clone and cycle (2026-11-12, #1139)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results, and
+one wrong answer fixed: what runs is std's.
+
+**A wrong answer.** A `take(n)` of a `repeat` held in a variable is std's
+struct (ADR 0871). Its `next_back` is std's `Take<Repeat<T>>::next_back`,
+which inlines `Repeat::next` and reads the `Repeat`'s one field,
+`element`. A `$repeating` had none, so `repeat('x').take(4)` held, then
+`next_back()`, cloned `undefined` and threw where Rust gives `Some('x')`.
+A `$repeating` now holds its value as std's `Repeat` does, `element`.
+
+**Refusals lifted.** Std writes every back step of `RepeatN` and of
+`Take<Repeat<T>>` as the front step (repeat_n.rs:175, take.rs:335):
+`next_back` is `next`, `nth_back` is `nth`, `advance_back_by` is
+`advance_by`, `rfold` and `try_rfold` are `fold` and `try_fold`, of items
+each alike, and `len()` is what's left. So `$repeatingN`, and a `take` of
+a `$repeating`, `$repeating(x).take(n)`, are given their back steps as
+their front steps, and their length, by one runtime function,
+`$backAsFront`. Their `rfold` and `try_rfold` are the runtime's default,
+which steps by `back`, their `next`, so it gives what `fold` would.
+
+The compiler's one fact of it is `recognition::steps_back_as_front`. It
+also answers for a `rev()` of one, whose `next` is its source's
+`next_back`, which is its `next`, held in MIR's temporary before it's
+asked. It's asked where an array's `$iter` is asked, at each use, never
+of what's made of one. So a map of a `repeat_n` stays `.map(f)`, and its
+`collect` asks its hint, as before. The uses are `as_double_ended`,
+`as_exact_size`, `has_a_back`, `len()` (`len_of_its_own`), and the
+`DoubleEndedIterator` and `ExactSizeIterator` dictionaries std's compiled
+`Rev` asks in the std build. These were refused:
+`repeat(x).take(n).rev()` in the default build ("a `Repeat<L>` as an
+`ExactSizeIterator`"), and `repeat_n(..)`'s `rev()`, `nth_back` and
+`len()` in both builds.
+
+**A `repeat`'s clone** is std's derived `Clone`, a `$repeating` of a clone
+of its value. It's carried as a closure cloned apart carries its own
+(`$cloning`, ADR 0522), made by `$clone`. So `repeat(x).clone()`, and
+`repeat(x).cycle()`, which clones it once as `Cycle::new` does,
+`$cycleOf($repeating(x), $clone, $next)`, run as Rust's do. Both were
+refused, "cloning `Repeat<L>`".
+
+Held by corpus case `repeats_stepped_from_their_backs.rs` (a value that
+says when it's cloned and dropped, each back step, `len()`, a held and an
+in-place `take`, a `repeat_n` of none, `rposition` of a `rev()`, `cycle()`
+and `clone()`) against native Rust in both builds.

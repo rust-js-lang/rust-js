@@ -119,6 +119,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$copyRange": "collections",
   "$copyWithin": "collections",
   "$count": "consumers",
+  "$clone": "glue",
   "$cycleOf": "iterators",
   "$debugDuration": "format",
   "$debugF64": "format",

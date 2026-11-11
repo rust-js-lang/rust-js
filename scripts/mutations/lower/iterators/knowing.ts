@@ -806,4 +806,28 @@ export const mutations: Mutation[] = [
     replace: "        given_as_it_is(self.tcx, owner, param)\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
   },
+  {
+    name: "back-as-front-made-backless",
+    breaks: "a `rev()` of a `repeat_n` made in place isn't known to have a back, and is refused (#1139)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.knows_its_back(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty) {\n",
+    replace: "        if self.knows_its_back(ty) {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
+  {
+    name: "back-as-front-lengthless",
+    breaks: "the length `rposition` asks of a `repeat_n`'s `rev()` isn't known, and is refused (#1139)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if crate::lower::recognition::steps_back_as_front(self.tcx, ty.peel_refs()) {\n            return Ok(value);\n",
+    replace: "        if false {\n            return Ok(value);\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
+  {
+    name: "back-as-front-len-refused",
+    breaks: "`len()` of a `repeat_n` a variable holds is refused (#1139)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        self.knows_its_length(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty.peel_refs())\n",
+    replace: "        self.knows_its_length(ty)\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
+  },
 ];
