@@ -1238,3 +1238,21 @@ both builds, through `METAMORPHIC=all`. The memory net's seeds 1 to 400
 and 5000 to 5399 still run as Rust does. Mutations
 `uninit-place-bytes-encoded`, `slice-of-one-place-a-copy` and
 `slice-of-one-place-unplaced`.
+
+## Amendment: a slice's pointer as an array's of its items (#1402)
+
+ppv-lite86 0.2.17, which rand_chacha, rand 0.7 and quickcheck 0.9 need,
+reads a 16-byte slice as four `u32` lanes, `transmute(ptr::read(input as
+*const _ as *const [u8; 16]))`, and writes them back, `ptr::write(out as
+*mut _ as *mut [u8; 16], transmute(x))`. The cast of a slice's pointer to an
+array's was refused as a value "of type `*const [u8; 16]`": `pointer_cast`
+took a slice's pointer, which is the slice, as its first item's, but not
+as an array's. **A slice's pointer cast to an array's of its items is its
+first item's, `$ptr(slice, 0)`, as the whole array's, `recast`'s answer as
+of any pointer into an array: of bytes, `$ptrRetyped(p, 16, "bytes")`,
+whose `read` is a copy of the 16 and whose `write` patches them where they
+are, the slice's own or a view's of part of an array; of another item,
+`$ptrWhole(p, 4)`.** Held by `test/corpus/lanes_read_through_a_byte_array_pointer.rs`
+(little- and big-endian `u32` and `u64` lanes read and written through a
+view, a `[u32]` read and written as a `[u32; 4]`) against native Rust in
+both builds, and the mutation `slice-pointer-as-an-array-pointer-refused`.

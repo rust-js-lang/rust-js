@@ -213,4 +213,13 @@ export const mutations: Mutation[] = [
     replace: "        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8) | ty::Int(ty::IntTy::I8));\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_cast_to_the_other_sign.rs$"],
   },
+  {
+    name: "slice-pointer-as-an-array-pointer-refused",
+    breaks:
+      "a slice's pointer cast to an array's of its items, `input as *const [u8] as *const [u8; 16]`, is refused as addressable memory: ppv-lite86's `unsafe_read_le` (#1402)",
+    file: "src/lower/pointers/casts.rs",
+    find: "                ) && matches!(b.kind(), ty::Array(of, _) if self.same_place(item, *of)) =>\n",
+    replace: "                ) && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^lanes_read_through_a_byte_array_pointer.rs$"],
+  },
 ];

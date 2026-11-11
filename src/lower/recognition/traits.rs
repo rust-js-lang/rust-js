@@ -719,11 +719,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(args))
             .ok()?;
-        // Of a type only its bounds know, `U: From<T>`, no impl yet: the
-        // bound's method, its dictionary's.
+        // Of a type only its bounds know, `U: From<T>`, or of one from
+        // such a type, ppv-lite86's `vec128_storage: From<W>` (#1402), no
+        // impl yet: the bound's method, its dictionary's.
         let implementation = match crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, method, args) {
             Ok(Some(instance)) => instance.def_id(),
-            _ if known_by_bounds(args.type_at(0)) => method,
+            _ if args.types().any(known_by_bounds) => method,
             _ => return None,
         };
         Some((method, args, implementation))

@@ -31,6 +31,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Some(value))
             }
+            // A slice's as an array's of its items, ppv-lite86's `input as
+            // *const [u8] as *const [u8; 16]`: its first item's as the whole
+            // array's, `recast`'s, as of a pointer into an array (#1402).
+            mir::CastKind::PtrToPtr
+                if let (Some((ty::Slice(item), _)), Some((b, _))) = (
+                    raw_pointee(self.tcx, from).map(|(a, m)| (*a.kind(), m)),
+                    raw_pointee(self.tcx, to),
+                ) && matches!(b.kind(), ty::Array(of, _) if self.same_place(item, *of)) =>
+            {
+                let first = Expr::call(Expr::helper("$ptr"), vec![value, Expr::int(0)]);
+                Ok(Some(self.recast(first, item, b, span)?))
+            }
             // A slice's, which is the slice, as its first item's: `$ptr(items, 0)`.
             mir::CastKind::PtrToPtr
                 if let (Some((ty::Slice(item), _)), Some((b, _))) = (

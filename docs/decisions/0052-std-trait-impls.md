@@ -257,3 +257,17 @@ numbering can't tell them apart. Held by the corpus's
 trait's words that every other's is compared with, are found once a session
 (`Caches::impl_names`, `impl_short_names`): asked of every impl for each name,
 zerocopy's many took its test build past the Crater's 20 minutes; now 82 s.
+
+## Amendment: `into()` to a known type through a bound's `From` (#1402)
+
+ppv-lite86's `impl<W, G> From<x2<W, G>> for vec256_storage where
+vec128_storage: From<W>` converts each half with `x.0[0].into()`. Its
+bound's target is a known type, `vec128_storage`, from a type parameter,
+`W`, so rustc resolves no impl, and only a target known by its bounds took
+the bound's `from`: it was refused, "calling `Into::into` (#1284)".
+**`into()` of a conversion either of whose types is known only by its
+bounds, `U: From<T>` or `Storage: From<W>`, is the bound's `from`, its
+dictionary's, `StorageFromW.from(x)`.** Held by
+`test/corpus/into_through_a_from_bound_of_another_type.rs` against native
+Rust in both builds, and the mutation
+`into-of-a-from-bound-on-a-known-type-refused`.

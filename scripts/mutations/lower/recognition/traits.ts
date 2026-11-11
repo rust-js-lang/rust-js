@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`x.into()` of a type parameter's target, `U: From<T>`, is refused, its `From` no impl to resolve (#321)",
     file: "src/lower/recognition/traits.rs",
-    find: "            _ if known_by_bounds(args.type_at(0)) => method,\n",
+    find: "            _ if args.types().any(known_by_bounds) => method,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
   },
@@ -608,5 +608,14 @@ export const mutations: Mutation[] = [
     find: "            ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),\n",
     replace: "            ty::GenericParamDefKind::Lifetime => ty.into(),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_cell_beside_a_lifetime_trait.rs$"],
+  },
+  {
+    name: "into-of-a-from-bound-on-a-known-type-refused",
+    breaks:
+      "`x.into()` of a type parameter's value where the bound is `Storage: From<W>`, a `From` of a type known here, is refused, \"calling `Into::into` (#1284)\": ppv-lite86's storage halves (#1402)",
+    file: "src/lower/recognition/traits.rs",
+    find: "            _ if args.types().any(known_by_bounds) => method,\n",
+    replace: "            _ if known_by_bounds(args.type_at(0)) => method,\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_through_a_from_bound_of_another_type.rs$"],
   },
 ];
