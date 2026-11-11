@@ -739,19 +739,36 @@ pub(super) fn stepped_locals<'tcx>(
                 // or the extend asks to grow it by (`grown_ask`'s `exact`),
                 // MIR holding it in a temporary, no form of it left to count:
                 // made knowing its back and length where it's made,
-                // `$zipEnds`, the one form that knows it (#1394).
+                // `$zipEnds`, the one form that knows it (#1394). And a
+                // `take(n)` or a `skip(n)` it's grown by, or what passes its
+                // length on of one, a `map` of it (`length_kept_source`): each
+                // temporary of it counted, made knowing its length where it's
+                // made, `$taking` or `$skipping` of its source made knowing
+                // it, as one an enumeration counts from its back is (#1317).
                 if keeps_capacity {
                     let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
                     if let Some(grown) = recognition.vec_grown_by(callee, generic_args, typing_env)
                         && let grown = erased(grown)
-                        && zipped_sources(tcx, grown).is_some()
                         && recognition.grows_by_exact_len(grown)
                         && !crate::lower::recognition::is_trusted_len(tcx, typing_env, grown)
                     {
-                        for &(local, lent, ty, _) in &given {
-                            if !lent && ty == grown {
-                                mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                        if zipped_sources(tcx, grown).is_some() {
+                            for &(local, lent, ty, _) in &given {
+                                if !lent && ty == grown {
+                                    mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                                }
                             }
+                        }
+                        let mut at = Some(grown);
+                        while let Some(ty) = at {
+                            if counted_source(tcx, ty).is_some() {
+                                for (local, decl) in mir.local_decls.iter_enumerated() {
+                                    if !user_variable(decl) && erased(decl.ty) == ty {
+                                        counted.insert((owner, local));
+                                    }
+                                }
+                            }
+                            at = crate::lower::recognition::length_kept_source(tcx, ty).map(erased);
                         }
                     }
                 }

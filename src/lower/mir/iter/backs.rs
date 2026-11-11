@@ -393,7 +393,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let skip = method == Some(IterMethod::Skip);
                 Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
             }
-            Some(IterMethod::Skip | IterMethod::Take) if self.made_stepped_from_its_back() && !held.is_ref() => {
+            // And one whose length is asked, counted, of a map's values say,
+            // where a crate that reads a `Vec`'s capacity grows one by it
+            // (#1317).
+            Some(IterMethod::Skip | IterMethod::Take)
+                if (self.made_stepped_from_its_back() || self.made_counted_from_its_back()) && !held.is_ref() =>
+            {
                 let skip = method == Some(IterMethod::Skip);
                 let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                 let it = self.closing(it, held, span)?;
@@ -402,10 +407,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(item) = self.iterator_item(output) {
                     given.extend(self.std_drop_function(item, span)?);
                 }
-                crate::lower::iterators::made_knowing_its_back(Expr::call_helper(
-                    if skip { "$skipping" } else { "$taking" },
-                    given,
-                ))
+                // And its length, of its source made exact-sized, which a
+                // variable that holds it keeps, for what asks it there, a
+                // crate's that reads a `Vec`'s capacity (#1317).
+                let made = Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given);
+                crate::lower::iterators::made_knowing_its_length(crate::lower::iterators::made_knowing_its_back(made))
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it

@@ -1801,3 +1801,28 @@ Rust in both builds. Mutations `flatten-ends-knowing-unapplied`,
 `flatten-each-branch-returns-unknowing` are new;
 `flatten-each-by-name-unknowing`, `flatten-of-iterators-unknowing` and
 `flatten-ends-made-unstaged` are refitted.
+
+## Amendment (2026-11-12, #1317): a `take(n)` or `skip(n)` a capacity-reading crate grows a `Vec` by is counted where it's made
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal lifted. The nightly's neighbour shuffle found two cases refused
+beside a case that reads a `Vec`'s capacity, "can't count", each of a
+`Vec` grown by what isn't `TrustedLen`, by its exact length (#1200):
+
+- A `map` of a `take(limit())` of a hash map's `into_values()`, which MIR
+  holds in a temporary. `stepped_locals` now counts each temporary of a
+  `take(n)` or a `skip(n)` along what the `Vec` is grown by, through what
+  passes its length on (`length_kept_source`, a `map` of one). It's the
+  set an enumeration counted from its back uses (#1354). The `take`/`skip`
+  maker makes a counted one as it makes one stepped from its back,
+  `$taking`/`$skipping` of its source made exact-sized.
+- A `map` of a held `skip(1)` stepped from its back: its maker made
+  `$skipping` of its source made exact-sized, knowing its back, but not
+  marked knowing its length, which the variable keeps for what asks it.
+  It is marked so now.
+
+Held by corpus case `counted_adapters_where_capacity_is_read.rs` (both,
+and of items with a destructor) against native Rust in both builds. Both
+pairs run as native Rust does and are taken off test/neighbours-known.txt.
+Mutations `grown-take-uncounted`, `counted-take-unmade` and
+`back-stepped-take-length-unmarked` are new.

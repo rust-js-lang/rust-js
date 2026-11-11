@@ -521,8 +521,8 @@ export const mutations: Mutation[] = [
     name: "enumerated-source-uncounted",
     breaks: "a local an enumeration stepped from its back is made of isn't said to be counted there, so a range's map it holds isn't made knowing its length, and is refused (#1354)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                                counted.insert((owner, local));\n",
-    replace: "                                let _ = local;\n",
+    find: "enumerated_source(tcx, made).is_some() {\n                                counted.insert((owner, local));\n",
+    replace: "enumerated_source(tcx, made).is_some() {\n                                let _ = local;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
   {
@@ -548,5 +548,13 @@ export const mutations: Mutation[] = [
     find: "(recognition.iterator_item(source).or_else(owned))",
     replace: "(recognition.iterator_item(source).or_else(|| None.or_else(owned).filter(|_| false)))",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "grown-take-uncounted",
+    breaks: "a `take(n)` of a map's values a crate that reads a `Vec`'s capacity grows one by, held in a temporary, isn't counted where it's made, and is refused (#1317)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                    if !user_variable(decl) && erased(decl.ty) == ty {\n",
+    replace: "                                    if false && !user_variable(decl) && erased(decl.ty) == ty {\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
 ];
