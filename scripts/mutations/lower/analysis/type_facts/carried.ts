@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || foreign.carried(assoc).contains(&fact)\n",
     tests: ["test/crates.test.ts", "-t", "associated type its dictionaries don't carry"],
   },
+  {
+    name: "into-iterator-sizes-uncarried",
+    breaks: "a library's trait's associated `IntoIterator`'s constant size isn't carried whatever asks it, so a consumer's generic flatten of its own array impl's items is refused, \"which no caller gives\" (#1341)",
+    file: "src/lower/analysis/type_facts/carried.rs",
+    find: "            if crate::lower::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(true)\n",
+    replace: "            if crate::lower::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(false)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
+  },
+  {
+    name: "iterator-assoc-sizes-carried",
+    breaks: "an associated type its bounds make an `Iterator` has its constant size carried by every impl's dictionary, so an impl that makes it its `T: Iterator` asks it, and is refused (#1341)",
+    file: "src/lower/analysis/type_facts/carried.rs",
+    find: "                && crate::lower::recognition::const_size_unknown(tcx, typing_env, projection)\n",
+    replace: "                && true\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
+  },
 ];

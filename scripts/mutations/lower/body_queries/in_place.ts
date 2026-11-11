@@ -270,22 +270,4 @@ export const mutations: Mutation[] = [
     replace: "    if false && std_iterators {\n",
     tests: ["test/iterator-forms.test.ts"],
   },
-  {
-    name: "collect-hint-seen-unsized-held",
-    breaks:
-      "a generic flatten of a library's trait's items, whose constant size its manifest says no dictionary carries, is held where a collect sees its hint, and refused, \"which no caller gives\", where it compiled made in place (#1327, #1341)",
-    file: "src/lower/body_queries/in_place.rs",
-    find: "            recognition.collect_hint_seen(at, given) && flattens_sized(here, caller, given)\n",
-    replace: "            recognition.collect_hint_seen(at, given)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
-  },
-  {
-    name: "flattens-sized-unwalked",
-    breaks:
-      "only the flatten a collect is given is asked its items' constant size, not one beneath a `map()`, which is held and refused (#1327)",
-    file: "src/lower/body_queries/in_place.rs",
-    find: "        .is_none_or(|held| held.into_iter().all(|held| flattens_sized(recognition, caller, held)))\n",
-    replace: "        .is_none_or(|_| true)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
-  },
 ];

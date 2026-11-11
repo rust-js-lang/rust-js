@@ -159,6 +159,17 @@ impl TypeFact {
     }
 }
 
+/// Whether `ty`, a type only a caller knows, may have a constant size,
+/// std's `ConstSizeIntoIterator::size()`, which only an array of `N` items
+/// or a reference to one has: not where its bounds make it an `Iterator`,
+/// which no array is, so its constant size is none however it's given
+/// (#1341): which associated types' constant size a trait's dictionaries
+/// carry, whatever asks it.
+pub(crate) fn const_size_unknown<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty = ty.peel_refs();
+    known_by_bounds(ty) && trait_holds_in(tcx, typing_env, ty, std_item(tcx, StdItem::Iterator)) != Some(true)
+}
+
 /// A map or a set, hashed or a B-tree, of a type parameter's keys, or a
 /// std associated type's of one, `ty` itself: its key, and its class's
 /// fact, `Map`, `Set`, `TreeMap` or `TreeSet`, which a caller gives

@@ -69,8 +69,11 @@ use std::path::Path;
 /// consumer's clone of one asks, as its own compile can't see what one
 /// captures (#1202). 27: which type parameters each function shows pretty
 /// or in hex, `shown_pretty` and `shown_hex`, whose writers a consumer
-/// makes take those options (#1331).
-pub const VERSION: u32 = 27;
+/// makes take those options (#1331). 28: each of its traits' associated
+/// types that's an `IntoIterator` has its constant size carried by every
+/// impl's dictionary, an `associated` entry's `ConstSize`, which a
+/// consumer's generic flatten of what it gives reads (#1341).
+pub const VERSION: u32 = 28;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

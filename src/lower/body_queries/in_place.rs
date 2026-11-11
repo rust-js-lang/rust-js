@@ -25,8 +25,8 @@ use rustc_span::def_id::DefId;
 /// extend asks the hint of what it's given, std's, which the program sees
 /// where it reaches a `size_hint` of the crate's own or a library's
 /// (`collect_hint_seen`): a flatten given one there is held, std's struct,
-/// which knows its items' constant size, where its callers give that
-/// (`flattens_sized`, #1327). Of the build of std's iterator structs, none (ADR 0908).
+/// which knows its items' constant size, which its callers or its trait's
+/// dictionaries give (#1327, #1341). Of the build of std's iterator structs, none (ADR 0908).
 pub(in crate::lower) fn decide<'tcx>(
     recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &mut [crate::lower::Body<'tcx>],
@@ -45,14 +45,7 @@ pub(in crate::lower) fn decide<'tcx>(
         let owner = body.def_id;
         let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
         let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
-        let here = crate::lower::recognition::Recognition {
-            typing_env: made_in.1,
-            ..recognition
-        };
-        let caller = tcx.typeck_root_def_id(owner);
-        let observed = |at: (DefId, usize), given: ty::Ty<'tcx>| {
-            recognition.collect_hint_seen(at, given) && flattens_sized(here, caller, given)
-        };
+        let observed = |at: (DefId, usize), given: ty::Ty<'tcx>| recognition.collect_hint_seen(at, given);
         in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart, (&hint_asked, &observed))
     };
     let mut sets: Vec<IndexSet<Span>> = bodies.iter().map(|body| made(body, None)).collect();
@@ -80,30 +73,6 @@ pub(in crate::lower) fn decide<'tcx>(
     for (body, set) in bodies.iter_mut().zip(sets) {
         body.facts.in_place_adapters = super::InPlace::decided(set);
     }
-}
-
-/// Whether each flatten an iterator of type `ty` holds, through std's
-/// adapters, has items whose constant size `caller`'s callers give, which
-/// std's struct held asks (`const_size_given`, ADR 0899). One of a type
-/// only a caller knows, whose size none gives yet, a trait's associated
-/// iterator's, is made in place, as it was, where a collect sees its hint
-/// too: no new refusal, the user's decision through m6 (#1327).
-fn flattens_sized<'tcx>(
-    recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
-    caller: DefId,
-    ty: ty::Ty<'tcx>,
-) -> bool {
-    let tcx = recognition.tcx;
-    let ty = ty.peel_refs();
-    if let Some((source, made)) = crate::lower::recognition::flattened_source(tcx, ty)
-        && !(made.or_else(|| recognition.iterator_item(source))).is_some_and(|items| {
-            crate::lower::analysis::type_facts::const_size_given(tcx, recognition.foreign, caller, items)
-        })
-    {
-        return false;
-    }
-    crate::lower::recognition::adapted_iterators(tcx, recognition.typing_env, ty)
-        .is_none_or(|held| held.into_iter().all(|held| flattens_sized(recognition, caller, held)))
 }
 
 /// Each `rev()`, `enumerate()` or `map()`, `HELD_COMPILED`'s, whose adapter

@@ -64,4 +64,12 @@ export const mutations: Mutation[] = [
       "        [[TypeFact::Map, TypeFact::Set], [TypeFact::Map, TypeFact::Set]][usize::from(sorted)][usize::from(set)]\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
+  {
+    name: "iterator-const-size-unknown",
+    breaks: "a type its bounds make an `Iterator` is taken for one that may be an array, so its constant size is asked of callers that don't give it, and refused (#1341)",
+    file: "src/lower/recognition/type_facts.rs",
+    find: "    known_by_bounds(ty) && trait_holds_in(tcx, typing_env, ty, std_item(tcx, StdItem::Iterator)) != Some(true)\n",
+    replace: "    known_by_bounds(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
+  },
 ];

@@ -415,3 +415,45 @@ what they held, three were refitted, and `collect-hint-seen-unsized-held`
 and `flattens-sized-unwalked` are held by the crate pair now. An `impl IntoIterator` alone, whose `IntoIterator`
 dictionary of the opaque type no evidence gives, is still refused in both
 builds: #1345.
+
+## Amendment: every trait carries its `IntoIterator`s' constant size (2026-11-11, #1341)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A library's trait's dictionaries carried only what its manifest says its
+own code asks. So a consumer's generic `Own(4).flat_map(|n| S::items(n))
+.collect()` of dep's `trait Source { type Items: IntoIterator; .. }`,
+given its own `impl Source for Pairs { type Items = [u32; 2]; .. }`, found
+no constant size given and stayed made in place: std counts the array's
+and asks the crate's own printing hint once, but the `Vec` asked it again
+as it grew. A consumer can't add to a library's dictionaries, so the
+user chose, through m6: every trait's dictionaries carry the constant
+size of each of its associated types that's an `IntoIterator`, whatever
+asks it, and a library's manifest says so (`type_facts/carried.rs`'
+`carried_by_every_impl`). Only an array has one, so an impl of anything
+else carries `undefined`, which is left out, and the output grows only
+where an impl gives an array. Not of one its bounds make an `Iterator`
+(`recognition::const_size_unknown`): no array is one, so its constant
+size is none, and carrying it would make an impl that gives its own `T:
+Iterator` ask its callers `T`'s, which generic code doesn't give
+(`iterator_passed_through_a_chain_of_impls.rs`).
+
+With that, every flatten's items' constant size is given wherever it's
+held, the crate's own traits' and a library's alike, so #1327's guard,
+`flattens_sized` and `const_size_given`, is gone: a flatten a collect sees
+the hint of is held, std's struct.
+
+The manifest's `associated` entries now list `ConstSize` of each such
+type, which a consumer reads as the library's dictionaries carrying it, so
+the library ABI is 28 (`src/library.rs`' `VERSION`,
+`tooling/manifest.js`): a library built before carries none, and a
+consumer would read `undefined` where an impl gives an array.
+
+`test/crates/pairs/library_trait_items_flattened_where_its_hint_is_seen`
+(dep's trait and its `Range` impl, the consumer's array impl, each
+collected, and mapped and collected, where the consumer's own hint prints)
+runs against native Rust. Mutations: `into-iterator-sizes-uncarried` and
+`iterator-assoc-sizes-carried` (`lower/analysis/type_facts/carried.ts`),
+`iterator-const-size-unknown` (`lower/recognition/type_facts.ts`); the
+guard's five went with it.

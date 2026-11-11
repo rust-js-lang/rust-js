@@ -21,7 +21,7 @@ use rustc_span::def_id::DefId;
 
 mod carried;
 pub(in crate::lower) use carried::{CarriedSuper, super_item_of};
-use carried::{carried_by, carries, default_super_item, slot_super_item};
+use carried::{carried_by, carried_by_every_impl, carries, default_super_item, slot_super_item};
 
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
@@ -292,6 +292,8 @@ pub(super) fn type_fact_params<'tcx>(
     // crate's impls of one carry, as the library's code reads it of them
     // (#476).
     carried.retain(|&(assoc, fact)| carries(foreign, assoc, fact));
+    // What every impl's dictionary carries, whatever asks it (#1341).
+    carried.extend(carried_by_every_impl(tcx));
     for &trait_id in tcx.all_local_trait_impls(()).keys() {
         if trait_id.is_local() {
             continue;
@@ -1171,26 +1173,6 @@ impl<'tcx> Asking<'tcx> {
         }
         self.calls.push((caller, callee, args));
     }
-}
-
-/// Whether the constant size of `of`, a flatten's items, which std's
-/// struct held asks (ADR 0899), is given where `caller` asks it, as a
-/// flatten's `ConstSize` is asked above: of a type known here; by its
-/// callers, of a type parameter or one of its slots, `I::Item`; by its
-/// trait's dictionaries, of an associated type of the crate's trait or a
-/// library's, `<S as Source>::Iter` or a trait method's `impl Trait`
-/// (#1312, #1341). Not of another, a library's trait's its manifest
-/// doesn't say it carries.
-pub(in crate::lower) fn const_size_given<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    caller: DefId,
-    of: ty::Ty<'tcx>,
-) -> bool {
-    let of = of.peel_refs();
-    !crate::lower::recognition::known_by_bounds(of)
-        || slot_of(tcx, foreign, caller, of).is_some()
-        || carried_by(foreign, of).is_some_and(|assoc| carries(foreign, assoc, TypeFact::ConstSize))
 }
 
 /// Where a library's function's slot `index` is read, as its manifest says:

@@ -554,36 +554,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
   {
-    name: "const-size-slot-ungiven",
-    breaks:
-      "a generic flatten of `Self::Item`s, whose constant size its callers give as one of its slots, is made in place where a collect sees its hint, and asks it as it grows (#1327)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "        || slot_of(tcx, foreign, caller, of).is_some()\n",
-    replace: "        || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_its_callers_items_where_its_hint_is_seen.rs$"],
-  },
-  {
-    name: "const-size-of-known-ungiven",
-    breaks: "a flatten of arrays collected where its hint is seen is made in place, and asks its source's hint as it grows (#1327)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "    !crate::lower::recognition::known_by_bounds(of)\n        || slot_of(tcx, foreign, caller, of).is_some()\n",
-    replace: "    false\n        || slot_of(tcx, foreign, caller, of).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
-  },
-  {
     name: "callee-fact-of-assoc-uncarried",
     breaks: "a fact a std callee asks of an associated type no slot names, a flatten's items' constant size of `<S as Source>::Items`, isn't carried by its trait's dictionaries, so it's refused, \"which no caller gives\" (#1312, #1341)",
     file: "src/lower/analysis/type_facts.rs",
     find: "        return Some(Asked::Carried(assoc, fact));\n",
     replace: "        return None;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_traits_items_sized_by_its_dictionary.rs$"],
-  },
-  {
-    name: "const-size-of-carried-ungiven",
-    breaks: "a flatten of an associated type's items, whose constant size its trait's dictionaries carry, is made in place where a collect sees its hint, and asks it again as the `Vec` grows (#1341)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "        || carried_by(foreign, of).is_some_and(|assoc| carries(foreign, assoc, TypeFact::ConstSize))\n",
-    replace: "        || false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_traits_items_sized_by_its_dictionary.rs$"],
   },
 ];

@@ -88,3 +88,33 @@ pub(super) fn carried_by(foreign: &crate::lower::library::Foreign<'_, '_>, ty: t
 pub(super) fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: DefId, fact: TypeFact) -> bool {
     assoc.is_local() || foreign.carried(assoc).contains(&fact)
 }
+
+/// What each of the crate's traits' dictionaries carry whatever asks it:
+/// the constant size of each associated type that's an `IntoIterator`
+/// its bounds don't make an `Iterator` (`const_size_unknown`),
+/// which a flatten of what it gives asks, held, std's struct (ADR 0899),
+/// wherever generic code flattens it, a consumer's included, which can't
+/// add to a library's dictionaries: none but an array's, which is left
+/// out (the user's decision through m6, #1341). Its manifest says so.
+pub(super) fn carried_by_every_impl(tcx: TyCtxt<'_>) -> Vec<(DefId, TypeFact)> {
+    let into_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::IntoIterator);
+    let traits =
+        (tcx.hir_crate_items(()).definitions()).filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Trait);
+    let mut carried = Vec::new();
+    for trait_id in traits {
+        let typing_env = ty::TypingEnv::non_body_analysis(tcx, trait_id);
+        for item in tcx.associated_items(trait_id).in_definition_order() {
+            if !item.is_type() {
+                continue;
+            }
+            let args = ty::GenericArgs::identity_for_item(tcx, item.def_id);
+            let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, item.def_id, args);
+            if crate::lower::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(true)
+                && crate::lower::recognition::const_size_unknown(tcx, typing_env, projection)
+            {
+                carried.push((item.def_id, TypeFact::ConstSize));
+            }
+        }
+    }
+    carried
+}
