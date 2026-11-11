@@ -366,15 +366,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (`$keyClassOf`, #1346), so a caller is asked its parts' classes
         // alone, never the tuple's; of an array, `[T; N]`, its item's class,
         // once, for every item (`$arrayKeyClassOf`, #1371): one class an
-        // item, `[T; 536870907]` took the compiler's memory. Another, `Key<T>` or `Option<T>`:
+        // item, `[T; 536870907]` took the compiler's memory; of a struct that
+        // derives what finds it, its fields' classes (#1360). A struct whose
+        // own impls find it is found by them, below. Another, `Option<T>`:
         // which class finds it is its parameter's too, an object's of equal
         // ones found as one only by value, which no class given here says
         // of it: refused, never a JS `Set` of objects found by themselves
-        // (#401); a struct's `Hash` and `Eq` may be its own (#1360).
+        // (#401).
         if let Some(key) = key
             && crate::lower::recognition::mentions_param(key)
         {
-            match crate::lower::recognition::key_class_parts(key) {
+            match crate::lower::recognition::key_class_parts(self.tcx, key, sorted) {
                 Some(KeyParts::Tuple(parts)) => {
                     let classes = (parts.into_iter())
                         .map(|part| self.map_class(set, sorted, (Some(part), None), span))
@@ -391,15 +393,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![Expr::bool(set), Expr::bool(sorted), class],
                     ));
                 }
-                None => {}
+                // A struct's that derives what finds it: its fields' classes,
+                // composed in their order as a tuple's, read of it where it's
+                // an object, `(key) => [key.id, key.tag]` (#1360).
+                Some(KeyParts::Fields(indices, types)) => {
+                    let classes = (types.into_iter())
+                        .map(|part| self.map_class(set, sorted, (Some(part), None), span))
+                        .collect::<R<Vec<_>>>()?;
+                    let mut args = vec![Expr::bool(set), Expr::bool(sorted), Expr::array(classes)];
+                    let whole = self.always_holds(key).is_none()
+                        && matches!(self.shape(key), crate::lower::Shape::Array(tys)
+                            if tys.len() == indices.len() && indices.iter().enumerate().all(|(at, &i)| at == i));
+                    if !whole {
+                        if self.always_holds(key).is_none() && matches!(self.shape(key), crate::lower::Shape::Other) {
+                            let what = format!(
+                                "a map or a set keyed by `{key}`, whose fields rust-js can't read where it's made"
+                            );
+                            return Err(self.unsupported(span, &what));
+                        }
+                        let fields = (indices.iter())
+                            .map(|&i| self.project(Expr::var("key"), key, i))
+                            .collect();
+                        let read = Expr::arrow(
+                            vec!["key".into()],
+                            vec![StmtKind::Return(Some(Expr::array(fields))).at(js::Span::NONE)],
+                        );
+                        args.push(read);
+                    }
+                    return Ok(Expr::call_helper("$keyClassOf", args));
+                }
+                // One whose `Hash` and `Eq`, or `Ord`, are its own: found by
+                // them, as a key of no type parameter is (ADR 1120, #1360).
+                None if matches!(key.kind(), ty::Adt(adt, _) if adt.is_struct())
+                    && (if sorted {
+                        self.found_by_cmp(key)
+                    } else {
+                        self.found_by_hash(key)
+                    }) => {}
+                None => {
+                    let what = format!("a map or a set keyed by `{key}`, made of a type parameter, in generic code");
+                    return Err(self.unsupported(span, &what));
+                }
             }
-            let what = match key.kind() {
-                ty::Adt(adt, _) if adt.is_struct() => format!(
-                    "a map or a set keyed by `{key}`, a struct made of a type parameter, in generic code, whose `Hash` and `Eq` may be its own (#1360)"
-                ),
-                _ => format!("a map or a set keyed by `{key}`, made of a type parameter, in generic code"),
-            };
-            return Err(self.unsupported(span, &what));
         }
         let name = match key {
             // Found by its own `Hash` and `Eq` (ADR 1120).

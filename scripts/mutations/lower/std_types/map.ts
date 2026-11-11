@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/limitations.test.ts",
       "-t",
-      "A map or set in generic code keyed by a struct or an enum made of a type parameter",
+      "A map or set in generic code keyed by an enum made of a type parameter",
     ],
   },
   {
@@ -640,16 +640,16 @@ export const mutations: Mutation[] = [
     name: "tuple-key-class-uncomposed",
     breaks: "a map or a set keyed by a tuple of a type parameter in generic code is refused, \"made of a type parameter\", where its parts' classes compose it (#1346)",
     file: "src/lower/std_types/map.rs",
-    find: "            match crate::lower::recognition::key_class_parts(key) {\n",
-    replace: "            match crate::lower::recognition::key_class_parts(key).filter(|parts| matches!(parts, KeyParts::Array(_))) {\n",
+    find: "            match crate::lower::recognition::key_class_parts(self.tcx, key, sorted) {\n",
+    replace: "            match crate::lower::recognition::key_class_parts(self.tcx, key, sorted).filter(|parts| matches!(parts, KeyParts::Array(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
   },
   {
     name: "array-key-class-uncomposed",
     breaks: "a map or a set keyed by an array of a type parameter in generic code, `[T; N]`, is refused, \"made of a type parameter\", where its item's class composes it (#1371)",
     file: "src/lower/std_types/map.rs",
-    find: "            match crate::lower::recognition::key_class_parts(key) {\n",
-    replace: "            match crate::lower::recognition::key_class_parts(key).filter(|parts| matches!(parts, KeyParts::Tuple(_))) {\n",
+    find: "            match crate::lower::recognition::key_class_parts(self.tcx, key, sorted) {\n",
+    replace: "            match crate::lower::recognition::key_class_parts(self.tcx, key, sorted).filter(|parts| matches!(parts, KeyParts::Tuple(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
   },
   {
@@ -659,5 +659,21 @@ export const mutations: Mutation[] = [
     find: '                        "$arrayKeyClassOf",\n                        vec![Expr::bool(set), Expr::bool(sorted), class],\n',
     replace: '                        "$keyClassOf",\n                        vec![Expr::bool(set), Expr::bool(sorted), Expr::array(vec![class])],\n',
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "struct-key-fields-unread",
+    breaks: "a derived struct key of an object's shape is given no reader of its fields, so its composed class reads it as an array, `key.length` none, and every key is one",
+    file: "src/lower/std_types/map.rs",
+    find: "                        args.push(read);\n",
+    replace: "                        let _ = read;\n",
+    tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "struct-key-own-impls-refused",
+    breaks: "a struct key made of a type parameter whose own impls find it is refused, where its `Hash` and `Eq`, or `Ord`, find it as a key of no type parameter",
+    file: "src/lower/std_types/map.rs",
+    find: "                None if matches!(key.kind(), ty::Adt(adt, _) if adt.is_struct())\n                    && (if sorted {",
+    replace: "                None if matches!(key.kind(), ty::Adt(adt, _) if adt.is_struct())\n                    && false\n                    && (if sorted {",
+    tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
   },
 ];

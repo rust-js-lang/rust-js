@@ -2086,9 +2086,12 @@ export function $hashedSet(KHash, eq) {
 // `Hash` and `Eq`; a B-tree's by its `cmp`, its own `Ord`'s (`$ordMap`),
 // one whose order can be seen (`$ordTree`), or std's (`$btreeMap` of a
 // base). The tuple's, as std's derived `Hash`, `Eq` and `Ord` of a tuple
-// find it: test/key-class-ways.txt holds each rule.
-export function $keyClassOf(set, sorted, parts) {
-  return $composedKeyClass(set, sorted, parts.map($keyWayOf), (i) => i);
+// find it: test/key-class-ways.txt holds each rule. Of a struct that
+// derives what finds it, its fields', in their order, `fields` reading them
+// of an object, `(key) => [key.id, key.tag]`; a tuple struct is its array
+// already (#1360).
+export function $keyClassOf(set, sorted, parts, fields) {
+  return $composedKeyClass(set, sorted, parts.map($keyWayOf), (i) => i, fields);
 }
 
 // The class of a map or a set keyed by an array, `[T; N]`, of its item's
@@ -2100,11 +2103,14 @@ export function $arrayKeyClassOf(set, sorted, Item) {
   return $composedKeyClass(set, sorted, [$keyWayOf(Item)], () => 0);
 }
 
-// Of keys whose part `i` is found by `ways[index(i)]`: hashed, compared
-// and ordered a part at a time, in order, the first unequal deciding.
-export function $composedKeyClass(set, sorted, ways, index) {
-  if (!sorted) return $unsortedKeyClass(set, ways, index);
-  const cmp = (a, b) => {
+// Of keys whose part `i`, of `parts(key)`, the key itself where it's an
+// array, is found by `ways[index(i)]`: hashed, compared and ordered a part
+// at a time, in order, the first unequal deciding.
+export function $composedKeyClass(set, sorted, ways, index, parts = (key) => key) {
+  if (!sorted) return $unsortedKeyClass(set, ways, index, parts);
+  const cmp = (x, y) => {
+    const a = parts(x);
+    const b = parts(y);
     for (let i = 0; i < a.length; i++) {
       const order = ways[index(i)].cmp(a[i], b[i]);
       if (order !== 0) return order;
@@ -2114,7 +2120,7 @@ export function $composedKeyClass(set, sorted, ways, index) {
   const kind = $keyClassSorted(ways.map((way) => way.sorted));
   if (kind === "tree") return [$ordTreeMap, $ordTreeSet][+set](cmp);
   if (kind === "own") return [$ordMap, $ordSet][+set](cmp);
-  const base = $unsortedKeyClass(set, ways.map((way) => $keyWayOf(way.Base ?? [Map, Set][+set])), index);
+  const base = $unsortedKeyClass(set, ways.map((way) => $keyWayOf(way.Base ?? [Map, Set][+set])), index, parts);
   return [$btreeMap, $btreeSet][+set](cmp, base);
 }
 
@@ -2129,12 +2135,13 @@ export function $keyWayOf(Class) {
 // in its order, short of the first unequal, as a derived `Hash` and
 // `PartialEq` of a tuple do; by what `parts` keeps each under where any
 // part's is; else by value.
-export function $unsortedKeyClass(set, ways, index) {
+export function $unsortedKeyClass(set, ways, index, parts = (key) => key) {
   const kind = $keyClassUnsorted(ways.map((way) => way.find));
   const part = (way, value) => (way.find === "parts" ? way.parts(value) : value);
   if (kind === "hashed") {
     const KHash = {
-      hash(key, state, H) {
+      hash(whole, state, H) {
+        const key = parts(whole);
         for (let i = 0; i < key.length; i++) {
           const way = ways[index(i)];
           if (way.find === "hashed") way.KHash.hash(key[i], state, H);
@@ -2142,7 +2149,9 @@ export function $unsortedKeyClass(set, ways, index) {
         }
       },
     };
-    const eq = (a, b) => {
+    const eq = (x, y) => {
+      const a = parts(x);
+      const b = parts(y);
       for (let i = 0; i < a.length; i++) {
         const way = ways[index(i)];
         if (!(way.find === "hashed" ? way.eq(a[i], b[i]) : $key(part(way, a[i])) === $key(part(way, b[i])))) return false;
@@ -2151,7 +2160,7 @@ export function $unsortedKeyClass(set, ways, index) {
     };
     return [$hashedMap, $hashedSet][+set](KHash, eq);
   }
-  if (kind === "parts") return [$keyMap, $keySet][+set]((key) => Array.from(key, (item, i) => part(ways[index(i)], item)));
+  if (kind === "parts") return [$keyMap, $keySet][+set]((key) => Array.from(parts(key), (item, i) => part(ways[index(i)], item)));
   return [$KeyMap, $KeySet][+set];
 }
 

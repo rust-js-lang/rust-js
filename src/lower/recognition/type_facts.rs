@@ -196,7 +196,7 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<(Ty<'tc
     while let Some(key) = each.pop() {
         if known_by_bounds(key) {
             given.push((key, fact));
-        } else if let Some(parts) = key_class_parts(key) {
+        } else if let Some(parts) = key_class_parts(tcx, key, fact.map_kind().is_some_and(|(_, sorted)| sorted)) {
             // An array's item is one part, of however many: one an item, an
             // array of half a billion bytes, `HashMap<[u8; 536870907], ()>`,
             // held 8.6 GB of the compiler's memory (#1368, #1371). A part of
@@ -218,31 +218,60 @@ pub(crate) fn mentions_param(key: Ty<'_>) -> bool {
 /// a slice's, ask each part's in turn (#1346): a tuple's, each part its
 /// own class, `$keyClassOf`; an array's, its item's class for every item,
 /// `$arrayKeyClassOf`, of whatever length, one class however many items
-/// (#1371).
+/// (#1371); and a struct's whose `Hash` and `PartialEq`, or a B-tree's
+/// `Ord`, are derived, its fields' in their order, as a tuple's (#1360).
 pub(crate) enum KeyParts<'tcx> {
     Tuple(Vec<Ty<'tcx>>),
     Array(Ty<'tcx>),
+    /// A struct's fields its derives ask, by their indices and types: each
+    /// but a `PhantomData`, which hashes nothing and is always equal.
+    Fields(Vec<usize>, Vec<Ty<'tcx>>),
 }
 
 impl<'tcx> KeyParts<'tcx> {
     /// The types whose classes make the key's: a tuple's parts, an
-    /// array's item once.
+    /// array's item once, a struct's fields.
     pub(crate) fn types(&self) -> &[Ty<'tcx>] {
         match self {
-            KeyParts::Tuple(parts) => parts,
+            KeyParts::Tuple(parts) | KeyParts::Fields(_, parts) => parts,
             KeyParts::Array(item) => std::slice::from_ref(item),
         }
     }
 }
 
-/// A key's parts whose classes make its own, a tuple's or an array's:
-/// `None` of another key.
-pub(crate) fn key_class_parts(key: Ty<'_>) -> Option<KeyParts<'_>> {
+/// A key's parts whose classes make its own, a tuple's, an array's, or a
+/// struct's whose traits a map of `sorted` keys asks are derived: `None` of
+/// another key.
+pub(crate) fn key_class_parts<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>, sorted: bool) -> Option<KeyParts<'tcx>> {
     match key.kind() {
         ty::Tuple(parts) if !parts.is_empty() => Some(KeyParts::Tuple(parts.to_vec())),
         ty::Array(item, _) => Some(KeyParts::Array(*item)),
+        ty::Adt(adt, args) if adt.is_struct() && derives_its_finding(tcx, adt.did(), sorted) => {
+            let phantom = tcx.lang_items().phantom_data();
+            let (indices, types) = (adt.non_enum_variant().fields.iter().enumerate())
+                .map(|(i, field)| (i, field.ty(tcx, args).skip_normalization()))
+                .filter(|(_, ty)| !matches!(ty.kind(), ty::Adt(of, _) if Some(of.did()) == phantom))
+                .unzip();
+            Some(KeyParts::Fields(indices, types))
+        }
         _ => None,
     }
+}
+
+/// Whether the struct `adt` derives what a map of its keys finds them by:
+/// `Hash` and `PartialEq` of a hashed one, `Ord` of a B-tree. Each impl of
+/// the trait for it derived, as `#[derive]` writes one (#1360).
+fn derives_its_finding(tcx: TyCtxt<'_>, adt: DefId, sorted: bool) -> bool {
+    let traits = match sorted {
+        true => vec![tcx.get_diagnostic_item(sym::Ord)],
+        false => vec![Some(std_item(tcx, StdItem::Hash)), tcx.lang_items().eq_trait()],
+    };
+    traits.into_iter().all(|tr| {
+        let Some(tr) = tr else { return false };
+        let simplified = rustc_middle::ty::fast_reject::SimplifiedType::Adt(adt);
+        let impls = tcx.trait_impls_of(tr).non_blanket_impls().get(&simplified);
+        impls.is_some_and(|impls| !impls.is_empty() && impls.iter().all(|&imp| tcx.is_automatically_derived(imp)))
+    })
 }
 
 /// A map's or a set's key as its class is found: a `&K`'s is its `K`'s, a

@@ -141,10 +141,23 @@ pub(crate) fn held_facts<'tcx>(
     of: Ty<'tcx>,
     fact: TypeFact,
 ) -> Vec<(Ty<'tcx>, TypeFact)> {
+    let sorted = fact.map_kind().is_some_and(|(_, sorted)| sorted);
+    // A struct found by its own `Hash` and `Eq`, or `Ord`, whose impls its
+    // dictionaries carry: its class is made where it's used, nothing asked
+    // of its callers (#1360).
+    let own_finding = |key: Ty<'tcx>| matches!(key.kind(), ty::Adt(adt, _) if adt.is_struct());
     if fact.map_kind().is_some()
         && let key = class_key(of)
         && mentions_param(key)
-        && key_class_parts(key).is_some()
+        && own_finding(key)
+        && key_class_parts(tcx, key, sorted).is_none()
+    {
+        return Vec::new();
+    }
+    if fact.map_kind().is_some()
+        && let key = class_key(of)
+        && mentions_param(key)
+        && key_class_parts(tcx, key, sorted).is_some()
     {
         let mut held = Vec::new();
         let mut each = vec![key];
@@ -155,11 +168,14 @@ pub(crate) fn held_facts<'tcx>(
             if known_by_bounds(key) {
                 held.push((key, fact));
             } else if mentions_param(key) {
-                match key_class_parts(key) {
-                    // An array's item once, of however many (#1371).
+                match key_class_parts(tcx, key, sorted) {
+                    // An array's item once, of however many (#1371); a
+                    // derived struct's fields (#1360).
                     Some(parts) => each.extend(parts.types().iter().rev().map(|&part| class_key(part))),
-                    // A struct made of one, which the lowering refuses
-                    // (#1360): asked whole.
+                    // A struct found by its own impls: nothing.
+                    None if own_finding(key) => {}
+                    // An enum made of one, which the lowering refuses: asked
+                    // whole.
                     None => held.push((key, fact)),
                 }
             }

@@ -309,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A type that's the value it holds, which it always does: a
     /// `ManuallyDrop`, what `pin!` pins. Not a `MaybeUninit`, which may hold
     /// none yet, a cell to be written (ADR 0332).
-    fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(in crate::lower) fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.transparent(ty)
             .filter(|_| self.recognition().uninit_of(ty).is_none())
     }

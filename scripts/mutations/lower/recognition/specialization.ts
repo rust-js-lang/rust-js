@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     breaks: "a map keyed by an array of a type parameter, `[T; N]`, a callee asks of what it's given, holds its item's class once an item, so `[T; 536870907]` of a blanket impl's copy takes the compiler's memory (#1371)",
     file: "src/lower/recognition/specialization.rs",
     find: "                    Some(parts) => each.extend(parts.types().iter().rev().map(|&part| class_key(part))),\n",
-    replace: "                    Some(parts) => each.extend(match parts { KeyParts::Array(item) => vec![item; 536870907], KeyParts::Tuple(parts) => parts }.into_iter().rev().map(class_key)),\n",
+    replace: "                    Some(parts) => each.extend(match parts { KeyParts::Array(item) => vec![item; 536870907], KeyParts::Tuple(parts) | KeyParts::Fields(_, parts) => parts }.into_iter().rev().map(class_key)),\n",
     tests: ["test/runtime-package.test.ts", "-t", "a type parameter's items compiles within a gigabyte"],
   },
   {

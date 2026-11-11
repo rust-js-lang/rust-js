@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "      for (let i = 0; i < ways.length; i++) {\n        const way = ways[index(i)];\n        if (!(",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
   },
+  {
+    name: "key-class-fields-unread-by-eq",
+    breaks: "a composed key class's `eq` compares the key, not its fields' reader's parts, so two equal named structs are two",
+    file: "src/runtime/key_class.js",
+    find: "      const a = parts(x);\n      const b = parts(y);\n      for (let i = 0; i < a.length; i++) {\n        const way",
+    replace: "      const a = x;\n      const b = y;\n      for (let i = 0; i < a.length; i++) {\n        const way",
+    tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
+  },
 ];

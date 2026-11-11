@@ -296,3 +296,30 @@ Held by `default_where_clause_facts_its_callers.rs` (`ordered` of items
 with no `Hash`, `counts` keyed by a tuple of `Self::Item`, `distinct`
 calling it, of words and of a mapped range) against native Rust in both
 builds and as a library, and the mutation `default-own-slot-asked-of-impl`.
+
+## Amendment: a struct key of a type parameter (2026-11-11, #1360)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as Rust finds it.
+
+A map or a set keyed by a struct made of a type parameter, `Key<T>`, in
+generic code was refused, as its `Hash` and `Eq` may be its own, so its
+class wasn't its fields'. **A struct that derives what finds it, `Hash`
+and `PartialEq` of a hashed map, `Ord` of a B-tree, each impl of it
+`#[derive]`'s, is found as a tuple of its fields is**, its fields' classes
+composed in their order by `$keyClassOf`, its caller asked each type
+parameter's (`key_class_parts`'s `Fields`), with a reader of its fields
+where it's an object, `(key) => [key.id, key.tag]`; a tuple struct is its
+array already. A `PhantomData` field is no part: it hashes nothing and is
+always equal. **A struct whose own impls find it is found by them**, a
+`$hashedSet` of its `Hash` dictionary and its `eq`, or a B-tree by its
+`cmp`, as a key of no type parameter is (ADR 1120), its callers asked
+nothing. Only an enum made of one, `Option<T>`, is refused still.
+
+Held by `struct_keys_of_a_type_parameter.rs` against native Rust in both
+builds (a tuple struct, a named one, a nested one, one of a `PhantomData`,
+B-tree keys by a derived and an own `Ord`, own `Hash` and `Eq`, a derived
+`Eq` beside an own `Hash` that counts its calls, a field hashed as nothing
+told apart by `==`, and through another generic function), and the
+mutations `struct-key-derives-unread`, `struct-key-derives-hash-alone`,
+`struct-key-phantom-a-part`, `struct-key-fields-unread`,
+`struct-key-own-impls-refused` and `key-class-fields-unread-by-eq`.
