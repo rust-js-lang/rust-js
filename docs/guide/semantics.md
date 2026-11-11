@@ -2174,3 +2174,14 @@ React and JSX are [their own pages](README.md#react).
     descriptor, as Rust's own differs by environment (ADR 0262, the user's
     decision, 2026-11-11, #1397; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
     amended).
+
+55. How often a hash map or set calls its key's own `hash` and `eq` is
+    rust-js's, not hashbrown's: each search hashes its key once and
+    compares only keys whose bytes are alike, and a clone hashes its keys
+    again, where hashbrown hashes every key again as its table grows,
+    compares keys whose hashes partly meet, and copies a table unhashed.
+    Which keys a map holds and gives back is std's; only a `hash` or `eq`
+    that prints, counts or panics sees it, and then only in a table that
+    grows or is cloned: one made `with_capacity` for what it holds calls
+    each as std's does (ADR 0262, the user's decision, 2026-11-07, #913;
+    [ADR 1120](../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)).

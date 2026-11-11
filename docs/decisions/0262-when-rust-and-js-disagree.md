@@ -370,6 +370,19 @@ react.dev's TopNav passes the same closure instead.
   the addresses tells them apart; calling them does the same. Pinned by
   `test/lowering-fn-identity.test.ts`. Listed in the guide's differences
   (`semantics.md`, 48).
+- **How often a hash map calls its key's own `hash` and `eq` is
+  rust-js's**, the second case's, which the user decided (2026-11-07,
+  difference 55, #913, ADR 1120). The user decided it of ADR 0168's
+  map, which never called a key's `hash`; ADR 1120 calls it on each
+  search, so what's left is how often: hashbrown hashes every key again as
+  its table grows and compares keys whose 7 hash bits meet, rust-js hashes
+  a key once a search and a clone's keys again. Matching it would mean
+  copying hashbrown's growth and probing. Which keys a map holds is std's;
+  a `hash` that prints or counts sees the difference only in a table that
+  grows or is cloned. Pinned by corpus case
+  `map_entry_hashes_its_key_once` (a table made `with_capacity`, each
+  search's calls counted as std's). Listed in the guide's differences
+  (`semantics.md`, 55).
 - **A library's public re-export of std's item in no JS module exports
   nothing**, the second case's, which the user decided (2026-11-11, difference 50,
   #1315, ADR 0240, amended). Zerocopy's `pub use core::mem::*;`, or a

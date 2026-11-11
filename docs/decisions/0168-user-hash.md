@@ -54,3 +54,12 @@ lowered:** its methods are no JS.
 
 - **Lower the impl and call it,** a map hashing as Rust's does. Not now:
   it needs a `Hasher` in JS, and a map's answers would be the same.
+
+## Amendment: `the impl changes nothing a program sees` was false (2026-11-12, #913)
+
+A `hash` that prints, counts or panics is seen: std's table calls it on
+each search, and again for each key as it grows, and a map that never
+called it printed nothing where Rust prints. ADR 1120 calls it on each
+search; how often, hashbrown's growth and probing apart, is difference 55
+of the guide's list, the second case of ADR 0262, which the user decided
+(2026-11-07).
