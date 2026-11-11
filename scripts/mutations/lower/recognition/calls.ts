@@ -620,4 +620,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iter_once_with.rs$"],
   },
+  {
+    name: "bswap-intrinsic-unanswered",
+    breaks: "`intrinsics::bswap(x)`, called as itself, is refused where it's `x.swap_bytes()` (#1384)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        \"bswap\" => \"swap_bytes\",\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
+  },
+  {
+    name: "fma-intrinsic-unanswered",
+    breaks: "`intrinsics::fmaf64(a, b, c)`, called as itself, is refused where it's `a.mul_add(b, c)` (#1384)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        \"fmaf64\" => return Some((\"mul_add\", Num::F64)),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
+  },
+  {
+    name: "bit-count-intrinsics-unanswered",
+    breaks: "`intrinsics::ctpop`, `ctlz` and `cttz`, called as themselves, are refused (#1384)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        \"ctpop\" => \"count_ones\",\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
+  },
 ];

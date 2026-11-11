@@ -160,14 +160,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // inlines into std's bodies: the method's operation, of its type,
         // `saturating_add(lo, n)` of `FlattenCompat`'s `size_hint` (ADR
         // 0899).
+        // So is one called as itself, custom MIR's and `core_intrinsics`':
+        // `bswap(x)`, `x.swap_bytes()`; `fmaf64(a, b, c)`, `a.mul_add(b, c)`,
+        // rounded once (ADR 0430); and the bit counts and turns (#1384).
         if tcx.intrinsic(def_id).is_some()
-            && let name = tcx.item_name(def_id)
-            && matches!(
-                name.as_str(),
-                "saturating_add" | "saturating_sub" | "wrapping_add" | "wrapping_sub" | "wrapping_mul"
-            )
-            && let Some(num) = args.types().next().and_then(Num::of)
-            && let Some(op) = super::methods::number(name.as_str(), num)
+            && let Some((method, num)) = number_intrinsic(tcx.item_name(def_id).as_str(), args)
+            && let Some(op) = super::methods::number(method, num)
         {
             return Some(Some(Std::Number(op)));
         }
@@ -1224,4 +1222,38 @@ pub(in crate::lower) fn ord_max_or_min(tcx: TyCtxt<'_>, def_id: DefId) -> Option
         "min" => Some(false),
         _ => None,
     }
+}
+
+/// The number's method an arithmetic intrinsic is, of the type it's of:
+/// its generic argument's, or of `fmaf32` and `fmaf64`, their name's.
+/// Of a count, `ctpop`, `ctlz` and `cttz`, the method's `u32`, as the
+/// intrinsic's is (#1384).
+fn number_intrinsic<'tcx>(name: &str, args: ty::GenericArgsRef<'tcx>) -> Option<(&'static str, Num)> {
+    let method = match name {
+        "saturating_add" | "saturating_sub" | "wrapping_add" | "wrapping_sub" | "wrapping_mul" => {
+            return Some((
+                [
+                    "saturating_add",
+                    "saturating_sub",
+                    "wrapping_add",
+                    "wrapping_sub",
+                    "wrapping_mul",
+                ]
+                .into_iter()
+                .find(|m| *m == name)?,
+                args.types().next().and_then(Num::of)?,
+            ));
+        }
+        "fmaf32" => return Some(("mul_add", Num::F32)),
+        "fmaf64" => return Some(("mul_add", Num::F64)),
+        "bswap" => "swap_bytes",
+        "bitreverse" => "reverse_bits",
+        "ctpop" => "count_ones",
+        "ctlz" => "leading_zeros",
+        "cttz" => "trailing_zeros",
+        "rotate_left" => "rotate_left",
+        "rotate_right" => "rotate_right",
+        _ => return None,
+    };
+    Some((method, args.types().next().and_then(Num::of)?))
 }

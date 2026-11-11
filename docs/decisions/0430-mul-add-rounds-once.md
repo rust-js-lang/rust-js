@@ -72,3 +72,20 @@ product's sum and a `NaN`'s.
 Held by corpus `mul_add` against native Rust, of each sign and of an
 `f32`; mutations `fused-infinite-addend-unfused` and
 `fused-infinite-addend-whatever-product`.
+
+## Amendment: the intrinsics a number's method is, called as themselves (#1384)
+
+`core::intrinsics::fmaf64(a, b, c)` and `fmaf32`, which `core_intrinsics`
+and custom MIR call, Rustlantis's programs (ADR 1125) among them, are
+`a.mul_add(b, c)`, rounded once by the same helpers, `$mulAdd` and
+`$mulAddF32`: `fmaf32(1.000244140625, 1.000244140625, 2^-60)` is
+`1.0004884`, where rounding through an `f64` first gives `1.0004883`. So
+is each integer intrinsic a method is: `bswap` `swap_bytes`, `bitreverse`
+`reverse_bits`, `ctpop` `count_ones`, `ctlz` `leading_zeros`, `cttz`
+`trailing_zeros`, `rotate_left` and `rotate_right` themselves
+(`recognition/calls.rs`' `number_intrinsic`, beside ADR 0899's
+`saturating_add`); and `arith_offset(p, n)` is `p.wrapping_offset(n)`
+(`pointers/catalog.rs`). Stable Rust reaches each only through its
+method, which was already supported; these are the calls themselves,
+which were refused, 958 of 1,000 Rustlantis default programs `bswap`
+alone. Case C of ADR 0262: each as Rust computes it.

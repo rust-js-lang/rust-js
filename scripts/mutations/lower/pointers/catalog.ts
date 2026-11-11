@@ -86,4 +86,12 @@ export const mutations: Mutation[] = [
     replace: '    ("as_ref", PointerOp::AsRef),',
     tests: ["test/corpus.test.ts", "-t", "^byte_offset_from_is_an_address_difference.rs$"],
   },
+  {
+    name: "arith-offset-intrinsic-unanswered",
+    breaks: "`intrinsics::arith_offset(p, n)`, called as itself, is refused where it's `p.wrapping_offset(n)` (#1384)",
+    file: "src/lower/pointers/catalog.rs",
+    find: "    (\"std::intrinsics::arith_offset\", PointerOp::WrappingAdd { sub: false }),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
+  },
 ];

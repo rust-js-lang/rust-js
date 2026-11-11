@@ -9,6 +9,9 @@ use crate::lower::recognition::TypeFact;
 const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::null", PointerOp::Null),
     ("std::ptr::null_mut", PointerOp::Null),
+    // The intrinsic `wrapping_offset` is, called as itself, custom MIR's
+    // and `core_intrinsics`' (#1384).
+    ("std::intrinsics::arith_offset", PointerOp::WrappingAdd { sub: false }),
     ("std::ptr::read", PointerOp::Read),
     ("std::ptr::read_volatile", PointerOp::Read),
     ("std::ptr::read_unaligned", PointerOp::Read),

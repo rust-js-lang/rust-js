@@ -588,3 +588,16 @@ test("custom MIR's jump into a loop other than at its start is refused", () => {
   );
   expect(compiled.stderr.toString()).not.toContain("panicked");
 });
+
+// The intrinsics a number's or a pointer's method is, called as
+// themselves, `core_intrinsics`' and Rustlantis's custom MIR's: each as
+// its method, `bswap` `swap_bytes`, `fmaf64` `mul_add` rounded once,
+// `arith_offset` `wrapping_offset`, as native Rust prints them (#1384).
+test("intrinsics called as themselves run as their methods", () => {
+  const dir = fixture("intrinsics-as-methods");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, "#![feature(core_intrinsics)]\n#![allow(internal_features)]\nuse core::intrinsics;\n\npub fn main() {\n    let x: u32 = 0x12345678;\n    let w: u64 = 0x0102030405060708;\n    let big: u128 = 1;\n    let s: i16 = -2;\n    println!(\"{:x} {:x} {}\", intrinsics::bswap(x), intrinsics::bswap(w), intrinsics::bswap(big));\n    println!(\"{} {}\", intrinsics::bitreverse(s), intrinsics::bitreverse(1u8));\n    println!(\"{} {} {}\", intrinsics::ctpop(x), intrinsics::ctlz(1u64), intrinsics::cttz(0x80u16));\n    println!(\"{:x} {:x}\", intrinsics::rotate_left(x, 8), intrinsics::rotate_right(x, 4));\n    println!(\"{:e} {:e}\", unsafe { intrinsics::fmaf64(0.1, 10.0, -1.0) }, unsafe { intrinsics::fmaf32(0.1, 10.0, -1.0) });\n    println!(\"{} {}\", unsafe { intrinsics::fmaf32(1.000244140625, 1.000244140625, 8.673617379884035e-19) }, 1.000244140625f32 * 1.000244140625 + 8.673617379884035e-19);\n    let v = [10u8, 20, 30, 40];\n    let p = unsafe { intrinsics::arith_offset(v.as_ptr(), 3) };\n    println!(\"{}\", unsafe { *intrinsics::arith_offset(p, -1) });\n}\n");
+  run([compiler, input, "-o", join(dir, "lib.js")], 120_000, { RUSTC_BOOTSTRAP: "1" });
+  const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  expect(ran.stdout.toString()).toBe("78563412 807060504030201 1329227995784915872903807060280344576\n32767 128\n13 63 7\n34567812 81234567\n5.551115123125783e-17 1.4901161e-8\n1.0004884 1.0004883\n30\n");
+});

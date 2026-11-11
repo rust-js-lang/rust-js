@@ -9,7 +9,3 @@
 refused custom-mir a use of a local before any write of it whole
 refused custom-mir arithmetic checked for overflow, from its MIR
 refused custom-mir a `&mut` of a number kept or given, from its MIR
-refused #1384 calling `std::intrinsics::(bswap|fmaf32|fmaf64|arith_offset)`
-#
-# Crashed: rust-js's stack, of a program's size.
-crashed #1383 has overflowed its stack
