@@ -190,4 +190,12 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_what_is_never_random_access"],
   },
 
+  {
+    name: "other-trait-bound-taken-for-none",
+    breaks: "std's one impl of a trait for a type constructor that asks its parameters another trait, `vec::IntoIter<T>`'s `TrustedRandomAccessNoCoerce` of `T: NonDrop`, is taken apart as asking nothing, so no caller is asked whether `vec::IntoIter<I::Item>` is one, and the zip is refused (#1389)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "                && trait_holds_in(tcx, typing_env, held[at], bound.def_id()) != Some(true)\n",
+    replace: "                && false\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
+  },
 ];

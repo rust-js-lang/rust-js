@@ -597,12 +597,25 @@ fn either_gates(a: &Gates, b: &Gates) -> Gates {
 /// unstable sort picks by it, `sort_by_cached_key`'s `(K, usize)`'s (#925),
 /// is its caller's.
 fn built_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: ty::Ty<'tcx>, fact: TypeFact) -> bool {
+    if crate::lower::recognition::known_by_bounds(ty) || !ty.has_param() {
+        return false;
+    }
+    // A std trait std's zip is specialized on, which a type built of its
+    // slots may have only as its callers' types say, `vec::IntoIter<<I as
+    // Iterator>::Item>`'s `TrustedRandomAccessNoCoerce`, a `Copy` item's
+    // (#1389): not one rustc says here, of any types given (#1385).
+    if matches!(
+        fact,
+        TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce | TypeFact::TrustedLen
+    ) {
+        return crate::lower::recognition::fact_trait(tcx, fact).is_some_and(|fact_trait| {
+            crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()
+        });
+    }
     matches!(
         fact,
         TypeFact::Size | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort
-    ) && !crate::lower::recognition::known_by_bounds(ty)
-        && ty.has_param()
-        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
+    ) && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
 }
 
 /// Where `caller` asks `(of, fact)`, `of` in its own terms: a slot's, or

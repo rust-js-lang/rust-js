@@ -296,8 +296,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a collect's items of a type built of its function's type parameters, `Held<<H::Item as IntoIterator>::IntoIter>`, ask no caller their layout, and the collect is refused, `size_of` of a type parameter, as itertools' `multi_cartesian_product` was (#737)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n",
-    replace: "        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n        && false\n",
+    find: "    ) && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n",
+    replace: "    ) && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
   },
   {
@@ -477,5 +477,13 @@ export const mutations: Mutation[] = [
     find: "                // What std's call asks of its items' type, a body read from\n                // MIR alone too, a library's default compiled here (#1370).\n                if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {\n                    continue;\n                }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+  },
+  {
+    name: "built-trait-fact-unrelayed",
+    breaks: "a fact of a std trait std's zip is specialized on, of a type built of a slot, `vec::IntoIter<<I as Iterator>::Item>`'s `TrustedRandomAccessNoCoerce`, is asked of no caller, so a library's zip its consumer compiles is refused (#1389)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()\n",
+    replace: "            false && crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
   },
 ];

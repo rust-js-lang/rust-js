@@ -143,3 +143,28 @@ itertools' probe now stops at the same zip's other side,
 type built of a slot that `Iterator::zip`'s manifest asks, which no caller
 of a library's function compiled here is asked (`asked_of_caller` gives no
 ask of it), a gap of its own.
+
+## Amendment: a built type's zip fact is its callers', relayed (2026-11-11, #1389)
+
+Past #1385, itertools' probe was refused at the same zip's other side,
+`vec::IntoIter<<I as Iterator>::Item>`, whose item may be `Copy`. Two
+things kept it from its callers. `held_bounds`, which takes a fact apart
+through std's one impl of the trait for its type constructor, kept only
+that impl's bounds of the same trait: `vec::IntoIter<T>`'s
+`TrustedRandomAccessNoCoerce` asks `T: NonDrop`, another trait, so it gave
+no facts at all, as if none were needed. An impl that asks its parameters
+another trait now has the fact asked of the whole type. And `built_of`
+relayed only a built type's layout and sort facts to a function's callers:
+a zip's trait facts, `TrustedRandomAccess`, `TrustedRandomAccessNoCoerce`
+and `TrustedLen`, of a type rustc can't answer here (`trait_holds`'s
+`None`), are its callers' too, so a library's function a consumer compiles
+is given them as a built slot, and its caller answers of its own types,
+`vec::IntoIter<u32>`'s yes, `vec::IntoIter<Loud>`'s no.
+
+Held by test/crates/pairs/library_zip_of_a_vec_of_a_slots_items (a
+library's zip of a `Vec` of what's never `Copy` with a `Vec` of a type
+parameter's items, compiled by its consumer, of numbers and of items that
+drop) against native Rust, and the mutations
+`other-trait-bound-taken-for-none` and `built-trait-fact-unrelayed`.
+itertools' probe now compiles whole, nothing refused, and its JS fails at
+run time in `chunk_by`, `Groupbylazy.new$ is not a function` (#1390).

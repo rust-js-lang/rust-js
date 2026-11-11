@@ -335,6 +335,17 @@ fn held_bounds<'tcx>(
             continue;
         };
         if bound.def_id() != trait_id {
+            // One the impl asks of its parameters by another trait that
+            // what `of` holds there may not have, a `vec::IntoIter<T>`'s
+            // `TrustedRandomAccessNoCoerce` of `T: NonDrop`, a `Copy`
+            // item's: not its parts' facts of this one, so asked of the
+            // whole (#1389). Not one it has, `Vec<T, Global>`'s `A:
+            // Allocator`.
+            if let Some(at) = params.iter().position(|&param| param == bound.self_ty().skip_binder())
+                && trait_holds_in(tcx, typing_env, held[at], bound.def_id()) != Some(true)
+            {
+                return vec![of];
+            }
             continue;
         }
         let Some(at) = params.iter().position(|&param| param == bound.self_ty().skip_binder()) else {
