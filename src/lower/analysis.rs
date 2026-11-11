@@ -3,6 +3,7 @@
 pub(super) mod arguments;
 mod back_stepped;
 
+mod ground;
 mod hint_asked;
 use crate::collections::{IndexMap, IndexSet};
 pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal, field_of, made_by};
@@ -282,33 +283,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     (library, std_bodies): (bool, bool),
     (instances, made_where_used): (&super::Instances, &IndexSet<LocalDefId>),
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
-    // With `--test`, rustc adds a harness: a `const` per test, marked
-    // `#[rustc_test_marker]`, and a `main` that runs them with libtest. The
-    // JS runner takes their place (ADR 0026), so they're left out.
-    let markers: Vec<(LocalDefId, Symbol)> = tcx
-        .hir_crate_items(())
-        .definitions()
-        .filter_map(|def_id| find_attr!(tcx, def_id, RustcTestMarker(label) => (def_id, *label)))
-        .collect();
-    let harness_main = tcx
-        .sess
-        .opts
-        .test
-        .then(|| tcx.entry_fn(()).map(|(main, _)| main))
-        .flatten();
-    let is_harness = |def_id: DefId| {
-        let root = tcx.typeck_root_def_id(def_id);
-        Some(root) == harness_main || markers.iter().any(|&(marker, _)| marker.to_def_id() == root)
-    };
-    let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
-    // Before its libraries are asked, whose writers it reaches are
-    // compiled here where they take less (ADR 0914, amended; #1026).
-    let (writer_facts, shown_params) = debug::writer_facts(tcx, &all_bodies, dependencies, (library, std_bodies));
-    // And whether it compares a function's identity, of which its libraries'
-    // functions that may merge two are compiled here (#1052).
-    let reads_fn_identity = rc_counts::reads_fn_identity(tcx, &all_bodies);
-    let foreign =
-        super::library::Foreign::new(tcx, dependencies, instances, (writer_facts.writes(), reads_fn_identity));
+    // What it stands on: its bodies but rustc's test harness's, its
+    // libraries and its trait impls (`ground.rs`).
+    let ground::Ground {
+        markers,
+        all_bodies,
+        writer_facts,
+        shown_params,
+        reads_fn_identity,
+        foreign,
+        trait_impls,
+    } = ground::of(tcx, all_bodies, dependencies, (library, std_bodies), instances);
     if !bindings::validate(tcx)
         || !super::declarations::validate_types(tcx)
         || !traits::validate(tcx, &foreign)
@@ -328,33 +313,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     {
         return None;
     }
-
-    let trait_impls: Vec<DefId> = tcx
-        .hir_crate_items(())
-        .definitions()
-        .filter(|&id| {
-            matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
-                && (!known_derive(tcx, id.to_def_id())
-                    || lowered_derive(tcx, id.to_def_id())
-                    || serde_impl(tcx, id.to_def_id()).is_some())
-                && (!from_serde_derive(tcx, id) || serde_impl(tcx, id.to_def_id()).is_some())
-        })
-        .map(|id| id.to_def_id())
-        // And std's, whose methods a crate given std's bodies lowers (ADR
-        // 0561): each impl of a body of std's, once.
-        .chain(all_bodies.iter().filter_map(|body| match body.def_id.is_local() {
-            true => None,
-            false => tcx.trait_impl_of_assoc(body.def_id),
-        }))
-        // And a library's the crate compiles itself, which its JS doesn't
-        // export, a marker's of no methods too (ADR 0914, amended).
-        .chain(instances.impls(tcx))
-        .fold(Vec::new(), |mut impls, id| {
-            if !impls.contains(&id) {
-                impls.push(id);
-            }
-            impls
-        });
     // A class's misuse, which asks whether it's equal only to itself, of
     // its impls (ADR 0761, amended).
     let classes_recognition = Recognition {
