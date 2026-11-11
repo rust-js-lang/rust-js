@@ -108,6 +108,12 @@ pub(in crate::lower) enum MapOp {
     GetDisjointMut,
     /// A `VacantEntry`'s `insert(v)`: a `&mut` to what it put in.
     VacantInsert,
+    /// An entry's `insert_entry(v)`, or a `VacantEntry`'s (`vacant`): `v`
+    /// written, what was there dropped, or put in, and the `OccupiedEntry`
+    /// of it, of what its search found, no search again (#1369).
+    InsertEntry {
+        vacant: bool,
+    },
     /// An entry's `and_modify(f)`: `f` given its value where its key is
     /// there, a handle on a number or text; the entry.
     AndModify,
@@ -254,6 +260,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "key" if occupied || vacant => MapOp::EntryKey,
         "into_key" if vacant => MapOp::EntryKey,
         "insert" if vacant => MapOp::VacantInsert,
+        "insert_entry" if vacant || entry => MapOp::InsertEntry { vacant },
         "get" | "get_mut" | "into_mut" if occupied => MapOp::EntryGet { mutable: name != "get" },
         "insert" if occupied => MapOp::EntryInsert,
         "remove" | "remove_entry" if occupied => MapOp::EntryRemove {
@@ -677,9 +684,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let map_ops = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         // A map's values' drop, where they have a destructor: what `retain`,
-        // `extend` and `clear` drop what they take out with (ADR 0321).
+        // `extend` and `clear` drop what they take out with (ADR 0321), and
+        // an entry's `insert_entry` what it replaces (#1369).
         let values_drop = match (set, types.get(1)) {
-            (false, Some(&value)) if matches!(op, MapOp::Retain | MapOp::Extend) => {
+            (false, Some(&value))
+                if matches!(op, MapOp::Retain | MapOp::Extend | MapOp::InsertEntry { vacant: false }) =>
+            {
                 self.std_drop_function(value, span)?
             }
             _ => None,
@@ -1027,6 +1037,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 map_ops("$entryGet", list)
             }
             MapOp::EntryInsert => map_ops("$entryInsert", vec![arg(), arg()]),
+            MapOp::InsertEntry { vacant: true } => map_ops("$vacantInsertEntry", vec![arg(), arg()]),
+            MapOp::InsertEntry { vacant: false } => {
+                map_ops("$entryInsertEntry", with_drops(vec![arg(), arg()], vec![values_drop]))
+            }
             MapOp::EntryRemove { entry } => {
                 let mut list = vec![arg()];
                 if entry {

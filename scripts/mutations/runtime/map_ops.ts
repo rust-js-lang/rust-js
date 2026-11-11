@@ -550,4 +550,28 @@ export const mutations: Mutation[] = [
     replace: "  const handleOf = (each, i) => $mutGet(m, keys[i]);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
   },
+  {
+    name: "vacant-insert-entry-searched-again",
+    breaks: "a `VacantEntry`'s `insert_entry` searches again for the entry it gives, so its key's `Hash` runs twice where std's runs once",
+    file: "src/runtime/map_ops.js",
+    find: "    return [m, key, { ...found, there: true, key, value, entry }];\n",
+    replace: "    return [m, key, m.found(key)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
+  },
+  {
+    name: "vacant-insert-entry-not-there",
+    breaks: "the `OccupiedEntry` a `VacantEntry`'s `insert_entry` gives keeps its search's answer that the key wasn't there, so its `remove()` takes nothing out",
+    file: "src/runtime/map_ops.js",
+    find: "{ ...found, there: true, key, value, entry }",
+    replace: "{ ...found, key, value, entry }",
+    tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
+  },
+  {
+    name: "insert-entry-write-short-circuited",
+    breaks: "an occupied entry's `insert_entry` writes `v` as the argument of the optional drop, `drop?.($entryInsert(..))`, which a map of values with no destructor never evaluates, so `v` is never written",
+    file: "src/runtime/map_ops.js",
+    find: "    const old = $entryInsert(entry._0, value);\n    drop?.(old);\n",
+    replace: "    drop?.($entryInsert(entry._0, value));\n",
+    tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
+  },
 ];

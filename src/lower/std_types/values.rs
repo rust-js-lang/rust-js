@@ -132,6 +132,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::TreeRange { .. }
                             | MapOp::EndEntry { .. }
                             | MapOp::EntryInsert
+                            // Owns what it's given, dropping what it replaces
+                            // (#1369).
+                            | MapOp::InsertEntry { .. }
                             // Lends each value it finds (#1276).
                             | MapOp::GetDisjointMut
                     )

@@ -178,3 +178,24 @@ a hashed map's test that holds what drops; both builds. Mutations
 (`runtime/extract_if.ts`); `scan-state-not-closed`,
 `map-extract-taken-stale`, `map-extract-kept` and `set-extract-kept` name
 their lines as they now read.
+
+## Amendment: an entry's `insert_entry` (2026-11-11, #1369)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same writes,
+drops and searches as std's.
+
+`Entry::insert_entry(v)` and `VacantEntry::insert_entry(v)`, stable since
+Rust 1.83, were refused. An entry's, `$entryInsertEntry(entry, v, drop)`,
+writes `v` where its key is there, dropping what it replaces as std's
+`OccupiedEntry::insert` gives it back to drop, or puts it in; a vacant
+one's, `$vacantInsertEntry(entry, v)`, puts it in. Each gives the
+`OccupiedEntry`, `[m, key, found]`, of the entry's one search (#926, ADR
+1120), marked there: a key found by its own `Hash` is hashed once, by
+`entry`, however its entry is used after. Held by `entry_insert_entry.rs`
+(a key whose `Hash` counts, values that drop, a `&str` map, a B-tree)
+against native Rust in both builds, and the mutations
+`vacant-insert-entry-searched-again`, `vacant-insert-entry-not-there`,
+`insert-entry-write-short-circuited`, `insert-entry-replaced-undropped` and
+`insert-entry-unknown`. The third is what the first form got wrong:
+`drop?.($entryInsert(..))` of a map whose values have no destructor
+evaluates no argument, so `v` was never written.

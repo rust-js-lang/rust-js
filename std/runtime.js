@@ -9949,6 +9949,31 @@ export function $vacantInsert([m, key, found], value, handle) {
   return handle ? $mutGet(m, key) : value;
 }
 
+// A `VacantEntry`'s `insert_entry(v)`: `v` put in, and the
+// `OccupiedEntry` of it, of what its search found, marked there, so no
+// search asks its key's `hash` again (#1369).
+export function $vacantInsertEntry([m, key, found], value) {
+  if (found !== undefined) {
+    const entry = m.putFound(found, key, value);
+    return [m, key, { ...found, there: true, key, value, entry }];
+  }
+  m.set(key, value);
+  return [m, key];
+}
+
+// An entry's `insert_entry(v)`: where its key is there, `v` written and
+// what was there dropped by `drop`, as std's `OccupiedEntry::insert` gives
+// it back to drop; else put in. Its `OccupiedEntry` (#1369).
+export function $entryInsertEntry(entry, value, drop) {
+  if (entry.TAG === "Occupied") {
+    // Written first: `drop?.(..)` of no `drop` evaluates no argument.
+    const old = $entryInsert(entry._0, value);
+    drop?.(old);
+    return entry._0;
+  }
+  return $vacantInsertEntry(entry._0, value);
+}
+
 // An entry's `or_insert(value)`, `$entry`'s, of a map whose search can be
 // seen (#926): what `$entry`'s search found written, no search again. Its
 // value, or a handle on it (`handle`); where it's there, `value` dropped by

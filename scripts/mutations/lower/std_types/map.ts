@@ -676,4 +676,20 @@ export const mutations: Mutation[] = [
     replace: "                None if matches!(key.kind(), ty::Adt(adt, _) if adt.is_struct())\n                    && false\n                    && (if sorted {",
     tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
   },
+  {
+    name: "insert-entry-replaced-undropped",
+    breaks: "an entry's `insert_entry` is given no drop of what it replaces, so a value with a destructor it writes over is never dropped",
+    file: "src/lower/std_types/map.rs",
+    find: "                if matches!(op, MapOp::Retain | MapOp::Extend | MapOp::InsertEntry { vacant: false }) =>\n",
+    replace: "                if matches!(op, MapOp::Retain | MapOp::Extend) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
+  },
+  {
+    name: "insert-entry-unknown",
+    breaks: "`insert_entry` isn't one of an entry's methods, so a program calling it is refused",
+    file: "src/lower/std_types/map.rs",
+    find: "        \"insert_entry\" if vacant || entry => MapOp::InsertEntry { vacant },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
+  },
 ];
