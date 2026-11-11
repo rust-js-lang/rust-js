@@ -115,14 +115,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^last_fold_gives_back_what_it_kept.rs$"],
   },
   {
-    name: "last-dropping-steps-closing-at-end",
-    breaks: "`last()` of what has no `fold` of its own steps it by JS's own steps, which close it inside its last step, so where what it has left panics as it's dropped, the one kept is dropped, where std's default fold has given it back and rustc leaks it (#648)",
-    file: "src/runtime/last_dropping.js",
-    find: "  $foldBy(it, \"next\", undefined, (_, item) => keep(item), unwind);\n",
-    replace: "  $foldBy(it[Symbol.iterator](), \"next\", undefined, (_, item) => keep(item), unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^last_fold_gives_back_what_it_kept.rs$"],
-  },
-  {
     name: "last-dropping-skip-unclosed",
     breaks: "a `skip(1).last()` whose skipped item's drop panics never closes what it steps, so the rest of a `Vec`'s items are never dropped (#844)",
     file: "src/runtime/last_dropping.js",

@@ -117,12 +117,12 @@ function $lastDropping(it, drop, boxed) {
     it.fold(undefined, (_, item) => keep(item), drop && unwind);
     return seen ? some(last) : undefined;
   }
-  // Else std's default `fold`, stepped here: where a step throws, a panic,
+  // Else std's default `fold`, `$foldBy`: where a step throws, a panic,
   // the one kept, then what's left, as the fold drops its own as it
-  // unwinds, then what it took. Not by JS's own steps, which close it at
-  // its end inside its last step: what's left is dropped once the fold has
-  // given back the one kept, so where that drop panics, it's leaked, as a
-  // `zip`'s side's rest is (#648).
+  // unwinds, then what it took. What's left is dropped once the fold has
+  // given back the one kept, by its own steps, not JS's, which `$foldBy`
+  // owns (#1330), so where that drop panics, it's leaked, as a `zip`'s
+  // side's rest is (#648).
   const unwind = () => {
     if (seen) {
       seen = false;

@@ -2466,3 +2466,20 @@ source's own `count` would answer too (`reaches_own_steps`). Held by
 `identity-map-shows-own-count`; the `generic-instances` rows of
 `own_count_through_adapters` and `flatten_count_takes_each_inner_count` run
 as Rust does.
+
+## Amendment: `last()`'s default fold steps by `$foldBy`'s own steps, the one rule (2026-11-12, #1109)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, no output
+changes. The mutation `last-dropping-steps-closing-at-end` (#648) folded
+`$lastDropping`'s fallback by JS's protocol steps,
+`$foldBy(it[Symbol.iterator](), ..)`, which close what's left inside the
+last step, before the fold gives back the one kept. Since #1330
+(c5d5ebedf), `$foldBy` itself steps a value by its own steps, `ownNext`,
+which a `$Steps`' `[Symbol.iterator]()` keeps as it makes the closing
+ones, and every other value that reaches the fallback, a JS iterator
+helper's or a generator's, is its own iterator. So the two calls fold by
+the same steps and close at the same point: the mutant is equivalent,
+not a missing case. With it applied, all 93 corpus cases that call
+`last()` and the 9 test files that do (449 tests) ran as before. It's
+removed; the rule is `$foldBy`'s, which its own mutations hold, and
+`$lastDropping`'s comment names it there.
