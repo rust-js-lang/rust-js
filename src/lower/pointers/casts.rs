@@ -167,6 +167,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let signed = Expr::bool(b.is_signed());
                 Ok(helper("$ptrRetyped", vec![pointer, width, signed]))
             }
+            // A float, read from its bytes as its bits, byteorder's (#1283).
+            (_, _) if is_bytes(a) && b.is_floating_point() => {
+                let width = self.pointee_size(b, span)?;
+                Ok(helper("$ptrRetyped", vec![pointer, width, Expr::str("float")]))
+            }
             (_, ty::Array(item, length)) if is_bytes(a) && is_bytes(*item) => {
                 let width = self.const_arg(*length, span)?;
                 Ok(helper("$ptrRetyped", vec![pointer, width, Expr::str("bytes")]))
@@ -200,7 +205,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // through the bytes.
             (_, _)
                 if (integer(a) || self.plain_codec(a, span)?.is_some())
-                    && (integer(b) || matches!(b.kind(), ty::Array(item, _) if is_bytes(*item))) =>
+                    && (integer(b)
+                        || b.is_floating_point()
+                        || matches!(b.kind(), ty::Array(item, _) if is_bytes(*item))) =>
             {
                 let bytes = self.recast(pointer, a, self.tcx.types.u8, span)?;
                 self.recast(bytes, self.tcx.types.u8, b, span)

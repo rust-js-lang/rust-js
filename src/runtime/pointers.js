@@ -877,6 +877,9 @@ function $byteView(view) {
         throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") return $bytesRead(this);
+      // A float's bytes, its bits, byteorder's `*(p as *const f32)` of an
+      // integer's (#1283).
+      if (this.signed === "float") return $floatFromBits($readInt(this, this.width, false), this.width);
       return $readInt(this, this.width, this.signed);
     },
     set(value) {
@@ -885,6 +888,10 @@ function $byteView(view) {
       }
       if (this.signed === "bytes") {
         for (let i = 0; i < this.width; i++) $byteSet(this, i, value[i]);
+        return;
+      }
+      if (this.signed === "float") {
+        $writeInt(this, this.width, $floatToBits(value, this.width));
         return;
       }
       $writeInt(this, this.width, value);

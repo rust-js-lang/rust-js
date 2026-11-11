@@ -247,4 +247,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_kept_mut.rs$"],
   },
+  {
+    name: "float-from-bytes-refused",
+    breaks: "an integer's bytes read as a float, byteorder's `*(&int as *const u32 as *const f32)`, is refused (#1283)",
+    file: "src/lower/pointers/casts.rs",
+    find: "                        || b.is_floating_point()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
+  {
+    name: "float-from-bytes-read-as-integer",
+    breaks: "an integer's bytes read as a float are read as the integer, its bits a number (#1283)",
+    file: "src/lower/pointers/casts.rs",
+    find: "                Ok(helper(\"$ptrRetyped\", vec![pointer, width, Expr::str(\"float\")]))\n",
+    replace: "                Ok(helper(\"$ptrRetyped\", vec![pointer, width, Expr::bool(false)]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
 ];

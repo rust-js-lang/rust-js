@@ -290,3 +290,24 @@ builds.
 
 A pointer to an item a slice's `iter_mut()` lends, byteorder's `n as *const
 f32`, is still refused (#1283): the item's handle doesn't know its slot.
+
+## Amendment: a slot's `&mut` is its slot's pointer, decided at compile time (#1283)
+
+The user's decision (B, 2026-11-12). A `&mut` that is an item a slice's
+`IterMut::next()` gave, `n` of `for n in numbers.iter_mut()`, is a
+handle `$mutItems` made. Each handle now knows its slot, so a raw pointer
+to what it's to is the slot's, `$ptrOfItem(n)`, at the slot's address.
+Which `&mut` is such an item is decided at compile time: a local written
+once, by `next()`'s `Some` of a `std::slice::IterMut`. Any other `&mut`
+whose JS is a box of a copy is still refused at compile time. byteorder's
+`n as *const f32` compiles; a closure's parameter, `.map(|n| n as *mut
+u32)`, is still refused.
+
+And a struct of the crate's that holds a raw pointer in a field, lock_api's
+`ExclusiveGuardData<T>(*mut T)`, lets its constructor's `&mut` out as one.
+Its callers give the place's pointer, as a raw pointer in the result does.
+An integer's bytes read or written as a float, byteorder's `*(&int as
+*const u32 as *const f32)`, are its bits, through `$floatFromBits` and
+`$floatToBits`. Case C of ADR 0262: what was refused now runs as Rust's.
+Corpus case pointer_to_a_lent_slot covers it against native Rust in both
+builds.

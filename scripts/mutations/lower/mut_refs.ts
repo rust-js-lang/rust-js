@@ -451,4 +451,20 @@ export const mutations: Mutation[] = [
     replace: "                        || false\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_kept_mut.rs$"],
   },
+  {
+    name: "struct-raw-pointer-unseen",
+    breaks: "a constructor that keeps its `&mut` as a struct's `*mut T` field, lock_api's guard, is given a box of a copy, refused (#1283)",
+    file: "src/lower/mut_refs.rs",
+    find: "                ty::Adt(adt, args) if !self.is_std(adt.did()) && !seen.contains(&adt.did()) => {\n",
+    replace: "                ty::Adt(adt, args) if false && !seen.contains(&adt.did()) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
+  {
+    name: "phantom-raw-pointer-seen",
+    breaks: "a marker's `PhantomData<*const ()>` in a type is taken for a raw pointer, so a JSX component given a reference to it is refused as letting it out (#1283)",
+    file: "src/lower/mut_refs.rs",
+    find: "                ty::Adt(marker, _) if marker.is_phantom_data() => walk.skip_current_subtree(),\n",
+    replace: "",
+    tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module"],
+  },
 ];

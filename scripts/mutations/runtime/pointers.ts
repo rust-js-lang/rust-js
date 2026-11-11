@@ -699,4 +699,20 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/lowering.test.ts", "-t", "exposing began is refused"],
   },
+  {
+    name: "float-bytes-read-as-bits",
+    breaks: "a float read through bytes is its bits as an integer, not the float (#1283)",
+    file: "src/runtime/pointers.js",
+    find: "      if (this.signed === \"float\") return $floatFromBits($readInt(this, this.width, false), this.width);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
+  {
+    name: "float-bytes-written-as-number",
+    breaks: "a float written through bytes is written as an integer of its value, not its bits (#1283)",
+    file: "src/runtime/pointers.js",
+    find: "      if (this.signed === \"float\") {\n        $writeInt(this, this.width, $floatToBits(value, this.width));\n        return;\n      }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
 ];

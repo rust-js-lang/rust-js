@@ -824,6 +824,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if base.projection.is_empty() && self.given_its_pointer_here(state.body, base.local) {
                         return Ok(Value::Expr(reference));
                     }
+                    // An item a slice's `iter_mut()` lent, a handle on its
+                    // slot: the slot's pointer, byteorder's `n as *const
+                    // f32` of `for n in numbers` (#1283).
+                    if base.projection.is_empty() && self.lent_by_slice_iter_mut(state.body, base.local) {
+                        return Ok(Value::Expr(Expr::call_helper("$ptrOfItem", vec![reference])));
+                    }
                     if js::same_path(&target, &Expr::held(reference)) {
                         return Err(refuse(
                             tcx,
@@ -908,6 +914,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         }
+    }
+
+    /// Whether `local` is written once, by the item a slice's `IterMut`'s
+    /// `next()` gave, `n = (next as Some).0`: a handle `$mutItems` made,
+    /// which knows its slot (#1283).
+    fn lent_by_slice_iter_mut(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
+        let writes: Vec<&Rvalue<'tcx>> = (body.basic_blocks.iter())
+            .flat_map(|data| &data.statements)
+            .filter_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.local == local && assign.0.projection.is_empty() => {
+                    Some(&assign.1)
+                }
+                _ => None,
+            })
+            .collect();
+        let [Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)] = writes.as_slice() else {
+            return false;
+        };
+        let [PlaceElem::Downcast(_, some), PlaceElem::Field(field, _)] = from.projection.as_slice() else {
+            return false;
+        };
+        if some.as_u32() != 1 || field.as_u32() != 0 {
+            return false;
+        }
+        body.basic_blocks.iter().any(|data| match &data.terminator().kind {
+            TerminatorKind::Call { func, destination, .. } if destination.local == from.local && destination.projection.is_empty() => {
+                fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(id, args)| {
+                    is_std_def(self.tcx, self.tcx.trait_of_assoc(id).unwrap_or(id), StdItem::Iterator)
+                        && matches!(args.type_at(0).kind(), ty::Adt(adt, _) if self.tcx.def_path_str(adt.did()) == "std::slice::IterMut")
+                })
+            }
+            _ => false,
+        })
     }
 
     /// Whether `place` is a whole field that's the property its cell holds,

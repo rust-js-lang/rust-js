@@ -7107,7 +7107,12 @@ export function $jsonErrorDyn(type) {
 }
 
 // `v.iter_mut()` of numbers or strings, which JS can't change in place: a
-// handle on each item, whose `value` reads and writes it (ADR 0152).
+// handle on each item, whose `value` reads and writes it (ADR 0152). Each
+// knows its slot, so a raw pointer to what it's to is the slot's,
+// `$ptrOfItem`'s (#1283).
+export const $itemArray = Symbol("rust-js item of");
+export const $itemIndex = Symbol("rust-js item at");
+
 export function $mutItems(v) {
   return Array.from(v, (_, i) => ({
     get value() {
@@ -7116,7 +7121,15 @@ export function $mutItems(v) {
     set value(item) {
       v[i] = item;
     },
+    [$itemArray]: v,
+    [$itemIndex]: i,
   }));
+}
+
+// A raw pointer to what an item `$mutItems` lent is to: its slot's, byteorder's
+// `n as *const f32` of `for n in numbers` (#1283).
+export function $ptrOfItem(handle) {
+  return $ptr(handle[$itemArray], handle[$itemIndex]);
 }
 
 // `v.get_mut(i)`, `first_mut()` and `last_mut()` of numbers or strings: a
@@ -8537,6 +8550,9 @@ export function $byteView(view) {
         throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") return $bytesRead(this);
+      // A float's bytes, its bits, byteorder's `*(p as *const f32)` of an
+      // integer's (#1283).
+      if (this.signed === "float") return $floatFromBits($readInt(this, this.width, false), this.width);
       return $readInt(this, this.width, this.signed);
     },
     set(value) {
@@ -8545,6 +8561,10 @@ export function $byteView(view) {
       }
       if (this.signed === "bytes") {
         for (let i = 0; i < this.width; i++) $byteSet(this, i, value[i]);
+        return;
+      }
+      if (this.signed === "float") {
+        $writeInt(this, this.width, $floatToBits(value, this.width));
         return;
       }
       $writeInt(this, this.width, value);

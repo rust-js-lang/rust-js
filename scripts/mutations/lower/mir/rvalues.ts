@@ -757,4 +757,12 @@ export const mutations: Mutation[] = [
     replace: "                                && false;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
+  {
+    name: "iter-mut-item-pointer-refused",
+    breaks: "a raw pointer to an item a slice's `iter_mut()` lends, byteorder's `n as *const f32`, is refused (#1283)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    if base.projection.is_empty() && self.lent_by_slice_iter_mut(state.body, base.local) {\n",
+    replace: "                    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
 ];
