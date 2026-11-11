@@ -1462,3 +1462,11 @@ ends where `nth` past its end leaves it, as std's does. Held by
 `range_advanced_by_its_bounds.rs`, both builds, and four mutations; the
 `generic-instances` rows of `range_reversed_skipped_beside_its_back_stepped`
 run as Rust does.
+
+## Amended (2026-11-12, #1109): no `$knowing` of an array's iterator reaches tidy
+
+`stepped_in_place`'s reading of `$knowing($iter(xs))` as `$iter(xs)` is
+gone with its mutation `knowing-of-items-kept`: no case of the corpus that
+reaches it, 1,108 of them, `fused_iterator.rs` among them, writes that
+shape now, each its snapshot without the rule. `knowing-unread` still holds
+what `$knowing` makes.

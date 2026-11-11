@@ -308,15 +308,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
-    name: "projection-item-not-an-iterator",
-    breaks:
-      "an iterator whose `Item` is another's associated type, `A::Item`, isn't taken as one, and `for _ in &mut it` is refused",
-    file: "src/lower/mir/iter/sources.rs",
-    find: "                .is_some_and(|tr| !iterator_traits.contains(&tr)),\n",
-    replace: "                .is_some_and(|_| false),\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_of_projection.rs$"],
-  },
-  {
     name: "rev-of-array-not-array",
     breaks:
       "a `rev()` of an array's iterator isn't seen to be its array reversed, and `next_back` of it is refused",

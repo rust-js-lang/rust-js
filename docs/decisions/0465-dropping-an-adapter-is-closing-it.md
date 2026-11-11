@@ -2483,3 +2483,12 @@ not a missing case. With it applied, all 93 corpus cases that call
 `last()` and the 9 test files that do (449 tests) ran as before. It's
 removed; the rule is `$foldBy`'s, which its own mutations hold, and
 `$lastDropping`'s comment names it there.
+
+## Amended (2026-11-12, #1109): `$foldToArray` is given an array or an iterator
+
+`$foldToArray` no longer makes an iterator of an iterable that isn't one:
+nothing gives it one. A `splice`'s replacement is `$splicing`'s own to
+step, and generic code's `collect()` of a `HashSet`, a `BTreeSet`, a
+`VecDeque` or an `Option` given as an `IntoIterator` is given its
+iterator. Without it the whole corpus, 2,249 cases, runs as native Rust;
+its mutation `fold-to-array-of-an-iterable-unstepped` is gone with it.

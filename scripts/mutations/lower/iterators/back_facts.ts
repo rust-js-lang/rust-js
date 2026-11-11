@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/back_facts.rs",
     find: "                    && !self.compiled_struct(ty, value)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(returned_impl_ends|chain_under_a_held_map_from_its_back).rs$"],
   },
   {
     name: "chain-stepped-by-its-type",

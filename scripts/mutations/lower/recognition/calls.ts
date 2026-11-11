@@ -430,19 +430,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
   },
   {
-    name: "slice-to-owned-unknown",
-    breaks:
-      "a slice's `to_owned()` is taken for a `T: Clone`'s, whose clone of a `[T]` is the array it's given: a change to the copy changes the original",
-    file: "src/lower/recognition/calls.rs",
-    find: "        _ if ty.is_slice() => Std::ToVec,\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(slice_to_owned|to_owned_is_clone).rs$",
-    ],
-  },
-  {
     name: "assert-unchecked-unknown",
     breaks: "`hint::assert_unchecked(c)` isn't known, and is refused",
     file: "src/lower/recognition/calls.rs",

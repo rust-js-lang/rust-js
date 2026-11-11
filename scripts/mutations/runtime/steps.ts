@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    taken.sizeHint = () => $takeHint(this, n);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(size_hint_of_adapters|capacity_exact_size_adapters).rs$"],
   },
   {
     name: "flatten-inner-uncounted",

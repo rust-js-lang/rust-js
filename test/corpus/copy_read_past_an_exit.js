@@ -116,6 +116,33 @@ function caught(t) {
   return count$1;
 }
 
+function setInACaughtWay(t) {
+  const count$1 = count;
+  try {
+    if (t) {
+      count = 11;
+      throw new Error("set");
+    }
+  } catch (error) {
+    $catchable(error);
+  }
+  return count$1;
+}
+
+function readInItsCatch(t) {
+  const count$1 = count;
+  try {
+    if (t) {
+      count = 21;
+      throw new Error("set");
+    }
+    return count$1;
+  } catch (error) {
+    $catchable(error);
+    return (count$1 + 100) >>> 0;
+  }
+}
+
 function labeled(t) {
   const count$1 = count;
   out: {
@@ -160,6 +187,11 @@ function main() {
   console.log(`${resetOrKeep(2, false)} ${resetOrKeep(2, true)}`);
   console.log(`${callThenClear(4)}`);
   console.log(`${caught(true)} ${count}`);
+  count = 1;
+  console.log(`${setInACaughtWay(true)} ${setInACaughtWay(false)}`);
+  count = 1;
+  console.log(`${readInItsCatch(true)} ${readInItsCatch(false)}`);
+  count = 1;
   console.log(`${labeled(true)} ${labeled(false)}`);
   console.log(`${matched(0)} ${matched(1)} ${count}`);
   console.log(`${callServer == null}`);

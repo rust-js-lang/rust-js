@@ -315,15 +315,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
   },
   {
-    name: "impl-bounds-walked-with-bound-lifetimes",
-    breaks:
-      "an impl's bound of any lifetime, `F: for<'a> Fn(&'a T::Item) -> bool`, is selected with its bound lifetimes left in it, and rustc panics, 'has escaping bound vars' (#1062)",
-    file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        let bound = tcx.instantiate_bound_regions_with_erased(bound).trait_ref;\n",
-    replace: "                        let bound = bound.skip_binder().trait_ref;\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
-  },
-  {
     name: "item-param-iterator-unstepped",
     breaks: "an impl whose `type Iter = I` is bound by `Iterator` isn't seen to step `I`, so a trait's default it keeps that steps `Self::Iter` `.reduce`s a range given it as if a JS iterator, `TypeError` (#972, ADR 0977)",
     file: "src/lower/analysis/iterator_steps.rs",

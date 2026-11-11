@@ -124,3 +124,13 @@ the array it's given, so a change to the copy would change the original
 `to_owned_is_clone`, which changes a plain slice's copy too, and the
 mutations `blanket-to-owned-shared` and `slice-to-owned-unknown`.
 
+## Amended (2026-11-12, #1109): a slice's `to_owned()` is its `clone()` too
+
+A slice's `to_owned()` was `to_vec()` by a rule of its own (`to_owned_of`),
+as a clone of a `[T]` was the array it's given. It isn't now: a slice's
+clone copies it, as its `to_vec()` does, so the rule and its mutation
+`slice-to-owned-unknown` are gone, **a slice's `to_owned()` is std's
+`T: Clone` one's**, as any other's but a `str`'s. Without it every case of
+the corpus that reaches `to_owned_of`, 20 of them, `slice_to_owned` and
+`to_owned_is_clone` among them, runs as native Rust and writes its
+snapshot. Held by those cases and `blanket-to-owned-shared`.

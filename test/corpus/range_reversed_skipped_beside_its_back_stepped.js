@@ -37,17 +37,33 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = secondFromItsFront({ start: 3n, end: 9n });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = backThenFar(
-    $rev($iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack)),
-  );
-  console.log(
-    `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
-  );
-  const value$4 = backThenSkipped(
+  const value$3 = farFromItsFront({ start: 0n, end: 18446744073709551615n });
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = backThenFar(
     $rev($iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack)),
   );
   console.log(
     `(${value$4[0] == null ? "None" : `Some(${value$4[0]})`}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
+  const value$5 = backThenSkipped(
+    $rev($iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack)),
+  );
+  console.log(
+    `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
+  );
+  const value$6 = frontThenFarFromItsBack(
+    $iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack),
+  );
+  console.log(
+    `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
+  );
+}
+
+function farFromItsFront(range) {
+  return $nthBack($rev($iterator(range, $rangeNext, false, $rangeNextBack)), 4000000000);
+}
+
+function frontThenFarFromItsBack(it) {
+  return [$next(it), $nthBack(it, 4000000000)];
 }
 //# sourceMappingURL=case.js.map

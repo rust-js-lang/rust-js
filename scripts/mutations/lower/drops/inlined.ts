@@ -326,16 +326,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "empty-finally-kept",
-    breaks:
-      "a drop of nothing to do leaves `try { .. } finally {}` (ADR 0608, amended)",
-    file: "src/lower/drops/inlined.rs",
-    find: "            js::each_block_mut(&mut made, &mut |stmts| unwrapped_tries(stmts));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
-    snapshots: true,
-  },
-  {
     name: "const-closure-drop-kept",
     breaks:
       "a guard in a closure that's a `const` fn keeps its drop a function, `restoreDrop_drop(_restore)` (ADR 0608, amended)",

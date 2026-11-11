@@ -101,11 +101,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-iterator-nth-stepped",
-    breaks: "a range's JS iterator has no `nth` of its bounds, so a `skip` of a held range steps each number and doesn't finish (#231)",
+    breaks:
+      "a range's JS iterator has no `nth` of its bounds, so a `rev()` of one made knowing its back has no `nth_back` of its own, and its `nth_back(4_000_000_000)` steps each number it passes, past the run's time, where std's `Rev::nth_back` is the range's `nth` (#231, #1109)",
     file: "src/runtime/iterator.js",
     find: "  nth ??= $rangeNthOf(next);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^range_reversed_skipped_beside_its_back_stepped.rs$"],
   },
   {
     name: "own-steps-not-the-value",
@@ -273,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-nth-back-unasked",
     breaks:
-      "a range made knowing its back has no `nth_back` of its own, so a `skip` of its `rev()` steps each number it skips, 4e9 of them, past the run's time, where std's `Rev::nth` moves the range's end (#950)",
+      "a range made knowing its back has no `nth_back` of its own, so generic code's `nth_back(4_000_000_000)` of it steps each number it passes, past the run's time, where std's `Range::nth_back` moves its end (#950, #1109)",
     file: "src/runtime/iterator.js",
     find: "  nthBack ??= nextBack && $rangeNthOf(nextBack);\n",
     replace: "",

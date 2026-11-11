@@ -9,7 +9,9 @@
 // block that holds a set, which goes on to what follows the block, and
 // past a `catch` an unwind's set reaches; and one past a way that ends
 // inside a `try`, a labeled block or a `match`'s `switch`, where what ends
-// there goes on to what follows: a `throw` past its `catch` (#515).
+// there goes on to what follows: a `throw` past its `catch` (#515), the
+// variable set in place in the way that throws, read after the `catch`
+// and in it (#1109).
 use std::cell::Cell;
 use std::panic::catch_unwind;
 
@@ -118,6 +120,30 @@ fn caught(t: bool) -> u32 {
     count
 }
 
+fn set_in_a_caught_way(t: bool) -> u32 {
+    let count = COUNT.get();
+    let _ = catch_unwind(|| {
+        if t {
+            COUNT.set(11);
+            panic!("set");
+        }
+    });
+    count
+}
+
+fn read_in_its_catch(t: bool) -> u32 {
+    let count = COUNT.get();
+    match catch_unwind(|| {
+        if t {
+            COUNT.set(21);
+            panic!("set");
+        }
+    }) {
+        Ok(()) => count,
+        Err(_) => count + 100,
+    }
+}
+
 fn labeled(t: bool) -> u32 {
     let count = COUNT.get();
     'out: {
@@ -163,6 +189,11 @@ fn main() {
     println!("{} {}", reset_or_keep(2, false), reset_or_keep(2, true));
     println!("{}", call_then_clear(4));
     println!("{} {}", caught(true), COUNT.get());
+    COUNT.set(1);
+    println!("{} {}", set_in_a_caught_way(true), set_in_a_caught_way(false));
+    COUNT.set(1);
+    println!("{} {}", read_in_its_catch(true), read_in_its_catch(false));
+    COUNT.set(1);
     println!("{} {}", labeled(true), labeled(false));
     println!("{} {} {}", matched(0), matched(1), COUNT.get());
     println!("{}", CALL_SERVER.get().is_none());

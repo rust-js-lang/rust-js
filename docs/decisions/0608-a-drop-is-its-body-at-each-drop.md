@@ -367,3 +367,12 @@ dictionary and drop) against native Rust; and the mutations
 (`js/applied.ts`). That a parameter's argument has no effects, and
 `reads_where_made`'s cases no program reaches, no mutation holds: what's
 given a `Drop` for its type parameters is a function's name.
+
+## Amended (2026-11-12, #1109): no `finally` is left empty to unwrap
+
+`unwrapped_tries`, which made a `try` whose `finally` a drop of nothing to
+do left empty its block, is gone with its mutation `empty-finally-kept`:
+it survived every case of the corpus that reaches the inliner, 595 of
+them, their JS each its snapshot, `future_size_unwinds`' `Big` and
+`map_stepped_from_its_back`'s `Noisy` too: no drop of nothing to do
+leaves an empty `finally` for it to find now. Case A, as before.

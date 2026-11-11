@@ -458,7 +458,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "            || self.equal_only_to_itself(ty)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(identity_keys|eq_of_identities_inside).rs$"],
+    snapshots: true,
   },
   {
     name: "library-identity-unread",
@@ -481,7 +482,8 @@ export const mutations: Mutation[] = [
     find: "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty) {\n",
     replace:
       "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty).filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_identity_set(_counted)?.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rc_identity_set(_counted)?|eq_of_identities_inside).rs$"],
+    snapshots: true,
   },
   {
     name: "identity-eq-value-called",

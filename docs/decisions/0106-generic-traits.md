@@ -393,3 +393,12 @@ Held by `inline_const_of_a_trait_constant.rs` (an inline constant reading
 nested in another, of a trait's default constant overridden or not, and
 with a const generic) against native Rust in both builds, and the mutations
 `const-block-reads-unread` and `nested-const-block-reads-unread`.
+
+## Amended (2026-11-12, #1109): bound lifetimes are `select`'s to erase
+
+The mutation `impl-bounds-walked-with-bound-lifetimes`, an impl's bound of
+any lifetime walked with its bound lifetimes left in it, is gone: trait
+selection erases what a binder binds itself (`traits::select`, #1224), so
+no case panics without the walk's own erasing, every case of the corpus
+that reaches it, 2,244, `iterator_passed_through_a_chain_of_impls`' `F:
+for<'a> Fn(&'a T::Item) -> bool` among them, each its snapshot.

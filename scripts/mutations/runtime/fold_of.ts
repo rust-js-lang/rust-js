@@ -187,14 +187,6 @@ export const mutations: Mutation[] = [
     tests: ["test/serde.test.ts", "-t", "collect_seq and collect_map drop"],
   },
   {
-    name: "fold-to-array-of-an-iterable-unstepped",
-    breaks: "`$foldToArray` of an iterable that isn't an iterator, a `splice`'s `Vec` replacement, steps nothing of it (#1141)",
-    file: "src/runtime/fold_of.js",
-    find: "  if (Array.isArray(it)) return Array.from(it);\n  if (typeof it.next !== \"function\" && typeof it.fold !== \"function\") it = it[Symbol.iterator]();\n",
-    replace: "  if (Array.isArray(it)) return Array.from(it);\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
-  },
-  {
     name: "collect-dropping-of-folded-by-next",
     breaks: "a collect of what `$folded` made steps it by `next`, which lists it whole first, so what it collected before a step panics is leaked, a `LinkedList`'s in generic code (#1161)",
     file: "src/runtime/fold_of.js",

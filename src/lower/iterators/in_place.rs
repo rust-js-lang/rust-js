@@ -48,9 +48,9 @@ pub(in crate::lower) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Opt
 /// `e`, stepped till it ends, by a `for` or not: of an `$intoIter(xs)`,
 /// where nothing reads where it is, JS's iterator of `xs`, which a `for`
 /// makes itself (ADR 0475); of a `fuse()` of a JS iterator, the iterator,
-/// which ends at its first `done` as the `Fuse` would, and of `$knowing`
-/// of an array's iterator, which knows its back and length already, the
-/// iterator (ADR 0561); through `$rev` of one.
+/// which ends at its first `done` as the `Fuse` would (ADR 0561); through
+/// `$rev` of one. A `$knowing` of an array's iterator, which knows its
+/// back and length already, no longer reaches here (#1109).
 pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let (reversed, knowing) = (is_reversed(e), is_knowing(e));
     let own_steps = iterator_parts(e).is_some_and(|given| given.len() >= 6);
@@ -71,7 +71,6 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let replacement = match callee.helper_name() {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
-        _ if knowing && is_stepped_items(&given[0]) => given[0].clone(),
         // A `fuse()` given no drops, its dictionary and its fact alone, the
         // drops it doesn't use left off (ADR 0300): its source. One given
         // its source's drop stays, which drops what it didn't give as it's

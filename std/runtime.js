@@ -4585,10 +4585,9 @@ export function $collectVec(it, size, how, drop) {
 // drops what's left: the fold's `unwind`. In place of items with nothing to
 // drop, `inPlace`, as its caller knows it (#710).
 export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined && !restFirst) {
-  // Of an array, a copy, as `Array.from` makes; of another iterable, its
-  // iterator, which a throw closes, where `Array.from` doesn't (#1126).
+  // Of an array, a copy, as `Array.from` makes (#1126); anything else it's
+  // given is an iterator, stepped by its fold or its `next` (#1109).
   if (Array.isArray(it)) return Array.from(it);
-  if (typeof it.next !== "function" && typeof it.fold !== "function") it = it[Symbol.iterator]();
   // A JS iterator's own helper, which has no fold, stepped by `next`.
   if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];

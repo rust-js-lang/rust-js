@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     find: '                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);',
     replace:
       '                {}\n                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);',
-    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(cell_deque_char_methods|collected_helper_iterator_stays_lazy).rs$"],
     snapshots: true,
   },
   {

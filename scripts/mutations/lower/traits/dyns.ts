@@ -482,7 +482,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "            ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, id),\n",
     replace: "            ty::Closure(..) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_of_a_borrowed_function|boxed_fn_given_to_consumers_drops).rs$"],
+    snapshots: true,
   },
   {
     name: "borrowed-fn-dyn-in-counted-rc-unwrapped",

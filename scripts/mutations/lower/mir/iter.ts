@@ -105,15 +105,11 @@ export const mutations: Mutation[] = [
   {
     name: "mir-next-through-mut-refused",
     breaks:
-      "`next` of a `&mut` to the crate's iterator from MIR is refused, not its own",
+      "`next` or `size_hint` of a `&mut` to the crate's iterator from MIR, `own.by_ref().size_hint()`, is refused, not its own",
     file: "src/lower/mir/iter.rs",
     find: "        let through_mut = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_ref());\n",
     replace: "        let through_mut = false;\n",
-    tests: [
-      "test/lowering-iterators.test.ts",
-      "-t",
-      "stepped through by_ref from MIR",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
   },
   {
     name: "mir-find-boxed-unboxed",

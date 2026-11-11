@@ -236,3 +236,13 @@ closed on its drop. An `Option` owns the one item it gives, as its
 filter's are. Held by `flatten_of_options_given_to_generic_code.rs` and the
 mutation `flattened-option-owns-nothing`; the `generic-instances` row of
 `flatten_last_takes_each_inner_last.rs` runs as Rust does.
+
+## Amended (2026-11-12, #1109): its dictionary's `into_iter`, by `as_js_iterator`
+
+`closed_inner` no longer asks `items_by_dictionary` itself: `as_js_iterator`
+gives an associated type's items its dictionary's `into_iter`, `$given(
+SelfItemIntoIterator.intoIter(x), ..)`, the same JS, so the mutation
+`closed-inner-not-by-dictionary` survived every case that reaches it, 54
+of them, `flat_map_of_a_where_clause_into_iterator.rs` among them, JS and
+results the same. One rule, `as_js_iterator`'s, makes each inner iterator
+of an associated type, closed or not.

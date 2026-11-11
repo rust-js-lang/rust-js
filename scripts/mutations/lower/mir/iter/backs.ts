@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-of-items-not-reversed-inward",
     breaks:
-      "`$rev($iter(v))` isn't the array's `$iter(v.toReversed())`, the one rule of it since #228",
+      "`$rev($iter(v))` isn't the array's `$iter(v.toReversed())`, the one rule of it since #228, and a `rev()` of a slice's `copied()`, `points.iter().copied().rev()`, throws `it.back is not a function`",
     file: "src/lower/mir/iter/backs.rs",
     find: "    if crate::lower::iterators::is_stepped_items(e) {\n        let items = crate::lower::iterators::iterated(e.clone());\n",
     replace:
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(fused_iterator|rev_of_closed_items|rev_drops).rs$",
+      "^(fused_iterator|rev_of_closed_items|rev_drops|copied_structs_apart).rs$",
     ],
     snapshots: true,
   },

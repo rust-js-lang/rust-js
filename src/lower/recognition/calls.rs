@@ -1182,12 +1182,12 @@ fn iterator_step(name: &str) -> Option<StepOp> {
     }
 }
 
-/// `to_owned()` of a `ty`: a `str`'s is itself, a slice's its `to_vec()`,
-/// and any other's, std's blanket impl for a `T: Clone`'s, its `clone()`.
+/// `to_owned()` of a `ty`: a `str`'s is itself, and any other's, a
+/// slice's too, std's blanket impl for a `T: Clone`'s, its `clone()`, whose
+/// clone of a `[T]` copies it as its `to_vec()` does (#1109).
 fn to_owned_of(ty: Ty<'_>) -> Std {
     match () {
         _ if ty.is_str() => Std::Same,
-        _ if ty.is_slice() => Std::ToVec,
         _ => Std::ToOwnedClone,
     }
 }

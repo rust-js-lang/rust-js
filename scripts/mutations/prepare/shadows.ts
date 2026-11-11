@@ -12,14 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_in_closure_sets_a_capture.rs$"],
   },
   {
-    name: "shadow-ended-way-leaves-a-try",
-    breaks: "a way that ends inside a `try`, a labeled block or a `switch` is taken to leave the copy's list, so a copy read after its `catch` is the variable a call in the `try` set, `caught(true)` giving 11 where Rust gives 1 (rd646's P0)",
-    file: "src/prepare/shadows.rs",
-    find: "    let ends = |way: &[Stmt]| top && way.last().is_some_and(leaves);\n",
-    replace: "    let ends = |way: &[Stmt]| way.last().is_some_and(leaves);\n",
-    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
-  },
-  {
     name: "shadow-ended-way-runs-on",
     breaks: "what a way that ends runs, `if (callServer$1 == null) { throw new Error(..); }`, is taken to run before what follows it, so React's Parcel client keeps `const callServer$1 = callServer;` (rd646)",
     file: "src/prepare/shadows.rs",
@@ -119,14 +111,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
     snapshots: true,
-  },
-  {
-    name: "shadow-catch-read-before-its-block",
-    breaks: "a copy of a module's variable read in a `catch`, `level$1 + 100`, is the variable, which the `try`'s call set before it threw (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
-    find: "                read_before_code(block, alias, ran, false) && read_before_code(after, alias, ran, false)\n",
-    replace: "                let mut before = *ran;\n                read_before_code(block, alias, ran, false) && read_before_code(after, alias, &mut before, false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable_in_try.rs$"],
   },
   {
     name: "shadow-read-in-try-copied",

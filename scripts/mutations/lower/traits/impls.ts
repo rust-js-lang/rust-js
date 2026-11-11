@@ -649,7 +649,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(|word| cx.fresh(word))).collect();\n",
     replace: "            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(String::from)).collect();\n",
-    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_dictionary_declared_once).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_dictionary_declared_once|copied_default_box_named_apart).rs$"],
   },
   {
     name: "entry-takes-any-box-apart",

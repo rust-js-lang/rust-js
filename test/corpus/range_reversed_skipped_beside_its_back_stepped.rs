@@ -6,7 +6,10 @@
 // step each of the 4e9 numbers it skips, 15 s of each, where Rust's is
 // instant (#950). A `rev()` given to generic code that steps it from its
 // back is such a `$rev` too, its `nth` and its `skip` the range's
-// `nth_back` (#1109).
+// `nth_back` (#1109). And far from either end: a range made knowing its
+// back given to generic code's `nth_back`, the range's own `nth_back`, and
+// the `nth_back` of its `rev()`, the range's `nth`, each moving a bound,
+// and not stepping each number (#1109).
 fn second_from_its_front(range: std::ops::Range<u64>) -> Option<u64> {
     range.rev().nth_back(1)
 }
@@ -23,6 +26,16 @@ fn main() {
     println!("{:?}", (0..u64::MAX).rev().skip(4_000_000_000).next());
     println!("{:?}", (0..u32::MAX).rev().skip(4_000_000_000).next());
     println!("{:?}", second_from_its_front(3..9));
+    println!("{:?}", far_from_its_front(0..u64::MAX));
     println!("{:?}", back_then_far((0..u64::MAX).rev()));
     println!("{:?}", back_then_skipped((0..u64::MAX).rev()));
+    println!("{:?}", front_then_far_from_its_back(0..u64::MAX));
+}
+
+fn far_from_its_front(range: std::ops::Range<u64>) -> Option<u64> {
+    range.rev().nth_back(4_000_000_000)
+}
+
+fn front_then_far_from_its_back<I: DoubleEndedIterator<Item = u64>>(mut it: I) -> (Option<u64>, Option<u64>) {
+    (it.next(), it.nth_back(4_000_000_000))
 }

@@ -415,3 +415,17 @@ found it. A `const n$1 = n` is `n` now only where nothing after it, in a
 closure or a block of its own, declares an `n`; there, it stays apart.
 Held by the corpus case `closure_in_closure_sets_a_capture` against native
 Rust; mutation `shadow-read-where-redeclared` (`prepare/shadows.ts`).
+
+## Amended (2026-11-12, #1109): two mutations no program can tell apart
+
+`shadow-ended-way-leaves-a-try` and `shadow-catch-read-before-its-block`
+are gone; the rules they broke stay, as what's right of a `try`. Neither
+mutant changes any program's JS: not the whole corpus's, 2,249 cases,
+each its snapshot, nor `copy_read_past_an_exit`'s new
+`set_in_a_caught_way` and `read_in_its_catch`, a module's variable set in
+place in a way that throws past its `catch`, read after the `catch` and in
+it. Each `catch` rust-js writes begins with `$catchable(error)`, a call,
+so a module variable's copy read in it or after it is read after code,
+and stays a copy, `read_before_code`'s, whatever a way inside the `try`
+did; and a function's own variable can't be set after Rust shadows it,
+`let n = n;`, but by a closure, whose writes keep it a copy already.

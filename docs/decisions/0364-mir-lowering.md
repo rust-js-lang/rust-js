@@ -1581,3 +1581,13 @@ Rust's preserved. Held by corpus `boxed_value_partly_moved_drops`
 (native-compared, both builds) and the mutations
 `box-contents-open-drop-as-a-struct` and `box-contents-left-undropped`
 (`lower/mir/drops.ts`).
+
+## Amended (2026-11-12, #1109): a mutation no case can tell apart
+
+`projection-item-not-an-iterator`, `implements_iterator` saying an iterator
+whose `Item` is another trait's associated type isn't one, is gone: no
+case of the corpus that reaches it, 2,238 of them, `iterator_of_projection`
+among them, nor one stepping such an iterator through a `&mut` in generic
+code, `for _ in &mut *g`, `g.by_ref().count()` and a held `&mut`'s `next`,
+changes its JS or its results. The rule stays, as what
+`implements_iterator` means.

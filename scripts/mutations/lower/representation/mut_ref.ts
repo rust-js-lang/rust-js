@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(iter_by_ref|iter_next_back|dyn_iterators).rs$",
+      "^(iter_by_ref|iter_next_back|dyn_iterators|by_ref_lends).rs$",
     ],
   },
   {
