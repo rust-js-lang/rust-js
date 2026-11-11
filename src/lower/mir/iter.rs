@@ -810,6 +810,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && item()
     }
 
+    /// `it.map(f)` made in place: by what gives each as it is,
+    /// `map(StaticPath::Params)`, no step, its source's value, said so for
+    /// what makes it knowing its back or its length (`mapped_as_it_is`,
+    /// #1342); but where a `Map` hides the crate's own steps (#235), or its
+    /// source's `nth` of what it drops (#493).
+    fn mapped(&mut self, it: Expr, (f, own): (Expr, bool), drops_nothing: bool, iter_ty: Ty<'tcx>) -> Expr {
+        let f = self.unary_callback(f, own);
+        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {
+            true => crate::lower::iterators::mapped_as_it_is(it),
+            false => crate::lower::iterators::lazily_made(Expr::call(Expr::member(it, "map"), vec![f])),
+        }
+    }
+
     /// `mir_iter_call`'s, once what it drops is seen to.
     fn mir_iter_method(
         &mut self,
@@ -976,12 +989,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match std_method {
-            // By what gives each as it is, `map(StaticPath::Params)`: no step, but where a `Map`
-            // hides the crate's own steps (#235), or its source's `nth` of what it drops (#493).
-            Some(IterMethod::Map) => match self.unary_callback(arg(), own) {
-                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,
-                f => crate::lower::iterators::lazily_made(method("map", it, vec![f])),
-            },
+            Some(IterMethod::Map) => self.mapped(it, (arg(), own), dropping.is_none(), iter_ty),
             // Of items with a destructor: each it doesn't keep dropped as it
             // discards it (ADR 0098), `filtered`'s.
             Some(IterMethod::Filter) => {

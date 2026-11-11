@@ -520,6 +520,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(stepped) = self.step_by_knowing(&value, ty, span)? {
             return Ok(stepped);
         }
+        // A map whose function gives each as it is, its source's value: its
+        // source made so (`mapped_as_it_is`, #1342).
+        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            && let Some(source_value) = crate::lower::iterators::source_mapped_as_it_is(&value)
+        {
+            return self.as_exact_size(source_value, source.peel_refs(), back, span);
+        }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455). And an `inspect(f)`, made
         // so, and a `cloned()` of what isn't a number, `src.map(clone)` (#778).
@@ -552,10 +559,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),
             };
         }
-        let why = self.as_is_map_because(ty);
         Err(self.unsupported(
             span,
-            &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count{why}"),
+            &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count"),
         ))
     }
 
@@ -651,6 +657,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(zipped) = self.zip_knowing(&value, ty, true, span)? {
             return Ok(zipped);
+        }
+        // A map whose function gives each as it is, its source's value: its
+        // source made so (`mapped_as_it_is`, #1342).
+        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            && let Some(source_value) = crate::lower::iterators::source_mapped_as_it_is(&value)
+        {
+            return self.as_double_ended(source_value, source.peel_refs(), span);
         }
         // A map made here of one that knows its back, `src.map(f)`: its
         // source's items, each `f`'s, from either end, as Rust's `Map` steps

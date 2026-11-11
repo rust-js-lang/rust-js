@@ -199,4 +199,12 @@ export const mutations: Mutation[] = [
     replace: "    let held = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
   },
+  {
+    name: "as-is-map-source-kept-in-place",
+    breaks: "the source of a map whose JS is its source's keeps the map's mark, made in place, so its range is stepped as a JS iterator, never as a range: nothing (#1342)",
+    file: "src/lower/iterators/value.rs",
+    find: "    source.facts = (source.facts.without(Known::IterMappedAsItIs)).without(Known::InPlace);\n",
+    replace: "    source.facts = source.facts.without(Known::IterMappedAsItIs);\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+  },
 ];

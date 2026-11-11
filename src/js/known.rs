@@ -272,6 +272,11 @@ pub enum Known {
     /// An enumeration made knowing its back and its length, `$enumerate(it)`
     /// (value.rs's `enumerated_knowing`, #764).
     IterEnumerate,
+    /// A map whose function gives each item as it is, its source's value as
+    /// it is (`mir/iter.rs`): what makes it knowing its back or its length
+    /// makes its source so (value.rs's `mapped_as_it_is` and
+    /// `source_mapped_as_it_is`, #1342).
+    IterMappedAsItIs,
     /// A field's cell, `$fieldCell(x, "f", true)`, that stores a `None`
     /// `null`, as the field does (`NoneForm::Null`): what a handle on the
     /// field made of it stores so, never read from its arguments (#819).

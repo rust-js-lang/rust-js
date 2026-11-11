@@ -775,4 +775,20 @@ export const mutations: Mutation[] = [
     replace: "                    (false, _) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_from_its_back.rs$"],
   },
+  {
+    name: "as-is-map-counted-as-made",
+    breaks: "a map whose JS is its source's is counted by that source with the map's marks, made in place, so its range is stepped as a JS iterator, never as a range: nothing (#1342)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.as_exact_size(source_value, source.peel_refs(), back, span);\n",
+    replace: "            return self.as_exact_size(value, source.peel_refs(), back, span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "as-is-map-backed-as-made",
+    breaks: "a map whose JS is its source's is made knowing its back by that source with the map's marks, made in place, so its range is stepped as a JS iterator, never as a range: nothing (#1342)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.as_double_ended(source_value, source.peel_refs(), span);\n",
+    replace: "            return self.as_double_ended(value, source.peel_refs(), span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+  },
 ];

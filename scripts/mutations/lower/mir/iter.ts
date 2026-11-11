@@ -147,8 +147,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map by an untagged variant constructor stays a step, `.map((value) => value)`",
     file: "src/lower/mir/iter.rs",
-    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
-    replace: "",
+    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
+    replace: "        match false {\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -376,8 +376,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "src/lower/mir/iter.rs",
-    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
-    replace: "                f if f.is_identity() && dropping.is_none() => it,\n",
+    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
+    replace: "        match f.is_identity() && drops_nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_own_nth.rs$"],
   },
   {
@@ -489,8 +489,8 @@ export const mutations: Mutation[] = [
     name: "identity-map-of-destructors-dropped",
     breaks: "an identity `map` of items with a destructor is dropped, so `rev().fuse().take(3).map(|d| d).nth(2)` reaches the reversed `Vec`'s `nth_back`, one slice front to back, where std's `Map` steps each from the back (#493)",
     file: "src/lower/mir/iter.rs",
-    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
-    replace: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
+    replace: "        match f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
   },
   {
@@ -854,5 +854,13 @@ export const mutations: Mutation[] = [
     find: "        if given.is_ref()\n            && let Some(it) = self.items_by_dictionary(values[0].clone(), given, span)?\n",
     replace: "        if given.is_ref()\n            && let Some(it) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_of_a_bound_reference.rs$"],
+  },
+  {
+    name: "as-is-map-unsaid",
+    breaks: "a map whose function gives each item as it is, left out of its JS, isn't said to be its source's, so what steps it from its back finds no map and refuses it (#1342)",
+    file: "src/lower/mir/iter.rs",
+    find: "            true => crate::lower::iterators::mapped_as_it_is(it),\n",
+    replace: "            true => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
   },
 ];

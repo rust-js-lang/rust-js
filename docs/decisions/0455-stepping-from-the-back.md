@@ -67,3 +67,44 @@ has them now, its source's, each passing the accumulator's drop on, as
 `own_steps_behind_adapters_unwind.rs` and the mutation
 `map-ends-fold-not-its-sources`; ADR 0465's amendment of the same date has
 the rest.
+
+## Amendment: a map that gives each item as it is (2026-11-11, #1342)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior was
+refused, so it's kept now.
+
+A map whose function gives each item as it is in JS, `map(Some)` of what
+can't look like `None`, is left out of its JS, which is its source's
+(`mir/iter.rs`): `.map((value) => value)` reads nothing. Beneath what
+steps it from its back or counts it, a filter's, an enumeration's, a
+`flat_map`'s or a flatten's `rfold`, what makes that knowing its back found
+no `src.map(f)` to make `$mapEnds`, only the source's value under the
+map's type, and refused it: "a `Map<Range<u32>, ..>` as a
+`DoubleEndedIterator`, which rust-js can't step from its back". #1326 had
+turned the flatten's `TypeError` into that refusal and named #1342 in it.
+
+The map's maker says now what it left out: its source's value is marked
+`Known::IterMappedAsItIs` (`iterators/value.rs`' `mapped_as_it_is`), and
+`as_double_ended` and `as_exact_size` make the map knowing its back or its
+length by making its source so, as the map was given it,
+`source_mapped_as_it_is`, without the marks its maker gave the map, made
+in place. The JS stays as it reads, `$filterEnds($iterator(range, ..),
+..)`, no map. A map's lowering is `mir/iter.rs`' `mapped` now, out of
+`mir_iter_method`, whose dispatcher cap goes down to 231. A flatten of `Option`s, made a filter of the `Some`s, steps
+its source from its back as a filter does (`back_stepped.rs`), so a map a
+variable holds beneath it is made knowing its back too. The refusal's
+words for #1342 go with it. A map a variable holds beneath an enumeration
+stepped from its back is refused as it was, of any function: its length
+isn't asked where it's made, which is apart.
+
+`test/corpus/as_is_map_stepped_from_its_back.rs` (a filter, an enumeration,
+a `flat_map` and a flatten of a variable's map, from the back, by `rfold`,
+`rfind`, `next_back` and `rev()`) runs against native Rust in both builds,
+and the conformance table's rows of `(1..6).map(|x| Some(x)).flatten()`
+stepped from its back, which #1326 left refused, run as Rust does.
+Mutations: `as-is-map-unsaid` (`lower/mir/iter.ts`),
+`as-is-map-counted-as-made` and `as-is-map-backed-as-made`
+(`lower/iterators/knowing.ts`), `as-is-map-source-kept-in-place`
+(`lower/iterators/value.ts`) and `flattened-options-source-unstepped`
+(`lower/analysis/back_stepped.ts`); six refitted, and
+`as-is-map-refusal-unnamed` taken off with the words it held.

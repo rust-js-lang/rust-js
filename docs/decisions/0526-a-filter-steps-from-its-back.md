@@ -124,9 +124,8 @@ flatten of `(1..6).map(|x| Some(x))` from its back, are refused at
 compile time where they threw: a map whose function gives each item as
 it is compiles to its source's JS (`mir/iter.rs`), so a back step
 over it finds no map to make knowing its back. That refusal was main's
-already for `(1..6).map(|x| x).filter(..).rfold(..)`. It's #1342, which
-it names now, as the refusal of counting one does
-(`back_facts.rs`' `as_is_map_because`; `test/diagnostics.test.ts`). Mutations: `flattened-options-unknowing` and
+already for `(1..6).map(|x| x).filter(..).rfold(..)`. It was #1342, which
+ADR 0455's amendment of the same date fixed. Mutations: `flattened-options-unknowing` and
 `flattened-options-source-unread` (`lower/iterators/knowing.ts`),
 `flat-map-options-unmapped` and `flatten-of-option-refs-flat`, moved from
 the recognizers (`lower/recognition/iterators.ts`), and

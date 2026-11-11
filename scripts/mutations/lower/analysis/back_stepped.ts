@@ -509,4 +509,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_adapter_is_its_value.rs$"],
     snapshots: true,
   },
+  {
+    name: "flattened-options-source-unstepped",
+    breaks: "a flatten of `Option`s, made a filter of the `Some`s, doesn't step its source from its back as a filter does, so a map a variable holds beneath it isn't made knowing that, and is refused (#1342)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                        .or_else(|| recognition.flattened_options(made).map(|(source, ..)| source))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+  },
 ];

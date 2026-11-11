@@ -841,7 +841,10 @@ pub(super) fn stepped_locals<'tcx>(
                 let chain = chained_sources(tcx, made).is_some() || zipped_sources(tcx, made).is_some();
                 let sources: Vec<Ty<'tcx>> = match chained_sources(tcx, made).or_else(|| zipped_sources(tcx, made)) {
                     Some((a, b)) => vec![a, b],
+                    // A flatten of `Option`s, made a filter of the `Some`s,
+                    // steps its source from its back as a filter does (#1342).
                     None => back_stepped_source(tcx, made)
+                        .or_else(|| recognition.flattened_options(made).map(|(source, ..)| source))
                         .or_else(|| counted_source(tcx, made).map(|(source, _)| source))
                         .or_else(|| stepped_by_source(tcx, made))
                         .or_else(|| enumerated_source(tcx, made))

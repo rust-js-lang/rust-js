@@ -496,6 +496,25 @@ pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
         .is_some_and(|next| next.starts_with("$range"))
 }
 
+/// `source`, the value a map whose function gives each item as it is,
+/// `map(|x| Some(x))`'s, is as it was (`mir/iter.rs`), said so, so what
+/// makes the map knowing its back or its length makes its source so
+/// (`is_mapped_as_it_is`, #1342).
+pub(in crate::lower) fn mapped_as_it_is(mut source: Expr) -> Expr {
+    source.facts = source.facts.with(Known::IterMappedAsItIs);
+    source
+}
+
+/// Of `e`, a map's source as it was (`mapped_as_it_is`), that source, as
+/// the map was given it: not the marks its maker gave the map, made in
+/// place (`Known::InPlace`), which a map's own call holds where it's
+/// written, `src.map(f)`.
+pub(in crate::lower) fn source_mapped_as_it_is(e: &Expr) -> Option<Expr> {
+    let mut source = e.clone();
+    source.facts = (source.facts.without(Known::IterMappedAsItIs)).without(Known::InPlace);
+    e.facts.has(Known::IterMappedAsItIs).then_some(source)
+}
+
 /// Whether `e` is std's compiled struct given what a use site knows,
 /// `$knowing(it, ..)` (`Form::Knowing`).
 pub(in crate::lower) fn is_knowing(e: &Expr) -> bool {
