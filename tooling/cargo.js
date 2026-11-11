@@ -318,20 +318,22 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * names each (ADR 0412).
  * `files` is each crate's modules' JS, by its name, where it's served from.
  * `targetDir` is where Cargo builds, its own `target/` without one.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, packageNames?: string[], features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, packageNames?: string[], packageIds?: Map<string, string>, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
  * `manifests` is each crate's, validated, as the compiler wrote it.
  * `warnings` are what rust-js says of a build that succeeds, past rustc's
  * diagnostics, each a line.
  * @returns {Promise<{ js?: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false, integrationTests = [] }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], packageIds = new Map(), features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false, integrationTests = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
   // Its library's `#[test]`s and its integration tests', `rust-js test`'s
   // (ADRs 0916, 1076): rustc's `--test`, which the wrapper gives rust-js's.
   if (tests) args.push("--profile", "test", "--lib", ...integrationTests.flatMap((name) => ["--test", name]));
-  for (const name of packageNames) args.push("-p", name);
+  // Each by its ID where it's known (`cargoWorkspace`'s `ids`): its name
+  // alone is ambiguous where the lock has another of it.
+  for (const name of packageNames) args.push("-p", packageIds.get(name) ?? name);
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
@@ -667,7 +669,11 @@ function exportsFile(exports, subpath) {
  * and `own`, the package the manifest is of, none of a workspace's root
  * without one.
  * @param {{ manifestPath: string, toolchain?: string, offline?: boolean, targetDir?: string }} options
- * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string>, own?: string }>}
+ * `ids` is each package's ID, `path+file:///dir#name@1.0`, what names it
+ * apart from another of its name in the lock, a crates.io release a
+ * dev-dependency brings, as serde_json's own tests bring serde_json 1.0.153
+ * beside it, where its name alone is ambiguous to `cargo -p`.
+ * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string>, ids: Map<string, string>, own?: string }>}
  */
 export async function cargoWorkspace({ manifestPath, toolchain, offline = false, targetDir }) {
   const manifest = resolve(manifestPath);
@@ -685,8 +691,9 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false,
   }));
   // Each package's integration tests, `tests/*.rs`, by their targets' names.
   const integrationTests = new Map(metadata.packages.map((pkg) => [pkg.name, pkg.targets.filter((target) => target.kind.includes("test")).map((target) => target.name)]));
+  const ids = new Map(metadata.packages.map((pkg) => [pkg.name, pkg.id]));
   const own = ownPackage(metadata.packages, manifest);
-  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, integrationTests, own };
+  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, integrationTests, ids, own };
 }
 
 /** The package of Cargo's metadata `manifest` is of, by its name: none of

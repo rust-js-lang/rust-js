@@ -301,8 +301,8 @@ export function createNativeBuilder({ root, rustJs }) {
     async build({ warn, ...given }) {
       return builder.inTarget("target", async (targetDir) => {
       const options = { ...given, inSource: true, targetDir };
-      const { root: workspace } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
-      const built = await builder.checkCargo(options);
+      const { root: workspace, ids } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
+      const built = await builder.checkCargo({ ...options, packageIds: ids });
       for (const warning of built.warnings) warn?.(warning);
       for (const [crate, manifest] of built.manifests) {
         // The app's own crates' checks, not an npm package's (ADR 0414).
@@ -386,14 +386,14 @@ export async function testApp({ app, packageNames = [], features = [], noDefault
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js test\` where the crate's is`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   return builder.inTarget("test", async (targetDir) => {
-  const { own, integrationTests } = await builder.cargoWorkspace({ manifestPath, targetDir });
+  const { own, integrationTests, ids } = await builder.cargoWorkspace({ manifestPath, targetDir });
   const named = packageNames.length ? packageNames : own ? [own] : [];
   if (!named.length) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
   // Each package's tests, one at a time: Cargo has what one checked as
   // done for the next (ADR 0360, amended). Each runner's files, together.
   const byRunner = new Map();
   for (const packageName of named) {
-    const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], features, noDefaultFeatures, packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
+    const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], packageIds: ids, features, noDefaultFeatures, packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
     for (const { runner, files } of tests) byRunner.set(runner, [...(byRunner.get(runner) ?? []), ...files]);
   }
   // A crate of no `#[test]`, or none its configuration builds, has no test

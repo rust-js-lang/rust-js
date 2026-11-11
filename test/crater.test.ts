@@ -242,6 +242,14 @@ test("an integration test's file its own cfg leaves off wasm32 is of no test of 
   const read = (files: Record<string, string>) => (path: string) => files[path];
   expect(offTarget("tests/dateutils.rs::try_verify", read({ "tests/dateutils.rs": text }))).toBe(true);
   expect(offTarget("tests/other.rs::t", read({ "tests/other.rs": '#![cfg(feature = "std")]\nfn a() {}\n' }))).toBe(false);
+  // A test a cfg of its own leaves off, unicode-ident's 64-bit one, and
+  // one beside it that's on.
+  const sized = '#[cfg(target_pointer_width = "64")]\n#[test]\nfn test_trieset_size() {}\n\n#[test]\nfn test_size() {}\n';
+  expect(offTarget("tests/static_size.rs::test_trieset_size", read({ "tests/static_size.rs": sized }))).toBe(true);
+  expect(offTarget("tests/static_size.rs::test_size", read({ "tests/static_size.rs": sized }))).toBe(false);
+  const inline = 'mod tests {\n    #[cfg(target_pointer_width = "64")]\n    #[test]\n    fn wide() {}\n    #[test]\n    fn any() {}\n}\n';
+  expect(offTarget("tests::wide", read({ "src/lib.rs": inline }))).toBe(true);
+  expect(offTarget("tests::any", read({ "src/lib.rs": inline }))).toBe(false);
 });
 
 // What stops the crates' tests, ranked by the crates each reason stops, then

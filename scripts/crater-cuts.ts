@@ -472,12 +472,22 @@ export function innerAttributes(text: string): string {
 /** Whether the test `name`, `a::b::tests::t`, is of a module a cfg leaves
  * off wasm32 in a test build, `#[cfg(unix)] mod tz_info;`, read of the
  * crate's source through `read` (#1153); or of an integration test's file,
- * `tests/dateutils.rs::t`, whose own `#![cfg(unix)]` leaves it off. */
+ * `tests/dateutils.rs::t`, whose own `#![cfg(unix)]` leaves it off; or is
+ * itself left off, `#[cfg(target_pointer_width = "64")] #[test] fn t`,
+ * unicode-ident's `test_trieset_size`, which the Crater took for a test
+ * the JS lost. */
 export function offTarget(name: string, read: (path: string) => string | undefined): boolean {
+  // The test function itself, of `text`, within `scope` where it's inline.
+  const fnOff = (text: string, fn: string, scope?: { from: number; to: number }) =>
+    items(text).some(
+      (item) =>
+        item.kind === "fn" && item.name === fn && (!scope || (scope.from < item.from && item.to <= scope.to)) && item.cfgs.some((cfg) => cfgHolds(cfg, true) === false),
+    );
   const integration = /^(tests\/[^/]+\.rs)::/.exec(name)?.[1];
   if (integration !== undefined) {
     const text = read(integration) ?? "";
-    return cfgsOf(innerAttributes(text).replaceAll("#![", "#[")).some((cfg) => cfgHolds(cfg, true) === false);
+    const rest = name.slice(integration.length + 2).split("::");
+    return cfgsOf(innerAttributes(text).replaceAll("#![", "#[")).some((cfg) => cfgHolds(cfg, true) === false) || (rest.length === 1 && fnOff(text, rest[0]));
   }
   const modules = name.split("::").slice(0, -1);
   let file = read("src/lib.rs") !== undefined ? "src/lib.rs" : "src/main.rs";
@@ -496,5 +506,6 @@ export function offTarget(name: string, read: (path: string) => string | undefin
       scope = undefined;
     } else scope = declared;
   }
-  return false;
+  const text = read(file);
+  return text !== undefined && fnOff(text, name.split("::").at(-1)!, scope);
 }

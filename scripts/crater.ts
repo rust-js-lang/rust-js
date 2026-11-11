@@ -268,8 +268,11 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
  * warnings, a function's macro's tests cut with it and 40 rounds, and a
  * listed test cut first, a dev-dependency a feature names kept, and a
  * failed build's first error said, and getrandom's feature asked of what Cargo
- * couldn't compile, not of a message (#1174). */
-const asking = 12;
+ * couldn't compile, not of a message (#1174). 13: a test a cfg of its own
+ * leaves off wasm32 is no test of rust-js's target, unicode-ident's
+ * 64-bit `test_trieset_size`, and each package built by its ID, which
+ * serde_json's own tests bringing another serde_json left ambiguous. */
+const asking = 13;
 
 /** What a crate's kept verdict is of, beside its release and the
  * compiler's build: the features its row names, how the Crater asks, and
