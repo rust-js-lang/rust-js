@@ -59,3 +59,22 @@ pub fn one() -> Vec<u32> {
   // Native Rust: [1, 2, 3, 3, 4, 5].
   expect(lib.one()).toEqual([1, 2, 3, 3, 4, 5]);
 });
+
+// `CString::from_raw` of a pointer `into_raw` didn't give, past a C string's
+// start, which Rust leaves undefined: refused where it runs (#1291).
+test("CString::from_raw of a pointer into_raw didn't give is refused where it runs", async () => {
+  const dir = fixture("c-string-from-raw-past");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::ffi::CString;
+
+pub fn past() -> usize {
+    let raw = CString::new("ab").unwrap().into_raw();
+    unsafe { CString::from_raw(raw.add(1)).as_bytes().len() }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.past()).toThrow("`CString::from_raw` of a pointer `CString::into_raw` didn't give");
+});

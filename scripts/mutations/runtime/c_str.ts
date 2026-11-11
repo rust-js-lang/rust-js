@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "      if (true) return `NulError(",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "c-str-from-ptr-unended",
+    breaks: "`CStr::from_ptr` reads its bytes without their nul, a C string of none (#1291)",
+    file: "src/runtime/c_str.js",
+    find: "    bytes.push(byte);\n    if (byte === 0) return bytes;\n",
+    replace: "    if (byte === 0) return bytes;\n    bytes.push(byte);\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_string_pointers.rs$"],
+  },
+  {
+    name: "c-string-from-raw-anywhere",
+    breaks: "`CString::from_raw` of a pointer past a C string's start gives the whole C string, where Rust leaves it undefined (#1291)",
+    file: "src/runtime/c_str.js",
+    find: "  if (at !== undefined && at.at === 0) return at.of;\n",
+    replace: "  if (at !== undefined) return at.of;\n",
+    tests: ["test/lowering-pointers.test.ts", "-t", "CString::from_raw"],
+  },
 ];

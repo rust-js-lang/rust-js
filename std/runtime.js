@@ -651,6 +651,27 @@ export function $debugCStrError(error, kind, options) {
   }
 }
 
+// `CStr::from_ptr(p)`: the bytes from where `p` points up to its nul, and
+// the nul, a C string's (ADR 1119), each read as a `u8`: a copy, as what a
+// shared C string borrows doesn't change while it's borrowed (#1291).
+export function $cstrFromPtr(pointer) {
+  const bytes = [];
+  for (let i = 0; ; i++) {
+    const byte = $ptrAdd(pointer, i).value & 0xff;
+    bytes.push(byte);
+    if (byte === 0) return bytes;
+  }
+}
+
+// `CString::from_raw(p)`: the C string whose first byte `into_raw` gave `p`
+// a pointer to; of another pointer, which Rust leaves undefined, rust-js's
+// error (#1291).
+export function $cstringFromRaw(pointer) {
+  const at = $byteOffset(pointer);
+  if (at !== undefined && at.at === 0) return at.of;
+  throw $unsupported("rust-js does not support `CString::from_raw` of a pointer `CString::into_raw` didn't give, which reads memory by where it is");
+}
+
 // A `&mut` of what a generic `Option`'s `Some` holds, given a handle on the
 // option: it reads what's in the `Some`, and writes the option a `Some` of
 // what it's given (ADR 0051).

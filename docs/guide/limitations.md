@@ -176,7 +176,6 @@ depends on what the program does:
 
 ## Numbers and text
 
-- A C string's pointer, its `as_ptr()`, `CStr::from_ptr`, `into_raw` and `from_raw`, which read memory by where it is ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md), #1291): `let c = c"hi"; println!("{:?}", c.as_ptr());`
 
 ## Formatting
 

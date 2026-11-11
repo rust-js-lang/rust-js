@@ -102,6 +102,9 @@ pub(super) fn c_str_op(path: &str) -> Option<Std> {
         }
         "std::ffi::CString::into_bytes" => CStrOp::IntoBytes,
         "std::ffi::CString::into_string" => CStrOp::IntoString,
+        "std::ffi::CStr::as_ptr" | "std::ffi::CString::into_raw" => CStrOp::Ptr,
+        "std::ffi::CStr::from_ptr" => CStrOp::FromPtr,
+        "std::ffi::CString::from_raw" => CStrOp::FromRaw,
         "std::ffi::NulError::nul_position" => CStrOp::Item(0),
         "std::ffi::NulError::into_vec" => CStrOp::Item(1),
         "std::ffi::IntoStringError::into_cstring" => CStrOp::Field("inner"),

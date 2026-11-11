@@ -108,3 +108,21 @@ changed in place. ADR 0530's amendment fixes that.
 `c_strings_hashed_and_their_errors_cloned`, built for wasm32 natively as
 std's hash of a `usize` is a 32-bit target's, holds each against native
 Rust, both builds and through `METAMORPHIC=all`.
+
+## Amendment: a C string's pointer (2026-11-12, #1291)
+
+`c.as_ptr()` and `s.into_raw()` were refused, and so were `CStr::from_ptr`
+and `CString::from_raw`. A C string is its bytes with the nul, so its
+pointer is a pointer to its first byte, `$ptr(bytes, 0)`, read as a `c_char`
+through the bytes (`recast` from `u8`, `$ptrRetyped(.., 1, true)`, wasm32's
+`i8`). A byte above 127 then reads as Rust's, negative.
+`CStr::from_ptr(p)` reads the bytes from where `p` points up to the nul,
+and the nul, a copy (`$cstrFromPtr`): what a shared C string borrows can't
+change while it's borrowed. `CString::from_raw(p)` is the array whose first
+byte `into_raw` gave `p` (`$cstringFromRaw`). Any other pointer, which Rust
+leaves undefined, is refused where it runs. Held by
+`test/corpus/c_string_pointers.rs` against native Rust (wasm32's `c_char`)
+in both builds: a length walked through the pointer, a byte's sign,
+`from_ptr` of it and of a pointer past its start, and `into_raw`, a write
+through it, `from_raw`. Mutations `c-str-pointer-unsigned`,
+`c-str-from-ptr-unended` and `c-string-from-raw-anywhere`.

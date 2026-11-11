@@ -44,6 +44,15 @@ pub(in crate::lower) enum CStrOp {
     IntoString,
     /// `c.to_owned()`, `CString::from(c)`: a copy of its bytes.
     Owned,
+    /// `c.as_ptr()`, `s.into_raw()`: a pointer to its first byte, read as a
+    /// `c_char`, an `i8` of wasm32's, through the bytes (#1291).
+    Ptr,
+    /// `CStr::from_ptr(p)`: the bytes from where `p` points up to its nul,
+    /// and the nul (#1291).
+    FromPtr,
+    /// `CString::from_raw(p)`: the C string whose bytes `into_raw` gave `p`
+    /// of (#1291).
+    FromRaw,
     /// A part of an error, `NulError`'s `nul_position()` and `into_vec()`,
     /// its items, `IntoStringError`'s `into_cstring()` and `utf8_error()`,
     /// its fields.
@@ -85,6 +94,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             CStrOp::IntoBytes => helper("$cstringIntoBytes", vec![arg()]),
             CStrOp::IntoString => helper("$cstringIntoString", vec![arg()]),
             CStrOp::Owned => Expr::call(Expr::member(arg(), "slice"), Vec::new()),
+            CStrOp::Ptr => {
+                let first = helper("$ptr", vec![arg(), Expr::int(0)]);
+                let output = self.signature_of(call.def_id).1;
+                let char = super::super::pointers::raw_pointee(self.tcx, output).map(|(pointee, _)| pointee);
+                let char = char.expect("a C string's pointer is a raw pointer");
+                self.recast(first, self.tcx.types.u8, char, call.span)?
+            }
+            CStrOp::FromPtr => helper("$cstrFromPtr", vec![arg()]),
+            CStrOp::FromRaw => helper("$cstringFromRaw", vec![arg()]),
             CStrOp::Item(at) => Expr::index(arg(), Expr::int(at)),
             CStrOp::Field(name) => Expr::member(arg(), name),
         }))

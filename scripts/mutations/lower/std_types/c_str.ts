@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "CStrOp::Item(_) => Expr::index(arg(), Expr::int(0)),",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "c-str-pointer-unsigned",
+    breaks: "a C string's pointer reads its bytes as `u8`s, not as wasm32's `c_char`, so a byte above 127 isn't negative (#1291)",
+    file: "src/lower/std_types/c_str.rs",
+    find: "                self.recast(first, self.tcx.types.u8, char, call.span)?\n",
+    replace: "                let _ = char;\n                first\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_string_pointers.rs$"],
+  },
 ];
