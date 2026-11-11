@@ -454,9 +454,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..
         } = call;
         let mut values = match known {
-            // What a path's method is given as a path; a component's
-            // `as_os_str()` is given the component.
-            Std::Path(op) if op != super::path::PathOp::ComponentText => {
+            // What a path's method is given as a path (`path_given`, which
+            // gives a component's `as_os_str()` the component as it is).
+            Std::Path(_) => {
                 let mut given = Vec::new();
                 for (at, (value, &ty)) in values.into_iter().zip(tys).enumerate() {
                     given.push(self.path_given(value, ty, (def_id, at), call.span)?);

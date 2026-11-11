@@ -74,3 +74,14 @@ by: `Path` of `join`'s `P`, `OsStr` of `set_extension`'s and of `Path::new`'s
 and `OpenOptions::open`, of a value and a `&`, each `as_ref()` printing)
 against native Rust in both builds and through `METAMORPHIC=all`; mutations
 `path-given-own-struct` and `path-given-reference-bound-unseen`.
+
+## Amendment: a component's `as_os_str()` is given as any path method's argument is (2026-11-11)
+
+`values.rs` gave every path method's arguments through `path_given` but a
+`Component`'s `as_os_str()`, whose receiver it gave as it is. Since #1388's
+amendment above, `path_given` gives a value that no `AsRef` bound converts
+as it is, the same answer, so the exception was a second rule giving what
+the first does; its mutation, `component-text-twice`, survived main's
+check. **Each path method's arguments are `path_given`'s, a component's
+too.** The corpus, both builds and every case's library build, is byte for
+byte what it was without it.

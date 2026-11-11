@@ -733,15 +733,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
   {
-    name: "component-text-twice",
-    breaks:
-      "a component's `as_os_str()` is given its text, and reads it as a component again",
-    file: "src/lower/std_types/values.rs",
-    find: "            Std::Path(op) if op != super::path::PathOp::ComponentText => {",
-    replace: "            Std::Path(_) => {",
-    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
-  },
-  {
     name: "get-mut-drop-refused",
     breaks:
       "a `RefCell`'s `get_mut` of a value with a destructor is refused, though it drops nothing (ADR 0863)",
