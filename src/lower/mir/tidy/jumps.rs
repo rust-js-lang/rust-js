@@ -3,11 +3,12 @@
 
 mod branch_ends;
 mod continues;
+mod kept;
 mod labels;
 mod tails;
 mod tried;
 
-pub(super) use self::{branch_ends::*, continues::*, labels::*, tails::*, tried::*};
+pub(super) use self::{branch_ends::*, continues::*, kept::*, labels::*, tails::*, tried::*};
 
 use super::*;
 use crate::js::result;
