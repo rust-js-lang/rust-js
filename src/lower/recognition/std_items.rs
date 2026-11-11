@@ -179,8 +179,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 /// Is `id` of a crate rustc loaded from its sysroot, not one a program
-/// built?
-fn from_sysroot(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// built? The one answer of which crates are the sysroot's.
+pub(in crate::lower) fn from_sysroot(tcx: TyCtxt<'_>, id: DefId) -> bool {
     !id.is_local() && {
         let sysroots: Vec<&std::path::Path> = tcx.sess.opts.sysroot.all_paths().collect();
         tcx.used_crate_source(id.krate)

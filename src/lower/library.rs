@@ -592,7 +592,10 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// isn't: its JS would be for another crate than the one this was checked
     /// against. Asked of each library, of the crates rustc loaded of its
     /// name: one is the library, its identity and hash; another of its name,
-    /// std's own `cfg_if` of rustc's sysroot, is another crate (#1130).
+    /// std's own `cfg_if` of rustc's sysroot, is another crate (#1130),
+    /// never the library. Where rustc loaded that one alone, it didn't load
+    /// the library, which nothing the crate uses reaches: itertools' own
+    /// tests, given getrandom 0.1's `cfg-if` and using none of it (#1420).
     pub(super) fn check(&self) -> bool {
         let mut matched = true;
         for library in self.dependencies.libraries.values() {
@@ -602,6 +605,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             // Its hash is of its identity too, `StableCrateId`.
             let named: Vec<_> = (self.tcx.crates(()).iter())
                 .filter(|&&krate| self.tcx.crate_name(krate).as_str() == library.name)
+                .filter(|&&krate| !super::recognition::from_sysroot(self.tcx, krate.as_def_id()))
                 .collect();
             let loaded = (named.iter()).any(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);
             if !named.is_empty() && !loaded {

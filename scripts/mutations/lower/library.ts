@@ -5,11 +5,20 @@ export const mutations: Mutation[] = [
   {
     name: "library-check-every-crate-of-its-name",
     breaks:
-      "each crate rustc loaded of a library's name is checked against its manifest, std's own `cfg_if` of rustc's sysroot too, so a program's `cfg_if` is refused, its metadata \"isn't of the build its JS was made from\" (#1130)",
+      "each crate rustc loaded of a library's name is checked against its manifest, another release of it too, so a graph of cfg-if 0.1 and 1.0 is refused, its metadata \"isn't of the build its JS was made from\" (#1130)",
     file: "src/lower/library.rs",
     find: "            let loaded = (named.iter()).any(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
     replace: "            let loaded = (named.iter()).all(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
-    tests: ["test/sysroot-names.test.ts", "-t", "cfg_if, libc and adler2, are the program's"],
+    tests: ["test/sysroot-names.test.ts", "-t", "two releases of one crate"],
+  },
+  {
+    name: "library-checked-against-sysroot-crates",
+    breaks:
+      "a library is checked against std's own crate of its name, of rustc's sysroot, where rustc loaded that one alone: a program given a dependency's `cfg-if` it never reaches is refused, \"isn't of the build its JS was made from\", itertools' own tests (#1420)",
+    file: "src/lower/library.rs",
+    find: "                .filter(|&&krate| !super::recognition::from_sysroot(self.tcx, krate.as_def_id()))\n",
+    replace: "",
+    tests: ["test/sysroot-names.test.ts", "-t", "never reaches"],
   },
   {
     name: "library-type-rcs-counted-for-unseen-consumers",

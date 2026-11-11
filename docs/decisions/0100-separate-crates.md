@@ -385,3 +385,22 @@ library ABI is 26, `tooling/manifest.js`'s validator too. A contract is
 read in one place, `Exports::read`, a manifest's and `@rust-js/std`'s
 alike, where two lists of its facts had to agree; it names each field of
 the contract, read or left to its loader, so a new one is read by both.
+
+## Amendment: a library rustc didn't load isn't checked against std's own crate (2026-11-12, #1420)
+
+The metadata check asked, of each library, whether one of the crates rustc
+loaded of its name had its hash. Where rustc loaded std's own `cfg_if`
+alone, the library wasn't loaded at all: nothing the crate uses reaches it.
+std's crate then stood for it and failed the check. itertools' own tests
+were given getrandom 0.1's `cfg-if` and use none of rand's code, and every
+one was refused, "the metadata rustc loaded for `cfg_if` isn't of the build
+its JS was made from"; so was an app that depends on a crate using cfg-if
+and never calls it. **A crate rustc loaded from its sysroot is never a
+library's** (`from_sysroot`, the one answer of which crates are the
+sysroot's): the check asks only the others of its name, and of none, the
+library wasn't loaded and there's nothing to check. Another build's
+metadata of a library the crate does load is refused as before. Held by
+`test/sysroot-names.test.ts`'s app that never reaches its dependency's
+`cfg-if`, and the mutation `library-checked-against-sysroot-crates`;
+`library-check-every-crate-of-its-name` is now caught by two releases of
+cfg-if in one graph, as std's crate isn't asked.

@@ -71,3 +71,33 @@ test("two releases of one crate, cfg-if 0.1 and 1.0, are two libraries of one bu
   const program = `console.log((await import(${JSON.stringify(join(app, "src", "lib.js"))})).sum());`;
   expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("11");
 }, 600_000);
+
+// A library the program is given and never uses, a dependency's `cfg-if`:
+// rustc loads std's own `cfg_if` alone, which is no build of it, and the
+// library is no build's to check, as itertools' own tests are given
+// getrandom 0.1's (#1420).
+test("a crate named as one std is made of that the program never reaches isn't checked against std's", () => {
+  const dir = fixture("sysroot-names-unused");
+  const crate = (name: string, deps: string, source: string) => {
+    const at = join(dir, name);
+    mkdirSync(join(at, "src"), { recursive: true });
+    writeFileSync(join(at, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "1.0.5"\nedition = "2024"\n\n[dependencies]\n${deps}`);
+    writeFileSync(join(at, "src", "lib.rs"), source);
+    const git = (...args: string[]) => expect(runSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], at, 60_000).code).toBe(0);
+    git("init", "-q");
+    git("add", ".");
+    git("commit", "-q", "-m", name);
+    return `${name} = { git = ${JSON.stringify(`file://${at}`)} }`;
+  };
+  const cfgIf = crate("cfg-if", "", "#![no_std]\n\npub fn one() -> u32 {\n    1\n}\n");
+  const uses = crate("uses", cfgIf, "pub fn two() -> u32 {\n    cfg_if::one() + 1\n}\n");
+  const app = join(dir, "app");
+  mkdirSync(join(app, "src"), { recursive: true });
+  writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\n${uses}\n\n[workspace]\n`);
+  writeFileSync(join(app, "src", "lib.rs"), "pub fn three() -> u32 {\n    3\n}\n");
+  const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build"], app, 300_000, { RUST_JS_COMPILER: compiler });
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  const program = `console.log((await import(${JSON.stringify(join(app, "src", "lib.js"))})).three());`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("3");
+}, 600_000);
