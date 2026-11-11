@@ -385,11 +385,24 @@ react.dev's TopNav passes the same closure instead.
   second case's, which the user decided (2026-11-11, difference 51, #1156, ADR 0425,
   amended). rustc checks a program for wasm32-unknown-unknown, whose `File`
   drops nothing, so its MIR has no drop of one; one `FinalizationRegistry`
-  closes its descriptor once JS collects it. Its descriptor isn't shown,
-  `{:?}` of a `File` is refused, so only a program holding more files than
-  the OS allows at once, counting those Rust dropped and JS hasn't
-  collected, sees it. Exact close at Rust's drop is #1391 (P2). Listed in
+  closes its descriptor once JS collects it, and a `ReadDir`'s directory
+  too. A program holding more files than the OS allows at once, counting
+  those Rust dropped and JS hasn't collected, sees it, and so does one that
+  prints a `File`'s descriptor, `{:?}`'s `fd` (#1397), which isn't freed for
+  the next file opened as Rust's is. Exact close at Rust's drop is #1391 (P2). Listed in
   the guide's differences (`semantics.md`, 51).
+- **`{:?}` of a `File` shows where its path is now**, the second case's,
+  which the user decided (2026-11-11, difference 54, #1397, ADR 0425,
+  amended): std's `File { fd, path, read, write }`, its `path` the path it
+  was opened by as it resolves where it's printed, `fs.realpathSync`'s, left
+  out where nothing's there now, as std's leaves out one it can't say. A file
+  renamed or removed since it was opened shows no `path`, where macOS's
+  `F_GETPATH` shows a renamed one's new path and a removed one's last, and
+  Linux's `/proc/self/fd` the new path or the old one with ` (deleted)`; one
+  whose old path holds another file now shows that path. Its `fd` is Node's
+  descriptor, as Rust's own differs by environment. Only a program that
+  prints a file renamed or removed since it was opened sees it. Listed in
+  the guide's differences (`semantics.md`, 54).
 - **An error of the OS's of a code the runtime's table hasn't is
   `Uncategorized` with Node's words**, the second case's, which the user
   decided (2026-11-11, #1156, ADR 0462, amended): std's table of kinds is

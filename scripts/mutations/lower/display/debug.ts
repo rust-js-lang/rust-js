@@ -575,4 +575,20 @@ export const mutations: Mutation[] = [
     replace: "                .dyn_written(value, (dynamic, debug), { let _ = options; None }, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
   },
+  {
+    name: "file-debug-refused",
+    breaks: "`{:?}` of a `File` is refused, as it was, and `unwrap_err()` of one opened with it (#1397)",
+    file: "src/lower/display/debug.rs",
+    find: "                \"File\" => Some(\"$fileDebug\"),\n",
+    replace: "                \"File\" => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
+  },
+  {
+    name: "file-type-debug-refused",
+    breaks: "`{:?}` of a `FileType` is refused (#1397)",
+    file: "src/lower/display/debug.rs",
+    find: "                \"FileType\" => Some(\"$fileTypeDebug\"),\n",
+    replace: "                \"FileType\" => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
+  },
 ];

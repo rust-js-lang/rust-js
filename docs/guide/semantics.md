@@ -1137,7 +1137,7 @@ export function lineCount(text) {
   as `process.getBuiltinModule("node:fs")` where it's asked, never
   imported; in a browser, opening one panics, naming what needed Node's
   process ([0391](../decisions/0391-what-works-in-node-only.md), amended).
-- **A `File` is `{ fd, pos }`,** its descriptor and the position std's
+- **A `File` is `{ fd, pos, path, read, write, append }`,** its descriptor, the path and modes it was opened with, and the position std's
   would keep, a `u64` passed to each read and write, so `Seek` moves it as
   `lseek` would. Its `Read` and `Seek` are `$fileReader`'s and its `Write`
   `$fileWriter`'s, whether its type is known or generic code's, so a
@@ -1159,8 +1159,23 @@ export function lineCount(text) {
   is the same error, `$osErrorOf(2)`, its code named as the platform names
   it; a number it doesn't name is `Uncategorized`, with `strerror`'s words
   for it, `Unknown error: 9999` on macOS and `Unknown error 9999` on Linux.
-- `{:?}` of a `File` or an `OpenOptions` is refused (#1156), and so is
-  what asks it, `unwrap_err()` of an `io::Result<File>`.
+- **A `&File` reads, writes and seeks as its `File` does,** at the one
+  position, `$fileReader` and `$fileWriter` given the same file.
+- **`{:?}` of a `File` is std's of unix,** `File { fd: 3, path: "/dir/notes",
+  read: true, write: false }`, its descriptor Node's and its path where the
+  one it was opened by resolves now (difference 54); `{:?}` of a `FileType`
+  is std's too. `unwrap_err()` of an `io::Result<File>` panics with it.
+- **A file's `metadata()`, `fs::metadata` and `fs::symlink_metadata` are
+  Node's `Stats` of `bigint`s,** `len()` its `size`, `is_dir()` its
+  `isDirectory()`, `modified()` its `mtimeNs`; a `FileType` is its kind's
+  name, `"dir"`, so `t.is_dir()` is `t === "dir"`. `set_len`, `sync_all` and
+  `sync_data` are `ftruncate`, `fsync` and `fdatasync`.
+- **`fs::create_dir`, `create_dir_all`, `remove_dir` and `read_dir` are
+  helpers,** `create_dir_all` std's steps word for word; a `ReadDir` reads
+  each entry as it's asked, in the OS's order as std's does, and a
+  `DirEntry` is `{ path, name, type }`.
+- `{:?}` of an `OpenOptions`, a `Metadata` or a `DirEntry` is refused
+  (#1418).
 
 ```rust
 use std::fs::{self, OpenOptions};
@@ -2127,12 +2142,13 @@ React and JSX are [their own pages](README.md#react).
     2026-11-11, #1315; [ADR 0240](../decisions/0240-reexports.md),
     amended).
 
-51. A `File` is closed once it's collected, not where Rust drops it:
-    rustc checks a program for a target whose `File` drops nothing, so
-    its MIR has no drop of one. Its descriptor isn't shown, `{:?}` of a
-    `File` is refused, so only a program that holds more files at once
-    than the OS allows, counting those Rust has dropped and JS hasn't
-    collected, sees it; exact close is #1391 (ADR 0262, the user's
+51. A `File` is closed once it's collected, not where Rust drops it, and
+    so is a `ReadDir`'s directory: rustc checks a program for a target
+    whose `File` drops nothing, so its MIR has no drop of one. Only a
+    program that holds more files at once than the OS allows, counting
+    those Rust has dropped and JS hasn't collected, sees it, or one that
+    prints a `File`'s descriptor, `{:?}`'s `fd`, which isn't the one Rust's
+    next file would reuse; exact close is #1391 (ADR 0262, the user's
     decision, 2026-11-11, #1156; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
     amended).
 
@@ -2149,3 +2165,12 @@ React and JSX are [their own pages](README.md#react).
     library to drop, isn't dropped there, a leak, as safe Rust's
     `mem::forget` may be (ADR 0262, the user's decision, 2026-11-11,
     #1403; [ADR 0462](../decisions/0462-io-error-values.md), amended).
+
+54. `{:?}` of a `File` shows its path as the path it was opened by
+    resolves where it's printed, and none where nothing's there now: a file
+    renamed or removed since it was opened shows no `path`, where macOS's
+    shows a renamed one's new path and a removed one's last, and Linux's
+    the new path or the old one with ` (deleted)`. Its `fd` is Node's
+    descriptor, as Rust's own differs by environment (ADR 0262, the user's
+    decision, 2026-11-11, #1397; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
+    amended).

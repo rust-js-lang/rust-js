@@ -211,8 +211,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Some(NodeOnly::Fs(op)) => return Some(Some(Std::Fs(op))),
             None => {}
         }
-        // An `OpenOptions`'s, its flags, which open nothing till `open` (#1156).
-        if let Some(op) = crate::lower::std_types::fs::open_options_op(path) {
+        // An `OpenOptions`'s, its flags, which open nothing till `open`
+        // (#1156); and a `File`'s, a `Metadata`'s, a `FileType`'s and a
+        // `DirEntry`'s (#1397).
+        if let Some(op) = crate::lower::std_types::fs::fs_method_op(path) {
             return Some(Some(Std::Fs(op)));
         }
         // A C-variadic function's next argument, the first of what's left of

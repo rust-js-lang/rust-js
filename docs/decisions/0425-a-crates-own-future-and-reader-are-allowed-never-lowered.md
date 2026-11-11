@@ -468,3 +468,58 @@ both builds and through `METAMORPHIC=all`, each writing beside its outcome's
 file; `test/process.test.ts` holds the `NODE_ONLY` entries and their gates
 and a browser's panic, and `test/asserts.rs` a `#[cfg(browser)]` test of it
 in Chromium; `test/diagnostics.test.ts` the two `{:?}` refusals.
+
+## Amendment: a `&File`, a file's metadata and `{:?}`, and directories (#1397, phase 2)
+
+**A `File` is `{ fd, pos, path, read, write, append }`:** beside its
+descriptor and position, the path it was opened by, made absolute where it's
+opened, and the modes it was opened with, `O_ACCMODE`'s, read where asked
+and written where written or appended to, which `{:?}` shows; and whether
+it appends, where `$appending`, a set of descriptors, held it apart.
+
+- **A `&File` reads, writes and seeks as the `File` does** (std's `impl Read
+  for &File` and the rest): `is_file_handle`, a `File` or a `&File`, is its
+  byte source and writer, `$fileReader` and `$fileWriter` given the same
+  object, so each handle moves the one position.
+- **`{:?}` of a `File` is std's of unix** (the user's decision, 2026-11-11):
+  `File { fd, path, read, write }`, `$fileDebug(f, options)`, its descriptor
+  Node's, its path `fs.realpathSync` of the one it was opened by, at print
+  time, left out where that resolves to none, as std's `get_path` leaves it
+  out where it can't say; a number and a `bool` given the placeholder's
+  options as `debug_struct` gives each field them. Rust's own descriptor
+  differs by environment too. A file renamed or removed since it was opened
+  shows no `path`, where macOS's `F_GETPATH` shows a renamed one's new path
+  and a removed one's last, and Linux's `/proc/self/fd` the new path or the
+  old one with ` (deleted)`: the second case's, the user's decision, the
+  guide's difference 54. So `unwrap_err()` of an `io::Result<File>` that's
+  `Ok` panics with std's message.
+- **A `Metadata` is Node's `Stats` of `bigint`s**, `fstat`'s, `stat`'s or
+  `lstat`'s: `len()` its `size`, `is_file()` and the rest its methods,
+  `modified()` and `accessed()` its nanoseconds, a `SystemTime`. A
+  `FileType` is the name of its kind, `"file"`, `"dir"`, `"symlink"` or
+  another of `S_IFMT`'s, so its `==` and `Hash` are JS's, and its `{:?}` is
+  std's, `FileType { is_file, is_dir, is_symlink, .. }`.
+- **`set_len`, `sync_all` and `sync_data`** are `ftruncate`, `fsync` and
+  `fdatasync`; a length past an `off_t` is std's error of its conversion, a
+  `TryFromIntError`'s, and one past 2^53 is refused where it runs, as a
+  write there is (#1418).
+- **Directories:** `fs::create_dir`, `create_dir_all` (std's `DirBuilder`'s
+  steps word for word), `remove_dir` and `read_dir`. A `ReadDir` is a
+  generator that reads each entry as it's asked, in the OS's order,
+  `Dir.readSync`'s, `readdir`'s as std's, not `readdirSync`'s sorted one; its
+  directory is opened where it's made, as std's `opendir` is, and closed once
+  every entry is read, or once it's collected, as a file is (difference 51).
+  A `DirEntry` is `{ path, name, type }`: `path()` the directory's joined
+  with its name, `file_name()` its name, `file_type()` what `readdir` said,
+  `lstat`'s where it said nothing, and `metadata()` `lstat`'s.
+- `{:?}` of an `OpenOptions`, a `Metadata`, a `DirEntry` or a `ReadDir` is
+  refused, naming #1418, which holds what's left of std's files.
+
+Corpus cases `fs_file_shared` (two `&File`s of one file, a `BufReader` of
+one, generic code given one; `{:?}`, `{:#?}` and `{:5?}` of files opened in
+each mode, their descriptor and the outcome's path masked; `unwrap_err()` of
+one opened) and `fs_dirs_and_metadata` (directories made, found, refused;
+entries in the OS's order, each one's path, name, type and length; metadata
+of a file and a directory; `set_len`, its position kept, past an `off_t`, of
+a reader; syncs; `remove_dir` of a full one and of none) run as native Rust
+in both builds and through `METAMORPHIC=all`.

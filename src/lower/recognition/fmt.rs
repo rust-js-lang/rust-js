@@ -30,8 +30,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }) {
             return Some("$dynWriter");
         }
-        // A `File`'s, a call of the OS's at its position (#1156).
-        if super::is_file(self.tcx, ty) {
+        // A `File`'s, or a `&File`'s, a call of the OS's at its position
+        // (#1156, #1397).
+        if super::is_file_handle(self.tcx, ty) {
             return Some("$fileWriter");
         }
         // A `&mut [u8]`'s, its slice written and re-pointed past it, std's

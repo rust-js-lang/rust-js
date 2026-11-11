@@ -224,6 +224,12 @@ const NODE_ONLY: &[(&str, NodeOnly)] = &[
     ("std::fs::read_to_string", NodeOnly::Fs(FsOp::ReadToString)),
     ("std::fs::write", NodeOnly::Fs(FsOp::Write)),
     ("std::fs::remove_file", NodeOnly::Fs(FsOp::RemoveFile)),
+    ("std::fs::metadata", NodeOnly::Fs(FsOp::Metadata)),
+    ("std::fs::symlink_metadata", NodeOnly::Fs(FsOp::SymlinkMetadata)),
+    ("std::fs::create_dir", NodeOnly::Fs(FsOp::CreateDir)),
+    ("std::fs::create_dir_all", NodeOnly::Fs(FsOp::CreateDirAll)),
+    ("std::fs::remove_dir", NodeOnly::Fs(FsOp::RemoveDir)),
+    ("std::fs::read_dir", NodeOnly::Fs(FsOp::ReadDir)),
 ];
 
 /// Whether `def_id`, a function, is given its caller's location: its own

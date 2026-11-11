@@ -11,7 +11,7 @@ mod inherent;
 pub(crate) use fmt::is_byte_slice;
 mod io;
 pub(crate) use io::{
-    ByteSource, IoOp, in_io_dictionary, is_file, is_open_options, is_std_reader, is_std_reader_impl, of_files,
+    ByteSource, IoOp, fs_type, in_io_dictionary, is_file_handle, is_std_reader, is_std_reader_impl, of_files,
     of_io_reading,
 };
 mod iterators;

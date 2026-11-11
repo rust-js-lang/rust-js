@@ -67,25 +67,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let shown = self.debug_string_with(top, item, span, pretty)?;
             return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));
         }
-        // A `File` shows its descriptor, path and modes, which the OS says,
-        // and an `OpenOptions` its flags, mode and custom flags: refused for
-        // now (#1156).
-        if crate::lower::recognition::is_file(self.tcx, ty) || crate::lower::recognition::is_open_options(self.tcx, ty)
+        // A `File` shows its descriptor, path and modes, std's of unix, and a
+        // `FileType` what it is (#1397).
+        if let Some(name) = crate::lower::recognition::fs_type(self.tcx, ty)
+            && let helper @ Some(_) = match name {
+                "File" => Some("$fileDebug"),
+                "FileType" => Some("$fileTypeDebug"),
+                _ => None,
+            }
         {
+            let mut args = vec![value];
+            if !matches!(pretty, Pretty::Plain) {
+                args.push(pretty.options());
+            }
+            return Ok(Expr::call_helper(helper.expect("matched"), args));
+        }
+        // The rest of std's files' types show what the OS says of them, an
+        // `OpenOptions` its flags, mode and custom flags, a `Metadata` its
+        // numbers: refused for now (#1418).
+        if crate::lower::recognition::fs_type(self.tcx, ty).is_some() {
             return Err(self.unsupported(
                 span,
-                &format!("`{{:?}}` of a `{ty}`, which shows what the OS says of it (#1156)"),
+                &format!("`{{:?}}` of a `{ty}`, which shows what the OS says of it (#1418)"),
             ));
         }
         // A `BufReader` shows its inner and what's buffered, `1/8192`, which
-        // is refused for now (#1156).
+        // is refused for now (#1418).
         if matches!(
             self.recognition().byte_source(ty),
             Some(crate::lower::recognition::ByteSource::BufReader(_))
         ) {
             return Err(self.unsupported(
                 span,
-                &format!("`{{:?}}` of a `{ty}`, which shows its inner and how much of its buffer is filled (#1156)"),
+                &format!("`{{:?}}` of a `{ty}`, which shows its inner and how much of its buffer is filled (#1418)"),
             ));
         }
         // A `MaybeUninit` shows its type's name, `MaybeUninit<u32>` (ADR 0332).

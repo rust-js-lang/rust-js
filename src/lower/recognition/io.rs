@@ -65,7 +65,8 @@ pub(crate) enum ByteSource<'tcx> {
     Empty,
     /// `io::Repeat`: `$repeatReader`, which reads its byte without end.
     Repeat,
-    /// `fs::File`: `$fileReader`, a call of the OS's at its position (#1156).
+    /// `fs::File`, or a `&File` (`is_file_handle`): `$fileReader`, a call of
+    /// the OS's at its position (#1156, #1397).
     File,
 }
 
@@ -173,9 +174,24 @@ pub(crate) fn is_file<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::fs::File")
 }
 
-/// Whether `ty` is std's `fs::OpenOptions` (#1156).
-pub(crate) fn is_open_options<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::fs::OpenOptions")
+/// Whether `ty` is a `File`, or a `&File`, whose `Read`, `Write` and `Seek`
+/// std implements too, as the same calls of the OS's: the same runtime
+/// dictionaries, `$fileReader` and `$fileWriter`, given the same file, so
+/// each `&File` reads, writes and seeks at the one position (#1397).
+pub(crate) fn is_file_handle<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Ref(_, file, Mutability::Not) => is_file(tcx, *file),
+        _ => is_file(tcx, ty),
+    }
+}
+
+/// Which of `std::fs`'s types `ty` is, its name, `"File"` or `"Metadata"`
+/// (#1156, #1397).
+pub(crate) fn fs_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<&'static str> {
+    match ty.kind() {
+        ty::Adt(adt, _) => std_path(tcx, adt.did()).strip_prefix("std::fs::"),
+        _ => None,
+    }
 }
 
 /// Whether `id` of `args` is a call of std's files, which may fail (#1156):
@@ -210,6 +226,9 @@ fn source_made(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Which of std's byte sources `ty` is, if it's one.
     pub(in crate::lower) fn byte_source(&self, ty: Ty<'tcx>) -> Option<ByteSource<'tcx>> {
+        if is_file_handle(self.tcx, ty) {
+            return Some(ByteSource::File);
+        }
         match ty.kind() {
             ty::Ref(_, slice, Mutability::Not) if matches!(slice.kind(), ty::Slice(item) if *item == self.tcx.types.u8) => {
                 Some(ByteSource::Slice)
@@ -222,7 +241,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(adt, _) => match std_path(self.tcx, adt.did()) {
                 "std::io::Empty" => Some(ByteSource::Empty),
                 "std::io::Repeat" => Some(ByteSource::Repeat),
-                "std::fs::File" => Some(ByteSource::File),
                 _ => None,
             },
             _ => None,
@@ -277,7 +295,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `$fileWriter`'s (#1156).
         let name = tcx.item_name(def_id);
         if is_std_def(tcx, trait_id, StdItem::IoWrite) {
-            return (is_file(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);
+            return (is_file_handle(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);
         }
         (is_io_reading(tcx, trait_id)
             && (self

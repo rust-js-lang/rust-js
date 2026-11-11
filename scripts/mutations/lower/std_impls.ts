@@ -720,4 +720,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
   },
+  {
+    name: "file-type-eq-refused",
+    breaks: "`==` of two `FileType`s is refused, where it's JS's of their kinds' names (#1397)",
+    file: "src/lower/std_impls.rs",
+    find: "            || crate::lower::recognition::fs_type(self.tcx, ty) == Some(\"FileType\")\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
+  },
 ];

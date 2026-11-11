@@ -182,12 +182,12 @@ for (const [name, source, message, crate] of [
   ["slice::from_mut of an object", "pub fn f() -> usize { let mut v = vec![1u8]; std::slice::from_mut(&mut v).len() }", "`slice::from_mut` of a `std::vec::Vec<u8>`, an object, whose place `s[0] = other` would replace (#1336)"],
   // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now;
   // one of a `&mut` to an object is held as the object, where generic code
-  // reads its box (#1156, #1374).
-  ["a BufReader's Debug", "use std::io::{BufReader, Cursor};\npub fn f() -> String { format!(\"{:?}\", BufReader::new(Cursor::new(vec![1u8]))) }", "which shows its inner and how much of its buffer is filled (#1156)"],
-  // A `File`'s and an `OpenOptions`' `{:?}` show what the OS says of them,
-  // refused for now (#1156).
-  ["a File's Debug", "pub fn f(file: std::fs::File) -> String { format!(\"{file:?}\") }", "`{:?}` of a `std::fs::File`, which shows what the OS says of it (#1156)"],
-  ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1156)"],
+  // reads its box (#1418, #1374).
+  ["a BufReader's Debug", "use std::io::{BufReader, Cursor};\npub fn f() -> String { format!(\"{:?}\", BufReader::new(Cursor::new(vec![1u8]))) }", "which shows its inner and how much of its buffer is filled (#1418)"],
+  // An `OpenOptions`' and a `Metadata`'s `{:?}` show what the OS says of
+  // them, refused for now; a `File`'s is std's (#1397, #1418).
+  ["a Metadata's Debug", "pub fn f(m: std::fs::Metadata) -> String { format!(\"{m:?}\") }", "`{:?}` of a `std::fs::Metadata`, which shows what the OS says of it (#1418)"],
+  ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where
   // the caller's is `undefined` or its error (#1416).

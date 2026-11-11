@@ -113,3 +113,10 @@ without it, and in a browser it panics as `$process` does: "`std::fs::File::open
 needs Node's process, which a browser hasn't (ADR 0391)". `test/process.test.ts`
 holds the list, the helpers and the gates equal, and the panic; a
 `#[cfg(browser)]` test of `test/asserts.rs` holds it in Chromium.
+
+Amended (#1397): `fs::metadata`, `fs::symlink_metadata`, `fs::create_dir`,
+`fs::create_dir_all`, `fs::remove_dir` and `fs::read_dir` are `NODE_ONLY`
+entries too, each a helper of `fs.js` that begins with its `$nodeFs` gate. A
+`File`'s, a `Metadata`'s, a `FileType`'s and a `DirEntry`'s methods reach no
+path of their own; each asks what was opened where it works, so they're
+`fs_method_op`'s, beside `OpenOptions`' setters.

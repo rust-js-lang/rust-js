@@ -201,11 +201,11 @@ keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 - `panic::set_hook`: `std::panic::set_hook(Box::new(|_| {}));`
 - `process::abort`: `std::process::abort();`
 - Standard input: `let mut s = String::new(); let _ = std::io::stdin().read_line(&mut s);`
-- The file system past a file's own reads and writes: `let _ = std::fs::create_dir("x");`
-- `{:?}` of a `File` (#1156): `let f = std::fs::File::open("x").unwrap(); println!("{f:?}");`
+- The file system past a file's reads and writes, its metadata and directories (#1418): `let _ = std::fs::rename("x", "y");`
+- `{:?}` of a `Metadata` (#1418): `let m = std::fs::metadata("x").unwrap(); println!("{m:?}");`
 - A `VecDeque<u8>`'s `read` and `fill_buf`, which read its front slice alone (#1302): `use std::io::Read; let mut d = std::collections::VecDeque::from(vec![1u8]); let _ = d.read(&mut [0u8; 1]);`
 - A `VecDeque<u8>` as generic code's reader (#1302): `fn first<R: std::io::Read>(mut r: R) -> u8 { let mut b = [0u8]; r.read_exact(&mut b).unwrap(); b[0] } let _ = first(std::collections::VecDeque::from(vec![1u8]));`
-- `{:?}` of a `BufReader` (#1156): `let r = std::io::BufReader::new(&b"x"[..]); println!("{r:?}");`
+- `{:?}` of a `BufReader` (#1418): `let r = std::io::BufReader::new(&b"x"[..]); println!("{r:?}");`
 - A `BufReader` of a `&mut` to an object, a reader (#1374): `let mut c = std::io::Cursor::new(vec![1u8]); let r = std::io::BufReader::new(&mut c); println!("{}", r.capacity());`
 - `panic::take_hook`: `let h = std::panic::take_hook(); drop(h);`
 

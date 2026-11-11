@@ -137,4 +137,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(closure_writes_captured_formatter|debug_of_a_fn_pointers_holder).rs$"],
   },
+  {
+    name: "shared-file-no-writer",
+    breaks: "a `&File` given to generic code's `W: Write` has no writer, refused (#1397)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "        if super::is_file_handle(self.tcx, ty) {\n",
+    replace: "        if super::is_file_handle(self.tcx, ty) && !ty.is_ref() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
+  },
 ];

@@ -1,29 +1,35 @@
 // std's files (#1156), through Node's fs, `$nodeFs`, which in a browser
-// panics, saying what needed it (ADR 0391). A `File` is `{ fd, pos }`, its
-// descriptor and the position std's would keep, a `u64` passed to each read
-// and write, so `Seek` moves it as `lseek` would. It's closed once it's
-// collected: rustc checks a program for a target whose `File` drops nothing,
-// so its MIR has no drop of one (ADR 0425, amended). An `io::Result<()>`'s
-// `Err` is thrown (ADR 0462), another's a value.
+// panics, saying what needed it (ADR 0391). A `File` is `{ fd, pos, path,
+// read, write, append }`: its descriptor and the position std's would keep, a
+// `u64` passed to each read and write, so `Seek` moves it as `lseek` would;
+// the path it was opened by, made absolute, and the modes it was opened
+// with, which `{:?}` shows (#1397); and whether it was opened to append,
+// `O_APPEND`, whose writes go to its end. It's closed once it's collected:
+// rustc checks a program for a target whose `File` drops nothing, so its
+// MIR has no drop of one (ADR 0425, amended). An `io::Result<()>`'s `Err` is
+// thrown (ADR 0462), another's a value.
 
-// The descriptors opened to append, `O_APPEND`, whose writes go to the end,
-// where the position is then.
-const $appending = new Set();
-
-// Each file's descriptor, closed once the file is collected, its error
-// unseen, as std's drop's is (difference 51; exact close at Rust's drop, #1391):
-// made where a file is first opened.
+// Each file's descriptor, and each directory's that's read, closed once
+// it's collected, its error unseen, as std's drop's is (difference 51;
+// exact close at Rust's drop, #1391): made where one is first opened.
 let $openFiles;
-// A file of a descriptor just opened, `{ fd, pos }`, closed once it's collected.
-function $opened(fd) {
+// `close()` of each held: a file's descriptor, or a directory being read.
+function $closeOnCollect(owner, held) {
   $openFiles ??= new FinalizationRegistry((opened) => {
-    $appending.delete(opened);
     try {
-      $nodeFs("`std::fs::File`").closeSync(opened);
+      if (typeof opened === "number") $nodeFs("`std::fs::File`").closeSync(opened);
+      else opened.closeSync();
     } catch {}
   });
-  const file = { fd, pos: 0n };
-  $openFiles.register(file, fd);
+  $openFiles.register(owner, held);
+}
+// A file of a descriptor just opened from `path`, its modes as std's
+// `get_mode` reads them, the access mode it was opened with, and whether it
+// appends; closed once it's collected.
+function $opened(fd, path, read, write, append) {
+  const absolute = $process("`std::fs::File`").getBuiltinModule("node:path").resolve(path);
+  const file = { fd, pos: 0n, path: absolute, read, write, append };
+  $closeOnCollect(file, fd);
   return file;
 }
 
@@ -142,13 +148,13 @@ function $fsThrow(f) {
 // `File::open(path)`: read only.
 function $fileOpen(path) {
   const fs = $nodeFs("`std::fs::File::open`");
-  return $fsTry(() => $opened(fs.openSync(path, fs.constants.O_RDONLY)));
+  return $fsTry(() => $opened(fs.openSync(path, fs.constants.O_RDONLY), path, true, false, false));
 }
 // `File::create(path)`: written from its start, made where there's none.
 function $fileCreate(path) {
   const fs = $nodeFs("`std::fs::File::create`");
   const { O_WRONLY, O_CREAT, O_TRUNC } = fs.constants;
-  return $fsTry(() => $opened(fs.openSync(path, O_WRONLY | O_CREAT | O_TRUNC, 0o666)));
+  return $fsTry(() => $opened(fs.openSync(path, O_WRONLY | O_CREAT | O_TRUNC, 0o666), path, false, true, false));
 }
 
 // An `OpenOptions`: its flags, each set by its method, which gives back the
@@ -205,11 +211,9 @@ function $openWith(o, path) {
   const access = o.append ? (o.read ? O_RDWR : O_WRONLY) | O_APPEND : o.read && o.write ? O_RDWR : o.write ? O_WRONLY : O_RDONLY;
   if ((!o.write && !o.append && creating) || (o.append && o.truncate && !o.createNew)) return $openInvalid(asked);
   const creation = o.createNew ? O_CREAT | O_EXCL : (o.create ? O_CREAT : 0) | (o.truncate ? O_TRUNC : 0);
-  return $fsTry(() => {
-    const fd = fs.openSync(path, access | creation, 0o666);
-    if (o.append) $appending.add(fd);
-    return $opened(fd);
-  });
+  // Its modes, `O_ACCMODE`'s: read where asked, written where it's written
+  // or appended to.
+  return $fsTry(() => $opened(fs.openSync(path, access | creation, 0o666), path, o.read, o.write || o.append, o.append));
 }
 
 // `n` bytes read into `buf` from `at`, at the file's position, which moves
@@ -296,13 +300,13 @@ function $fileWrite(w, bytes) {
   return $fsTry(() => {
     const fs = $nodeFs("`std::fs::File`");
     const data = Uint8Array.from(bytes);
-    if ($appending.has(f.fd)) {
+    if (f.append) {
       const n = fs.writeSync(f.fd, data, 0, data.length, null);
       f.pos = BigInt(fs.fstatSync(f.fd).size);
       return n;
     }
     if (f.pos > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw $unsupported("rust-js does not support a write to a file past 2^53 bytes, where Node writes none (#1156)");
+      throw $unsupported("rust-js does not support a write to a file past 2^53 bytes, where Node writes none (#1418)");
     }
     let n;
     try {
@@ -323,6 +327,180 @@ const $fileWriter = {
   writeFmt: (w, text) => $ioWriteFmt($fileWrite)(w, text),
   flush: () => {},
 };
+
+// `f.metadata()`: `fstat`'s, Node's `Stats` of its numbers as `bigint`s,
+// a `u64` length's and a time's nanoseconds whole.
+function $fileMetadata(f) {
+  return $fsTry(() => $nodeFs("`std::fs::File::metadata`").fstatSync(f.fd, { bigint: true }));
+}
+// `f.sync_all()`: `fsync`, `F_FULLFSYNC` on macOS, as std's.
+function $fileSyncAll(f) {
+  const fs = $nodeFs("`std::fs::File::sync_all`");
+  $fsThrow(() => fs.fsyncSync(f.fd));
+}
+// `f.sync_data()`: `fdatasync`.
+function $fileSyncData(f) {
+  const fs = $nodeFs("`std::fs::File::sync_data`");
+  $fsThrow(() => fs.fdatasyncSync(f.fd));
+}
+// `f.set_len(size)`: `ftruncate`, its position where it was. A size past an
+// `off_t` is std's error of its conversion, a `TryFromIntError`'s; one past
+// 2^53, which Node's `ftruncateSync` takes as a `number`, is refused where it
+// runs, as a write there is.
+function $fileSetLen(f, size) {
+  if (size > 0x7fffffffffffffffn) {
+    const tried = $tryFromInt(size, 0n, 0x7fffffffffffffffn)._0;
+    throw new $IoError("InvalidInput", { value: tried, impl: $parseErrorDyn("core::num::error::TryFromIntError") });
+  }
+  if (size > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw $unsupported("rust-js does not support a file's length past 2^53 bytes, which Node sets none of (#1418)");
+  }
+  const fs = $nodeFs("`std::fs::File::set_len`");
+  $fsThrow(() => fs.ftruncateSync(f.fd, Number(size)));
+}
+// `{:?}` of a `File`, std's on unix: `File { fd, path, read, write }`, its
+// descriptor Node's, its path what the one it was opened by resolves to now,
+// `realpath`'s, as macOS's `F_GETPATH` and Linux's `/proc/self/fd` say it,
+// left out where it resolves to none, a file removed since (difference 54),
+// and the modes it was opened with; a number and a `bool` given the
+// options, as std's `debug_struct` gives each field them.
+function $fileDebug(f, options) {
+  const fd = $formatted($debugInt(String(f.fd), (f.fd >>> 0).toString(16), options), options, true);
+  const fields = [`fd: ${fd}`];
+  let path;
+  try {
+    path = $nodeFs("`std::fs::File`").realpathSync(f.path);
+  } catch {}
+  if (path !== undefined) fields.push(`path: ${$debugStr(path)}`);
+  fields.push(`read: ${$formatted(String(f.read), options)}`, `write: ${$formatted(String(f.write), options)}`);
+  return options?.alternate ? $pretty("File {", fields, "}") : `File { ${fields.join(", ")} }`;
+}
+
+// A `FileType` is the kind of file a `Stats` or a `Dirent` says, its name:
+// `"file"`, `"dir"`, `"symlink"`, or one of the rest, each its own, as std's
+// mode's `S_IFMT` bits are, so `==` of two is JS's.
+function $fileType(stats) {
+  if (stats.isFile()) return "file";
+  if (stats.isDirectory()) return "dir";
+  if (stats.isSymbolicLink()) return "symlink";
+  if (stats.isFIFO()) return "fifo";
+  if (stats.isSocket()) return "socket";
+  if (stats.isBlockDevice()) return "blockDevice";
+  return stats.isCharacterDevice() ? "charDevice" : undefined;
+}
+// `{:?}` of a `FileType`, std's: what it is of the three it says.
+function $fileTypeDebug(type, options) {
+  const fields = [
+    `is_file: ${$formatted(String(type === "file"), options)}`,
+    `is_dir: ${$formatted(String(type === "dir"), options)}`,
+    `is_symlink: ${$formatted(String(type === "symlink"), options)}`,
+  ];
+  return options?.alternate ? $pretty("FileType {", fields, "}", true) : `FileType { ${fields.join(", ")}, .. }`;
+}
+// `m.modified()` and `m.accessed()`: a `SystemTime`, its nanoseconds.
+function $modified(m) {
+  return { TAG: "Ok", _0: m.mtimeNs };
+}
+function $accessed(m) {
+  return { TAG: "Ok", _0: m.atimeNs };
+}
+// `fs::metadata(path)`: `stat`'s, a symbolic link followed.
+function $fsMetadata(path) {
+  const fs = $nodeFs("`std::fs::metadata`");
+  return $fsTry(() => fs.statSync(path, { bigint: true }));
+}
+// `fs::symlink_metadata(path)`: `lstat`'s, of the link itself.
+function $fsSymlinkMetadata(path) {
+  const fs = $nodeFs("`std::fs::symlink_metadata`");
+  return $fsTry(() => fs.lstatSync(path, { bigint: true }));
+}
+
+// `fs::create_dir(path)`: `mkdir`, of mode `0o777`, as std's `DirBuilder`'s.
+function $fsCreateDir(path) {
+  const fs = $nodeFs("`std::fs::create_dir`");
+  $fsThrow(() => fs.mkdirSync(path, 0o777));
+}
+// `fs::create_dir_all(path)`: std's `DirBuilder::create_dir_all`, word for
+// word: made, or made once its parent is, or there already as a directory.
+function $fsCreateDirAll(path) {
+  const fs = $nodeFs("`std::fs::create_dir_all`");
+  const isDir = (p) => {
+    try {
+      return fs.statSync(p).isDirectory();
+    } catch {
+      return false;
+    }
+  };
+  const all = (path) => {
+    if (path === "") return;
+    try {
+      return fs.mkdirSync(path, 0o777);
+    } catch (e) {
+      if (e?.code !== "ENOENT") {
+        if ($fromOs(e) && isDir(path)) return;
+        throw e;
+      }
+    }
+    const parent = $pathParent(path);
+    if (parent === undefined) throw new $IoError("Uncategorized", undefined, "failed to create whole tree");
+    all(parent);
+    try {
+      fs.mkdirSync(path, 0o777);
+    } catch (e) {
+      if (!($fromOs(e) && isDir(path))) throw e;
+    }
+  };
+  $fsThrow(() => all(path));
+}
+
+// `fs::remove_dir(path)`: `rmdir`, of an empty directory.
+function $fsRemoveDir(path) {
+  const fs = $nodeFs("`std::fs::remove_dir`");
+  $fsThrow(() => fs.rmdirSync(path));
+}
+
+// `fs::read_dir(path)`: `Ok` of its entries, each read as it's asked, in
+// the order the OS gives them, `readdir`'s, as std's; the directory opened
+// here, as std's `opendir` is, and closed once they're all read, or once
+// they're collected.
+function $fsReadDir(path) {
+  const fs = $nodeFs("`std::fs::read_dir`");
+  return $fsTry(() => {
+    const dir = fs.opendirSync(path);
+    // Each entry, `Ok` of a `DirEntry`, `{ path, name, type }`, its path the
+    // directory's joined with its name, as std's `root.join(name)`, and its
+    // type, what `readdir` says of it, `lstat`'s where it says nothing; or
+    // `Err` of the OS's error reading it. Not one of the compiler's iterator
+    // helpers: it's what `$fsReadDir` gives, inside its `Ok`.
+    const entries = (function* () {
+      while (true) {
+        let entry;
+        try {
+          entry = dir.readSync();
+        } catch (e) {
+          if (!$fromOs(e)) throw e;
+          yield { TAG: "Err", _0: $osError(e) };
+          return;
+        }
+        if (entry === null) {
+          dir.closeSync();
+          return;
+        }
+        const at = $pathJoin(path, entry.name);
+        const type = $fileType(entry) ?? $fileType(fs.lstatSync(at));
+        yield { TAG: "Ok", _0: { path: at, name: entry.name, type } };
+      }
+    })();
+    $closeOnCollect(entries, dir);
+    return entries;
+  });
+}
+// `entry.metadata()`: `lstat`'s of its path, a symbolic link's own, as
+// std's `fstatat` of `AT_SYMLINK_NOFOLLOW` is.
+function $entryMetadata(entry) {
+  const fs = $nodeFs("`std::fs::DirEntry::metadata`");
+  return $fsTry(() => fs.lstatSync(entry.path, { bigint: true }));
+}
 
 // `fs::read(path)`: its bytes, in a `Vec` of its length's capacity, as std's
 // `try_with_capacity` of its metadata's is.
