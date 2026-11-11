@@ -333,3 +333,30 @@ rewrites of `from_iter_holds_what_generic_code_gives.rs`, and the mutations
 `compiled-struct-in-a-holder-held`, `std-bodies-holder-held` and
 `adapter-of-it-a-holder`. The crate's
 own iterator so given, not an adapter of it, throws on its drop, #1286.
+
+## Amendment: a fold steps by its own steps too (2026-11-11, #1330)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+#1239 made what closes a source step it by its own steps, `ownNext`, the
+ones before JS's protocol, `Iterator.from(it)`'s, made it close itself at
+its end. `$foldBy`, std's default `fold(self, init, f)` of a `$Steps`,
+still stepped by `next`. Given `Iterator.from(it)`, generic code's, the
+step that found it done closed it inside the step. So a panic in what's
+left of it, a `take(3)` of five items whose fourth's drop panics, ran as
+a step's panic and dropped the accumulator: `drop total 6`. Std's fold
+has its result by then and drops `self` after, and a panic there leaks
+the result, never drops it. A `take` is `$taking` where its hint is
+asked, and #1330's second defect makes that every `take` of its type
+crate-wide. So the points table showed it beside a "hint given" case,
+`vec | take | sum`.
+
+`$foldBy` steps by `ownNext` where the value has one, and closes it after
+its loop, where a panic leaves the accumulator as Rust leaves its result.
+`test/corpus/fold_whose_rest_panics_as_dropped_leaks_its_result.rs` holds
+the sum against native Rust in both builds; mutation
+`fold-by-steps-closing-at-its-end`. #1330's points rows are off the list.
+Whether a `take` is `$taking` by its type crate-wide or by the function
+that makes it, #1330's other defect, which changes no answer now, is
+#1333's.

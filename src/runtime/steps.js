@@ -568,16 +568,20 @@ function $endsAfter(ends, run) {
 // left of `it`, closed; as a step unwinds, the accumulator, by `unwind`,
 // where it's given, then `ends`, then `it`; as `f` does, whose frame drops
 // the accumulator and the item itself, `ends`, then `it` (S2, #422, #423,
-// #710).
+// #710). Stepped by its own steps, `ownNext`, not those that close it at
+// its end, JS's protocol's: what's left of it is dropped after its last
+// step, as std's fold drops `self` once it has what it folded, which a
+// panic there leaks, never drops (#1330).
 function $foldBy(it, by, init, f, unwind, ends) {
   let folded = init;
   let stepping = false;
   const close = () => it.return?.();
+  const own = by === "next" && it.ownNext !== undefined;
   $unwinds(
     () => {
       for (;;) {
         stepping = true;
-        const step = it[by]();
+        const step = own ? it.ownNext() : it[by]();
         stepping = false;
         if (step.done) return;
         folded = f(folded, step.value);

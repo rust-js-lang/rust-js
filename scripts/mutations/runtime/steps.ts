@@ -515,4 +515,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
   },
+  {
+    name: "fold-by-steps-closing-at-its-end",
+    breaks: "a fold of a `$Steps` stepped by JS's protocol closes it inside its last step, so a panic in what's left of it drops the accumulator, `drop total 6`, which std's fold, done with it, leaks (#1330)",
+    file: "src/runtime/steps.js",
+    find: "  const own = by === \"next\" && it.ownNext !== undefined;\n",
+    replace: "  const own = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_whose_rest_panics_as_dropped_leaks_its_result.rs$"],
+  },
 ];
