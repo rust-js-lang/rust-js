@@ -371,3 +371,25 @@ bounds are carried. Four snapshots change.
 and a `Vec`, collected and folded from the back) runs against native Rust
 in both builds. The mutation is `rpitit-bounds-entryless`
 (`lower/traits.ts`).
+
+## Amendment: a `const { .. }` block's trait constants are generic code's reads (2026-11-11, #1387)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+`fn of<T: N>() -> u32 { const { T::V * 10 + 1 } }` printed 1 where Rust
+prints 21: the dictionary its caller gave was `const twoN = {};`, no `V`.
+What a dictionary carries is `generic_consts`' (`analysis/generic_consts.rs`,
+the one list), which read the trait constants a body names in its THIR. A
+`const { .. }` block of a type parameter's, which rustc can't say as a
+value, is lowered as code where it's used, its own MIR's
+(`crate_const_as_code`), and its `T::V` is in that body, never walked.
+`generic_consts` now follows each such block into its MIR, and each inline
+constant of a type parameter's inside it, so what it lists is what the
+lowering reads.
+
+Held by `inline_const_of_a_trait_constant.rs` (an inline constant reading
+`T::V` alone, beside a generic associated constant and a plain read of it,
+nested in another, of a trait's default constant overridden or not, and
+with a const generic) against native Rust in both builds, and the mutations
+`const-block-reads-unread` and `nested-const-block-reads-unread`.
