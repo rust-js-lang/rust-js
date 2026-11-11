@@ -833,6 +833,25 @@ test("a library's generic code drops a consumer's impl Trait by its dictionary",
   expect(printed(join(dir, "app.js"))).toBe("stepped\ndrop hidden\nSome(20)\nholding\ndrop kept\n");
 }, 300_000);
 
+// A consumer's flatten given to a library's function, whose body the
+// consumer can't see and which may ask its hint, is held, std's struct,
+// which counts its items' constant size, under a `filter` too (#1323).
+test("a consumer's flatten given to a library's function knows its hint", () => {
+  const dir = fixture("library-flatten-hint");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub fn hint<I: Iterator>(it: I) -> (usize, Option<usize>) {\n    it.size_hint()\n}\n");
+  writeFileSync(
+    join(dir, "app.rs"),
+    "pub fn main() {\n    let v = vec![1u32, 2, 3, 4];\n    println!(\"{:?}\", dep::hint(v.iter().copied().flat_map(|n| [n; 3])));\n    println!(\"{:?}\", dep::hint(v.iter().copied().flat_map(Some)));\n    println!(\"{:?}\", dep::hint(v.iter().copied().flat_map(|n| [n; 3]).filter(|x| x % 2 == 0)));\n}\n",
+  );
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("(12, Some(12))\n(0, Some(4))\n(0, Some(12))\n");
+}, 300_000);
+
 // A library's generic fold drops the iterator its consumer gives once it's
 // done (ADR 0464); its peekable, which gives it back, is std's own, dropped
 // with what it holds when the consumer consumes it (ADR 0561).

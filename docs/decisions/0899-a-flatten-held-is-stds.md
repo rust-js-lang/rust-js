@@ -217,3 +217,60 @@ builds. Mutation: `ref-const-size-not-its-pointees`. A
 `size_hint()` of `once(i).flatten()` or `once(r).flat_map(..)` stays
 refused, of a plain `I: IntoIterator` as well: `Once`'s hint of what
 it holds, a separate gap.
+
+## Amendment: a flatten given where its hint is asked is held (2026-11-11, #1323)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A flatten made in place is JS's own `flatMap`, which knows none of its
+items' sizes, so its `size_hint()` read `(0, None)` until its source ran
+out. Asked where it's made, `it.size_hint()`, the flatten was held, std's
+struct, which counts an array's constant size and an `Option`'s one at
+most (above). Given to a function that asks its hint,
+`hint(v.iter().copied().flat_map(|n| [n; 3]))` of `fn hint<I: Iterator>(it:
+I) -> (usize, Option<usize>) { it.size_hint() }`, it was made in place.
+That gave `(0, None)` where native Rust gives `(12, Some(12))`, and `(0,
+None)` where it gives `(0, Some(4))` of `flat_map(Some)`. So did one
+given on, `relayed(it)` of `hint(it)`, and one under another adapter
+made in place there, `flat_map(f).map(g)`, `.filter(g)` and `.rev()`,
+whose hint is their source's. The plain build alone was wrong; in the
+build of std's iterator structs a flatten is always std's.
+
+`in_place_adapters` holds a flatten whose hint is asked where it's given:
+- given to `size_hint()`, to a function of the crate's that asks the hint
+  of what it's given, or to a library's, whose body the crate can't see,
+  as `hint_asked.rs` takes a library's already;
+- or as the receiver of an iterator's method whose own call is wanted.
+
+Those calls are `wanted`, found to a fixed point of the body's calls.
+Which functions ask the hint of what they're given is the hint's owner's,
+`hint_asked.rs`' `asked_of_own` (the generic facts' catalogue's row), read
+across the crate's bodies to a fixed point: `size_hint()` of a type made
+of the function's type parameters, or one given on to such a function. It
+goes by the function, not its parameter, as what it's given may reach the
+hint through what it makes of it, `metamorph_is(it)`'s `I` of an `impl
+MetamorphIs<I>`; so each iterator it's given is wanted, which holds a
+flatten where nothing asks, std's struct, correct and longer. The bodies
+that give one such a function or a library's make what they give in
+place again, `results_in_place`. The other adapters given there are as they were,
+`$lazyZip(..)`, `$stepBy(..)`, `$filterEnds(..)`: JS's own and the
+runtime's know their hints.
+
+Left as it was: generic code's flatten of a trait's associated type's
+items, `(1..3).flat_map(S::items)`, in the plain build, is now held, and
+asks the constant size of `<S as Named>::Items`, which no dictionary
+carries yet. That was a wrong answer and is now refused, as it is in the
+build of std's structs, until #1312's `Asked::Carried` carries it.
+
+`test/corpus/flatten_given_where_its_hint_is_asked.rs` holds a flatten
+of arrays, of `Option`s and of a map's arrays given to `hint`, one given
+on, one through `identity`, one under a `map`, a `filter` and a `rev()`, one asked where it's
+made of a type parameter's items, and the other adapters given there,
+against native Rust in both builds. Mutations (`lower/body_queries/in_place.ts`):
+`flatten-wanted-made-in-place`, `hint-wanted-not-through-adapters`,
+`hint-asked-bodies-unrevisited` and `hint-of-a-library-unasked`, and
+(`lower/analysis/hint_asked.ts`) `hint-asked-of-no-param` and
+`hint-asked-not-relayed`; `test/crates.test.ts`' "a consumer's flatten
+given to a library's function knows its hint"; `rev-never-in-place`,
+`rev-own-impl-in-place` and `holder-param-steps-js` refitted.

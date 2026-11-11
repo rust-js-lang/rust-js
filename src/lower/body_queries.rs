@@ -189,7 +189,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let in_place_adapters = in_place_adapters(tcx, thir, None, |_| false);
+        let in_place_adapters = in_place_adapters(tcx, thir, None, |_| false, &IndexSet::default());
         let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)

@@ -77,4 +77,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
   },
+  {
+    name: "hint-asked-of-no-param",
+    breaks: "a function that asks `size_hint()` of what it's given isn't known to: a flatten given it is JS's own `flatMap`, `(0, None)` where std's counts its items' constant size (#1323)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                (callee == size_hint || asked.contains(&callee))\n",
+    replace: "                asked.contains(&callee)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
+  {
+    name: "hint-asked-not-relayed",
+    breaks: "a function that gives what it's given on to one that asks its hint isn't known to ask it: `relayed(it)` of `hint(it)` (#1323)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                (callee == size_hint || asked.contains(&callee))\n",
+    replace: "                (callee == size_hint)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
 ];

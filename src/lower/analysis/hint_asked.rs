@@ -190,6 +190,45 @@ pub(super) fn of_crate<'tcx>(
     asked
 }
 
+/// Each function of the crate's that asks the hint of what it's given:
+/// `size_hint()` of a type made of its type parameters, `hint<I:
+/// Iterator>(it: I)`'s, or one that gives them on to such a function, to
+/// the fixed point of the crate's bodies (#1323). By the function, not by
+/// its parameter: what it's given may reach the hint through what it makes
+/// of it, `metamorph_is(it)`'s `I` of an `impl MetamorphIs<I>`, so each
+/// iterator it's given is, where `in_place_adapters` holds a flatten,
+/// std's struct, which knows its hint. Before lowering, of the crate's
+/// bodies.
+pub(in crate::lower) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tcx>]) -> IndexSet<DefId> {
+    let size_hint = crate::lower::recognition::trait_method(
+        tcx,
+        crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
+        "size_hint",
+    );
+    let mut asked: IndexSet<DefId> = IndexSet::default();
+    loop {
+        let before = asked.len();
+        for body in bodies {
+            let owner = tcx.typeck_root_def_id(body.def_id);
+            let asks = body.thir.exprs.iter().any(|expr| {
+                let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
+                    return false;
+                };
+                (callee == size_hint || asked.contains(&callee))
+                    && args
+                        .types()
+                        .any(|given| rustc_middle::ty::TypeVisitableExt::has_param(&given))
+            });
+            if asks {
+                asked.insert(owner);
+            }
+        }
+        if asked.len() == before {
+            return asked;
+        }
+    }
+}
+
 /// `instance`, an iterator given where its hint is asked, made knowing it
 /// where it's made, only of what steps an array's items, which JS's own
 /// iterator, `values()`, and its own adapters know no hint of: a range's,

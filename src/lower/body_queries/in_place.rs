@@ -50,16 +50,28 @@ pub(super) fn results_in_place<'tcx>(
                 )
         })
     };
+    // And each that gives one to a function that asks its hint, or to a
+    // library's, which may (#1323).
+    let hint_asked = crate::lower::analysis::asked_of_own(tcx, bodies);
+    let gives_to_hint_asked = |body: &crate::lower::Body<'tcx>| {
+        body.thir.exprs.iter().any(|e| {
+            matches!(e.kind, ExprKind::ZstLiteral { .. })
+                && crate::lower::fn_def(e.ty).is_some_and(|(callee, _)| {
+                    hint_asked.contains(&callee)
+                        || !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee)
+                })
+        })
+    };
     for body in bodies.iter_mut() {
         let flat_mapped = given.contains(&body.def_id);
-        if !flat_mapped && !clones_apart(body) {
+        if !flat_mapped && !clones_apart(body) && !gives_to_hint_asked(body) {
             continue;
         }
         let stepped_result = flat_mapped.then_some(body.expr);
         let owner = body.def_id;
         let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
         let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
-        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart);
+        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart, &hint_asked);
     }
 }
 
@@ -81,6 +93,7 @@ pub(super) fn in_place_adapters<'tcx>(
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
     cloned_apart: impl Fn(ty::Ty<'tcx>) -> bool,
+    hint_asked: &IndexSet<DefId>,
 ) -> IndexSet<Span> {
     use crate::lower::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
@@ -147,30 +160,90 @@ pub(super) fn in_place_adapters<'tcx>(
     // `rev()` of a zip is, `$rev($zipEnds(..))`, whatever its source is
     // (#400, #740).
     let sized = |maker: DefId| crate::lower::recognition::sized_in_place(tcx, maker);
-    let steps_as_js = |callee: DefId, index: usize, in_place: &IndexSet<Span>, at: Span, maker: DefId| {
-        // Another of them, itself made in place, `enumerate().rev()`'s: in
-        // place too.
-        if crate::lower::recognition::makes_held_compiled(tcx, callee) {
-            return in_place.contains(&at);
-        }
-        if callee == size_hint && !sized(maker) {
-            return false;
-        }
-        let std = crate::lower::recognition::is_std_crate(tcx, callee)
-            && !crate::lower::recognition::is_compiled_std(tcx, callee);
-        // What it's given for, a type parameter bound by `Iterator` or
-        // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
-        // `next_back()`'s and `len()`'s too: not one that holds it,
-        // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
-        // `Self`, its own compiled impl's, of its struct (#537).
-        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
-        let input = inputs.get(index).map(|input| *input.peel_refs().kind());
-        let Some(ty::Param(param)) = input else {
-            return false;
-        };
-        crate::lower::iterators::bound_as_iterator(tcx, callee, param)
-            && (std || callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))
+    let flattens = |maker: DefId| {
+        let made = tcx.fn_sig(maker).instantiate_identity().skip_binder().output();
+        crate::lower::recognition::flattened_source(tcx, made).is_some()
     };
+    // What's given where its hint is asked: to `size_hint()`, to a function
+    // of the crate's that asks the hint of what it's given (`asked_of_own`,
+    // the hint's owner's), or to a library's, whose body, which the crate
+    // can't see, may ask it, as `hint_asked.rs` takes it; or as the
+    // receiver of an iterator's method whose own call is, which gives its
+    // hint of it, `flat_map(f).filter(g)`'s: to the fixed point (#1323),
+    // each call's `fn_span`.
+    let library = |callee: DefId| !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee);
+    let mut wanted: IndexSet<Span> = IndexSet::default();
+    loop {
+        let before = wanted.len();
+        for e in thir.exprs.indices() {
+            let ExprKind::Call {
+                fun,
+                ref args,
+                fn_span: at,
+                ..
+            } = thir[e].kind
+            else {
+                continue;
+            };
+            let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+                continue;
+            };
+            let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+            let adapts = callee != size_hint && tcx.trait_of_assoc(callee) == Some(iterator_traits[0]);
+            for (index, &arg) in args.iter().enumerate() {
+                let arg = match thir[strip(thir, arg)].kind {
+                    ExprKind::Borrow { arg, .. } => strip(thir, arg),
+                    _ => strip(thir, arg),
+                };
+                let ExprKind::Call { fn_span: made, .. } = thir[arg].kind else {
+                    continue;
+                };
+                let asks = match inputs.get(index) {
+                    _ if adapts && index == 0 => wanted.contains(&at),
+                    Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),
+                    None => false,
+                };
+                if asks {
+                    wanted.insert(made);
+                }
+            }
+        }
+        if wanted.len() == before {
+            break;
+        }
+    }
+    let steps_as_js =
+        |callee: DefId, index: usize, in_place: &IndexSet<Span>, at: Span, (made, maker): (Span, DefId)| {
+            // A flatten whose hint is asked where it's given (`wanted`): held,
+            // std's struct, which knows its items' constant size, as of
+            // `size_hint()` itself; JS's own `flatMap` knows none (ADR 0899,
+            // #1323).
+            if flattens(maker) && wanted.contains(&made) {
+                return false;
+            }
+            // Another of them, itself made in place, `enumerate().rev()`'s: in
+            // place too.
+            if crate::lower::recognition::makes_held_compiled(tcx, callee) {
+                return in_place.contains(&at);
+            }
+            if callee == size_hint && !sized(maker) {
+                return false;
+            }
+            let std = crate::lower::recognition::is_std_crate(tcx, callee)
+                && !crate::lower::recognition::is_compiled_std(tcx, callee);
+            // What it's given for, a type parameter bound by `Iterator` or
+            // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
+            // `next_back()`'s and `len()`'s too: not one that holds it,
+            // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
+            // `Self`, its own compiled impl's, of its struct (#537).
+            let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+            let input = inputs.get(index).map(|input| *input.peel_refs().kind());
+            let Some(ty::Param(param)) = input else {
+                return false;
+            };
+            crate::lower::iterators::bound_as_iterator(tcx, callee, param)
+                && (std || callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))
+        };
     let mut found = IndexSet::default();
     // What a closure gives that's stepped where it's given, `flat_map`'s:
     // made in place, as one given to it would be.
@@ -291,7 +364,7 @@ pub(super) fn in_place_adapters<'tcx>(
     loop {
         let before = found.len();
         for &(made, at, callee, index, maker) in &given {
-            if steps_as_js(callee, index, &found, at, maker) {
+            if steps_as_js(callee, index, &found, at, (made, maker)) {
                 found.insert(made);
             }
         }

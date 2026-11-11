@@ -18,7 +18,7 @@ pub(super) use cell_borrows::{
 pub(super) use cell_flow::CellClass;
 mod clones;
 pub(in crate::lower) use clones::Cloned;
-pub(in crate::lower) use hint_asked::Hinted;
+pub(in crate::lower) use hint_asked::{Hinted, asked_of_own};
 mod closures;
 mod debug;
 mod drops;

@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     "name": "rev-never-in-place",
     "breaks": "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            if steps_as_js(callee, index, &found, at, maker) {\n",
-    "replace": "            if false && steps_as_js(callee, index, &found, at, maker) {\n",
+    "find": "            if steps_as_js(callee, index, &found, at, (made, maker)) {\n",
+    "replace": "            if false && steps_as_js(callee, index, &found, at, (made, maker)) {\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     "name": "rev-own-impl-in-place",
     "breaks": "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
-    "replace": "        (std || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    "find": "            crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n                && (std ||",
+    "replace": "            (std || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n                && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     "name": "holder-param-steps-js",
     "breaks": "a `map()` given to the crate's `T` bound by nothing, `set_get(&mut it, (5..8).map(f))`'s, is made a JS iterator, which the caller's std struct then reads as its own (#537)",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
-    "replace": "        (callee.is_local() || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    "find": "            crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n                && (std ||",
+    "replace": "            (callee.is_local() || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n                && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -228,5 +228,37 @@ export const mutations: Mutation[] = [
       "^zip_of_droppers_from_its_back.rs$"
     ],
     "snapshots": true
+  },
+  {
+    name: "flatten-wanted-made-in-place",
+    breaks: "a flatten given where its hint is asked is made in place, JS's own `flatMap`, which knows no items' constant size: `(0, None)` (#1323)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            if flattens(maker) && wanted.contains(&made) {\n",
+    replace: "            if flattens(maker) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
+  {
+    name: "hint-wanted-not-through-adapters",
+    breaks: "a flatten under another adapter given where its hint is asked, `flat_map(f).filter(g)`, is made in place, its hint `(0, None)` (#1323)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                    _ if adapts && index == 0 => wanted.contains(&at),\n",
+    replace: "                    _ if adapts && index == 0 => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
+  {
+    name: "hint-asked-bodies-unrevisited",
+    breaks: "a body that gives a flatten to a function that asks its hint keeps what it made in place before the crate's bodies were read: `(0, None)` (#1323)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "        if !flat_mapped && !clones_apart(body) && !gives_to_hint_asked(body) {\n",
+    replace: "        if !flat_mapped && !clones_apart(body) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
+  {
+    name: "hint-of-a-library-unasked",
+    breaks: "a flatten under a `filter` given to a library's function, whose body the crate can't see, is made in place, though the library may ask its hint: `(0, None)` (#1323)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),\n",
+    replace: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee),\n",
+    tests: ["test/crates.test.ts", "-t", "flatten given to a library's function knows its hint"],
   },
 ];
