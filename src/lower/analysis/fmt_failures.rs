@@ -300,9 +300,10 @@ pub(in crate::lower) fn call_may_fail<'tcx>(
 
 /// Whether `id`, called with `args`, is std's own of a writer rust-js
 /// compiled, the crate's or a library's: `write_all`, which calls its
-/// `write`, which may fail as any of theirs may (#1072).
+/// `write`, which may fail as any of theirs may (#1072). Not a library's
+/// own function, whose manifest says whether it fails (`Foreign::fails`).
 fn of_own_writer(foreign: &Foreign<'_, '_>, id: DefId, args: ty::GenericArgsRef<'_>) -> bool {
-    !id.is_local()
+    !foreign.compiled_by_rust_js(id)
         && args.types().next().is_some_and(
             |this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if foreign.compiled_by_rust_js(adt.did())),
         )
