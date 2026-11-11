@@ -7,7 +7,9 @@ const bufRead = ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"];
 const generic = ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"];
 const deque = ["test/corpus.test.ts", "-t", "^io_read_deque.rs$"];
 const emptyRepeat = ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat.rs$"];
-const toEndCapacity = ["test/corpus.test.ts", "-t", "^io_read_to_end_capacity.rs$"];
+const chainTake = ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"];
+const readerDefaults = ["test/lowering-readers.test.ts"];
+const toEndCapacity =["test/corpus.test.ts", "-t", "^io_read_to_end_capacity.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -177,5 +179,37 @@ export const mutations: Mutation[] = [
     find: "      $reserve(v, from.length, 1);\n",
     replace: "",
     tests: toEndCapacity,
+  },
+  {
+    name: "read-byte-reads-two",
+    breaks: "`Bytes::next`'s `$readByte` reads a two-byte buffer, taking two bytes of each step, where std reads one (#1156)",
+    file: "src/runtime/readers.js",
+    find: "  const byte = [0];\n",
+    replace: "  const byte = [0, 0];\n",
+    tests: chainTake,
+  },
+  {
+    name: "reader-defaults-read-exact-short-quiet",
+    breaks: "a `Chain`'s or a `Take`'s `read_exact` that can't fill its buffer is `Ok`, where std's `default_read_exact` is `UnexpectedEof` (#1156)",
+    file: "src/runtime/readers.js",
+    find: "      if (at < buf.length) throw $readExactEof();\n",
+    replace: "",
+    tests: chainTake,
+  },
+  {
+    name: "reader-defaults-over-its-own-read-to-end",
+    breaks: "std's default `read_to_end` replaces what a `Chain`'s impl writes itself, each source's own, which reserves first (#1156, #1338)",
+    file: "src/runtime/readers.js",
+    find: "    ...reader,\n  };\n  $readerDefaulted.set(reader, made);\n",
+    replace: "    ...reader,\n  };\n  Object.assign(made, { readToEnd });\n  $readerDefaulted.set(reader, made);\n",
+    tests: readerDefaults,
+  },
+  {
+    name: "reader-defaults-capacity-kept",
+    breaks: "a `Vec` a `Take`'s std-default `read_to_end` grows keeps its length as its capacity, where std's reads give another (#1340): a number, not #1180's refusal",
+    file: "src/runtime/readers.js",
+    find: "      if (read._0 === 0) return $grewUnsized(v, len, { TAG: \"Ok\", _0: all });\n",
+    replace: "      if (read._0 === 0) return { TAG: \"Ok\", _0: all };\n",
+    tests: readerDefaults,
   },
 ];

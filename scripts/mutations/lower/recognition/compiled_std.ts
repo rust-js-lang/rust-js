@@ -170,4 +170,20 @@ export const mutations: Mutation[] = [
     replace: '    ("Zip", "zip", true),\n',
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
+  {
+    name: "io-chain-fn-not-compiled",
+    breaks: "`core::io::chain`, which `Read::chain` calls and std keeps public but unstable, isn't compiled, so `@rust-js/std` can't be built (#1156)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "const COMPILED_STD_IO_FNS: &[&str] = &[\"chain\", \"take\"];\n",
+    replace: "const COMPILED_STD_IO_FNS: &[&str] = &[\"take\"];\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
+  {
+    name: "question-mark-try-compiled",
+    breaks: "a `?` of a `Result` in a compiled body, `Chain::read`'s, has std's `Try::branch` compiled for it, which the lowering writes itself, and `@rust-js/std` can't be built (#1156)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "            if super::is_question_mark_written(tcx, callee, args) {\n",
+    replace: "            if false && super::is_question_mark_written(tcx, callee, args) {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

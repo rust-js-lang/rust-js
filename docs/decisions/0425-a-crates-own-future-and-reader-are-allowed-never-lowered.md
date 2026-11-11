@@ -225,3 +225,97 @@ metamorphic rewrites; mutations `empty-read-exact-of-nothing-fails`,
 (`runtime/readers.ts`), and `empty-no-byte-source`,
 `repeat-made-unanswered` and `empty-own-lines-unwritten`
 (`lower/recognition/io.ts`).
+
+## Amendment: `chain`, `take` and `bytes` are read (#1156)
+
+`Read::chain`, `Read::take` and `Read::bytes` were refused. They are std's
+structs and std's bodies now, compiled into `@rust-js/std`'s `io.js` as
+`Cursor` is. The coordinator decided this for the user on 2026-11-11.
+Case C of [0262](0262-when-rust-and-js-disagree.md): what's read is the
+program's data.
+
+- **`Chain<T, U>` is `{ first, second, doneFirst }` and `Take<T>` is
+  `{ inner, limit }`.** Their impls of `Read` and `BufRead` are std's
+  bodies, as `chainRead_read` and `takeBufRead_fillBuf`. So are
+  `into_inner`, `get_ref`, `get_mut`, `limit` and `set_limit`, and Chain's
+  `read_to_end` and `read_until`, which its impl writes itself.
+  `COMPILED_STD_IO` lists them, and `core::io::{chain, take}` are
+  `COMPILED_STD_IO_FNS`.
+- **Each impl is a dictionary, its factory's in `io.js`**
+  (`chainRead($sliceReader, $sliceReader)`), given the dictionaries of
+  what it holds. `byte_source_dictionary` gives a std reader
+  (`recognition::is_std_reader`) its impl's factory, as `impl_dictionary`
+  gives the crate's impls theirs. A known `Chain`'s or `Take`'s
+  `DICTIONARY_METHODS` go through the dictionary, as a slice's do, in the
+  same form. Repeated dictionaries are declared once (ADR 0979), including
+  a runtime helper's of one, `const ChainRead =
+  $readerDefaults(chainRead(..))`.
+- **What a `Chain` or a `Take` doesn't write itself is std's default over
+  its `read`, `$readerDefaults(reader)`**: `read_exact` is
+  `default_read_exact`, `read_to_end` is `default_read_to_end`'s reads,
+  and `read_to_string` is `default_read_to_string`, which is
+  `$appendToString` over that `read_to_end`. Each keeps the bytes, errors
+  and stopping point of std's, and retries an interrupted read.
+  `$readerDefaults` reads in 8192-byte chunks, not as
+  `default_read_to_end` does (a 32-byte probe, then spare capacity
+  growing by `max_read_size`). That can't be seen for a reader whose
+  sources are std's, which is the only kind it's given: a `Chain`'s or a
+  `Take`'s dictionary (`byte_source_dictionary`'s std-reader branch,
+  which an architecture test holds as the only writer of
+  `"$readerDefaults"`). **A reader of the crate's own, #1297's, would see
+  each `read`'s size, so `$readerDefaults` must never serve one unless
+  its read sizes are std's.** Its `capacity()` does show: a `Vec` that
+  `$readerDefaults`' `read_to_end` grows past its room is `$grewUnsized`,
+  and its `capacity()` raises #1180's error naming #1340, never another
+  number. One that fits its room keeps std's capacity. The coordinator
+  decided this for the user (A), and #1340 is std's number. A `Chain`'s
+  own `read_to_end` calls each source's, which reserves as std's does
+  (ADR 0419, #1338).
+- **`Bytes<R>` is std's struct, and `Bytes::next` std's body**. That body
+  calls `SpecReadByte::spec_read_byte`, whose general impl calls alloc's
+  `inlined_slow_read_byte`. That function reaches memory
+  (`slice::from_mut`), so it is a recognizer: `IoOp::ReadByte`, the
+  runtime's `$readByte(r, RRead)`, std's body word for word. It reads one
+  byte through the reader's `read` of a one-byte buffer, retries
+  `Interrupted`, gives `undefined` at 0 and otherwise the byte or the
+  error. The coordinator decided this (B). **Each byte is one `read` of
+  one byte, as std calls it, so a reader of the crate's own (#1297) will
+  see std's own calls.** `SpecReadByte` is `OPTIMIZING_BY_TYPE`:
+  `BufReader`'s impl only reads from its buffer what the general one
+  would.
+- **A call of a trait method that std's compiled impl writes itself**,
+  such as a known `Chain`'s `read_until`, gets the impl's own forms. It
+  is given the object, not the provided method's box of a `Self`:
+  `call_callee` asks the resolved instance before the trait's compiled
+  provided method, so `form_differs` crosses into the impl's signature.
+- `recognition::tried_as_written` is the one owner of "a `?` of an
+  `Option` or a `Result` is written by the lowering". Both dispatch and
+  the walk that finds std's compiled bodies ask it, so std's
+  `<Result as Try>::branch` isn't compiled. `same_kinds_of_generics`
+  keeps `fact_specialization` from comparing `SpecReadByte`'s
+  `StdinLock<'_>` impl, a lifetime, with `R`'s, a type.
+
+Held by `test/corpus/io_read_chain_take_bytes.rs`, against native Rust in
+both builds and through its metamorphic rewrites. It covers a chain of
+slices read, `read_line`, `read_to_string` and `read_until` across its
+seam, a character split between its parts, a take of a slice, of a
+repeat and of a chain, `bytes` of each, generic `R: Read` and
+`B: BufRead`, a `&mut dyn Read` and a `Box<dyn BufRead>`.
+`test/lowering-readers.test.ts` holds the capacity refusal (#1340), and
+`test/architecture-traits.test.ts` holds that `$readerDefaults` is given
+std's readers alone. Mutations: `read-byte-reads-two`,
+`reader-defaults-read-exact-short-quiet`,
+`reader-defaults-over-its-own-read-to-end` and
+`reader-defaults-capacity-kept` (`runtime/readers.ts`); `read-byte-compiled`,
+`take-no-std-reader` and `std-reader-own-methods-compiled`
+(`lower/recognition/io.ts`); `own-reader-given-a-dictionary`
+(`lower/analysis.ts`); `compiled-impl-method-not-the-callee`
+(`lower/mir/assign.ts`); `std-reader-read-no-defaults` and
+`helper-made-dictionary-unnamed` (`lower/traits/dictionaries.ts`);
+`std-reader-dictionary-takes-std-defaults` (`lower/traits/impls.ts`);
+`specialization-generics-counted` and `spec-read-byte-not-optimizing`
+(`lower/recognition/specialization.ts`); `io-chain-fn-not-compiled` and
+`question-mark-try-compiled` (`lower/recognition/compiled_std.ts`);
+`question-mark-written-of-from-residual-misread`
+(`lower/recognition/types.ts`); and `read-byte-of-the-source-read`
+(`lower/std_types/io.ts`). `BufReader` is next; `File` comes last.

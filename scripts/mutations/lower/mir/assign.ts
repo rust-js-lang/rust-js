@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
     file: "src/lower/mir/assign.rs",
-    find: "            Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),\n",
+    find: "            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^scan_object_state with"],
   },
@@ -968,5 +968,13 @@ export const mutations: Mutation[] = [
     find: "            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())\n",
     replace: "            && crate::lower::iterators::is_items_map(&expr)\n",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
+  },
+  {
+    name: "compiled-impl-method-not-the-callee",
+    breaks: "a known `Chain`'s `read_until`, which std's compiled impl writes itself, is given the provided method's box of a `Self`, `$cellOf(c)`, where its body takes the object, and throws (#1156)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    && instance.def_id() != def_id\n                    && compiled_std(instance.def_id())\n",
+    replace: "                    && instance.def_id() != def_id\n                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
 ];

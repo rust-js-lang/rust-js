@@ -410,6 +410,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
                 continue;
             }
+            // std's own `read_exact`, `read_to_end` and `read_to_string` of
+            // a `Chain` or a `Take` that doesn't write them: `$readerDefaults`
+            // of its dictionary, where it's given (#1156).
+            if crate::lower::recognition::is_std_reader_impl(self.tcx, id)
+                && crate::lower::recognition::in_io_dictionary(self.tcx, item.def_id)
+                && !self.krate.fns.contains_key(&method)
+            {
+                continue;
+            }
             // A library's trait's default, whose body is the library's (ADR 0100):
             // its function over `Self`, given this impl's dictionary as any of
             // its generic functions is (ADR 0185), the crate's own where the

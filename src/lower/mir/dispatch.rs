@@ -983,10 +983,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `?` of a `ty`, or what it returns of one, is written as it
-    /// is, `Value::Branch`'s: an `Option`, a `Result` or a `fmt::Result`;
-    /// not another `Try`, std's generic code's, its dictionary's (ADR 0913).
+    /// is, `Value::Branch`'s: recognition's `tried_as_written`, which the
+    /// bodies `@rust-js/std` compiles leave to it too.
     fn tried_as_written(&self, ty: Ty<'tcx>) -> bool {
-        self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)
+        crate::lower::recognition::tried_as_written(self.tcx, ty)
     }
 
     fn mir_call_values_of(

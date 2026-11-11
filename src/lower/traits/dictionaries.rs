@@ -123,6 +123,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.tcx.item_name(tr.def_id)
                 ),
             )),
+            // A `Chain`'s or a `Take`'s, its impl's in `@rust-js/std`, and of
+            // its `Read`, what that doesn't write std's defaults over its
+            // `read`, `$readerDefaults`: given std's readers alone, whose
+            // sources are std's, which see none of how much each `read` asks
+            // for (ADR 0425, amended; never a reader of the crate's own, #1297).
+            None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) => {
+                let made = (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr))?;
+                Ok(match is_std_def(self.tcx, tr.def_id, StdItem::IoRead) {
+                    true => Expr::call_helper("$readerDefaults", vec![made]),
+                    false => made,
+                })
+            }
             None => Err(self.unsupported(
                 span,
                 &format!(
@@ -912,32 +924,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        // The crate's own impl's accessor, or one a library exports (ADR 0100),
-        // or one of a library's its JS doesn't, which the crate compiles
-        // (ADR 0914, amended): in a copied default, of the impl's terms, where
-        // its bounds and the default's hold, `Map<T, F>: Counting` of a
-        // blanket impl's.
-        let typing_env = self.typing_env;
-        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)
-            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.compiled(impl_id))
-        {
-            // A `&mut` to an object its generic code gives within what a
-            // bound trait's method takes, which `T`'s dictionary's entry
-            // gives its impl as generic code's box where it doesn't adapt
-            // it, a `Vec<&mut Self>`'s (#685, #686): of the crate's impl,
-            // or a library's it compiles itself.
-            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {
-                let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by");
-                return Err(self.unsupported(span, &what));
-            }
-            let callee = self.fn_ref(impl_id);
-            let args = self.evidence_args(impl_id, impl_args, span)?;
-            // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).
-            return Ok(match self.takes_evidence(impl_id) {
-                true => Expr::call(callee, args),
-                false => callee,
-            });
+        if let Some(made) = self.impl_dictionary(tr, span)? {
+            return Ok(made);
         }
+        let typing_env = self.typing_env;
         // A trait object's: Rust's built-in `impl Trait for dyn Trait`.
         let selected = crate::lower::traits::select(self.tcx, self.typing_env, tr);
         if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {
@@ -950,6 +940,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.dictionary(referent, span);
         }
         Err(self.no_evidence(span, tr))
+    }
+
+    /// The crate's own impl's accessor, or one a library exports (ADR 0100),
+    /// or one of a library's its JS doesn't, which the crate compiles (ADR
+    /// 0914, amended), std's in `@rust-js/std` among them: in a copied
+    /// default, of the impl's terms, where its bounds and the default's
+    /// hold, `Map<T, F>: Counting` of a blanket impl's. `None` of another.
+    fn impl_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some((impl_id, impl_args)) = evidence_impl(self.tcx, self.typing_env, tr)
+            .filter(|&(id, _)| self.krate.trait_impls.contains(&id) || self.krate.foreign.compiled(id))
+        else {
+            return Ok(None);
+        };
+        // A `&mut` to an object its generic code gives within what a bound
+        // trait's method takes, which `T`'s dictionary's entry gives its
+        // impl as generic code's box where it doesn't adapt it, a `Vec<&mut
+        // Self>`'s (#685, #686): of the crate's impl, or a library's it
+        // compiles itself.
+        if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {
+            let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by");
+            return Err(self.unsupported(span, &what));
+        }
+        let callee = self.fn_ref(impl_id);
+        let args = self.evidence_args(impl_id, impl_args, span)?;
+        // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).
+        Ok(Some(match self.takes_evidence(impl_id) {
+            true => Expr::call(callee, args),
+            false => callee,
+        }))
     }
 
     /// `tr` of what `tr`'s type refers to, where its impl is std's that
@@ -1212,6 +1231,14 @@ fn size(e: &Expr) -> usize {
 /// Whether `e`, a dictionary made, is a generic impl's, a call of its
 /// function, `holderTouch(TTouch)`: the program's item, given dictionaries.
 fn is_impl_call(e: &Expr) -> bool {
+    // A runtime maker's of one, std's reader's defaults over a `Chain`'s
+    // `Read`, `$readerDefaults(chainRead(..))`: that one's (#1156).
+    if let js::ExprKind::Call(callee, given) = &e.kind
+        && callee.helper_name().is_some()
+        && let [made] = given.as_slice()
+    {
+        return is_impl_call(made);
+    }
     matches!(&e.kind, js::ExprKind::Call(callee, _)
         if matches!(callee.kind, js::ExprKind::Var(_)) && callee.facts.has(js::Known::Item))
 }

@@ -513,7 +513,7 @@ export const mutations: Mutation[] = [
     name: "own-reader-given-a-dictionary",
     breaks: "a reader of the crate's own, never lowered, is given a dictionary of its impl, whose methods aren't there (ADR 0425)",
     file: "src/lower/analysis.rs",
-    find: "        .filter(|&id| !is_unlowered_impl(tcx, id))\n",
+    find: "        .filter(|&id| !is_unlowered_impl(tcx, id) || is_std_reader_impl(tcx, id))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
   },

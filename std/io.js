@@ -3,6 +3,8 @@
 import {
   $apart,
   $appendToString,
+  $bigMin,
+  $cleanup,
   $formatted,
   $grew,
   $index,
@@ -12,12 +14,74 @@ import {
   $memchr,
   $partialEq,
   $pretty,
+  $readByte,
+  $readerDefaults,
   $slice,
   $strPop,
   $traitImpl,
   $unwindsOn,
+  $view,
 } from "./runtime.js";
 
+export const Chain = {
+  intoInner(chain) {
+    return [chain.first, chain.second];
+  },
+  getRef(chain) {
+    return [chain.first, chain.second];
+  },
+  getMut(chain) {
+    return [
+      {
+        get value() {
+          return chain.first;
+        },
+        set value(value) {
+          chain.first = value;
+        },
+      },
+      {
+        get value() {
+          return chain.second;
+        },
+        set value(value) {
+          chain.second = value;
+        },
+      },
+    ];
+  },
+};
+
+export const Take = {
+  limit(take) {
+    return take.limit;
+  },
+  setLimit(take, limit) {
+    take.len$ = limit;
+    take.limit = limit;
+  },
+  intoInner(take) {
+    return take.inner;
+  },
+  getRef(take) {
+    return take.inner;
+  },
+  getMut(take) {
+    return {
+      get value() {
+        return take.inner;
+      },
+      set value(value) {
+        take.inner = value;
+      },
+    };
+  },
+};
+
+const $chainRead = new WeakMap();
+const $chainBufRead = new WeakMap();
+const $takeRead = new WeakMap();
+const $takeBufRead = new WeakMap();
 const $cursorClone = new WeakMap();
 const $cursorDebug = new WeakMap();
 const $cursorPartialEq = new WeakMap();
@@ -85,6 +149,255 @@ export function splitIterator_next(split, BBufRead, dropB) {
   return { TAG: "Err", _0: e };
 }
 
+export function chainRead_read(chain, buf, TRead, URead, dropT, dropU) {
+  if (!chain.doneFirst) {
+    const self = { value: chain.first };
+    let read;
+    try {
+      read = TRead.read(self, buf);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.first = self.value;
+      }
+    }
+    if (read.TAG === "Err") {
+      return read;
+    }
+    if (read._0 === 0 && buf.length !== 0) {
+      chain.doneFirst = true;
+    } else {
+      return { TAG: "Ok", _0: read._0 };
+    }
+  }
+  const self = { value: chain.second };
+  try {
+    return URead.read(self, buf);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      chain.second = self.value;
+    }
+  }
+}
+
+export function chainRead_readToEnd(chain, buf, TRead, URead, dropT, dropU) {
+  let read = 0;
+  if (!chain.doneFirst) {
+    const self = { value: chain.first };
+    let readToEnd;
+    try {
+      readToEnd = TRead.readToEnd(self, buf);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.first = self.value;
+      }
+    }
+    if (readToEnd.TAG === "Err") {
+      return readToEnd;
+    }
+    read = (read + readToEnd._0) >>> 0;
+    chain.doneFirst = true;
+  }
+  const self = { value: chain.second };
+  let tmp;
+  try {
+    tmp = URead.readToEnd(self, buf);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      chain.second = self.value;
+    }
+  }
+  if (tmp.TAG === "Err") {
+    return tmp;
+  }
+  read = (read + tmp._0) >>> 0;
+  return { TAG: "Ok", _0: read };
+}
+
+export function chainBufRead_fillBuf(chain, TBufRead, UBufRead, dropT, dropU) {
+  if (!chain.doneFirst) {
+    const result = TBufRead.fillBuf({
+      get value() {
+        return chain.first;
+      },
+      set value(value) {
+        chain.first = value;
+      },
+    });
+    if (result.TAG === "Err") {
+      return result;
+    }
+    const value = result._0;
+    if (value.length !== 0) {
+      return { TAG: "Ok", _0: value };
+    }
+    chain.doneFirst = true;
+  }
+  return UBufRead.fillBuf({
+    get value() {
+      return chain.second;
+    },
+    set value(value) {
+      chain.second = value;
+    },
+  });
+}
+
+export function chainBufRead_consume(chain, amt, TBufRead, UBufRead, dropT, dropU) {
+  if (!chain.doneFirst) {
+    const self = { value: chain.first };
+    try {
+      TBufRead.consume(self, amt);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.first = self.value;
+      }
+    }
+  } else {
+    const self = { value: chain.second };
+    try {
+      UBufRead.consume(self, amt);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.second = self.value;
+      }
+    }
+  }
+}
+
+export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dropT, dropU) {
+  let read = 0;
+  if (!chain.doneFirst) {
+    const self = { value: chain.first };
+    let readUntil;
+    try {
+      readUntil = bufRead_readUntil(self, byte, buf, TBufRead, TBufRead.Read(), dropT);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.first = self.value;
+      }
+    }
+    if (readUntil.TAG === "Err") {
+      return readUntil;
+    }
+    read = (read + readUntil._0) >>> 0;
+    const b = buf.at(-1);
+    if (b != null) {
+      if (b === byte) {
+        if (readUntil._0 !== 0) {
+          return { TAG: "Ok", _0: read };
+        }
+      }
+    }
+    chain.doneFirst = true;
+  }
+  const self = { value: chain.second };
+  let tmp;
+  try {
+    tmp = bufRead_readUntil(self, byte, buf, UBufRead, UBufRead.Read(), dropU);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      chain.second = self.value;
+    }
+  }
+  if (tmp.TAG === "Err") {
+    return tmp;
+  }
+  read = (read + tmp._0) >>> 0;
+  return { TAG: "Ok", _0: read };
+}
+
+export function takeRead_read(take, buf, TRead, dropT) {
+  if (take.limit === 0n) {
+    return { TAG: "Ok", _0: 0 };
+  }
+  const max = Number(BigInt.asUintN(32, $bigMin(BigInt(buf.length), take.limit)));
+  const self = { value: take.inner };
+  let read;
+  try {
+    read = TRead.read(self, $view(buf, 0, max));
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      take.inner = self.value;
+    }
+  }
+  if (read.TAG === "Err") {
+    return read;
+  }
+  const value = BigInt(read._0);
+  if (!(value <= take.limit)) {
+    throw new Error("number of read bytes exceeds limit");
+  }
+  take.limit = BigInt.asUintN(64, take.limit - value);
+  return { TAG: "Ok", _0: read._0 };
+}
+
+export function takeBufRead_fillBuf(take, TBufRead, dropT) {
+  if (take.limit === 0n) {
+    return { TAG: "Ok", _0: [] };
+  }
+  const result = TBufRead.fillBuf({
+    get value() {
+      return take.inner;
+    },
+    set value(value) {
+      take.inner = value;
+    },
+  });
+  if (result.TAG === "Err") {
+    return result;
+  }
+  const value = result._0;
+  const cap = Number(BigInt.asUintN(32, $bigMin(BigInt(value.length), take.limit)));
+  return { TAG: "Ok", _0: $slice(value, 0, cap) };
+}
+
+export function takeBufRead_consume(take, amt, TBufRead, dropT) {
+  amt = Number(BigInt.asUintN(32, $bigMin(BigInt(amt), take.limit)));
+  const value = BigInt(amt);
+  take.limit = BigInt.asUintN(64, take.limit - value);
+  const self = { value: take.inner };
+  try {
+    TBufRead.consume(self, amt);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      take.inner = self.value;
+    }
+  }
+}
+
+export function bytesIterator_next(bytes, RRead, dropR) {
+  const self = { value: bytes.inner };
+  try {
+    return rSpecReadByte_specReadByte(self, RRead, dropR);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      bytes.inner = self.value;
+    }
+  }
+}
+
 export function cursorClone_clone(cursor, TClone, dropT) {
   return { inner: TClone.clone(cursor.inner), pos: cursor.pos };
 }
@@ -138,6 +451,18 @@ export function bufRead_lines(self, SelfBufRead, SelfRead, dropSelf) {
   return lines(self, dropSelf);
 }
 
+export function read_chain(self, next, SelfRead, RRead, dropSelf, dropR) {
+  return chain(self, next, dropSelf, dropR);
+}
+
+export function read_take(self, limit, SelfRead, dropSelf) {
+  return take(self, limit, dropSelf);
+}
+
+export function read_bytes(self, SelfRead, dropSelf) {
+  return bytes(self, dropSelf);
+}
+
 export function seek_rewind(self, SelfSeek, dropSelf) {
   const seek = SelfSeek.seek(self, { TAG: "Start", _0: 0n });
   let tmp;
@@ -158,6 +483,18 @@ export function seek_seekRelative(self, offset, SelfSeek, dropSelf) {
   }
   tmp = { TAG: "Break", _0: { TAG: "Err", _0: seek._0 } };
   return $ioThrow(tmp._0._0);
+}
+
+export function chain(first, second, dropT, dropU) {
+  return { first, second, doneFirst: false };
+}
+
+export function take(inner, limit, dropT) {
+  return { inner, len$: limit, limit };
+}
+
+export function rSpecReadByte_specReadByte(self, RRead, dropR) {
+  return $readByte(self, RRead);
 }
 
 export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
@@ -240,6 +577,85 @@ export function split(buf, delim, dropB) {
 
 export function lines(buf, dropB) {
   return { buf };
+}
+
+export function bytes(inner, dropR) {
+  return { inner };
+}
+
+export function chainRead(TRead, URead, dropT, dropU) {
+  return $traitImpl($chainRead, [TRead, URead, dropT, dropU], () => ({
+    read(arg0, arg1) {
+      return chainRead_read(arg0.value, arg1, TRead, URead, dropT, dropU);
+    },
+    readToEnd(arg0, arg1) {
+      return chainRead_readToEnd(arg0.value, arg1, TRead, URead, dropT, dropU);
+    },
+    $drop(chain) {
+      try {
+        dropT?.(chain.first);
+      } catch (error) {
+        $cleanup(() => {
+          dropU?.(chain.second);
+        }, error);
+        throw error;
+      }
+      dropU?.(chain.second);
+    },
+  }));
+}
+
+export function chainBufRead(TBufRead, UBufRead, dropT, dropU) {
+  return $traitImpl($chainBufRead, [TBufRead, UBufRead, dropT, dropU], () => ({
+    Read() {
+      return $readerDefaults(chainRead(TBufRead.Read(), UBufRead.Read(), dropT, dropU));
+    },
+    fillBuf(arg0) {
+      return chainBufRead_fillBuf(arg0.value, TBufRead, UBufRead, dropT, dropU);
+    },
+    consume(arg0, arg1) {
+      return chainBufRead_consume(arg0.value, arg1, TBufRead, UBufRead, dropT, dropU);
+    },
+    $drop(chain) {
+      try {
+        dropT?.(chain.first);
+      } catch (error) {
+        $cleanup(() => {
+          dropU?.(chain.second);
+        }, error);
+        throw error;
+      }
+      dropU?.(chain.second);
+    },
+  }));
+}
+
+export function takeRead(TRead, dropT) {
+  return $traitImpl($takeRead, [TRead, dropT], () => ({
+    read(arg0, arg1) {
+      return takeRead_read(arg0.value, arg1, TRead, dropT);
+    },
+    $drop(take) {
+      dropT?.(take.inner);
+    },
+  }));
+}
+
+export function takeBufRead(TBufRead, dropT) {
+  return $traitImpl($takeBufRead, [TBufRead, dropT], () => ({
+    Read() {
+      return $readerDefaults(takeRead(TBufRead.Read(), dropT));
+    },
+    fillBuf(arg0) {
+      return takeBufRead_fillBuf(arg0.value, TBufRead, dropT);
+    },
+    consume(arg0, arg1) {
+      return takeBufRead_consume(arg0.value, arg1, TBufRead, dropT);
+    },
+    $drop(take) {
+      dropT?.(take.inner);
+    },
+  }));
 }
 
 export function cursorClone(TClone, dropT) {

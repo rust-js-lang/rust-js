@@ -8,7 +8,7 @@ mod compiled_std;
 mod fmt;
 mod inherent;
 mod io;
-pub(crate) use io::{ByteSource, IoOp, of_io_reading};
+pub(crate) use io::{ByteSource, IoOp, in_io_dictionary, is_std_reader, is_std_reader_impl, of_io_reading};
 mod iterators;
 mod js_items;
 mod json;

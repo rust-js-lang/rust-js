@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's dictionary of an object's, `impl<T: Pick> Wrap for Holder<T>` of a `Holder<Clicks>`, is made though its `T::pick(Some(&mut ..))` gives `Clicks`'s entry generic code's box: what it writes is lost (#685)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
-    replace: "            if let Some(here) = None::<Ty<'tcx>> {\n",
+    find: "        if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    replace: "        if let Some(here) = None::<Ty<'tcx>> {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a generic impl's &mut T"],
   },
   {
@@ -473,8 +473,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a dictionary that's its module's `const` is called, `circleShape()`",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                false => callee,\n",
-    replace: "                false => Expr::call(callee, Vec::new()),\n",
+    find: "            false => callee,\n",
+    replace: "            false => Expr::call(callee, Vec::new()),\n",
     tests: [
       "test/lowering-dictionaries.test.ts",
       "-t",
@@ -577,8 +577,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's impl its JS doesn't make has no evidence where its consumer gives it to generic code, and is refused (ADR 0914, amended)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.compiled(impl_id))\n",
-    replace: "            && (self.krate.trait_impls.contains(&impl_id))\n",
+    find: "            .filter(|&(id, _)| self.krate.trait_impls.contains(&id) || self.krate.foreign.compiled(id))\n",
+    replace: "            .filter(|&(id, _)| self.krate.trait_impls.contains(&id))\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
@@ -666,8 +666,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's dictionary of a library's generic impl, made of its own type, that gives a bound trait's method a `Vec<&mut T>` isn't refused as the library's own is (#685, #686, the `is_local()` audit)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
-    replace: "            if impl_id.is_local() && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    find: "        if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    replace: "        if impl_id.is_local() && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
     tests: ["test/crates.test.ts", "-t", "dictionary of a library's generic impl giving"],
   },
   {
@@ -745,5 +745,22 @@ export const mutations: Mutation[] = [
     find: "                    && (!item.is_impl_trait_in_trait() || super::words::one_impl_trait_of(self.tcx, item.def_id))\n",
     replace: "                    && !item.is_impl_trait_in_trait()\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
+  },
+  {
+    name: "std-reader-read-no-defaults",
+    breaks: "a `Chain`'s or a `Take`'s `Read` dictionary is its impl's alone, without std's defaults, so its `read_exact` isn't there (#1156)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    true => Expr::call_helper(\"$readerDefaults\", vec![made]),\n",
+    replace: "                    true => made,\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
+  },
+  {
+    name: "helper-made-dictionary-unnamed",
+    breaks: "a dictionary a runtime helper makes of an impl's, `$readerDefaults(chainRead(..))`, is written again at each use, not declared once (ADR 0979, #1156)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        return is_impl_call(made);\n",
+    replace: "        return false && is_impl_call(made);\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
+    snapshots: true,
   },
 ];

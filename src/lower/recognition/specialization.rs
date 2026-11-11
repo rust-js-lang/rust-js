@@ -61,7 +61,7 @@ pub(crate) fn fact_specialization<'tcx>(
         .filter(|&other| {
             other != impl_id
                 && tcx.specializes((other, impl_id))
-                && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()
+                && same_kinds_of_generics(tcx, other, impl_id)
                 && tcx
                     .impl_trait_ref(other)
                     .instantiate(tcx, impl_args)
@@ -111,6 +111,19 @@ pub(crate) fn fact_specialization<'tcx>(
         selected: (selected, impl_args),
         special,
     })
+}
+
+/// Whether impls `a` and `b` have as many generics of each kind, in order,
+/// so one's arguments are the other's: not `SpecReadByte`'s for a
+/// `StdinLock<'_>` of its general one's `R`, a lifetime where a type is.
+fn same_kinds_of_generics(tcx: TyCtxt<'_>, a: DefId, b: DefId) -> bool {
+    let kinds = |imp: DefId| {
+        let generics = tcx.generics_of(imp);
+        (0..generics.count())
+            .map(|i| std::mem::discriminant(&generics.param_at(i, tcx).kind))
+            .collect::<Vec<_>>()
+    };
+    kinds(a) == kinds(b)
 }
 
 /// A fact of `of`, or the facts of what it holds that it is, where rustc
@@ -677,8 +690,18 @@ const OPTIMIZING: &[(&str, Option<&str>)] = &[("TrustedLen", None), ("TrustedRan
 /// Only its `Debug` shows the range so changed, which isn't compiled. And
 /// `Filter::count`'s `SpecAssumeCount`, whose `TrustedLen` impl assumes
 /// what the general one checks, `upper - count`, which a `TrustedLen`'s
-/// upper bound never fails (ADR 0932).
-const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl", "SpecAssumeCount"];
+/// upper bound never fails (ADR 0932). And `Bytes::next`'s `SpecReadByte`,
+/// whose `BufReader` impl takes the byte from its buffer where it has one,
+/// else reads it as the general impl does, a one-byte `read` of the
+/// `BufReader`, which takes it from that buffer, filled as it would be:
+/// the same byte, and the same reads of what it holds (#1156).
+const OPTIMIZING_BY_TYPE: &[&str] = &[
+    "SpecRangeSetup",
+    "StepByImpl",
+    "StepByBackImpl",
+    "SpecAssumeCount",
+    "SpecReadByte",
+];
 
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl as a more specific impl may specialize

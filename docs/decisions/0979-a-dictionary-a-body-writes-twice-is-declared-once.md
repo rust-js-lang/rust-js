@@ -125,3 +125,14 @@ helper does. A std collection's `from_iter`, the collect generic code's own
 is (ADR 0445, amended), reads `Array.from` and `new Set`, and was written
 out at each use; `generic_collect`'s `vecFromIterator` is declared once
 again. Held by the mutation `dictionary-reading-a-global-unkept`.
+
+## Amendment: a runtime helper's of an impl's dictionary is named as that impl's (2026-11-11, #1156)
+
+A dictionary a runtime helper makes of one impl's, `$readerDefaults(chainRead($sliceReader, $sliceReader))`,
+std's defaults over a `Chain`'s `Read` (ADR 0425, amended), is a generic
+impl's as `is_impl_call` asks it: the helper's one argument's. So a body
+that writes it twice declares it once, `const ChainRead = ..`, as
+`ChainBufRead` beside it is, not written out at each read. Applying this
+rule to it was the coordinator's decision for the user. Held by the
+mutation `helper-made-dictionary-unnamed` and
+`test/corpus/io_read_chain_take_bytes.js`.

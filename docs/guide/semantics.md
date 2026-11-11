@@ -885,11 +885,13 @@ What's refused is in [the limitations](limitations.md).
   of a library that keeps none, so what that library grows has std's
   capacity too, but of one that reads its library's private state, which
   a copy can't reach, whose `Vec`s' capacities are unknown. Of a `Vec` whose growth isn't kept, a `collect()` std may make in
-  place, a string's `into_bytes()`, or one generic code grew by an
-  iterator whose JS hint isn't std's, `chars().skip(n)` given to it,
-  `capacity()` throws an error naming #1180, never another number. A
-  slice's, a `Cursor`'s or a `VecDeque`'s `read_to_end` reserves what it
-  adds first, as std's does, so its capacity is native Rust's (#1338).
+  place, a string's `into_bytes()`, one generic code grew by an
+  iterator whose JS hint isn't std's, `chars().skip(n)` given to it, or
+  one a `Chain`'s or a `Take`'s `read_to_end`, std's default over its
+  `read`, grew past its room (#1340), `capacity()` throws an error
+  naming #1180, never another number. A slice's, a `Cursor`'s or a
+  `VecDeque`'s `read_to_end` reserves what it adds first, as std's does,
+  so its capacity is native Rust's (#1338).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what
@@ -1010,6 +1012,18 @@ Differences:
   is `OutOfMemory`. `io::empty()` is `undefined`, a unit struct's JS, and
   `io::repeat(5)` is std's struct, `{ byte: 5 }`
   ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md), amended).
+- **`chain`, `take` and `bytes` are std's structs and bodies,** compiled
+  into `@rust-js/std`: a `Chain` is `{ first, second, doneFirst }` and a
+  `Take` `{ inner, limit }`. Each impl's `Read` and `BufRead` is a
+  dictionary made of its sources', `chainRead(..)`. What a chain or a take
+  doesn't write itself, `read_exact`, `read_to_end` and `read_to_string`,
+  is std's default over its `read`, `$readerDefaults(chainRead(..))`,
+  declared once where a body reads it twice. `bytes()` reads each byte as
+  std's body does: one `read` of a one-byte buffer, `$readByte`. The
+  capacity of a `Vec` a chain's or a take's default `read_to_end` grows
+  past its room is std's of reads it makes otherwise, so its `capacity()`
+  is refused (#1340)
+  ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-chain-take-and-bytes-are-read-1156)).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
   read in place, and its `Clone`, `Debug`, `PartialEq` and `Default` are

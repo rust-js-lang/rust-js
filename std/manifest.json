@@ -61,12 +61,47 @@
         ]
       },
       {
+        "key": "alloc::io::util::{impl#8}::spec_read_byte",
+        "rust_path": "rust_js_std::<R as alloc::io::SpecReadByte>::spec_read_byte",
+        "module": [
+          "io"
+        ],
+        "export": "rSpecReadByte_specReadByte",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "no_drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::step_by::{impl#7}::setup",
         "rust_path": "rust_js_std::<T as core::iter::adapters::step_by::SpecRangeSetup<T>>::setup",
         "module": [
           "iter"
         ],
         "export": "tSpecRangeSetupT_setup",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#7}::next",
+        "rust_path": "rust_js_std::<alloc::io::Bytes<R> as core::iter::Iterator>::next",
+        "module": [
+          "io"
+        ],
+        "export": "bytesIterator_next",
         "member": null,
         "params": [
           {
@@ -11631,6 +11666,63 @@
         ]
       },
       {
+        "key": "alloc::io::read::Read::bytes",
+        "rust_path": "rust_js_std::alloc::io::Read::bytes",
+        "module": [
+          "io"
+        ],
+        "export": "read_bytes",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::read::Read::chain",
+        "rust_path": "rust_js_std::alloc::io::Read::chain",
+        "module": [
+          "io"
+        ],
+        "export": "read_chain",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::read::Read::take",
+        "rust_path": "rust_js_std::alloc::io::Read::take",
+        "module": [
+          "io"
+        ],
+        "export": "read_take",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "alloc::io::buf_read::default_read_until",
         "rust_path": "rust_js_std::alloc::io::buf_read::default_read_until",
         "module": [
@@ -11654,6 +11746,269 @@
           "io"
         ],
         "export": "defaultSkipUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#4}",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Chain<T, U>>",
+        "module": [
+          "io"
+        ],
+        "export": "chainBufRead",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#4}::consume",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Chain<T, U>>::consume",
+        "module": [
+          "io"
+        ],
+        "export": "chainBufRead_consume",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#4}::fill_buf",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Chain<T, U>>::fill_buf",
+        "module": [
+          "io"
+        ],
+        "export": "chainBufRead_fillBuf",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#4}::read_until",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Chain<T, U>>::read_until",
+        "module": [
+          "io"
+        ],
+        "export": "chainBufRead_readUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#6}",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Take<T>>",
+        "module": [
+          "io"
+        ],
+        "export": "takeBufRead",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#6}::consume",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Take<T>>::consume",
+        "module": [
+          "io"
+        ],
+        "export": "takeBufRead_consume",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#6}::fill_buf",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::BufRead for core::io::Take<T>>::fill_buf",
+        "module": [
+          "io"
+        ],
+        "export": "takeBufRead_fillBuf",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#3}",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::Read for core::io::Chain<T, U>>",
+        "module": [
+          "io"
+        ],
+        "export": "chainRead",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#3}::read",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::Read for core::io::Chain<T, U>>::read",
+        "module": [
+          "io"
+        ],
+        "export": "chainRead_read",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#3}::read_to_end",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::Read for core::io::Chain<T, U>>::read_to_end",
+        "module": [
+          "io"
+        ],
+        "export": "chainRead_readToEnd",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#5}",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::Read for core::io::Take<T>>",
+        "module": [
+          "io"
+        ],
+        "export": "takeRead",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#5}::read",
+        "rust_path": "rust_js_std::alloc::io::util::<impl alloc::io::Read for core::io::Take<T>>::read",
+        "module": [
+          "io"
+        ],
+        "export": "takeRead_read",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::bytes",
+        "rust_path": "rust_js_std::alloc::io::util::bytes",
+        "module": [
+          "io"
+        ],
+        "export": "bytes",
         "member": null,
         "params": [
           {
@@ -11699,6 +12054,33 @@
         ]
       },
       {
+        "key": "core::io::util::{impl#9}::get_mut",
+        "rust_path": "rust_js_std::core::io::Chain::<T, U>::get_mut",
+        "module": [
+          "io"
+        ],
+        "export": "Chain",
+        "member": "getMut"
+      },
+      {
+        "key": "core::io::util::{impl#9}::get_ref",
+        "rust_path": "rust_js_std::core::io::Chain::<T, U>::get_ref",
+        "module": [
+          "io"
+        ],
+        "export": "Chain",
+        "member": "getRef"
+      },
+      {
+        "key": "core::io::util::{impl#9}::into_inner",
+        "rust_path": "rust_js_std::core::io::Chain::<T, U>::into_inner",
+        "module": [
+          "io"
+        ],
+        "export": "Chain",
+        "member": "intoInner"
+      },
+      {
         "key": "core::io::seek::Seek::rewind",
         "rust_path": "rust_js_std::core::io::Seek::rewind",
         "module": [
@@ -11722,6 +12104,91 @@
           "io"
         ],
         "export": "seek_seekRelative",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::util::{impl#11}::get_mut",
+        "rust_path": "rust_js_std::core::io::Take::<T>::get_mut",
+        "module": [
+          "io"
+        ],
+        "export": "Take",
+        "member": "getMut"
+      },
+      {
+        "key": "core::io::util::{impl#11}::get_ref",
+        "rust_path": "rust_js_std::core::io::Take::<T>::get_ref",
+        "module": [
+          "io"
+        ],
+        "export": "Take",
+        "member": "getRef"
+      },
+      {
+        "key": "core::io::util::{impl#11}::into_inner",
+        "rust_path": "rust_js_std::core::io::Take::<T>::into_inner",
+        "module": [
+          "io"
+        ],
+        "export": "Take",
+        "member": "intoInner"
+      },
+      {
+        "key": "core::io::util::{impl#11}::limit",
+        "rust_path": "rust_js_std::core::io::Take::<T>::limit",
+        "module": [
+          "io"
+        ],
+        "export": "Take",
+        "member": "limit"
+      },
+      {
+        "key": "core::io::util::{impl#11}::set_limit",
+        "rust_path": "rust_js_std::core::io::Take::<T>::set_limit",
+        "module": [
+          "io"
+        ],
+        "export": "Take",
+        "member": "setLimit"
+      },
+      {
+        "key": "core::io::util::chain",
+        "rust_path": "rust_js_std::core::io::chain",
+        "module": [
+          "io"
+        ],
+        "export": "chain",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::util::take",
+        "rust_path": "rust_js_std::core::io::take",
+        "module": [
+          "io"
+        ],
+        "export": "take",
         "member": null,
         "params": [
           {
@@ -12970,6 +13437,12 @@
     ],
     "impls": [
       "alloc::io::util::{impl#10}",
+      "alloc::io::util::{impl#3}",
+      "alloc::io::util::{impl#4}",
+      "alloc::io::util::{impl#5}",
+      "alloc::io::util::{impl#6}",
+      "alloc::io::util::{impl#7}",
+      "alloc::io::util::{impl#8}",
       "alloc::io::util::{impl#9}",
       "core::io::cursor::{impl#12}",
       "core::io::cursor::{impl#3}",
@@ -13491,8 +13964,19 @@
       "in_source": "io.js",
       "imports": [],
       "exports": [
+        "Chain",
+        "Take",
         "linesIterator_next",
         "splitIterator_next",
+        "chainRead_read",
+        "chainRead_readToEnd",
+        "chainBufRead_fillBuf",
+        "chainBufRead_consume",
+        "chainBufRead_readUntil",
+        "takeRead_read",
+        "takeBufRead_fillBuf",
+        "takeBufRead_consume",
+        "bytesIterator_next",
         "cursorClone_clone",
         "cursorClone_cloneFrom",
         "cursorDebug_fmt",
@@ -13503,12 +13987,23 @@
         "bufRead_readLine",
         "bufRead_split",
         "bufRead_lines",
+        "read_chain",
+        "read_take",
+        "read_bytes",
         "seek_rewind",
         "seek_seekRelative",
+        "chain",
+        "take",
+        "rSpecReadByte_specReadByte",
         "defaultReadUntil",
         "defaultSkipUntil",
         "split",
         "lines",
+        "bytes",
+        "chainRead",
+        "chainBufRead",
+        "takeRead",
+        "takeBufRead",
         "cursorClone",
         "cursorDebug",
         "cursorPartialEq",
@@ -13516,8 +14011,8 @@
       ],
       "links": [
         {
-          "start": 257,
-          "end": 269,
+          "start": 321,
+          "end": 333,
           "file": "runtime.js"
         }
       ],
@@ -13535,7 +14030,7 @@
     },
     {
       "file": "io.js",
-      "hash": "d52cba11526fedfb"
+      "hash": "3317685ae9b2fb4d"
     },
     {
       "file": "io.js.map",

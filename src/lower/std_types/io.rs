@@ -75,6 +75,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = next();
                 Expr::call_helper("$appendToString", vec![buf, f])
             }
+            // Its reader in generic code's box, read through `R`'s `Read`.
+            IoOp::ReadByte => {
+                let reader = next();
+                let read = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::IoRead);
+                let tr = ty::TraitRef::new(self.tcx, read, [call.generic_args.type_at(0)]);
+                let dictionary = self.dictionary(tr, call.span)?;
+                Expr::call_helper("$readByte", vec![reader, dictionary])
+            }
             IoOp::CursorNew => Expr::object(vec![
                 Prop::Field("inner".into(), next()),
                 Prop::Field("pos".into(), Expr::bigint(0)),

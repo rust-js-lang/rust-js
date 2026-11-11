@@ -1333,6 +1333,79 @@ export function $appendToString(buf, f) {
   return read;
 }
 
+// alloc's `inlined_slow_read_byte(reader)`, `Bytes::next`'s: one byte read
+// by the reader's `read` of a one-byte buffer, as std's body does, an
+// interrupted read tried again: none at its end, else the byte, or the
+// error. A reader of the crate's own sees std's own calls of it (#1297).
+export function $readByte(r, RRead) {
+  const byte = [0];
+  while (true) {
+    const read = RRead.read(r, byte);
+    if (read.TAG === "Err") {
+      if (read._0.kind === "Interrupted") continue;
+      return read;
+    }
+    return read._0 === 0 ? undefined : { TAG: "Ok", _0: byte[0] };
+  }
+}
+
+// std's provided `read_exact`, `read_to_end` and `read_to_string` (#1156)
+// of a reader of std's own whose impl doesn't write them, a `Chain`'s or a
+// `Take`'s: `default_read_exact`, `default_read_to_end` and
+// `default_read_to_string` over its `read`, an interrupted read tried again;
+// what it writes itself kept. Given std's readers alone, whose sources are
+// std's: how much each `read` asks for, which a reader of the crate's own
+// would see and std asks as a 32-byte probe, then its spare capacity, isn't
+// std's (#1297). Nor is the capacity `default_read_to_end` leaves a `Vec`
+// it grows, of those reads and of what each source's `read_buf` leaves
+// initialized: one grown past its room is one whose growth isn't kept,
+// `$grewUnsized`'s, whose `capacity()` is refused, #1180's error naming
+// #1340, the coordinator's decision for the user (A). One dictionary of
+// each reader's.
+export const $readerDefaulted = new WeakMap();
+export function $readerDefaults(reader) {
+  let made = $readerDefaulted.get(reader);
+  if (made !== undefined) return made;
+  const readToEnd = (r, v) => {
+    const len = v.length;
+    const chunk = new Array(8192).fill(0);
+    let all = 0;
+    while (true) {
+      const read = reader.read(r, chunk);
+      if (read.TAG === "Err") {
+        if (read._0.kind === "Interrupted") continue;
+        return $grewUnsized(v, len, read);
+      }
+      if (read._0 === 0) return $grewUnsized(v, len, { TAG: "Ok", _0: all });
+      for (let i = 0; i < read._0; i++) v.push(chunk[i]);
+      all += read._0;
+    }
+  };
+  made = {
+    // One that can't fill `buf` leaves what it read in it.
+    readExact(r, buf) {
+      let at = 0;
+      while (at < buf.length) {
+        const read = reader.read(r, $view(buf, at));
+        if (read.TAG === "Err") {
+          if (read._0.kind === "Interrupted") continue;
+          throw read._0;
+        }
+        if (read._0 === 0) break;
+        at += read._0;
+      }
+      if (at < buf.length) throw $readExactEof();
+    },
+    readToEnd,
+    // All of it read by `default_read_to_end`, not the reader's own, then
+    // kept where it's UTF-8.
+    readToString: (r, s) => $appendToString(s, (b) => readToEnd(r, b)),
+    ...reader,
+  };
+  $readerDefaulted.set(reader, made);
+  return made;
+}
+
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
 // `None` of none, where JS's `reduce` throws, closed, as std's `next()?`
 // drops it (#242); boxed where it may look like `None` (ADRs 0051, 0479).
@@ -12027,7 +12100,7 @@ export function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
   const kept = $capacities.get(v);
   if (kept === $unknownCapacity) {
-    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, items whose size no caller gives, or one generic code grew by an iterator whose JS hint isn't std's (#1180)");
+    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, items whose size no caller gives, one generic code grew by an iterator whose JS hint isn't std's (#1180), or one a `Chain`'s or a `Take`'s std-default `read_to_end` grew past its room (#1340)");
   }
   return Math.max(v.length, kept ?? 0);
 }

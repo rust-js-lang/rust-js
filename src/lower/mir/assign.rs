@@ -1090,10 +1090,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&mut Self` its dictionary takes in a box, an `I::Item`'s that's an
         // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
         // `&mut`, nor std's, but a provided method std's body is compiled
-        // of, `scan`'s, whose function it gives its state's box (ADR 0933).
+        // of, `scan`'s, whose function it gives its state's box (ADR 0933);
+        // but where a std impl whose body is compiled writes the method
+        // itself, `Chain`'s `read_until`, that one, which takes its `&mut
+        // self` as its own body does, the object, not the provided method's
+        // box of a `Self` (#1156).
+        let compiled_std = |id| crate::lower::recognition::is_compiled_std(self.tcx, id);
         Ok(match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
-            Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),
+            Some(_)
+                if let Some(instance) = self.resolve_instance(def_id, generic_args)?
+                    && instance.def_id() != def_id
+                    && compiled_std(instance.def_id())
+                    && self.tcx.trait_of_assoc(instance.def_id()).is_none() =>
+            {
+                Some((instance.def_id(), instance.args))
+            }
+            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
                 None if (self.krate.foreign.compiled_by_rust_js(trait_id)

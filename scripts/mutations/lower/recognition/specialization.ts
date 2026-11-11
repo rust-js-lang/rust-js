@@ -38,9 +38,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Filter::count` asks `SpecAssumeCount`'s `TrustedLen` impl, which rust-js refuses: std's bodies don't compile (ADR 0932)",
     file: "src/lower/recognition/specialization.rs",
-    find: 'const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl", "SpecAssumeCount"];',
+    find: '    "SpecAssumeCount",\n',
     replace:
-      'const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl"];',
+      '',
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -58,8 +58,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `StepBy` range specializations aren't read as optimizations, so its `SpecRangeSetup::setup` can't be called in generic code (ADR 0917)",
     file: "src/lower/recognition/specialization.rs",
-    find: 'const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl", "SpecAssumeCount"];\n',
-    replace: 'const OPTIMIZING_BY_TYPE: &[&str] = &["SpecAssumeCount"];\n',
+    find: '    "SpecRangeSetup",\n    "StepByImpl",\n    "StepByBackImpl",\n',
+    replace: '',
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -148,5 +148,21 @@ export const mutations: Mutation[] = [
     find: "        (false, true) => \"fold\",\n",
     replace: "        (false, true) => \"next\",\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "specialization-generics-counted",
+    breaks: "a more specific impl's generics are counted, not matched kind by kind, so `SpecReadByte`'s `StdinLock<'_>` impl, a lifetime, is instantiated with `R`'s type, and the compiler crashes (#1156)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "                && same_kinds_of_generics(tcx, other, impl_id)\n",
+    replace: "                && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
+  },
+  {
+    name: "spec-read-byte-not-optimizing",
+    breaks: "`Bytes::next`'s `SpecReadByte` is a specialization that changes results, not one that only optimizes, so `bytes()` is refused (#1156)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "    \"SpecReadByte\",\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
 ];

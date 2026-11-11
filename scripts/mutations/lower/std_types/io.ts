@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "                Prop::Field(\"pos\".into(), Expr::bigint(1)),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
   },
+  {
+    name: "read-byte-of-the-source-read",
+    breaks: "`Bytes::next`'s `$readByte` is given a slice's dictionary whatever it reads, so a chain's bytes are read as its first slice's (#1156)",
+    file: "src/lower/std_types/io.rs",
+    find: "                Expr::call_helper(\"$readByte\", vec![reader, dictionary])\n",
+    replace: "                let _ = dictionary;\n                Expr::call_helper(\"$readByte\", vec![reader, Expr::helper(\"$sliceReader\")])\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

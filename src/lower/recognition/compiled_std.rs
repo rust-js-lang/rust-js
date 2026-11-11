@@ -276,10 +276,28 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
 ];
 
 /// `io`'s iterators compiled, as `COMPILED_STD`'s are, each `alloc::io`'s
-/// (#1156): what `BufRead::lines` and `split` make.
+/// (#1156): what `BufRead::lines` and `split` make; and its readers made of
+/// others, `chain`'s, `take`'s and `bytes`' (ADR 0425, amended).
 const COMPILED_STD_IO: &[(&str, Option<&str>, &str)] = &[
     ("Lines", Some("Iterator"), "next"),
     ("Split", Some("Iterator"), "next"),
+    ("Chain", Some("Read"), "read"),
+    ("Chain", Some("Read"), "read_to_end"),
+    ("Chain", Some("BufRead"), "fill_buf"),
+    ("Chain", Some("BufRead"), "consume"),
+    ("Chain", Some("BufRead"), "read_until"),
+    ("Chain", None, "into_inner"),
+    ("Chain", None, "get_ref"),
+    ("Chain", None, "get_mut"),
+    ("Take", Some("Read"), "read"),
+    ("Take", Some("BufRead"), "fill_buf"),
+    ("Take", Some("BufRead"), "consume"),
+    ("Take", None, "limit"),
+    ("Take", None, "set_limit"),
+    ("Take", None, "into_inner"),
+    ("Take", None, "get_ref"),
+    ("Take", None, "get_mut"),
+    ("Bytes", Some("Iterator"), "next"),
     ("Cursor", Some("Clone"), "clone"),
     ("Cursor", Some("Clone"), "clone_from"),
     ("Cursor", Some("Debug"), "fmt"),
@@ -295,9 +313,17 @@ const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
     ("BufRead", "read_line"),
     ("BufRead", "split"),
     ("BufRead", "lines"),
+    ("Read", "chain"),
+    ("Read", "take"),
+    ("Read", "bytes"),
     ("Seek", "rewind"),
     ("Seek", "seek_relative"),
 ];
+
+/// `core::io`'s functions that make a reader of others, which `Read`'s
+/// `chain` and `take` call (#1156): public to std alone, unstable, so the
+/// walk of what a compiled body calls that std keeps private finds neither.
+const COMPILED_STD_IO_FNS: &[&str] = &["chain", "take"];
 
 /// The `Iterator` methods a compiled std struct is made a JS iterator with
 /// where it's made (`std_iterator_steps`), and its dictionary's reader by
@@ -456,10 +482,11 @@ pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A std trait a catalog names, by its diagnostic item, `Iterator`, or as
 /// `core::iter` exports one without, `ExactSizeIterator` or
-/// `TrustedRandomAccessNoCoerce`.
+/// `TrustedRandomAccessNoCoerce`, or `alloc::io` does, `Read` or `BufRead`.
 fn std_iter_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
     tcx.get_diagnostic_item(Symbol::intern(name))
         .or_else(|| registry::by_path(tcx, StdCrate::Core, &["iter", name]))
+        .or_else(|| registry::by_path(tcx, StdCrate::Alloc, &["io", name]))
 }
 
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
@@ -526,6 +553,9 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 .map(|item| item.def_id),
         );
     }
+    for name in COMPILED_STD_IO_FNS {
+        found.extend(registry::by_path(tcx, StdCrate::Core, &["io", name]));
+    }
     // And each function std keeps private that a compiled body calls,
     // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:
     // no program can name it, so no recognizer can rewrite it.
@@ -564,6 +594,12 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
             let Some((callee, args)) = func.const_fn_def() else {
                 continue;
             };
+            // Not a `?` of an `Option` or a `Result`, which the lowering
+            // writes itself, `Chain::read`'s `self.first.read(buf)?`: no
+            // body of `Try`'s is compiled for it (#1156).
+            if super::is_question_mark_written(tcx, callee, args) {
+                continue;
+            }
             // And each method of a trait's impl for a type std keeps
             // private, `FlattenCompat`'s `next` (ADR 0899), or of a trait
             // std keeps private, `SpecTake`'s `spec_fold` of a `Take`

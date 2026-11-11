@@ -4,7 +4,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { root } from "./support";
+import { root, stdDir } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -50,6 +50,37 @@ test("a drop slot is numbered by drop_params.rs alone", () => {
   expect(sources.filter(file => counts.test(read(file)))).toEqual(["src/lower/traits/drop_params.rs"]);
   const lowering = sources.filter(file => /^src\/lower\/(drops|traits)/.test(file) || file === "src/lower/drops.rs");
   expect(lowering.filter(file => /u32::MAX/.test(read(file)))).toEqual([]);
+});
+
+// std's defaults over a reader's `read`, `$readerDefaults`, read in sizes
+// of their own, not std's 32-byte probe and spare capacity, which only a
+// reader whose sources are std's can't see (ADR 0425, amended, #1156). So
+// it's given std's readers alone, a `Chain`'s or a `Take`'s dictionary:
+// written once, in `byte_source_dictionary`'s branch of `is_std_reader`,
+// and every call of it the compiler writes, in `@rust-js/std` and the
+// corpus, of `chainRead(..)` or `takeRead(..)`. A reader of the crate's own
+// (#1297) would see each `read`'s size; it's never given one unless its
+// sizes are std's.
+test("$readerDefaults is given std's own readers alone", () => {
+  const writes = sources.filter(file => read(file).includes('"$readerDefaults"'));
+  expect(writes).toEqual(["src/lower/traits/dictionaries.rs"]);
+  const text = read("src/lower/traits/dictionaries.rs");
+  expect(text.split('"$readerDefaults"').length).toBe(2);
+  const at = text.indexOf('"$readerDefaults"');
+  const arm = text.lastIndexOf("None if ", at);
+  expect(text.slice(arm, text.indexOf("=>", arm))).toBe(
+    "None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) ",
+  );
+  expect(text.slice(arm, at)).not.toMatch(/\n {12}(None|Some)\b/);
+  const io = readFileSync(join(stdDir, "io.js"), "utf8");
+  const written = [["io.js", io], ...files("test/corpus").filter(file => file.endsWith(".js")).map(file => [file, read(file)])]
+    .flatMap(([file, text]) => [...text.matchAll(/\$readerDefaults\(\s*([\w$]+)\(/g)].map(m => `${file}: ${m[1]}`));
+  expect(written.length).toBeGreaterThan(0);
+  expect(written.filter(call => !/: (chainRead|takeRead)$/.test(call))).toEqual([]);
+  // And the runtime calls it nowhere but where it's made.
+  const runtime = files("src/runtime").filter(file => file.endsWith(".js"));
+  expect(runtime.filter(file => /\$readerDefaults\(/.test(read(file)))).toEqual(["src/runtime/readers.js"]);
+  expect(read("src/runtime/readers.js").match(/\$readerDefaults\(/g)?.length).toBe(1);
 });
 
 // A trait's arguments of a type, its `Self` and each parameter, are

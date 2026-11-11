@@ -695,6 +695,28 @@ pub(crate) fn is_try_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
             == Some(id)
 }
 
+/// Whether a `?` of `ty` is written as it is (ADR 0052): an `Option` or a
+/// `Result`, whose `Try::branch` the lowering keeps as the value tried and
+/// whose `FromResidual::from_residual` it returns, never std's bodies of
+/// them; another `Try`'s, std's generic code's, is its dictionary's (ADR
+/// 0913).
+pub(crate) fn tried_as_written<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))
+}
+
+/// Whether `id` of `args` is a `?` the lowering writes itself: `Try::branch`
+/// of what's tried as written, or `FromResidual::from_residual` of its
+/// residual, `FromResidual<R>`'s `R`, the type its call is given.
+pub(crate) fn is_question_mark_written<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    let given = match () {
+        _ if tcx.is_lang_item(id, LangItem::TryTraitBranch) => args.types().next(),
+        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => args.types().nth(1),
+        _ => None,
+    };
+    given.is_some_and(|ty| tried_as_written(tcx, ty))
+}
+
 pub(crate) fn is_non_zero_ty(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did()))
 }

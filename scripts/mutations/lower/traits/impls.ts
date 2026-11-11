@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "                true => self.evidence_args_with(method, instance.args, location, span),\n",
     replace:
-      "                true => (|| -> R<Vec<Expr>> {\n                    let mut evidence: Vec<Expr> = self.takes_caller_location(method).then_some(location).into_iter().collect();\n                    for param in const_params(self.tcx, method) {\n                        evidence.push(self.const_arg(instance.args.const_at(param.index as usize), span)?);\n                    }\n                    for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {\n                        let bound = ty::EarlyBinder::bind(self.tcx, bound)\n                            .instantiate(self.tcx, instance.args)\n                            .skip_normalization();\n                        evidence.push(self.dictionary(bound, span)?);\n                    }\n                    Ok(evidence)\n                })(),\n",
+      "                true => (|| -> R<Vec<Expr>> {\n                    let mut evidence: Vec<Expr> = self.takes_caller_location(method).then_some(location).into_iter().collect();\n                    for param in const_params(self.tcx, method) {\n                        evidence.push(self.const_arg(instance.args.const_at(param.index as usize), span)?);\n                    }\n                    for bound in crate::lower::traits::bounds(self.tcx, self.krate.foreign, self.krate.given, method) {\n                        let bound = ty::EarlyBinder::bind(self.tcx, bound)\n                            .instantiate(self.tcx, instance.args)\n                            .skip_normalization();\n                        evidence.push(self.dictionary(bound, span)?);\n                    }\n                    Ok(evidence)\n                })(),\n",
     tests: ["test/corpus.test.ts", "-t", "drop_impl_dictionary"],
   },
   {
@@ -758,5 +758,13 @@ export const mutations: Mutation[] = [
     find: "                ty::ClauseKind::Trait(bound) => own(bound.self_ty()),\n",
     replace: "                ty::ClauseKind::Trait(_) => true,\n",
     tests: ["test/crates.test.ts", "-t", "generic_impl_const_of_instance"],
+  },
+  {
+    name: "std-reader-dictionary-takes-std-defaults",
+    breaks: "a `Chain`'s or a `Take`'s dictionary holds std's provided `read_exact` and the rest it doesn't write, whose bodies reach memory, where `$readerDefaults` holds them, and `@rust-js/std` can't be built (#1156)",
+    file: "src/lower/traits/impls.rs",
+    find: "                && crate::lower::recognition::in_io_dictionary(self.tcx, item.def_id)\n                && !self.krate.fns.contains_key(&method)\n",
+    replace: "                && false\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
 ];

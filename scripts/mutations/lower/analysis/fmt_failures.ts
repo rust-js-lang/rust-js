@@ -125,8 +125,8 @@ export const mutations: Mutation[] = [
     breaks:
       "whether any of the crate's writes may fail isn't asked of its writers' `write`s, so a crate whose only failing writer no function returning a write's result gives on lowers `main`'s `write_all` of it as never failing, its `Err` thrown (#1072)",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "    let any = !failing.is_empty() || writer_fails || foreign.writes_may_fail();\n",
-    replace: "    let any = !failing.is_empty() || foreign.writes_may_fail();\n",
+    find: "    let any = writes_fail(&failing) || writer_fails || foreign.writes_may_fail();\n",
+    replace: "    let any = writes_fail(&failing) || foreign.writes_may_fail();\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writer_fails_in_main\\.rs$"],
   },
   {
@@ -145,5 +145,14 @@ export const mutations: Mutation[] = [
     find: "            if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) {\n",
     replace: "            if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"],
+  },
+  {
+    name: "reader-failures-fail-writes",
+    breaks:
+      "a reader's own method that may fail, `Chain::read`'s `?` of its first's `read`, makes `@rust-js/std`'s writes may-fail, so every consumer's generic `T: Display` is `$fmtOrPanic` (#1156)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "    let writes_fail = |failing: &IndexSet<DefId>| failing.iter().any(|&id| !of_io_reading(tcx, id));\n",
+    replace: "    let writes_fail = |failing: &IndexSet<DefId>| !failing.is_empty();\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

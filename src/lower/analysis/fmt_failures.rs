@@ -167,8 +167,13 @@ pub(super) fn failing_fns<'tcx>(
     let writer_fails = erring.iter().any(|&id| {
         (tcx.trait_impl_of_assoc(id)).is_some_and(|imp| is_std_def(tcx, tcx.impl_trait_id(imp), StdItem::IoWrite))
     });
-    // A generic `T`'s may fail where any of the crate's or a library's does.
-    let any = !failing.is_empty() || writer_fails || foreign.writes_may_fail();
+    // A generic `T`'s may fail where any of the crate's or a library's does;
+    // not where a reader's own method alone does, `Chain::read`'s `?` of
+    // its first's `read`: a read's error is no write's, which a generic
+    // `T`'s `fmt` or `write` may give (#1156). What calls it and fails is
+    // counted itself.
+    let writes_fail = |failing: &IndexSet<DefId>| failing.iter().any(|&id| !of_io_reading(tcx, id));
+    let any = writes_fail(&failing) || writer_fails || foreign.writes_may_fail();
     let mut changed = true;
     while changed {
         changed = false;
@@ -182,7 +187,7 @@ pub(super) fn failing_fns<'tcx>(
             }
         }
     }
-    let any = any || !failing.is_empty();
+    let any = any || writes_fail(&failing);
     // Only one that returns a write's result passes its error on; another
     // that formats one panics, as std's `format!` does.
     failing.retain(|&id| {

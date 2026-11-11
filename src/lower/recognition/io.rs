@@ -16,6 +16,10 @@ pub(crate) enum IoOp {
     /// `String` by: `$appendToString(buf, f)`, as its body reaches memory,
     /// `String::as_mut_vec`.
     AppendToString,
+    /// alloc's `inlined_slow_read_byte(reader)`, what `Bytes::next` reads a
+    /// byte by: `$readByte(reader, RRead)`, std's body over the reader's
+    /// dictionary, as its body reaches memory, `slice::from_mut` (#1336).
+    ReadByte,
     /// `Cursor::new(inner)`: std's struct, `{ inner, pos: 0n }`.
     CursorNew,
     /// `c.position()`: `c.pos`.
@@ -76,10 +80,20 @@ const DICTIONARY_METHODS: &[&str] = &[
 ];
 
 /// Whether `id` is a std function of io's a recognizer answers in place of
-/// its body, which reaches memory: alloc's `append_to_string`, which
-/// `@rust-js/std` compiles none of.
+/// its body, which reaches memory: alloc's `append_to_string` and
+/// `inlined_slow_read_byte`, which `@rust-js/std` compiles none of.
 pub(crate) fn answered_io_fn(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id) == "std::io::read::append_to_string"
+    answered_io_op(tcx, id).is_some()
+}
+
+/// Which recognizer answers `id`, a std function of io's whose body
+/// reaches memory.
+fn answered_io_op(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
+    match std_path(tcx, id) {
+        "std::io::read::append_to_string" => Some(IoOp::AppendToString),
+        "std::io::util::inlined_slow_read_byte" => Some(IoOp::ReadByte),
+        _ => None,
+    }
 }
 
 /// Whether `id`, a method of `Read`, `BufRead` or `Seek`, is one a
@@ -98,6 +112,27 @@ pub(crate) fn of_io_reading(tcx: TyCtxt<'_>, id: DefId) -> bool {
         .trait_of_assoc(id)
         .or_else(|| tcx.trait_impl_of_assoc(id).map(|imp| tcx.impl_trait_id(imp)));
     trait_id.is_some_and(|trait_id| is_io_reading(tcx, trait_id))
+}
+
+/// Whether `ty` is one of std's readers of others whose bodies
+/// `@rust-js/std` compiles, a `Chain` or a `Take` (#1156): its `Read` and
+/// `BufRead` are its impls' dictionaries, what they don't write std's
+/// defaults, `$readerDefaults`.
+pub(crate) fn is_std_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if matches!(std_path(tcx, adt.did()), "std::io::Chain" | "std::io::Take")
+            && is_compiled_std_type(tcx, adt.did()))
+}
+
+/// Whether `id` is std's impl of `io::Read` or `BufRead` for one of
+/// `is_std_reader`'s: one that has a dictionary, as a reader of the
+/// crate's own doesn't (#1297). Not a `Take`'s `Seek`, not compiled.
+pub(crate) fn is_std_reader_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true }) && {
+        let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+        (is_std_def(tcx, tr.def_id, StdItem::IoRead) || is_std_def(tcx, tr.def_id, StdItem::IoBufRead))
+            && is_std_reader(tcx, tr.self_ty())
+    }
 }
 
 /// Whether `id` is std's `io::Cursor`.
@@ -139,8 +174,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `args`.
     pub(super) fn io_op(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<IoOp> {
         let tcx = self.tcx;
-        if answered_io_fn(tcx, def_id) {
-            return Some(IoOp::AppendToString);
+        if let Some(op) = answered_io_op(tcx, def_id) {
+            return Some(op);
         }
         if let Some(made) = source_made(tcx, def_id) {
             return Some(made);
@@ -165,10 +200,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 (tr.def_id, tr.self_ty())
             }
         };
+        // A source's, or a `Chain`'s or a `Take`'s, whose dictionary holds
+        // what its impl doesn't write, std's defaults.
+        let name = tcx.item_name(def_id);
         (is_io_reading(tcx, trait_id)
-            && self
+            && (self
                 .byte_source(self_ty)
-                .is_some_and(|source| source.writes(tcx.item_name(def_id).as_str())))
+                .is_some_and(|source| source.writes(name.as_str()))
+                || (is_std_reader(tcx, self_ty)
+                    && !is_std_def(tcx, trait_id, StdItem::IoSeek)
+                    && DICTIONARY_METHODS.contains(&name.as_str()))))
         .then_some(IoOp::Dictionary)
     }
 }

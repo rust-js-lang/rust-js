@@ -395,4 +395,21 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Text,\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
   },
+  {
+    name: "other-try-as-written",
+    breaks:
+      "`?` of a `ControlFlow` or a type parameter's `Try` in std's bodies is read as an `Option`'s, not by its dictionary (ADR 0913)",
+    file: "src/lower/recognition/types.rs",
+    find: "    matches!(ty.kind(), ty::Adt(adt, _)\n        if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))\n",
+    replace: "    true || matches!(ty.kind(), ty::Adt(adt, _)\n        if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "question-mark-written-of-from-residual-misread",
+    breaks: "a `?`'s `FromResidual::from_residual` is asked of its `Self`, not the residual it's given, so std's compiled body of it is sought for a `Result`'s `?` (#1156)",
+    file: "src/lower/recognition/types.rs",
+    find: "        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => args.types().nth(1),\n",
+    replace: "        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => None,\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];
