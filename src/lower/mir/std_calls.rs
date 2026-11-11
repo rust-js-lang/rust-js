@@ -595,9 +595,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         edit,
                         StringEdit::PathPush | StringEdit::SetFileName | StringEdit::SetExtension
                     ) {
-                        given = (given.into_iter().zip(&arg_tys[1..]))
-                            .map(|(value, &ty)| this.path_given(value, ty))
-                            .collect();
+                        let mut paths = Vec::new();
+                        for (at, (value, &ty)) in given.into_iter().zip(&arg_tys[1..]).enumerate() {
+                            paths.push(this.path_given(value, ty, (def_id, at + 1), span)?);
+                        }
+                        given = paths;
                     }
                     if matches!(
                         edit,

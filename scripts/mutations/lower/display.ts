@@ -398,4 +398,12 @@ export const mutations: Mutation[] = [
       "a writer from its MIR takes its Formatter's options",
     ],
   },
+  {
+    name: "file-write-error-uncaught",
+    breaks: "a `File`'s `write_all` the OS refuses throws past `unwrap_err()`, where its value is the error (#1156)",
+    file: "src/lower/display.rs",
+    find: "|| super::recognition::of_files(self.tcx, def_id, args)",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
+  },
 ];

@@ -120,6 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(ByteSource::Slice) => Ok(Expr::helper("$sliceReader")),
             Some(ByteSource::Empty) => Ok(Expr::helper("$emptyReader")),
             Some(ByteSource::Repeat) => Ok(Expr::helper("$repeatReader")),
+            Some(ByteSource::File) => Ok(Expr::helper("$fileReader")),
             Some(ByteSource::Cursor(inner)) => {
                 let as_ref = crate::lower::recognition::std_item(self.tcx, StdItem::AsRef);
                 let bytes = ty::Ty::new_slice(self.tcx, self.tcx.types.u8);

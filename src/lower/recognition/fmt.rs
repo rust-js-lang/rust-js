@@ -30,6 +30,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }) {
             return Some("$dynWriter");
         }
+        // A `File`'s, a call of the OS's at its position (#1156).
+        if super::is_file(self.tcx, ty) {
+            return Some("$fileWriter");
+        }
         let bytes = matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec)
             && matches!(args.type_at(0).kind(), ty::Uint(ty::UintTy::U8)));
         bytes.then_some("$vecWriter")

@@ -16,3 +16,6 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
+
+#1392 P0: a library's generic writer given a consumer's failing writer (a File) throws instead of returning Err
+plain std library fs_write_only_fails.rs

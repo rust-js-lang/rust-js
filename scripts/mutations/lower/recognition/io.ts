@@ -162,4 +162,20 @@ export const mutations: Mutation[] = [
     replace: "|| (buf_reader_seek_relative(tcx, id) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
   },
+  {
+    name: "file-no-reader",
+    breaks: "a `File` isn't one of std's byte sources, so its reads are refused, as a reader of the crate's own (#1156)",
+    file: "src/lower/recognition/io.rs",
+    find: "                \"std::fs::File\" => Some(ByteSource::File),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
+  },
+  {
+    name: "file-writes-unrecognized",
+    breaks: "a `File`'s `write_all` isn't its dictionary's, `$fileWriter`'s, and is refused (#1156)",
+    file: "src/lower/recognition/io.rs",
+    find: "            return (is_file(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);",
+    replace: "            return None;",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
+  },
 ];

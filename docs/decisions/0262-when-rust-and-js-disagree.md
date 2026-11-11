@@ -381,6 +381,23 @@ react.dev's TopNav passes the same closure instead.
   it. Pinned by corpus case `std_module_reexported_by_a_glob` and crate
   pair `std_items_reexported_by_a_library`. Listed in the guide's
   differences (`semantics.md`, 50).
+- **A `File` is closed once it's collected, not where Rust drops it**, the
+  second case's, which the user decided (2026-11-11, rd803, #1156, ADR 0425,
+  amended). rustc checks a program for wasm32-unknown-unknown, whose `File`
+  drops nothing, so its MIR has no drop of one; one `FinalizationRegistry`
+  closes its descriptor once JS collects it. Its descriptor isn't shown,
+  `{:?}` of a `File` is refused, so only a program holding more files than
+  the OS allows at once, counting those Rust dropped and JS hasn't
+  collected, sees it. Exact close at Rust's drop is #1391 (P2). Listed in
+  the guide's differences (`semantics.md`, 51).
+- **An error of the OS's of a code the runtime's table hasn't is
+  `Uncategorized` with Node's words**, the second case's, which the user
+  decided (2026-11-11, #1156, ADR 0462, amended): std's table of kinds is
+  copied whole, with each code's `strerror` message, so only a code std
+  doesn't map either, and that the table hasn't, `ENXIO` say, reads
+  `no such device or address (os error 6)` where Rust's reads `No such
+  device or address (os error 6)`. Listed in the guide's differences
+  (`semantics.md`, 52).
 
 ## Amendment: the stack's depth
 

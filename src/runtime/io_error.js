@@ -1,14 +1,16 @@
 // An `io::Error` (ADR 0462): its kind, an `ErrorKind`'s name, and the
 // error it holds, a `dyn Error` pair, `{ value, impl }`, where it was made
-// of one, or std's own message, `write_all`'s. A class, as a `fmt::Error`
-// is, so that it's thrown where an `io::Result<()>` is an `Err` and told
-// apart from a panic.
+// of one, or std's own message, `write_all`'s; or the OS's, its `code`, its
+// number, beside its message, the platform's (#1156). A class, as a
+// `fmt::Error` is, so that it's thrown where an `io::Result<()>` is an
+// `Err` and told apart from a panic.
 class $IoError extends $WriteError {
-  constructor(kind, error, message) {
+  constructor(kind, error, message, code) {
     super();
     this.kind = kind;
     this.error = error;
     this.message = message;
+    this.code = code;
   }
 }
 // An `io::Result<()>`'s `Err`: its error, thrown.
@@ -66,14 +68,20 @@ const $ioKinds = {
 function $ioKindText(kind) {
   return $ioKinds[kind];
 }
-// `{}` of an `io::Error`: what its error shows, or its kind's words.
+// `{}` of an `io::Error`: the OS's message and number, what its error
+// shows, or its kind's words.
 function $ioErrorDisplay(e) {
+  if (e.code !== undefined) return `${e.message} (os error ${e.code})`;
   if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);
   return e.message || $ioKindText(e.kind);
 }
-// `{:?}` of one, std's `Custom { kind, error }` or `Kind(..)`, pretty
-// where `options` say.
+// `{:?}` of one, std's `Os { code, kind, message }`, `Custom { kind, error
+// }` or `Kind(..)`, pretty where `options` say.
 function $ioErrorDebug(e, options) {
+  if (e.code !== undefined) {
+    const fields = [`code: ${e.code}`, `kind: ${e.kind}`, `message: ${$debugStr(e.message)}`];
+    return options?.alternate ? $pretty("Os {", fields, "}") : `Os { ${fields.join(", ")} }`;
+  }
   if (e.message) {
     const fields = [`kind: ${e.kind}`, `message: ${$debugStr(e.message)}`];
     return options?.alternate ? $pretty("Error {", fields, "}") : `Error { ${fields.join(", ")} }`;

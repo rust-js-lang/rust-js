@@ -99,3 +99,17 @@ variable or `None`, `$varOs(key)`, and `env::vars_os()` the pairs
 browser's panic names it. rustc's `process/env-vars.rs` passes, and
 `env_vars` in the corpus compares each with its plain form, with native
 Rust.
+
+## Amendment: std's files (#1156)
+
+`NODE_ONLY` lists std's functions of a program's files beside those of its
+process, each a `NodeOnly::Process` or a `NodeOnly::Fs` entry: `File::open`,
+`File::create`, `OpenOptions::open`, `fs::read`, `fs::read_to_string`,
+`fs::write` and `fs::remove_file`, each a helper of the runtime's `fs.js`
+that begins with `$nodeFs("`std::fs::..`")`. `$nodeFs` is a gate of
+`process.js` beside `$process`: Node's `process.getBuiltinModule("node:fs")`,
+read where it's asked and never imported, so a browser's bundle loads
+without it, and in a browser it panics as `$process` does: "`std::fs::File::open`
+needs Node's process, which a browser hasn't (ADR 0391)". `test/process.test.ts`
+holds the list, the helpers and the gates equal, and the panic; a
+`#[cfg(browser)]` test of `test/asserts.rs` holds it in Chromium.

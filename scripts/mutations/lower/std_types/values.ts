@@ -737,8 +737,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a component's `as_os_str()` is given its text, and reads it as a component again",
     file: "src/lower/std_types/values.rs",
-    find: "            Std::Path(op) if op != super::path::PathOp::ComponentText => (values.into_iter().zip(tys))",
-    replace: "            Std::Path(_) => (values.into_iter().zip(tys))",
+    find: "            Std::Path(op) if op != super::path::PathOp::ComponentText => {",
+    replace: "            Std::Path(_) => {",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {

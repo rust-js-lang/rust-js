@@ -67,6 +67,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let shown = self.debug_string_with(top, item, span, pretty)?;
             return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));
         }
+        // A `File` shows its descriptor, path and modes, which the OS says,
+        // and an `OpenOptions` its flags, mode and custom flags: refused for
+        // now (#1156).
+        if crate::lower::recognition::is_file(self.tcx, ty) || crate::lower::recognition::is_open_options(self.tcx, ty)
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("`{{:?}}` of a `{ty}`, which shows what the OS says of it (#1156)"),
+            ));
+        }
         // A `BufReader` shows its inner and what's buffered, `1/8192`, which
         // is refused for now (#1156).
         if matches!(

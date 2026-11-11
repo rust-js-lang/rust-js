@@ -138,3 +138,16 @@ crate pair `library_io_writer_fails`. The mutations
 `io-write-error-uncounted`, `writer-failure-unasked`,
 `writer-helper-unfollowed` and `library-writes-never-fail` put each old
 answer back.
+
+## Amendment: an error of the OS's (#1156)
+
+An `io::Error` of the OS's, a file's, is std's `Os` repr: a `$IoError` of
+its kind, its message and its `code`, the OS's number, Node's negated. `{}`
+is `No such file or directory (os error 2)`, `{:?}` `Os { code: 2, kind:
+NotFound, message: "No such file or directory" }`, pretty where asked, and
+`raw_os_error()` is `e.code`, `undefined`, `None`, of another error. Its kind
+is std's `decode_error_kind` of its code and its message the platform's
+`strerror`, glibc's or macOS's where they differ, from one table of
+`fs.js`, `$osErrors`; a code the table hasn't is `Uncategorized` with Node's
+words for it (the user's decision, 2026-11-11, a known difference listed in
+ADR 0262).

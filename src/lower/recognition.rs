@@ -9,7 +9,10 @@ mod conversions;
 mod fmt;
 mod inherent;
 mod io;
-pub(crate) use io::{ByteSource, IoOp, in_io_dictionary, is_std_reader, is_std_reader_impl, of_io_reading};
+pub(crate) use io::{
+    ByteSource, IoOp, in_io_dictionary, is_file, is_open_options, is_std_reader, is_std_reader_impl, of_files,
+    of_io_reading,
+};
 mod iterators;
 mod js_items;
 mod json;
@@ -49,6 +52,7 @@ use super::representation::Num;
 use super::std_types::any::AnyOp;
 use super::std_types::clock::ClockOp;
 use super::std_types::cow::CowOp;
+use super::std_types::fs::FsOp;
 use super::std_types::hash::{HashOp, Hashed, StdHasher};
 use super::std_types::heap::HeapOp;
 use super::std_types::io_error::IoErrorOp;
@@ -221,6 +225,9 @@ pub(super) enum Std {
     Unwind(UnwindOp),
     /// The process a program runs in, Node's (ADR 0391): `env::args()`.
     Process(ProcessOp),
+    /// std's files, Node's fs (#1156): a `File` opened, an `OpenOptions`'s
+    /// flag, `fs::read` and the rest.
+    Fs(FsOp),
     /// memchr's searches, of the crate rustc builds (ADR 0529).
     Memchr(super::shipped::MemchrOp),
     /// `panic::Location`'s (ADR 0427).

@@ -57,3 +57,20 @@ changed in place is its text's edit, as a `String`'s is.**
   Mutations read a root's separator as a component's, keep a parent's
   trailing `.`, take `.bashrc`'s extension, append an absolute path,
   double a separator, and compare `starts_with` by text.
+
+## Amendment: a path of the crate's own type is its `as_ref()` (#1388)
+
+`base.join(&name)`, of a `Name` of the crate's own that's an `AsRef<Path>`,
+was given the struct, and `$pathJoin` threw a `TypeError` (P0, found by
+audit while planning `File`, #1156). What a path's method, a `PathBuf`'s
+edit or a file's function is given as a path (`path_given`) is its text where
+its type is std's text, a `str`, a `String`, a path or an `OsStr`, a
+`Component`'s `as_os_str()`, and otherwise its impl's `as_ref()` through its
+dictionary, of the `AsRef<X>` the callee's signature bounds its parameter
+by: `Path` of `join`'s `P`, `OsStr` of `set_extension`'s and of `Path::new`'s
+`&S`. Case C of [0262](0262-when-rust-and-js-disagree.md). Corpus case
+`path_given_own_as_ref` (`join`, `push`, `starts_with`, `ends_with`,
+`strip_prefix`, `with_file_name`, `set_extension`, `Path::new`, `File::open`
+and `OpenOptions::open`, of a value and a `&`, each `as_ref()` printing)
+against native Rust in both builds and through `METAMORPHIC=all`; mutations
+`path-given-own-struct` and `path-given-reference-bound-unseen`.

@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "  const error = \"Error\";\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
+  {
+    name: "os-error-shown-as-its-kind",
+    breaks: "an error of the OS's shows its kind's words, `entity not found`, where std's shows its message and number, `No such file or directory (os error 2)` (#1156)",
+    file: "src/runtime/io_error.js",
+    find: "  if (e.code !== undefined) return `${e.message} (os error ${e.code})`;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
+  },
 ];

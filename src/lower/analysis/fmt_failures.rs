@@ -12,7 +12,7 @@ use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{
     StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def,
-    is_write_result_type, of_io_reading,
+    is_write_result_type, of_files, of_io_reading,
 };
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -135,6 +135,13 @@ pub(super) fn failing_fns<'tcx>(
             // of a type that's known or a dictionary's: std's sources'
             // fail, `read_exact` past their end (#1156).
             if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) {
+                failing.insert(caller);
+                continue;
+            }
+            // A call of std's files, which the OS may refuse, a `File`'s
+            // write or `fs::remove_file`, or that opens one, which generic
+            // code may be given to write (#1156).
+            if of_files(tcx, callee, args) {
                 failing.insert(caller);
                 continue;
             }

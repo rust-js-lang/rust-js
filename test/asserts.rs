@@ -95,6 +95,15 @@ mod tests {
         reject_later("rejected later");
     }
 
+    // In a browser, a file is no `Err` but a panic, naming what needed Node
+    // (ADR 0391, #1156).
+    #[test]
+    #[cfg(browser)]
+    #[should_panic(expected = "`std::fs::File::open` needs Node's process, which a browser hasn't")]
+    fn opens_no_file_in_a_browser() {
+        let _ = std::fs::File::open("notes.txt");
+    }
+
     // A test returning a `Result` passes on `Ok`, and fails on `Err`.
     #[test]
     fn returns_ok() -> Result<(), String> {

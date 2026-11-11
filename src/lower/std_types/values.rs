@@ -456,10 +456,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = match known {
             // What a path's method is given as a path; a component's
             // `as_os_str()` is given the component.
-            Std::Path(op) if op != super::path::PathOp::ComponentText => (values.into_iter().zip(tys))
-                .map(|(value, &ty)| self.path_given(value, ty))
-                .collect::<Vec<_>>()
-                .into_iter(),
+            Std::Path(op) if op != super::path::PathOp::ComponentText => {
+                let mut given = Vec::new();
+                for (at, (value, &ty)) in values.into_iter().zip(tys).enumerate() {
+                    given.push(self.path_given(value, ty, (def_id, at), call.span)?);
+                }
+                given.into_iter()
+            }
             _ => values.into_iter(),
         };
         // `Rc::new` of a closure another `Rc` may be made of too, where the
@@ -507,6 +510,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(js);
         }
         if let Some(js) = self.process_call(known, &mut values) {
+            return Ok(js);
+        }
+        if let Some(js) = self.fs_call(known, call, &mut values)? {
             return Ok(js);
         }
         if let Some(js) = self.memchr_call(known, &mut values) {
@@ -729,6 +735,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
+            Std::Fs(_) => unreachable!("lowered by fs_call"),
             Std::Unwind(_) => unreachable!("lowered by unwind_call"),
             Std::Memchr(_) => unreachable!("lowered by memchr_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),

@@ -1107,6 +1107,69 @@ export function lineCount(text) {
 }
 ```
 
+### Files: `std::fs`
+
+- **A `File` works through Node's fs where the program runs in Node,** read
+  as `process.getBuiltinModule("node:fs")` where it's asked, never
+  imported; in a browser, opening one panics, naming what needed Node's
+  process ([0391](../decisions/0391-what-works-in-node-only.md), amended).
+- **A `File` is `{ fd, pos }`,** its descriptor and the position std's
+  would keep, a `u64` passed to each read and write, so `Seek` moves it as
+  `lseek` would. Its `Read` and `Seek` are `$fileReader`'s and its `Write`
+  `$fileWriter`'s, whether its type is known or generic code's, so a
+  `BufReader<File>` reads its lines as std's does. A file opened to
+  append writes at its end. A file isn't buffered, so `flush` does
+  nothing. It's closed once it's collected (difference 51).
+- **`File::open`, `File::create`, `fs::read`, `fs::read_to_string`,
+  `fs::write` and `fs::remove_file` are helpers,** `$fileOpen(path)` and
+  the rest; a path of the crate's own `AsRef<Path>` is its `as_ref()`.
+- **`OpenOptions` is the runtime's `$OpenOptions`,** whose setters give it
+  back, as std's `&mut Self` does: `OpenOptions::new().append(true).open(p)`
+  is `$openOptions().append(true).open(p)`. Options that open nothing,
+  `create(true)` without `write`, are refused as std refuses them,
+  `InvalidInput` and std's message.
+- **An error of the OS's is std's `Os` error:** `No such file or directory
+  (os error 2)`, `{:?}` `Os { code: 2, kind: NotFound, message: "No such
+  file or directory" }`, `raw_os_error()` its number; its kind and message
+  are std's of its code (difference 52).
+- `{:?}` of a `File` or an `OpenOptions` is refused (#1156), and so is
+  what asks it, `unwrap_err()` of an `io::Result<File>`.
+
+```rust
+use std::fs::{self, OpenOptions};
+use std::io::{self, Write};
+
+pub fn log(path: &str, line: &str) -> io::Result<()> {
+    let mut file = OpenOptions::new().append(true).create(true).open(path)?;
+    writeln!(file, "{line}")
+}
+
+pub fn size(path: &str) -> io::Result<usize> {
+    Ok(fs::read(path)?.len())
+}
+```
+
+```js
+import { $fileWriter, $fsRead, $ioThrow, $openOptions } from "@rust-js/std";
+
+export function log(path, line) {
+  const result = $openOptions().append(true).create(true).open(path);
+  if (result.TAG === "Err") {
+    return $ioThrow(result._0);
+  }
+  const file = result._0;
+  $fileWriter.writeFmt({ value: file }, `${line}\n`);
+}
+
+export function size(path) {
+  const result = $fsRead(path);
+  if (result.TAG === "Err") {
+    return result;
+  }
+  return { TAG: "Ok", _0: result._0.length };
+}
+```
+
 What's refused of collections and iterators is in
 [the limitations](limitations.md#iterators-and-collections).
 
@@ -2032,3 +2095,18 @@ React and JSX are [their own pages](README.md#react).
     module doesn't find it there (ADR 0262, the user's decision,
     2026-11-11, rd802, #1315; [ADR 0240](../decisions/0240-reexports.md),
     amended).
+
+51. A `File` is closed once it's collected, not where Rust drops it:
+    rustc checks a program for a target whose `File` drops nothing, so
+    its MIR has no drop of one. Its descriptor isn't shown, `{:?}` of a
+    `File` is refused, so only a program that holds more files at once
+    than the OS allows, counting those Rust has dropped and JS hasn't
+    collected, sees it; exact close is #1391 (ADR 0262, the user's
+    decision, 2026-11-11, rd803, #1156; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
+    amended).
+
+52. An error of the OS's whose code std's table maps is std's kind and
+    the platform's message for it, word for word; one whose code the
+    runtime's table hasn't is `Uncategorized`, with Node's words for it,
+    `bad file descriptor`, where std's are the C library's (ADR 0262, the
+    user's decision, 2026-11-11, #1156).

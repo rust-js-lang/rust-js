@@ -306,7 +306,10 @@ test("oxc APIs stay behind the printing and formatting adapters", () => {
 test("only the publisher and the driver write files", () => {
   const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
   const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs"];
-  expect(sources.filter(file => !writers.includes(file) && writes.test(read(file)))).toEqual([]);
+  // Its code alone: a lowering of std's files names them in its comments
+  // and in the paths it recognizes, `"std::fs::write"` (#1156).
+  const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+  expect(sources.filter(file => !writers.includes(file) && writes.test(code(file)))).toEqual([]);
   for (const file of writers) expect(read(file), file).toMatch(writes);
 });
 

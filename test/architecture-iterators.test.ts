@@ -267,6 +267,7 @@ const ownUnwinding: Record<string, string> = {
   "src/runtime/json_read.js": "JSON.parse's `SyntaxError` caught to become a `Result`, not a drop",
   "src/runtime/json_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
   "src/runtime/json_value.js": "serde's encoding error caught to become a `Result`, not a drop",
+  "src/runtime/fs.js": "Node's error of a call of the OS's caught to become std's `io::Error`, a pipe's positioned read or write tried again where it is, and a collected file's close, whose error std's drop ignores, not a drop (#1156)",
   "src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
   "src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
   "src/runtime/pop_if_cell.js": "a `Vec`'s `pop_if` cell written back as its test returns or panics, not a drop (#906)",

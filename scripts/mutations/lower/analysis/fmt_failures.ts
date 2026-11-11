@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "    let writes_fail = |failing: &IndexSet<DefId>| !failing.is_empty();\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "file-calls-never-fail",
+    breaks: "a call of std's files isn't one that may fail, so a crate whose only failing write is a `File`'s writes it as one that never fails (#1156)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "            if of_files(tcx, callee, args) {",
+    replace: "            if of_files(tcx, callee, args) && false {",
+    tests: ["test/corpus.test.ts", "-t", "^(fs_file|fs_write_only_fails).rs$"],
+  },
 ];

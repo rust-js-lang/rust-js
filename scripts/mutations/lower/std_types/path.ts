@@ -19,12 +19,19 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
   {
-    name: "path-given-component-raw",
-    breaks:
-      "a `Component` given as a path is its object, which `$pathJoin` throws on",
+    name: "path-given-own-struct",
+    breaks: "a path's method given a type of the crate's own that's an `AsRef<Path>` is given the struct, not its `as_ref()`, and `$pathJoin` throws a `TypeError` (#1388)",
     file: "src/lower/std_types/path.rs",
-    find: "match self.recognition().is_path_component(ty) {",
-    replace: "match false {",
-    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+    find: "        let Some(target) = self.as_ref_target(callee, at) else {",
+    replace: "        let Some(target) = self.as_ref_target(callee, at).filter(|_| false) else {",
+    tests: ["test/corpus.test.ts", "-t", "^path_given_own_as_ref.rs$"],
+  },
+  {
+    name: "path-given-reference-bound-unseen",
+    breaks: "`Path::new(&name)`'s bound, of its `&S`, isn't found, so it's given the struct, not its `AsRef<OsStr>`'s text (#1388)",
+    file: "src/lower/std_types/path.rs",
+    find: "        let declared = self.signature_of(callee).0.get(at)?.peel_refs();",
+    replace: "        let declared = *self.signature_of(callee).0.get(at)?;",
+    tests: ["test/corpus.test.ts", "-t", "^path_given_own_as_ref.rs$"],
   },
 ];

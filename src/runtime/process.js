@@ -8,6 +8,13 @@ function $process(what) {
   }
   return process;
 }
+// Node's fs, `node:fs`, for std's files (#1156): as Node's process is
+// asked, through `$process`, which in a browser panics, saying what needed
+// it. Read where it's asked, never imported, so a browser's bundle loads
+// without it.
+function $nodeFs(what) {
+  return $process(what).getBuiltinModule("node:fs");
+}
 // `env::args()`: the program's path, then its arguments, as `node app.js a` gives them.
 function $args() {
   return $process("`std::env::args`").argv.slice(1);

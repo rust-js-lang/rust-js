@@ -205,9 +205,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = self.memchr_op(def_id) {
             return Some(Some(Std::Memchr(op)));
         }
-        // The process a program runs in, Node's (ADR 0391).
-        if let Some(op) = node_only(tcx, def_id) {
-            return Some(Some(Std::Process(op)));
+        // The process a program runs in, and its files, Node's (ADR 0391).
+        match node_only(tcx, def_id) {
+            Some(NodeOnly::Process(op)) => return Some(Some(Std::Process(op))),
+            Some(NodeOnly::Fs(op)) => return Some(Some(Std::Fs(op))),
+            None => {}
+        }
+        // An `OpenOptions`'s, its flags, which open nothing till `open` (#1156).
+        if let Some(op) = crate::lower::std_types::fs::open_options_op(path) {
+            return Some(Some(Std::Fs(op)));
         }
         // A C-variadic function's next argument, the first of what's left of
         // its array (ADR 0428).
@@ -956,6 +962,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "other" => Some(IoErrorOp::Other),
                 "kind" => Some(IoErrorOp::Kind),
                 "is_interrupted" => Some(IoErrorOp::IsInterrupted),
+                "raw_os_error" => Some(IoErrorOp::RawOsError),
                 _ => None,
             };
         }

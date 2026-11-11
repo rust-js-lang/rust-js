@@ -22,6 +22,7 @@
 //! | `catch_unwind`, `resume_unwind` | a `try`, `$catchUnwind(f)`; `throw $unwinding(payload)` | `unwind` |
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
+//! | `File`, `OpenOptions`, `fs::read`: Node's fs | `{ fd, pos }`; its helper, `$fileOpen(path)` | `fs` |
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
 //! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |
 //! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
@@ -43,6 +44,7 @@ pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod clock;
 pub(super) mod cow;
+pub(super) mod fs;
 pub(super) mod future;
 pub(super) mod hash;
 pub(super) mod heap;

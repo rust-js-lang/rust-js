@@ -414,3 +414,57 @@ refusals. Mutations (`runtime/readers.ts`): `buf-read-never-bypasses`,
 (`lower/traits/dictionaries/declared.ts`)
 `buf-reader-dictionary-not-an-impl-call`; (`lower/display/debug.ts`)
 `buf-reader-debug-shown`. `File` comes last.
+
+## Amendment: `File` is read and written through Node's fs (#1156, phase 1)
+
+The user's decisions of 2026-11-11, on #1156. **A `File` is `{ fd, pos }`**,
+its descriptor and the position std's would keep, a `u64` the runtime
+passes to every read and write (Node's `readSync` at a `bigint`, its
+`writeSync` at a `number`, below 2^53, past which a write is refused where it
+runs), so `Seek` moves it as `lseek` would: `Start(n)`, `End(n)` from
+`fstat`'s size, `Current(n)`, and `EINVAL`, os error 22, below 0 or past an
+`off_t`. A file opened to append is remembered by its descriptor, and writes
+at its end, where its position is then. One that can't seek, a pipe, reads
+and writes where it is, and its `seek` is `ESPIPE`.
+
+- **Node's fs, where it runs:** `$nodeFs(what)` reads
+  `process.getBuiltinModule("node:fs")` through `$process`, no static
+  import, so in a browser it panics naming what needed it (ADR 0391,
+  amended). `File::open`, `File::create`, `OpenOptions::open`, `fs::read`,
+  `fs::read_to_string`, `fs::write` and `fs::remove_file` are `NODE_ONLY`
+  entries, each a helper of `fs.js`.
+- **`File` is one of std's byte sources,** `ByteSource::File`, its `Read` and
+  `Seek` `$fileReader`'s, std's own methods over Node's calls, `read_exact`
+  std's default over its `read`, `read_to_end` reserving what `fstat` says is
+  left first, as `buffer_capacity_required` does. Its `Write` is
+  `$fileWriter`'s: its `write`, and `write_all` and `write_fmt` over it,
+  `$ioWriteAll`'s; `flush` does nothing, as a file isn't buffered.
+- **`OpenOptions` is the runtime's `$OpenOptions`** (the user's decision): a
+  class whose setters set its flags and give it back, std's `&mut Self`, so
+  `OpenOptions::new().append(true).create(true).open(p)` is
+  `$openOptions().append(true).create(true).open(p)`, a stored builder too.
+  Its `open` is std's `get_access_mode` and `get_creation_mode` word for
+  word: options that open nothing are std's `InvalidInput` and message.
+- **A write of a file may fail,** so a crate that calls std's files is one
+  whose writes may (`of_files`, ADR 0462's `any_failing`), and a `File`'s
+  `write_all` the OS refuses is its caller's error, though generic code
+  writes it (`fs_write_only_fails`).
+- **Closed once it's collected,** one `FinalizationRegistry` (the user's
+  decision, rd803, a rare and harmless exception of ADR 0262): rustc checks a
+  program for wasm32-unknown-unknown, whose `File` is
+  `sys::fs::unsupported::File(!)`, which drops nothing, so its MIR has no
+  drop of a `File` for a close to be written at. Exact close at Rust's drop
+  is #1391 (P2).
+- `{:?}` of a `File` or an `OpenOptions`, which shows what the OS says of
+  it, is refused, naming #1156.
+
+Corpus cases `fs_file` (written, read whole, by line through a `BufReader`
+and by generic code; read in parts, sought from each end and before its
+start; a hole past its end; appended through stored options, `create_new`
+of one there, `truncate`; std's four refusals of options; the OS's errors of
+a missing file, a write to a reader, a read of a writer, a directory, and
+text that isn't UTF-8) and `fs_write_only_fails`, against native Rust in
+both builds and through `METAMORPHIC=all`, each writing beside its outcome's
+file; `test/process.test.ts` holds the `NODE_ONLY` entries and their gates
+and a browser's panic, and `test/asserts.rs` a `#[cfg(browser)]` test of it
+in Chromium; `test/diagnostics.test.ts` the two `{:?}` refusals.

@@ -112,8 +112,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.krate.any_failing {
             return false;
         }
-        // A byte source's `read_exact` past its end (#1156).
-        if super::recognition::of_io_reading(self.tcx, def_id) {
+        // A byte source's `read_exact` past its end, and a call of std's
+        // files the OS refuses (#1156).
+        if super::recognition::of_io_reading(self.tcx, def_id) || super::recognition::of_files(self.tcx, def_id, args) {
             return true;
         }
         match self.resolve_instance(def_id, args) {

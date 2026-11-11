@@ -65,6 +65,8 @@ pub(crate) enum ByteSource<'tcx> {
     Empty,
     /// `io::Repeat`: `$repeatReader`, which reads its byte without end.
     Repeat,
+    /// `fs::File`: `$fileReader`, a call of the OS's at its position (#1156).
+    File,
 }
 
 impl ByteSource<'_> {
@@ -160,6 +162,29 @@ pub(crate) fn is_std_reader_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
     }
 }
 
+/// The methods of `io::Write` a `File`'s dictionary, `$fileWriter`, holds:
+/// its impl's `write` and `flush`, and what the trait provides over them.
+const FILE_WRITES: &[&str] = &["write", "write_all", "write_fmt", "flush"];
+
+/// Whether `ty` is std's `fs::File` (#1156).
+pub(crate) fn is_file<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::fs::File")
+}
+
+/// Whether `ty` is std's `fs::OpenOptions` (#1156).
+pub(crate) fn is_open_options<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::fs::OpenOptions")
+}
+
+/// Whether `id` of `args` is a call of std's files, which may fail (#1156):
+/// a function of `std::fs`'s, a `File`'s own or an `OpenOptions`'s, or one
+/// of `io::Write`'s of a `File`, whose writes the OS may refuse.
+pub(crate) fn of_files<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    std_path(tcx, id).starts_with("std::fs::")
+        || (tcx.trait_of_assoc(id)).is_some_and(|tr| is_std_def(tcx, tr, StdItem::IoWrite))
+            && args.types().next().is_some_and(|this| is_file(tcx, this.peel_refs()))
+}
+
 /// Whether `id` is std's `io::Cursor`.
 fn is_cursor(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_path(tcx, id) == "std::io::Cursor"
@@ -195,6 +220,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(adt, _) => match std_path(self.tcx, adt.did()) {
                 "std::io::Empty" => Some(ByteSource::Empty),
                 "std::io::Repeat" => Some(ByteSource::Repeat),
+                "std::fs::File" => Some(ByteSource::File),
                 _ => None,
             },
             _ => None,
@@ -245,8 +271,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
         };
         // A source's, or a `Chain`'s or a `Take`'s, whose dictionary holds
-        // what its impl doesn't write, std's defaults.
+        // what its impl doesn't write, std's defaults; and a `File`'s writes,
+        // `$fileWriter`'s (#1156).
         let name = tcx.item_name(def_id);
+        if is_std_def(tcx, trait_id, StdItem::IoWrite) {
+            return (is_file(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);
+        }
         (is_io_reading(tcx, trait_id)
             && (self
                 .byte_source(self_ty)

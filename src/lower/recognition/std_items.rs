@@ -198,16 +198,32 @@ pub(super) fn is_libtest(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
 /// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
 /// path compared here would miss.
-/// std's functions of the process a program runs in, which Node has and a
-/// browser hasn't (ADR 0391), each by its path: the one list of what works
-/// in Node only. Each is a helper of the runtime's `process.js`.
-const NODE_ONLY: &[(&str, ProcessOp)] = &[
-    ("std::env::args", ProcessOp::Args),
-    ("std::env::var", ProcessOp::Var),
-    ("std::env::var_os", ProcessOp::VarOs),
-    ("std::env::vars", ProcessOp::Vars),
-    ("std::env::vars_os", ProcessOp::VarsOs),
-    ("std::process::exit", ProcessOp::Exit),
+/// One of std's functions that works in Node only (ADR 0391): of the
+/// process a program runs in, a helper of the runtime's `process.js`, or of
+/// its files, of `fs.js` (#1156).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) enum NodeOnly {
+    Process(ProcessOp),
+    Fs(FsOp),
+}
+
+/// std's functions of the process a program runs in and of its files,
+/// which Node has and a browser hasn't (ADR 0391), each by its path: the one
+/// list of what works in Node only.
+const NODE_ONLY: &[(&str, NodeOnly)] = &[
+    ("std::env::args", NodeOnly::Process(ProcessOp::Args)),
+    ("std::env::var", NodeOnly::Process(ProcessOp::Var)),
+    ("std::env::var_os", NodeOnly::Process(ProcessOp::VarOs)),
+    ("std::env::vars", NodeOnly::Process(ProcessOp::Vars)),
+    ("std::env::vars_os", NodeOnly::Process(ProcessOp::VarsOs)),
+    ("std::process::exit", NodeOnly::Process(ProcessOp::Exit)),
+    ("std::fs::File::open", NodeOnly::Fs(FsOp::Open)),
+    ("std::fs::File::create", NodeOnly::Fs(FsOp::Create)),
+    ("std::fs::OpenOptions::open", NodeOnly::Fs(FsOp::OptionsOpen)),
+    ("std::fs::read", NodeOnly::Fs(FsOp::Read)),
+    ("std::fs::read_to_string", NodeOnly::Fs(FsOp::ReadToString)),
+    ("std::fs::write", NodeOnly::Fs(FsOp::Write)),
+    ("std::fs::remove_file", NodeOnly::Fs(FsOp::RemoveFile)),
 ];
 
 /// Whether `def_id`, a function, is given its caller's location: its own
@@ -238,7 +254,7 @@ pub(crate) fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Which of std's functions that work in Node only `id` is, if it's one.
-pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {
+pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<NodeOnly> {
     let path = std_path(tcx, id);
     NODE_ONLY.iter().find(|(of, _)| *of == path).map(|&(_, op)| op)
 }

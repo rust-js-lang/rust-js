@@ -236,6 +236,7 @@ helpers! {
     TryFromInt,
     Print,
     Process,
+    Fs,
     Alloc,
     SliceIndex,
     Capacity,
@@ -792,6 +793,8 @@ impl Helper {
             // the task ends (ADR 0087).
             Helper::Print => include_str!("runtime/print.js"),
             Helper::Process => include_str!("runtime/process.js"),
+            // std's files, through Node's fs (#1156).
+            Helper::Fs => include_str!("runtime/fs.js"),
             Helper::Alloc => include_str!("runtime/alloc.js"),
             Helper::SliceIndex => include_str!("runtime/slice_index.js"),
             Helper::Capacity => include_str!("runtime/capacity.js"),
