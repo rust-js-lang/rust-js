@@ -334,6 +334,17 @@ rewrites of `from_iter_holds_what_generic_code_gives.rs`, and the mutations
 `adapter-of-it-a-holder`. The crate's
 own iterator so given, not an adapter of it, throws on its drop, #1286.
 
+What std's own bodies move is std's, `is_std_crate`, not every body of
+another crate: a library's generic body, which its consumer compiles from
+the library's optimized MIR (ADR 0914), holds what it moves as the crate's
+own does. Taking every non-local body for std's left a library's
+`from_iter` holding none of the six but the box, `drop cell` before `cell
+summed 3`, as the metamorphic net's `library` rewrite of
+`iterator_held_in_a_place_dropped_with_it.rs` found in both builds (#1366).
+Held by test/crates/pairs/library_iterator_held_in_a_place (the case's
+items as a library and its consumer, against native Rust) and the mutation
+`library-bodies-holder-unheld`.
+
 ## Amendment: a fold steps by its own steps too (2026-11-11, #1330)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so

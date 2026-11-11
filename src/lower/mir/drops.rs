@@ -277,9 +277,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn moved_into_a_holder(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
         // Std's struct, compiled, which steps what it holds as Rust does and
         // has no `hold()` (#243); and what std's own bodies move into theirs,
-        // a flatten's `frontiter`, which they drop where they replace it.
+        // a flatten's `frontiter`, which they drop where they replace it. A
+        // library's body, read from its optimized MIR where a program
+        // compiles it (ADR 0914), holds what it moves as the crate's own
+        // does (#1366).
         if crate::lower::recognition::is_compiled_std_iterator(self.tcx, body.local_decls[local].ty)
-            || !body.source.def_id().is_local()
+            || crate::lower::recognition::is_std_crate(self.tcx, body.source.def_id())
         {
             return false;
         }
