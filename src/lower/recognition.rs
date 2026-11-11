@@ -5,6 +5,7 @@ mod c_strs;
 mod calls;
 mod chars;
 mod compiled_std;
+mod conversions;
 mod fmt;
 mod inherent;
 mod io;

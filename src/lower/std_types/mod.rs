@@ -62,6 +62,7 @@ pub(super) mod range;
 pub(super) mod rc;
 pub(super) mod result;
 pub(super) mod slice;
+pub(super) mod sorts;
 pub(super) mod text;
 pub(super) mod uninit;
 pub(super) mod unwind;
