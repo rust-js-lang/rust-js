@@ -55,12 +55,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.user_impl(tr).is_some()
     }
 
-    /// The impl of the crate's, or a dependency's, that `tr` selects.
+    /// The impl of the crate's, or a dependency's, that `tr` selects: of
+    /// `@rust-js/std`'s, of a type compiled for this build, not an adapter's
+    /// held as the recognizers' (`compiled_for`, #1401).
     pub(in crate::lower) fn user_impl(&self, tr: ty::TraitRef<'tcx>) -> Option<DefId> {
         let tr = self.tcx.erase_and_anonymize_regions(tr);
         match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
             Ok(ImplSource::UserDefined(imp))
-                if self.trait_impls.contains(&imp.impl_def_id) || self.foreign.has_impl(imp.impl_def_id) =>
+                if self.trait_impls.contains(&imp.impl_def_id)
+                    || self.foreign.has_impl(imp.impl_def_id) && super::compiled_for(self.tcx, tr.self_ty()) =>
             {
                 Some(imp.impl_def_id)
             }

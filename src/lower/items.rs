@@ -699,8 +699,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `peekable`'s, a function over `Self`: called on a type parameter,
         // which resolves to nothing, or on a type, which resolves to the
         // method itself; never one an impl writes itself (ADRs 0185, 0561).
-        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()))
-            || (super::recognition::is_compiled_std(self.tcx, def_id) && resolved.is_none_or(|i| i.def_id() == def_id)))
+        // A std body compiled of the type it's called for, an adapter's of
+        // one held as std's struct (`compiled_instance`, #1401).
+        let of_its_type = |i: ty::Instance<'tcx>| {
+            !super::recognition::is_compiled_std(self.tcx, i.def_id())
+                || super::recognition::compiled_instance(self.tcx, i.def_id(), i.args)
+        };
+        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()) && of_its_type(i))
+            || (super::recognition::compiled_instance(self.tcx, def_id, generic_args)
+                && resolved.is_none_or(|i| i.def_id() == def_id)))
     }
 
     /// `ty`, of a function's own generics, in a call of it, `generic_args`.

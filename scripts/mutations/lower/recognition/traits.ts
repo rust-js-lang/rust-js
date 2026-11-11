@@ -618,4 +618,13 @@ export const mutations: Mutation[] = [
     replace: "            _ if known_by_bounds(args.type_at(0)) => method,\n",
     tests: ["test/corpus.test.ts", "-t", "^into_through_a_from_bound_of_another_type.rs$"],
   },
+  {
+    name: "std-impl-of-any-type-user",
+    breaks: "`@rust-js/std`'s impl of an adapter compiled as its meaning alone is the crate's own iterator's for a type held as the recognizers', so a filter whose `{:?}` nothing asks is stepped by std's compiled `next`, `$iterator(.., filterIterator_next)` (#1401)",
+    file: "src/lower/recognition/traits.rs",
+    find: "                    || self.foreign.has_impl(imp.impl_def_id) && super::compiled_for(self.tcx, tr.self_ty()) =>\n",
+    replace: "                    || self.foreign.has_impl(imp.impl_def_id) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
+    snapshots: true,
+  },
 ];

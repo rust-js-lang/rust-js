@@ -392,14 +392,84 @@ fn compiled_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
     !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()
 }
 
+/// Whether `@rust-js/std`'s bodies of std's struct named `type_name` are
+/// this build's to call: compiled for it (`compiled_for_build`), or, of one
+/// compiled as its meaning alone, of a type of it whose `{:?}` the crate
+/// asks (`note_debug_shown`, #1401), held as std's struct.
+fn called_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
+    compiled_for_build(tcx, type_name)
+        || (crate::lower::session::caches(tcx).debug_shown.get()).is_some_and(|(_, names)| names.contains(type_name))
+}
+
+/// `ty`, regions erased, by its address interned in this session: what the
+/// session's caches key a type by, which names it in this `TyCtxt` alone.
+fn session_key<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> usize {
+    std::ptr::from_ref(tcx.erase_and_anonymize_regions(ty.peel_refs()).kind()) as usize
+}
+
+/// Note the types of std's adapters compiled as their meaning alone,
+/// `MEANING_ONLY`'s, whose `{:?}` `bodies` ask (#1401): each type a `Debug`
+/// clause of what they call names, `Result::unwrap`'s `E: Debug` of an
+/// `ExactlyOneError<Filter<..>>`, or `{:?}`'s own, `Argument::new_debug`'s
+/// `T: Debug`, and each adapter it holds. Only std's struct shows one, so
+/// each such type is std's struct where it's held; every other value of the
+/// adapter stays the recognizers'. Once a session, before the catalogue is
+/// asked.
+pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::Body<'tcx>]) {
+    let caches = crate::lower::session::caches(tcx);
+    debug_assert!(
+        caches.compiled.get().is_none(),
+        "the catalogue asked before what `{{:?}}` shows is noted"
+    );
+    let Some(debug) = tcx.get_diagnostic_item(Symbol::intern("Debug")) else {
+        return;
+    };
+    let (mut types, mut names) = (
+        crate::collections::IndexSet::default(),
+        crate::collections::IndexSet::default(),
+    );
+    for body in bodies {
+        for expr in body.thir.exprs.iter() {
+            let rustc_middle::thir::ExprKind::ZstLiteral { .. } = expr.kind else {
+                continue;
+            };
+            let Some((callee, args)) = crate::lower::fn_def(expr.ty) else {
+                continue;
+            };
+            for (clause, _) in tcx.clauses_of(callee).instantiate(tcx, args) {
+                let Some(clause) = clause.skip_normalization().as_trait_clause() else {
+                    continue;
+                };
+                if clause.def_id() != debug {
+                    continue;
+                }
+                for part in clause.self_ty().skip_binder().walk().filter_map(|part| part.as_type()) {
+                    let ty::Adt(adt, _) = part.kind() else { continue };
+                    if let Some(&name) = (std_path(tcx, adt.did()).strip_prefix("std::iter::"))
+                        .and_then(|name| MEANING_ONLY.iter().find(|&&each| each == name))
+                    {
+                        types.insert(session_key(tcx, part));
+                        names.insert(name);
+                    }
+                }
+            }
+        }
+    }
+    _ = caches.debug_shown.set((types, names));
+}
+
 /// Whether a value of `ty`, std's adapter `std::iter`'s or another type, is
 /// std's struct compiled for this build where it's held: the one answer,
 /// by the type, of what each query of the catalog below asks (#1401). Not
 /// another's than an adapter's, whose answer is its catalog's alone.
-fn compiled_for(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+pub(crate) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     match ty.peel_refs().kind() {
         ty::Adt(adt, _) if !adt.did().is_local() => {
-            (std_path(tcx, adt.did()).strip_prefix("std::iter::")).is_none_or(|name| compiled_for_build(tcx, name))
+            (std_path(tcx, adt.did()).strip_prefix("std::iter::")).is_none_or(|name| {
+                compiled_for_build(tcx, name)
+                    || (crate::lower::session::caches(tcx).debug_shown.get())
+                        .is_some_and(|(types, _)| types.contains(&session_key(tcx, ty)))
+            })
         }
         _ => true,
     }
@@ -411,6 +481,18 @@ fn compiled_for(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
 /// compiled for this build (`compiled_for`). The one answer of where a call
 /// goes, its instance's, as `is_compiled_std` is of a body's.
 pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    // A maker of `HELD_COMPILED`'s adapters, `filter`, of the type it makes.
+    let maker =
+        (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id));
+    if maker {
+        let made = tcx
+            .fn_sig(id)
+            .instantiate(tcx, args)
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        return is_compiled_std(tcx, id) && compiled_for(tcx, made);
+    }
     is_compiled_std(tcx, id)
         && tcx.impl_of_assoc(id).is_none_or(|imp| {
             let of = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization());
@@ -442,11 +524,11 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
         ty::Adt(adt, _) => Some(adt.did()),
         _ => None,
     });
-    let meaning_only = |name: &str| MEANING_ONLY.contains(&name);
-    owner.is_some_and(|adt| {
-        (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(|path| MEANING_ONLY.contains(&path))
-    }) || (HELD_COMPILED.iter())
-        .any(|&(name, method, _)| meaning_only(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
+    // Not one a type of which `{:?}` shows (`called_for_build`, #1401).
+    let not_called = |name: &str| MEANING_ONLY.contains(&name) && !called_for_build(tcx, name);
+    owner.is_some_and(|adt| (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(not_called))
+        || (HELD_COMPILED.iter())
+            .any(|&(name, method, _)| not_called(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
 /// The provided method `method` of std's trait `trait_name` compiled into
@@ -518,7 +600,7 @@ fn std_iter_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let mut found = Vec::new();
     let iter = (COMPILED_STD.iter())
-        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
+        .filter(|&&(type_name, ..)| called_for_build(tcx, type_name))
         .map(|entry| (StdCrate::Core, "iter", entry));
     let io = COMPILED_STD_IO.iter().map(|entry| (StdCrate::Alloc, "io", entry));
     for (krate, module, &(type_name, trait_name, method)) in iter.chain(io) {
@@ -557,7 +639,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let made_for_build = |method: &str| {
         (HELD_COMPILED.iter())
             .find(|&&(_, maker, _)| maker == method)
-            .is_none_or(|&(type_name, ..)| compiled_for_build(tcx, type_name))
+            .is_none_or(|&(type_name, ..)| called_for_build(tcx, type_name))
     };
     for &(trait_name, method) in COMPILED_STD_PROVIDED
         .iter()
@@ -695,14 +777,14 @@ fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> V
 /// one of `HELD_COMPILED`'s adapters, `rev`, held where it's held, std's
 /// struct, of a type compiled for this build: the one answer, of what's
 /// made in place.
-pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId, made: ty::Ty<'_>) -> bool {
+pub(crate) fn makes_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, made: ty::Ty<'tcx>) -> bool {
     compiled_for(tcx, made)
         && (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
 /// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place,
 /// `made`, is sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
-pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId, made: ty::Ty<'_>) -> bool {
+pub(crate) fn sized_in_place<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, made: ty::Ty<'tcx>) -> bool {
     compiled_for(tcx, made)
         && (HELD_COMPILED.iter())
             .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
@@ -712,7 +794,7 @@ pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId, made: ty::Ty<'_>) -> bo
 /// decision), `Peekable`: std's struct, `{ iter, peeked }`, as a type of
 /// the crate's is, wherever a value of it is made or read; of an adapter,
 /// of a type compiled for this build (`compiled_for`).
-pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+pub(crate) fn is_compiled_std_type<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     let ty::Adt(adt, _) = ty.peel_refs().kind() else {
         return false;
     };
@@ -727,7 +809,7 @@ pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
 
 /// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`, std's
 /// struct where it's held, of a type compiled for this build.
-pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+pub(crate) fn is_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
         && (std_path(tcx, adt.did()).strip_prefix("std::iter::"))
             .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path)))

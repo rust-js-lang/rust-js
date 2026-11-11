@@ -104,3 +104,46 @@ No behaviour changes yet: `compiled_for` still answers by the name, so the
 corpus's snapshots, in both builds, and `@rust-js/std` are byte-identical.
 test/architecture-iterators.test.ts holds the queries type-keyed, and a
 query by a definition alone from coming back.
+
+## Amendment (2026-11-11, #1401): a type whose `{:?}` is asked is std's struct
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results;
+refusals lifted. In the normal build, `{:?}` of a `MEANING_ONLY` adapter was
+refused: `Filter`, `FilterMap`, `TakeWhile`, `SkipWhile`, `MapWhile`, `Scan`,
+`Copied` or `Cloned`. A JS iterator, `range.filter(p)`, keeps nothing to
+show. That refused itertools' test_core.rs at `exactly_one().unwrap()`,
+whose `ExactlyOneError<Filter<..>>: Debug` holds one. The user decided (a):
+such a type is std's struct where it's held, and every other value of the
+adapter stays the recognizers'.
+
+`note_debug_shown` notes, once a session and before the catalogue is
+asked, each `MEANING_ONLY` type whose `{:?}` the crate's bodies ask. That
+covers every type a `Debug` clause of what they call names, `{:?}`'s own
+`Argument::new_debug` among them, and each adapter inside it, so the one
+in `ExactlyOneError<Filter<..>>` counts too. A closure's type is its site's,
+so this picks one `filter()` out of many.
+
+The set keys a type by its address interned in the session, regions
+erased. That names a type in this `TyCtxt` alone, so it lives in the
+session's caches, dropped with the session, never written to disk.
+
+`compiled_for(ty)` answers yes of a type in the set. Several answers follow
+that one:
+- `@rust-js/std`'s bodies of an adapter one of whose types is in the set are
+  this crate's to call (`called_for_build`, `not_compiled_for_build`).
+- A maker's call, `filter`'s, is compiled only for the type it makes
+  (`compiled_instance`).
+- A std impl is the crate's own iterator's only for a type compiled for
+  this build (`user_impl`).
+- A resolved std method is the crate's only for its type (`resolves_to_crate`).
+
+So in one crate `(0..10).filter(p)` shown is `iterator_filter({ start: 0,
+end: 10 }, p, ..)` with `filterDebug_fmt`, and another `filter()` is
+`$lazyRange(0, 10).filter(p)`. Held by corpus case
+`debug_of_adapters_compiled_as_their_meaning.rs`: each adapter's text, a
+generic wrapper's derived `Debug` of a filter stepped part way, and two
+filters nothing shows, against native Rust in both builds. Mutations
+`debug-shown-unnoted`, `debug-shown-type-not-compiled`,
+`debug-shown-maker-of-any-type` and `std-impl-of-any-type-user`. The
+package `@rust-js/std` doesn't change: the meaning build already compiles
+each adapter's `fmt`.

@@ -15,6 +15,9 @@ use super::*;
 /// (`decide_in_place`).
 pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     let mut bodies = lowered_bodies(tcx);
+    // What `{:?}` shows of std's adapters compiled as their meaning alone,
+    // before anything asks the catalogue (#1401).
+    crate::lower::recognition::note_debug_shown(tcx, &bodies);
     crate::lower::body_queries::across_bodies(tcx, &mut bodies);
     // What only an unlowered impl reaches is no JS either (ADR 0425).
     let unreached = reached_only_unlowered(tcx, &bodies);

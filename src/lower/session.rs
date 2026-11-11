@@ -40,6 +40,12 @@ pub(crate) struct Caches {
     pub meaning: Cell<bool>,
     /// That every struct outside the crate is one JS may make (ADR 1105).
     pub every_outside_struct: Cell<bool>,
+    /// The types of std's adapters compiled as their meaning alone whose
+    /// `{:?}` the crate asks, each by its address interned in this session,
+    /// regions erased, and their names: std's struct where they're held
+    /// (#1401). A type's address names it in this session's `TyCtxt` alone,
+    /// so it lives no longer than the session, never written to disk.
+    pub debug_shown: OnceCell<(IndexSet<usize>, IndexSet<&'static str>)>,
 }
 
 thread_local! {
@@ -96,6 +102,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             provided: OnceMap::default(),
             meaning: Cell::new(flags.meaning),
             every_outside_struct: Cell::new(flags.every_outside_struct),
+            debug_shown: OnceCell::new(),
         }));
     });
     Session(())

@@ -750,7 +750,11 @@ What's refused is in [the limitations](limitations.md).
   f))` ([0510](../decisions/0510-flat-map-and-flatten-of-destructors.md),
   amended); dropped, it's closed once,
   `it.return()`; one a `cycle()` or a clone holds to clone is std's struct
-  too ([0561](../decisions/0561-std-bodies.md),
+  too, and so is a `filter()`, a `filter_map()`, a `take_while()`, a
+  `skip_while()`, a `map_while()`, a `scan()`, a `copied()` or a `cloned()`
+  whose `{:?}` the crate asks, which only std's struct shows, `Filter {
+  iter: 0..10 }`, every other one of it the recognizers', `range.filter(p)`
+  (#1401) ([0561](../decisions/0561-std-bodies.md),
   [0871](../decisions/0871-rev-is-stds.md),
   [0899](../decisions/0899-a-flatten-held-is-stds.md),
   [0903](../decisions/0903-a-flat-map-held-is-stds.md),
