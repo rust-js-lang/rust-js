@@ -419,9 +419,8 @@ export const mutations: Mutation[] = [
     name: "held-cycle-clone-refused",
     breaks: "a held `Cycle`'s clone is refused",
     file: "src/lower/std_impls/clones.rs",
-    find: "                if self.explicit_adapter(ty) && crate::lower::recognition::cycled_source(self.tcx, ty).is_some() =>\n",
-    replace:
-      "                if self.explicit_adapter(ty) && crate::lower::recognition::cycled_source(self.tcx, ty).is_some() && false =>\n",
+    find: "            ty::Adt(..) if self.held_cycle(ty).is_some() => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
+    replace: "            ty::Adt(..) if self.held_cycle(ty).is_some() && false => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {

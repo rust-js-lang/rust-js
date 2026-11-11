@@ -293,16 +293,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cross-crate-items.test.ts", "-t", "guards make no dyn Any"],
   },
   {
-    name: "enumerate-explicit-too",
-    breaks:
-      "a held `Enumerate` is also an explicit adapter beside std's struct, which code asking `explicit_adapter` relies on it never is: the debug build's check of it panics",
-    file: "src/lower/analysis.rs",
-    find: "    explicit_adapters.retain(|&id| {\n        !super::recognition::is_held_compiled(tcx, tcx.type_of(id).instantiate_identity().skip_normalization())\n    });\n",
-    replace: "",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(held_enumerate|std_enumerate).rs$"],
-  },
-  {
     name: "class-display-dictionary-emitted",
     breaks:
       "a class's `impl Display` is emitted as a dictionary too, `queenPositionDisplay`, besides its `toString` (#358)",

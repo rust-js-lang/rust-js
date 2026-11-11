@@ -172,10 +172,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: clones::Cloned<'tcx>,
-    /// The kinds of std's iterator adapters explicit wherever the crate
-    /// makes one (ADR 0542): those its types hold, and those that keep a
-    /// count it clones, an `Enumerate`, a `Take` or a `Skip`, whose clone
-    /// is of their source and their count (ADR 0525).
+    /// The kinds of std's iterator adapters the crate's types hold (ADR
+    /// 0542), which `held_cycle` asks of a `Cycle`, the one of them that's
+    /// explicit wherever the crate makes one (ADR 0544): each other kind is
+    /// std's struct where it's held (ADR 0871), whatever this says of it.
     pub explicit_adapters: IndexSet<DefId>,
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
@@ -612,14 +612,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Fn`, which then drops it (ADR 0521): a library's may be. A captured
     // `Rc` counted may make one, and a `dyn Fn` that drops may count an
     // `Rc`; both only grow, so a second pass settles them.
-    // The kinds of adapters explicit wherever the crate makes one: those its
-    // types hold (ADR 0542). Not one std's struct is where it's held,
-    // `Enumerate`, `Take` or `Skip`, compiled (ADRs 0871, 0913): its own
-    // kind of held, a clone of one too.
-    let mut explicit_adapters = held_adapters::held_adapters(tcx);
-    explicit_adapters.retain(|&id| {
-        !super::recognition::is_held_compiled(tcx, tcx.type_of(id).instantiate_identity().skip_normalization())
-    });
+    // The kinds of adapters the crate's types hold (ADR 0542), of which a
+    // `Cycle`'s is asked (`held_cycle`).
+    let explicit_adapters = held_adapters::held_adapters(tcx);
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let (mut counted, given) = counted_with(&closure_facts);
     // Whether the crate makes a `dyn Fn` of a function holding a value with

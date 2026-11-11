@@ -604,10 +604,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),
             // A `Cycle` a struct holds, which keeps what it started with and
             // what it steps (ADR 0544): `Cycle { orig: .., iter: .. }`.
-            ty::Adt(..)
-                if self.explicit_adapter(ty)
-                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty) =>
-            {
+            ty::Adt(..) if let Some(source) = self.held_cycle(ty) => {
                 let it = Expr::var("cycle");
                 let orig = self.debug_string_with(Expr::member(it.clone(), "orig"), source, span, pretty)?;
                 let iter = self.debug_string_with(Expr::member(it, "iter"), source, span, pretty)?;

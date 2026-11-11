@@ -77,28 +77,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
-    /// crate's types hold, which keeps its source and its state wherever the
-    /// crate makes one. The one answer, of what's made and what's asked of it.
-    /// Never one compiled where it's held, `Enumerate`'s, which code asking
-    /// this relies on (ADR 0871): checked in a debug build.
-    pub(in crate::lower) fn explicit_adapter(&self, ty: ty::Ty<'tcx>) -> bool {
+    /// Of a `Cycle` of type `ty` whose kind the crate's types hold, its
+    /// source: one that keeps what it started with and what it steps
+    /// wherever the crate makes one (ADRs 0542, 0544). The one answer, of
+    /// what's made and what's asked of it. `None` of another: every other
+    /// kind a type holds is std's struct where it's held (ADR 0871), whose
+    /// own `Debug`, clone and steps are compiled.
+    pub(in crate::lower) fn held_cycle(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
         let ty::Adt(adapter, _) = ty.peel_refs().kind() else {
-            return false;
+            return None;
         };
-        let explicit = self.krate.explicit_adapters.contains(&adapter.did());
-        debug_assert!(
-            !explicit
-                || !crate::lower::recognition::is_held_compiled(
-                    self.tcx,
-                    self.tcx
-                        .type_of(adapter.did())
-                        .instantiate_identity()
-                        .skip_normalization()
-                ),
-            "an explicit adapter compiled where it's held, {ty}",
-        );
-        explicit
+        (self.krate.explicit_adapters.contains(&adapter.did()))
+            .then(|| crate::lower::recognition::cycled_source(self.tcx, ty))
+            .flatten()
     }
 
     /// Whether `$sizeHint` finds the size of an iterator of type `ty` held

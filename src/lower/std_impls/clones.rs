@@ -565,11 +565,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `Cycle` a struct holds: the one it carries, of clones of what
             // it started with and what it steps (ADR 0544).
-            ty::Adt(..)
-                if self.explicit_adapter(ty) && crate::lower::recognition::cycled_source(self.tcx, ty).is_some() =>
-            {
-                Ok(Expr::call_helper("$clone", vec![place]))
-            }
+            ty::Adt(..) if self.held_cycle(ty).is_some() => Ok(Expr::call_helper("$clone", vec![place])),
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left, each item a
             // clone of one where the iterator owns them. A `Rev`'s is std's,

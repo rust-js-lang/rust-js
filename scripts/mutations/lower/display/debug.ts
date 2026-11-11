@@ -442,9 +442,8 @@ export const mutations: Mutation[] = [
     name: "held-cycle-debug-refused",
     breaks: "a held `Cycle`'s `Debug` is refused",
     file: "src/lower/display/debug.rs",
-    find: "                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty) =>\n",
-    replace:
-      "                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty).filter(|_| false) =>\n",
+    find: "            ty::Adt(..) if let Some(source) = self.held_cycle(ty) => {\n",
+    replace: "            ty::Adt(..) if let Some(source) = self.held_cycle(ty).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {

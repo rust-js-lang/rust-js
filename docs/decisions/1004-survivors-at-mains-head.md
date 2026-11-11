@@ -259,3 +259,24 @@ the compiler as it is and with each.
   Were one reached, the mutant's JS would still be right, the jump moved
   into the arm that goes on, so the restriction stays as the rule ADR 0745
   states, as the first amendment decided of closes no program shows.
+
+## Amendment: `enumerate-explicit-too` survives again, and `explicit_adapter` becomes `held_cycle` (2026-11-12)
+
+The mutation survived on main again (#1109): it removed `explicit_adapters.retain(..)`,
+which left out the kinds std's struct is where they're held, and
+`held_enumerate.rs` and `std_enumerate.rs` passed. That's because no code
+asks it of one now. Each of `explicit_adapter`'s three askers, a held
+`Cycle`'s `Debug`, its clone and `cycle()`'s maker, asked it only of a
+`Cycle`, beside `cycled_source`. A `Cycle` is never std's struct where it's
+held, so the debug build's check never ran on an `Enumerate`. A struct
+holding an `Enumerate`, a `Take` of a `Skip`, and a `Cycle` of an
+`Enumerate`, each shown and cloned, compiled the same under the mutation.
+No program can tell the two versions apart.
+
+So the question is now the one that's asked: `held_cycle(ty)`, the
+source of a `Cycle` whose kind the crate's types hold (ADR 0544), `None`
+of another. The `retain` and the debug build's check go with the
+mutation. Every other kind a type holds is std's struct where it's held
+(ADR 0871), whatever the set says of it. Mutations `held-cycle-of-array-generated`,
+`held-cycle-clone-refused` and `held-cycle-debug-refused` are refitted to
+`held_cycle`.
