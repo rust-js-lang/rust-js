@@ -90,28 +90,37 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 
     /// `<L as Labeled>::Label: Display`, which the trait declares, from `L`'s
     /// `Labeled`: its `LabelDisplay`, or a supertrait's of it (ADR 0106).
+    /// Of what an associated type projects, `<<S as Source>::Pairs as
+    /// IntoIterator>::IntoIter: DoubleEndedIterator`, the trait that declares
+    /// it on its type's, `PairsIntoIterDoubleEndedIterator` (#1355).
     fn item_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
-        let ty::Alias(
+        let mut of = tr.self_ty();
+        while let ty::Alias(
             _,
             alias @ ty::AliasTy {
                 kind: ty::Projection { .. },
                 ..
             },
-        ) = *tr.self_ty().kind()
-        else {
-            return None;
-        };
-        let owner = alias.trait_ref(self.recognition.tcx);
-        let dictionary = self.evidence_route(owner)?;
-        item_bounds(self.recognition.tcx, owner.def_id, owner.args)
-            .into_iter()
-            .find_map(|(name, bound)| {
-                let supers = self.super_route(bound, tr)?;
-                Some(Route {
-                    root: Root::Item(Box::new(dictionary.clone()), name),
-                    supers,
-                })
-            })
+        ) = *of.kind()
+        {
+            let owner = alias.trait_ref(self.recognition.tcx);
+            let found = self.evidence_route(owner).and_then(|dictionary| {
+                item_bounds(self.recognition.tcx, owner.def_id, owner.args)
+                    .into_iter()
+                    .find_map(|(name, bound)| {
+                        let supers = self.super_route(bound, tr)?;
+                        Some(Route {
+                            root: Root::Item(Box::new(dictionary.clone()), name),
+                            supers,
+                        })
+                    })
+            });
+            if found.is_some() {
+                return found;
+            }
+            of = alias.self_ty();
+        }
+        None
     }
 
     /// Is a dictionary for `tr` given? Without building it.

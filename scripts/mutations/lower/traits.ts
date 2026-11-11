@@ -377,4 +377,13 @@ export const mutations: Mutation[] = [
     replace: "    let tr = match false && tr.has_escaping_bound_vars() {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_reference_given_to_adapters_in_generic_code\\.rs$"],
   },
+  {
+    name: "nested-bound-named-as-its-type",
+    breaks: "a bound of what an associated type projects, `IntoIter: DoubleEndedIterator`, is named as one of the type's own, `PairsDoubleEndedIterator`, which a bound of it would share (#1355)",
+    file: "src/lower/traits.rs",
+    find: "                path.insert_str(0, tcx.item_name(def_id).as_str());\n",
+    replace: "                let _ = def_id;\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

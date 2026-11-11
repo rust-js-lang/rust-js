@@ -38,7 +38,8 @@ function grow(s, TShape) {
 }
 
 function describe(s, TNamed) {
-  return `${TNamed.label(s)} ${TNamed.Shape().name(s)} ${$displayF64(TNamed.Shape().area(s))}`;
+  const Shape = TNamed.Shape();
+  return `${TNamed.label(s)} ${Shape.name(s)} ${$displayF64(Shape.area(s))}`;
 }
 
 function shout(t, TDisplay) {

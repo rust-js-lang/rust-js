@@ -40,6 +40,7 @@ function tExt(TIterator) {
       return best;
     },
     positionMax(self, SelfItemOrd) {
+      const PartialEq = SelfItemOrd.PartialOrd().PartialEq();
       const widest = tExt({ next: $next, fold: $foldOf }).widest(
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
           next: $next,
@@ -52,10 +53,8 @@ function tExt(TIterator) {
             $partialOrd({
               PartialEq: () =>
                 $partialEq({
-                  eq: (a, b) =>
-                    SelfItemOrd.PartialOrd().PartialEq().eq(a[0], b[0]) && a[1] === b[1],
-                  ne: (a, b) =>
-                    SelfItemOrd.PartialOrd().PartialEq().ne(a[0], b[0]) || a[1] !== b[1],
+                  eq: (a, b) => PartialEq.eq(a[0], b[0]) && a[1] === b[1],
+                  ne: (a, b) => PartialEq.ne(a[0], b[0]) || a[1] !== b[1],
                 }),
               partialCmp: (a, b) =>
                 SelfItemOrd.PartialOrd().partialCmp(a[0], b[0]) || $cmp(a[1], b[1]),

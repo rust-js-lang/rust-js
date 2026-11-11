@@ -310,3 +310,39 @@ it said "which no caller gives". Mutations:
 restored), `entry-form-in-the-dictionarys-env`,
 `dictionary-output-of-parameters-normalized` (refitted: normalized in
 the dictionary's environment) and `rpitit-fact-refusal-unnamed`.
+
+## Amendment: a bound of what an associated type projects (2026-11-11, #1355)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior was
+thrown, so it's kept now.
+
+`trait Source { type Pairs: IntoIterator<Item = u32, IntoIter:
+DoubleEndedIterator>; .. }` declares a bound of what its associated type
+projects, `<Self::Pairs as IntoIterator>::IntoIter: DoubleEndedIterator`.
+Each impl's dictionary had its entry, but named as one of `Pairs`' own,
+`PairsDoubleEndedIterator`, which a bound `Pairs: DoubleEndedIterator`
+would share. And generic code never found it: `item_route` looked only in
+the projection's own trait, the `IntoIterator` of `S::Pairs`. So
+`(1..4).flat_map(S::pairs).rfold(..)` made each inner iterator of the
+dictionary's `IntoIterator` alone, which has no back, and the plain build
+threw "it[by] is not a function" where Rust runs, the build of std's
+structs refusing it.
+
+- **Its name.** The type's word, then the path it projects, then the
+  trait: `PairsIntoIterDoubleEndedIterator` (the user's decision through
+  m6, shown before blessing; `traits.rs`' `item_bounds`).
+- **Its route.** Generic code finds a bound of what a projection
+  projects in the trait that declares it on its associated type, walking
+  out from the projection's own trait (`routes.rs`' `item_route`).
+- **A flatten of it.** Made knowing its back, a flatten makes each inner
+  iterator of an `IntoIterator`'s items knowing its back by its
+  `IntoIter`'s, an iterator's itself (`flattened_inner`), its dictionary's
+  where generic code has it, and is refused where none says it has one,
+  never stepped as if (`knowing.rs`' `as_double_ended`).
+
+`test/corpus/associated_into_iterator_flattened_from_its_back.rs` (a `Vec`
+and an array, by `rfold`, `next_back` and `rev()`) runs against native
+Rust in both builds. Mutations: `nested-bound-named-as-its-type`
+(`lower/traits.ts`), `projected-bound-unrouted` (`lower/traits/routes.ts`),
+and `flatten-of-iterators-unknowing` and `flatten-of-iterators-each-called`
+refitted to the `IntoIter` (`lower/iterators/knowing.ts`).

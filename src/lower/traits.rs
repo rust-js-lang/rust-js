@@ -605,7 +605,25 @@ pub(super) fn item_bounds<'tcx>(
             else {
                 continue;
             };
-            let name = format!("{}{}", tcx.item_name(item.def_id), trait_word(tcx, declared.trait_ref));
+            // A bound of what the type projects, `IntoIter: DoubleEndedIterator`
+            // of `type Pairs: IntoIterator<IntoIter: DoubleEndedIterator>`, by
+            // that path too, `PairsIntoIterDoubleEndedIterator` (#1355).
+            let mut path = String::new();
+            let mut of = declared.self_ty();
+            while let ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) = *of.kind()
+                && def_id != item.def_id
+            {
+                path.insert_str(0, tcx.item_name(def_id).as_str());
+                of = alias.self_ty();
+            }
+            let item_word = words::item_word(tcx, item.def_id);
+            let name = format!("{item_word}{path}{}", trait_word(tcx, declared.trait_ref));
             found.push((name, instantiated.trait_ref));
         }
     }

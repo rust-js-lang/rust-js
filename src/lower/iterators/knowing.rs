@@ -625,11 +625,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // a function given by its name, `flat_map(pairs)`, what its
                 // call gives, `(item) => pairs(item)`, std's struct of an
                 // adapter it gives among them (#1235).
+                // Of an `IntoIterator`'s items, by what it gives, its
+                // `IntoIter`, an iterator's itself, `<S::Pairs as
+                // IntoIterator>::IntoIter`, its back its dictionary's where
+                // generic code has it (#1355); refused where none says it
+                // has one, never stepped as if.
                 false
-                    if self.implements_iterator(inner)
+                    if let Some(into_iter) = self.recognition().flattened_inner(ty)
                         && let Some((item, mut body, taken)) = self.each_returned(each) =>
                 {
-                    let knowing = self.as_double_ended(taken, inner, span)?;
+                    let knowing = self.as_double_ended(taken, into_iter, span)?;
                     body.push(StmtKind::Return(Some(knowing)).at(js::Span::NONE));
                     Some(Expr::arrow(vec![item.as_str().into()], body))
                 }

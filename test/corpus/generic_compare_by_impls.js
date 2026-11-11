@@ -185,12 +185,13 @@ function clamped(x, low, high, TOrd) {
 }
 
 function heaped(items, TOrd) {
+  const PartialOrd = TOrd.PartialOrd();
   const heap = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    $heapPush(heap, item, TOrd.PartialOrd());
+    $heapPush(heap, item, PartialOrd);
   }
-  return $heapSorted(heap, TOrd.PartialOrd());
+  return $heapSorted(heap, PartialOrd);
 }
 
 function main() {

@@ -105,6 +105,7 @@ function gathered(SSource) {
 }
 
 function back(SSource) {
+  const IterDoubleEndedIterator = SSource.IterDoubleEndedIterator();
   return Array.from(
     $roomForHint(
       $rev(
@@ -124,7 +125,7 @@ function back(SSource) {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-              SSource.IterDoubleEndedIterator(),
+              IterDoubleEndedIterator,
               true,
               SSource.IterOneShot,
             ),
@@ -139,7 +140,7 @@ function back(SSource) {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-              SSource.IterDoubleEndedIterator(),
+              IterDoubleEndedIterator,
               $tryOf(broke),
               true,
               SSource.IterOneShot,

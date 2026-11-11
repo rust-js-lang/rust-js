@@ -53,10 +53,11 @@ export function entry() {
 }
 
 function inOrder(items, VOrd) {
-  const heap = $heapFrom(items.slice(), VOrd.PartialOrd());
+  const PartialOrd = VOrd.PartialOrd();
+  const heap = $heapFrom(items.slice(), PartialOrd);
   const out = [];
   let pop;
-  while ((pop = $heapPop(heap, VOrd.PartialOrd(), true)) != null) {
+  while ((pop = $heapPop(heap, PartialOrd, true)) != null) {
     const v = $someValue(pop);
     out.push(v);
   }
@@ -64,15 +65,16 @@ function inOrder(items, VOrd) {
 }
 
 function top(items, VOrd, VCopy) {
+  const PartialOrd = VOrd.PartialOrd();
   const heap = [];
   const iter = $iter(items);
   let value;
   while ((value = $nextSome(iter)) != null) {
     const value$1 = $someValue(value);
     const item = VCopy ? VCopy.copy(value$1) : value$1;
-    $heapPush(heap, VCopy ? VCopy.copy(item) : item, VOrd.PartialOrd());
+    $heapPush(heap, VCopy ? VCopy.copy(item) : item, PartialOrd);
   }
-  return $heapPop(heap, VOrd.PartialOrd(), true);
+  return $heapPop(heap, PartialOrd, true);
 }
 
 function main() {

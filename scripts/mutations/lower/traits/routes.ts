@@ -157,4 +157,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^owner_handle_quiet.rs$"],
     snapshots: true,
   },
+  {
+    name: "projected-bound-unrouted",
+    breaks: "generic code finds no evidence of a bound a trait declares on what its associated type projects, `<<S as Source>::Pairs as IntoIterator>::IntoIter: DoubleEndedIterator`, so a flatten of its items from its back is refused (#1355)",
+    file: "src/lower/traits/routes.rs",
+    find: "            of = alias.self_ty();\n",
+    replace: "            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+  },
 ];

@@ -38,6 +38,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         declared
     }
 
+    /// Of `body`, each entry of a dictionary the function was given, called,
+    /// that it writes, `SSource.PairsIntoIterator()`: the dictionary of what
+    /// a trait declares of its associated type (`item_route`, ADR 0106).
+    /// What each call gives is the same, as a generic impl's call's is, so
+    /// one written twice is declared once at the top, named by its entry,
+    /// `const PairsIntoIterator = SSource.PairsIntoIterator();` (ADR 0979,
+    /// amended, #1355), through `declare_repeated` as the kept are.
+    pub(in crate::lower) fn given_entries(&self, body: &mut [js::Stmt]) -> Vec<(String, Expr)> {
+        let given = self.given_names();
+        let mut found: Vec<(String, Expr)> = Vec::new();
+        js::each_expr_mut(body, &mut |e: &mut Expr| {
+            if e.facts.has(js::Known::Evidence)
+                && let js::ExprKind::Call(callee, args) = &e.kind
+                && args.is_empty()
+                && let js::ExprKind::Member(_, entry) = &callee.kind
+                && reads_only_at_top(e, &given)
+                && !found.iter().any(|(_, seen)| seen == e)
+            {
+                found.push((entry.clone(), e.clone()));
+            }
+        });
+        found
+    }
+
     /// The name of a declared dictionary of `tr`: its type's and its
     /// trait's, `chainDoubleEndedIterator` or `u32Clone`, or its trait's
     /// alone of a type with no one name, `intoIterator`.

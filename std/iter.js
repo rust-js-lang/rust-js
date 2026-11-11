@@ -211,6 +211,7 @@ export const FlattenCompat = {
     dropIItem,
     dropIItemItem,
   ) {
+    const FromResidual = RTry.FromResidual();
     let tmp = true;
     let result;
     bb27: {
@@ -232,7 +233,7 @@ export const FlattenCompat = {
           acc = value$1;
         } else {
           try {
-            result = RTry.FromResidual().fromResidual(tmp$1._0);
+            result = FromResidual.fromResidual(tmp$1._0);
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
@@ -372,7 +373,7 @@ export const FlattenCompat = {
             acc = value;
           } else {
             try {
-              result = RTry.FromResidual().fromResidual(tmp$1._0);
+              result = FromResidual.fromResidual(tmp$1._0);
             } catch (error) {
               $cleanup(() => {
                 dropFold?.(fold);
@@ -410,7 +411,7 @@ export const FlattenCompat = {
         return result;
       }
       try {
-        result = RTry.FromResidual().fromResidual(tmp$1._0);
+        result = FromResidual.fromResidual(tmp$1._0);
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
@@ -556,6 +557,7 @@ export const FlattenCompat = {
     dropIItem,
     dropIItemItem,
   ) {
+    const FromResidual = RTry.FromResidual();
     let tmp = true;
     let result;
     bb27: {
@@ -577,7 +579,7 @@ export const FlattenCompat = {
           acc = value$1;
         } else {
           try {
-            result = RTry.FromResidual().fromResidual(tmp$1._0);
+            result = FromResidual.fromResidual(tmp$1._0);
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
@@ -719,7 +721,7 @@ export const FlattenCompat = {
             acc = value;
           } else {
             try {
-              result = RTry.FromResidual().fromResidual(tmp$1._0);
+              result = FromResidual.fromResidual(tmp$1._0);
             } catch (error) {
               $cleanup(() => {
                 dropFold?.(fold);
@@ -757,7 +759,7 @@ export const FlattenCompat = {
         return result;
       }
       try {
-        result = RTry.FromResidual().fromResidual(tmp$1._0);
+        result = FromResidual.fromResidual(tmp$1._0);
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
@@ -5815,12 +5817,13 @@ export function flatMapIterator_next(
   dropUItem,
   dropUIntoIter,
 ) {
+  const IntoIterIterator = UIntoIterator.IntoIterIterator();
   return UIntoIterOneShot
     ? flattenCompatIUIterator2_next(
         flatMap.inner,
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
-        UIntoIterator.IntoIterIterator(),
+        IntoIterIterator,
         false,
         (map) => {
           map.return();
@@ -5833,7 +5836,7 @@ export function flatMapIterator_next(
         flatMap.inner,
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
-        UIntoIterator.IntoIterIterator(),
+        IntoIterIterator,
         false,
         (map) => {
           map.return();
@@ -8054,6 +8057,7 @@ export function chainIterator_tryFold(
   dropR,
   dropAItem,
 ) {
+  const FromResidual = RTry.FromResidual();
   let tmp = true;
   let result;
   if (chain.a != null) {
@@ -8071,7 +8075,7 @@ export function chainIterator_tryFold(
     }
     if (tmp.TAG !== "Continue") {
       try {
-        result = RTry.FromResidual().fromResidual(tmp._0);
+        result = FromResidual.fromResidual(tmp._0);
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
@@ -8114,7 +8118,7 @@ export function chainIterator_tryFold(
       acc = value$1._0;
       return RTry.fromOutput(acc);
     }
-    return RTry.FromResidual().fromResidual(value$1._0);
+    return FromResidual.fromResidual(value$1._0);
   }
   try {
     result = RTry.fromOutput(acc);
@@ -8473,6 +8477,7 @@ export function chainDoubleEndedIterator_tryRfold(
   dropR,
   dropAItem,
 ) {
+  const FromResidual = RTry.FromResidual();
   let tmp = true;
   let result;
   if (chain.b != null) {
@@ -8496,7 +8501,7 @@ export function chainDoubleEndedIterator_tryRfold(
     }
     if (tmp.TAG !== "Continue") {
       try {
-        result = RTry.FromResidual().fromResidual(tmp._0);
+        result = FromResidual.fromResidual(tmp._0);
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
@@ -8539,7 +8544,7 @@ export function chainDoubleEndedIterator_tryRfold(
       acc = value$1._0;
       return RTry.fromOutput(acc);
     }
-    return RTry.FromResidual().fromResidual(value$1._0);
+    return FromResidual.fromResidual(value$1._0);
   }
   try {
     result = RTry.fromOutput(acc);
@@ -9831,6 +9836,7 @@ export function iterator_flatten(
   dropSelfItemItem,
   dropSelfItemIntoIter,
 ) {
+  const IntoIterIterator = SelfItemIntoIterator.IntoIterIterator();
   return $stdIterator(
     { inner: { iter: iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfItem) } },
     {
@@ -9839,7 +9845,7 @@ export function iterator_flatten(
           iterator,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfFused,
           SelfItemIntoIterOneShot,
           dropSelf,
@@ -9853,7 +9859,7 @@ export function iterator_flatten(
           iterator,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfItemIntoIterOneShot,
           SelfItemConstSize,
           dropSelf,
@@ -9867,7 +9873,7 @@ export function iterator_flatten(
           iterator,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfItemIntoIterOneShot,
           dropSelf,
           dropSelfItemIntoIter,
@@ -9882,7 +9888,7 @@ export function iterator_flatten(
           f,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfItemIntoIterOneShot,
           dropSelf,
           dropSelfItemIntoIter,
@@ -9899,7 +9905,7 @@ export function iterator_flatten(
           f,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           $tryOf(broke),
           SelfFused,
           SelfItemIntoIterOneShot,
@@ -9917,7 +9923,7 @@ export function iterator_flatten(
           iterator,
           SelfIterator,
           SelfItemIntoIterator,
-          SelfItemIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfItemIntoIterOneShot,
           dropSelf,
           dropSelfItemIntoIter,
@@ -10413,6 +10419,7 @@ export function iterator_chain(
   dropSelfItem,
   dropUIntoIter,
 ) {
+  const IntoIterIterator = UIntoIterator.IntoIterIterator();
   let tmp;
   let tmp$1;
   try {
@@ -10433,7 +10440,7 @@ export function iterator_chain(
           return chainIterator_next(
             iterator,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10443,7 +10450,7 @@ export function iterator_chain(
           return chainIterator_sizeHint(
             iterator,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10454,7 +10461,7 @@ export function iterator_chain(
             iterator,
             n,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10465,7 +10472,7 @@ export function iterator_chain(
             iterator,
             n,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10475,7 +10482,7 @@ export function iterator_chain(
           return chainIterator_last(
             iterator,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10487,7 +10494,7 @@ export function iterator_chain(
             init,
             f,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             unwind,
@@ -10501,7 +10508,7 @@ export function iterator_chain(
             init,
             f,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             $tryOf(broke),
             dropSelf,
             dropUIntoIter,
@@ -10515,7 +10522,7 @@ export function iterator_chain(
           return chainIterator_count(
             iterator,
             SelfIterator,
-            UIntoIterator.IntoIterIterator(),
+            IntoIterIterator,
             dropSelf,
             dropUIntoIter,
             dropSelfItem,
@@ -10567,6 +10574,7 @@ export function iterator_zip(
   dropUItem,
   dropUIntoIter,
 ) {
+  const IntoIterIterator = UIntoIterator.IntoIterIterator();
   let tmp$1 = true;
   let tmp;
   try {
@@ -10585,7 +10593,7 @@ export function iterator_zip(
         self,
         tmp,
         SelfIterator,
-        UIntoIterator.IntoIterIterator(),
+        IntoIterIterator,
         SelfRandomAccess,
         SelfRandomAccessNoCoerce,
         SelfTrustedLen,
@@ -10602,7 +10610,7 @@ export function iterator_zip(
           self,
           tmp,
           SelfIterator,
-          UIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfRandomAccess,
           SelfRandomAccessNoCoerce,
           SelfTrustedLen,
@@ -10618,7 +10626,7 @@ export function iterator_zip(
           self,
           tmp,
           SelfIterator,
-          UIntoIterator.IntoIterIterator(),
+          IntoIterIterator,
           SelfRandomAccess,
           SelfRandomAccessNoCoerce,
           SelfTrustedLen,
@@ -11276,6 +11284,7 @@ export function flattenCompatIUIterator2_tryFold(
   dropIItem,
   dropUItem,
 ) {
+  const IntoIterIterator = IItemIntoIterator.IntoIterIterator();
   return IFused
     ? fuseFuseImplIFusedIterator_tryFold(
         flattenCompat.iter,
@@ -11294,7 +11303,7 @@ export function flattenCompatIUIterator2_tryFold(
             }
             let next;
             try {
-              next = IItemIntoIterator.IntoIterIterator().next(tmp);
+              next = IntoIterIterator.next(tmp);
             } catch (error) {
               $cleanup(() => {
                 dropU?.(tmp);
@@ -11366,7 +11375,7 @@ export function flattenCompatIUIterator2_tryFold(
             }
             let next;
             try {
-              next = IItemIntoIterator.IntoIterIterator().next(tmp);
+              next = IntoIterIterator.next(tmp);
             } catch (error) {
               $cleanup(() => {
                 dropU?.(tmp);
@@ -12068,6 +12077,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
   dropIItem,
   dropUItem,
 ) {
+  const IntoIterIterator = IItemIntoIterator.IntoIterIterator();
   return IFused
     ? fuseFuseImplIFusedIterator_tryRfold(
         flattenCompat.iter,
@@ -12086,7 +12096,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             }
             let next;
             try {
-              next = IItemIntoIterator.IntoIterIterator().next(tmp);
+              next = IntoIterIterator.next(tmp);
             } catch (error) {
               $cleanup(() => {
                 dropU?.(tmp);
@@ -12159,7 +12169,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             }
             let next;
             try {
-              next = IItemIntoIterator.IntoIterIterator().next(tmp);
+              next = IntoIterIterator.next(tmp);
             } catch (error) {
               $cleanup(() => {
                 dropU?.(tmp);

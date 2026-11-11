@@ -64,7 +64,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl's, a call of its function made of what the function was given,
     /// `holderTouch(TTouch)`, a copied default's of its own impl among them,
     /// named as a bound's dictionary is, `HolderTouch` (ADR 0979, amended,
-    /// #691).
+    /// #691). An entry of a given one, called, is the body's own
+    /// (`given_entries`).
     pub(in crate::lower) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let made = self.dictionary_made(tr, span)?;
         let named = if is_impl_call(&made) {

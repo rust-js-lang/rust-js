@@ -787,7 +787,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes twice or more, declared at its top; any made past here, where
     /// it's made (ADR 0979).
     fn declare_kept(&mut self, out: &mut Vec<Stmt>) {
-        let made = std::mem::take(&mut self.locals.mir.dictionaries);
+        let mut made = std::mem::take(&mut self.locals.mir.dictionaries);
+        made.extend(self.given_entries(out));
         self.locals.mir.declaring = false;
         let declared = self.declare_repeated(made, out);
         out.splice(0..0, declared);

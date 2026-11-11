@@ -24,9 +24,10 @@ function one(TFromU8) {
 }
 
 function identity(n, TElement) {
-  const items = $repeat(TElement.From().from(0), n * n, 0, (item) => item);
+  const From = TElement.From();
+  const items = $repeat(From.from(0), n * n, 0, (item) => item);
   for (let i = 0; i < n; i++) {
-    const value = TElement.From().from(1);
+    const value = From.from(1);
     const index = i * n + i;
     items[$at(items, index)] = value;
   }
@@ -34,8 +35,9 @@ function identity(n, TElement) {
 }
 
 function twice(x, TElement) {
-  const t = TElement.From().from(x);
-  return TElement.Add().add(t, TElement.From().from(x));
+  const From = TElement.From();
+  const t = From.from(x);
+  return TElement.Add().add(t, From.from(x));
 }
 
 function converted(l, LIntoT) {

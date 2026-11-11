@@ -419,15 +419,14 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-of-iterators-unknowing",
     breaks:
-      "a flatten of an `Option`'s slice iterator, stepped from its back, is a JS `flatMap` that has no back: it throws (#260)",
+      "a flatten of an `Option`'s slice iterator, or of an associated `IntoIterator`'s items, stepped from its back, is a JS `flatMap` that has no back: it throws (#260, #1355)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    if self.implements_iterator(inner)\n",
-    replace:
-      "                    if false && self.implements_iterator(inner)\n",
+    find: "                    if let Some(into_iter) = self.recognition().flattened_inner(ty)\n",
+    replace: "                    if let Some(into_iter) = None::<ty::Ty<'tcx>>\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(flatten_of_iterators_from_back).rs$",
+      "^(flatten_of_iterators_from_back|associated_into_iterator_flattened_from_its_back).rs$",
     ],
   },
   {
@@ -435,9 +434,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    let knowing = self.as_double_ended(taken, inner, span)?;\n",
+    find: "                    let knowing = self.as_double_ended(taken, into_iter, span)?;\n",
     replace:
-      "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(&item)]), inner, span)?;\n",
+      "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(&item)]), into_iter, span)?;\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

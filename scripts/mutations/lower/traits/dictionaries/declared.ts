@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
     snapshots: true,
   },
+  {
+    name: "given-entries-undeclared",
+    breaks: "an entry of a given dictionary, called twice in a body, `SSource.PairsIntoIterator()`, is made again at each, not declared once at its top (#1355)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "                found.push((entry.clone(), e.clone()));\n",
+    replace: "                let _ = entry;\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

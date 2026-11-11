@@ -136,3 +136,29 @@ that writes it twice declares it once, `const ChainRead = ..`, as
 rule to it was the coordinator's decision for the user. Held by the
 mutation `helper-made-dictionary-unnamed` and
 `test/corpus/io_read_chain_take_bytes.js`.
+
+## Amendment: an entry of a given dictionary, called (2026-11-11, #1355)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, no observable
+difference. A given dictionary's entry is a function of no arguments that
+gives a dictionary, its supertrait's, `VOrd.PartialOrd()`, or of a bound
+its trait declares of its associated type, `SSource.PairsIntoIterator()`
+(ADR 0106): what each call gives does the same, as a generic impl's call
+does, and making it runs nothing of the program's. Read once at the body's
+top, even ahead of a branch not taken, it gives what each place it's
+asked gave. No such entry is called of a dictionary that may be
+`undefined`, a `Copy`'s: none is in the corpus, the snapshots or
+`@rust-js/std`.
+
+Generic code wrote such a call at each place it read the dictionary, the
+`IntoIterator`'s twice for each inner item a flatten makes,
+`$given(SSource.PairsIntoIterator().intoIter(..),
+SSource.PairsIntoIterator().IntoIterIterator(), ..)`. A body writing one
+twice or more now declares it once at its top, as the kept are, named by
+its entry, `const PairsIntoIterator = SSource.PairsIntoIterator();`
+(`traits/dictionaries/declared.rs`' `given_entries`, read where the body is
+done, `declare_kept`, as the route that makes it, `evidence_for`, has no
+body to keep it in). One written once stays where it's asked. Six corpus
+snapshots and `@rust-js/std`'s `iter.js` change: `const PartialOrd =
+VOrd.PartialOrd();`, `const FromResidual = RTry.FromResidual();`. The
+mutation is `given-entries-undeclared` (`lower/traits/dictionaries/declared.ts`).
