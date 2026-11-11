@@ -263,3 +263,26 @@ is #1337's to lift where MIR's lowering follows the moves (the
 coordinator's decision). Corpus case
 `copied_default_of_a_wrapper_normalizes_its_items_drop` (compile-fail);
 mutation `thir-ty-unnormalized` (`lower/drops/types.ts`).
+
+## Amendment: a `match` that moves a part in one arm and all of it in another is followed (#1337)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Each part drops
+where Rust drops it.
+
+The THIR walk of a copied default refused a `match` of a value with a
+destructor whose arms moved parts of it, `(front, _) if .. =>`, wherever
+another arm moved all of it, `both =>`: "moving part of a value with a
+destructor". The arms' moves are what MIR's lowering already follows, as it
+does where the copy isn't walked, a concrete function's, a generic one's:
+an arm that moves a part leaves the rest to its owner, dropped where the
+owner goes, after what follows the `match`; one that moves all of it drops
+it where that arm leaves it; a guard binds by reference and moves nothing
+where it fails; a panic in an arm drops the part it moved, then what's
+left. So the rule is one: each arm's moves are followed, `pattern_paths`,
+a whole binding's its root's. Corpus case
+`match_moves_a_part_or_the_whole.rs` (a blanket impl's copy and a
+`Wrapper<I>` impl's, generic functions' beside them, a guard that fails
+after binding, a panic in an arm) and
+`copied_default_of_a_wrapper_normalizes_its_items_drop.rs`, refused before,
+against native Rust in both builds; mutation
+`match-whole-arm-beside-a-part-refused`.

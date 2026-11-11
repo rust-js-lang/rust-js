@@ -323,13 +323,14 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             Some(ExprKind::Let { expr, pat }) if *expr == child => follows(self, pat),
             // A field moved out, `consume(pair.a)`: a struct's or a tuple's.
             Some(ExprKind::Field { lhs, .. }) if *lhs == child => self.projection_follows(),
-            // Each arm moves the parts its pattern binds, and none all of it.
+            // Each arm moves the parts its pattern binds, or all of it, as
+            // MIR's lowering moves each, what's left of it dropped where its
+            // owner is, `(front, _) if .. =>` beside `both =>` (#1337).
             Some(ExprKind::Match { scrutinee, arms, .. }) if *scrutinee == child => {
-                let taken: Vec<Taken> = arms.iter().map(|&a| self.taken(&self.thir[a].pattern)).collect();
-                !taken.contains(&Taken::Part)
-                    || arms.iter().zip(&taken).all(|(&arm, taken)| {
-                        *taken != Taken::Whole && self.cx.pattern_paths(&self.thir[arm].pattern).is_some()
-                    })
+                !arms.iter().any(|&a| self.taken(&self.thir[a].pattern) == Taken::Part)
+                    || arms
+                        .iter()
+                        .all(|&arm| self.cx.pattern_paths(&self.thir[arm].pattern).is_some())
             }
             _ => true,
         };

@@ -406,4 +406,12 @@ export const mutations: Mutation[] = [
     replace: "                || false && self.cx.recognition.foreign.is_instance(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
+  {
+    name: "match-whole-arm-beside-a-part-refused",
+    breaks: "a `match` whose one arm moves a part of a value with a destructor and another all of it, `(front, _) if .. =>` beside `both =>`, in a copied default, is refused, \"moving part of a value with a destructor\", where MIR's lowering follows each arm's moves (#1337)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        .all(|&arm| self.cx.pattern_paths(&self.thir[arm].pattern).is_some())\n",
+    replace: "                        .all(|&arm| self.taken(&self.thir[arm].pattern) != Taken::Whole && self.cx.pattern_paths(&self.thir[arm].pattern).is_some())\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_moves_a_part_or_the_whole.rs$"],
+  },
 ];

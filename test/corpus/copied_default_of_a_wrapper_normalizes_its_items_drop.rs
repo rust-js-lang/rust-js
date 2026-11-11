@@ -1,11 +1,10 @@
-//@ compile-fail: moving part of a value with a destructor
 // A copied default's `Vec<Self::Item>` of an impl that isn't a blanket one,
 // `<Wrapper<I> as Iterator>::Item` in its impl's terms, is asked what it
 // drops normalized, `I::Item`'s, as a blanket impl's `<T as Iterator>::Item`
 // is: a `match` of a pair of them that moves a part in one arm and the whole
-// in another is refused as the blanket impl's is. It compiled where the
-// alias, asked as it was, was taken for one that drops nothing, which was
-// correct only by luck. The refusal is #1337's to lift.
+// in another drops each part once, where its arm or its owner leaves it, as
+// MIR's lowering does (#1337). It compiled once where the alias, asked as
+// it was, was taken for one that drops nothing, correct only by luck.
 struct Noisy(u32);
 
 impl Drop for Noisy {
