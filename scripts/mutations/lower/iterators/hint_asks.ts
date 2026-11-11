@@ -315,4 +315,20 @@ export const mutations: Mutation[] = [
     replace: "        collects && false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
   },
+  {
+    name: "extend-of-a-dyn-keeps-no-capacity",
+    breaks: "a crate that extends a `Vec` by a Rust-made `dyn Iterator` keeps no capacities, so its `extend` never asks the hint std asks whenever it's full, the crate's own `size_hint` behind it never runs and an endless one never overflows (#1377)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                    self.hint_reaches_own_where(iter_ty, !binding)\n",
+    replace: "                    self.hint_reaches_own(iter_ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_by_a_dyn_iterator_asks_its_hint.rs$"],
+  },
+  {
+    name: "binding-made-in-mir-never",
+    breaks: "a crate that extends by a binding's iterator, JS's own, is taken for one extended by a `dyn` Rust made, so it keeps capacities and each push reads `$grew` where it read `push` (#1377)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return true;\n",
+    replace: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return false;\n",
+    tests: ["test/js-collections.test.ts", "-t", "forEach and iterators"],
+  },
 ];

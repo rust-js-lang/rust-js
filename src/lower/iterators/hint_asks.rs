@@ -98,7 +98,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     .is_some_and(|ty| self.grows_as_it_extends(ty.peel_refs()))
                 && iterable.is_some_and(|iterable| {
                     let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
-                    self.hint_reaches_own(iter_ty)
+                    // A `dyn`'s too, of one Rust made, not a binding (#1377).
+                    let binding = args
+                        .get(1)
+                        .is_some_and(|arg| self.made_by_a_binding_in(body, &arg.node));
+                    self.hint_reaches_own_where(iter_ty, !binding)
                 })
         };
         (bodies.iter())
@@ -109,6 +113,74 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     rustc_middle::mir::TerminatorKind::Call { func, args, .. } if extend(func, args, body))
                 })
             })
+    }
+
+    /// Whether `operand` of `body` is what a binding's call made, JS's own
+    /// iterator, as MIR shows it: a local a binding's call wrote, moved or
+    /// copied on, or a `map`, `filter`, `take` or `skip` of one, whose
+    /// hint is that one's (`iterators::binding_made`'s, of a value, #1377).
+    fn made_by_a_binding_in(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        operand: &rustc_middle::mir::Operand<'tcx>,
+    ) -> bool {
+        use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
+        let mut operand = operand.clone();
+        // Each step back is to an earlier write, so it ends, at most once
+        // a local.
+        for _ in 0..body.local_decls.len() {
+            let (Operand::Move(place) | Operand::Copy(place)) = &operand else {
+                return false;
+            };
+            if !place.projection.is_empty() {
+                return false;
+            }
+            let local = place.local;
+            let mut next = None;
+            for data in body.basic_blocks.iter() {
+                for statement in &data.statements {
+                    if let StatementKind::Assign(assign) = &statement.kind
+                        && assign.0.local == local
+                        && assign.0.projection.is_empty()
+                        && let Rvalue::Use(used, _) = &assign.1
+                    {
+                        next = Some(Err(used.clone()));
+                    }
+                }
+                if let TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } = &data.terminator().kind
+                    && destination.local == local
+                    && destination.projection.is_empty()
+                {
+                    next = Some(Ok((func.clone(), args.first().map(|arg| arg.node.clone()))));
+                }
+            }
+            match next {
+                Some(Err(used)) => operand = used,
+                Some(Ok((func, first))) => {
+                    let Some((callee, _)) = func.const_fn_def() else {
+                        return false;
+                    };
+                    if crate::lower::bindings::is_binding(self.tcx, callee) {
+                        return true;
+                    }
+                    let iterator = std_item(self.tcx, StdItem::Iterator);
+                    let adapts = ["map", "filter", "take", "skip"]
+                        .iter()
+                        .any(|name| crate::lower::recognition::trait_method(self.tcx, iterator, name) == callee);
+                    match (adapts, first) {
+                        (true, Some(first)) => operand = first,
+                        _ => return false,
+                    }
+                }
+                None => return false,
+            }
+        }
+        false
     }
 
     /// Whether a collect into `output` of an iterator of `iter_ty` grows a
@@ -528,10 +600,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// item, `extend_desugared` (#1180). Else by as many as it's given,
     /// which a `TrustedLen` one reserves first, `$grew` where capacities are
     /// kept (`mir_std_call`).
-    pub(in crate::lower) fn extend_fills(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
+    /// A `dyn`'s too, of one Rust made, not a binding, `binding_made`
+    /// (#1377).
+    pub(in crate::lower) fn extend_fills(&self, into: Ty<'tcx>, (iterable, binding_made): (Ty<'tcx>, bool)) -> bool {
         let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
         self.recognition().grows_as_it_extends(into)
-            && (self.hint_reaches_own(iter_ty)
+            && (self.recognition().hint_reaches_own_where(iter_ty, !binding_made)
                 || self.krate.keeps_capacity && !is_trusted_len(self.tcx, self.typing_env, iter_ty))
     }
 
@@ -554,7 +628,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
     ) -> R<(Expr, Expr)> {
-        if !self.extend_fills(into, iterable) {
+        let binding = crate::lower::iterators::binding_made(&items);
+        if !self.extend_fills(into, (iterable, binding)) {
             return Ok((collection, items));
         }
         let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
@@ -570,7 +645,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.refuse_unkept_lower_bound(iter_ty, span)?;
         // Of one whose hint is the crate's own, its type known here, not its
         // caller's, whose callers decide (`refuse_unknown_capacity_extends`).
-        let own = self.hint_reaches_own(iter_ty);
+        let own = self.recognition().hint_reaches_own_where(iter_ty, !binding);
         let known_own = own && !(iterable.has_param() || iterable.has_aliases());
         // Of generic code, by an iterator whose JS hint, of what one of its
         // callers gives, isn't std's: its capacity unknown once it grows

@@ -28,7 +28,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let extend = self.recognition().extend_grows(def_id, generic_args) && arg_tys.len() == 2;
-        let fills = extend && self.extend_fills(arg_tys[0].peel_refs(), arg_tys[1]);
+        let binding = matches!(values.get(1), Some(Value::Expr(e)) if crate::lower::iterators::binding_made(e));
+        let fills = extend && self.extend_fills(arg_tys[0].peel_refs(), (arg_tys[1], binding));
         let grows = (self.krate.keeps_capacity)
             .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extend.then_some(0)))
             .flatten()

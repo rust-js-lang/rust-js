@@ -417,3 +417,31 @@ mutations `slice-read-to-end-reserves-nothing`,
 `deque-read-to-end-reserves-nothing` and
 `cursor-read-to-end-reserves-nothing` (`runtime/readers.ts`). What a body
 `@rust-js/std` compiles grows, `read_until`'s, keeps std's growth too (#1339).
+
+## Amendment: an `extend` by a `dyn` Rust made asks its hint (2026-11-11, #1377)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+#1359 made a collect of a `dyn Iterator` ask its hint; an `extend` by one
+still didn't. std's `extend_desugared` asks the hint whenever the `Vec` is
+full, so the crate's own `size_hint` behind a `Box<dyn Iterator>` ran
+there, and of what has no end its lower bound, `usize::MAX`, panicked
+`capacity overflow` once it was full, where the JS stepped it forever.
+When it's full is the `Vec`'s capacity, which the crate keeps where an
+`extend` may ask the crate's own (`extends_as_it_fills`). That pass reads
+MIR, where a binding's mark, a value's fact, isn't: it follows the
+`extend`'s argument back (`made_by_a_binding_in`), through moves and a
+`map`, `filter`, `take` or `skip` of one, to the call that made it, and a
+binding's is JS's own, whose hint is its contract's `(0, None)`. Each
+other `dyn` is asked as a collect asks it (`hint_reaches_own_where`), and
+`extend_fills` and `extended_grown` read the value's mark
+(`iterators::binding_made`). So a crate that extends only by a binding's
+iterator keeps no capacities, `push` as it was.
+
+Held by `extend_by_a_dyn_iterator_asks_its_hint.rs` (a boxed own iterator
+whose hint prints where std's asks it, a `map` of one, a boxed endless
+range's `capacity overflow`, in a crate that reads no capacity) against
+native Rust in both builds, js-collections' binding iteration, and the
+mutations `extend-of-a-dyn-keeps-no-capacity` and
+`binding-made-in-mir-never`.
