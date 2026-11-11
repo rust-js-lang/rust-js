@@ -278,4 +278,13 @@ export const mutations: Mutation[] = [
     replace: "        if false && hint_lost(made_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_a_chars_map_reserves_by_its_hint.rs$"],
   },
+  {
+    name: "into-iter-given-on-in-place",
+    breaks:
+      "`IntoIterator::into_iter` of a `map()` given on to generic code that clones it, as `iproduct!` gives what it's given to `cartesian_product`, is taken to step it there, so it's made the recognizers' JS iterator while its `Clone` is std's struct's: \"Cannot read properties of undefined\" (#1409)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "        if callee == into_iter && !at.is_desugaring(rustc_span::DesugaringKind::ForLoop) {\n",
+    replace: "        if callee == into_iter && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(into_iter_of_a_map_given_on|adapter_shown_and_cloned_generically).rs$"],
+  },
 ];

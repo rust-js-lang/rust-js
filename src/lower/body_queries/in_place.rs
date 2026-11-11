@@ -115,6 +115,7 @@ pub(super) fn in_place_adapters<'tcx>(
     // methods: given a zip that folds apart, each reaches its `fold` only as
     // its `rfold`, which `$zipEnds` folds as std does (#812).
     let rev = crate::lower::recognition::trait_method(tcx, iterator_traits[0], "rev");
+    let into_iter = crate::lower::recognition::trait_method(tcx, iterator_traits[1], "into_iter");
     let from_its_back = |callee: DefId| {
         callee == rev
             || (tcx.trait_of_assoc(callee)).is_some_and(|tr| crate::lower::recognition::is_double_ended(tcx, tr))
@@ -252,6 +253,13 @@ pub(super) fn in_place_adapters<'tcx>(
             return in_place.contains(&at);
         }
         if callee == size_hint && !sized(maker, made_ty) {
+            return false;
+        }
+        // `IntoIterator::into_iter` of an iterator gives it itself on,
+        // unstepped, `iproduct!`'s to `cartesian_product`, which may hold
+        // and clone it: in place only where a `for` loop's steps it there
+        // (#1409).
+        if callee == into_iter && !at.is_desugaring(rustc_span::DesugaringKind::ForLoop) {
             return false;
         }
         let std = crate::lower::recognition::is_std_crate(tcx, callee)

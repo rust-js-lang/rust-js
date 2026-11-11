@@ -430,3 +430,23 @@ compiled struct, which knows its back only given it: `it.back is not a
 function`. Where `compiled_struct` says it's one, it's made knowing its
 back first, `as_double_ended`'s `$knowing` of its compiled `next_back`.
 Corpus case `compiled_map_given_back_reversed`.
+
+## Amendment: `into_iter` outside a `for` loop gives the adapter on (#1409)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change. An
+adapter given to `IntoIterator::into_iter` was taken to be stepped there,
+as a `for` loop's `into_iter` steps it, so it was made in place, the
+recognizers' JS iterator. But `into_iter` of an iterator is the iterator
+itself, given on: `IntoIterator::into_iter(v.iter().map(f))` handed to
+generic code that holds and clones it, as itertools' `iproduct!` hands
+each iterator to `cartesian_product`, met std's compiled `Clone` of the
+struct with a JS iterator, and threw "Cannot read properties of
+undefined". Now only a `for` loop's own `into_iter` steps it in place
+(its call's span is the loop's desugaring); any other is given on, so the
+adapter is std's struct, as one held is.
+
+Tests: corpus cases `into_iter_of_a_map_given_on` (a `map()` in every
+build) and `adapter_shown_and_cloned_generically` (a `cloned()` whose
+`{:?}` the crate asks, ADR 0932, amended), against native Rust;
+mutation `into-iter-given-on-in-place`, caught. No other corpus case's JS
+changed.

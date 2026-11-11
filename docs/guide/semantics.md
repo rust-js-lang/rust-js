@@ -747,7 +747,9 @@ What's refused is in [the limitations](limitations.md).
   `for` loop or `drop` steps, reads as a JS chain:
   `v.iter().rev().map(f).collect()` is `v.toReversed().map(f)`, and `let
   mut cs = s.chars().enumerate()` is `s[Symbol.iterator]().map((x, i) => [i,
-  x])`. One
+  x])`. One given on by `IntoIterator::into_iter` outside a `for` loop,
+  as `iproduct!` gives what it's given to `cartesian_product`, is std's
+  struct, as what it's given to may hold and clone it (#1409). One
   asked its `size_hint()` is std's struct, which knows it, but a `rev()`,
   `enumerate()`, `map()` or `inspect()` made in place, sized as its source
   is; a flatten's, and a flat map's, counts what's left of its items, an
