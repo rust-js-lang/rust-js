@@ -257,3 +257,15 @@ of nested calls. The refusals that stop the most crates: `LocalKey::try_with`
 (4 crates, 132 tests), `Into::into` and `TryInto::try_into` called
 (4 crates), a pointer read as another type's (3), `std::process::Command`
 (3), and `&mut &mut [T]` values (bytes, miniz_oxide, httparse: 1,050 tests).
+
+## Amendment: each JS build starts from the crate's own lock (2026-11-11, #1400)
+
+The JS's builds run without `--locked`, as a cut changes the source, and
+each integration test's manifest names only the dev-dependencies it uses.
+Cargo pruned the rest from the lock, and the next build, naming them again,
+resolved them anew at their newest: itertools' quickcheck graph ran
+ppv-lite86 0.2.21 and zerocopy 0.8.63 as JS, where its packed lock, which
+native Rust ran, has ppv-lite86 0.2.17 and no zerocopy, so a refusal was
+reported of a crate native Rust never built. Each JS build now starts from
+the crate's own lock again, so a dependency named again comes back at the
+release native Rust ran.

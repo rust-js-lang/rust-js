@@ -446,11 +446,19 @@ async function built(
   featured: string[],
   rootFile?: string,
 ): ReturnType<typeof cutUntilBuilt> {
+  // Each build starts from the crate's own lock: one build's manifest
+  // drops the dev-dependencies it doesn't name, so Cargo prunes them from
+  // the lock, and the next build, which names them again, would resolve
+  // them anew at their newest, not the releases native Rust ran,
+  // ppv-lite86 0.2.21 and its zerocopy where itertools' lock has 0.2.17.
+  const relocked = () => lock !== "" && writeFileSync(join(jsDir, "Cargo.lock"), lock);
   writeFileSync(join(jsDir, "Cargo.toml"), manifest);
+  relocked();
   const ran = await cutUntilBuilt(jsDir, target, featured, rootFile);
   const withFeature = forTheJs(manifest, lock);
   if (!("problem" in ran && ran.uncompiled.includes("getrandom")) || withFeature === manifest) return ran;
   writeFileSync(join(jsDir, "Cargo.toml"), withFeature);
+  relocked();
   return cutUntilBuilt(jsDir, target, featured, rootFile);
 }
 
