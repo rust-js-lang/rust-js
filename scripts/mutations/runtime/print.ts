@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "writeAll: (w, bytes) => void w.value.push(...bytes),",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
   },
+  {
+    name: "slice-writer-unadvanced",
+    breaks: "std's `Write for &mut [u8]` writes its bytes but doesn't re-point the slice past them, the next write over them (#1282)",
+    file: "src/runtime/print.js",
+    find: "  w.value = $view(room, n);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
+  },
 ];

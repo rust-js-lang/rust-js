@@ -575,69 +575,6 @@ pub fn legacy_len(legacy: &mut Legacy) -> usize {
   expect([shadowed.exitCode === 0, shadowed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, whose `prefix` is the parent's yet")]);
 });
 
-// A parameter of a \`&mut\` to a \`&mut [i32]\`, whose place JS can't share,
-// is refused: given a copy, \`*s = other\` would leave the caller's \`rest\`
-// as it was.
-test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
-  const dir = fixture("mut-slice-ref-param");
-  writeFileSync(join(dir, "lib.rs"), `pub fn reset<'a>(s: &mut &'a mut [i32], other: &'a mut [i32]) {
-    *s = other;
-}
-`);
-  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-    cwd: root,
-    stderr: "pipe",
-  });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
-});
-
-// A variable of a type JS can't hold, a struct of a \`&mut\` to a \`&mut [i32]\`,
-// is refused: \`*h.s = &mut ys\` would change a copy, leaving \`rest\` on
-// \`xs\`.
-test("a variable of a type JS can't hold is refused from MIR", () => {
-  const dir = fixture("mut-slice-ref-held");
-  writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
-    s: &'a mut &'b mut [i32],
-}
-pub fn run() -> Vec<i32> {
-    let mut xs = vec![1, 2];
-    let mut ys = vec![9];
-    let mut rest: &mut [i32] = &mut xs;
-    let h = Holder { s: &mut rest };
-    *h.s = &mut ys;
-    rest[0] = 5;
-    xs
-}
-`);
-  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-    cwd: root,
-    stderr: "pipe",
-  });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
-  // And one assigned again, which MIR declares first.
-  writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
-    s: &'a mut &'b mut [i32],
-}
-pub fn run(again: bool) -> Vec<i32> {
-    let mut xs = vec![1, 2];
-    let mut ys = vec![9];
-    let mut rest: &mut [i32] = &mut xs;
-    let mut h = Holder { s: &mut rest };
-    if again {
-        h = Holder { s: h.s };
-    }
-    *h.s = &mut ys;
-    rest[0] = 5;
-    xs
-}
-`);
-  const again = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-    cwd: root,
-    stderr: "pipe",
-  });
-  expect([again.exitCode === 0, again.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
-});
-
 // What JS can't do soundly is refused: each compiled to output that ran
 // unlike Rust, found running them both.
 for (const [name, source, message] of [
@@ -711,28 +648,6 @@ pub fn run() -> Vec<String> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
   const lib = await import(join(dir, "mir.js"));
   expect(lib.run()).toEqual(["got 11", "drop 11", "got 10", "drop 10", "drop 1", "got 12", "drop 12", "drop 11", "drop 2"]);
-});
-
-// MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
-// which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
-test("MIR's split_off through a held `&mut` is refused", () => {
-  const dir = fixture("mir-split-off-held");
-  writeFileSync(join(dir, "lib.rs"), `pub fn run() -> Vec<i32> {
-    let mut w = vec![1, 2, 3, 4, 5];
-    let mut rest: &mut [i32] = &mut w;
-    let r = &mut rest;
-    if let Some(h) = r.split_off_mut(..2) {
-        h[0] = 9;
-    }
-    rest[0] = -7;
-    w
-}
-`);
-  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-    cwd: root,
-    stderr: "pipe",
-  });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support splitting this slice yet")]);
 });
 
 // ADR 0233: a `match` whose arms each give the field of their variant's

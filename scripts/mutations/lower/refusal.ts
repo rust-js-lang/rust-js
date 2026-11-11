@@ -57,12 +57,4 @@ export const mutations: Mutation[] = [
     replace: '    format!("calling `{}`", tcx.def_path_str(id))\n',
     tests: ["test/diagnostics.test.ts", "-t", "a spin loop's hint"],
   },
-  {
-    name: "slice-behind-mut-issue-unnamed",
-    breaks: "a slice reference behind a `&mut` is refused without its issue, #1282",
-    file: "src/lower/refusal.rs",
-    find: "        if matches!(inner.kind(), ty::Ref(_, slice, _) if matches!(slice.kind(), ty::Slice(_))))\n",
-    replace: "        if matches!(inner.kind(), ty::Ref(_, slice, _) if matches!(slice.kind(), ty::Str)))\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a slice reference behind a &mut"],
-  },
 ];

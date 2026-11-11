@@ -8,6 +8,7 @@ mod compiled_std;
 mod conversions;
 mod fmt;
 mod inherent;
+pub(crate) use fmt::is_byte_slice;
 mod io;
 pub(crate) use io::{
     ByteSource, IoOp, in_io_dictionary, is_file, is_open_options, is_std_reader, is_std_reader_impl, of_files,

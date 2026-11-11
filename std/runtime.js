@@ -12296,6 +12296,23 @@ export const $vecWriter = {
   writeFmt: (w, text) => $writeText(w.value, text),
   flush: () => {},
 };
+// std's `Write for &mut [u8]`, given in a box, `w.value` the slice: its bytes
+// written at its front, as many as it has room for, and the slice re-pointed
+// past them, as std's takes the rest, `*self = &mut take(self)[n..]`; its
+// `write_all` std's, a write of what fits and `WriteZero` past it (#1282).
+export const $sliceWrite = (w, bytes) => {
+  const room = w.value;
+  const n = Math.min(room.length, bytes.length);
+  for (let i = 0; i < n; i++) room[i] = bytes[i];
+  w.value = $view(room, n);
+  return { TAG: "Ok", _0: n };
+};
+export const $sliceWriter = {
+  write: $sliceWrite,
+  writeAll: (w, bytes) => $ioWriteAll($sliceWrite)(w, bytes),
+  writeFmt: (w, text) => $ioWriteFmt($sliceWrite)(w, text),
+  flush: () => {},
+};
 // A `Box<dyn Write>`'s, given in a box: the pair it holds, written through.
 export const $dynWriter = {
   write: (w, bytes) => w.value.impl.write(w.value, bytes),

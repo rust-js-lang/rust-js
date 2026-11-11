@@ -101,3 +101,15 @@ writer's dictionary is `$mutWriter` of its writer's, of an `io::Write`
 as of a `fmt::Write` (ADR 0454), one rule of both, and `$mutWriter`
 writes bytes too. Held by `test/corpus/io_write_mut_generic.rs` and the
 mutations `io-writer-mut-as-its-writer` and `mut-writer-writes-no-bytes`.
+
+## Amendment: std's writer of a `&mut [u8]` (#1282)
+
+`io::Write` of a `&mut [u8]`, std's cursor over a buffer, has a dictionary
+of its own, `$sliceWriter`: its `write` writes as many bytes as the slice
+has room for at its front and re-points the slice past them, as std's
+takes the rest; its `write_all` and `write_fmt` std's, `$ioWriteAll` and
+`$ioWriteFmt` of that `write`, a write of what fits and `WriteZero` past it,
+thrown, a value where it's one (ADR 0462). A call of it on a variable,
+`cursor.write_all(b"..")`, is given a handle on the variable, so the
+caller's slice is re-pointed, and `write!(cursor, ..)` is `$sliceWriter`'s
+own, never `$mutWriter`'s of a `[u8]`.

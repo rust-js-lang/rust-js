@@ -939,6 +939,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
+        // A `&mut [u8]`'s, `$sliceWriter`'s, its slice written and re-pointed
+        // past what's written, as std's is (#1282): `[u8]` behind its
+        // references, as only `&mut [u8]` writes to one.
+        if super::fmt::is_byte_slice(ty.peel_refs()) {
+            return matches!(name.as_str(), "write" | "write_all" | "write_fmt" | "flush")
+                .then_some(Std::Io(IoOp::Dictionary));
+        }
         if self.io_writer(ty) != Some("$vecWriter") {
             return None;
         }

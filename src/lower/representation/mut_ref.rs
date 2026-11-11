@@ -321,11 +321,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // through a `&mut` to it, `*r = &mut other`, makes another: a cell
         // too, rust_decimal's `impl AddAssign for &mut Decimal`'s `&mut self`.
         // Not of an iterator or a function, each the JS one it steps or calls
-        // (ADRs 0071, 0099), nor of a slice, which may be a view of part of
-        // an array, split through a held `&mut` as it is.
+        // (ADRs 0071, 0099). Of a slice, a cell of its view, as a `&mut &[T]`
+        // is a cell of its: a write of the whole re-points it, `*buf = &mut
+        // take(buf)[n..]`, std's `Write for &mut [u8]`, and a write through
+        // it writes what it views, both seen by the caller (#1282).
         if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
             let plain_object = self.is_object(inner)
-                && !inner.is_slice()
                 && !self.is_callable(inner)
                 && !self.implements_iterator(inner)
                 && !self.is_generic_iter(inner);

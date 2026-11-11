@@ -724,3 +724,16 @@ The rest of the corpus is unchanged. Mutations
 `box-iterator-of-a-mut-ref-not-passed-through`
 (`lower/recognition/std_items.ts`) and `box-receiver-cell-unread`
 (`lower/mir/dispatch.ts`); `passed-on-a-default` refitted.
+
+## Amendment: a `&mut` of a `&mut [T]` is a cell of its view (#1282)
+
+A `&mut [T]` is a view of its array's items (ADR 0335), and a `&mut` to it
+was left out of the cell form: a slice "may be a view of part of an array,
+split through a held `&mut` as it is". So `&mut &mut [u8]` was refused,
+1,050 of the Crater's tests (bytes, miniz_oxide, httparse), though it's
+std's own idiom for a cursor over a buffer: `Write for &mut [u8]` writes
+its slice and re-points it, `*buf = &mut take(buf)[n..]`. It's a cell now,
+as a `&mut &[T]` was: `{ value: view }`, a write through it writes what
+the view's over, `b.value[i] = v`, and a write of the whole re-points it,
+`b.value = $view(taken, n)`, each the caller's, its box copied back as any
+cell's. Case C of ADR 0262.

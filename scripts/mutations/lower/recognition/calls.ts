@@ -652,4 +652,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
   },
+  {
+    name: "slice-writer-unanswered",
+    breaks: "`io::Write` of a `&mut [u8]`, `cursor.write_all(..)`, is refused, std's own writer of a buffer (#1282)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if super::fmt::is_byte_slice(ty.peel_refs()) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
+  },
 ];

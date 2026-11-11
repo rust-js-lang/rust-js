@@ -34,6 +34,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if super::is_file(self.tcx, ty) {
             return Some("$fileWriter");
         }
+        // A `&mut [u8]`'s, its slice written and re-pointed past it, std's
+        // cursor over a buffer (#1282).
+        if is_byte_slice(ty) {
+            return Some("$sliceWriter");
+        }
         let bytes = matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec)
             && matches!(args.type_at(0).kind(), ty::Uint(ty::UintTy::U8)));
         bytes.then_some("$vecWriter")
@@ -641,4 +646,9 @@ pub(crate) fn is_debug_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `f.pad(s)` of a `Formatter` (ADR 0143).
 pub(crate) fn is_formatter_pad(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "pad" && is_formatter_method(tcx, id)
+}
+
+/// Whether `ty` is `[u8]`, what a `&mut [u8]` writer writes (#1282).
+pub(crate) fn is_byte_slice(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Slice(item) if matches!(item.kind(), ty::Uint(ty::UintTy::U8)))
 }

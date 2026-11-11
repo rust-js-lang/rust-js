@@ -497,8 +497,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` to a writer taken by value, `W = &mut s`, given in a box
         // (ADR 0454), a generic one's too: its own dictionary, through the
         // box, of a `fmt::Write` and an `io::Write` alike.
+        // Not a `&mut [u8]`, whose `io::Write` is its own, std's, its slice
+        // re-pointed, `$sliceWriter` (#1282).
         if (is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite) || is_std_def(self.tcx, tr.def_id, StdItem::IoWrite))
             && let ty::Ref(_, inner, Mutability::Mut) = *ty.kind()
+            && !(is_std_def(self.tcx, tr.def_id, StdItem::IoWrite) && crate::lower::recognition::is_byte_slice(inner))
         {
             let writer = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span)?;
             return Ok(Expr::call_helper("$mutWriter", vec![writer]));

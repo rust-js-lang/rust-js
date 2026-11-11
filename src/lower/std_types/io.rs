@@ -79,6 +79,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => receiver,
                     false => crate::lower::mut_refs::boxed(receiver),
                 };
+                // A `&mut [u8]` writer's box re-points what it holds past
+                // what's written (`$sliceWriter`, #1282): of a variable, a
+                // handle on it, so the caller's slice is re-pointed too,
+                // where a box made for the call would be dropped with it.
+                let slice_writer = crate::lower::recognition::is_byte_slice(tr.self_ty().peel_refs());
+                let receiver = match &receiver.kind {
+                    crate::js::ExprKind::Object(props, ..)
+                        if slice_writer
+                            && let [crate::js::Prop::Field(key, held)] = props.as_slice()
+                            && key == crate::js::HELD
+                            && matches!(held.kind, crate::js::ExprKind::Var(_)) =>
+                    {
+                        Expr::handle(held.clone())
+                    }
+                    _ => receiver,
+                };
                 let mut given = vec![receiver];
                 given.extend(values.by_ref());
                 let name = bindings::fn_name(tcx, call.def_id);

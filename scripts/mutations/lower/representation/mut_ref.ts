@@ -248,4 +248,12 @@ export const mutations: Mutation[] = [
     replace: "            ) == Some(false)\n        {\n            return self.mut_ref_form_in(inner, param_env);\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
   },
+  {
+    name: "mut-ref-of-a-slice-not-a-cell",
+    breaks: "a `&mut` of a `&mut [T]` isn't a cell of its view, so `&mut &mut [u8]` is refused, std's cursor over a buffer and httparse's `&mut &mut [Header]` (#1282)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            let plain_object = self.is_object(inner)\n                && !self.is_callable(inner)\n",
+    replace: "            let plain_object = self.is_object(inner)\n                && !inner.is_slice()\n                && !self.is_callable(inner)\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
+  },
 ];

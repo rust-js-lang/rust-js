@@ -747,4 +747,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => StdItem::IoRead,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
   },
+  {
+    name: "slice-writer-through-mut-writer",
+    breaks: "`write!` of a `&mut [u8]` takes it for a `&mut W` of a writer `W`, `$mutWriter($sliceWriter)`, one `value` too deep, a `TypeError` (#1282)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && !(is_std_def(self.tcx, tr.def_id, StdItem::IoWrite) && crate::lower::recognition::is_byte_slice(inner))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
+  },
 ];

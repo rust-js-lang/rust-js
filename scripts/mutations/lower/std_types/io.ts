@@ -91,4 +91,12 @@ export const mutations: Mutation[] = [
     replace: "        match false && self.form_differs(Form::Box, (call.def_id, declared, held)) {",
     tests: ["test/diagnostics.test.ts", "-t", "BufReader of a &mut to an object"],
   },
+  {
+    name: "slice-writer-box-dropped",
+    breaks: "a `&mut [u8]` writer's call is given a box made for it, so the caller's slice isn't re-pointed past what's written, the next write over it (#1282)",
+    file: "src/lower/std_types/io.rs",
+    find: "                        if slice_writer\n",
+    replace: "                        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
+  },
 ];
