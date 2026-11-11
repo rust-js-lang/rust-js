@@ -1034,7 +1034,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Self>`'s (#685, #686): of the crate's impl, or a library's it
         // compiles itself.
         if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {
-            let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by");
+            let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by (#1421)");
             return Err(self.unsupported(span, &what));
         }
         let callee = self.fn_ref(impl_id);

@@ -929,7 +929,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_rust_fn(def_id)
             && let Some(here) = self.nested_mut_object(def_id, generic_args)
         {
-            let what = format!("a `{here}` inside a generic function's parameters or result");
+            let what = format!("a `{here}` inside a generic function's parameters or result (#1421)");
             return Err(self.unsupported(span, &what));
         }
         let declared = self

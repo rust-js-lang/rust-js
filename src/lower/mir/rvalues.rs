@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let BorrowKind::Mut { .. } = kind {
                         return Err(self.unsupported(
                             span,
-                            "a `&mut` to a field that holds a `&mut` generic code has as its box, `&mut slot.at` of `struct Slot<'a, T> { at: &'a mut T }`: write it whole, `slot.at = &mut other`, or reborrow what it's to, `&mut *slot.at`",
+                            "a `&mut` to a field that holds a `&mut` generic code has as its box, `&mut slot.at` of `struct Slot<'a, T> { at: &'a mut T }` (#1421): write it whole, `slot.at = &mut other`, or reborrow what it's to, `&mut *slot.at`",
                         ));
                     }
                     let read = self.mir_place(state, *place, span, out)?;

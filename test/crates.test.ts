@@ -275,7 +275,7 @@ test("a library's request whose callback is a public field refuses its consumer'
 // `is_local()` audit).
 test("a consumer's call giving a library trait's method a Vec of &mut objects through generic code is refused", () => {
   const native = chain(join(root, "test", "crates", "refused"), "library_trait_dispatch_takes_mut_vec", ["dep", "app"], [
-    "rust-js does not support a `&mut C` inside a generic function's parameters or result yet",
+    "rust-js does not support a `&mut C` inside a generic function's parameters or result (#1421) yet",
     "app.rs:17:5",
   ]);
   expect(native).toBe("2 7\n");
