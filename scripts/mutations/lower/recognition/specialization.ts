@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/specialization.rs",
     find: "        Err(_) if !crate::lower::generic_facts::may_hold_for_some(tcx, ty, trait_id) => Some(false),\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_what_is_never_random_access"],
+    tests: ["test/crates.test.ts", "-t", "a zip of what's never random access asks no caller whether it is"],
   },
 
   {

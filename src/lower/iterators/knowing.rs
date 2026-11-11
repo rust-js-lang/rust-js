@@ -106,9 +106,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// whose own hint is of it: a `$iter`'s, of an array's items or of what
     /// was made one where it was made, a slice's chunks' say (#1100), a
     /// range's, the crate's own iterator's or a generic one's, by its
-    /// dictionary, an explicit adapter's, or another such struct's (ADRs
-    /// 0170, 0542, 0561), or a std source's whose form gives std's
-    /// (`source_hint_kept`, #1357). Not a
+    /// dictionary, or another such struct's (ADRs 0170, 0561), or a std
+    /// source's whose form gives std's (`source_hint_kept`, #1357). An
+    /// explicit adapter's (ADR 0542) is known by these of what it holds: a
+    /// `take(n)` of a `once`, the one only its own rule knew, is of an array
+    /// of items since #1375. Not a
     /// std adapter's made here, `map`'s or `filter`'s, a JS iterator's,
     /// which knows nothing of its length. The one answer, of `size_hint()`
     /// and `len()`.
@@ -117,7 +119,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.array_source(ty).is_some()
             || self.recognition().iterates_items(ty)
             || self.is_unknown(ty)
-            || self.explicit_adapter(ty)
             || self.range_kind(ty).is_some()
             || self.is_user_iterator(ty)
             || self.struct_hint_known(ty)

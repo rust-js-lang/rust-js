@@ -561,8 +561,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",
     file: "src/lower/iterators/knowing.rs",
-    find: "            || self.is_unknown(ty)\n            || self.explicit_adapter(ty)\n",
-    replace: "            || matches!(ty.kind(), ty::Param(_))\n            || self.explicit_adapter(ty)\n",
+    find: "            || self.is_unknown(ty)\n            || self.range_kind(ty).is_some()\n",
+    replace: "            || matches!(ty.kind(), ty::Param(_))\n            || self.range_kind(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
   },
   {
@@ -573,14 +573,6 @@ export const mutations: Mutation[] = [
     find: "            || self.struct_hint_known(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
-  },
-  {
-    name: "held-size-hint-refused",
-    breaks: "a held adapter's size hint is refused",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            || self.explicit_adapter(ty)\n            || self.range_kind(ty).is_some()\n",
-    replace: "            || self.range_kind(ty).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(held_cycle|held_explicit_adapters_hint).rs$"],
   },
   {
     name: "dropping-take-dropless",
