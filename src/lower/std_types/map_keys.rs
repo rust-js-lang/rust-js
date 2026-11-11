@@ -35,6 +35,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (!self.is_key(key, false) && !key.peel_refs().is_unit()) || self.hash_runs_code(key, &mut Vec::new())
     }
 
+    /// Whether a map's entry, of type `entry`, of `key`s and of `value`s if
+    /// it's a map's, is its one search, `$entry(m, k)`'s, its `or_insert`
+    /// and the rest asking nothing again, as std's entry holds where it
+    /// is: a B-tree of std's nodes (`tree_of_nodes`, #926), or a hash map
+    /// of keys found by their own `Hash` and `Eq` (`found_by_hash`, ADR
+    /// 1120), a type parameter's included, whose `hash` std's entry calls
+    /// once (#1362). Another's searches ask what nothing sees, and
+    /// `$orInsert(m, k, v)` is what JS writes (ADR 0262, no difference).
+    pub(in crate::lower) fn entry_searched_once(
+        &self,
+        entry: Ty<'tcx>,
+        key: Ty<'tcx>,
+        value: Option<Ty<'tcx>>,
+    ) -> bool {
+        let entry = entry.peel_refs();
+        if self.is_std_type(entry, crate::lower::recognition::StdItem::BTreeEntry) {
+            return self.tree_of_nodes(key, value);
+        }
+        self.is_std_type(entry, crate::lower::recognition::StdItem::HashMapEntry) && self.found_by_hash(key)
+    }
+
     /// A key a B-tree finds as a `$KeyMap` keeps it: one whose `Ord` is
     /// derived, or std's, all through, so two it orders `Equal` are equal
     /// field by field, as `$key` tells them, and its order is `cmp_fn`'s

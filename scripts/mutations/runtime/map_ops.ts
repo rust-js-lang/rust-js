@@ -542,4 +542,12 @@ export const mutations: Mutation[] = [
     replace: "    if (found.slice(0, i).some((other) => other.key === each.key)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
   },
+  {
+    name: "disjoint-mut-handle-searches",
+    breaks: "`get_disjoint_mut`'s handle on a number or text searches for its key again, running its `hash` twice where std's runs it once (#1362)",
+    file: "src/runtime/map_ops.js",
+    find: "  const handleOf = (each, i) => (each.entry === undefined ? $mutGet(m, keys[i]) : $entryHandle(each.entry));\n",
+    replace: "  const handleOf = (each, i) => $mutGet(m, keys[i]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
+  },
 ];

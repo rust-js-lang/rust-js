@@ -10,6 +10,8 @@ import {
   $drainAll,
   $entry,
   $entryGet,
+  $entryOrInsert,
+  $entryOrInsertWith,
   $eq,
   $extendMap,
   $getKeyValue,
@@ -21,7 +23,6 @@ import {
   $isSubset,
   $mapEq,
   $mutGet,
-  $orInsert,
   $ord,
   $ordered,
   $partialEq,
@@ -121,9 +122,8 @@ function count(items, KHash, KPartialEq, KClone, KMap) {
   const counts = new KMap();
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const key = KClone.clone(item);
-    const current = $orInsert(counts, key, 0);
-    counts.set(key, (current + 1) >>> 0);
+    const orInsert = $entryOrInsert($entry(counts, KClone.clone(item)), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
   }
   return counts;
 }
@@ -144,9 +144,8 @@ function sorted(items, TOrd, TSize, TStableSort) {
 function index(text) {
   const counts = new ($hashedMap(wordHash, wordPartialEq_eq))();
   for (const word of text.split(/\p{White_Space}+/u).filter((word) => word !== "")) {
-    const key = [word];
-    const current = $orInsert(counts, key, 0);
-    counts.set(key, (current + 1) >>> 0);
+    const orInsert = $entryOrInsert($entry(counts, [word]), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
   }
   return counts;
 }
@@ -248,9 +247,8 @@ function maps() {
 
   const parities = new ($hashedMap(parityHash, parityPartialEq_eq))();
   for (let n = 0; n < 6; n++) {
-    const key = [n];
-    const current = $orInsert(parities, key, 0);
-    parities.set(key, (current + n) >>> 0);
+    const orInsert = $entryOrInsert($entry(parities, [n]), 0, true);
+    orInsert.value = (orInsert.value + n) >>> 0;
   }
   const kept = Array.from(parities).map(([p, n]) => [p[0], n]);
   kept.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
@@ -373,18 +371,13 @@ function holding() {
   console.log(`${tagged.has({ word: ["HI"], n: 2 })}`);
 
   const lists = new ($hashedMap(wordHash, wordPartialEq_eq))();
-  const key = ["k"];
-  if (!lists.has(key)) {
-    lists.set(key, []);
-  }
-  lists.get(key).push(1);
-  const entry = $andModify($entry(lists, ["K"]), (v) => {
-    v.push(2);
-  });
-  if (!entry._0[0].has(entry._0[1])) {
-    entry._0[0].set(entry._0[1], []);
-  }
-  entry._0[0].get(entry._0[1]).push(3);
+  $entryOrInsertWith($entry(lists, ["k"]), () => []).push(1);
+  $entryOrInsertWith(
+    $andModify($entry(lists, ["K"]), (v) => {
+      v.push(2);
+    }),
+    () => [],
+  ).push(3);
   for (const list of Array.from(lists.values())) {
     list.push(4);
   }

@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                false => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
+  {
+    name: "hash-entry-searched-again",
+    breaks: "a hash map's entry of keys found by their own `Hash` is `$orInsert(m, k, v)` and `m.set(k, ..)`, each a search, its key's `hash` run three or four times where std's entry runs it once (#1362)",
+    file: "src/lower/std_types/map_keys.rs",
+    find: "        self.is_std_type(entry, crate::lower::recognition::StdItem::HashMapEntry) && self.found_by_hash(key)\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
+  },
 ];

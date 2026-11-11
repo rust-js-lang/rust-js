@@ -7,6 +7,8 @@ import {
   $cmp,
   $count,
   $debugStr,
+  $entry,
+  $entryOrInsert,
   $enumerate,
   $eq,
   $foldOf,
@@ -22,7 +24,6 @@ import {
   $lazyZip,
   $next,
   $nth,
-  $orInsert,
   $ord,
   $ordMap,
   $ordSet,
@@ -83,8 +84,8 @@ function iTools(IIterator, IItemMap, UsizeIItemSize) {
     counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {
       const counts = new IItemMap();
       for (const item of $iterator(self, IIterator.next, true)) {
-        const current = $orInsert(counts, item, 0);
-        counts.set(item, (current + 1) >>> 0);
+        const orInsert = $entryOrInsert($entry(counts, item), 0, true);
+        orInsert.value = (orInsert.value + 1) >>> 0;
       }
       return counts;
     },

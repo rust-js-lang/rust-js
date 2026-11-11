@@ -5,13 +5,13 @@ import {
   $advanceSlice,
   $cleanup,
   $dropEach,
+  $entry,
+  $entryOrInsert,
   $eq,
   $given,
   $hashSlice,
   $iter,
-  $mutGet,
   $next,
-  $orInsert,
   $partialEq,
   $strictlyEqual,
   $took,
@@ -40,8 +40,7 @@ function tCounting(TIterator, dropT, dropTItem) {
       try {
         try {
           $given(iter, TIterator, true).forEach((item) => {
-            $orInsert(counts, item, 0, undefined, dropTItem);
-            const orInsert = $mutGet(counts, item);
+            const orInsert = $entryOrInsert($entry(counts, item, dropTItem), 0, true);
             orInsert.value = (orInsert.value + 1) >>> 0;
           });
         } catch (error) {

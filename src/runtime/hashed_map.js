@@ -39,6 +39,10 @@ class $HashedKeys {
     else under.push(entry);
     return entry;
   }
+  // The entry of `key`, one it holds, found by what it is, asking nothing.
+  held(key) {
+    return this.#table.get(key);
+  }
   // The entry of `key`, one it holds, taken out by what it is, asking
   // nothing, as std's `retain` takes out what it walks to.
   deleteHeld(key) {
@@ -90,6 +94,12 @@ function $hashedMap(KHash, eq) {
     }
     deleteHeld(key) {
       this.#keys.deleteHeld(key);
+    }
+    // Each key of `entries`, some it holds, with a handle on its value,
+    // `$mutEntries`', each on the entry itself, asking nothing, as std's
+    // `iter_mut` and `retain` hash none of its keys (#1362).
+    entryHandles(entries) {
+      return Array.from(entries, ([key]) => [key, $entryHandle(this.#keys.held(key))]);
     }
     // The key it holds equal to `key`, as a map keeps it (`$keptAs`).
     keyOf(key) {

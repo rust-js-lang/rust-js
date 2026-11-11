@@ -7,9 +7,10 @@ import {
   $btreeSet,
   $cmp,
   $debugStr,
+  $entry,
+  $entryOrInsert,
   $eq,
   $iter,
-  $orInsert,
   $ord,
   $ordered,
   $partialEq,
@@ -39,8 +40,8 @@ function counts(items, TPartialEq, THash, TMap) {
   const counts = new TMap();
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const current = $orInsert(counts, item, 0);
-    counts.set(item, (current + 1) >>> 0);
+    const orInsert = $entryOrInsert($entry(counts, item), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
   }
   return counts;
 }

@@ -50,18 +50,22 @@ function $mapExtractIf(m, f, entries, handles, set, drop) {
       return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
     });
   }
-  const each = Array.from(entries)[Symbol.iterator]();
+  // Each it holds taken out by what it is, asking nothing of its keys, as
+  // std's walk asks nothing (#1362): a handle on each on its entry.
+  const each = (handles ? $mutEntries(m, entries) : Array.from(entries))[Symbol.iterator]();
   return steps(() => {
     for (let step = each.next(); !step.done; step = each.next()) {
       if (set) {
         if (!f(step.value)) continue;
-        m.delete(step.value);
+        $deleteHeld(m, step.value);
         return { done: false, value: step.value };
       }
       const [key, value] = step.value;
-      if (!f(key, handles ? $mutGet(m, key) : value)) continue;
-      const taken = m.get(key);
-      m.delete(key);
+      if (!f(key, value)) continue;
+      // The value the map holds, not the handle `f` was given on it, which
+      // reads the map, where it's gone once deleted.
+      const taken = handles ? value.value : value;
+      $deleteHeld(m, key);
       return { done: false, value: [key, taken] };
     }
     return { done: true, value: undefined };

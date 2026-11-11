@@ -37,4 +37,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
+  {
+    name: "hashed-entry-handles-search",
+    breaks: "a hashed map's `values_mut`, `iter_mut` and `retain` give handles that search for each key, running its `hash` where std's walk runs none (#1362)",
+    file: "src/runtime/hashed_map.js",
+    find: "    entryHandles(entries) {\n      return Array.from(entries, ([key]) => [key, $entryHandle(this.#keys.held(key))]);\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
+  },
 ];

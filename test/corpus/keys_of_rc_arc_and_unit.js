@@ -4,13 +4,13 @@ import {
   $add,
   $cleanup,
   $debugStr,
+  $entry,
+  $entryOrInsert,
   $eq,
   $hashSlice,
   $hashedMap,
   $hashedSet,
   $insert,
-  $mutGet,
-  $orInsert,
   $rcClone,
   $rcDrop,
   $removeEntry,
@@ -283,8 +283,7 @@ function main() {
   }
   let orInsert;
   try {
-    $orInsert(a, "x", 0);
-    orInsert = $mutGet(a, "x");
+    orInsert = $entryOrInsert($entry(a, "x"), 0, true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(p);

@@ -21,14 +21,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?
             .into_iter();
-        // Of a B-tree that may be std's nodes, of the entry itself, whose
-        // one search is what std asks (#926).
-        let nodes = self.is_std_type(entry_ty.peel_refs(), StdItem::BTreeEntry)
-            && generic_args
-                .types()
-                .next()
-                .is_some_and(|key| self.tree_of_nodes(key, generic_args.types().nth(1)));
-        if nodes {
+        // Of a map whose searches can be seen, of the entry itself, whose
+        // one search is what std asks (#926, #1362).
+        let once = generic_args
+            .types()
+            .next()
+            .is_some_and(|key| self.entry_searched_once(entry_ty, key, generic_args.types().nth(1)));
+        if once {
             let entry = exprs.next().expect("the entry");
             let given = match op {
                 MapOp::OrDefault => None,

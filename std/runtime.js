@@ -1738,6 +1738,10 @@ export class $HashedKeys {
     else under.push(entry);
     return entry;
   }
+  // The entry of `key`, one it holds, found by what it is, asking nothing.
+  held(key) {
+    return this.#table.get(key);
+  }
   // The entry of `key`, one it holds, taken out by what it is, asking
   // nothing, as std's `retain` takes out what it walks to.
   deleteHeld(key) {
@@ -1789,6 +1793,12 @@ export function $hashedMap(KHash, eq) {
     }
     deleteHeld(key) {
       this.#keys.deleteHeld(key);
+    }
+    // Each key of `entries`, some it holds, with a handle on its value,
+    // `$mutEntries`', each on the entry itself, asking nothing, as std's
+    // `iter_mut` and `retain` hash none of its keys (#1362).
+    entryHandles(entries) {
+      return Array.from(entries, ([key]) => [key, $entryHandle(this.#keys.held(key))]);
     }
     // The key it holds equal to `key`, as a map keeps it (`$keptAs`).
     keyOf(key) {
@@ -6930,16 +6940,10 @@ export function $mutEntries(m, entries = m) {
 
 // `m.values_mut()` of a map whose values are numbers or strings: a handle on
 // each value, which writes the map, in the order of `entries`, a B-tree's
-// sorted (ADR 0152).
+// sorted (ADR 0152). Each on its entry, `$mutEntries`', of a map whose
+// search can be seen, as std's walk asks nothing of its keys (#1362).
 export function $mutValues(m, entries = m) {
-  return Array.from(entries, ([key]) => ({
-    get value() {
-      return m.get(key);
-    },
-    set value(item) {
-      m.set(key, item);
-    },
-  }));
+  return $mutEntries(m, entries).map(([, handle]) => handle);
 }
 
 // `items.binary_search_by(f)`, `f` giving each item's `Ordering` to what's
@@ -9848,7 +9852,8 @@ export function $cloneIntoMap(m, from, make, drop) {
 // A hash map's `get_disjoint_mut(keys)`: each key's value, a handle on a
 // number or text (`handle`), or `None` where it isn't there; where two
 // find one entry, `duplicate keys found`, as std's does once it's found
-// them all (#1276).
+// them all (#1276). A handle is on what each search found, asking nothing
+// again (#1362).
 export function $mapGetDisjointMut(m, keys, handle) {
   const found = keys.map((key) => $found(m, key));
   found.forEach((each, i) => {
@@ -9856,7 +9861,8 @@ export function $mapGetDisjointMut(m, keys, handle) {
       throw new Error("duplicate keys found");
     }
   });
-  return found.map((each, i) => (!each.there ? undefined : handle ? $mutGet(m, keys[i]) : each.value));
+  const handleOf = (each, i) => (each.entry === undefined ? $mutGet(m, keys[i]) : $entryHandle(each.entry));
+  return found.map((each, i) => (!each.there ? undefined : handle ? handleOf(each, i) : each.value));
 }
 
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
@@ -11002,18 +11008,22 @@ export function $mapExtractIf(m, f, entries, handles, set, drop) {
       return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
     });
   }
-  const each = Array.from(entries)[Symbol.iterator]();
+  // Each it holds taken out by what it is, asking nothing of its keys, as
+  // std's walk asks nothing (#1362): a handle on each on its entry.
+  const each = (handles ? $mutEntries(m, entries) : Array.from(entries))[Symbol.iterator]();
   return steps(() => {
     for (let step = each.next(); !step.done; step = each.next()) {
       if (set) {
         if (!f(step.value)) continue;
-        m.delete(step.value);
+        $deleteHeld(m, step.value);
         return { done: false, value: step.value };
       }
       const [key, value] = step.value;
-      if (!f(key, handles ? $mutGet(m, key) : value)) continue;
-      const taken = m.get(key);
-      m.delete(key);
+      if (!f(key, value)) continue;
+      // The value the map holds, not the handle `f` was given on it, which
+      // reads the map, where it's gone once deleted.
+      const taken = handles ? value.value : value;
+      $deleteHeld(m, key);
       return { done: false, value: [key, taken] };
     }
     return { done: true, value: undefined };

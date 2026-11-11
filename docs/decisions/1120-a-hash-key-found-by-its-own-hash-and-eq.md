@@ -74,6 +74,18 @@ const counts = new ($hashedMap(wordHash, wordPartialEq_eq))();
   walks to without hashing, as std's does.
 - **A search panics before the table changes**, as std's does where
   `hash` or `eq` panics.
+- **An entry is one search** (#1362): `m.entry(k)` is `$entry(m, k)`,
+  which hashes `k` once, and `or_insert`, `or_insert_with(_key)`,
+  `or_default`, `and_modify` and the handle on a number or text they give
+  write what it found, `$entryOrInsert` and `$entryOrInsertWith` as a
+  B-tree of std's nodes' (#926), never `$orInsert(m, k, v)` and `m.set(k,
+  ..)`, three or four searches. `entry_searched_once` (`map_keys.rs`)
+  owns which entries are: a B-tree's of std's nodes, and a hash map's of
+  keys found by their own `Hash` and `Eq`, generic code's included, whose
+  class may be one. `get_disjoint_mut`'s handle is on what its search
+  found, and a walk hashes nothing: `values_mut`, `iter_mut` and `retain`
+  hold each entry itself (`entryHandles`), and `extract_if` takes out
+  what it walks to (`$deleteHeld`), as std's do.
 
 ## What std leaves its own
 
@@ -82,7 +94,10 @@ every key again as it grows, and compares keys whose hashes differ where
 7 bits of their random hashes meet. Its clone copies the table without
 hashing. rust-js hashes once a search, a clone's keys too, and never
 compares keys whose bytes differ. A program can't count on either, so the
-corpus prints what a map holds and gives back, never the calls. The std
+corpus prints what a map holds and gives back, and counts calls only of a
+table made `with_capacity` for all it holds, which std's docs say never
+grows: there each call's searches are std's, one an entry and none a
+walk (`test/corpus/map_entry_hashes_its_key_once.rs`, #1362). The std
 net's counted key panics at its first call, `insert`'s `hash`, whose
 place std's table fixes.
 
@@ -128,4 +143,12 @@ place std's table fixes.
   `hash-runs-code-of-any-bound`, `hashed-key-refused`,
   `hashed-key-borrowed-unrefused`, `hashed-keys-eq-unasked`,
   `hashed-keys-removed-still-found`, `hashed-keys-insert-keeps-new-key`,
-  `hashed-set-replace-keeps-held`.
+  `hashed-set-replace-keeps-held`; and of an entry's one search (#1362),
+  `hash-entry-searched-again`, `hashed-entry-handles-search`,
+  `disjoint-mut-handle-searches`, `extract-if-deletes-by-search`,
+  `extract-if-set-deletes-by-search` and `mut-values-searched`.
+- **Amended (#1362)**: a hash map's entry of such keys hashed its key three
+  or four times, `$orInsert` then `m.set`, where std's hashes it once, and
+  a walk's handles searched for each key; the same in generic code. A
+  B-tree's `values_mut` of a key whose `Ord` is its own compared its keys
+  where std's walk compares none, now its entries' handles too.

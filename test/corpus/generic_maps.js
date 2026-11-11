@@ -4,6 +4,9 @@ import {
   $KeyMap,
   $KeySet,
   $byteLen,
+  $entry,
+  $entryOrInsert,
+  $entryOrInsertWith,
   $eq,
   $foldOf,
   $given,
@@ -11,7 +14,6 @@ import {
   $iter,
   $next,
   $nextSome,
-  $orInsert,
   $partialEq,
   $strictlyEqual,
   $toBytes,
@@ -26,10 +28,7 @@ export function entry() {
 function group(iter, KHash, KPartialEq, KMap) {
   const map = new KMap();
   for (const [k, v] of iter) {
-    if (!map.has(k)) {
-      map.set(k, []);
-    }
-    map.get(k).push(v);
+    $entryOrInsertWith($entry(map, k), () => []).push(v);
   }
   return map;
 }
@@ -47,8 +46,8 @@ function tCounting(TIterator, TItemMap) {
       $given(self, TIterator, true)
         .map((item) => f(item))
         .forEach((k) => {
-          const current = $orInsert(counts, k, 0);
-          counts.set(k, (current + 1) >>> 0);
+          const orInsert = $entryOrInsert($entry(counts, k), 0, true);
+          orInsert.value = (orInsert.value + 1) >>> 0;
         });
       return counts;
     },

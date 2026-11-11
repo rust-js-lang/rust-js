@@ -10,8 +10,6 @@ import {
   $eq,
   $extendMap,
   $index,
-  $mutGet,
-  $orInsertWith,
   $ord,
   $partialEq,
   $partialOrd,
@@ -60,11 +58,14 @@ function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
   while ((value = iter.next().value) != null) {
     const a = VCopy ? VCopy.copy(value[0]) : value[0];
     const b = VCopy ? VCopy.copy(value[1]) : value[1];
-    const key = VCopy ? VCopy.copy(a) : a;
-    const map = $orInsertWith(all, key, () => new VMap());
-    const key$1 = VCopy ? VCopy.copy(b) : b;
-    $orInsertWith(map, key$1, () => 0);
-    const orDefault = $mutGet(map, key$1);
+    const orDefault = $entryOrInsertWith(
+      $entry(
+        $entryOrInsertWith($entry(all, VCopy ? VCopy.copy(a) : a), () => new VMap()),
+        VCopy ? VCopy.copy(b) : b,
+      ),
+      () => 0,
+      true,
+    );
     orDefault.value = (orDefault.value + 1) >>> 0;
   }
   return all;

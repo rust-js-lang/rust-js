@@ -1153,7 +1153,11 @@ export function at(b, row, col) {
   set a `$hashedSet`. A search hashes the key once, then asks `eq` of the
   keys it holds that hashed to the same bytes, so `Tag("RUST")` finds the
   `Tag("rust")` a set holds, and a `hash` that prints or panics runs where
-  std's does ([ADR 1120](../../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)):
+  std's does ([ADR 1120](../../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)).
+  An entry is one search, so `*counts.entry(tag).or_insert(0) += 1`
+  hashes `tag` once, `$entryOrInsert($entry(counts, tag), 0, true)` as a
+  B-tree's below, generic code's map too; `values_mut`, `iter_mut`,
+  `retain` and `extract_if` hash nothing, as std's walks don't (#1362):
 
 ```rust
 use std::collections::HashSet;
