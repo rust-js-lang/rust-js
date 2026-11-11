@@ -18,7 +18,7 @@ import { join } from "node:path";
 
 import { generate, print, type Program } from "./generate";
 import { reduce, size } from "./reduce";
-import { reducedRepro } from "./reduced";
+import { deadlineOf, reducedRepros, toReduce } from "./reduced";
 import { same } from "./oracle";
 import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, contentDirectory, fixture, root, target, writeWhole } from "./support";
@@ -144,8 +144,11 @@ const origin = () =>
     source: Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim(),
   });
 
+const seedTimeout = 600_000;
+
 for (let seed = start; seed < start + seeds; seed++) {
   test(`seed ${seed}`, async () => {
+    const started = Date.now();
     const program = generate(seed);
     const verdict = judge(program, seed);
     if (process.env.FUZZ_REPORT) console.log(`seed ${seed}: ${verdict.kind}${"error" in verdict ? ` ${verdict.error.split("\n")[0]}` : ""}`);
@@ -178,7 +181,8 @@ for (let seed = start; seed < start + seeds; seed++) {
     // And that again by the nets' reducer, which takes apart what's left
     // within a statement (#1088).
     const build = "build" in again ? again.build : "build" in verdict ? verdict.build : "plain";
-    const further = again.kind === "differs" || again.kind === "crash" ? reducedRepro(repro, build) : "";
+    const further =
+      again.kind === "differs" || again.kind === "crash" ? (await reducedRepros([toReduce(repro, build)], deadlineOf(started, seedTimeout)))[0] : "";
     expect(`${verdict.kind}, ${reduced} from ${size(program)} statements to ${size(smallest)} in ${repro}:\n\n${print(smallest, seed)}\n${detail(again)}${further}`).toBe("");
-  }, 600_000);
+  }, seedTimeout);
 }

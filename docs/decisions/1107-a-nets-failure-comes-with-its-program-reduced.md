@@ -136,3 +136,19 @@ The metamorphic net's parts, though, ran 141–149 min, and the job's
 150-minute limit stopped them, so it runs on three machines of four
 parts each, `1-4/12`, `5-8/12` and `9-12/12`, as the iterator matrix
 runs on six (#1306).
+
+## Amendment: a test's failures are reduced at once, within its timeout (#1365)
+
+Each failure was reduced where it was found, `spawnSync` of the reducer
+with a budget of 300 s and 300 s more before it was stopped, so a test
+that found two, a memory-net seed failing in both builds, ran its two
+reductions end to end and past its 600 s timeout, reporting nothing
+(seeds 7, 12 and 14 of #1349's widened net). Now each net's test keeps
+each failure's program as it finds it (`toReduce`) and, once it has run,
+reduces them all at once (`reducedRepros`), sharing its part's cores and
+memory among them, each budget the less of `NET_REDUCE_BUDGET` and what's
+left of the test's own timeout less a minute's margin, the reducer's
+process group stopped past it; with too little left, the failure says the
+command that reduces it. Seed 16 with #1356's bug put back, both builds
+failing: 307 s before, 158 s after, the same reduced program
+(docs/dev-loop.md).

@@ -12,6 +12,7 @@ import { buildCompiler, fixture } from "./support";
 import { underLoad } from "../scripts/timing";
 import { checked, failure, reduce, size } from "../scripts/reduce";
 import { installMiri, miriInstalled } from "./miri";
+import { reducedRepros, toReduce } from "./reduced";
 import { partSetting } from "./part-settings";
 
 beforeAll(() => {
@@ -51,6 +52,25 @@ test("a program rust-js refuses is reduced to what it refuses, the rest gone", a
   expect(reduced.program).toContain("set_hook");
   for (const gone of ["helper", "Unused", "vec!", "short"]) expect(reduced.program).not.toContain(gone);
   expect(reduced.to).toBeLessThan(reduced.from / 3);
+}, 300_000);
+
+// A net's test's failures are reduced together once it has found them all,
+// each a share of its cores, and each within what's left of the test's own
+// timeout: a memory-net seed failing in both builds, reduced one after the
+// other at 300 s each, ran past its 600 s (#1365). Of one with too little
+// time left, the command that reduces it, not a reduction cut short.
+test("a test's failures are reduced at once, within what's left of its timeout", async () => {
+  const dir = fixture("reduce-together");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "refused.rs");
+  writeFileSync(file, refused);
+  const both = await reducedRepros([toReduce(file, "plain"), toReduce(file, "std")], Date.now() + 280_000);
+  for (const repro of both) {
+    expect(repro).toContain("set_hook");
+    expect(repro).not.toContain("short");
+  }
+  const [late] = await reducedRepros([toReduce(file, "plain")], Date.now() + 30_000);
+  expect(late).toStartWith("\nnot reduced (no time left in the test's timeout): bun scripts/reduce.ts ");
 }, 300_000);
 
 test("a program that runs as native Rust does isn't reduced", async () => {

@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { corpus } from "./corpus-cases";
 import { runSync } from "./child";
 import { buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
-import { reducedRepro } from "./reduced";
+import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, fixture, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
@@ -157,9 +157,15 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
   return { problems, program: made.library === undefined ? variant : undefined };
 }
 
+const caseTimeout = 900_000;
+
 for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name))) {
-  test(`${name}, rewritten`, () => {
+  test(`${name}, rewritten`, async () => {
+    const started = Date.now();
     const problems: string[] = [];
+    // Its failures' programs, each reduced once every rewrite has run
+    // (#1365).
+    const failing: { at: number; reduction: Reduction }[] = [];
     for (const rewrite of rewritesRun) {
       const found = wrong(rewrite, name, edition, native);
       for (const [build] of builds) {
@@ -169,15 +175,17 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
           problems.push(`${build} ${rewrite} ${name} runs as Rust does now: take it off test/metamorphic-known.txt (#${listedAs.issue})`);
         } else if (listedAs === undefined && problem !== undefined) {
           // With its program reduced (#1088), where it's one crate.
-          const repro = found?.program === undefined ? "" : reducedRepro(found.program, build, edition);
-          problems.push(`${build} ${rewrite} ${name}: ${problem}${repro}`);
+          if (found?.program !== undefined) failing.push({ at: problems.length, reduction: toReduce(found.program, build, edition) });
+          problems.push(`${build} ${rewrite} ${name}: ${problem}`);
         }
       }
     }
+    const repros = await reducedRepros(failing.map((f) => f.reduction), deadlineOf(started, caseTimeout));
+    failing.forEach((f, i) => (problems[f.at] += repros[i]));
     // What isn't listed: an issue to file, and `<builds> <rewrite> <case>`
     // to list under it.
     expect(problems.join("\n\n")).toBe("");
-  }, 900_000);
+  }, caseTimeout);
 }
 
 // The harness's own parts.

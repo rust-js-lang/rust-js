@@ -26,7 +26,7 @@ import { memoryProgram } from "./memory-net";
 import { miriInstalled, undefinedBehaviour, installMiri } from "./miri";
 import { partSetting } from "./part-settings";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { reducedRepro } from "./reduced";
+import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { buildCompiler, contentDirectory, fixture, root, target, writeWhole } from "./support";
 
 beforeAll(buildCompiler);
@@ -123,8 +123,11 @@ test("a wrong answer is the form of the operation that first prints otherwise", 
   expect(firstOtherwise(native, `${native}3 a1 [5]\n`, forms)).toBe("copies/copy");
 });
 
+const seedTimeout = 600_000;
+
 for (const seed of chosen) {
-  test(`seed ${seed}`, () => {
+  test(`seed ${seed}`, async () => {
+    const started = Date.now();
     const { text, swarm, forms } = memoryProgram(seed);
     const dir = fixture(`memory-${seed}`);
     // Where its text says, so the same program is one kept native binary.
@@ -137,6 +140,8 @@ for (const seed of chosen) {
     const native = runNative(file, dir, "2024", "wasm32");
     if (typeof native === "string") throw new Error(`seed ${seed} made a program rustc rejects:\n${text}\n${native}`);
     const problems: string[] = [];
+    // Its wrong answers, each reduced once both builds have run (#1365).
+    const wrongs: { at: number; reduction: Reduction }[] = [];
     for (const [build, flags] of builds) {
       const key = `${seed} ${build}`;
       const compiled = compileJs(file, dir, "2024", false, {}, flags);
@@ -165,10 +170,13 @@ for (const seed of chosen) {
       // A wrong answer of a known form passes; another is kept and reduced.
       const form = firstOtherwise(native.stdout, ran.stdout, forms);
       if (form !== undefined && knownAs("wrong", form) !== undefined) continue;
-      problems.push(wrong(seed, build, file, text, native, ran, form));
+      wrongs.push({ at: problems.length, reduction: toReduce(file, build) });
+      problems.push(wrong(seed, build, text, native, ran, form));
     }
+    const repros = await reducedRepros(wrongs.map((w) => w.reduction), deadlineOf(started, seedTimeout));
+    wrongs.forEach((w, i) => (problems[w.at] += repros[i]));
     expect(problems.join("\n\n")).toBe("");
-  }, 600_000);
+  }, seedTimeout);
 }
 
 /** One more program `build` refused for `reason`. */
@@ -180,16 +188,15 @@ function refused(build: string, reason: string, seed: number) {
 }
 
 /** A wrong answer, kept in target/memory-net/ before it's reduced, so a
- * job stopped can't lose it: what each run printed, and the program
- * reduced. */
-function wrong(seed: number, build: string, file: string, text: string, native: Run, ran: Run, form: string | undefined): string {
+ * job stopped can't lose it: what each run printed. */
+function wrong(seed: number, build: string, text: string, native: Run, ran: Run, form: string | undefined): string {
   const out = join(target, "memory-net");
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, `seed-${seed}.rs`), text);
   const detail = `native: ${show(native.outcome)}\n${native.stdout}\nJS (${build}): ${show(ran.outcome)}\n${ran.stdout}${ran.stderr.slice(0, 2000)}`;
   writeFileSync(join(out, `seed-${seed}.${build}.txt`), detail);
   const first = form === undefined ? "only in how it ended" : `first printed by a \`${form}\``;
-  return `seed ${seed}, ${build}: a wrong answer, ${first}\n${detail}${reducedRepro(file, build)}`;
+  return `seed ${seed}, ${build}: a wrong answer, ${first}\n${detail}`;
 }
 
 afterAll(() => {

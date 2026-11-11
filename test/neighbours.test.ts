@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { crateOf, groups, listed, narrowed, neighbourly, readKnown, victim, writeCrate, type Known } from "./neighbours";
-import { reducedRepro } from "./reduced";
+import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
@@ -106,9 +106,14 @@ function parting(a: string, b: string): string {
   return `native: ${JSON.stringify(x.slice(at, at + 3))}\njs:     ${JSON.stringify(y.slice(at, at + 3))}`;
 }
 
+const groupTimeout = 1_800_000;
+
 for (const index of chosen) {
   const group = all[index];
   test(`seed ${seed} group ${index}: ${group.length} cases`, async () => {
+    const started = Date.now();
+    // Its failures' crates, each reduced once both builds have run (#1365).
+    const failing: { at: number; reduction: Reduction }[] = [];
     const whole = native(`neighbours-${seed}-${index}`, group);
     // A case the shuffle let in that can't share a crate: the shuffle's
     // own fault, `apart`'s to say.
@@ -136,8 +141,8 @@ for (const index of chosen) {
             : await fewest(group, refused);
         const victimOf = named !== undefined && group.includes(named) ? named : undefined;
         if (!listed(known, build, victimOf, beside)) {
-          const repro = reducedRepro(inlinedCrate([...(victimOf === undefined ? [] : [victimOf]), ...beside]), build);
-          problems.push(`${build}: ${victimOf ?? "-"} refused beside ${beside.join(" ")}, though each compiles alone: ${ran}${repro}`);
+          failing.push({ at: problems.length, reduction: toReduce(inlinedCrate([...(victimOf === undefined ? [] : [victimOf]), ...beside]), build) });
+          problems.push(`${build}: ${victimOf ?? "-"} refused beside ${beside.join(" ")}, though each compiles alone: ${ran}`);
         }
         continue;
       }
@@ -156,18 +161,19 @@ for (const index of chosen) {
       const others = group.filter((name) => name !== hurt);
       const beside = hurt === undefined ? group : await narrowed(hurt, others, fails);
       if (hurt !== undefined && listed(known, build, hurt, beside)) continue;
-      const repro = reducedRepro(inlinedCrate(hurt === undefined ? group : [hurt, ...beside]), build);
+      failing.push({ at: problems.length, reduction: toReduce(inlinedCrate(hurt === undefined ? group : [hurt, ...beside]), build) });
       problems.push(
         (hurt === undefined
           ? `${build}: ${group.join(" ")} ended ${show(ran.outcome)} where native ended ${show(whole.run.outcome)}${ran.bytes.stderr.equals(whole.run.bytes.stderr) ? "" : `, its stderr ${JSON.stringify(ran.stderr.slice(0, 300))} where native's is ${JSON.stringify(whole.run.stderr.slice(0, 300))}`}`
-          : `${build}: ${hurt} beside ${beside.join(" ")} runs otherwise than native, ending ${show(ran.outcome)}:\n${parting(whole.run.stdout, ran.stdout)}`)
-          .concat(repro),
+          : `${build}: ${hurt} beside ${beside.join(" ")} runs otherwise than native, ending ${show(ran.outcome)}:\n${parting(whole.run.stdout, ran.stdout)}`),
       );
     }
+    const repros = await reducedRepros(failing.map((f) => f.reduction), deadlineOf(started, groupTimeout));
+    failing.forEach((f, i) => (problems[f.at] += repros[i]));
     // What isn't listed: an issue to file, and its pair to list under it,
     // `<builds> <case> beside <cases>`, or a line more under its issue.
     expect(problems.join("\n\n")).toBe("");
-  }, 1_800_000);
+  }, groupTimeout);
 }
 
 /** Whether `pair`'s crate still goes wrong in `build`: refused or crashing,
