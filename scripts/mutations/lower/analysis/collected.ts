@@ -151,15 +151,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a type constant"],
   },
   {
-    name: "std-iterators-ignored",
-    breaks:
-      "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
-    file: "src/lower/analysis/collected.rs",
-    find: "    if std_iterators {\n",
-    replace: "    if false && std_iterators {\n",
-    tests: ["test/iterator-forms.test.ts"],
-  },
-  {
     name: "class-trait-field-calls-unread",
     breaks:
       "a call of a trait of classes' method that gives a field, outside its defaults, calls a method that isn't, `this.items()`, not the field (rd304)",

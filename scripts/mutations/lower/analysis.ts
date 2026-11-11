@@ -492,14 +492,6 @@ export const mutations: Mutation[] = [
     tests: ["test/require.test.ts"],
   },
   {
-    name: "growing-extend-capacity-unkept",
-    breaks: "a crate whose `extend` asks the crate's own hint as a `Vec` fills keeps no capacity, so `with_capacity(n)` is an empty array of none (a wrong answer, #849)",
-    file: "src/lower/analysis.rs",
-    find: "    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);\n",
-    replace: "    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies);\n",
-    tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_unasked.rs$"],
-  },
-  {
     name: "library-closure-clone-undecided",
     breaks:
       "a consumer decides of a library's closure itself, not as its library's contract says: `map(|s| s.len())`'s, which rustc infers `FnMut` by `map`'s bound and its library made a plain function, is cloned apart, `$clone(f)`, which throws (#1202)",

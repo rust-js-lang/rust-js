@@ -300,7 +300,7 @@ impl Callbacks for RustJs {
             },
         );
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let mut bodies = lower::collect_bodies(tcx, self.std_iterators, self.export_library);
+        let mut bodies = lower::collect_bodies(tcx);
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
         // unwind (#424).
         if self.std_bodies {
@@ -338,13 +338,14 @@ impl Callbacks for RustJs {
                 library: self.export_library,
                 program: self.program,
                 std_bodies: self.std_bodies,
+                std_iterators: self.std_iterators,
                 panics_abort: self.panics_abort,
                 tidy_until: self.tidy_until.as_deref(),
                 js_modules: &self.local_js,
             };
             match lower::lower_crate(
                 tcx,
-                (&bodies, &initializers),
+                (&mut bodies, &mut initializers),
                 &serde_attrs,
                 (&self.dependencies, &instances, &made_where_used),
                 built,

@@ -563,4 +563,21 @@ export const mutations: Mutation[] = [
     replace: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
+  {
+    name: "const-size-slot-ungiven",
+    breaks:
+      "a generic flatten of `Self::Item`s, whose constant size its callers give as one of its slots, is made in place where a collect sees its hint, and asks it as it grows (#1327)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()\n",
+    replace: "    !crate::lower::recognition::known_by_bounds(of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_its_callers_items_where_its_hint_is_seen.rs$"],
+  },
+  {
+    name: "const-size-of-known-ungiven",
+    breaks: "a flatten of arrays collected where its hint is seen is made in place, and asks its source's hint as it grows (#1327)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()\n",
+    replace: "    slot_of(tcx, foreign, caller, of).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+  },
 ];

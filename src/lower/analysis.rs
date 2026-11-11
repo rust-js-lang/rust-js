@@ -4,6 +4,7 @@ pub(super) mod arguments;
 mod back_stepped;
 
 mod ground;
+pub(super) use ground::{Ground, of as ground};
 mod hint_asked;
 use crate::collections::{IndexMap, IndexSet};
 pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal, field_of, made_by};
@@ -277,23 +278,26 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
 
 pub(super) fn analyze_crate<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
+    ground: Ground<'a, 'tcx>,
     all_bodies: &'a [Body<'tcx>],
     initializers: &[Body<'tcx>],
-    dependencies: &crate::library::Dependencies,
-    (library, std_bodies): (bool, bool),
+    library: bool,
     (instances, made_where_used): (&super::Instances, &IndexSet<LocalDefId>),
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
     // What it stands on: its bodies but rustc's test harness's, its
-    // libraries and its trait impls (`ground.rs`).
-    let ground::Ground {
-        markers,
-        all_bodies,
+    // libraries and its trait impls (`ground.rs`), made before the bodies
+    // were told which adapters each makes in place.
+    let all_bodies = ground.harness.left_out(tcx, all_bodies);
+    let Ground {
+        harness: ground::Harness { markers, .. },
         writer_facts,
         shown_params,
         reads_fn_identity,
         foreign,
         trait_impls,
-    } = ground::of(tcx, all_bodies, dependencies, (library, std_bodies), instances);
+        cloned,
+        asks_capacity,
+    } = ground;
     if !bindings::validate(tcx)
         || !super::declarations::validate_types(tcx)
         || !traits::validate(tcx, &foreign)
@@ -575,9 +579,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Each closure's handle on itself or on what owns them, whose upgrades
     // ask no count (ADRs 0843, 0317, amended), a library's owner by contract.
     let mut self_handles = SelfHandles::new(tcx, all_bodies, &|id, index| foreign.owned_by_return(id, index));
-    // The types the crate clones (ADRs 0522, 0525), in place or in generic
-    // code: which closures an `Rc<dyn Fn>` may be made of twice too (#1249).
-    let cloned = clones::cloned_types(tcx, all_bodies, library);
+    // The types the crate clones, `ground`'s: which closures an `Rc<dyn Fn>`
+    // may be made of twice too (#1249).
     let counted_with = |closure_facts: &ClosureFacts<'tcx>| {
         let mut given: IndexSet<(DefId, u32)> = IndexSet::default();
         loop {
@@ -698,7 +701,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What generic code asks the hint of, made knowing it where it's made,
     // by the makers of what's stepped from its back (#1236).
     // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
-    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
     let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, asks_capacity || foreign.keeps_capacity());
     back_stepped.typed.extend(hint_asked.knowing);
     let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, library);

@@ -8,6 +8,9 @@ pub struct Built<'a> {
     pub program: bool,
     /// Given std's bodies to lower (ADR 0561).
     pub std_bodies: bool,
+    /// The build of std's iterator structs alone, the differential job's: no
+    /// adapter made in place (ADR 0908).
+    pub std_iterators: bool,
     /// Asked to abort on a panic, `-C panic=abort`, which rust-js unwinds
     /// (ADR 0090): unwinding is refused of it (ADR 0660).
     pub panics_abort: bool,

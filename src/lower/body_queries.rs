@@ -29,7 +29,7 @@ use constants::constant_patterns;
 pub(super) use constants::{
     ConstantPatterns, PatternStep, PatternValue, pattern_places, pattern_value, transparent_subpattern,
 };
-use in_place::{in_place_adapters, results_in_place};
+pub(in crate::lower) use in_place::decide as decide_in_place;
 pub(super) use ranges::{present_item_of_sized, ranges};
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
@@ -172,8 +172,9 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) called_methods: IndexSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, `in_place_adapters`'s: its
-    /// maker marks what it makes so (`made_in_place`, #730).
-    pub(super) in_place_adapters: IndexSet<Span>,
+    /// maker marks what it makes so (`made_in_place`, #730). Decided once the
+    /// crate's `Recognition` exists (`decide_in_place`), none reads it before.
+    pub(super) in_place_adapters: InPlace,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
@@ -189,7 +190,6 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let in_place_adapters = in_place_adapters(tcx, thir, None, |_| false, &IndexSet::default());
         let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)
@@ -206,7 +206,7 @@ impl<'tcx> BodyFacts<'tcx> {
             getter_unwraps: getter_unwraps::getter_unwraps(tcx, thir),
             method_calls,
             called_methods,
-            in_place_adapters,
+            in_place_adapters: InPlace(None),
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,
@@ -382,16 +382,32 @@ pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
 }
 
 /// What a body's facts take of the crate's other bodies, before lowering:
-/// what a closure given `flat_map` gives, made in place
-/// (`results_in_place`), and each resume of a payload a closure captured
-/// (`resumes_as_given`).
-pub(super) fn across_bodies<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    bodies: &mut [super::Body<'tcx>],
-    cloned: &super::analysis::Cloned<'tcx>,
-) {
-    results_in_place(tcx, bodies, cloned);
+/// each resume of a payload a closure captured (`resumes_as_given`). Which
+/// adapters each makes in place is decided later, once the crate's
+/// `Recognition` exists (`decide_in_place`).
+pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>]) {
     resumes_as_given(tcx, bodies);
+}
+
+/// Which of `HELD_COMPILED`'s adapters a body makes in place, decided once
+/// the crate's `Recognition` exists (`decide_in_place`, #1327): before then
+/// none, and nothing reads it, as its readers ask only `contains`, which an
+/// undecided one refuses. Only this module makes or decides one.
+#[derive(Default)]
+pub(in crate::lower) struct InPlace(Option<IndexSet<Span>>);
+
+impl InPlace {
+    fn decided(set: IndexSet<Span>) -> Self {
+        InPlace(Some(set))
+    }
+
+    /// Whether the adapter made at `span` is made in place.
+    pub(in crate::lower) fn contains(&self, span: &Span) -> bool {
+        let Some(set) = &self.0 else {
+            panic!("rust-js: a body's in-place adapters read before they're decided (decide_in_place)");
+        };
+        set.contains(span)
+    }
 }
 
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2173
-lines	271838
+files	2179
+lines	272773
 temporaries	0	0
 labeled blocks	0	0
 while (true)	205	7.5
-$iter	2442	89.8
-Iterator.from	227	8.4
+$iter	2464	90.3
+Iterator.from	230	8.4
 return;	299	11
-renamed x$1	13227	486.6
+renamed x$1	13268	486.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1831	0	0	1	19	2	1	98
@@ -321,7 +321,7 @@ test/corpus/closures_made_and_folded.js	90	0	0	0	0	1	0	9
 test/corpus/closures_of_their_value.js	86	0	0	0	0	0	0	0
 test/corpus/code_point_order.js	108	0	0	0	0	0	0	10
 test/corpus/collect_as_vec_asks_hint.js	358	0	0	0	0	2	0	0
-test/corpus/collect_asks_hint_as_it_grows.js	408	0	0	0	0	2	0	0
+test/corpus/collect_asks_hint_as_it_grows.js	401	0	0	0	1	2	0	0
 test/corpus/collect_close_panics.js	91	0	0	0	5	0	0	0
 test/corpus/collect_closes_what_its_hint_panics.js	120	0	0	0	0	0	0	0
 test/corpus/collect_drops.js	128	0	0	0	5	0	0	0
@@ -666,19 +666,23 @@ test/corpus/flag_of_a_guarded_match.js	40	0	0	0	0	0	0	0
 test/corpus/flat_map_drops.js	163	0	0	0	10	0	0	4
 test/corpus/flat_map_inner_iterables.js	42	0	0	0	0	0	0	0
 test/corpus/flat_map_of_a_bound_reference.js	141	0	0	0	6	0	0	11
-test/corpus/flat_map_of_a_where_clause_into_iterator.js	283	0	0	0	6	0	0	36
+test/corpus/flat_map_of_a_where_clause_into_iterator.js	282	0	0	0	6	0	0	36
 test/corpus/flat_map_of_given_adapters_from_its_back.js	1060	0	0	0	2	0	0	2
 test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0
 test/corpus/flatten_boxed_options.js	76	0	0	0	0	0	0	0
 test/corpus/flatten_closed_part_way_drops_source_first.js	340	0	0	1	15	0	0	0
+test/corpus/flatten_collected_where_its_hint_is_seen.js	100	0	0	0	1	0	0	0
+test/corpus/flatten_collected_whose_own_hint_runs.js	40	0	0	0	1	0	0	0
 test/corpus/flatten_count_takes_each_inner_count.js	579	0	0	0	23	3	3	12
 test/corpus/flatten_fold_closure_panics.js	181	0	0	0	6	0	0	6
 test/corpus/flatten_folds_reach_its_sources_own.js	493	0	0	2	10	0	0	0
 test/corpus/flatten_from_both_ends.js	217	0	0	0	7	0	4	35
 test/corpus/flatten_from_both_ends_drops_its_inners.js	212	0	0	0	7	0	0	8
 test/corpus/flatten_from_its_back.js	246	0	0	0	9	0	2	19
+test/corpus/flatten_given_where_its_hint_is_asked.js	316	0	0	0	16	1	0	30
 test/corpus/flatten_last_takes_each_inner_last.js	436	0	0	1	10	0	1	110
 test/corpus/flatten_of_iterators_from_back.js	160	0	0	0	9	0	0	4
+test/corpus/flatten_of_its_callers_items_where_its_hint_is_seen.js	98	0	0	0	1	1	0	0
 test/corpus/flatten_of_options_given_to_generic_code.js	125	0	0	0	3	1	0	9
 test/corpus/flattened_keyed_const.js	54	0	0	0	0	0	0	0
 test/corpus/flattened_keyed_enum.js	153	0	0	0	0	0	1	5
@@ -737,6 +741,7 @@ test/corpus/fn_pointer_of_borrowed_struct.js	18	0	0	0	0	0	0	0
 test/corpus/fold_back_drops_what_it_takes.js	115	0	0	0	0	0	0	0
 test/corpus/fold_drops_moved_function_first.js	1753	0	0	1	42	0	1	121
 test/corpus/fold_from_none.js	36	0	0	0	0	0	0	6
+test/corpus/fold_whose_rest_panics_as_dropped_leaks_its_result.js	98	0	0	0	2	1	0	0
 test/corpus/folded_call_panic_drops.js	30	0	0	0	0	0	0	0
 test/corpus/folded_functions_drop_before_the_rest.js	985	0	0	1	6	0	1	150
 test/corpus/for_binding_set_by_its_closure.js	39	0	0	0	0	0	0	0
@@ -987,6 +992,7 @@ test/corpus/io_buf_read.js	179	0	0	1	0	0	0	20
 test/corpus/io_cursor.js	169	0	0	0	0	0	0	12
 test/corpus/io_error_values.js	75	0	0	0	0	0	0	0
 test/corpus/io_read_deque.js	88	0	0	0	0	0	0	2
+test/corpus/io_read_empty_and_repeat.js	291	0	0	0	0	0	0	11
 test/corpus/io_read_generic.js	215	0	0	0	0	0	0	45
 test/corpus/io_read_slice.js	256	0	0	0	0	0	0	2
 test/corpus/io_unit_result.js	178	0	0	0	0	0	0	13

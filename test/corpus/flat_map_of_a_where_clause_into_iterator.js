@@ -18,6 +18,8 @@ import {
   $roomForHint,
   $traitImpl,
   $unwindsOn,
+  iterator_flatMap,
+  iterator_flatten,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,48 +37,43 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
     $tExt,
     [TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
-      flat(self, SelfItemIntoIterator) {
+      flat(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
+        const iter = iterator_flatMap(
+          self,
+          (x) => x,
+          TIterator,
+          SelfItemIntoIterator,
+          false,
+          SelfItemConstSize,
+          SelfItemIntoIterOneShot,
+          dropT,
+          dropTItem,
+          undefined,
+          dropTItem,
+          dropTItemItem,
+          dropTItemIntoIter,
+        );
         return $collectDropping(
-          $roomForHint(
-            $flatMap($closing($given(self, TIterator, true), $givenDrop(dropT), false), (x) =>
-              $closing(
-                $given(
-                  SelfItemIntoIterator.intoIter(x),
-                  SelfItemIntoIterator.IntoIterIterator(),
-                  true,
-                ),
-                dropTItem,
-                false,
-              ),
-            ),
-            TItemItemSize,
-            false,
-            false,
-            dropTItemItem,
-          ),
+          $roomForHint(iter, TItemItemSize, false, false, dropTItemItem),
           dropTItemItem,
           true,
         );
       },
-      flattened(self, SelfItemIntoIterator) {
+      flattened(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
+        const iter = iterator_flatten(
+          self,
+          TIterator,
+          SelfItemIntoIterator,
+          false,
+          SelfItemConstSize,
+          SelfItemIntoIterOneShot,
+          dropT,
+          dropTItem,
+          dropTItemItem,
+          dropTItemIntoIter,
+        );
         return $collectDropping(
-          $roomForHint(
-            $flatMap($closing($given(self, TIterator, true), $givenDrop(dropT), false), (item) =>
-              $closing(
-                $given(
-                  SelfItemIntoIterator.intoIter(item),
-                  SelfItemIntoIterator.IntoIterIterator(),
-                  true,
-                ),
-                dropTItem,
-                false,
-              ),
-            ),
-            TItemItemSize,
-            false,
-            false,
-            dropTItemItem,
-          ),
+          $roomForHint(iter, TItemItemSize, false, false, dropTItemItem),
           dropTItemItem,
           true,
         );
@@ -156,7 +153,7 @@ function main() {
     $dropEach(dDrop_drop),
     dDrop_drop,
     $dropEach(dDrop_drop),
-  ).flat($iter(tmp$1), intoIterator);
+  ).flat($iter(tmp$1), intoIterator, undefined, false);
   try {
     console.log(`flat [${numbers(flat).join(", ")}]`);
   } catch (error) {
@@ -217,7 +214,7 @@ function main() {
     $dropEach(dDrop_drop),
     dDrop_drop,
     $dropEach(dDrop_drop),
-  ).flattened($iter(tmp$4), intoIterator);
+  ).flattened($iter(tmp$4), intoIterator, undefined, false);
   try {
     console.log(`flattened [${numbers(flattened).join(", ")}]`);
   } catch (error) {
@@ -273,10 +270,12 @@ function main() {
       }
     }
   }
-  const sums = tExt({ next: $next }, 4).flat($iter([[1, 2], [3]]), {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  const sums = tExt({ next: $next }, 4).flat(
+    $iter([[1, 2], [3]]),
+    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    undefined,
+    false,
+  );
   console.log(`sums [${sums.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

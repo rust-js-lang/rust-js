@@ -25,4 +25,5 @@ plain std generic-instances capacity_of_chains_of_exact_size_adapters.rs
 plain std generic-instances capacity_of_text_patterns.rs
 plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances extend_asks_hint_capacity_grown.rs
+plain std generic-instances flatten_collected_where_its_hint_is_seen.rs
 plain std generic-instances map_of_own_size_hint.rs

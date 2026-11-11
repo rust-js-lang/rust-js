@@ -48,7 +48,7 @@ pub enum Lowered {
 /// made where they're first used (ADR 0037, amended).
 pub fn lower_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]),
+    (all_bodies, initializers): (&mut [Body<'tcx>], &mut [Body<'tcx>]),
     serde_attrs: &super::SerdeAttributes,
     (dependencies, instances, made_where_used): (
         &crate::library::Dependencies,
@@ -61,6 +61,7 @@ pub fn lower_crate<'tcx>(
         library: export_library,
         program,
         std_bodies,
+        std_iterators,
         panics_abort,
         tidy_until,
         js_modules,
@@ -68,6 +69,15 @@ pub fn lower_crate<'tcx>(
     // A program decides by its own code, whatever contract it writes (#597).
     let library = export_library && !program;
     let sources = super::sources::CapturedSources::new(tcx);
+    // What the analysis stands on; then which adapters each body makes in
+    // place, decided once the crate's `Recognition` exists, before anything
+    // reads it, a collect's hint where the program sees it among what
+    // decides it (#1327).
+    let ground = super::analysis::ground(tcx, all_bodies, dependencies, (library, std_bodies), instances);
+    for bodies in [&mut *all_bodies, &mut *initializers] {
+        super::body_queries::decide_in_place(ground.recognition(tcx), bodies, &ground.cloned, std_iterators);
+    }
+    let (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]) = (all_bodies, initializers);
     let AnalyzedCrate {
         bodies,
         flattened,
@@ -135,10 +145,10 @@ pub fn lower_crate<'tcx>(
         null_fields,
     } = match analyze_crate(
         tcx,
+        ground,
         all_bodies,
         initializers,
-        dependencies,
-        (library, std_bodies),
+        library,
         (instances, made_where_used),
     ) {
         Some(analyzed) => analyzed,

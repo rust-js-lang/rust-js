@@ -1165,6 +1165,22 @@ impl<'tcx> Asking<'tcx> {
     }
 }
 
+/// Whether `caller`'s callers give the constant size of `of`, a flatten's
+/// items, which std's struct held asks (ADR 0899): of a type known here, a
+/// type parameter or one of its slots, `I::Item`, as a flatten's
+/// `ConstSize` is asked above; not of another type only a caller knows,
+/// `<S as Source>::Iter` or a trait method's `impl Trait` (#1312), which
+/// none gives yet.
+pub(in crate::lower) fn const_size_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    caller: DefId,
+    of: ty::Ty<'tcx>,
+) -> bool {
+    let of = of.peel_refs();
+    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()
+}
+
 /// Where a library's function's slot `index` is read, as its manifest says:
 /// a built slot's gates (#737).
 fn foreign_gates(foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId, index: u32) -> Gates {

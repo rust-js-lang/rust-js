@@ -63,16 +63,8 @@ pub(super) fn of_crate<'tcx>(
         knowing: IndexSet::default(),
         hinted: Hinted::default(),
     };
-    let size_hint = crate::lower::recognition::trait_method(
-        tcx,
-        crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
-        "size_hint",
-    );
-    let collect = crate::lower::recognition::trait_method(
-        tcx,
-        crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
-        "collect",
-    );
+    let asks = AsksHint::of(tcx);
+    let collect = asks.collect;
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     for body in all_bodies {
@@ -117,14 +109,9 @@ pub(super) fn of_crate<'tcx>(
             {
                 mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);
             }
-            // `size_hint()` of a type of its type parameters, asked of what
-            // its callers give, each instance below.
-            // Or a `collect()` of one, which asks its hint as the `Vec` it
-            // makes grows, std's `SpecFromIter` (#1239).
-            if (callee == size_hint || callee == collect)
-                && let Some(of) = args.types().next().map(|ty| ty.peel_refs())
-                && rustc_middle::ty::TypeVisitableExt::has_param(&of)
-            {
+            // What asks the hint of a type of its type parameters, asked of
+            // what its callers give, each instance below (`AsksHint`).
+            if let Some(of) = asks.of_params(callee, args) {
                 of_params.push((tcx.typeck_root_def_id(body.def_id), tcx.erase_and_anonymize_regions(of)));
             }
             // A library's function's iterators, whose hint its body, which
@@ -192,8 +179,8 @@ pub(super) fn of_crate<'tcx>(
     asked
 }
 
-/// Each function of the crate's that asks the hint of what it's given:
-/// `size_hint()` of a type made of its type parameters, `hint<I:
+/// Each function of the crate's that asks the hint of what it's given,
+/// `AsksHint`'s, `hint<I:
 /// Iterator>(it: I)`'s, or one that gives them on to such a function, to
 /// the fixed point of the crate's bodies (#1323). By the function, not by
 /// its parameter: what it's given may reach the hint through what it makes
@@ -202,11 +189,7 @@ pub(super) fn of_crate<'tcx>(
 /// std's struct, which knows its hint. Before lowering, of the crate's
 /// bodies.
 pub(in crate::lower) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tcx>]) -> IndexSet<DefId> {
-    let size_hint = crate::lower::recognition::trait_method(
-        tcx,
-        crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
-        "size_hint",
-    );
+    let asks_hint = AsksHint::of(tcx);
     let mut asked: IndexSet<DefId> = IndexSet::default();
     loop {
         let before = asked.len();
@@ -216,10 +199,11 @@ pub(in crate::lower) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tc
                 let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                     return false;
                 };
-                (callee == size_hint || asked.contains(&callee))
-                    && args
-                        .types()
-                        .any(|given| rustc_middle::ty::TypeVisitableExt::has_param(&given))
+                asks_hint.of_params(callee, args).is_some()
+                    || asked.contains(&callee)
+                        && args
+                            .types()
+                            .any(|given| rustc_middle::ty::TypeVisitableExt::has_param(&given))
             });
             if asks {
                 asked.insert(owner);
@@ -228,6 +212,34 @@ pub(in crate::lower) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tc
         if asked.len() == before {
             return asked;
         }
+    }
+}
+
+/// The calls that ask the hint of an iterator of their function's type
+/// parameters: `size_hint()`, and a `collect()`, which std's `SpecFromIter`
+/// asks as the `Vec` it makes grows (#1239). The one answer, of what each
+/// instance is made knowing (`of_crate`) and of which functions ask the
+/// hint of what they're given (`asked_of_own`, #1327).
+struct AsksHint {
+    size_hint: DefId,
+    collect: DefId,
+}
+
+impl AsksHint {
+    fn of(tcx: TyCtxt<'_>) -> Self {
+        let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
+        AsksHint {
+            size_hint: crate::lower::recognition::trait_method(tcx, iterator, "size_hint"),
+            collect: crate::lower::recognition::trait_method(tcx, iterator, "collect"),
+        }
+    }
+
+    /// Of a call of `callee` with `args` that asks it, the iterator's type,
+    /// where it's of its function's type parameters.
+    fn of_params<'tcx>(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
+        let of = args.types().next()?.peel_refs();
+        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))
+            .then_some(of)
     }
 }
 

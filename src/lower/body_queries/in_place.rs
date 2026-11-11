@@ -1,7 +1,8 @@
 //! Which of `HELD_COMPILED`'s adapters, `rev()`, `enumerate()`, `map()`,
 //! `flatten()`, a body makes in place, what the recognizers make of them,
-//! and which it holds, std's struct (ADR 0871): `in_place_adapters`, and
-//! across the crate's bodies, a `flat_map`'s closure's (`results_in_place`).
+//! and which it holds, std's struct (ADR 0871): `in_place_adapters`, of
+//! each body, decided across the crate's once its `Recognition` exists
+//! (`decide`).
 //! Split from body_queries.rs by concept, as a file is at most 1500 lines.
 
 use super::{strip, tail};
@@ -12,24 +13,58 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-/// Each closure the crate gives a `flat_map` made in place, which steps
-/// what it gives there as a JS iterator: what it gives is made in place
-/// (`in_place_adapters`), its facts made again so. Not one held, std's
-/// compiled `FlatMap`, which steps what it gives as std's struct, its
-/// `next_back` too (#726). Before lowering, of the crate's bodies.
-pub(super) fn results_in_place<'tcx>(
-    tcx: TyCtxt<'tcx>,
+/// Which of `HELD_COMPILED`'s adapters each body makes in place, decided
+/// once the crate's `Recognition` exists, before anything reads it
+/// (`InPlace`): of each body, `in_place_adapters` given what the crate's
+/// other bodies say, which functions ask the hint of what they're given
+/// (`asked_of_own`) and which adapters the crate clones apart (ADR 0915);
+/// then each closure the crate gives a `flat_map` made in place, which
+/// steps what it gives there as a JS iterator, so what it gives is made in
+/// place too; not one held, std's compiled `FlatMap`, which steps what it
+/// gives as std's struct, its `next_back` too (#726). A collect or an
+/// extend asks the hint of what it's given, std's, which the program sees
+/// where it reaches a `size_hint` of the crate's own or a library's
+/// (`collect_hint_seen`): a flatten given one there is held, std's struct,
+/// which knows its items' constant size, where its callers give that
+/// (`flattens_sized`, #1327). Of the build of std's iterator structs, none (ADR 0908).
+pub(in crate::lower) fn decide<'tcx>(
+    recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &mut [crate::lower::Body<'tcx>],
     cloned: &crate::lower::analysis::Cloned<'tcx>,
+    std_iterators: bool,
 ) {
+    let tcx = recognition.tcx;
+    if std_iterators {
+        for body in bodies.iter_mut() {
+            body.facts.in_place_adapters = super::InPlace::decided(IndexSet::default());
+        }
+        return;
+    }
+    let hint_asked = crate::lower::analysis::asked_of_own(tcx, bodies);
+    let made = |body: &crate::lower::Body<'tcx>, stepped_result: Option<ExprId>| {
+        let owner = body.def_id;
+        let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
+        let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
+        let here = crate::lower::recognition::Recognition {
+            typing_env: made_in.1,
+            ..recognition
+        };
+        let caller = tcx.typeck_root_def_id(owner);
+        let observed = |at: (DefId, usize), given: ty::Ty<'tcx>| {
+            recognition.collect_hint_seen(at, given) && flattens_sized(here, caller, given)
+        };
+        in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart, (&hint_asked, &observed))
+    };
+    let mut sets: Vec<IndexSet<Span>> = bodies.iter().map(|body| made(body, None)).collect();
+    // Each closure given a `flat_map` made in place.
     let mut given = IndexSet::default();
-    for body in bodies.iter() {
+    for (body, set) in bodies.iter().zip(&sets) {
         for e in body.thir.exprs.iter() {
             if let ExprKind::Call {
                 fun, ref args, fn_span, ..
             } = e.kind
                 && matches!(*body.thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::is_flat_map(tcx, id))
-                && body.facts.in_place_adapters.contains(&fn_span)
+                && set.contains(&fn_span)
                 && let Some(&f) = args.get(1)
                 && let ExprKind::Closure(ref closure) = body.thir[strip(&body.thir, f)].kind
             {
@@ -37,42 +72,38 @@ pub(super) fn results_in_place<'tcx>(
             }
         }
     }
-    // And each that makes an adapter the crate clones apart, `chain()`'s
-    // of a `cycle()`, whose parts its maker holds (ADR 0915).
-    let clones_apart = |body: &crate::lower::Body<'tcx>| {
-        body.thir.exprs.iter().any(|e| {
-            matches!(e.kind, ExprKind::Call { .. })
-                && crate::lower::iterators::cloned_apart(
-                    (tcx, ty::TypingEnv::post_analysis(tcx, body.def_id)),
-                    cloned,
-                    e.ty,
-                    body.def_id,
-                )
-        })
-    };
-    // And each that gives one to a function that asks its hint, or to a
-    // library's, which may (#1323).
-    let hint_asked = crate::lower::analysis::asked_of_own(tcx, bodies);
-    let gives_to_hint_asked = |body: &crate::lower::Body<'tcx>| {
-        body.thir.exprs.iter().any(|e| {
-            matches!(e.kind, ExprKind::ZstLiteral { .. })
-                && crate::lower::fn_def(e.ty).is_some_and(|(callee, _)| {
-                    hint_asked.contains(&callee)
-                        || !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee)
-                })
-        })
-    };
-    for body in bodies.iter_mut() {
-        let flat_mapped = given.contains(&body.def_id);
-        if !flat_mapped && !clones_apart(body) && !gives_to_hint_asked(body) {
-            continue;
+    for (body, set) in bodies.iter().zip(sets.iter_mut()) {
+        if given.contains(&body.def_id) {
+            *set = made(body, Some(body.expr));
         }
-        let stepped_result = flat_mapped.then_some(body.expr);
-        let owner = body.def_id;
-        let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
-        let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
-        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart, &hint_asked);
     }
+    for (body, set) in bodies.iter_mut().zip(sets) {
+        body.facts.in_place_adapters = super::InPlace::decided(set);
+    }
+}
+
+/// Whether each flatten an iterator of type `ty` holds, through std's
+/// adapters, has items whose constant size `caller`'s callers give, which
+/// std's struct held asks (`const_size_given`, ADR 0899). One of a type
+/// only a caller knows, whose size none gives yet, a trait's associated
+/// iterator's, is made in place, as it was, where a collect sees its hint
+/// too: no new refusal, the user's decision through m6 (#1327).
+fn flattens_sized<'tcx>(
+    recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
+    caller: DefId,
+    ty: ty::Ty<'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    let ty = ty.peel_refs();
+    if let Some((source, made)) = crate::lower::recognition::flattened_source(tcx, ty)
+        && !(made.or_else(|| recognition.iterator_item(source))).is_some_and(|items| {
+            crate::lower::analysis::type_facts::const_size_given(tcx, recognition.foreign, caller, items)
+        })
+    {
+        return false;
+    }
+    crate::lower::recognition::adapted_iterators(tcx, recognition.typing_env, ty)
+        .is_none_or(|held| held.into_iter().all(|held| flattens_sized(recognition, caller, held)))
 }
 
 /// Each `rev()`, `enumerate()` or `map()`, `HELD_COMPILED`'s, whose adapter
@@ -93,7 +124,7 @@ pub(super) fn in_place_adapters<'tcx>(
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
     cloned_apart: impl Fn(ty::Ty<'tcx>) -> bool,
-    hint_asked: &IndexSet<DefId>,
+    (hint_asked, observed): (&IndexSet<DefId>, &impl Fn((DefId, usize), ty::Ty<'tcx>) -> bool),
 ) -> IndexSet<Span> {
     use crate::lower::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
@@ -167,10 +198,12 @@ pub(super) fn in_place_adapters<'tcx>(
     // What's given where its hint is asked: to `size_hint()`, to a function
     // of the crate's that asks the hint of what it's given (`asked_of_own`,
     // the hint's owner's), or to a library's, whose body, which the crate
-    // can't see, may ask it, as `hint_asked.rs` takes it; or as the
-    // receiver of an iterator's method whose own call is, which gives its
-    // hint of it, `flat_map(f).filter(g)`'s: to the fixed point (#1323),
-    // each call's `fn_span`.
+    // can't see, may ask it, as `hint_asked.rs` takes it; to a collect or
+    // an extend, where the program sees what it asks (`collect_hint_seen`,
+    // hint_asks.rs', #1327); or
+    // as the receiver of an iterator's method whose own call is, which
+    // gives its hint of it, `flat_map(f).filter(g)`'s: to the fixed point
+    // (#1323), each call's `fn_span`.
     let library = |callee: DefId| !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee);
     let mut wanted: IndexSet<Span> = IndexSet::default();
     loop {
@@ -199,6 +232,7 @@ pub(super) fn in_place_adapters<'tcx>(
                     continue;
                 };
                 let asks = match inputs.get(index) {
+                    _ if observed((callee, index), thir[arg].ty) => true,
                     _ if adapts && index == 0 => wanted.contains(&at),
                     Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),
                     None => false,

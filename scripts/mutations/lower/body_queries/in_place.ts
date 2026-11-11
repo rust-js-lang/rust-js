@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     "name": "held-flat-map-results-in-place",
     "breaks": "what the closure of a `flat_map()` held in a variable gives is made in place, a JS `.map()` chain, which std's compiled `FlatMap` steps from its back as its struct and throws (#726)",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                && body.facts.in_place_adapters.contains(&fn_span)\n",
+    "find": "                && set.contains(&fn_span)\n",
     "replace": "",
     "tests": [
       "test/corpus.test.ts",
@@ -246,19 +246,46 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
-    name: "hint-asked-bodies-unrevisited",
-    breaks: "a body that gives a flatten to a function that asks its hint keeps what it made in place before the crate's bodies were read: `(0, None)` (#1323)",
-    file: "src/lower/body_queries/in_place.rs",
-    find: "        if !flat_mapped && !clones_apart(body) && !gives_to_hint_asked(body) {\n",
-    replace: "        if !flat_mapped && !clones_apart(body) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
-  },
-  {
     name: "hint-of-a-library-unasked",
     breaks: "a flatten under a `filter` given to a library's function, whose body the crate can't see, is made in place, though the library may ask its hint: `(0, None)` (#1323)",
     file: "src/lower/body_queries/in_place.rs",
     find: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),\n",
     replace: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee),\n",
     tests: ["test/crates.test.ts", "-t", "flatten given to a library's function knows its hint"],
+  },
+  {
+    name: "collect-hint-seen-made-in-place",
+    breaks: "a flatten collected where the program sees the hint std's collect asks is made in place, JS's own `flatMap`, which knows no items' constant size: its source's printing `size_hint` asked three times where std asks once (#1327)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                    _ if observed((callee, index), thir[arg].ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+  },
+  {
+    name: "std-iterators-ignored",
+    breaks:
+      "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    if std_iterators {\n",
+    replace: "    if false && std_iterators {\n",
+    tests: ["test/iterator-forms.test.ts"],
+  },
+  {
+    name: "collect-hint-seen-unsized-held",
+    breaks:
+      "a generic flatten whose items' constant size no caller gives, a trait's associated iterator's, is held where a collect sees its hint, and refused, \"its constant size of `<S as Source>::Iter`, which no caller gives yet\", where it compiled made in place (#1327)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            recognition.collect_hint_seen(at, given) && flattens_sized(here, caller, given)\n",
+    replace: "            recognition.collect_hint_seen(at, given)\n",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of a trait's associated iterators"],
+  },
+  {
+    name: "flattens-sized-unwalked",
+    breaks:
+      "only the flatten a collect is given is asked its items' constant size, not one beneath a `rev()`, which is held and refused (#1327)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "        .is_none_or(|held| held.into_iter().all(|held| flattens_sized(recognition, caller, held)))\n",
+    replace: "        .is_none_or(|_| true)\n",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of a trait's associated iterators"],
   },
 ];

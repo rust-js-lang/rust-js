@@ -2,34 +2,52 @@
 //! their facts are asked: its bodies but rustc's test harness's, its
 //! libraries, `Foreign`, of the writers and the functions' identities its
 //! bodies ask of them, and its trait impls, which a `Recognition` of it
-//! holds. Split from analysis.rs by concept, as a file is at most 1500
-//! lines. It holds none of its bodies: what it lends of them, the harness
-//! left out, it lends again where it's asked.
+//! holds, which types it clones and whether a `Vec`'s capacity is asked.
+//! Split from analysis.rs by concept, as a file is at most 1500 lines. It
+//! holds none of its bodies, so they can be told which adapters each makes
+//! in place once it's made, before the analysis lends them (#1327).
 
 use super::*;
 
 /// What `of` makes of the crate.
-pub(super) struct Ground<'a, 'b, 'tcx> {
-    /// rustc's test markers, the harness's `const`s (ADR 0026).
-    pub(super) markers: Vec<(LocalDefId, Symbol)>,
-    /// Its bodies but the harness's.
-    pub(super) all_bodies: Vec<&'b Body<'tcx>>,
+pub(in crate::lower) struct Ground<'a, 'tcx> {
+    /// rustc's test harness, which the JS runner takes the place of.
+    pub(super) harness: Harness,
     pub(super) writer_facts: WriterFacts,
     pub(super) shown_params: ShownParams<'tcx>,
     pub(super) reads_fn_identity: bool,
     pub(super) foreign: super::super::library::Foreign<'a, 'tcx>,
     pub(super) trait_impls: Vec<DefId>,
+    /// The types the crate clones (ADRs 0522, 0525), in place or in
+    /// generic code.
+    pub(in crate::lower) cloned: Cloned<'tcx>,
+    /// Whether the crate asks a `Vec`'s capacity, which is kept as std grows
+    /// it (ADR 0419).
+    pub(super) asks_capacity: bool,
+}
+
+impl<'a, 'tcx> Ground<'a, 'tcx> {
+    /// The crate's `Recognition`, of its trait impls and libraries.
+    pub(in crate::lower) fn recognition(&self, tcx: TyCtxt<'tcx>) -> Recognition<'_, 'tcx> {
+        Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &self.trait_impls,
+            foreign: &self.foreign,
+        }
+    }
 }
 
 /// rustc's test harness, which the JS runner takes the place of (ADR 0026).
-struct Harness {
-    markers: Vec<(LocalDefId, Symbol)>,
+pub(super) struct Harness {
+    /// Its test markers, a `const` each.
+    pub(super) markers: Vec<(LocalDefId, Symbol)>,
     main: Option<DefId>,
 }
 
 impl Harness {
     /// `all_bodies` but the harness's.
-    fn left_out<'b, 'tcx>(&self, tcx: TyCtxt<'tcx>, all_bodies: &'b [Body<'tcx>]) -> Vec<&'b Body<'tcx>> {
+    pub(super) fn left_out<'b, 'tcx>(&self, tcx: TyCtxt<'tcx>, all_bodies: &'b [Body<'tcx>]) -> Vec<&'b Body<'tcx>> {
         let is_harness = |def_id: DefId| {
             let root = tcx.typeck_root_def_id(def_id);
             Some(root) == self.main || self.markers.iter().any(|&(marker, _)| marker.to_def_id() == root)
@@ -39,13 +57,13 @@ impl Harness {
 }
 
 /// What the crate's analysis stands on (`Ground`).
-pub(super) fn of<'a, 'b, 'tcx>(
+pub(in crate::lower) fn of<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &'b [Body<'tcx>],
+    all_bodies: &[Body<'tcx>],
     dependencies: &'a crate::library::Dependencies,
     (library, std_bodies): (bool, bool),
     instances: &'a super::super::Instances,
-) -> Ground<'a, 'b, 'tcx> {
+) -> Ground<'a, 'tcx> {
     // With `--test`, rustc adds a harness: a `const` per test, marked
     // `#[rustc_test_marker]`, and a `main` that runs them with libtest. The
     // JS runner takes their place (ADR 0026), so they're left out.
@@ -99,14 +117,22 @@ pub(super) fn of<'a, 'b, 'tcx>(
             }
             impls
         });
-    let Harness { markers, .. } = harness;
+    let cloned = clones::cloned_types(tcx, &all_bodies, library);
+    let recognition = Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies) || recognition.extends_as_it_fills(&all_bodies);
     Ground {
-        markers,
-        all_bodies,
+        harness,
         writer_facts,
         shown_params,
         reads_fn_identity,
         foreign,
         trait_impls,
+        cloned,
+        asks_capacity,
     }
 }

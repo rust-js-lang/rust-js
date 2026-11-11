@@ -655,3 +655,26 @@ test("whether a consumer keeps each item is one catalog", () => {
   expect(defining("leaves_none")).toEqual([]);
   expect(read("src/lower/mir/iter/closing.rs")).toContain("crate::lower::recognition::keeps_each(name)");
 });
+
+// Which adapters a body makes in place is decided once, by its owner,
+// `body_queries/in_place.rs`'s `decide`, which `lower/pipeline.rs` calls
+// once the crate's `Recognition` exists and before the analysis reads the
+// bodies (#1327): a body holds an undecided `InPlace` until then, which
+// only `body_queries` makes or decides, and its readers ask it only
+// `contains`, which an undecided one refuses. Nothing else writes the set,
+// and nothing reads it but by `contains`.
+test("in-place adapters are decided once, then read", () => {
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const outside = lowering.filter((file) => !file.startsWith("src/lower/body_queries"));
+  const writes = outside.filter((file) => /in_place_adapters\s*=[^=]|(?<![:\w])InPlace\s*\((?:None|Some)|InPlace::decided/.test(read(file)));
+  expect(writes).toEqual([]);
+  const reads = outside.flatMap((file) =>
+    [...read(file).matchAll(/in_place_adapters\.(\w+)/g)].map((m) => `${file}: ${m[1]}`),
+  );
+  expect(reads.filter((read) => !read.endsWith(": contains"))).toEqual([]);
+  const source = read("src/lower/body_queries.rs");
+  expect(source).toContain("pub(in crate::lower) struct InPlace(Option<IndexSet<Span>>);");
+  expect(source).toMatch(/\n    fn decided\(set: IndexSet<Span>\) -> Self \{/);
+  const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
+  expect(deciding).toEqual(["src/lower/pipeline.rs"]);
+});

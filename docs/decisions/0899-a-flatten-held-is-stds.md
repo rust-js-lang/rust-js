@@ -274,3 +274,90 @@ against native Rust in both builds. Mutations (`lower/body_queries/in_place.ts`)
 `hint-asked-not-relayed`; `test/crates.test.ts`' "a consumer's flatten
 given to a library's function knows its hint"; `rev-never-in-place`,
 `rev-own-impl-in-place` and `holder-param-steps-js` refitted.
+
+## Amendment: held where a collect's hint is seen, decided once (2026-11-11, #1327)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A `flat_map` of arrays collected into a `Vec`, or extended into a `Vec`
+or a `VecDeque`, asked its source's `size_hint` three times where std asks
+once, when that source was the crate's own iterator, whose hint prints.
+std's collect asks the flatten's hint as the `Vec` fills. std's flatten
+knows its items' constant size, so its hint is exact and one reserve is
+enough. A flatten made in place, JS's own `flatMap`, knows none, so the
+`Vec` asked again as it grew. #1323 held a flatten whose hint a function
+asks. A collect or an extend asks it too, and the program sees what it
+asks wherever it reaches a `size_hint` of the crate's own or a
+library's. So a flatten given one there is held:
+`iterators/hint_asks.rs`' `collect_hint_seen`, the owner of when a
+collect asks its hint, seeds `in_place_adapters`' `wanted`. A capacity
+the crate reads is std's already, by the growth that #1180 keeps.
+Without this rule, four capacity-reading flattens match native Rust, so
+it holds none for them, and a flatten whose hint runs nothing is made in
+place as it was.
+
+Held, std's struct asks its items' constant size, which a generic
+function's callers give only of a type parameter or one of its slots,
+`I::Item`. Of another type only a caller knows, `<S as Source>::Iter` or
+a trait method's `impl Trait` (#1312), none gives it yet, so holding the
+flatten would refuse a program that compiles today. The user's decision,
+through m6: no new refusal. `in_place.rs`' `flattens_sized` holds a
+flatten for a seen hint only where each flatten in what the collect is
+given has its size given, `analysis/type_facts.rs`' `const_size_given`
+says, the owner of what a caller is asked. Another stays made in place,
+as it was. Where a caller makes that type an array whose constant size
+std counts, its hint is asked again as the `Vec` grows, which native Rust
+doesn't: #1341 (P0), already so before this change, closed by carrying
+`ConstSize` through the dictionary with #1312. An inner that isn't an
+array, the crate's own iterator say, matches native Rust in place: std
+counts no constant size of it.
+
+Which functions' hint is seen is a `Recognition` question, which needs
+the crate's libraries and trait impls. So the in-place adapters are no
+longer decided as the bodies are collected. `body_queries::InPlace` is
+undecided until then, and its readers ask only `contains`, which an
+undecided one refuses. The set is decided once by its owner,
+`body_queries/in_place.rs`' `decide`, which `lower/pipeline.rs` calls
+after the crate's ground (`analysis/ground.rs`: libraries, trait impls,
+cloned types, capacity facts) and before the analysis lends the bodies
+out. Initializers are decided too, and so is the build of std's iterator
+structs, whose set is empty. The first pass `collect_bodies` made, and
+`results_in_place`'s second, are now this one pass: each body with the
+crate's facts, then each `flat_map`'s closure made in place given that
+answer. `test/architecture-iterators.test.ts`' "in-place adapters are
+decided once, then read" holds it, and docs/architecture.md's pipeline
+shows the step. A corpus compile of all 2,161 cases, 12 at a time on the
+Mac, took 15.7–16.3 s before and 15.9–16.3 s after.
+
+`test/corpus/flatten_collected_whose_own_hint_runs.rs` and
+`flatten_collected_where_its_hint_is_seen.rs` (a collect, a `Vec`'s and a
+`VecDeque`'s extend of the crate's iterator, and a plain range's collect
+whose capacity is read) run against native Rust in both builds. Three
+snapshots changed: `collect_asks_hint_as_it_grows` and
+`flat_map_of_a_where_clause_into_iterator` hold their flattens now, which
+reach the crate's own `size_hint` and a caller's, and
+`restarting_iterators` the one it gives generic code that collects it. #1327's 60 rows are off
+`test/iterator-matrix-known.txt`, and the whole conformance and points
+tables were run. `flatten_of_its_callers_items_where_its_hint_is_seen.rs`
+holds a generic flatten of a slot's items, and
+`test/lowering-generic-iterators.test.ts` a trait's associated
+iterators made in place. Its metamorphic net's generic-instances rewrites
+found that a flatten given to generic code that collects it was made in
+place, though #1239 made that collect std's `SpecFromIter`, which asks its
+hint as the `Vec` grows: `hint_asked.rs`' `AsksHint` is now the one
+answer of which calls ask the hint of their parameters' iterator, of
+what's made knowing it (`of_crate`) and of which functions ask it of what
+they're given (`asked_of_own`), so the flatten is held, and the third case
+holds that too. The second case's rewrite is listed under #1263, the
+capacity generic code's collect gives, in both builds. The readability baseline is blessed with it: `$iter` 89.8
+to 89.9 in 10,000 lines, the held flatten's dictionary's `intoIter:
+(items) => $iter(items)`. Mutations: `collect-hint-seen-made-in-place`,
+`collect-hint-seen-unsized-held` and `flattens-sized-unwalked`
+(`lower/body_queries/in_place.ts`), `collect-hint-seen-of-none`
+(`lower/iterators/hint_asks.ts`), and `const-size-slot-ungiven` and
+`const-size-of-known-ungiven` (`lower/analysis/type_facts.ts`), and
+`collect-asks-no-hint` (`lower/analysis/hint_asked.ts`). `std-iterators-ignored`,
+`growing-extend-capacity-unkept` and `held-flat-map-results-in-place`
+were moved or refitted, and `hint-asked-bodies-unrevisited` was taken
+off: the pass it named is gone.

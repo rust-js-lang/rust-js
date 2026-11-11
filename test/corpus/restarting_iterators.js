@@ -20,7 +20,9 @@ import {
   $lent,
   $next,
   $range,
+  $rangeNext,
   $stepBy,
+  iterator_flatMap,
   iterator_fuse,
   iterator_peekable,
   iterator_zip,
@@ -165,7 +167,15 @@ function main() {
     `scan ([${value$14[0].join(", ")}], [${value$14[1].join(", ")}], [${value$14[2].join(", ")}])`,
   );
   const value$15 = twice(
-    $iterator(f(), flakyIterator_next).flatMap((x) => $lazyRange(0, x % 3)),
+    iterator_flatMap(
+      f(),
+      (x) => ({ start: 0, end: x % 3 }),
+      { next: flakyIterator_next },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+      false,
+      undefined,
+      false,
+    ),
     "next",
   );
   console.log(

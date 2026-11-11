@@ -16,6 +16,32 @@ use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether a call of `callee`, std's collect or extend, asks the hint of
+    /// what it's given at `index`, of type `given`, as it fills, where the
+    /// program sees what it asks: `collect()`'s and `from_iter`'s, and
+    /// `extend`'s iterable's, where the hint may run a `size_hint` of the
+    /// crate's own or a library's (`hint_reaches_own`), which a flatten made
+    /// in place, knowing no items' constant size, would ask otherwise than
+    /// std's (#1327). A capacity the crate reads is std's already, what
+    /// keeps it asking (ADR 0419, #1180).
+    pub(in crate::lower) fn collect_hint_seen(
+        &self,
+        (callee, index): (rustc_span::def_id::DefId, usize),
+        given: Ty<'tcx>,
+    ) -> bool {
+        let tcx = self.tcx;
+        let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
+        let from_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::FromIterator);
+        let collects = (callee == crate::lower::recognition::trait_method(tcx, iterator, "collect")
+            || callee == crate::lower::recognition::trait_method(tcx, from_iterator, "from_iter"))
+            && index == 0
+            || index == 1
+                && tcx
+                    .trait_of_assoc(callee)
+                    .is_some_and(|t| crate::lower::recognition::is_extend(tcx, t));
+        collects && self.hint_reaches_own(given)
+    }
+
     /// Whether std's `extend` of `ty` asks its iterator's hint as it fills:
     /// a `Vec`'s, `extend_desugared`, a `BinaryHeap`'s, its `Vec`'s, and a
     /// `VecDeque`'s, `spec_extend` (#849). Not a `LinkedList`'s, which asks

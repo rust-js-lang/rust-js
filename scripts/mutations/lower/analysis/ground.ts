@@ -11,4 +11,12 @@ export const mutations: Mutation[] = [
     replace: "        all_bodies.iter().collect()\n",
     tests: ["test/test-files.test.ts", "-t", "a module's one module of tests is its test file"],
   },
+  {
+    name: "growing-extend-capacity-unkept",
+    breaks: "a crate whose `extend` asks the crate's own hint as a `Vec` fills keeps no capacity, so `with_capacity(n)` is an empty array of none (a wrong answer, #849)",
+    file: "src/lower/analysis/ground.rs",
+    find: "    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies) || recognition.extends_as_it_fills(&all_bodies);\n",
+    replace: "    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies);\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_unasked.rs$"],
+  },
 ];

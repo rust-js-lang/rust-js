@@ -9,12 +9,15 @@ import {
   $filterDropping,
   $foldToArray,
   $folded,
+  $iter,
   $iterator,
   $lazyChain,
   $lazyRange,
+  $next,
   $reserveHint,
   $roomForHint,
   $some,
+  iterator_flatMap,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -226,29 +229,19 @@ function main() {
         ),
       ).length,
   );
-  run(
-    "flat-mapped, its inner's left counted",
-    () =>
-      $collectDropping(
-        $roomForHint(
-          $closing(
-            $iterator(
-              own(4, none, (n) => n),
-              ownIterator_next,
-              true,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ).flatMap((n) => new Array(10).fill(n)),
-          4,
-          false,
-        ),
-      ).length,
-  );
+  run("flat-mapped, its inner's left counted", () => {
+    const iter = iterator_flatMap(
+      own(4, none, (n) => n),
+      (n) => new Array(10).fill(n),
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      false,
+      undefined,
+      false,
+      ownDrop_drop,
+    );
+    return $collectDropping($roomForHint(iter, 4, false)).length;
+  });
   run(
     "chained",
     () =>

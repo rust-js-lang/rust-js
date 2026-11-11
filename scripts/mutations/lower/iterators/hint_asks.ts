@@ -307,4 +307,12 @@ export const mutations: Mutation[] = [
     replace: "false",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
+  {
+    name: "collect-hint-seen-of-none",
+    breaks: "a collect's hint is never taken for seen: a flatten of the crate's iterator, whose `size_hint` prints, collected is made in place, its hint asked three times where std asks once (#1327)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        collects && self.hint_reaches_own(given)\n",
+    replace: "        collects && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+  },
 ];

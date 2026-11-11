@@ -79,18 +79,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hint-asked-of-no-param",
-    breaks: "a function that asks `size_hint()` of what it's given isn't known to: a flatten given it is JS's own `flatMap`, `(0, None)` where std's counts its items' constant size (#1323)",
+    breaks: "a function that asks `size_hint()` of what it's given, or collects it, isn't known to: a flatten given it is JS's own `flatMap`, `(0, None)` where std's counts its items' constant size (#1323)",
     file: "src/lower/analysis/hint_asked.rs",
-    find: "                (callee == size_hint || asked.contains(&callee))\n",
-    replace: "                asked.contains(&callee)\n",
+    find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
+    replace: "                false\n                    || asked.contains(&callee)\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
     name: "hint-asked-not-relayed",
     breaks: "a function that gives what it's given on to one that asks its hint isn't known to ask it: `relayed(it)` of `hint(it)` (#1323)",
     file: "src/lower/analysis/hint_asked.rs",
-    find: "                (callee == size_hint || asked.contains(&callee))\n",
-    replace: "                (callee == size_hint)\n",
+    find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
+    replace: "                asks_hint.of_params(callee, args).is_some()\n                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+  },
+  {
+    name: "collect-asks-no-hint",
+    breaks:
+      "a flatten given to generic code that collects it is made in place, as no collect is said to ask its hint, so the `Vec` std's `SpecFromIter` grows asks it again (#1239, #1327)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
+    replace: "        (callee == self.size_hint && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_its_callers_items_where_its_hint_is_seen.rs$"],
   },
 ];

@@ -111,6 +111,14 @@ consumes it. It collects MIR and body facts, then requires rustc's full
 analysis (including borrow checking and lints) to succeed before lowering.
 Capturing a body is not permission to emit it.
 
+Which adapters each body makes in place (`body_queries/in_place.rs`) is
+decided once, in `lower/pipeline.rs`, after the crate's ground
+(`analysis/ground.rs`: its libraries, trait impls, cloned types and
+capacity facts) gives its `Recognition`, and before the analysis lends the
+bodies out: a collect's hint the program can see decides it too (#1327).
+The bodies hold it as an undecided `InPlace` until then, which no reader
+can read (`test/architecture-iterators.test.ts`).
+
 ```text
 Rust source
     |
@@ -121,8 +129,9 @@ rustc + JSX expansion -> captured THIR, MIR and body facts
 rustc analysis succeeds
     |
     v
-lower/pipeline.rs: analyze crate -> lower bodies -> assemble retained modules
-    |                              MIR -> JS AST -> body tidy
+lower/pipeline.rs: crate ground -> in-place adapters decided -> analyze crate
+    |              -> lower bodies -> assemble retained modules
+    |                 MIR -> JS AST -> body tidy
     v
 program::Unlinked             owned data: no rustc types beyond this boundary
     |
