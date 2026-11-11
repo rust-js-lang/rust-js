@@ -39,7 +39,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 && tcx
                     .trait_of_assoc(callee)
                     .is_some_and(|t| crate::lower::recognition::is_extend(tcx, t));
-        collects && self.hint_reaches_own(given)
+        if !collects {
+            return false;
+        }
+        let seen = self.hint_reaches_own(given);
+        let answer = match (index == 0, seen) {
+            (true, true) => "collect-asks",
+            (false, true) => "extend-asks",
+            (true, false) => "collect-unseen",
+            (false, false) => "extend-unseen",
+        };
+        crate::decisions::record("hint-seen", answer);
+        seen
     }
 
     /// Whether std's `extend` of `ty` asks its iterator's hint as it fills:
@@ -815,8 +826,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// hint first (`extended_reserved`): where it's asked of a collection
     /// not named, it's held first, so it's made once.
     pub(in crate::lower) fn extend_reserves(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
-        self.extend_room(into, iterable)
-            .is_some_and(|(iter_ty, _)| self.recognition().hint_room_seen(iter_ty))
+        let reserves = self
+            .extend_room(into, iterable)
+            .is_some_and(|(iter_ty, _)| self.recognition().hint_room_seen(iter_ty));
+        crate::decisions::record("extend-reserves", if reserves { "reserves" } else { "none" });
+        reserves
     }
 
     /// What `extend` of `into` by what's of type `iterable` reserves room

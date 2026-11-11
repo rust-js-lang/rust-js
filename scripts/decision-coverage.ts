@@ -107,47 +107,75 @@ async function pool(all: Job[], width: number) {
   return results;
 }
 
-type Pair = { decision: string; answer: string; owner: string; count: number; nets: Set<string>; builds: Set<string>; shapes: Set<string> };
+/** A line of a counts file: decision, answer, kind (`-` of a decision
+ * not typed), body (`own`, `other` or `crate`), count, build, shape and
+ * owner (`src/decisions.rs`' `counts`). */
+const fields = (line: string) => {
+  const [decision, answer, kind, body, n, build, shape, owner] = line.split("\t");
+  return owner ? { decision, answer, kind, body, count: Number(n), build, shape, owner } : undefined;
+};
+
+type Pair = {
+  decision: string;
+  answer: string;
+  owner: string;
+  count: number;
+  nets: Set<string>;
+  builds: Set<string>;
+  shapes: Set<string>;
+  kinds: Map<string, number>;
+  bodies: Map<string, number>;
+};
 
 /** The net a counts file is of: its name before its first dot. */
 const netOf = (file: string) => file.split(".")[0];
 
-/** `file`'s lines, a compile's every decision's every answer each, summed
- * by decision, answer, build and shape: what the report reads of them, a
- * file of some 50 lines where a net's was one of 49 a compile. */
+/** `file`'s lines, summed by all but their count: what the report reads of
+ * them, a file of a line an answer, kind, body, build and shape given. */
 function sum(file: string) {
   const sums = new Map<string, number>();
   for (const line of readFileSync(file, "utf8").split("\n")) {
-    const [decision, answer, n, build, shape, owner] = line.split("\t");
-    if (!owner) continue;
-    const key = [decision, answer, build, shape, owner].join("\t");
-    sums.set(key, (sums.get(key) ?? 0) + Number(n));
+    const parts = line.split("\t");
+    if (!fields(line)) continue;
+    const key = [...parts.slice(0, 4), ...parts.slice(5)].join("\t");
+    sums.set(key, (sums.get(key) ?? 0) + Number(parts[4]));
   }
   const lines = [...sums].map(([key, n]) => {
-    const [decision, answer, build, shape, owner] = key.split("\t");
-    return `${decision}\t${answer}\t${n}\t${build}\t${shape}\t${owner}\n`;
+    const parts = key.split("\t");
+    return [...parts.slice(0, 4), n, ...parts.slice(4)].join("\t") + "\n";
   });
   writeFileSync(file, lines.join(""));
 }
 
 function merge(dir: string): Map<string, Pair> {
   const pairs = new Map<string, Pair>();
-  // What each net's compiles were of: a build or shape none of them was
-  // can't be said to be missed.
+  // What each net's compiles were of: a build, shape, kind or body none
+  // of them was can't be said to be missed.
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".tsv"))) {
     const net = netOf(file);
     for (const line of readFileSync(join(dir, file), "utf8").split("\n")) {
-      const [decision, answer, n, build, shape, owner] = line.split("\t");
-      if (!owner) continue;
-      const key = `${decision}\t${answer}`;
-      const pair = pairs.get(key) ?? { decision, answer, owner, count: 0, nets: new Set(), builds: new Set(), shapes: new Set() };
+      const l = fields(line);
+      if (!l) continue;
+      const key = `${l.decision}\t${l.answer}`;
+      const pair = pairs.get(key) ?? {
+        decision: l.decision,
+        answer: l.answer,
+        owner: l.owner,
+        count: 0,
+        nets: new Set(),
+        builds: new Set(),
+        shapes: new Set(),
+        kinds: new Map(),
+        bodies: new Map(),
+      };
       pairs.set(key, pair);
-      const count = Number(n);
-      if (count > 0) {
-        pair.count += count;
+      if (l.count > 0) {
+        pair.count += l.count;
         pair.nets.add(net);
-        pair.builds.add(build);
-        pair.shapes.add(shape);
+        pair.builds.add(l.build);
+        pair.shapes.add(l.shape);
+        if (l.kind !== "-") pair.kinds.set(l.kind, (pair.kinds.get(l.kind) ?? 0) + l.count);
+        pair.bodies.set(l.body, (pair.bodies.get(l.body) ?? 0) + l.count);
       }
     }
   }
@@ -161,19 +189,41 @@ function report(pairs: Map<string, Pair>, runs: { name: string; code: number; se
   const oneBuild = reached.filter((p) => p.builds.size === 1);
   const oneShape = reached.filter((p) => p.shapes.size === 1);
   const oneNet = reached.filter((p) => p.nets.size === 1);
+  // A kind or a body another answer of the decision reached, which this
+  // one never did: one its owner can be asked of, so a gap, where the rest
+  // are no gap, a crate's analysis never given of a body.
+  const missing = (of: (p: Pair) => Map<string, number>) =>
+    reached.flatMap((p) => {
+      const possible = new Set(all.filter((q) => q.decision === p.decision).flatMap((q) => [...of(q).keys()]));
+      const lacking = [...possible].filter((k) => !of(p).has(k)).sort();
+      return lacking.length ? [{ p, lacking }] : [];
+    });
+  const map = (m: Map<string, number>) => [...m].sort().map(([k, n]) => `${k} ${n}`).join(", ");
   const row = (p: Pair) =>
-    `| ${p.decision} | ${p.answer} | ${p.count} | ${[...p.nets].sort().join(", ")} | ${[...p.builds].sort().join(", ")} | ${[...p.shapes].sort().join(", ")} | ${p.owner} |`;
+    `| ${p.decision} | ${p.answer} | ${p.count} | ${[...p.nets].sort().join(", ")} | ${[...p.builds].sort().join(", ")} | ${[...p.shapes].sort().join(", ")} | ${map(p.bodies)} | ${map(p.kinds)} | ${p.owner} |`;
   const table = (ps: Pair[]) =>
-    ["| Decision | Answer | Count | Nets | Builds | Shapes | Owner |", "|---|---|---|---|---|---|---|", ...ps.map(row)].join("\n");
+    ["| Decision | Answer | Count | Nets | Builds | Shapes | Bodies | Kinds | Owner |", "|---|---|---|---|---|---|---|---|---|", ...ps.map(row)].join("\n");
+  const lacks = (rows: { p: Pair; lacking: string[] }[]) =>
+    ["| Decision | Answer | Never of | Owner |", "|---|---|---|---|", ...rows.map(({ p, lacking }) => `| ${p.decision} | ${p.answer} | ${lacking.join(", ")} | ${p.owner} |`)].join("\n");
   const decisions = new Set(all.map((p) => p.decision)).size;
+  const byBody = missing((p) => p.bodies);
+  const byKind = missing((p) => p.kinds);
   return [
     "# Decision coverage",
     "",
-    `${decisions} decisions, ${all.length} answers: ${reached.length} reached, ${never.length} never.`,
+    `${decisions} decisions, ${all.length} answers: ${reached.length} reached, ${never.length} never; ${byBody.length} never of a body, ${byKind.length} never of a kind, another answer of theirs is.`,
     "",
     "## Never reached",
     "",
     never.length ? table(never) : "None.",
+    "",
+    "## Never of a body another answer is (the crate's own, another crate's)",
+    "",
+    byBody.length ? lacks(byBody) : "None.",
+    "",
+    "## Never of a kind of type another answer is",
+    "",
+    byKind.length ? lacks(byKind) : "None.",
     "",
     "## Reached in one build alone",
     "",

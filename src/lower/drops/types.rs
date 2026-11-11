@@ -239,7 +239,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             Drops::Runs => "runs",
             Drops::Unsupported(..) => "unsupported",
         };
-        crate::decisions::record("type-drops", answer);
+        crate::decisions::record_typed(
+            "type-drops",
+            answer,
+            crate::lower::recognition::kind_of(self.recognition.tcx, ty),
+        );
         drops
     }
 

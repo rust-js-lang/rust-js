@@ -90,3 +90,45 @@ recording it and a catalogue entry.
   none; `refcell-try-borrow`'s `unchecked` and
   `library-writer-options`' `plain` the metamorphic net's alone, of
   programs alone.
+
+## Amendment: the second pass, finer answers (#1376)
+
+The first run reached 48 of the 49 answers: a catalogue that coarse shows
+few gaps. So each answer is now counted apart by where it was given and,
+of a decision that says the type it answers of, by that type's kind; and
+the decisions the first pass left, because their facts are crate-wide
+sets, are counted where they're answered.
+
+- **Bodies.** Each answer is counted of a body of the crate's own,
+  `own`; of another crate's the build lowers, a library's or std's,
+  `other` (`decisions::in_body`, set as `lowered_from_mir` lowers a
+  body); or of neither, the crate's analysis or what's lowered outside a
+  MIR body, `crate`.
+- **Kinds.** A typed decision (`typed: true`, `record_typed`) counts its
+  answers by the type's kind: a number, an array, a tuple, a struct, an
+  enum, a type parameter, a reference, or another, as `recognition::kind_of`
+  says, `decisions.rs` listing the kinds. `copy-if-needed`,
+  `type-drops`, `option-payload`, `mut-ref-form` and `back-stepped` are.
+- **New decisions.** `back-stepped`, whether a value is made knowing its
+  back, by the crate's types, a generic function's own, a made local, or
+  not (`iterators/back_facts.rs`' `stepped_from_its_back`), its
+  `back-counted` and `stepped-local` beside it; `hint-seen`, whether a
+  collect or an extend asks its iterator's hint where the program sees it
+  (`iterators/hint_asks.rs`' `collect_hint_seen`); and `extend-reserves`.
+  22 decisions, 64 answers.
+- **The file.** A line is `decision answer kind body count build shape
+  owner`. Only the first compile into a file writes every answer, `0` of
+  each never given, so the report knows each there is; each after writes
+  what it gave, where every line of every kind and body each compile
+  would grow a net's file past a gigabyte.
+- **The report** says, beside the answers never reached, each answer
+  never given of a body or a kind another answer of the same decision
+  was: one its owner is asked of, so a gap, where a body none of its
+  answers is given of, the crate's analysis in a function's, isn't.
+
+Of the first gaps: `writer-options`' `shown` is the crate pairs', 23
+times, uncounted in the first run; `refcell-try-borrow`'s `unchecked` is
+corpus case try_borrow_of_a_cell_never_contested's, as a program and as
+a library; and `library-writer-options`' `plain` the crate pair
+library_writer_without_options', an app's padding writer given the
+library's plain ones, each against native Rust.

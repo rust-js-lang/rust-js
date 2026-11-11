@@ -674,3 +674,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .find(|&id| is_from_str(self.tcx, id))
     }
 }
+
+/// What kind of type `ty` is, as a typed decision counts its answers
+/// (ADR 1124): a number, a `bool` or a `char`; an array or a slice; a
+/// tuple; a struct; an enum; a type parameter or a projection; a reference
+/// or a raw pointer; another. `decisions.rs`, which no rustc type reaches,
+/// lists the kinds.
+pub(crate) fn kind_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> crate::decisions::Kind {
+    use crate::decisions::Kind;
+    match ty.kind() {
+        _ if ty.is_ref() || crate::lower::pointers::raw_pointee(tcx, ty).is_some() => Kind::Ref,
+        ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) => Kind::Number,
+        ty::Array(..) | ty::Slice(_) => Kind::Array,
+        ty::Tuple(_) => Kind::Tuple,
+        ty::Adt(adt, _) if adt.is_enum() => Kind::Enum,
+        ty::Adt(..) => Kind::Struct,
+        ty::Alias(..) => Kind::Param,
+        _ if crate::lower::generic_facts::is_type_parameter(ty) => Kind::Param,
+        _ => Kind::Other,
+    }
+}

@@ -19,31 +19,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its local, `has_a_back`'s.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
-        self.krate.back_stepped.typed.contains(&ty)
-            // What this generic function makes of its own parameters, given
-            // where a hint is asked (`hint_asked.rs`, #1240).
-            || (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty))
-            || !self.asking_made.get()
-                && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
-                    let local = (self.krate.back_stepped.borrows)
-                        .get(&(self.frame.owner, local))
-                        .copied()
-                        .unwrap_or(local);
-                    made == ty && self.local_stepped_from_its_back(local).is_some()
-                })
+        let answer = if self.krate.back_stepped.typed.contains(&ty) {
+            "typed"
+        // What this generic function makes of its own parameters, given
+        // where a hint is asked (`hint_asked.rs`, #1240).
+        } else if (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {
+            "knowing-in"
+        } else if !self.asking_made.get()
+            && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
+                let local = (self.krate.back_stepped.borrows)
+                    .get(&(self.frame.owner, local))
+                    .copied()
+                    .unwrap_or(local);
+                made == ty && self.local_stepped_from_its_back(local).is_some()
+            })
+        {
+            "made-into"
+        } else {
+            "no"
+        };
+        crate::decisions::record_typed("back-stepped", answer, crate::lower::recognition::kind_of(self.tcx, ty));
+        answer != "no"
     }
 
     /// Whether what the call being lowered makes is what an enumeration
     /// the crate steps from its back is made of, which counts it there, so
     /// it's made knowing its length (`BackStepped::counted`, #1354).
     pub(in crate::lower) fn made_counted_from_its_back(&self) -> bool {
-        self.made_into.is_some_and(|(local, _)| {
+        let counted = self.made_into.is_some_and(|(local, _)| {
             let local = (self.krate.back_stepped.borrows)
                 .get(&(self.frame.owner, local))
                 .copied()
                 .unwrap_or(local);
             self.krate.back_stepped.counted.contains(&(self.frame.owner, local))
-        })
+        });
+        crate::decisions::record("back-counted", if counted { "counted" } else { "uncounted" });
+        counted
     }
 
     /// Whether `ty` is an adapter whose maker makes it knowing its back
@@ -78,9 +89,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         local: rustc_middle::mir::Local,
     ) -> Option<crate::lower::analysis::SteppedLocal> {
-        (self.krate.back_stepped.locals)
+        let stepped = (self.krate.back_stepped.locals)
             .get(&(self.frame.owner, local))
-            .copied()
+            .copied();
+        let answer = match stepped {
+            Some(crate::lower::analysis::SteppedLocal::Lent) => "lent",
+            Some(crate::lower::analysis::SteppedLocal::Given) => "given",
+            None => "none",
+        };
+        crate::decisions::record("stepped-local", answer);
+        stepped
     }
 
     /// Whether what the std iterator method being lowered makes, into

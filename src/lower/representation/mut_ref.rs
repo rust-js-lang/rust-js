@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MutRefForm::GivenAsItIs => "given-as-it-is",
             MutRefForm::Itself => "itself",
         };
-        crate::decisions::record("mut-ref-form", answer);
+        crate::decisions::record_typed("mut-ref-form", answer, crate::lower::recognition::kind_of(self.tcx, ty));
         form
     }
 

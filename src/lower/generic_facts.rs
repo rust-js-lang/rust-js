@@ -307,3 +307,9 @@ pub(in crate::lower) fn may_hold_for_some<'tcx>(
     );
     infcx.predicate_may_hold(&obligation)
 }
+
+/// Whether `ty` is a type parameter itself, as decision coverage counts a
+/// typed answer of one apart (`recognition::kind_of`, ADR 1124).
+pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Param(_))
+}

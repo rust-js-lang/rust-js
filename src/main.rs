@@ -408,8 +408,10 @@ fn main() -> ExitCode {
         let _ = rustc_interface::util::STACK_SIZE.set(STACK);
     }
     let code = on_its_thread();
-    // What each decision answered, where asked (`decisions.rs`).
-    if let Some((path, lines)) = decisions::counts() {
+    // What each decision answered, where asked (`decisions.rs`): every
+    // answer into a file that has none yet, so it knows each there is.
+    let whole = decisions::path().is_some_and(|path| std::fs::metadata(path).map_or(true, |file| file.len() == 0));
+    if let Some((path, lines)) = decisions::counts(whole) {
         let written = (std::fs::OpenOptions::new().create(true).append(true).open(path))
             .and_then(|mut file| file.write_all(lines.as_bytes()));
         if let Err(error) = written {

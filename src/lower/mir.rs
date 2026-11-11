@@ -841,7 +841,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An enum one `match` makes and the next takes apart, one dispatch
         // (rd433).
         let threaded = self.mir_threaded(held);
-        let lowered = self.mir_function(threaded.as_ref().unwrap_or(held), captures, seed);
+        // Its decisions, of a body of the crate's own or another's (ADR 1124).
+        let own = mir.body.source.def_id().is_local();
+        let lowered = crate::decisions::in_body(own, || {
+            self.mir_function(threaded.as_ref().unwrap_or(held), captures, seed)
+        });
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;
         lowered

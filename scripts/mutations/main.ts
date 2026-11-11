@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "        if printer_reads.is_none() || !hooks.check.is_empty() {\n",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
   },
+  {
+    name: "decisions-zeros-every-compile",
+    breaks: "each compile writes every answer's `0`, hundreds of lines, where only the first into a file must: a net's file grows past a gigabyte",
+    file: "src/main.rs",
+    find: ".is_some_and(|path| std::fs::metadata(path).map_or(true, |file| file.len() == 0));\n",
+    replace: ".is_some_and(|_| true);\n",
+    tests: ["test/decisions.test.ts", "-t", "counts every answer"],
+  },
 ];
