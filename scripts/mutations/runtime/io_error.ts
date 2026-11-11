@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
   },
+  {
+    name: "io-error-dyn-no-type-id",
+    breaks: "an `io::Error` made a `dyn Error` has no `typeId`, so a downcast of it to an `io::Error` finds `None` where Rust finds it",
+    file: "src/runtime/io_error.js",
+    find: "    source: (e) => e.error?.impl.source(e.error.value),\n    typeId: () => type,\n",
+    replace: "    source: (e) => e.error?.impl.source(e.error.value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
+  },
 ];

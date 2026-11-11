@@ -38,6 +38,7 @@ export const negativeError = {
   Debug: () => negativeDebug,
   Display: () => negativeDisplay,
   source: $negativeError_source,
+  typeId: () => "lib::Negative",
   description: () => "description() is deprecated; use Display",
   cause: $negativeError_source,
 };
@@ -45,7 +46,10 @@ export const negativeError = {
 function parsePositive(s) {
   const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
   if (result.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseIntError") } };
+    return {
+      TAG: "Err",
+      _0: { value: result._0, impl: $parseErrorDyn("core::num::error::ParseIntError") },
+    };
   }
   const n = result._0;
   if (n < 0n) {
@@ -73,15 +77,30 @@ function settings(text) {
             const small = result._0;
             return { TAG: "Ok", _0: [scale, on, mark, small] };
           }
-          return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("TryFromIntError") } };
+          return {
+            TAG: "Err",
+            _0: { value: result._0, impl: $parseErrorDyn("core::num::error::TryFromIntError") },
+          };
         }
-        return { TAG: "Err", _0: { value: result$1._0, impl: $parseErrorDyn("ParseIntError") } };
+        return {
+          TAG: "Err",
+          _0: { value: result$1._0, impl: $parseErrorDyn("core::num::error::ParseIntError") },
+        };
       }
-      return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseCharError") } };
+      return {
+        TAG: "Err",
+        _0: { value: result._0, impl: $parseErrorDyn("core::char::convert::ParseCharError") },
+      };
     }
-    return { TAG: "Err", _0: { value: result$1._0, impl: $parseErrorDyn("ParseBoolError") } };
+    return {
+      TAG: "Err",
+      _0: { value: result$1._0, impl: $parseErrorDyn("core::str::error::ParseBoolError") },
+    };
   }
-  return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseFloatError") } };
+  return {
+    TAG: "Err",
+    _0: { value: result._0, impl: $parseErrorDyn("core::num::float_parse::ParseFloatError") },
+  };
 }
 
 // Given where an `E: Error` goes, as thiserror's `#[error(transparent)]`
@@ -147,19 +166,21 @@ function main() {
     }
   }
   const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
-  console.log(`${describe(err, $parseErrorDyn("ParseIntError"))}`);
-  const value = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
-  const receiver = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
+  console.log(`${describe(err, $parseErrorDyn("core::num::error::ParseIntError"))}`);
+  const value = tAsDyn_asDyn(err, $parseErrorDyn("core::num::error::ParseIntError"));
+  const receiver = tAsDyn_asDyn(err, $parseErrorDyn("core::num::error::ParseIntError"));
   const value$1 = receiver.impl.source(receiver.value) == null;
   console.log(`${value.impl.Display().fmt(value.value)} ${value$1}`);
   console.log(
-    `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("TryFromIntError"))}`,
+    `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("core::num::error::TryFromIntError"))}`,
   );
-  console.log(`${describe($unwrapErr($parseBool("maybe")), $parseErrorDyn("ParseBoolError"))}`);
+  console.log(
+    `${describe($unwrapErr($parseBool("maybe")), $parseErrorDyn("core::str::error::ParseBoolError"))}`,
+  );
   console.log(
     `${reported({
       value: $unwrapErr($parseInt("x", 0, 255)),
-      impl: eReport($parseErrorDyn("ParseIntError")),
+      impl: eReport($parseErrorDyn("core::num::error::ParseIntError")),
     })}`,
   );
 }

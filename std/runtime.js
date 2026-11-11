@@ -6837,15 +6837,18 @@ export function $append(items, other) {
   other.length = 0;
 }
 
-// One of std's parse errors, `name`, as a `dyn Error` (ADR 0141): its value
-// is its message (ADR 0063), shown by `{:?}` as Rust shows it,
-// `ParseIntError { kind: InvalidDigit }`, and by `{}` as its text, given the
-// placeholder's options as std's `fmt` of it applies them.
-export function $parseErrorDyn(name) {
+// One of std's parse errors, of `TypeId` `type`, as a `dyn Error` (ADR
+// 0141): its value is its message (ADR 0063), shown by `{:?}` as Rust shows
+// it, `ParseIntError { kind: InvalidDigit }`, its type's name, and by `{}`
+// as its text, given the placeholder's options as std's `fmt` of it applies
+// them; its `type_id` `type`, which a downcast compares (ADR 0331).
+export function $parseErrorDyn(type) {
+  const name = type.slice(type.lastIndexOf("::") + 2);
   return {
     Debug: () => ({ fmt: (value) => $debugParseError(value, name) }),
     Display: () => ({ fmt: (value, options) => $formatted(value, options) }),
     source: () => undefined,
+    typeId: () => type,
   };
 }
 
@@ -7031,13 +7034,15 @@ export function $trimMatches(s, p, start = true, end = true) {
   return s.slice(from, to);
 }
 
-// serde_json's error as a `dyn Error` (ADR 0141): shown as serde_json shows
-// it, `{}` its message and `{:?}` `Error("..", line: 1, column: 1)`.
-export function $jsonErrorDyn() {
+// serde_json's error, of `TypeId` `type`, as a `dyn Error` (ADR 0141):
+// shown as serde_json shows it, `{}` its message and `{:?}` `Error("..",
+// line: 1, column: 1)`; its `type_id` `type` (ADR 0331).
+export function $jsonErrorDyn(type) {
   return {
     Debug: () => ({ fmt: $debugJsonError }),
     Display: () => ({ fmt: $displayJsonError }),
     source: () => undefined,
+    typeId: () => type,
   };
 }
 
@@ -15646,11 +15651,14 @@ export function $debugJsonError(e) {
 
 // std's error of a message, which `Box<dyn Error>::from("..")` makes: a
 // `dyn Error`'s dictionary, whose `value` is the message (ADR 0141).
+// Its `type_id` is std's private `StringError`'s, which no program can
+// name, so no downcast finds it: a key no type's name is (ADR 0331).
 export function $stringError() {
   return {
     Debug: () => ({ fmt: (message) => $debugStr(message) }),
     Display: () => ({ fmt: (message) => message }),
     source: () => undefined,
+    typeId: () => "<std's StringError>",
   };
 }
 
@@ -16893,13 +16901,15 @@ export function $ioResultDebug(result, options) {
   const error = $ioErrorDebug(result, options);
   return options?.alternate ? $pretty("Err(", [error], ")") : `Err(${error})`;
 }
-// An `io::Error` as a `dyn Error`'s dictionary (ADR 0141).
-export function $ioErrorDyn() {
+// An `io::Error`, of `TypeId` `type`, as a `dyn Error`'s dictionary (ADR
+// 0141); its `type_id` `type` (ADR 0331).
+export function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
     Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
+    typeId: () => type,
   };
 }
 

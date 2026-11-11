@@ -23,7 +23,7 @@ function parse(s) {
         TAG: "Err",
         _0: new $IoError("InvalidData", {
           value: result._0,
-          impl: $parseErrorDyn("ParseIntError"),
+          impl: $parseErrorDyn("core::num::error::ParseIntError"),
         }),
       }
     : result;
@@ -46,7 +46,7 @@ function main() {
     if (andThen.TAG === "Ok") {
       console.log(`ok ${andThen._0}`);
     } else {
-      const arg = $ioErrorDyn().source(andThen._0) != null;
+      const arg = $ioErrorDyn("core::io::error::Error").source(andThen._0) != null;
       console.log(
         `${$ioErrorDisplay(andThen._0)} | ${andThen._0.kind} | ${$ioErrorDebug(andThen._0)} | ${$ioKindText(andThen._0.kind)} | ${arg}`,
       );
@@ -60,12 +60,15 @@ function main() {
   console.log(`${$ioErrorDebug(k, { alternate: true })} ${$ioErrorDisplay(k)}`);
   const boxed = {
     value: new $IoError("Other", { value: "inner", impl: $stringError() }),
-    impl: $ioErrorDyn(),
+    impl: $ioErrorDyn("core::io::error::Error"),
   };
   console.log(`${boxed.impl.Display().fmt(boxed.value)} ${boxed.impl.Debug().fmt(boxed.value)}`);
   const wrapped = {
     TAG: "Err",
-    _0: { value: new $IoError("Other", { value: "q", impl: $stringError() }), impl: $ioErrorDyn() },
+    _0: {
+      value: new $IoError("Other", { value: "q", impl: $stringError() }),
+      impl: $ioErrorDyn("core::io::error::Error"),
+    },
   };
   console.log(
     `${wrapped.TAG === "Ok" ? "Ok(())" : `Err(${wrapped._0.impl.Debug().fmt(wrapped._0.value)})`}`,

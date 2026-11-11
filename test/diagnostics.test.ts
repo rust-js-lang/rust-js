@@ -357,6 +357,8 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variant of what JS threw", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::JsError), B(f64) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell a `&'a js::JsError` from another variant's value", "js"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
+  // A generic `Error` impl's dictionary has no `type_id` (ADR 0331, amended).
+  ["a dyn Error's downcast to a generic impl's type", '#[derive(Debug)] pub struct W<E>(E);\nimpl<E: std::fmt::Debug> std::fmt::Display for W<E> { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{:?}", self.0) } }\nimpl<E: std::fmt::Debug> std::error::Error for W<E> {}\npub fn f(e: &(dyn std::error::Error + \'static)) -> bool { e.is::<W<u8>>() }', "whose `Error` impl is generic"],
   ["writing a u128", 'pub fn f(n: u128) -> String { serde_json::to_string(&n).unwrap() }', "does not support", "serde"],
   ["reading a u128", 'pub fn f(s: &str) -> bool { serde_json::from_str::<u128>(s).is_ok() }', "does not support", "serde"],
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],

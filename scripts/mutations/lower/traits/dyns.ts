@@ -65,16 +65,16 @@ export const mutations: Mutation[] = [
       "`s.parse::<i64>()?` into a `Box<dyn Error>` is a pair of the dictionary ADR 0186 gives std's parse errors, where it's its message, `$parseErrorDyn(\"ParseIntError\")`",
     snapshots: true,
     file: "src/lower/traits/dyns.rs",
-    find: "        if self.is_parse_error(ty)\n            && let ty::Adt(adt, _) = ty.kind()",
-    replace: "        if false\n            && let ty::Adt(adt, _) = ty.kind()",
+    find: "            _ if self.is_parse_error(ty) => \"$parseErrorDyn\",\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "std_errors_boxed"],
   },
   {
     name: "json-error-dyn-refused",
     breaks: "`serde_json::from_str(s)?` into a `Box<dyn Error>` is an error",
     file: "src/lower/traits/dyns.rs",
-    find: "        if self.is_json_error(ty) {\n            return Some(",
-    replace: "        if false {\n            return Some(",
+    find: "            _ if self.is_json_error(ty) => \"$jsonErrorDyn\",\n",
+    replace: "",
     tests: ["test/serde.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
   },
   {
@@ -626,5 +626,13 @@ export const mutations: Mutation[] = [
     replace:
       "                && !matches!(called.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce);\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
+  },
+  {
+    name: "std-error-dictionary-key-wrong",
+    breaks: "std's error dictionaries are given their types' names, not their `TypeId` keys, so a downcast of a `dyn Error` to `io::Error` or `ParseIntError` finds `None`",
+    file: "src/lower/traits/dyns.rs",
+    find: "        Some(Expr::call(Expr::helper(helper), vec![Expr::str(self.type_id_key(ty))]))\n",
+    replace: "        Some(Expr::call(Expr::helper(helper), vec![Expr::str(&format!(\"{ty}\"))]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
 ];

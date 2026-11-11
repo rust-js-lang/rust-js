@@ -32,6 +32,7 @@
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `src/lower/instances.rs given_calls_of` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
+//! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `src/lower/generic_facts.rs error_impl_has_type_id` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
 
 use super::FnCx;
@@ -261,6 +262,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
         }
     }
+}
+
+/// Whether `imp`, an `Error` impl, gives its dictionary its type's
+/// `TypeId`: one of a type of no type parameter. A generic one's, whose key
+/// its caller's types would make, gives none, and a downcast to a type it's
+/// of is refused (ADR 0331, amended).
+pub(in crate::lower) fn error_impl_has_type_id(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId) -> bool {
+    !tcx.type_of(imp).instantiate_identity().skip_normalization().has_param()
 }
 
 /// Whether any types given for `ty`'s type parameters, and values for its

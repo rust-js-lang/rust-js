@@ -924,8 +924,15 @@ pub(crate) fn is_clone_from(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// which a `dyn` or generic code calls through it: `Error::source` (ADR
 /// 0141), `fmt::Write`'s `write_char` and `write_fmt` (ADR 0180), and
 /// `io::Write`'s `write_all` and `write_fmt` (ADR 0392).
+/// `Error`'s hidden `type_id`, which a `dyn Error`'s downcasts ask: in each
+/// `Error` dictionary, its value's type's `TypeId` (ADR 0331, amended).
+pub(crate) fn is_error_type_id(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_method(tcx, id, StdItem::Error, "type_id")
+}
+
 pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_method(tcx, id, StdItem::Error, "source")
+        || is_error_type_id(tcx, id)
         || error_default(tcx, id).is_some()
         || is_writer_default(tcx, id)
         || is_std_method(tcx, id, StdItem::IoWrite, "write_all")

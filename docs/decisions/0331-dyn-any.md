@@ -140,3 +140,30 @@ every `{}` and `{:?}` does of a value its text doesn't read (ADR 0060,
 amended): `(made(), "Any { .. }")`, by the user's choice of a comma
 sequence. One rule, so `$debugAny` and its mutation `debug-any-unrun` are
 gone; `dyn_any_generic` holds it as `text_of_a_value_made_by_a_call` does.
+
+## Amendment: a `dyn Error` downcasts by its dictionary's `type_id` (2026-11-11, #1400)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A where the dictionary
+says its type; D, rust-js's error, of a downcast to a type of a generic
+`Error` impl. The user's decision (2026-11-11), relayed by m6-react.
+
+A `dyn Error` is a pair too (ADR 0141), but its dictionary kept no type,
+so its downcasts were refused, and rand_core 0.5's `raw_os_error`, which
+downcasts its inner error to an `io::Error`, with them. **Each `Error`
+dictionary carries `typeId`, `Error`'s own hidden method, which std's
+downcasts call: its type's `TypeId` key, `typeId: () => "lib::Mine"`.**
+std's error dictionaries take theirs from the compiler, the one owner of a
+key, `$ioErrorDyn("core::io::error::Error")`, a parse error's naming it
+too; a message's, std's private `StringError`, which no program names, has
+a key no type's name is. **A `dyn Error`'s `is`, `downcast_ref`,
+`downcast_mut` and `Box<dyn Error>`'s `downcast` are a `dyn Any`'s, of its
+dictionary's `typeId`**, asked optionally, `e.impl.typeId?.()`: a generic
+impl's dictionary has none, as its key would be made of its caller's types
+(an `Id` composed of its parts' isn't rustc's of a part hashed), so its
+value is of no type a downcast may name, and a downcast to a type of a
+generic impl is refused (`error_impl_has_type_id`, the one rule).
+
+Held by `dyn_error_downcast.rs` against native Rust in both builds (the
+crate's errors, `io::Error`, a parse error, a message, a generic impl's
+value, `downcast_mut` and `Box`'s `downcast`), by diagnostics' refusal of
+a downcast to a generic impl's type, and by mutations.

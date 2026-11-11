@@ -42,6 +42,7 @@ export const appErrorError = {
   Debug: () => appErrorDebug,
   Display: () => appErrorDisplay,
   source: $appErrorError_source,
+  typeId: () => "lib::AppError",
   description: () => "description() is deprecated; use Display",
   cause: $appErrorError_source,
 };

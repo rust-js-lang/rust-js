@@ -205,15 +205,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // itself, the value itself.
             "leak" if adt(StdItem::Vec) => Std::Same,
             "leak" if string || owner.is_box() => Std::Leak,
-            // A `dyn Any`'s downcasts, by its type's key (ADR 0331).
-            "is" if self.is_dyn_any(owner) => Std::Any(AnyOp::Is),
-            "downcast_ref" if self.is_dyn_any(owner) => Std::Any(AnyOp::DowncastRef),
-            "downcast_mut" if self.is_dyn_any(owner) => Std::Any(AnyOp::DowncastMut),
+            // A `dyn Any`'s downcasts, by its type's key, a `dyn Error`'s by
+            // its `type_id` (ADR 0331), `Box<dyn Error>`'s in `impl dyn Error`.
+            "is" if self.downcasts(owner) => Std::Any(AnyOp::Is),
+            "downcast_ref" if self.downcasts(owner) => Std::Any(AnyOp::DowncastRef),
+            "downcast_mut" if self.downcasts(owner) => Std::Any(AnyOp::DowncastMut),
             "downcast"
-                if (owner.is_box() || rc)
-                    && owner
-                        .walk()
-                        .any(|part| part.as_type().is_some_and(|t| self.is_dyn_any(t))) =>
+                if self.is_dyn_error(owner)
+                    || (owner.is_box() || rc)
+                        && owner.walk().any(|t| t.as_type().is_some_and(|t| self.downcasts(t))) =>
             {
                 Std::Any(AnyOp::Downcast)
             }

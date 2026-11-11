@@ -1516,7 +1516,11 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   own `From` impls; `Box<dyn Error>` takes the crate's errors, strings,
   `"msg".into()`, std's parse errors and serde_json's
   ([0035](../decisions/0035-results-and-throwing-js.md),
-  [0141](../decisions/0141-std-trait-objects.md)).
+  [0141](../decisions/0141-std-trait-objects.md)). Its `downcast_ref`,
+  `is`, `downcast_mut` and `downcast` compare its dictionary's `typeId`,
+  `Error`'s own, `e.impl.typeId?.() === "lib::Mine"`, as a `dyn Any`'s
+  do; a generic impl's dictionary has none
+  ([0331](../decisions/0331-dyn-any.md), amended).
 - **Control flow is Rust's:** `loop` with a value, labeled `break` and
   `continue`, labeled blocks ([0158](../decisions/0158-labeled-blocks.md)),
   each `break` where it's written, a case's `break;` where the block ends

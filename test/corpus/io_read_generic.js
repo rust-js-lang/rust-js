@@ -39,7 +39,10 @@ function pair(r, Read) {
     Read.readExact(r, b);
     return { TAG: "Ok", _0: b.slice() };
   } catch (error) {
-    return { TAG: "Err", _0: { value: $writeCaught(error), impl: $ioErrorDyn() } };
+    return {
+      TAG: "Err",
+      _0: { value: $writeCaught(error), impl: $ioErrorDyn("core::io::error::Error") },
+    };
   }
 }
 

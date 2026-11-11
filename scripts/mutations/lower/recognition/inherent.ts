@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "dyn-any-is-unknown",
     breaks: "`is::<T>()` of a `dyn Any` is an error",
     file: "src/lower/recognition/inherent.rs",
-    find: '            "is" if self.is_dyn_any(owner) => Std::Any(AnyOp::Is),\n',
+    find: '            "is" if self.downcasts(owner) => Std::Any(AnyOp::Is),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
@@ -408,5 +408,13 @@ export const mutations: Mutation[] = [
     find: "            || t.is_ref() && mutable\n",
     replace: "            || t.is_ref()\n",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
+  },
+  {
+    name: "dyn-error-box-downcast-unknown",
+    breaks: "`Box<dyn Error>`'s `downcast`, which std writes in an `impl dyn Error`, isn't known, and a program calling it is refused",
+    file: "src/lower/recognition/inherent.rs",
+    find: "                if self.is_dyn_error(owner)\n                    || (owner.is_box() || rc)",
+    replace: "                if (owner.is_box() || rc)",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
 ];

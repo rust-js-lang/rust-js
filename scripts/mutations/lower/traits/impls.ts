@@ -767,4 +767,12 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "error-dictionary-no-type-id",
+    breaks: "a crate's `Error` dictionary carries no `typeId`, so a `dyn Error`'s downcast to its type finds `undefined`, `None`, where Rust finds it",
+    file: "src/lower/traits/impls.rs",
+    find: "                if !crate::lower::generic_facts::error_impl_has_type_id(self.tcx, id) {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
+  },
 ];

@@ -35,7 +35,7 @@ function main() {
   console.log(`[${$pad($unwrapErr($parseF64("x"), undefined, $debugF64), 24, ">")}]`);
   const boxed = {
     value: $unwrapErr($parseInt("q", 0, 255)),
-    impl: $parseErrorDyn("ParseIntError"),
+    impl: $parseErrorDyn("core::num::error::ParseIntError"),
   };
   console.log(`[${boxed.impl.Display().fmt(boxed.value, { width: 32, align: "Right" })}]`);
   const invalid = $unwrapErr($fromUtf8([255]));

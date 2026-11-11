@@ -374,6 +374,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), entry));
                 continue;
             }
+            // std's own `Error::type_id`, which no impl writes: its type's
+            // `TypeId`, which a `dyn Error`'s downcasts compare (ADR 0331,
+            // amended).
+            if crate::lower::recognition::is_error_type_id(self.tcx, item.def_id) {
+                if !crate::lower::generic_facts::error_impl_has_type_id(self.tcx, id) {
+                    continue;
+                }
+                let key = self.type_fact_value(tr.self_ty(), crate::lower::recognition::TypeFact::Id, span)?;
+                let entry = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(key)).at(js::Span::NONE)]);
+                props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), entry));
+                continue;
+            }
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
             // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {

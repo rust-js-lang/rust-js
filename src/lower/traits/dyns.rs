@@ -196,24 +196,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The `Error` dictionary of one of std's errors rust-js holds as its own
     /// value, shown as std shows it: a parse error's, its message (ADR
-    /// 0063), serde_json's, and an `io::Error`'s (ADR 0462).
+    /// 0063), serde_json's, and an `io::Error`'s (ADR 0462). Each given its
+    /// type's `TypeId`, its `type_id`'s, which a `dyn Error`'s downcasts
+    /// compare (ADR 0331, amended); a parse error's names it too.
     pub(super) fn std_error_dictionary(&self, ty: Ty<'tcx>) -> Option<Expr> {
-        if self.is_parse_error(ty)
-            && let ty::Adt(adt, _) = ty.kind()
-        {
-            let name = self.tcx.item_name(adt.did());
-            return Some(Expr::call(
-                Expr::helper("$parseErrorDyn"),
-                vec![Expr::str(name.as_str())],
-            ));
-        }
-        if self.is_json_error(ty) {
-            return Some(Expr::call(Expr::helper("$jsonErrorDyn"), Vec::new()));
-        }
-        if self.recognition().is_io_error(ty) {
-            return Some(Expr::call(Expr::helper("$ioErrorDyn"), Vec::new()));
-        }
-        None
+        let helper = match () {
+            _ if self.is_parse_error(ty) => "$parseErrorDyn",
+            _ if self.is_json_error(ty) => "$jsonErrorDyn",
+            _ if self.recognition().is_io_error(ty) => "$ioErrorDyn",
+            _ => return None,
+        };
+        Some(Expr::call(Expr::helper(helper), vec![Expr::str(self.type_id_key(ty))]))
     }
 
     /// `Error::source`, which a `dyn Error`'s dictionary has (ADR 0141).

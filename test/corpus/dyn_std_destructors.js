@@ -24,6 +24,7 @@ export const dError = {
   Debug: () => dDebug,
   Display: () => dDisplay,
   source: $dError_source,
+  typeId: () => "lib::D",
   description: () => "description() is deprecated; use Display",
   cause: $dError_source,
   $drop: dDrop_drop,

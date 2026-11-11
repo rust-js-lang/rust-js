@@ -110,4 +110,12 @@ export const mutations: Mutation[] = [
     replace: "        let form = [Form::Handle, Form::Box]",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_takes_its_callers_forms\\.rs$"],
   },
+  {
+    name: "generic-error-impl-type-id",
+    breaks: "a generic `Error` impl's dictionary is given a `TypeId`, of a type with a type parameter, which no caller gives: every program with one is refused",
+    file: "src/lower/generic_facts.rs",
+    find: "    !tcx.type_of(imp).instantiate_identity().skip_normalization().has_param()\n",
+    replace: "    let _ = imp;\n    true\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
+  },
 ];

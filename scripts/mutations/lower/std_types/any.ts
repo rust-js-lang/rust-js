@@ -190,4 +190,20 @@ export const mutations: Mutation[] = [
     replace: "            && self.recognition().is_dyn_any(any)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
+  {
+    name: "dyn-error-downcast-to-generic-allowed",
+    breaks: "a downcast of a `dyn Error` to a type of a generic `Error` impl, whose dictionary has no `typeId`, compiles and finds `None` where Rust finds it",
+    file: "src/lower/std_types/any.rs",
+    find: "            && !crate::lower::generic_facts::error_impl_has_type_id(self.tcx, imp.impl_def_id)\n",
+    replace: "            && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "downcast to a generic impl"],
+  },
+  {
+    name: "dyn-error-type-id-called",
+    breaks: "a `dyn Error`'s `typeId` is called, not asked optionally, so a downcast of a generic impl's value throws, where Rust finds `None`",
+    file: "src/lower/std_types/any.rs",
+    find: "                kind: js::ExprKind::OptionalCall(Box::new(Expr::member(dictionary, type_id)), Vec::new()),\n",
+    replace: "                kind: js::ExprKind::Call(Box::new(Expr::member(dictionary, type_id)), Vec::new()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
+  },
 ];

@@ -5,7 +5,7 @@
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
-use crate::lower::recognition::{Std, TypeFact, any_trait, linked_twice};
+use crate::lower::recognition::{Std, StdItem, TypeFact, any_trait, linked_twice, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -58,6 +58,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.spill("any", value, out)
         };
         let any = tys[0].peel_refs();
+        // To a type of a generic `Error` impl, whose dictionary has no
+        // `type_id`: refused, never `None` where Rust finds it.
+        if self.recognition().is_dyn_error(self.pointee_of(any))
+            && let Ok(rustc_middle::traits::ImplSource::UserDefined(imp)) = crate::lower::traits::select(
+                self.tcx,
+                self.typing_env,
+                ty::TraitRef::new(self.tcx, std_item(self.tcx, StdItem::Error), [of]),
+            )
+            && !crate::lower::generic_facts::error_impl_has_type_id(self.tcx, imp.impl_def_id)
+        {
+            let what = format!("a downcast of a `dyn Error` to `{of}`, whose `Error` impl is generic");
+            return Err(self.unsupported(span, &what));
+        }
         let is = Expr::bin(
             Op::Eq,
             self.type_id_of(pair.clone(), self.pointee_of(any), span, out)?,
@@ -141,6 +154,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.type_fact_value(ty, TypeFact::Id, span);
         };
         let dictionary = Expr::member(value, js::DICTIONARY);
+        // A `dyn Error`'s, its dictionary's own `type_id`, `Error`'s hidden
+        // method std's downcasts call (ADR 0331, amended).
+        // A generic impl's dictionary has none (`error_impl_has_type_id`),
+        // `undefined`: its value is of no type a downcast names, as one to
+        // such a type is refused.
+        if self.recognition().is_dyn_error(ty) {
+            let error = std_item(self.tcx, StdItem::Error);
+            let type_id = crate::lower::bindings::trait_method_name(self.tcx, error, "type_id");
+            return Ok(Expr {
+                facts: js::Facts::NONE,
+                kind: js::ExprKind::OptionalCall(Box::new(Expr::member(dictionary, type_id)), Vec::new()),
+                span: js::Span::NONE,
+                held_as: Default::default(),
+            });
+        }
         let any_id = any_trait(self.tcx);
         let any = match traits.principal_def_id() {
             id if id.is_some() && id == any_id => dictionary,

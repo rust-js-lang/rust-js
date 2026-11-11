@@ -98,12 +98,14 @@ function $ioResultDebug(result, options) {
   const error = $ioErrorDebug(result, options);
   return options?.alternate ? $pretty("Err(", [error], ")") : `Err(${error})`;
 }
-// An `io::Error` as a `dyn Error`'s dictionary (ADR 0141).
-function $ioErrorDyn() {
+// An `io::Error`, of `TypeId` `type`, as a `dyn Error`'s dictionary (ADR
+// 0141); its `type_id` `type` (ADR 0331).
+function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
     Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
+    typeId: () => type,
   };
 }

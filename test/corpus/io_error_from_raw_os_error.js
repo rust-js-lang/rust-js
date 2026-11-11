@@ -13,7 +13,7 @@ function main() {
       `${code}: ${$ioErrorDisplay(e)} | ${$ioErrorDebug(e)} | ${e.kind} ${e.code == null ? "None" : `Some(${e.code})`}`,
     );
   }
-  const e = { value: $osErrorOf(2), impl: $ioErrorDyn() };
+  const e = { value: $osErrorOf(2), impl: $ioErrorDyn("core::io::error::Error") };
   console.log(`${e.impl.Display().fmt(e.value)}`);
 }
 //# sourceMappingURL=case.js.map

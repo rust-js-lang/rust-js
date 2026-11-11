@@ -419,6 +419,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if traits.principal_def_id().is_some_and(|id| self.tcx.is_diagnostic_item(Symbol::intern("Any"), id)))
     }
 
+    /// A `dyn Error`, `+ Send + Sync` or not, whose downcasts ask its
+    /// dictionary's `type_id`, as a `dyn Any`'s do (ADR 0331, amended).
+    pub(in crate::lower) fn is_dyn_error(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some_and(|id| is_std_def(self.tcx, id, StdItem::Error)))
+    }
+
+    /// A `dyn` std's downcasts are of: a `dyn Any`'s or a `dyn Error`'s.
+    pub(in crate::lower) fn downcasts(&self, ty: Ty<'tcx>) -> bool {
+        self.is_dyn_any(ty) || self.is_dyn_error(ty)
+    }
+
     /// A `dyn Any + Send`, an unwind's payload's: a `dyn Any` that holds no
     /// `&JsError` of its own, as one isn't `Send` (ADR 0710).
     pub(in crate::lower) fn is_dyn_any_send(&self, ty: Ty<'tcx>) -> bool {

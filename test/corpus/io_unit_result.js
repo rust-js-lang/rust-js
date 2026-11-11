@@ -35,7 +35,7 @@ function parse(s) {
         TAG: "Err",
         _0: new $IoError("InvalidData", {
           value: result._0,
-          impl: $parseErrorDyn("ParseIntError"),
+          impl: $parseErrorDyn("core::num::error::ParseIntError"),
         }),
       }
     : result;
