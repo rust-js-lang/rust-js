@@ -1275,3 +1275,15 @@ already. `test/corpus/integer_slices_read_as_another_width.rs` holds each,
 read and written, against native Rust on wasm32 in both builds; the mutation
 `slice-pointer-recast-refused` puts the refusal back.
 
+## Amendment: a slice a call makes, read as another item type's (2026-11-12, #1420)
+
+The view of #1419 read the slice twice, its first item's pointer and its
+length, so it was made only of a slice a variable holds. Generic code's
+`self.results.as_ref() as *const [u64] as *const [u32]`, rand_core 0.5.1's
+`BlockRng64::next_u32` of an `R::Results: AsRef<[u64]>`, casts the slice
+its dictionary's `asRef` gives, a call, and was refused as addressable
+memory of `*const [u32]`. **A slice of any expression is spilled first,
+`const items = R.asRef(results);`, then viewed as before**
+(`pointer_cast`, given the statements to spill into). Held by
+`test/corpus/block_results_read_as_another_width.rs` against native Rust on
+wasm32 in both builds, and the mutation `slice-pointer-recast-of-a-call-refused`.

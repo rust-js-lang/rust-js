@@ -12,13 +12,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to the same place, the same handle, where what it points to stays
     /// what it is or is `()`; `0 as *const T`, `null`. An address, a
     /// pointer made a number or one made of a number, isn't JS's: refused.
-    /// `None` of a cast of no pointer.
+    /// `None` of a cast of no pointer. What it reads twice is spilled into
+    /// `out` first.
     pub(in crate::lower) fn pointer_cast(
         &mut self,
         kind: mir::CastKind,
         value: Expr,
         (from, to): (Ty<'tcx>, Ty<'tcx>),
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         match kind {
             // A slice's as one of what's at the same place, `*mut
@@ -47,14 +49,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // *const [u64] as *const [u32]`, its length kept: a view of as
             // many of them from where its first item is, that item's pointer
             // `recast`, as `slice::from_raw_parts_mut` of it is (#1419). Read
-            // once for each, so a slice a variable holds.
+            // once for each, so a slice a variable holds; one a call makes,
+            // generic code's `self.results.as_ref()` of an `R::Results:
+            // AsRef<[u64]>`, BlockRng64's own, spilled first (#1420).
             mir::CastKind::PtrToPtr
                 if let (Some((ty::Slice(a), _)), Some((ty::Slice(b), _))) = (
                     raw_pointee(self.tcx, from).map(|(a, m)| (*a.kind(), m)),
                     raw_pointee(self.tcx, to).map(|(b, m)| (*b.kind(), m)),
-                ) && !self.same_place(a, b)
-                    && value.reads_same() =>
+                ) && !self.same_place(a, b) =>
             {
+                let value = match value.reads_same() {
+                    true => value,
+                    false => self.spill("items", value, out),
+                };
                 let first = Expr::call(Expr::helper("$ptr"), vec![value.clone(), Expr::int(0)]);
                 let retyped = self.recast(first, a, b, span)?;
                 let length = Expr::member(value, "length");

@@ -647,7 +647,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let from = operand.ty(decls, tcx);
                 let value = self.mir_expr(state, operand, out)?;
-                match self.pointer_cast(*kind, value.clone(), (from, *to), span)? {
+                match self.pointer_cast(*kind, value.clone(), (from, *to), span, out)? {
                     Some(cast) => cast,
                     None => self.cast(value, from, *to, span)?,
                 }

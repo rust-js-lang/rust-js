@@ -226,8 +226,17 @@ export const mutations: Mutation[] = [
     name: "slice-pointer-recast-refused",
     breaks: "a `[u64]` slice's pointer as a `[u32]` slice's is refused as addressable memory, rand_core's `next_u32` (#1419)",
     file: "src/lower/pointers/casts.rs",
-    find: "                    && value.reads_same() =>\n",
-    replace: "                    && false =>\n",
+    find: "                ) && !self.same_place(a, b) =>\n",
+    replace: "                ) && !self.same_place(a, b) && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^integer_slices_read_as_another_width.rs$"],
+  },
+  {
+    name: "slice-pointer-recast-of-a-call-refused",
+    breaks:
+      "a slice a call makes, generic code's `self.results.as_ref() as *const [u64] as *const [u32]` of an `AsRef<[u64]>`, isn't spilled and read as its view: refused as addressable memory, rand_core's `BlockRng64::next_u32` (#1420)",
+    file: "src/lower/pointers/casts.rs",
+    find: "                ) && !self.same_place(a, b) =>\n",
+    replace: "                ) && !self.same_place(a, b) && value.reads_same() =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^block_results_read_as_another_width.rs$"],
   },
 ];
