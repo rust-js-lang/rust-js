@@ -86,10 +86,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "os-error-of-unknown-number-words",
-    breaks: "`from_raw_os_error` of a number the platform doesn't name reads glibc's words on macOS, `Unknown error 9999` where Rust's are `Unknown error: 9999`",
+    breaks: "`from_raw_os_error` of a number the platform doesn't name reads the other platform's words, glibc's `Unknown error 9999` on macOS and macOS's `Unknown error: 9999` on Linux",
     file: "src/runtime/fs.js",
     find: "darwin ? `Unknown error: ${code}` : `Unknown error ${code}`",
-    replace: "`Unknown error ${code}`",
+    replace: "darwin ? `Unknown error ${code}` : `Unknown error: ${code}`",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
   },
   {
