@@ -140,4 +140,12 @@ export const mutations: Mutation[] = [
     replace: "            .all(|_| true)\n",
     tests: ["test/crates.test.ts", "-t", "a library's default the crate's impls copy takes no fact of its own"],
   },
+  {
+    name: "grown-item-size-asked-of-a-param-alone",
+    breaks: "a call that grows a `Vec` of an associated type's items, `I::Item`, asks its caller no size, so generic code isn't given it and `capacity()` refuses the `Vec` (#1260)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        .then(|| revealed.grown_vec_item(callee, args))\n        .flatten();\n",
+    replace: "        .then(|| revealed.grown_vec_item(callee, args))\n        .flatten()\n        .filter(|item| matches!(item.kind(), ty::Param(_)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
+  },
 ];

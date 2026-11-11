@@ -109,6 +109,8 @@ function $reserve(v, additional, size) {
   if ($capacityUnknown(v)) return;
   const capacity = $capacity(v);
   if (capacity - v.length >= additional) return;
+  // Of items whose size wasn't given (#934, #1260), not known.
+  if (size === undefined) return void $untracked(v);
   const grown = size === 0 ? v.length + additional : Math.max(capacity * 2, v.length + additional, $leastCapacity(size));
   $capacities.set(v, grown);
 }
@@ -135,6 +137,8 @@ function $shrinkTo(v, min) {
 // room for, std's `reserve` of as many, `grow_amortized`'s; of items of no
 // size, its length (#1180). The call's value, `made`.
 function $grew(v, size, len, made) {
+  // Of items whose size wasn't given (#934, #1260), `$grewUnsized`'s.
+  if (size === undefined) return $grewUnsized(v, len, made);
   if ($capacityUnknown(v)) return made;
   const had = Math.max(len, $capacities.get(v) ?? 0);
   const added = v.length - len;
@@ -397,6 +401,14 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
       const step = it.next();
       if (step.done) {
         ended();
+        return step;
+      }
+      // Of items whose size wasn't given (#934, #1260), as one of items
+      // whose size no caller gives is grown: its hint asked never, and once
+      // full, its growth not known, as `$grewUnsized`'s.
+      if (size === undefined) {
+        if (!$capacityUnknown(v) && v.length >= $capacity(v)) $untracked(v);
+        first = false;
         return step;
       }
       if ($capacityUnknown(v)) {

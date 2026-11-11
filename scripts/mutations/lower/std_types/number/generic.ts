@@ -240,8 +240,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type built of a function's type parameters whose layout its caller gives, `Held<J>`, is measured as if rustc knew it, and refused, `size_of` of a type parameter (#737)",
     file: "src/lower/std_types/number/generic.rs",
-    find: "        if (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())\n",
-    replace: "        if matches!(of.kind(), ty::Alias(..))\n",
+    find: "        (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())\n",
+    replace: "        matches!(of.kind(), ty::Alias(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
   },
   {

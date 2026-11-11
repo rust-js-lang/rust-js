@@ -250,7 +250,7 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
         }
     }
     for &(index, fact) in contracts.type_facts.get(&id).into_iter().flatten() {
-        param(&mut params, index).facts.push(fact.word().to_string());
+        param(&mut params, index).facts.push(fact.key().to_string());
     }
     for &(_, index, by) in contracts.given.stepped.iter().filter(|&&(of, _, _)| of == id) {
         param(&mut params, index).stepped.push(key(tcx, by));
@@ -655,7 +655,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .and_then(|library| library.associated.get(&key(self.tcx, assoc)))
             .into_iter()
             .flatten()
-            .filter_map(|word| super::recognition::TypeFact::of_word(word))
+            .filter_map(|word| super::recognition::TypeFact::of_key(word))
             .collect()
     }
 
@@ -674,7 +674,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         let mut facts = Vec::new();
         for assoc in assocs {
             for word in carried.get(&key(self.tcx, assoc)).into_iter().flatten() {
-                facts.extend(super::recognition::TypeFact::of_word(word).map(|fact| (assoc, fact)));
+                facts.extend(super::recognition::TypeFact::of_key(word).map(|fact| (assoc, fact)));
             }
         }
         facts
@@ -693,7 +693,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
         (self.item(id).into_iter().flat_map(|item| &item.calling.params))
             .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))
-            .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (index, fact)))
+            .filter_map(|(index, word)| super::recognition::TypeFact::of_key(word).map(|fact| (index, fact)))
             .collect()
     }
 

@@ -106,6 +106,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .clone()
                     .unwrap_or_else(|| self.room_item_size(generic_args.type_at(0)));
                 match (op, self.krate.keeps_capacity) {
+                    // Of items whose size isn't given, #934's (`room_value`),
+                    // which may be of no size: not known, refused.
+                    (CapacityOp::Of, _)
+                        if grown_size
+                            .as_ref()
+                            .is_some_and(|size| matches!(size.kind, js::ExprKind::Undefined)) =>
+                    {
+                        helper("$capacity", vec![helper("$untracked", vec![arg()])])
+                    }
                     (CapacityOp::Of, _) => helper("$capacity", [arg()].into_iter().chain(grown_size).collect()),
                     (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),
                     (CapacityOp::Reserve { exact: false }, true) => {

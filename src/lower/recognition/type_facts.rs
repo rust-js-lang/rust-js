@@ -66,11 +66,17 @@ pub(crate) enum TypeFact {
     /// code's `Rc::new` of a type parameter a counted class may be makes
     /// so, or a box (#1228, #1423).
     Instance,
+    /// The size std grows a `Vec` by and checks its room by (ADR 0419,
+    /// 0774): `Size`'s value, named as `Size` is, but given as `undefined`
+    /// where no caller can give it, an impl's associated type its
+    /// dictionary doesn't carry (#934), its growth then not kept and its
+    /// room counted alone (#1260).
+    Room,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 22] = [
+    pub(crate) const ALL: [TypeFact; 23] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -93,6 +99,7 @@ impl TypeFact {
         TypeFact::LengthFirst,
         TypeFact::VecCollect,
         TypeFact::Instance,
+        TypeFact::Room,
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -100,6 +107,7 @@ impl TypeFact {
     pub(crate) fn described(self) -> &'static str {
         match self {
             TypeFact::Size => "size_of",
+            TypeFact::Room => "the size std grows a `Vec` by",
             TypeFact::Align => "align_of",
             TypeFact::Name => "type_name",
             TypeFact::Id => "the `TypeId`",
@@ -123,13 +131,25 @@ impl TypeFact {
 
     /// Its word in the name of a type parameter's, `TSize`.
     /// The fact a word names, a library's manifest's (ADR 0145).
-    pub(crate) fn of_word(word: &str) -> Option<TypeFact> {
-        TypeFact::ALL.into_iter().find(|fact| fact.word() == word)
+    /// The fact a library's manifest names `key`, `key()`'s.
+    pub(crate) fn of_key(key: &str) -> Option<TypeFact> {
+        TypeFact::ALL.into_iter().find(|fact| fact.key() == key)
     }
 
+    /// Its name in a library's manifest: its `word()`, but `Room`'s, which
+    /// is named in JS as `Size` is, `RoomSize`.
+    pub(crate) fn key(self) -> &'static str {
+        match self {
+            TypeFact::Room => "RoomSize",
+            _ => self.word(),
+        }
+    }
+
+    /// Its name in JS, after its type's, `TSize`: `Room`'s is `Size`'s, so
+    /// a slot is never asked both (`settle_room`).
     pub(crate) fn word(self) -> &'static str {
         match self {
-            TypeFact::Size => "Size",
+            TypeFact::Size | TypeFact::Room => "Size",
             TypeFact::Align => "Align",
             TypeFact::Name => "Name",
             TypeFact::Id => "Id",
@@ -165,6 +185,32 @@ impl TypeFact {
             .into_iter()
             .find(|&(set, sorted)| TypeFact::of_map(set, sorted) == self)
     }
+}
+
+/// Whether `of` is an associated type, `<I as Iterator>::Item`: where its
+/// facts aren't given, #934's case, which an impl's dictionary, carrying its
+/// own type parameters', can't give (`room_value`'s `undefined`); of a std
+/// trait's, `size_of` refuses it (`uncarried_std_item`).
+pub(crate) fn is_associated_type(of: Ty<'_>) -> bool {
+    matches!(
+        of.kind(),
+        ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { .. },
+                ..
+            }
+        )
+    )
+}
+
+/// Whether `of` is a std trait's associated type, whose `size_of` no
+/// caller gives and no dictionary carries is refused (`layout_bytes`, #934).
+pub(crate) fn uncarried_std_item(tcx: TyCtxt<'_>, of: Ty<'_>) -> bool {
+    matches!(
+        of.kind(),
+        ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if is_std_crate(tcx, *def_id)
+    )
 }
 
 /// Whether `ty`, a type only a caller knows, may have a constant size,

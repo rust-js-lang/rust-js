@@ -17,6 +17,7 @@
 //! | Fact | Route | Owner |
 //! |---|---|---|
 //! | `size_of::<T>()` and the rest, `TypeFact`'s (ADR 0145) | Given | `src/lower/traits/given.rs given_type_fact` |
+//! | the size std grows a `Vec` of it by and checks its room by, `TypeFact::Room`: `undefined` of #934's case alone, an impl's associated type no dictionary carries (#1260) | Given | `src/lower/iterators/hint_asks.rs room_value` |
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `src/lower/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |

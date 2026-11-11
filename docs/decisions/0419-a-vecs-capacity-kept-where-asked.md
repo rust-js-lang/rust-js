@@ -631,3 +631,62 @@ Held by corpus case `set_merges_collected_where_capacity_is_read.rs`
 (each way of a difference, the unions, a hash union both ways round, its
 `|`, and what's left after a step) against native Rust in both builds;
 three cases' JS changed to the lazy union. Guide limitations.md updated.
+
+## Amendment: growth of an associated type's items (2026-11-12, #1260)
+
+Generic code's growth of a `Vec` of an associated type's items, `Vec<I::Item>`
+or `Vec<S::Item>`, or of a type built of type parameters, `Vec<(T, u8)>`,
+was grown `$grewUnsized`, its capacity unknown, and `capacity()` refused it:
+the analysis asked a caller the items' size only of a bare type parameter,
+and the lowering read only `TSize`. Native Rust gives std's number, so
+std's behaviour is kept (ADR 0262's third case).
+
+- **The size std grows a `Vec` by is its own fact, `TypeFact::Room`.** The
+  analysis's `grown_asked` asks it of any item a growing call names
+  (`asked_of`: a slot's, `IItemSize`; a trait-carried associated type's, its
+  dictionary's `ItemSize`; a built type's, `TU8Size`; none of one rustc lays
+  out whatever its types, `&T`). It's named as `Size` is, `TSize`, and a
+  slot asked both is given `Size` alone (`settle_room`), so one function
+  never takes two; a library's manifest names it `RoomSize`, and a
+  library's trait that carries an associated type's `Size` carries its
+  `Room`, the same key, `ItemSize`, which a consumer's copy reads.
+- **Its value has one owner, `room_value`**: rustc's layout in the
+  function's typing environment, `&T`'s 4 on wasm32; a type parameter's
+  given `Room` or `Size`; an associated type's or a built type's as its
+  caller or its trait's dictionary gives it (`known_fact_of`, the read
+  `type_fact_value` shares); and `undefined` of #934's case alone, an
+  associated type no caller gives and no dictionary carries, in an impl's
+  method, its `I::Item`; elsewhere, not given, none, as loud as before. An
+  impl's method takes no `Room` of such an item slot, which its dictionary
+  wouldn't pass, so its `undefined` is `room_value`'s
+  (test/architecture-generic-facts.test.ts holds both).
+- **An undefined size is an unknown capacity**: `$grew` grows as
+  `$grewUnsized` does, `$reserve` past what it has leaves it unknown, an
+  `extend`'s `$grownBy` passes its items through as one of items whose size
+  no caller gives, asking no hint, unknown once full (itertools'
+  `LazyBuffer::prefill`, given its impl's `undefined`), and
+  `capacity()` of a `Vec` whose items' size is `undefined` refuses it,
+  naming #1180, since they may be of no size. Before, asking that size
+  refused the whole crate at compile time, itertools' `ChunkBy`; now only
+  the capacity is loud, never another number.
+
+Tests: corpus case `capacity_of_an_associated_types_items` (a `push`, an
+`extend`, a `collect` and a `reserve` of `I::Item`, of zero-sized items,
+a user trait's `S::Item` of two sizes, `(T, u8)`, `&T`, and a `T` whose
+`size_of` and growth are both asked), against native Rust in each build;
+test/vec-capacity.test.ts's impl growth of `I::Item` compiling with its
+capacity refused, of a fresh `Vec` too, and returned to a caller that knows
+its type, an `extend` given an `undefined` size, and one `TSize` for both
+facts; crate pair `capacity_of_a_library_traits_item`, a consumer's copy
+of a library's growth of its trait's associated type's items; itertools
+compiles and runs as native in the crate corpus. Mutations `capacity-item-size-of-an-associated-type-unknown`,
+`capacity-item-size-of-a-laid-out-generic-unknown`,
+`grown-item-size-asked-of-a-param-alone`, `room-and-size-both-taken`,
+`room-of-an-impls-associated-type-refused`, `grew-of-an-unsized-room-counted`,
+`reserve-of-an-unsized-room-counted`, `capacity-of-an-unsized-room-known`,
+`grown-by-of-an-undefined-size-asks-its-hint` and
+`room-of-a-library-traits-item-uncarried`, caught; nine refitted.
+
+The room std checks of a `reserve` or `with_capacity` of such items (ADR
+0774) is still of their count alone here, as ADR 0774 decided for items
+whose size a type parameter gives; #1432 reopens that.

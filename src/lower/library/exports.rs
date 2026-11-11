@@ -246,7 +246,7 @@ pub(in crate::lower) fn exports<'tcx>(
                 .filter(|&(&id, _)| id.is_local() && tcx.def_kind(id) == rustc_hir::def::DefKind::AssocTy)
                 .map(|(&id, facts)| crate::library::Associated {
                     key: key(tcx, id),
-                    facts: facts.iter().map(|&(_, fact)| fact.word().to_string()).collect(),
+                    facts: facts.iter().map(|&(_, fact)| fact.key().to_string()).collect(),
                     carrier: None,
                 })
                 .collect();
@@ -255,7 +255,7 @@ pub(in crate::lower) fn exports<'tcx>(
             for (&carrier, facts) in contracts.carried_super.iter().filter(|&(&id, _)| id.is_local()) {
                 let mut by_assoc: IndexMap<DefId, Vec<String>> = IndexMap::default();
                 for &(assoc, fact) in facts {
-                    by_assoc.entry(assoc).or_default().push(fact.word().to_string());
+                    by_assoc.entry(assoc).or_default().push(fact.key().to_string());
                 }
                 associated.extend(by_assoc.into_iter().map(|(assoc, facts)| crate::library::Associated {
                     key: key(tcx, assoc),

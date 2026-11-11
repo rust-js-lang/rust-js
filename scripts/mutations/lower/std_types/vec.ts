@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     replace: "                    (CapacityOp::Of, _) => helper(\"$capacity\", vec![arg()]),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
+  {
+    name: "capacity-of-an-unsized-room-known",
+    breaks: "`capacity()` of a fresh `Vec` of an impl's associated type's items, which may be of no size, `()`'s `usize::MAX`, is its kept 0 instead of refused (#1260)",
+    file: "src/lower/std_types/vec.rs",
+    find: "                        helper(\"$capacity\", vec![helper(\"$untracked\", vec![arg()])])\n",
+    replace: "                        helper(\"$capacity\", vec![arg()])\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
+  },
 ];

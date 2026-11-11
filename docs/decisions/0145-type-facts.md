@@ -473,3 +473,13 @@ by `test/corpus/size_of_what_rustc_knows_of_any_parameter.rs` in both builds.
 Mutations `*-assoc-layouts-*`, `unknown-layout-assoc-carried` and
 `rustc-known-generic-layouts-refused`; the test "a library's traits carry
 the layouts of the associated types their impls can give" reads its manifest.
+
+## Amendment: the size std grows a `Vec` by, `Room` (2026-11-12, #1260)
+
+A fact more, `TypeFact::Room`: the size std grows a `Vec` by and checks its
+room by. Its value is `Size`'s, and it's named as `Size` is, `TSize`, so a
+slot asked both is given `Size` alone; a library's manifest names it
+`RoomSize`. Unlike `Size`, it may be `undefined`, of #934's case alone, an
+associated type no caller gives and no dictionary carries: its growth then
+isn't kept and `capacity()` refuses it (ADR 0419's amendment, which has
+the rest).

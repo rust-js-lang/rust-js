@@ -4,7 +4,7 @@
 // compiled and run.
 
 import { expect, test } from "bun:test";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
@@ -267,4 +267,199 @@ pub fn through_an_identity() -> usize {
   for (const f of [lib.throughAFunction, lib.throughAnIdentity]) {
     expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
+});
+
+// #934's case: an impl's method growing a \`Vec\` of an associated type's
+// items, \`I::Item\`, whose size its dictionary can't give, compiles, its
+// size \`undefined\` (\`room_value\`): what it grows runs as native Rust does,
+// its capacity isn't known, and \`capacity()\` refuses it, naming #1180, never
+// another number, of a fresh \`Vec\` too, whose items may be of no size, as
+// \`()\`'s, whose capacity is \`usize::MAX\` (#1260, the user's decision).
+test("an impl's growth of an associated type's items compiles, its capacity refused", async () => {
+  const dir = fixture("capacity-impl-associated-items");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Buf<I: Iterator> {
+    it: I,
+}
+
+pub trait Fill {
+    fn filled(&mut self) -> usize;
+    fn room(&mut self) -> usize;
+    fn fresh(&self) -> usize;
+    fn pushed(&mut self) -> usize;
+    fn reserved(&self) -> usize;
+}
+
+impl<I: Iterator> Fill for Buf<I> {
+    fn filled(&mut self) -> usize {
+        let mut v: Vec<I::Item> = Vec::new();
+        for x in &mut self.it {
+            v.push(x);
+        }
+        v.len()
+    }
+    fn room(&mut self) -> usize {
+        let mut v: Vec<I::Item> = Vec::new();
+        v.extend(&mut self.it);
+        v.capacity()
+    }
+    fn fresh(&self) -> usize {
+        let v: Vec<I::Item> = Vec::new();
+        v.capacity()
+    }
+    fn pushed(&mut self) -> usize {
+        let mut v: Vec<I::Item> = Vec::new();
+        if let Some(x) = self.it.next() {
+            v.push(x);
+        }
+        v.capacity()
+    }
+    fn reserved(&self) -> usize {
+        let mut v: Vec<I::Item> = Vec::new();
+        v.reserve(3);
+        v.capacity()
+    }
+}
+
+pub fn filled() -> usize {
+    let mut b: Box<dyn Fill> = Box::new(Buf { it: [1u8, 2, 3].into_iter() });
+    b.filled()
+}
+
+pub fn room() -> usize {
+    let mut b: Box<dyn Fill> = Box::new(Buf { it: [1u8, 2, 3].into_iter() });
+    b.room()
+}
+
+pub fn pushed() -> usize {
+    let mut b: Box<dyn Fill> = Box::new(Buf { it: [1u8, 2, 3].into_iter() });
+    b.pushed()
+}
+
+pub fn reserved() -> usize {
+    let b: Box<dyn Fill> = Box::new(Buf { it: [1u8, 2, 3].into_iter() });
+    b.reserved()
+}
+
+pub fn fresh_units() -> usize {
+    let b: Box<dyn Fill> = Box::new(Buf { it: [(), ()].into_iter() });
+    b.fresh()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.filled()).toBe(3);
+  for (const f of [lib.room, lib.freshUnits, lib.pushed, lib.reserved]) expect(() => f()).toThrow("rust-js does not support");
+  expect(() => lib.freshUnits()).toThrow("`capacity()` of a `Vec` whose growth it didn't keep");
+});
+
+// A slot asked both its size, \`size_of\`'s, and the size std grows a \`Vec\`
+// by, \`TypeFact::Room\`, named alike, is given once, \`TSize\`, never twice
+// (\`settle_room\`, #1260).
+test("a type parameter's size and its growth's are one TSize", () => {
+  const dir = fixture("capacity-size-and-room");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sized_and_grown<T: Copy>(x: T) -> (usize, usize) {
+    let mut v: Vec<T> = Vec::new();
+    v.push(x);
+    (std::mem::size_of::<T>(), v.capacity())
+}
+
+pub fn both() -> (usize, usize) {
+    sized_and_grown(1u8)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("function sizedAndGrown(x, TSize) {");
+});
+
+// What an impl grew of its associated type's items without their size,
+// #934's, returned to a caller that knows it, \`Vec<u8>\`: its capacity still
+// isn't known, so \`capacity()\` refuses it, never the number growth by no
+// size gives (#1260).
+test("a Vec an impl grew without its items' size has no capacity its caller reads", async () => {
+  const dir = fixture("capacity-impl-grown-returned");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Buf<I: Iterator> {
+    it: I,
+}
+
+pub trait Fill {
+    type Out;
+    fn pushed(&mut self) -> Vec<Self::Out>;
+    fn reserved(&mut self) -> Vec<Self::Out>;
+}
+
+impl<I: Iterator> Fill for Buf<I> {
+    type Out = I::Item;
+    fn pushed(&mut self) -> Vec<I::Item> {
+        let mut v = Vec::new();
+        if let Some(x) = self.it.next() {
+            v.push(x);
+        }
+        v
+    }
+    fn reserved(&mut self) -> Vec<I::Item> {
+        let mut v = Vec::new();
+        v.reserve(3);
+        v
+    }
+}
+
+pub fn pushed() -> usize {
+    let mut b = Buf { it: [1u8, 2].into_iter() };
+    b.pushed().capacity()
+}
+
+pub fn reserved() -> usize {
+    let mut b = Buf { it: [1u8, 2].into_iter() };
+    b.reserved().capacity()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  for (const f of [lib.pushed, lib.reserved]) expect(() => f()).toThrow("`capacity()` of a `Vec` whose growth it didn't keep");
+});
+
+// What an impl's method gives a function it calls of its associated type's
+// items' size, #934's \`undefined\`: that function's \`extend\` of its \`Vec\`
+// grows as one of items whose size no caller gives, asking no hint, its
+// capacity then not known: itertools' \`LazyBuffer::prefill\` of its
+// \`Combinations\`' \`next\` (#1260).
+test("an extend given its items' size as undefined runs as one of unsized items", async () => {
+  const dir = fixture("capacity-undefined-size-extend");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Buffer<I: Iterator> {
+    it: I,
+    buffer: Vec<I::Item>,
+}
+
+impl<I: Iterator> Buffer<I> {
+    fn prefill(&mut self, len: usize) {
+        if len > self.buffer.len() {
+            let delta = len - self.buffer.len();
+            self.buffer.extend(self.it.by_ref().take(delta));
+        }
+    }
+}
+
+pub struct Pairs<I: Iterator> {
+    buffer: Buffer<I>,
+}
+
+impl<I: Iterator> Iterator for Pairs<I>
+where
+    I::Item: Copy,
+{
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        self.buffer.prefill(self.buffer.buffer.len() + 2);
+        Some(self.buffer.buffer.len())
+    }
+}
+
+pub fn lengths() -> Vec<usize> {
+    let mut pairs = Pairs { buffer: Buffer { it: 0u8..20, buffer: Vec::new() } };
+    vec![pairs.next().unwrap(), pairs.next().unwrap(), pairs.next().unwrap()]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.lengths()).toEqual([2, 4, 6]);
 });

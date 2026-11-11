@@ -917,7 +917,12 @@ What's refused is in [the limitations](limitations.md).
   an `impl Iterator` function's chain steps, by std's structs' links,
   `$inPlaceCapacityFrom` (#1428); `reserve(n)` as std's does, `reserve_exact(n)` as many as it
   needs; items of no size `usize::MAX`. Of a type parameter's items, by
-  its caller's `TSize`. A crate that reads no capacity prints none of
+  its caller's `TSize`; of an associated type's, `I::Item`'s, or a type's
+  built of them, `(T, u8)`'s, by the size its caller or its trait's
+  dictionary gives, `IItemSize` or `SSource.ItemSize` (#1260); of an
+  impl's associated type its dictionary can't give, `I::Item` in an
+  `impl<I: Iterator>`'s method (#934), its growth isn't kept and
+  `capacity()` refuses it. A crate that reads no capacity prints none of
   this; one that does compiles its own copy of each function it reaches
   of a library that keeps none, so what that library grows has std's
   capacity too, but of one that reads its library's private state, which

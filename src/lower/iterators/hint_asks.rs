@@ -738,17 +738,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The size of a `Vec`'s `item`s, by which std grows it, of a crate
-    /// that keeps capacities: its caller's `TSize` where it's a type
-    /// parameter's, as the analysis asks it (`grown_vec_item`, #1180).
-    /// `None` of another made of type parameters, an associated type's or
-    /// `vec::IntoIter<I::Item>`, whose size no caller gives: its growth
-    /// isn't kept, as before #1180.
+    /// that keeps capacities: rustc's where it knows it, `&T`'s too; its
+    /// caller's `TSize` where it's a type parameter's; an associated type's,
+    /// `I::Item`'s, or a type's built of them, `[T; 2]`'s, as its caller or
+    /// its trait's dictionary gives it (`known_fact_of`, #1260), as the
+    /// analysis asks it (`grown_vec_item`, #1180). `None` where neither
+    /// gives it: its growth isn't kept, and `capacity()` refuses it.
     pub(in crate::lower) fn capacity_item_size(&self, item: Ty<'tcx>) -> Option<Expr> {
-        match item.kind() {
-            _ if !item.has_param() => Some(self.room_item_size(item)),
-            ty::Param(param) => self.given_type_fact(param.index, TypeFact::Size),
-            _ => None,
+        self.room_value(item)
+    }
+
+    /// The size std grows a `Vec` of `item`s by and checks their room by,
+    /// `TypeFact::Room` (#1260): rustc's where it lays it out here, of any
+    /// types given, as the analysis's `built_of` asks none of it; a type
+    /// parameter's, given as `Room` or `Size` (`settle_room` keeps one);
+    /// an associated type's or a built type's, as its caller or its trait's
+    /// dictionary gives it (`known_fact_of`). `undefined` of #934's case
+    /// alone, an associated type no caller gives and no dictionary carries,
+    /// in an impl's method (`in_impl_method`), its `I::Item`; elsewhere, not
+    /// given, `None`, loud. Of #934's, its growth then isn't kept and its room is
+    /// counted alone; the one place `Room` is given so (held by
+    /// test/architecture-generic-facts.test.ts). `None` where it isn't
+    /// given.
+    /// Whether the function being lowered is a trait impl's method, or a
+    /// closure in one: where #934's case is, an associated type its impl's
+    /// dictionary can't give (`room_value`).
+    fn in_impl_method(&self) -> bool {
+        (self.tcx)
+            .trait_impl_of_assoc(self.tcx.typeck_root_def_id(self.item))
+            .is_some()
+    }
+
+    pub(in crate::lower) fn room_value(&self, item: Ty<'tcx>) -> Option<Expr> {
+        if let Ok(layout) = self.tcx.layout_of(self.typing_env.as_query_input(item)) {
+            return Some(Expr::int(i128::from(layout.size.bytes())));
         }
+        let given = |fact| match item.kind() {
+            ty::Param(param) => self.given_type_fact(param.index, fact),
+            _ => self.known_fact_of(item, fact),
+        };
+        given(TypeFact::Room).or_else(|| given(TypeFact::Size)).or_else(|| {
+            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::undefined)
+        })
     }
 
     /// `$grownBy(collection, items, size, deque, drop, own, lost,

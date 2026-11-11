@@ -44,3 +44,28 @@ test("each fact in the generic facts' catalogue names an owner that's there", ()
     .map(([, , file, fn]) => `${file} ${fn}`);
   expect(missing).toEqual([]);
 });
+
+// A size std grows a `Vec` by and checks its room by, `TypeFact::Room`, is
+// given as `undefined`, its growth not kept and its room counted alone, of
+// #934's case alone: an associated type no caller gives and no dictionary
+// carries, an impl's `I::Item` (#1260, the user's decision). `room_value` is
+// the one owner of `Room`'s value and the one place it's `undefined`, gated
+// by `is_associated_type`; an impl's method takes no `Room` of an item
+// slot, which its dictionary wouldn't pass; and no other place gives `Room`
+// as `undefined`, so the fallback can't spread.
+test("a Room size is undefined only of #934's case, by room_value", () => {
+  const body = (text: string, name: string) => {
+    const at = text.indexOf(`fn ${name}(`);
+    return at < 0 ? "" : text.slice(at, text.indexOf("\n    }\n", at));
+  };
+  const code = (file: string) => read(file).split("\n").filter((line) => !line.trim().startsWith("//"));
+  const rust = files("src/lower").filter((file) => file.endsWith(".rs"));
+  const room = body(read("src/lower/iterators/hint_asks.rs"), "room_value");
+  expect(room).toContain("(crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::undefined)");
+  expect(room.match(/undefined/g)?.length).toBe(1);
+  const gated = rust.flatMap((file) => code(file).filter((line) => line.includes("is_associated_type(") && !line.includes("fn is_associated_type(")).map(() => file));
+  expect(gated).toEqual(["src/lower/iterators/hint_asks.rs"]);
+  const elsewhere = rust.filter((file) => code(file).some((line) => /TypeFact::Room/.test(line) && /undefined/.test(line)));
+  expect(elsewhere).toEqual([]);
+  expect(read("src/lower/analysis/type_facts.rs")).toMatch(/fact == TypeFact::Room\s*&& tcx\.trait_impl_of_assoc\(id\)\.is_some\(\)\s*&& index >= tcx\.generics_of\(id\)\.count\(\) as u32/);
+});

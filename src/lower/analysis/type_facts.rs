@@ -474,6 +474,15 @@ pub(super) fn type_fact_params<'tcx>(
         // (`instance_over_self`), itertools' `collect_vec` (#1370).
         let compiled =
             crate::lower::recognition::is_compiled_std(tcx, id) || collects::instance_over_self(tcx, foreign, id);
+        // Of an impl's method, the size std grows a `Vec` of an associated
+        // type's items by, an item slot, which its dictionary can't give
+        // (#934): not taken, its `room_value` `undefined` (#1260).
+        if fact == TypeFact::Room
+            && tcx.trait_impl_of_assoc(id).is_some()
+            && index >= tcx.generics_of(id).count() as u32
+        {
+            continue;
+        }
         let ask = match (tcx.trait_of_assoc(id), tcx.trait_impl_of_assoc(id)) {
             (Some(_), _) => own || compiled,
             (None, Some(impl_id)) => own || (index as usize) < tcx.generics_of(impl_id).count(),
@@ -509,6 +518,7 @@ pub(super) fn type_fact_params<'tcx>(
     for facts in params.values_mut() {
         facts.sort();
         facts.dedup();
+        settle_room(facts);
     }
     // Of the crate's own traits; a library's are its manifest's.
     let mut by_trait = CarriedSuper::default();
@@ -524,6 +534,17 @@ pub(super) fn type_fact_params<'tcx>(
         built_slots,
         carried_super: by_trait,
     }
+}
+
+/// Of a slot asked both its `Size` and its `Room`, which are named alike,
+/// `TSize`, its `Size` alone, which gives `Room` too (`room_value`): a
+/// slot's size is given once, and required where `Size` is.
+fn settle_room(facts: &mut Vec<(u32, TypeFact)>) {
+    let sized: Vec<u32> = (facts.iter())
+        .filter(|&&(_, fact)| fact == TypeFact::Size)
+        .map(|&(index, _)| index)
+        .collect();
+    facts.retain(|&(index, fact)| fact != TypeFact::Room || !sized.contains(&index));
 }
 
 /// What `type_fact_params` finds: each function's and associated type's
@@ -674,7 +695,7 @@ fn built_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: ty::Ty
     }
     matches!(
         fact,
-        TypeFact::Size | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort
+        TypeFact::Size | TypeFact::Room | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort
     ) && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
 }
 
@@ -917,8 +938,9 @@ impl<'tcx> Asking<'tcx> {
             // `size_of_val` of an unsized `T` is the value's, not the type's:
             // a size or an alignment is asked of a sized one, and its name
             // of any, a `T: ?Sized`'s too.
-            let measured =
-                |of: ty::Ty<'tcx>| of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align);
+            let measured = |of: ty::Ty<'tcx>| {
+                of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Room | TypeFact::Align)
+            };
             // A downcast's type is its last, after its `Box`'s allocator.
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if let Some(of) = args.types().last()

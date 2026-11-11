@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "uncarried-associated-read",
     breaks: "a consumer's fact of a library trait's associated type that the library's dictionaries don't carry is read of them, `undefined` (#476)",
     file: "src/lower/analysis/type_facts/carried.rs",
-    find: "    assoc.is_local() || foreign.carried(assoc).contains(&fact)\n",
-    replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || foreign.carried(assoc).contains(&fact)\n",
+    find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
+    replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     tests: ["test/crates.test.ts", "-t", "associated type its dictionaries don't carry"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "                None => tcx.layout_of(typing_env.as_query_input(ty)).is_ok(),\n",
     replace: "                None => true,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+  },
+  {
+    name: "room-of-a-library-traits-item-uncarried",
+    breaks: "a consumer's copy of a library's growth of its trait's associated type's items asks their `Room`, which the library's manifest names as its `Size`, and isn't given it, so its growth isn't kept and `capacity()` refuses it (#1260)",
+    file: "src/lower/analysis/type_facts/carried.rs",
+    find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
+    replace: "    assoc.is_local() || carried.contains(&fact)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: capacity_of_a_library_traits_item"],
   },
 ];

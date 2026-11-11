@@ -276,13 +276,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$vecCollectWay", given))
     }
 
-    /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
-    /// for the wasm32 target, or its name; of a type parameter, the one this
-    /// function was given for it.
-    pub(in crate::lower) fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
-        let what = fact.described();
-        // An associated type's, `<A as Array>::Item`'s: its trait's
-        // dictionary's (ADR 0145).
+    /// A fact of `of`, an associated type or a type built of type
+    /// parameters, that this function has, or `None`: of an associated
+    /// type, `<A as Array>::Item`, its trait's dictionary's where it carries
+    /// it (ADR 0145); of a std associated type of a type parameter, given,
+    /// `IItemMap` (ADR 0466), or of a type built of them whose layout it's
+    /// given, `Held<J>` (#737). The one answer of `type_fact_value`'s and
+    /// `capacity_item_size`'s.
+    pub(in crate::lower) fn known_fact_of(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
         if let ty::Alias(
             _,
             alias @ ty::AliasTy {
@@ -297,17 +298,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|facts| facts.iter().any(|&(_, f)| f == fact))
             && let Some(dictionary) = self.evidence_for(alias.trait_ref(self.tcx))
         {
-            return Ok(Expr::member(
+            return Some(Expr::member(
                 dictionary,
                 crate::lower::traits::item_fact_key(self.tcx, *def_id, fact),
             ));
         }
-        // A std associated type's of a type parameter, `IItemMap` (ADR 0466),
-        // or a type built of them whose layout it's given, `Held<J>` (#737).
-        if (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())
-            && let Some(given) = self.given_fact_of(of, fact)
-        {
-            return Ok(given);
+        (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())
+            .then(|| self.given_fact_of(of, fact))
+            .flatten()
+    }
+
+    /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
+    /// for the wasm32 target, or its name; of a type parameter, the one this
+    /// function was given for it.
+    pub(in crate::lower) fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
+        let what = fact.described();
+        // The size std grows a `Vec` by, or `undefined` of #934's case
+        // (`room_value`); else, not given, as `Size` refuses it.
+        if fact == TypeFact::Room {
+            if let Some(room) = self.room_value(of) {
+                return Ok(room);
+            }
+            return self.type_fact_value(of, TypeFact::Size, span);
+        }
+        if let Some(known) = self.known_fact_of(of, fact) {
+            return Ok(known);
         }
         if let ty::Param(param) = of.kind() {
             // Whether it's a `FusedIterator`, its caller's, or not where no
@@ -524,15 +539,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std trait's associated type no caller gives the facts of and no
         // dictionary carries: of a function's own slot, its caller gives
         // them, and of a trait's default's `Self`, its dictionary (#990).
-        if let ty::Alias(
-            _,
-            ty::AliasTy {
-                kind: ty::Projection { def_id },
-                ..
-            },
-        ) = of.kind()
-            && crate::lower::recognition::is_std_crate(self.tcx, *def_id)
-        {
+        if crate::lower::recognition::uncarried_std_item(self.tcx, of) {
             return Err(self.unsupported(
                 span,
                 &format!(

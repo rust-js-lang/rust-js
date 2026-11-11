@@ -84,9 +84,11 @@ pub(super) fn carried_by(foreign: &crate::lower::library::Foreign<'_, '_>, ty: t
 /// crate's own trait, each its code asks; of a library's, only what its
 /// manifest says they carry, which its consumer's code may read of any of
 /// them, and the consumer's dictionaries of its own impls carry too
-/// (`Foreign::carried`, #476).
+/// (`Foreign::carried`, #476). Its `Room` where it carries its `Size`, the
+/// same key, `ItemSize` (#1260).
 pub(super) fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: DefId, fact: TypeFact) -> bool {
-    assoc.is_local() || foreign.carried(assoc).contains(&fact)
+    let carried = foreign.carried(assoc);
+    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)
 }
 
 /// What each of the crate's traits' dictionaries carry whatever asks it:

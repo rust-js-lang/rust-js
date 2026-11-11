@@ -49,8 +49,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`size_of_val` of an unsized `T` asks its caller for a size its type hasn't",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                |of: ty::Ty<'tcx>| of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align);\n",
-    replace: "                |_: ty::Ty<'tcx>| true;\n",
+    find: "                of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Room | TypeFact::Align)\n",
+    replace: "                true\n",
     tests: ["test/diagnostics.test.ts", "-t", "size_of_val of an unsized"],
   },
   {
@@ -130,8 +130,8 @@ export const mutations: Mutation[] = [
     name: "unsized-name-unasked",
     breaks: "`type_name` of a `T: ?Sized` is asked of none, and refused",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                |of: ty::Ty<'tcx>| of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align);\n",
-    replace: "                |of: ty::Ty<'tcx>| of.is_sized(tcx, typing_env);\n",
+    find: "                of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Room | TypeFact::Align)\n",
+    replace: "                of.is_sized(tcx, typing_env)\n",
     tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
   },
   {
@@ -361,8 +361,8 @@ export const mutations: Mutation[] = [
     name: "built-slot-sort-unasked",
     breaks: "generic code's `sort_by_cached_key` of a key that holds a type parameter is refused, its `(K, usize)` pairs' sort asked of no caller (#925)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        TypeFact::Size | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort\n",
-    replace: "        TypeFact::Size | TypeFact::Align | TypeFact::StableSort\n",
+    find: "        TypeFact::Size | TypeFact::Room | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort\n",
+    replace: "        TypeFact::Size | TypeFact::Room | TypeFact::Align | TypeFact::StableSort\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
   },
   {
@@ -535,5 +535,13 @@ export const mutations: Mutation[] = [
     find: "        _ if new_cyclic => args.type_at(0),\n",
     replace: "        _ if new_cyclic || recognition.classify(callee, args).is_some() && false => args.type_at(0),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: const_generic_(with_type|inside)$"],
+  },
+  {
+    name: "room-and-size-both-taken",
+    breaks: "a slot asked both its `Size` and its `Room`, named alike, is taken twice, `TSize` twice, which isn't JS (#1260)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        settle_room(facts);\n",
+    replace: "",
+    tests: ["test/vec-capacity.test.ts", "-t", "one TSize"],
   },
 ];

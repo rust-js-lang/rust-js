@@ -187,12 +187,14 @@ fn grown_asked<'tcx>(
         typing_env: typing_env.with_post_analysis_normalized(tcx),
         ..*recognition
     };
+    // Of any type rustc can't size here, a type parameter, an associated
+    // type or one built of them (#1260): `asked_of` asks none of one it
+    // knows.
     let grown = (keeps_capacity)
         .then(|| revealed.grown_vec_item(callee, args))
-        .flatten()
-        .filter(|item| matches!(item.kind(), ty::Param(_)));
+        .flatten();
     if let Some(item) = grown {
-        return asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Size), &None)
+        return asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None)
             .into_iter()
             .collect();
     }

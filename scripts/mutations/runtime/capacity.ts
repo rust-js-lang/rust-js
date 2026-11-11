@@ -359,4 +359,28 @@ export const mutations: Mutation[] = [
     replace: "    at = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
+  {
+    name: "grew-of-an-unsized-room-counted",
+    breaks: "a push of items whose size wasn't given, #934's, grows by `MIN_NON_ZERO_CAP` of no size, a capacity std's isn't, which `capacity()` gives instead of refusing (#1260)",
+    file: "src/runtime/capacity.js",
+    find: "  if (size === undefined) return $grewUnsized(v, len, made);\n",
+    replace: "",
+    tests: ["test/vec-capacity.test.ts", "-t", "has no capacity its caller reads"],
+  },
+  {
+    name: "reserve-of-an-unsized-room-counted",
+    breaks: "a `reserve` of items whose size wasn't given, #934's, grows by `MIN_NON_ZERO_CAP` of no size, which `capacity()` gives instead of refusing (#1260)",
+    file: "src/runtime/capacity.js",
+    find: "  if (size === undefined) return void $untracked(v);\n",
+    replace: "",
+    tests: ["test/vec-capacity.test.ts", "-t", "has no capacity its caller reads"],
+  },
+  {
+    name: "grown-by-of-an-undefined-size-asks-its-hint",
+    breaks: "an `extend` given its items' size as `undefined`, #934's, asks its hint as one of known capacity does, and of generic code's, whose hint may be the crate's own, refuses at run time, itertools' `LazyBuffer::prefill` (#1260)",
+    file: "src/runtime/capacity.js",
+    find: "      if (size === undefined) {\n        if (!$capacityUnknown(v) && v.length >= $capacity(v)) $untracked(v);\n        first = false;\n        return step;\n      }\n",
+    replace: "",
+    tests: ["test/vec-capacity.test.ts", "-t", "an extend given its items' size as undefined"],
+  },
 ];

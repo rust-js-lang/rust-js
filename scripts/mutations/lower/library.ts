@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's manifest doesn't say what its functions ask of their type parameters",
     file: "src/lower/library.rs",
-    find: "        param(&mut params, index).facts.push(fact.word().to_string());\n",
+    find: "        param(&mut params, index).facts.push(fact.key().to_string());\n",
     replace: "        let _ = (param(&mut params, index), fact);\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
