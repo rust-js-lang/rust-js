@@ -79,3 +79,26 @@ const seven = $cycle(a).take(7).toArray();
 The `iter_cycle` corpus case runs one chained and held, of borrowed and of
 owned items, one changed after, of one stepped first and of an empty one,
 with native Rust; rustc's `sync-send-iterators-in-libcore` passes.
+
+## Amendment (2026-11-11, #1375): an iterator of its items alone owns them
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is preserved. A clone of an `Option`'s `into_iter()` copied its
+array, `[x]`, but never cloned its item. `owns`, which says which items a
+clone clones, asked only `array_source`, and an `Option`'s iterator is one
+of its items alone (`iterates_items`). So a `cycle()` of `Some(L(7))
+.into_iter()` gave `L(7)` again each round, where std's `Cycle` clones its
+iterator and so the item, `L(207)`, by `L`'s own `Clone`. That was a wrong
+answer on main, which the consumer net found as #1375 made `once(x)` one of
+those too. A direct `.clone()` went through `Option`'s own `Clone`, and was
+right.
+
+Such an iterator owns its items: `owns` is `array_source`'s or
+`iterates_items`'. The borrowing ones among them, an `Option`'s `iter()`, a
+slice's chunks, an escape's bytes, give a reference or a `Copy` item, which
+`needs_clone` says needs none, so their clones are as they were.
+
+Held by corpus case `cycle_of_an_items_iterator_clones_its_item.rs`,
+against native Rust in both builds: a `cycle()` of an `Option`'s
+`into_iter()` and of `once(x)` of a type whose `Clone` prints, and a clone
+beside the original. Mutation `items-iterator-clone-uncloned`.

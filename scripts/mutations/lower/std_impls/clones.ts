@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a `Vec`'s `into_iter()` shares its items, which change in place",
     file: "src/lower/std_impls/clones.rs",
-    find: "                let owns = self.array_source(ty).unwrap_or(false);\n",
-    replace: "                let owns = false;\n",
+    find: "                let owns = self.array_source(ty).unwrap_or(false) || self.recognition().iterates_items(ty);\n",
+    replace: "                let owns = self.recognition().iterates_items(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
   },
   {
@@ -450,5 +450,13 @@ export const mutations: Mutation[] = [
     find: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()) && !self.is_known_std(ty))\n",
     replace: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()))\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
+  {
+    name: "items-iterator-clone-uncloned",
+    breaks: "a clone of an `Option`'s `into_iter()` or of `once(x)` copies its array, never cloning its item, so a `cycle()` of it gives `L(7)` again where Rust's clones give `L(207)` (a wrong answer, #1375)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "                let owns = self.array_source(ty).unwrap_or(false) || self.recognition().iterates_items(ty);\n",
+    replace: "                let owns = self.array_source(ty).unwrap_or(false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
   },
 ];

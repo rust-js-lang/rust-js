@@ -574,8 +574,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0364): a clone, a `$iter` of what it has left, each item a
             // clone of one where the iterator owns them. A `Rev`'s is std's,
             // its compiled `Clone` (ADR 0871).
+            // So is one of its items alone, an `Option`'s `into_iter()` and
+            // `once(x)`, which owns them: a borrowing one's, `&T` or `Copy`,
+            // need no clone.
             ty::Adt(..) if self.steps_an_array(ty) => {
-                let owns = self.array_source(ty).unwrap_or(false);
+                let owns = self.array_source(ty).unwrap_or(false) || self.recognition().iterates_items(ty);
                 let left = self.stepped_left(place, ty, owns, span)?;
                 Ok(self.stepped_items_of(left, ty))
             }
