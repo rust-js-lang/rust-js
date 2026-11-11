@@ -971,7 +971,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let runs = runs_settled;
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
-    let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
+    let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign, &instances.impls(tcx));
     // The functions JS calls, whose JS takes their type parameters as JS
     // gives them, and the copies their crate's calls need otherwise, each
     // named apart beside its function (ADR 0051, amended).

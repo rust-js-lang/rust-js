@@ -1583,3 +1583,34 @@ export function joined(items, TDisplay) {
   `recognition/io.ts`, all caught; the last, a closure's name asked by
   `buf_reader_seek_relative`, which crashed rustc once a library's closure
   that formats a `dyn` could fail.
+
+## Amendment: what an instance impl and a library impl's dictionary step (2026-11-11, #1409)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, no output
+changes; two refusals lifted.
+
+A library's trait impl the crate compiles itself, itertools'
+`impl<T: Iterator + ?Sized> Itertools for T` once test_core's
+`partition(&mut array, ..)` and `collect_array()` meet, is no library's
+item (`Foreign::item` is `None` of an instance), so what it steps of
+`T` is the crate's analysis's to say, as a local impl's is. That
+analysis (`stepped_params`) walked the crate's own impls alone, so the
+kept defaults' steps of `T`, `collect_array`'s `self.next()`, reached
+no impl, and its dictionary was refused, "stepping `T`, which rust-js
+found nothing here steps". It now walks the instance impls too
+(`Instances::impls`, as `ground.rs` lists them).
+
+And a caller's parameter given as it is, `I: Iterator + Clone`, given
+to a library impl's method whose dictionary its bounds make of it, a
+blanket impl's default that only hands it on: the impl's dictionary
+steps `I` by its other defaults, as its manifest says, so the caller,
+which makes that dictionary, steps it too, down through the impl's own
+bounds, as #1062 does of the crate's own impls.
+
+Tests: pairs `library_blanket_impl_steps_a_callers_parameter` and
+`library_blanket_default_compiled_by_its_consumer`, each against native
+Rust; mutations `library-impl-dictionary-unstepped` and
+`instance-impl-defaults-unstepped`, caught. The same gap in the
+type-fact analysis, which also walks the crate's own impls alone, is
+next: test_core is now refused at "`whether it's a TrustedLen` of a type
+parameter".

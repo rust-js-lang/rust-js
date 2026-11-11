@@ -358,4 +358,22 @@ export const mutations: Mutation[] = [
     replace: "            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() && tcx.trait_of_assoc(callee).is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_iterables_given_to_std.rs$"],
   },
+  {
+    name: "library-impl-dictionary-unstepped",
+    breaks:
+      "a caller's `I: Iterator + Clone`, given as it is, given to a library's blanket impl's default that hands it on unstepped, `first_of`, isn't stepped though the impl's dictionary it makes steps it by its other defaults: refused, \"stepping `I`\" (#1409)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    steps_through(&mut stepped, imp, impl_args);\n                    asked.push((imp, impl_args));\n",
+    replace: "                    asked.push((imp, impl_args));\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_impl_steps_a_callers_parameter$"],
+  },
+  {
+    name: "instance-impl-defaults-unstepped",
+    breaks:
+      "a library's blanket impl the crate compiles itself (ADR 0914) isn't walked for the defaults it keeps, so its dictionary takes no `T: Iterator` though `collect_array` steps `T`: refused, \"stepping `T`\" (#1409)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "        .chain(instance_impls.iter().copied())\n",
+    replace: "        .chain(instance_impls.iter().copied().filter(|_| false))\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_default_compiled_by_its_consumer$"],
+  },
 ];

@@ -122,6 +122,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    instance_impls: &[DefId],
 ) -> IndexSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
@@ -209,6 +210,36 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 Some(given) => (into_iter, tcx.mk_args(&[given.into()])),
                 None => (callee, args),
             };
+            // Each library impl whose dictionary its bounds make of what the
+            // caller gives, itertools' `impl<T: Iterator> Itertools for T` of
+            // an `I` of the caller's, down through that impl's own bounds:
+            // what the impl steps of it, as its manifest says, which its
+            // dictionary then takes, the caller steps, as it makes that
+            // dictionary, whether or not the method called steps it (#1409).
+            let mut asked: Vec<(DefId, ty::GenericArgsRef<'tcx>)> = vec![(callee, args)];
+            let mut seen: IndexSet<(DefId, ty::GenericArgsRef<'tcx>)> = IndexSet::default();
+            while let Some((of, of_args)) = asked.pop() {
+                if !seen.insert((of, of_args)) || seen.len() > 64 {
+                    continue;
+                }
+                for (clause, _) in tcx.clauses_of(of).instantiate(tcx, of_args) {
+                    let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                        continue;
+                    };
+                    let bound = tcx.instantiate_bound_regions_with_erased(bound).trait_ref;
+                    if !rustc_middle::ty::TypeVisitableExt::has_param(&bound) {
+                        continue;
+                    }
+                    let Some((imp, impl_args)) = crate::lower::traits::evidence_impl(tcx, typing_env, bound) else {
+                        continue;
+                    };
+                    if imp.is_local() || foreign.item(imp).is_none() {
+                        continue;
+                    }
+                    steps_through(&mut stepped, imp, impl_args);
+                    asked.push((imp, impl_args));
+                }
+            }
             // A std-private trait's method whose impl the caller's type picks,
             // `FuseImpl::next`'s of a `Fuse<I>` (ADR 0561): stepped as either
             // impl's method steps it.
@@ -455,9 +486,15 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // crate's iterator holding them, `Holder<I>`, what its impl's `next`
     // steps, where it's stepped (ADR 0492).
     let mut kept_through: Vec<(Param, (Param, Param))> = Vec::new();
-    for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
-        for &imp in impls {
-            let imp = imp.to_def_id();
+    // The crate's impls, and its libraries' it compiles itself, whose
+    // dictionaries it makes (ADR 0914, amended; #1409).
+    let impls: Vec<DefId> = (tcx.all_local_trait_impls(()).values().flatten())
+        .map(|imp| imp.to_def_id())
+        .chain(instance_impls.iter().copied())
+        .collect();
+    for &imp in &impls {
+        {
+            let trait_id = tcx.impl_trait_id(imp);
             let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
             let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
             let overridden = tcx.impl_item_implementor_ids(imp);
@@ -491,9 +528,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // evidence, so the impl steps what that type's `next` steps, of a
     // parameter passed on as it is, or held in a std adapter, `Fuse<I>`
     // (ADR 0527).
-    for impls in tcx.all_local_trait_impls(()).values() {
-        for &imp in impls {
-            let imp = imp.to_def_id();
+    for &imp in &impls {
+        {
             let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
             for item in tcx
                 .associated_items(imp)
