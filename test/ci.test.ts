@@ -898,8 +898,11 @@ test("a part the machine kills is said killed, with what it ran and its peak", a
     } finally {
       console.log = log;
     }
+    // `bun test` holds a file's lines till it ends where its output is a
+    // pipe, but streams them under GitHub Actions, where it prints its
+    // `::group::`s: the last case said is none, or the one before the kill.
     const ended = said.find((line) => line.startsWith("── part 1/1 killed (memory?)"));
-    expect(ended, said.join("\n")).toMatch(/at most \d+\.\d GB.*; the last case it said ended none$/);
+    expect(ended, said.join("\n")).toMatch(/at most \d+\.\d GB.*; the last case it said ended (none|first)$/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
