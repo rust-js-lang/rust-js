@@ -8,6 +8,7 @@ use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends,
 
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
+mod again;
 mod bindings;
 mod branches;
 mod case_rests;
@@ -33,6 +34,7 @@ mod unwinds;
 mod value_chains;
 mod values;
 
+pub(super) use self::again::Again;
 pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
@@ -151,16 +153,6 @@ pub(super) struct Hints<'h> {
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
 /// (`stages::STAGES`), up to `hints.until`'s where it names one, and in a
 /// debug build, what each stage leaves checked (ADR 0659).
-/// Tidy's stages run again (`stages::Stage::again`): whether the stage
-/// running found they must, once it's done, `must`, set by its passes and
-/// taken by `tidy`; and whether they're running, `running`, after the
-/// body's own `written` stage, which isn't run again (#779, #784).
-#[derive(Default)]
-pub(super) struct Again {
-    pub(super) must: std::cell::Cell<bool>,
-    pub(super) running: std::cell::Cell<bool>,
-}
-
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Stopped early, `--tidy-until`'s, what runs as a panic unwinds is
     // guarded still, the list's own pass (#847).
