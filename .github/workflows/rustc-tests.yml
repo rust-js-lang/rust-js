@@ -33,6 +33,10 @@ on:
         description: 'Instead: put back each known bug, and check its tests catch it.'
         type: boolean
         default: false
+      decisions:
+        description: 'With fuzz_seeds: count each compile''s decisions (ADR 1124), the nightly''s.'
+        type: boolean
+        default: false
       mutation_args:
         description: 'With mutations: which, like "--changed=origin/main" for a change''s, or names. Empty: all of them.'
         required: false
@@ -66,6 +70,10 @@ on:
         default: '1'
       mutations:
         description: 'Instead: put back each known bug, and check its tests catch it.'
+        type: boolean
+        default: false
+      decisions:
+        description: 'With fuzz_seeds: count each compile''s decisions (ADR 1124), the nightly''s.'
         type: boolean
         default: false
       mutation_args:
@@ -243,6 +251,7 @@ jobs:
           RUST_JS_COMPILER: bin/rust-js
           FUZZ_REPORT: '1'
           FUZZ_MIRI: '1'
+          RUST_JS_DECISIONS: ${{ inputs.decisions && '/tmp/decisions.tsv' || '' }}
         run: |
           # Whole numbers, or the batch fails, not as a run of none.
           case "$SEEDS" in ''|*[!0-9]*|0) echo "fuzz_seeds=$SEEDS: a whole number, at least 1"; exit 1;; esac
@@ -279,6 +288,10 @@ jobs:
           path: ran-${{ matrix.part }}.txt
           if-no-files-found: ignore
           retention-days: 7
+      - if: always() && inputs.decisions
+        uses: ./.github/actions/decision-counts
+        with:
+          name: fuzz.${{ matrix.part }}
 
   # The batch is every seed asked for, each run once, or it isn't one.
   fuzz-report:

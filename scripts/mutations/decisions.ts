@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            let Some(n) = given.get(&(decision.name, answer)).copied() else { continue };\n",
     tests: ["test/decisions.test.ts", "-t", "counts every answer"],
   },
+  {
+    name: "empty-decisions-setting-counts",
+    breaks: "an empty `RUST_JS_DECISIONS`, a workflow's of a run not the nightly, asks counts written to a file named ``, each compile warning it can't",
+    file: "src/decisions.rs",
+    find: "    LazyLock::new(|| std::env::var_os(\"RUST_JS_DECISIONS\").filter(|path| !path.is_empty()));\n",
+    replace: "    LazyLock::new(|| std::env::var_os(\"RUST_JS_DECISIONS\"));\n",
+    tests: ["test/decisions.test.ts", "-t", "empty setting"],
+  },
 ];

@@ -1,0 +1,17 @@
+name: Decision counts
+description: This job's decision counts (ADR 1124), the file `RUST_JS_DECISIONS` names, a line a compile, summed and kept as an artifact for the nightly's `decision-coverage` job to merge.
+inputs:
+  name:
+    description: "The artifact's name past `decisions-`: the job's, its net before the first dot, `matrix.3`."
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: if [ -f /tmp/decisions.tsv ]; then bun scripts/decision-coverage.ts --sum /tmp/decisions.tsv; fi
+    - uses: actions/upload-artifact@v7
+      with:
+        name: decisions-${{ inputs.name }}
+        path: /tmp/decisions.tsv
+        if-no-files-found: ignore
+        retention-days: 14

@@ -622,6 +622,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts timings
       - id: test
+        env:
+          # The nightly's counts each compile's decisions (ADR 1124).
+          RUST_JS_DECISIONS: ${{ inputs.nightly && '/tmp/decisions.tsv' || '' }}
         run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }}
       - if: always()
         uses: actions/upload-artifact@v7
@@ -630,6 +633,10 @@ jobs:
           path: target/test-timings.json
           if-no-files-found: ignore
           retention-days: 7
+      - if: always() && inputs.nightly
+        uses: ./.github/actions/decision-counts
+        with:
+          name: suite.${{ matrix.shard }}
       # What differs, blessed, as a patch to read and apply: never pushed.
       - name: Bless what differs
         if: failure() && steps.test.outcome == 'failure'

@@ -22,6 +22,12 @@ permissions:
   # check.yml's plan reads its runs.
   actions: read
 
+# Each compile counts its decisions' answers (ADR 1124): each job sums
+# them and keeps them, `decision-counts`, and `decision-coverage` merges
+# the night's, which answers no program reached.
+env:
+  RUST_JS_DECISIONS: /tmp/decisions.tsv
+
 concurrency:
   group: nightly
   cancel-in-progress: false
@@ -48,6 +54,7 @@ jobs:
     with:
       fuzz_seeds: '600'
       fuzz_start: ${{ needs.seeds.outputs.start }}
+      decisions: true
 
   # Tidy's stages and preparation's rewrites on the whole corpus (ADRs
   # 0659, 1087): each case's JS as tidy leaves it after each stage, and as
@@ -81,6 +88,10 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/6
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/tidy-stages.test.ts
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The night's generated programs through the same (ADR 1087): each of
   # the day's 600, whose JS runs as native Rust's, after each of tidy's
@@ -121,6 +132,10 @@ jobs:
           path: target/fuzz/
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # One meaning per iterator (ADR 0908): each case built with std's
   # iterator structs alone, none rewritten in place, runs as native Rust
@@ -150,6 +165,10 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/2
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/iterator-forms.test.ts
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The same input gives the same output (ADR 1003, #866): each case
   # compiled twice, as a program and as a library, gives the same JS, map
@@ -179,6 +198,10 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/2
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=600000 test/determinism.test.ts
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The metamorphic net (#939, ADR 1104): every corpus case rewritten each
   # way scripts/metamorph keeps its meaning, in both builds against native
@@ -217,6 +240,10 @@ jobs:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
           MACHINE: ${{ matrix.machine }}
         run: bun scripts/parts.ts $(( (MACHINE - 1) * 4 + 1 ))-$(( MACHINE * 4 ))/12 test/metamorphic.test.ts --timeout=1800000
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The object model's net (#891, ADR 1105): every corpus case's items moved
   # into a library, the program run with each value the library gives it
@@ -244,6 +271,10 @@ jobs:
           OBJECT_MODEL: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/parts.ts 4 test/object-model.test.ts --timeout=900000
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The `None` matrix (#855, ADR 1096): an `Option` of each payload held in
   # each kind of place, each with its `NoneForm`, written each way and read
@@ -270,6 +301,10 @@ jobs:
           NONE_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=600000 test/none-matrix.test.ts
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The neighbour shuffle (#853, ADR 1103): the day's seed's groups of the
   # corpus's cases, each group one crate, in both builds against native
@@ -303,6 +338,10 @@ jobs:
           NEIGHBOURS_SEED: ${{ needs.seeds.outputs.start }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/parts.ts 4 test/neighbours.test.ts --timeout=1800000
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The memory net (#1172): 400 seeds from the day's, each a program of
   # unsafe Rust over plain data, run under Miri, which must find it
@@ -343,6 +382,10 @@ jobs:
           path: target/memory-net
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The `&mut` matrix (ADR 1086): each pointee of a `&mut`, held each way,
   # through each operation, in both builds, runs as native Rust does; each
@@ -367,6 +410,10 @@ jobs:
           MUT_REF_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/mut-ref-matrix.test.ts
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The iterator conformance matrix (ADR 1090): every case, each source,
   # chain, consumer and panic site, in both builds against native Rust, but
@@ -405,6 +452,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The iterator conformance table (ADR 1092): each adapter alone through
   # each step of the contract, in both builds against native Rust, but the
@@ -442,6 +493,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The points table (#817): each of the conformance table's cases run once
   # a panic point, each closure call, drop, clone and step of the crate's
@@ -475,6 +530,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The unwind table (#854): each operation beyond iterators, a value's
   # fields, closures, collections' operations that call the crate's code,
@@ -509,6 +568,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The formatting grid (#941): every format spec of each value its trait
   # applies to, by each sink in turn, in both builds against native Rust,
@@ -541,6 +604,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The numbers grid (#940): every integer and float operation of each
   # type's boundary values, each cast between every pair, each parse, in
@@ -574,6 +641,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The async table (#942): each family of async bodies, values live across
   # `.await`, of each shape, at each panic point, in both builds against
@@ -606,6 +677,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The consumer net (test/consumer-net.ts): each std method that takes an
   # iterator by value, of each source, as it is and with a closure's or a
@@ -639,6 +714,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The std net (test/std-net.ts, #1171): each std method that changes a
   # collection in place or calls what it's given, as it is and with what it
@@ -672,6 +751,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # All of the twin net (test/twin-net.ts, #1205): each table's cases in the
   # plain build, the runtime's hand-written helpers, against the build of
@@ -704,6 +787,10 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The crates from crates.io the guide says run (docs/crate-corpus.md):
   # each compiled with every crate it uses, its probe run beside native
@@ -732,6 +819,10 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/crate-corpus.ts --check
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The small Crater (ADR 1109): each crate of the corpus's own `#[test]`s,
   # natively and as JS, each test compared; a refused one cut and the rest
@@ -767,6 +858,10 @@ jobs:
           name: crater-${{ matrix.shard }}
           path: crater-${{ matrix.shard }}.json
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
 
   # The Crater's shards as one run: each crate's line, what stops them
   # ranked by crates and tests (#1174), and `--check`'s wrong answers.
@@ -835,6 +930,41 @@ jobs:
           path: target/react-in-rust.diff
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
+
+  # Which answers of the compiler's decisions no program of the night
+  # reached (ADR 1124): each job's summed counts merged, the report in the
+  # run's summary and an artifact. A never-reached answer is a template or
+  # a corpus case to write; a red night is the nets', not this.
+  decision-coverage:
+    name: decision coverage
+    needs: [check, fuzz, stages, programs, forms, determinism, metamorphic, object-model, nones, neighbours, memory, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, twins, crates, crater, port]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: decisions-*
+          path: decisions
+      # An artifact a job, `decisions-matrix.3`, its file the net's.
+      - run: |
+          mkdir -p counts
+          for dir in decisions/decisions-*; do mv "$dir/decisions.tsv" "counts/${dir#decisions/decisions-}.tsv"; done
+          bun scripts/decision-coverage.ts --merge counts
+          cat target/decision-coverage/report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: decision-coverage
+          path: target/decision-coverage/report.md
+          retention-days: 30
 
   # A red night of `main` is an issue, "Nightly red: <date>", opened or, run
   # again that day, commented on, naming each failed job with its link: the

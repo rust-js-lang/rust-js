@@ -72,3 +72,16 @@ test("a compile asked counts every answer of every decision, a 0 too", () => {
   expect(borrowed).toBeGreaterThan(0);
   expect(rows.find(([decision, answer]) => decision === "generic-form" && answer === "held-box")?.slice(2, 5)).toEqual(["0", "plain", "program"]);
 }, underLoad(120_000));
+
+// A workflow gives an empty setting where it asks no counts, a run not the
+// nightly's (nightly.yml, check.yml): that asks none, not a file named ``.
+test("an empty setting asks no counts", () => {
+  const dir = fixture("decisions-empty");
+  const source = join(dir, "main.rs");
+  writeFileSync(source, "pub fn main() {\n    println!(\"{}\", 1);\n}\n");
+  const compiled = Bun.spawnSync([compiler, source, "-o", join(dir, "main.js"), "--", "--crate-type=lib"], {
+    cwd: root,
+    env: { ...process.env, RUST_JS_DECISIONS: "" },
+  });
+  expect([compiled.exitCode, compiled.stderr.toString()]).toEqual([0, ""]);
+}, underLoad(120_000));

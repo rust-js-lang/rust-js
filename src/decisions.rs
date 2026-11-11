@@ -111,8 +111,10 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     },
 ];
 
-/// The file the counts go to, where asked.
-static PATH: LazyLock<Option<std::ffi::OsString>> = LazyLock::new(|| std::env::var_os("RUST_JS_DECISIONS"));
+/// The file the counts go to, where asked: an empty setting asks none, as
+/// a workflow gives of a run not the nightly.
+static PATH: LazyLock<Option<std::ffi::OsString>> =
+    LazyLock::new(|| std::env::var_os("RUST_JS_DECISIONS").filter(|path| !path.is_empty()));
 
 /// How many times each decision gave each answer, this compile.
 static GIVEN: Mutex<BTreeMap<(&'static str, &'static str), u64>> = Mutex::new(BTreeMap::new());

@@ -49,7 +49,19 @@ program reaches** (`src/decisions.rs`, `scripts/decision-coverage.ts`).
   is to be wrong, becomes a generator template or a corpus case, run
   against native Rust. A wrong answer found so is a P0. Answers one net
   alone reaches say which net a retirement would cost.
-- **Where it runs.** The nightly, not each push: it runs every net.
+- **Where it runs.** The nightly, not each push: it runs every net in
+  full, so it counts as it runs, the extra a compile some 1,700 records
+  and a file's append, no run of its own. `nightly.yml` sets
+  `RUST_JS_DECISIONS` of each job, and of the suite (`check.yml`'s
+  `test`, by its `nightly`) and the generated programs
+  (`rustc-tests.yml`'s `fuzz`, by its `decisions`); each job sums its
+  file, a line a compile, to one of some 50 (`--sum`, the
+  `decision-counts` action), and the `decision-coverage` job merges them,
+  each job a net (`--merge <dir>`), into the run's summary and an
+  artifact. An empty setting, a workflow's of a run not the nightly, asks
+  none. Run here, `bun run decision-coverage` takes some 3 hours of the
+  14-core Mac, each net as the nightly runs all of it, the iterator matrix
+  its `pairs` sample, so it's run of the nets a change concerns, named.
 
 The first catalogue is 17 decisions of 49 answers: `RefCell` borrows and
 `try_borrow`s, `&mut` forms (ADR 1086), generic code's forms (ADR 1115),
@@ -71,3 +83,10 @@ recording it and a catalogue entry.
   by one program may still be wrong beside another's. The report's
   one-net and one-shape lists point at those; the generators' isolation
   and build-shape variation are the next steps of the testing plan.
+- The first run here (2026-11-11), every net but the neighbour shuffle,
+  the object model's and the crate pairs, the metamorphic net two-thirds
+  through: 48 of the 49 answers reached; `writer-options`' `shown`, a
+  writer of a type a library's function shows with its options (#1331),
+  none; `refcell-try-borrow`'s `unchecked` and
+  `library-writer-options`' `plain` the metamorphic net's alone, of
+  programs alone.
