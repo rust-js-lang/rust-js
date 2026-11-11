@@ -4539,10 +4539,15 @@ export function $vecCollectWay(inPlace, trusted) {
 // iterable is no Rust iterator. Of items with a destructor, `drop`: what it
 // collected dropped as a panic unwinds, what's left first where it isn't
 // in place (#423, #672).
+// Its capacity std's (#1263): by `next`, what `$roomForHint` reached
+// (`$grownVec`); by its fold, a `TrustedLen`'s, its length, as std reserves
+// its exact upper bound; in place, its source's buffer's, which isn't kept,
+// so `capacity()` refuses it, as a collect made in place where its type is
+// known (#1180).
 export function $collectVec(it, size, how, drop) {
-  if (how === "inPlace") return $foldToArray(it, drop, false, true);
+  if (how === "inPlace") return $untracked($foldToArray(it, drop, false, true));
   if (how === "fold") return $foldToArray($roomForHint(it, size, true, false), drop, true, false);
-  return $collectDropping($roomForHint(it, size, false, false, drop), drop, true);
+  return $grownVec($roomForHint(it, size, false, false, drop), (grown) => $collectDropping(grown, drop, true));
 }
 
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's

@@ -10,7 +10,8 @@ import { compiler, fixture, run } from "./support";
 
 // A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
 // reads one: one std may collect in place, whose capacity is its source's,
-// and a string's bytes, whose capacity is the string's. `capacity()` of it
+// where its type is known or generic code collects it into the `Vec` its
+// caller gives as `B: FromIterator` (#1263), and a string's bytes, whose capacity is the string's. `capacity()` of it
 // throws a refusal naming #1180, `$unsupported`'s, never another number,
 // which no `catch_unwind` takes for a panic (#1193); `shrink_to_fit()` knows it again, and a `push`
 // past it leaves it unknown (the user's decision, #1180).
@@ -28,6 +29,15 @@ test("capacity() of a Vec whose growth wasn't kept throws, naming #1180", async 
 
 pub fn in_place() -> usize {
     let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+    w.capacity()
+}
+
+fn collected<I: Iterator, B: FromIterator<I::Item>>(it: I) -> B {
+    it.collect()
+}
+
+pub fn generic_in_place() -> usize {
+    let w: Vec<u32> = collected(grown().into_iter().map(|x| x + 1));
     w.capacity()
 }
 
@@ -62,7 +72,7 @@ pub fn known() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.inPlace, lib.bytes, lib.pushed, lib.caught]) {
+  for (const f of [lib.inPlace, lib.genericInPlace, lib.bytes, lib.pushed, lib.caught]) {
     expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
   expect([lib.fitted(), lib.known()]).toEqual([5, 8]);

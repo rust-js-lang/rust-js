@@ -878,7 +878,9 @@ What's refused is in [the limitations](limitations.md).
   iterator, `append`, `resize` and `extend_from_slice` reserve as many as
   they add; a `collect()` or an `extend` of another grows by its hint's
   lower bound as it fills, `$grownVec` and `$grownBy`, a `GenericShunt`'s
-  none; `reserve(n)` as std's does, `reserve_exact(n)` as many as it
+  none, generic code's into the `Vec` its caller gives as `B:
+  FromIterator` too, by the way std collects what its caller gives
+  (`IVecCollect`, #1263); `reserve(n)` as std's does, `reserve_exact(n)` as many as it
   needs; items of no size `usize::MAX`. Of a type parameter's items, by
   its caller's `TSize`. A crate that reads no capacity prints none of
   this; one that does compiles its own copy of each function it reaches

@@ -628,8 +628,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.drops(item) != crate::lower::drops::Drops::Nothing {
                 args.extend(self.drop_function(item, span)?);
             }
-            let collected = Expr::call_helper("$collectVec", args);
-            return Ok(self.untracked_where_in_place(collected, output, iter_ty, Some(item)));
+            // Its capacity std's by its way, `$collectVec`'s own (#1263).
+            return Ok(Expr::call_helper("$collectVec", args));
         }
         // What it asks of its hint as std grows a `Vec` of it (`grown_ask`).
         let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);

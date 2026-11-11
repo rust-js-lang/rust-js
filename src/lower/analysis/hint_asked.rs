@@ -118,12 +118,7 @@ pub(super) fn of_crate<'tcx>(
             // the crate can't see, may ask.
             if recognition.foreign.is_library(callee.krate) {
                 for given in args.types() {
-                    _ = mark_hint_knowing(
-                        tcx,
-                        recognition,
-                        given.peel_refs(),
-                        (&mut asked.knowing, &mut asked.hinted.types),
-                    );
+                    _ = mark_given(tcx, recognition, given.peel_refs(), keeps_capacity, &mut asked);
                 }
             }
         }
@@ -162,12 +157,7 @@ pub(super) fn of_crate<'tcx>(
             // consumers'.
             let mut of_items = crate::lower::instances::instances_of(tcx, &callers, of, owner).is_none();
             for instance in instances {
-                of_items |= mark_hint_knowing(
-                    tcx,
-                    recognition,
-                    instance,
-                    (&mut asked.knowing, &mut asked.hinted.types),
-                );
+                of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);
             }
             if of_items {
                 for (maker, made) in made {
@@ -243,6 +233,45 @@ impl AsksHint {
     }
 }
 
+/// `instance`, an iterator given where its hint is asked, generic code's or a
+/// library's, made knowing it where it's made (`mark_hint_knowing`); and, of
+/// a crate that keeps capacities, of an array JS counts (`is_array_iter`),
+/// where JS's own adapters lose its lower bound as it's given
+/// (`given_hint_is_stds`), a set's `iter().enumerate()`,
+/// `entries()`, as where it's collected knowing its type (`grown_by`,
+/// #1263): of a chain or a zip, whose runtime one sums its parts' hints,
+/// its parts' counted adapters (`counted_parts`). Whether it was marked.
+fn mark_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    instance: Ty<'tcx>,
+    keeps_capacity: bool,
+    asked: &mut HintAsked<'tcx>,
+) -> bool {
+    if mark_hint_knowing(
+        tcx,
+        recognition,
+        instance,
+        (&mut asked.knowing, &mut asked.hinted.types),
+    ) {
+        return true;
+    }
+    let of_arrays = (instance.walk().filter_map(|part| part.as_type()))
+        .any(|held| !adapter(tcx, held) && recognition.is_array_iter(held.peel_refs()));
+    if !keeps_capacity || !of_arrays || recognition.given_hint_is_stds(instance) {
+        return false;
+    }
+    match recognition.lower_bound_kept_by_parts(instance) {
+        true => {
+            let (counted, knowing) = counted_parts(tcx, instance);
+            asked.hinted.types.extend(counted);
+            asked.knowing.extend(knowing);
+        }
+        false => mark_each(tcx, instance, (&mut asked.knowing, &mut asked.hinted.types)),
+    }
+    true
+}
+
 /// `instance`, an iterator given where its hint is asked, made knowing it
 /// where it's made, only of what steps an array's items, which JS's own
 /// iterator, `values()`, and its own adapters know no hint of: a range's,
@@ -303,11 +332,26 @@ fn mark_each<'tcx>(
 /// zip that holds them, whose runtime one sums their hints or takes the
 /// fewer, as it's made (#1216).
 fn mark_counted<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, instance: Ty<'tcx>, hinted: &mut Hinted<'tcx>) {
+    let (counted, knowing) = counted_parts(tcx, instance);
+    hinted.counted_in.extend(counted.into_iter().map(|held| (maker, held)));
+    hinted
+        .knowing_in
+        .extend(knowing.into_iter().map(|below| (maker, below)));
+}
+
+/// Of `instance`, the adapters made knowing their hint where it's made,
+/// `mark_counted`'s, and what's below each made knowing its back: each
+/// `take(n)`, `skip(n)` or `step_by(n)`, `$taking`, `$skipping` or
+/// `$stepBy`, and each map, `$mapEnds`, which keeps its source's hint; and
+/// below a counted one, an enumeration's `$enumerate`, a map's `$mapEnds`,
+/// the source's `$iter`. Not the chain or the zip that holds them, whose
+/// runtime one sums their hints or takes the fewer, as it's made (#1216).
+fn counted_parts<'tcx>(tcx: TyCtxt<'tcx>, instance: Ty<'tcx>) -> (Vec<Ty<'tcx>>, Vec<Ty<'tcx>>) {
+    let (mut counted, mut knowing) = (Vec::new(), Vec::new());
     for held in instance.walk().filter_map(|part| part.as_type()) {
         let held = tcx.erase_and_anonymize_regions(held);
-        // A map of them, `$mapEnds`, which keeps its source's hint.
         if crate::lower::recognition::mapped_source(tcx, held).is_some() {
-            hinted.counted_in.insert((maker, held));
+            counted.push(held);
         }
         let Some(source) = counted_source(tcx, held)
             .map(|(source, _)| source)
@@ -315,17 +359,15 @@ fn mark_counted<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, instance: Ty<'tcx>, hinte
         else {
             continue;
         };
-        hinted.counted_in.insert((maker, held));
-        // What it counts, made knowing its hint down to its own source: an
-        // enumeration's `$enumerate`, a map's `$mapEnds`, the source's
-        // `$iter`.
+        counted.push(held);
         for below in source.walk().filter_map(|part| part.as_type()) {
             let below = tcx.erase_and_anonymize_regions(below.peel_refs());
             if made_knowing_by_its_maker(tcx, below) || !adapter(tcx, below) && below.is_adt() {
-                hinted.knowing_in.insert((maker, below));
+                knowing.push(below);
             }
         }
     }
+    (counted, knowing)
 }
 
 /// Each adapter `made`, a type of `maker`'s own type parameters, holds made

@@ -632,4 +632,12 @@ export const mutations: Mutation[] = [
     replace: "            let mut args = vec![it, size, how];\n            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
+  {
+    name: "collect-vec-untracked-by-caller",
+    breaks: "generic code's `$collectVec` is `$untracked` wherever its caller may collect it in place, so `capacity()` of one its caller gives by fold or by `next` throws #1180's refusal, where std's is known (#1263)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            return Ok(Expr::call_helper(\"$collectVec\", args));\n",
+    replace: "            return Ok(self.untracked_where_in_place(Expr::call_helper(\"$collectVec\", args), output, iter_ty, Some(item)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
+  },
 ];

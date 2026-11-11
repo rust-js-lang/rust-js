@@ -445,3 +445,44 @@ range's `capacity overflow`, in a crate that reads no capacity) against
 native Rust in both builds, js-collections' binding iteration, and the
 mutations `extend-of-a-dyn-keeps-no-capacity` and
 `binding-made-in-mir-never`.
+
+## Amended (2026-11-11, #1263): generic code's collect into a `B: FromIterator` keeps std's capacity
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is preserved. `capacity()` of a `Vec` that generic code collected
+into a `B: FromIterator` its caller gave threw #1180's refusal, wherever
+the caller might collect it in place. Native Rust gives std's number.
+
+`$collectVec` now keeps std's capacity for each way std's `SpecFromIter`
+collects (`IVecCollect`, #1239), so the lowering no longer wraps it in
+`$untracked`:
+
+- **By `next`:** what `$roomForHint` reached as it grew, `$grownVec`.
+- **By fold, a `TrustedLen`:** its exact length, as before.
+- **In place:** its source's buffer's, which isn't kept, so it's
+  `$untracked` there and `capacity()` refuses it, as it does for a collect
+  made in place where its type is known.
+
+Std grows such a `Vec` by its iterator's hint. So what a caller gives
+generic code that asks the hint (`AsksHint`: a `size_hint()` or a
+`collect()`), or gives a library's generic function, is made knowing it
+(`mark_given`, one rule for both). This applies where it steps an array JS
+counts (`is_array_iter`) and JS's own iterator would lose its hint as given
+(`given_hint_is_stds`). A map of the crate's own iterator, whose
+`$iterator`'s own `map` keeps std's hint, stays as it was. An example is a set's
+`iter().enumerate()`, which would otherwise be `Array.from(set).entries()`
+and is now `$enumerate($iter(..))`. A chain or a zip, whose runtime form
+sums its parts' hints, is marked by its counted parts, `counted_parts`,
+the rule a `Vec` collected where its type is known already follows. It
+can't be marked whole, because a `take(n)` of a B-tree set's `iter()`
+can't be stepped from its back.
+
+Held by corpus case `capacity_of_generic_collects.rs`, against native Rust
+in both builds, and by the generic in-place collect in
+`vec-capacity.test.ts`'s #1180 test. The metamorphic net's seven
+`generic-instances` rewrites listed under #1263 are taken off. Mutations:
+`collect-vec-by-next-capacity-untracked`, `collect-vec-in-place-capacity-kept`,
+`collect-vec-untracked-by-caller`, `given-hint-lost-unmarked`,
+`given-chain-marked-whole` and `given-hint-marked-of-any-source` are new,
+`chain-part-sources-unmarked` is refitted to `counted_parts`, and `collect-vec-by-next-unhinted` and
+`collect-vec-in-place-rest-first` are refitted.

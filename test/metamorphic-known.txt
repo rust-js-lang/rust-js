@@ -16,12 +16,3 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
-
-#1263 P2 (capacity): capacity() after generic code's collect into a B: FromIterator of an iterator std can't collect in place throws #1180's error
-plain std generic-instances capacity_of_chains_of_exact_size_adapters.rs
-plain std generic-instances capacity_of_text_patterns.rs
-plain std generic-instances capacity_of_what_std_hints_less.rs
-plain std generic-instances extend_asks_hint_capacity_grown.rs
-plain std generic-instances flatten_collected_where_its_hint_is_seen.rs
-plain std generic-instances map_of_own_size_hint.rs
-plain std generic-instances repeat_n_hint_held.rs
