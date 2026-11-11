@@ -69,6 +69,36 @@ export const grownNearCap = (paths: string[], base: string, at = root): [string,
 export const splitFirst = ([file, then, now]: [string, number, number]) =>
   `${file} grew from ${then} to ${now} lines, past ${NEAR}: split it by concept in its own commit first, never squeeze it (the user's rule, #1334)`;
 
+// Where the checkout's `origin/main` is behind `origin`'s own `main`, the
+// two commits, as `origin` says where it's asked: a stale ref, past which
+// others' commits the branch was rebased onto look like its own. `undefined`
+// where they agree, or `origin` can't be asked, as offline.
+export const staleMain = (at = root): { local: string; remote: string } | undefined => {
+  const local = Bun.spawnSync(["git", "rev-parse", "origin/main"], { cwd: at });
+  const remote = Bun.spawnSync(["git", "ls-remote", "origin", "refs/heads/main"], { cwd: at, timeout: 20_000 });
+  if (local.exitCode !== 0 || remote.exitCode !== 0) return undefined;
+  const [local_, remote_] = [local.stdout.toString().trim(), remote.stdout.toString().split(/\s/)[0]];
+  return remote_ && remote_ !== local_ ? { local: local_, remote: remote_ } : undefined;
+};
+
+// What `paths` near the cap say since where the checkout left main: each
+// grown file to split first; or, where any grew and `origin/main` is stale,
+// that it be fetched first, as what's grown may be others' (#1334). Asks
+// `origin` only where a file grew.
+export const nearCapReport = (paths: string[], at = root): string[] => {
+  const base = mergeBase(at);
+  if (base === undefined) return [];
+  const grown = grownNearCap(paths, base, at);
+  if (grown.length === 0) return [];
+  const stale = staleMain(at);
+  if (stale) {
+    return [
+      `origin/main is ${stale.local.slice(0, 9)}, behind origin's main at ${stale.remote.slice(0, 9)}: what looks grown (${grown.map(([file]) => file).join(", ")}) may be others' commits, so fetch origin first and measure again (#1334)`,
+    ];
+  }
+  return grown.map(splitFirst);
+};
+
 if (import.meta.main) {
   const paths = process.argv.slice(2);
   const sizes = fileSizes(paths.length ? paths : COMPILER);
@@ -95,8 +125,8 @@ if (import.meta.main) {
   console.log(`\n${sizes.length} files, ${total} lines, ${Math.round(total / sizes.length)} a file on average`);
   const base = mergeBase();
   if (base) {
-    const grown = grownNearCap(paths.length ? paths : COMPILER, base);
-    console.log(`\n## Over ${NEAR} lines and grown since ${base.slice(0, 9)}, where this left main: ${grown.length}`);
-    for (const file of grown) console.log(splitFirst(file));
+    const report = nearCapReport(paths.length ? paths : COMPILER);
+    console.log(`\n## Over ${NEAR} lines and grown since ${base.slice(0, 9)}, where this left main: ${report.length}`);
+    for (const line of report) console.log(line);
   }
 }

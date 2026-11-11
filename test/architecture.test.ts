@@ -1265,12 +1265,12 @@ test("a test file is at most the cap", () => {
 // squeezed under the cap, an import moved or lines joined to fit. One over
 // it that doesn't grow is left as it is, so whoever next adds to it splits
 // it. A checkout of main itself, CI's, measures nothing: the push's check
-// on the Mac, `check:fast --all`, is where a change is measured.
+// on the Mac, `check:fast --all`, is where a change is measured. Where a
+// file looks grown and `origin/main` is behind origin's, it may be others'
+// commits the branch was rebased onto: it says to fetch first.
 test("a file near the cap doesn't grow: it's split by concept first", () => {
-  const { COMPILER, TESTS, mergeBase, grownNearCap, splitFirst } = require("../scripts/file-sizes.ts") as typeof import("../scripts/file-sizes.ts");
-  const base = mergeBase();
-  if (base === undefined) return;
-  expect(grownNearCap([...COMPILER, ...TESTS], base).map(splitFirst)).toEqual([]);
+  const { COMPILER, TESTS, nearCapReport } = require("../scripts/file-sizes.ts") as typeof import("../scripts/file-sizes.ts");
+  expect(nearCapReport([...COMPILER, ...TESTS])).toEqual([]);
 });
 
 // A test that says the JS has no block label, `bb12`, asks for one at a

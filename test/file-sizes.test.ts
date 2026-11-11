@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { NEAR, grownNearCap, mergeBase, splitFirst } from "../scripts/file-sizes";
+import { NEAR, grownNearCap, mergeBase, nearCapReport, splitFirst, staleMain } from "../scripts/file-sizes";
 
 const lines = (n: number) => Array.from({ length: n }, (_, i) => `// ${i}`).join("\n") + "\n";
 
@@ -52,6 +52,47 @@ test("a file over 1,350 lines that grew since main is told to be split first", (
     // Split by concept, the file left under it is no longer grown.
     put("src/near.rs", NEAR - 100);
     expect(grownNearCap(["src"], base!, at).map(([file]) => file)).toEqual(["src/new.rs", "src/made.rs"]);
+  } finally {
+    rmSync(at, { recursive: true, force: true });
+  }
+});
+
+// m1-lisa's check named three files others had grown on main: its
+// `origin/main` was stale, so main's newer commits, which the branch was
+// rebased onto, looked like the branch's own.
+test("a file that looks grown against a stale origin/main says to fetch first", () => {
+  const at = mkdtempSync(join(tmpdir(), "file-sizes-"));
+  try {
+    const git = (cwd: string, ...args: string[]) => {
+      const run = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd });
+      if (run.exitCode !== 0) throw new Error(run.stderr.toString());
+      return run.stdout.toString().trim();
+    };
+    const [origin, clone] = [join(at, "origin"), join(at, "clone")];
+    mkdirSync(join(origin, "src"), { recursive: true });
+    git(origin, "init", "-q", "-b", "main");
+    writeFileSync(join(origin, "src/big.rs"), lines(NEAR + 10));
+    git(origin, "add", "-A");
+    git(origin, "commit", "-q", "-m", "main");
+    git(at, "clone", "-q", origin, clone);
+    const fetched = git(clone, "rev-parse", "origin/main");
+    // Another's commit on main grows the file; the clone has it, rebased
+    // onto, but its `origin/main` is where it was fetched.
+    writeFileSync(join(origin, "src/big.rs"), lines(NEAR + 20));
+    git(origin, "commit", "-q", "-am", "another's");
+    git(clone, "pull", "-q", "--rebase", origin, "main");
+    git(clone, "update-ref", "refs/remotes/origin/main", fetched);
+
+    expect(grownNearCap(["src"], mergeBase(clone)!, clone).map(([file]) => file)).toEqual(["src/big.rs"]);
+    const now = git(origin, "rev-parse", "HEAD");
+    expect(staleMain(clone)).toEqual({ local: fetched, remote: now });
+    expect(nearCapReport(["src"], clone)).toEqual([
+      `origin/main is ${fetched.slice(0, 9)}, behind origin's main at ${now.slice(0, 9)}: what looks grown (src/big.rs) may be others' commits, so fetch origin first and measure again (#1334)`,
+    ]);
+    // Fetched, it's main's, and nothing grew.
+    git(clone, "fetch", "-q", "origin");
+    expect(staleMain(clone)).toBeUndefined();
+    expect(nearCapReport(["src"], clone)).toEqual([]);
   } finally {
     rmSync(at, { recursive: true, force: true });
   }
