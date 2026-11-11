@@ -1,0 +1,21 @@
+# The class of a map or a set keyed by a tuple or an array whose parts'
+# classes generic code is given (#1346), of how each part's finds its keys:
+# unsorted, by value (`Map`, `$KeyMap`), by what `parts` keeps it under
+# (`$keyMap`, `$PathMap`, `$CowMap`) or by its own `Hash` and `Eq`
+# (`$hashedMap`); sorted, by std's order (`$btreeMap`), its own `Ord`
+# (`$ordMap`) or one that can be seen (`$ordTree`). The tuple's way is the
+# first of its parts' in that order, as std's derived `Hash`, `PartialEq`
+# and `Ord` of a tuple ask each part's in turn. The runtime's
+# `$keyClassUnsorted` and `$keyClassSorted` are held to this table by
+# test/runtime-package.test.ts.
+unsorted	value,value	value
+unsorted	value,parts	parts
+unsorted	parts,value	parts
+unsorted	value,hashed	hashed
+unsorted	parts,hashed	hashed
+unsorted	hashed,hashed	hashed
+sorted	cmp,cmp	cmp
+sorted	cmp,own	own
+sorted	own,cmp	own
+sorted	cmp,tree	tree
+sorted	own,tree	tree

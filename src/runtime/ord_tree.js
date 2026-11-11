@@ -727,6 +727,7 @@ class $OrdTreeSet extends $OrdSet {
 // as `$ordMap`'s is made.
 function $ordTreeMap(cmp) {
   return class extends $OrdTree {
+    static way = { sorted: "tree", cmp };
     constructor(entries) {
       super(cmp, entries);
     }
@@ -735,6 +736,7 @@ function $ordTreeMap(cmp) {
 
 function $ordTreeSet(cmp) {
   return class extends $OrdTreeSet {
+    static way = { sorted: "tree", cmp };
     constructor(items) {
       super(cmp, items);
     }

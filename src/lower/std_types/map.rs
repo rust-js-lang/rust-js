@@ -360,18 +360,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return given
                 .ok_or_else(|| self.unsupported(span, &format!("a map of `{key}` keys, whose class isn't given")));
         }
-        // One made of a type parameter, `Key<T>`, `(T, i32)` or `Option<T>`:
+        // One made of a type parameter: of a tuple or an array, `(usize, T)`,
+        // its parts' classes, each given or known here, composed where it's
+        // made, as std's derived `Hash`, `PartialEq` and `Ord` of one ask
+        // each part's (`$keyClassOf`, #1346), so a caller is asked its parts'
+        // classes alone, never the tuple's. Another, `Key<T>` or `Option<T>`:
         // which class finds it is its parameter's too, an object's of equal
         // ones found as one only by value, which no class given here says
         // of it: refused, never a JS `Set` of objects found by themselves
-        // (#401).
+        // (#401); a struct's `Hash` and `Eq` may be its own (#1360).
         if let Some(key) = key
             && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))
         {
-            return Err(self.unsupported(
-                span,
-                &format!("a map or a set keyed by `{key}`, made of a type parameter, in generic code"),
-            ));
+            if let Some(parts) = crate::lower::recognition::key_class_parts(self.tcx, key) {
+                let classes = (parts.into_iter())
+                    .map(|part| self.map_class(set, sorted, (Some(part), None), span))
+                    .collect::<R<Vec<_>>>()?;
+                return Ok(Expr::call_helper(
+                    "$keyClassOf",
+                    vec![Expr::bool(set), Expr::bool(sorted), Expr::array(classes)],
+                ));
+            }
+            let what = match key.kind() {
+                ty::Adt(adt, _) if adt.is_struct() => format!(
+                    "a map or a set keyed by `{key}`, a struct made of a type parameter, in generic code, whose `Hash` and `Eq` may be its own (#1360)"
+                ),
+                _ => format!("a map or a set keyed by `{key}`, made of a type parameter, in generic code"),
+            };
+            return Err(self.unsupported(span, &what));
         }
         let name = match key {
             // Found by its own `Hash` and `Eq` (ADR 1120).

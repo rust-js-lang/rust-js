@@ -150,3 +150,55 @@ before.
 Case D: no class rust-js has finds it as Rust does. Listed in
 `docs/guide/limitations.md`, whose example `test/limitations.test.ts`
 compiles, and held by the mutation `generic-made-key-classed` (`std_types/map.ts`).
+
+## Amendment: a tuple's class, composed of its parts' where it's made (2026-11-11, #1346)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior was
+refused, so it's kept now.
+
+A map or a set keyed by a tuple or an array made of a type parameter,
+`(usize, T)`, was refused in generic code, "made of a type parameter": no
+class given here says how one is found. itertools stopped there, at
+`self.enumerate().minmax_by_key(..)` in an `Itertools` default, which calls
+the blanket impl's copy of another default at `Enumerate<Self>`. Asking a
+caller the tuple's class, as a type built of its slots, doesn't settle:
+the copy at `Enumerate<Self>` asks it again of `Enumerate<Enumerate<T>>`,
+and so on, polymorphic recursion through a blanket impl. Measured with
+copies asking built-type facts, built asks went 5, 32, 148, 509, 1,802,
+6,573, 24,324 and 90,517 over rounds 0 to 7, to 6 GB.
+
+A tuple's class is a function of its parts', as std's derived `Hash`,
+`PartialEq` and `Ord` of a tuple ask each part's in turn. So it's composed
+where the map is made, `$keyClassOf(set, sorted, [part classes])`, each
+part's given or known here, and a caller is asked its own slots' classes
+alone, never the tuple's (the user's decision through m6):
+
+- **The asks.** `map_of_param` gives a tuple's or a known-length array's
+  parts of type parameters, each asked as a slot, and `held_facts`, the one
+  owner of a type's fact as its parts' (ADR 0975), holds a tuple's class
+  as its parts' classes wherever a callee asks it of what it's given.
+- **The class.** `map_class` composes `$keyClassOf` of each part's class
+  (`key_class_parts`). Each class maker says how it finds its keys, a
+  static `way`: by value, by what `parts` keeps a key under (`$keyMap`,
+  `$PathMap`, `$CowMap`), by its own `Hash` and `Eq` (`$hashedMap`); a
+  B-tree by std's order, its own `Ord` or one that can be seen. The tuple
+  is hashed where any part is, hashing each in its order and comparing
+  each in its order, short of the first unequal; kept under its parts'
+  where any part is; else by value. Sorted, by its parts' `cmp`s in turn,
+  std's nodes where any part's order can be seen, its own `Ord`'s where
+  any part's is. `$keyClassUnsorted` and `$keyClassSorted` hold the rules,
+  held to `test/key-class-ways.txt` by `test/runtime-package.test.ts`.
+- **What's still refused.** A struct key made of a type parameter,
+  `Key<T>`, whose `Hash` and `Eq` may be its own: #1360.
+
+On itertools, asks settle at round 2: slot asks 85, 215 and 257, built
+asks 5, 20 and 20, carried 2. itertools 0.14.0 compiles; its probe stops
+at #1361. `test/corpus/map_keyed_by_a_tuple_of_a_type_parameter.rs` (a
+blanket impl's default counting `self.enumerate()`, keys found by value,
+by their own `Hash` and `Eq` and in B-trees by std's order and by their
+own `Ord`, and arrays) runs against native Rust in both builds;
+`test/diagnostics.test.ts` holds #1360's refusal. Mutations:
+`tuple-key-class-asked-whole` (`lower/recognition/specialization.ts`),
+`tuple-key-parts-unasked` (`lower/recognition/type_facts.ts`),
+`tuple-key-class-uncomposed` (`lower/std_types/map.ts`) and five of
+`runtime/key_class.ts`; four refitted.

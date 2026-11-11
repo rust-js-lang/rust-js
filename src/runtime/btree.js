@@ -6,6 +6,7 @@
 // order once each change.
 function $btreeMap(cmp, Base = Map) {
   return class extends Base {
+    static way = { sorted: "cmp", cmp, Base };
     #last;
     #sorted = true;
     constructor(entries) {
@@ -69,6 +70,7 @@ function $btreeMap(cmp, Base = Map) {
 // And a set's, of `Base`, `Set` or one keyed by value.
 function $btreeSet(cmp, Base = Set) {
   return class extends Base {
+    static way = { sorted: "cmp", cmp, Base };
     #last;
     #sorted = true;
     constructor(items) {

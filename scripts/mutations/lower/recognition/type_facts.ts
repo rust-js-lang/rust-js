@@ -72,4 +72,12 @@ export const mutations: Mutation[] = [
     replace: "    known_by_bounds(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
   },
+  {
+    name: "tuple-key-parts-unasked",
+    breaks: "a map a std function makes keyed by a tuple of a type parameter asks no part's class of its caller, so its composition finds none given, and it's refused (#1346)",
+    file: "src/lower/recognition/type_facts.rs",
+    find: "            Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),\n",
+    replace: "            Some(_) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
+  },
 ];

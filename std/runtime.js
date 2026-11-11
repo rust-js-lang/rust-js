@@ -1551,6 +1551,8 @@ export function $key(value) {
 }
 
 export class $KeyMap extends Map {
+  // How it finds its keys, which `$keyClassOf` composes a tuple's of (#1346).
+  static way = { find: "value" };
   constructor(entries) {
     super();
     if (entries) {
@@ -1617,6 +1619,7 @@ export class $KeyMap extends Map {
 // with each such part its `$id`, as its derived `Hash` and `Eq` find it.
 export function $keyMap(parts) {
   return class extends $KeyMap {
+    static way = { find: "parts", parts };
     keyOf(key) {
       return $key(parts(key));
     }
@@ -1624,6 +1627,8 @@ export function $keyMap(parts) {
 }
 
 export class $KeySet extends Set {
+  // How it finds its keys, which `$keyClassOf` composes a tuple's of (#1346).
+  static way = { find: "value" };
   #items = new Map();
   constructor(items) {
     super();
@@ -1685,6 +1690,7 @@ export class $KeySet extends Set {
 // (ADR 1015, amended): each kept under `$key` of `parts(item)`.
 export function $keySet(parts) {
   return class extends $KeySet {
+    static way = { find: "parts", parts };
     keyOf(item) {
       return $key(parts(item));
     }
@@ -1761,6 +1767,7 @@ export class $HashedKeys {
 // a `Map`, which its methods find through, one search each.
 export function $hashedMap(KHash, eq) {
   return class extends Map {
+    static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
     constructor(entries) {
       super();
@@ -1831,6 +1838,7 @@ export function $hashedMap(KHash, eq) {
 // `$hashedMap`'s.
 export function $hashedSet(KHash, eq) {
   return class extends Set {
+    static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
     constructor(items) {
       super();
@@ -1895,6 +1903,79 @@ export function $hashedSet(KHash, eq) {
       for (const item of this.values()) f.call(that, item, item, this);
     }
   };
+}
+
+// The class of a map or a set keyed by a tuple or an array, `(usize, T)`,
+// made of its parts' classes, each as its part's key is found, where
+// generic code gives a part's of a type only its caller knows (#1346): the
+// caller gives each part's class, never the tuple's, so what a function
+// asks of its callers stays its own parts', however deep a blanket impl
+// makes them. Each class says how it finds its keys, its `way`: `Map` and
+// `Set` by what JS finds them by, `$KeyMap` by value, `$keyMap(parts)`,
+// `$PathMap` and `$CowMap` by what `parts` keeps each under, `$hashedMap`
+// by its own `Hash` and `Eq`; a B-tree's by its `cmp`, its own `Ord`'s
+// (`$ordMap`), one whose order can be seen (`$ordTree`), or std's
+// (`$btreeMap` of a base). The tuple's, as std's derived `Hash`, `Eq` and
+// `Ord` of a tuple find it: test/key-class-ways.txt holds each rule.
+export function $keyClassOf(set, sorted, parts) {
+  const ways = parts.map($keyWayOf);
+  if (!sorted) return $unsortedKeyClass(set, ways);
+  const cmp = (a, b) => {
+    for (let i = 0; i < ways.length; i++) {
+      const order = ways[i].cmp(a[i], b[i]);
+      if (order !== 0) return order;
+    }
+    return 0;
+  };
+  const kind = $keyClassSorted(ways.map((way) => way.sorted));
+  if (kind === "tree") return [$ordTreeMap, $ordTreeSet][+set](cmp);
+  if (kind === "own") return [$ordMap, $ordSet][+set](cmp);
+  const base = $unsortedKeyClass(set, ways.map((way) => $keyWayOf(way.Base ?? [Map, Set][+set])));
+  return [$btreeMap, $btreeSet][+set](cmp, base);
+}
+
+// How a class finds its keys: `Map`'s and `Set`'s by what JS finds them
+// by, as `$key` finds a number or a string; another's, its `way`.
+export function $keyWayOf(Class) {
+  return Class === Map || Class === Set ? { find: "value" } : Class.way;
+}
+
+// Of parts found as `ways` say, unsorted: by their own `Hash` and `Eq`
+// where any part is, hashing each in its order and comparing each in its
+// order, short of the first unequal, as a derived `Hash` and `PartialEq`
+// of a tuple do; by what `parts` keeps each under where any part's is;
+// else by value.
+export function $unsortedKeyClass(set, ways) {
+  const kind = $keyClassUnsorted(ways.map((way) => way.find));
+  const part = (way, value) => (way.find === "parts" ? way.parts(value) : value);
+  if (kind === "hashed") {
+    const KHash = {
+      hash(key, state, H) {
+        ways.forEach((way, i) => {
+          if (way.find === "hashed") way.KHash.hash(key[i], state, H);
+          else H.write(state, Array.from(new TextEncoder().encode($key(part(way, key[i])))));
+        });
+      },
+    };
+    const eq = (a, b) =>
+      ways.every((way, i) => (way.find === "hashed" ? way.eq(a[i], b[i]) : $key(part(way, a[i])) === $key(part(way, b[i]))));
+    return [$hashedMap, $hashedSet][+set](KHash, eq);
+  }
+  if (kind === "parts") return [$keyMap, $keySet][+set]((key) => ways.map((way, i) => part(way, key[i])));
+  return [$KeyMap, $KeySet][+set];
+}
+
+// The rules of test/key-class-ways.txt: of the parts' ways, the tuple's.
+export function $keyClassUnsorted(finds) {
+  if (finds.includes("hashed")) return "hashed";
+  if (finds.includes("parts")) return "parts";
+  return "value";
+}
+
+export function $keyClassSorted(orders) {
+  if (orders.includes("tree")) return "tree";
+  if (orders.includes("own")) return "own";
+  return "cmp";
 }
 
 // The number an object is known by in a key that holds it, as its derived
@@ -2170,6 +2251,7 @@ export class $OrdSet extends Set {
 // made, of its entries or none, and which a copy of one makes again.
 export function $ordMap(cmp) {
   return class extends $OrdMap {
+    static way = { sorted: "own", cmp };
     constructor(entries) {
       super(cmp, entries);
     }
@@ -2178,6 +2260,7 @@ export function $ordMap(cmp) {
 
 export function $ordSet(cmp) {
   return class extends $OrdSet {
+    static way = { sorted: "own", cmp };
     constructor(items) {
       super(cmp, items);
     }
@@ -2913,6 +2996,7 @@ export class $OrdTreeSet extends $OrdSet {
 // as `$ordMap`'s is made.
 export function $ordTreeMap(cmp) {
   return class extends $OrdTree {
+    static way = { sorted: "tree", cmp };
     constructor(entries) {
       super(cmp, entries);
     }
@@ -2921,6 +3005,7 @@ export function $ordTreeMap(cmp) {
 
 export function $ordTreeSet(cmp) {
   return class extends $OrdTreeSet {
+    static way = { sorted: "tree", cmp };
     constructor(items) {
       super(cmp, items);
     }
@@ -3177,6 +3262,7 @@ export function $treeIsDisjoint(a, b, cmp) {
 // order once each change.
 export function $btreeMap(cmp, Base = Map) {
   return class extends Base {
+    static way = { sorted: "cmp", cmp, Base };
     #last;
     #sorted = true;
     constructor(entries) {
@@ -3240,6 +3326,7 @@ export function $btreeMap(cmp, Base = Map) {
 // And a set's, of `Base`, `Set` or one keyed by value.
 export function $btreeSet(cmp, Base = Set) {
   return class extends Base {
+    static way = { sorted: "cmp", cmp, Base };
     #last;
     #sorted = true;
     constructor(items) {
@@ -7136,12 +7223,14 @@ export function $pathCmp(a, b) {
 // A map, or a set, of paths, each kept under its components, `$pathKey`'s:
 // `a//b` finds `a/b`, which it gives back as it was put in.
 export class $PathMap extends $KeyMap {
+  static way = { find: "parts", parts: $pathKey };
   keyOf(path) {
     return $pathKey(path);
   }
 }
 
 export class $PathSet extends $KeySet {
+  static way = { find: "parts", parts: $pathKey };
   keyOf(path) {
     return $pathKey(path);
   }
@@ -7273,12 +7362,14 @@ export function $cowKey(key) {
 }
 
 export class $CowMap extends $KeyMap {
+  static way = { find: "parts", parts: $cowKey };
   keyOf(key) {
     return $cowKey(key);
   }
 }
 
 export class $CowSet extends $KeySet {
+  static way = { find: "parts", parts: $cowKey };
   keyOf(key) {
     return $cowKey(key);
   }

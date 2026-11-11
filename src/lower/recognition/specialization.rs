@@ -130,13 +130,37 @@ fn same_kinds_of_generics(tcx: TyCtxt<'_>, a: DefId, b: DefId) -> bool {
 /// can't say it of `of` and std's one impl of the trait for its type
 /// constructor asks that trait alone of its parameters: `TrustedLen` of a
 /// `&mut I`, `I`'s, as `impl<I: TrustedLen + ?Sized> TrustedLen for &mut
-/// I` asks (ADR 0975).
+/// I` asks (ADR 0975). And the class of a map keyed by a tuple or an array
+/// of a type parameter, `(usize, T)`: each part's a caller gives, which
+/// `$keyClassOf` composes where it's made, never the tuple's, so what a
+/// caller is asked stays its own parts' however deep a blanket impl's copy
+/// at `Enumerate<Self>` builds them (#1346).
 pub(crate) fn held_facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     of: Ty<'tcx>,
     fact: TypeFact,
 ) -> Vec<(Ty<'tcx>, TypeFact)> {
+    if fact.map_kind().is_some()
+        && let key = class_key(of)
+        && key_class_parts(tcx, key).is_some()
+        && (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds))
+    {
+        let mut held = Vec::new();
+        let mut each = vec![key];
+        while let Some(key) = each.pop() {
+            let generic = (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds));
+            match key_class_parts(tcx, key) {
+                _ if known_by_bounds(key) => held.push((key, fact)),
+                Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
+                // A struct made of one, which the lowering refuses (#1360):
+                // asked whole. One known here, its class made here: none.
+                None if generic => held.push((key, fact)),
+                None => {}
+            }
+        }
+        return held;
+    }
     // How std collects an iterator into a `Vec`, `IVecCollect`, of one
     // built of type parameters: of what says whether it's collected in
     // place, where that's a caller's, `collects_in_place`'s `None`, its

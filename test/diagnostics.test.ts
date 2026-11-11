@@ -210,6 +210,9 @@ for (const [name, source, message, crate] of [
   // A flatten stepped from its back of std's structs a function gives, the
   // function computed where it's given, which runs once: refused (#1235).
   ["a flatten of a function's impl stepped from its back", "fn doubled(n: u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    (0..n).map(|x| x * 2)\n}\nfn pick() -> fn(u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    doubled\n}\npub fn f() -> Vec<u32> {\n    (1..4u32).flat_map(pick()).rev().collect()\n}", "which holds std's struct of an adapter a function gives (#1235)"],
+  // A struct key made of a type parameter, whose `Hash` and `Eq` may be its
+  // own: refused, where a tuple's class is its parts' composed (#1346, #1360).
+  ["a set keyed by a struct of a type parameter", "use std::collections::HashSet;\nuse std::hash::Hash;\n#[derive(Hash, PartialEq, Eq)]\npub struct Key<T>(u32, T);\npub fn count<T: Hash + Eq>(keys: Vec<Key<T>>) -> usize {\n    keys.into_iter().collect::<HashSet<_>>().len()\n}", "a map or a set keyed by `Key<T>`, a struct made of a type parameter, in generic code, whose `Hash` and `Eq` may be its own (#1360)"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["flatten of an Option of an Option of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<Option<D>>) -> bool { a.flatten().is_some() }', "`std::option::Option::<std::option::Option<T>>::flatten` of a value with a destructor"],
   ["a Box<dyn Debug> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: Box<dyn std::fmt::Debug> = Box::new(D); }', "a `dyn` of a value with a destructor"],

@@ -1,5 +1,7 @@
 
 class $KeyMap extends Map {
+  // How it finds its keys, which `$keyClassOf` composes a tuple's of (#1346).
+  static way = { find: "value" };
   constructor(entries) {
     super();
     if (entries) {
@@ -66,6 +68,7 @@ class $KeyMap extends Map {
 // with each such part its `$id`, as its derived `Hash` and `Eq` find it.
 function $keyMap(parts) {
   return class extends $KeyMap {
+    static way = { find: "parts", parts };
     keyOf(key) {
       return $key(parts(key));
     }

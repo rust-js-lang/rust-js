@@ -1110,6 +1110,24 @@ test("a long text's kept facts are its own, at every byte, and at most $textKept
   expect($textFactsKept.has(texts[texts.length - $textKept + 1])).toBe(false);
 });
 
+// How a map or a set keyed by a tuple or an array finds its keys, of its
+// parts' ways, where generic code is given each part's class (#1346): the
+// runtime's `$keyClassUnsorted` and `$keyClassSorted`, the rules
+// `$keyClassOf` composes by, held to test/key-class-ways.txt.
+test("$keyClassOf's rules answer test/key-class-ways.txt", () => {
+  const module = join(fixture("runtime-key-class-ways"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const rows = readFileSync(join(root, "test/key-class-ways.txt"), "utf8").split("\n")
+    .filter((line) => line && !line.startsWith("#")).map((line) => line.split("\t"));
+  expect(rows.length).toBe(11);
+  const script = `
+const { $keyClassUnsorted, $keyClassSorted } = await import(${JSON.stringify(module)});
+const rows = ${JSON.stringify(rows)};
+console.log(rows.map(([sorted, parts]) => (sorted === "sorted" ? $keyClassSorted : $keyClassUnsorted)(parts.split(","))).join(","));`;
+  const printed = run([node ?? "node", "--input-type=module", "--eval", script]).trim();
+  expect(printed).toBe(rows.map(([, , way]) => way).join(","));
+});
+
 // How std's `SpecFromIter` collects an iterator into a `Vec`, `IVecCollect`
 // (#1239): the compiler's `recognition::vec_collect_way` answers it of a
 // type its caller knows, the runtime's `$vecCollectWay` of what a generic

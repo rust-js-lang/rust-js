@@ -7,12 +7,14 @@ function $cowKey(key) {
 }
 
 class $CowMap extends $KeyMap {
+  static way = { find: "parts", parts: $cowKey };
   keyOf(key) {
     return $cowKey(key);
   }
 }
 
 class $CowSet extends $KeySet {
+  static way = { find: "parts", parts: $cowKey };
   keyOf(key) {
     return $cowKey(key);
   }

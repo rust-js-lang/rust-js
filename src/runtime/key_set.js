@@ -1,5 +1,7 @@
 
 class $KeySet extends Set {
+  // How it finds its keys, which `$keyClassOf` composes a tuple's of (#1346).
+  static way = { find: "value" };
   #items = new Map();
   constructor(items) {
     super();
@@ -61,6 +63,7 @@ class $KeySet extends Set {
 // (ADR 1015, amended): each kept under `$key` of `parts(item)`.
 function $keySet(parts) {
   return class extends $KeySet {
+    static way = { find: "parts", parts };
     keyOf(item) {
       return $key(parts(item));
     }

@@ -257,6 +257,7 @@ class $OrdSet extends Set {
 // made, of its entries or none, and which a copy of one makes again.
 function $ordMap(cmp) {
   return class extends $OrdMap {
+    static way = { sorted: "own", cmp };
     constructor(entries) {
       super(cmp, entries);
     }
@@ -265,6 +266,7 @@ function $ordMap(cmp) {
 
 function $ordSet(cmp) {
   return class extends $OrdSet {
+    static way = { sorted: "own", cmp };
     constructor(items) {
       super(cmp, items);
     }

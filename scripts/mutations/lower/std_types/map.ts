@@ -484,14 +484,14 @@ export const mutations: Mutation[] = [
   {
     name: "generic-made-key-classed",
     breaks:
-      "a set in generic code keyed by `(T, i32)` is a JS `Set`, which holds `(1, 0)` twice, as it finds objects by themselves (#401)",
+      "a set in generic code keyed by `Key<T>` is a JS `Set`, which holds `Key(0, 1)` twice, as it finds objects by themselves (#401, #1360)",
     file: "src/lower/std_types/map.rs",
     find: "            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))\n",
     replace: "            && false\n",
     tests: [
       "test/limitations.test.ts",
       "-t",
-      "A map or set in generic code keyed by a type made of a type parameter",
+      "A map or set in generic code keyed by a struct or an enum made of a type parameter",
     ],
   },
   {
@@ -635,5 +635,13 @@ export const mutations: Mutation[] = [
     find: "                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n                    list.push(Expr::bool(true));\n                }\n                map_ops(\"$mapGetDisjointMut\", list)\n",
     replace: "                map_ops(\"$mapGetDisjointMut\", list)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
+  },
+  {
+    name: "tuple-key-class-uncomposed",
+    breaks: "a map or a set keyed by a tuple of a type parameter in generic code is refused, \"made of a type parameter\", where its parts' classes compose it (#1346)",
+    file: "src/lower/std_types/map.rs",
+    find: "            if let Some(parts) = crate::lower::recognition::key_class_parts(self.tcx, key) {\n",
+    replace: "            if let Some(parts) = None::<Vec<Ty<'tcx>>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
   },
 ];

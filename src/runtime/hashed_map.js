@@ -68,6 +68,7 @@ class $HashedKeys {
 // a `Map`, which its methods find through, one search each.
 function $hashedMap(KHash, eq) {
   return class extends Map {
+    static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
     constructor(entries) {
       super();
@@ -138,6 +139,7 @@ function $hashedMap(KHash, eq) {
 // `$hashedMap`'s.
 function $hashedSet(KHash, eq) {
   return class extends Set {
+    static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
     constructor(items) {
       super();

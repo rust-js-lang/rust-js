@@ -146,12 +146,14 @@ function $pathCmp(a, b) {
 // A map, or a set, of paths, each kept under its components, `$pathKey`'s:
 // `a//b` finds `a/b`, which it gives back as it was put in.
 class $PathMap extends $KeyMap {
+  static way = { find: "parts", parts: $pathKey };
   keyOf(path) {
     return $pathKey(path);
   }
 }
 
 class $PathSet extends $KeySet {
+  static way = { find: "parts", parts: $pathKey };
   keyOf(path) {
     return $pathKey(path);
   }

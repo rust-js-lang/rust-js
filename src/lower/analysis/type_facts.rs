@@ -87,7 +87,7 @@ pub(super) fn type_fact_params<'tcx>(
                 // makes, as a body read from its THIR asks it, so a library's
                 // default compiled here from its MIR takes the class its
                 // library's copies do (`map_made`, #990).
-                if let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args)) {
+                for (index, fact) in map_made(tcx, foreign, caller, (callee, args)) {
                     asking.asked.insert((caller, index, fact));
                 }
                 // A std trait's method whose impl the caller's type picks,
@@ -131,9 +131,10 @@ pub(super) fn type_fact_params<'tcx>(
             // called or given (`map_made`).
             if let ExprKind::ZstLiteral { .. } = expr.kind
                 && let Some((callee, args)) = fn_def(expr.ty)
-                && let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args))
             {
-                asking.asked.insert((caller, index, fact));
+                for (index, fact) in map_made(tcx, foreign, caller, (callee, args)) {
+                    asking.asked.insert((caller, index, fact));
+                }
             }
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
@@ -530,9 +531,9 @@ fn map_made<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
-) -> Option<(u32, TypeFact)> {
+) -> Vec<(u32, TypeFact)> {
     if foreign.compiled_by_rust_js(callee) {
-        return None;
+        return Vec::new();
     }
     let output = (tcx.fn_sig(callee).instantiate(tcx, args))
         .skip_normalization()
@@ -542,8 +543,9 @@ fn map_made<'tcx>(
         ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
         _ => output,
     };
-    let (key, fact) = map_of_param(tcx, made)?;
-    Some((slot_of(tcx, foreign, caller, key)?, fact))
+    (map_of_param(tcx, made).into_iter())
+        .filter_map(|(key, fact)| Some((slot_of(tcx, foreign, caller, key)?, fact)))
+        .collect()
 }
 
 /// Whether dropping a value of a type runs anything where a function is,

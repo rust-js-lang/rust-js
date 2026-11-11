@@ -171,21 +171,51 @@ pub(crate) fn const_size_unknown<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::Typing
 }
 
 /// A map or a set, hashed or a B-tree, of a type parameter's keys, or a
-/// std associated type's of one, `ty` itself: its key, and its class's
-/// fact, `Map`, `Set`, `TreeMap` or `TreeSet`, which a caller gives
-/// (ADRs 0466, 0404).
-pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, TypeFact)> {
-    let ty::Adt(adt, args) = ty.kind() else { return None };
+/// std associated type's of one, `ty` itself: each key part a caller gives
+/// the class of, and the class's fact, `Map`, `Set`, `TreeMap` or
+/// `TreeSet` (ADRs 0466, 0404): the key's own, or of a key that's a tuple
+/// or an array, each part's, whose classes `$keyClassOf` composes
+/// (`key_class_parts`, #1346).
+pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<(Ty<'tcx>, TypeFact)> {
+    let ty::Adt(adt, args) = ty.kind() else {
+        return Vec::new();
+    };
     let is = |item| is_std_def(tcx, adt.did(), item);
     let fact = match () {
         _ if is(StdItem::HashMap) => TypeFact::Map,
         _ if is(StdItem::HashSet) => TypeFact::Set,
         _ if is(StdItem::BTreeMap) => TypeFact::TreeMap,
         _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,
-        _ => return None,
+        _ => return Vec::new(),
     };
-    let key = class_key(args.types().next()?);
-    known_by_bounds(key).then_some((key, fact))
+    let Some(key) = args.types().next() else {
+        return Vec::new();
+    };
+    let mut given = Vec::new();
+    let mut each = vec![class_key(key)];
+    while let Some(key) = each.pop() {
+        match key_class_parts(tcx, key) {
+            _ if known_by_bounds(key) => given.push((key, fact)),
+            Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
+            None => {}
+        }
+    }
+    given
+}
+
+/// The parts of a key whose class is its parts' classes composed, a
+/// tuple's and an array's of a known length, as std's derived `Hash`,
+/// `PartialEq` and `Ord` of one ask each part's in turn (#1346): `None` of
+/// another key.
+pub(crate) fn key_class_parts<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
+    match key.kind() {
+        ty::Tuple(parts) if !parts.is_empty() => Some(parts.to_vec()),
+        ty::Array(item, len) => {
+            let len = len.try_to_target_usize(tcx)?;
+            Some(vec![*item; usize::try_from(len).ok()?])
+        }
+        _ => None,
+    }
 }
 
 /// A map's or a set's key as its class is found: a `&K`'s is its `K`'s, a
