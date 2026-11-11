@@ -142,14 +142,14 @@ function $leastCapacity(size) {
 
 // `it`, of what `Vec::from_iter` asks room for first, of `size` bytes each,
 // as std's `SpecFromIter` does. Of a `TrustedLen`'s, `trusted`, its hint
-// first: its upper bound where it has one; of one whose type has no end,
-// `endless`, a `capacity overflow` panic. A JS iterator's hint of no
-// upper bound is no hint, not an endless one (ADR 0940). Of another,
-// std's `SpecFromIterNested`: its first item by `next`, then, where it
-// has one, its hint's lower bound and one more; of none, nothing asked
-// and nothing stepped again, an empty `Vec`. Of one `endless` once it
-// gives an item, a `cycle()`'s, that lower bound is `usize::MAX`, so the
-// same panic (ADR 0940, amended). What it gives is `it` with that item
+// first: its upper bound where it has one; of none, a lower bound of
+// `usize::MAX`, as one whose type has no end has, a `capacity overflow`
+// panic (ADR 0940, amended). Of another, std's `SpecFromIterNested`: its
+// first item by `next`, then, where it has one, its hint's lower bound
+// and one more; of none, nothing asked and nothing stepped again, an
+// empty `Vec`. Of one `endless` once it gives an item, a `cycle()`'s,
+// that lower bound is `usize::MAX`, so the same panic (ADR 0940,
+// amended). What it gives is `it` with that item
 // first (#724). Where a step throws, a panic, `it` is closed, as
 // `from_iter` drops what it took as it unwinds; where asking its room
 // does, the item taken is dropped first, `drop`, as it was taken last:
@@ -160,11 +160,13 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
   const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());
   if (trusted) {
     unwound(() => {
-      if (endless) throw new Error("capacity overflow");
       const [lower, upper] = $sizeHint(it);
       // A `TrustedLen`'s hint of no upper bound is more than `usize::MAX`,
-      // its lower bound that, as std's contract says: so generic code's,
-      // whose type its caller knows, `repeat(x).map(f)` (#1239).
+      // its lower bound that, as std's contract says: so of one whose type
+      // has no end, a `RangeFrom`'s or a `repeat()`'s, and generic code's,
+      // whose type its caller knows, `repeat(x).map(f)` (#1239). No hint
+      // std's `TrustedLen`s have runs the crate's code, so asking it first
+      // is unseen.
       if (upper === undefined && lower >= 2 ** 32 - 1) throw new Error("capacity overflow");
       $roomFor(upper !== undefined ? upper : Math.min(lower + 1, 2 ** 32 - 1), size);
     });

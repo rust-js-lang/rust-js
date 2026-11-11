@@ -653,11 +653,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "entry-takes-any-box-apart",
-    breaks: "a blanket impl's default, of a generic `Self` that writes its box's `value`, is taken for one that takes the box apart, so `*self = Self::default()` through its function pointer leaves the caller's object as it was (a wrong answer, #831)",
+    breaks: "a blanket impl's method, of a generic `Self` that writes its box's `value`, is taken for one that takes the box apart, so a `&mut dyn` of it whose `*self = ..` replaces the whole leaves the caller's object as it was (a wrong answer, #831, #968)",
     file: "src/lower/traits/impls.rs",
     find: "        Some(forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0))\n",
     replace: "        Some(forms.unboxed.get(i).is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {
     name: "entry-of-own-type-as-method",

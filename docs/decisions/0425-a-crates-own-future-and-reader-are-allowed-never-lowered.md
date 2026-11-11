@@ -319,3 +319,12 @@ std's readers alone. Mutations: `read-byte-reads-two`,
 `question-mark-written-of-from-residual-misread`
 (`lower/recognition/types.ts`); and `read-byte-of-the-source-read`
 (`lower/std_types/io.ts`). `BufReader` is next; `File` comes last.
+
+## Amendment: a helper only a type's own `io::Read` calls is held by its snapshot (2026-11-11)
+
+A private function only a type's own `io::Read` calls, `unlowered_helpers`'
+`read_from_delegate`, was refused where it was lowered, so mutation
+`unlowered-helpers-lowered` failed its case. Generic code's `R: Read` has
+a dictionary now (`RRead.read(self, buf)`), so the helper lowers and runs:
+the mutation's only effect is JS nothing calls, and it survived on main.
+It's checked against the case's snapshot (`snapshots: true`, #864).

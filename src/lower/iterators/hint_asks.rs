@@ -404,9 +404,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it` grown as `grown` says, `$roomForHint(it, size, trusted)`: the
     /// size it's grown by (`grown_item_size`), whether it's `TrustedLen`,
     /// a caller's `ITrustedLen` where that's its caller's, `callers_trusted`
-    /// (#670); and of one that's endless, or not `TrustedLen` of items with
-    /// a destructor, whose first item std takes by `next` before it asks
-    /// room, that item's drop, as a panic asking it unwinds (#724).
+    /// (#670); and of one not `TrustedLen` that's endless once stepped, or
+    /// of items with a destructor, whose first item std takes by `next`
+    /// before it asks room, whether it's endless and that item's drop, as a
+    /// panic asking it unwinds (#724).
     pub(in crate::lower) fn grown_by_hint(
         &mut self,
         it: Expr,
@@ -435,6 +436,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.drop_function(item, span)?,
             false => None,
         };
+        // Of a `TrustedLen`, its hint says it's endless, std's contract,
+        // which the runtime reads (ADR 0940, amended): not given.
+        let endless = endless && !trusted;
         if endless || drop.is_some() {
             given.push(Expr::bool(endless));
         }

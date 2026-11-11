@@ -144,7 +144,6 @@ function endless(TDefault) {
       $iterator({ start: 0 }, $rangeFromStep(0, 4294967295)).map(() => TDefault.default()),
       0,
       true,
-      true,
     ),
   ).length;
 }

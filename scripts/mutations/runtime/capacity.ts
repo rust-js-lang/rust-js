@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "endless-room-by-lower",
-    breaks: "a `collect()` of what has no end its type knows, `(0..).map(f)`, asks room of its lower bound, so maps where Rust panics `capacity overflow` at once (ADR 0940)",
-    file: "src/runtime/capacity.js",
-    find: "    unwound(() => {\n      if (endless) throw new Error(\"capacity overflow\");\n",
-    replace: "    unwound(() => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
-  },
-  {
     name: "endless-once-unstepped",
     breaks: "a `collect()` of what isn't `TrustedLen` but has no end once it gives an item panics before it's stepped, so its first item's never made, and a `cycle()` with nothing panics too, where std steps it once first (#433, ADR 0940)",
     file: "src/runtime/capacity.js",

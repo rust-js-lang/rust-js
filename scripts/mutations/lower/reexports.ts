@@ -155,6 +155,16 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
+    name: "unexpressed-reexport-unrefused",
+    breaks:
+      "a `pub use` of a function of a crate of no JS re-exports nothing, silently, where no JS module of rust-js's has it (ADR 0240, amended; #1344)",
+    file: "src/lower/reexports.rs",
+    find: "            refuse(\n                statement,\n                &what,\n",
+    replace:
+      "            let _ = (\n                statement,\n                &what,\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "an item of a crate of no JS"],
+  },
+  {
     name: "reexports-alone-of-anything",
     breaks:
       "a crate's root with an item of its own is taken as re-exporting alone, so it writes no JS where its package's entry re-exports its `pub use`s, its item lost (ADR 1008, amended)",
@@ -431,20 +441,20 @@ export const mutations: Mutation[] = [
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
   {
-    name: "glob-of-std-within-the-crate-refused",
-    breaks: "a glob that gives std's names only within the crate, rustc's import-glob-crate's `pub use *;` of a root's `use std::mem::*;`, is refused, \"of `forget`\", where the program compiled before #592",
+    name: "glob-within-the-crate-refused",
+    breaks: "a glob that gives a crate of no JS's names only within the crate, rustc's import-glob-crate's `pub use *;` of a root's `use nojs::*;`, is refused, \"of `helper`\", as std's was before #592 (#1344)",
     file: "src/lower/reexports.rs",
     find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
     replace: "        let unsaid = false && !id.is_local() && foreign.item(id).is_none();\n",
-    tests: ["test/glob-reexports.test.ts", "-t", "a glob of std's names the crate alone sees"],
+    tests: ["test/glob-reexports.test.ts", "-t", "an item of a crate of no JS"],
   },
   {
-    name: "public-glob-of-std-unsaid",
-    breaks: "a public glob of std's names, `pub use std::mem::*;`, says nothing of them, where a JS importer finds none, not refused",
+    name: "public-glob-of-no-js-unsaid",
+    breaks: "a public glob of a crate of no JS, `pub use nojs::*;`, says nothing of its function, where a JS importer finds none, not refused (#1344)",
     file: "src/lower/reexports.rs",
     find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
     replace: "        let unsaid = !id.is_local() && foreign.item(id).is_none();\n",
-    tests: ["test/glob-reexports.test.ts", "-t", "a glob of std's names the crate alone sees"],
+    tests: ["test/glob-reexports.test.ts", "-t", "an item of a crate of no JS"],
   },
   {
     name: "namespace-merged-into-a-list",

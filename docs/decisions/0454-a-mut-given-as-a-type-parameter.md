@@ -851,3 +851,15 @@ amended, #1324). Generic code's `F` of a held `&mut` is still refused, as
 any `&mut` to an object inside generic code's parameters is. Held by
 `generic_fn_value_takes_its_callers_forms.rs` and the mutation
 `held-box-form-unasked`.
+
+## Amendment: `entry-takes-any-box-apart` is held by a `&mut dyn` (2026-11-11)
+
+Since 1aefc906e a function pointer of a blanket impl's method gives the
+box in generic code's one form, so `entry_gives_box` is asked only of a
+`&mut dyn` made of an object (`dyns.rs`' `pair_written_whole`, #968), and
+`mut_method_pointer_replaced` no longer told `entry-takes-any-box-apart`
+apart: it survived on main. It's held by corpus case
+`dyn_of_a_generic_impl_written_whole`, whose `&mut dyn` of a blanket
+impl's `*self = ..` leaves the caller's object as it was with the mutation
+(`C { n: 5 }` where Rust's is `C { n: 0 }`), as crate pair
+`library_singles_across_crates` does too.

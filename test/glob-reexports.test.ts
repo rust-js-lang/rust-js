@@ -341,3 +341,49 @@ pub fn main() {
   const p = runSync([compiler, join(dir, "public.rs"), "-o", join(dir, "public.js"), "--", "--crate-type=lib"], root, 60_000);
   expect([p.code, p.stderr.includes("does not support")]).toEqual([0, false]);
 });
+
+// #1344: another crate's item with no JS, of a crate rust-js didn't
+// compile, its metadata alone (ADR 1054): a `pub use` of its function by
+// name is refused, as no JS module of rust-js's has it to re-export it
+// from, and a public glob of its module is refused at that function, where
+// a type of it re-exports nothing (ADR 0240); but a glob that gives the
+// function only within the crate, a root's `use nojs::*;` that a module's
+// `mod foo { pub use *; }` of edition 2015 sees, says nothing of it, as
+// no JS outside the crate sees the name, and the crate's own names it
+// gives are each said, as of std's.
+test("an item of a crate of no JS is refused where it's re-exported, and unsaid where the crate alone sees it", async () => {
+  const dir = fixture("reexports-of-a-crate-of-no-js");
+  writeFileSync(join(dir, "nojs.rs"), "pub fn helper() -> i32 {\n    7\n}\n\npub struct Marker;\n");
+  run(["rustc", "--edition=2024", "--target=wasm32-unknown-unknown", "--crate-type=rlib", "--emit=metadata", "--crate-name", "nojs",
+    join(dir, "nojs.rs"), "-o", join(dir, "libnojs.rmeta")]);
+  const nojs = ["--extern", `nojs=${join(dir, "libnojs.rmeta")}`];
+  const compiled = (name: string, source: string, rustc: string[]) => {
+    writeFileSync(join(dir, `${name}.rs`), source);
+    return runSync([compiler, join(dir, `${name}.rs`), "-o", join(dir, name, "lib.js"), "--", "--crate-name", name, "--crate-type=lib",
+      ...nojs, ...rustc], root, 60_000);
+  };
+  const named = compiled("named", "pub use nojs::helper;\npub use nojs::Marker;\n", ["--edition=2024"]);
+  expect([named.code, named.stderr]).toEqual([1, expect.stringContaining("a `pub use` of `nojs::helper`")]);
+  expect(named.stderr).toContain("it's in no JS module of rust-js's to be re-exported from");
+  const glob = compiled("glob", "pub mod all {\n    pub use nojs::*;\n}\n", ["--edition=2024"]);
+  expect([glob.code, glob.stderr]).toEqual([1, expect.stringContaining("a `pub use` of every name of a module, of `helper`")]);
+  const types = compiled("types", "pub use nojs::Marker;\n", ["--edition=2024"]);
+  expect([types.code, types.stderr.includes("does not support")]).toEqual([0, false]);
+  const within = compiled("within", `extern crate nojs;
+use nojs::*;
+
+pub fn seven() -> i32 {
+    7
+}
+
+pub fn main() {
+    mod foo {
+        pub use *;
+    }
+    assert_eq!(foo::seven(), 7);
+}
+`, ["--edition=2015", "-Aunused_imports"]);
+  expect([within.code, within.stderr.includes("does not support")]).toEqual([0, false]);
+  const lib = await import(join(dir, "within", "lib.js"));
+  expect([lib.main(), lib.seven()]).toEqual([undefined, 7]);
+});

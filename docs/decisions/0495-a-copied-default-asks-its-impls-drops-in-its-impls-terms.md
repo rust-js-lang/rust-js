@@ -286,3 +286,23 @@ after binding, a panic in an arm) and
 `copied_default_of_a_wrapper_normalizes_its_items_drop.rs`, refused before,
 against native Rust in both builds; mutation
 `match-whole-arm-beside-a-part-refused`.
+
+## Amendment: every environment `no_type_here` is asked in bounds its parameters (2026-11-11)
+
+`no_type_here` said "no type here" only of type parameters the
+environment bounds, so a dictionary's method's own `I`, read where only its
+impl's bounds held, kept its slot (#794). Its mutation,
+`no-type-of-unbounded-params`, which dropped that condition, survived on
+main: a dictionary's method is read under its own bounds as well now, its
+default's terms and its impl's one (#1313's `copies_of_default`, 2026-11-11),
+so no environment it's asked in leaves a parameter of `ty` unbounded.
+
+Instrumented, the condition was never false in the corpus (both builds and
+as libraries), `test/libraries.test.ts`, `test/crates.test.ts`,
+`test/iterator-forms.test.ts`, the crate corpus's 100 crates, or the
+metamorphic net's `generic`, `generic-instances`, `default-copy`,
+`library`, `opaque`, `impl-owned` and `impl-ref` rewrites of every case.
+The condition and its mutation are taken off: a type of a parameter that
+can't be normalized where it's read is no type there, the bounds' one
+answer. The libraries test of #794's `from_iter::<I>` still holds what it
+gave.

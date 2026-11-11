@@ -83,3 +83,12 @@ runtime) and `fuse-try-fold-fused-unsaid` (the std package's lowering)
 are caught. Readability: the case's `Vec`s of values with a destructor
 add `$iter` (77.3 to 77.6 in 10,000 lines) and renamed temporaries
 (714.5 to 715.6) as each such case does. The output reads no worse.
+
+## Amendment: what holds `fused-fact-unanswered` (2026-11-11)
+
+Since 31d29cf63 a copied default is given its caller's `TFused`, so
+`fuse_size_hint`'s copy no longer reaches a type parameter's `Fused` no
+caller says, and mutation `fused-fact-unanswered` survived on main. Such a
+fact is still asked, and answered `false`, by corpus cases
+`flat_map_of_a_where_clause_into_iterator` and `associated_iterator_steps`,
+which the mutation refuses ("`Fused`"); they hold it now.

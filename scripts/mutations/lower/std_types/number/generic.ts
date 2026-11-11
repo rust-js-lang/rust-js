@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     find: "                return Ok(self.fused_fact(param.index).unwrap_or_else(|| Expr::bool(false)));\n",
     replace:
       '                return self.fused_fact(param.index).ok_or_else(|| self.unsupported(span, "Fused"));\n',
-    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(flat_map_of_a_where_clause_into_iterator|associated_iterator_steps).rs$"],
   },
   {
     name: "vec-to-array-err-empty",

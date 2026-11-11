@@ -42,7 +42,7 @@ through what keeps each item.
 - The normal build's JS: 15 cases' held structs collected ask their hint,
   `$roomForHint(c, 4, false).toArray()`, 109 lines in, 47 out.
 - Mutations: `collect-hint-room-unasked`, `endless-collect-unchecked`,
-  `endless-room-by-lower`.
+  `endless-room-by-lower` (taken off with its code, 2026-11-11, below).
 
 ## Amendment: what has no end once it gives an item (2026-10-30, #433)
 
@@ -236,3 +236,34 @@ program sees. It runs against native Rust in both builds. Mutations:
 `heap-and-btree-not-grown-as-vec`, `heap-grown-as-itself`,
 `btree-collected-as-array`, `linked-list-asks-room`,
 `grows-as-vec-without-btree-set`.
+
+## Amendment: a `TrustedLen`'s endlessness is its hint's, not its type's (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no observable difference.
+Two ways said a `TrustedLen` collect has no end: the type's
+(`endless_by_type`, given as `$roomForHint(it, size, true, true)`), and,
+since 22880c6c1 (#1239), its hint, a lower bound of `usize::MAX` and no
+upper bound, which std's `TrustedLen` contract says of every such
+iterator and which generic code, whose type its caller knows, reads. The
+first was redundant: mutation `endless-room-by-lower`, which took it away,
+survived on main.
+
+**The hint is the one way** (it covers concrete and generic code alike).
+The trusted branch's `if (endless) throw` is gone, and a trusted call is
+given no `endless`: `$roomForHint($repeating(1).map(made), 1, true)`, not
+`.., 1, true, true)` (the user's choice, 2026-11-11: an argument nothing
+reads isn't emitted). `endless_by_type` still decides that a trusted
+collect asks room at all, and `endless` is still given to one that isn't
+`TrustedLen` and has no end once stepped. Asking the hint first is unseen:
+no `TrustedLen` of std's runs the crate's code in its `size_hint`.
+
+The evidence, each arm of `endless_by_type` collected with the throw and
+without, in both builds, against native Rust: `RangeFrom` of `u8`, `u32`,
+`u64`, `i8` and `char`; `repeat`; their `map`, `enumerate`, `inspect`,
+`fuse`, `peekable` (and once peeked), `copied` and `cloned`; a `chain` of
+either side, a `zip`, `by_ref()` of a local and of a field, `&mut`, an
+`impl Iterator` returned, a map held and one stepped once; each panics
+`capacity overflow` before any item is made, the same output either way.
+The mutation is taken off with the code. That probe found #1358 (a
+`String` of `char`s asks no room first) and #1359 (a `Box<dyn Iterator>`'s
+collect asks none).

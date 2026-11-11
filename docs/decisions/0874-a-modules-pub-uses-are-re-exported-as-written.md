@@ -578,9 +578,11 @@ Held by `test/cargo-in-source.test.ts`'s "a Cargo build's export * of a
 module placed outside its crate's directory loads" and
 `test/glob-reexports.test.ts`'s "a glob of std's names the crate alone sees
 says nothing of them"; mutations `export-all-unlinked`
-(`to_oxc/expressions.ts`), `namespace-merged-into-a-list`,
-`glob-of-std-within-the-crate-refused` and `public-glob-of-std-unsaid`
-(`lower/reexports.ts`).
+(`to_oxc/expressions.ts`) and `namespace-merged-into-a-list`
+(`lower/reexports.ts`). Since #1315 std's names say nothing whoever sees
+them (ADR 0240, amended), so the glob's two rules are held by a crate of
+no JS's, `glob-within-the-crate-refused` and
+`public-glob-of-no-js-unsaid` (ADR 0240's #1344 amendment).
 
 ## Amendment: a `pub use` of what the module imports exports its binding (rd705, the user's decision, 2026-11-04)
 

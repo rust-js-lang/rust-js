@@ -114,11 +114,12 @@ export const mutations: Mutation[] = [
   {
     name: "unlowered-helpers-lowered",
     breaks:
-      "a private function only a type's own `io::Read` calls is lowered, and its `read` of the delegate refused",
+      "a private function only a type's own `io::Read` calls is lowered, JS no one calls (ADR 0425)",
     file: "src/lower/analysis/collected.rs",
     find: "        if found.is_empty() {\n            return unreached;\n",
     replace: "        if true {\n            return unreached;\n",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
+    snapshots: true,
   },
   {
     name: "derived-hash-unlowered",

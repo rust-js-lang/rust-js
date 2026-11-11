@@ -401,8 +401,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code calling a blanket impl's default is asked the drop of an associated type another default's where clause names, which it can't meet there, `<<I::IntoIter as Iterator>::Item as IntoIterator>::Item`, and is refused, as itertools' `intersperse` was (#828)",
     file: "src/lower/drops/types.rs",
-    find: "            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n            .is_err()\n",
-    replace: "            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n            .is_err()\n            && false\n",
+    find: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n",
+    replace: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
   },
   {
@@ -413,15 +413,6 @@ export const mutations: Mutation[] = [
     find: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding {\n",
     replace: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding { subpattern: Some(_), .. } => false,\n            PatKind::Binding {\n",
     tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
-  },
-  {
-    name: "no-type-of-unbounded-params",
-    breaks:
-      "an associated type of another item's type parameter, a dictionary's method's own `I`, read where its impl's bounds hold, is taken for no type there, so `from_iter::<I>`'s in-place buffer isn't given and a panic drops in another order (#794, #828)",
-    file: "src/lower/drops/types.rs",
-    find: "    params_bounded\n        && tcx\n",
-    replace: "    tcx\n",
-    tests: ["test/libraries.test.ts", "-t", "a std trait's generic method's dictionary carries the same facts in each library"],
   },
   {
     name: "glue-parts-drop-nothing",

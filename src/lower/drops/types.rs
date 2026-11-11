@@ -825,7 +825,11 @@ pub(super) fn describe(ty: Ty<'_>, what: &str) -> String {
 /// impl's default, itertools' `intersperse`, where another default's where
 /// clause names it (#828). No value there is one, as rustc holds each type a
 /// body uses to its bounds: an impl's slot of such a default is given
-/// nothing there, its drop or its facts.
+/// nothing there, its drop or its facts. Each `typing_env` it's asked in
+/// bounds every type parameter `ty` names: a dictionary's method's own `I`
+/// is read where the method's bounds hold too, since its default's and its
+/// impl's terms are one (`from_iter::<I>`'s `<I as IntoIterator>::IntoIter`,
+/// #794), so its failing to normalize is the bounds' answer.
 pub(in crate::lower) fn no_type_here<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -844,32 +848,6 @@ pub(in crate::lower) fn no_type_here<'tcx>(
     if !ty.has_param() {
         return tcx.instantiate_and_check_impossible_clauses((*def_id, alias.args));
     }
-    // Only of type parameters `typing_env` bounds, whose bounds it is: one
-    // of another's, a dictionary's method's own `I` read where its impl's
-    // bounds hold, is none of its to say (`from_iter::<I>`'s
-    // `<I as IntoIterator>::IntoIter`, #794).
-    let bounded: IndexSet<ty::ParamTy> = (typing_env.param_env.caller_bounds().iter())
-        .flat_map(|clause| -> Vec<ty::GenericArg<'tcx>> {
-            match clause.kind().skip_binder() {
-                ty::ClauseKind::Trait(bound) => bound.trait_ref.args.iter().flat_map(|arg| arg.walk()).collect(),
-                ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
-                    .chain(equal.term.as_type().map(Into::into))
-                    .flat_map(|arg| arg.walk())
-                    .collect(),
-                _ => Vec::new(),
-            }
-        })
-        .filter_map(|part| match part.as_type()?.kind() {
-            ty::Param(param) => Some(*param),
-            _ => None,
-        })
-        .collect();
-    let params_bounded = (ty.walk().filter_map(|part| part.as_type())).all(|part| match part.kind() {
-        ty::Param(param) => bounded.contains(param),
-        _ => true,
-    });
-    params_bounded
-        && tcx
-            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
-            .is_err()
+    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+        .is_err()
 }

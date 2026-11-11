@@ -191,3 +191,30 @@ Pinned by corpus case `std_module_reexported_by_a_glob` and crate pair
 `std-reexport-without-js-refused` and `std-glob-reexport-refused`
 (`lower/reexports.ts`). Listed in ADR 0262's consequences and the guide's
 differences (`semantics.md`, 50).
+
+## Amendment: another crate's item with no JS, re-exported, is refused; within the crate, unsaid (#1344)
+
+After #1315 the refusal "it's in no JS module of rust-js's to be
+re-exported from" applied only to a public re-export of a non-std crate's
+item that has no JS, and no test reached it, so its mutation went; and the
+glob's rule that a name only the crate sees is unsaid (ADR 0874) was held
+only by std's names, which `std_without_js` now says nothing of whoever
+sees them, so both of its mutations survived.
+
+Such a crate is one rust-js didn't compile, its metadata alone (ADR 1054).
+Nothing changes; the rules are pinned: **a `pub use` of its function by
+name is refused**, and a public glob of its module is refused at that
+function, "a `pub use` of every name of a module, of `helper`", as no JS
+module of rust-js's has it to re-export (ADR 0262's last case: Rust's
+behaviour can't be kept for a JS importer); a type of it re-exports
+nothing, as any type's doesn't; and **a glob that gives its function only
+within the crate**, a root's `use nojs::*;` that a module's `mod foo { pub
+use *; }` of edition 2015 sees, **says nothing of it**, as no JS outside the
+crate sees the name, while the crate's own names it gives are said.
+
+Held by `test/glob-reexports.test.ts`'s "an item of a crate of no JS is
+refused where it's re-exported, and unsaid where the crate alone sees it";
+mutations `unexpressed-reexport-unrefused`, restored, and
+`glob-within-the-crate-refused` and `public-glob-of-no-js-unsaid`, ADR
+0874's two renamed, as std's names no longer tell them apart
+(`lower/reexports.ts`).

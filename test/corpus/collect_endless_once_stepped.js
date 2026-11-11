@@ -186,7 +186,7 @@ function main() {
 
   // `TrustedLen`, of no upper bound: before any item's made.
   const repeated = $repeating(3);
-  check("repeat map", () => Array.from($roomForHint(repeated.map(made), 1, true, true)));
+  check("repeat map", () => Array.from($roomForHint(repeated.map(made), 1, true)));
 
   // A zip with what has an end: its lower bound, which fits.
   const cycled$9 = $cycle(items);
