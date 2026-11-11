@@ -24,6 +24,10 @@ pub(crate) enum IoOp {
     CursorSetPosition,
     /// `c.get_ref()`, `c.get_mut()` and `c.into_inner()`: `c.inner`.
     CursorInner,
+    /// `io::empty()`: std's unit struct, `undefined`.
+    Empty,
+    /// `io::repeat(byte)`: std's struct, `{ byte }`.
+    Repeat,
 }
 
 /// One of std's byte sources a dictionary of the runtime's reads.
@@ -40,6 +44,21 @@ pub(crate) enum ByteSource<'tcx> {
     /// generic code's `Read` or `BufRead`, whose dictionary would hold them
     /// (#1302).
     Deque,
+    /// `io::Empty`: `$emptyReader`, which reads nothing.
+    Empty,
+    /// `io::Repeat`: `$repeatReader`, which reads its byte without end.
+    Repeat,
+}
+
+impl ByteSource<'_> {
+    /// Whether its impls in std write `name`, a method of `Read`,
+    /// `BufRead` or `Seek`, so its dictionary holds it: each source's
+    /// `DICTIONARY_METHODS`, and `Empty`'s `read_until`, `skip_until` and
+    /// `read_line`, which read nothing, as std's provided ones of it do.
+    fn writes(self, name: &str) -> bool {
+        DICTIONARY_METHODS.contains(&name)
+            || (self == ByteSource::Empty && matches!(name, "read_until" | "skip_until" | "read_line"))
+    }
 }
 
 /// The methods of `Read`, `BufRead` and `Seek` each source's impl writes
@@ -86,6 +105,16 @@ fn is_cursor(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_path(tcx, id) == "std::io::Cursor"
 }
 
+/// Which of std's io functions that make a byte source `id` is,
+/// `io::empty` or `io::repeat`.
+fn source_made(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
+    match std_path(tcx, id) {
+        "std::io::empty" => Some(IoOp::Empty),
+        "std::io::repeat" => Some(IoOp::Repeat),
+        _ => None,
+    }
+}
+
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Which of std's byte sources `ty` is, if it's one.
     pub(in crate::lower) fn byte_source(&self, ty: Ty<'tcx>) -> Option<ByteSource<'tcx>> {
@@ -97,6 +126,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {
                 Some(ByteSource::Deque)
             }
+            ty::Adt(adt, _) => match std_path(self.tcx, adt.did()) {
+                "std::io::Empty" => Some(ByteSource::Empty),
+                "std::io::Repeat" => Some(ByteSource::Repeat),
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -107,6 +141,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tcx = self.tcx;
         if answered_io_fn(tcx, def_id) {
             return Some(IoOp::AppendToString);
+        }
+        if let Some(made) = source_made(tcx, def_id) {
+            return Some(made);
         }
         if let Some(imp) = tcx.inherent_impl_of_assoc(def_id)
             && matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if is_cursor(tcx, adt.did()))
@@ -129,8 +166,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
         };
         (is_io_reading(tcx, trait_id)
-            && DICTIONARY_METHODS.contains(&tcx.item_name(def_id).as_str())
-            && self.byte_source(self_ty).is_some())
+            && self
+                .byte_source(self_ty)
+                .is_some_and(|source| source.writes(tcx.item_name(def_id).as_str())))
         .then_some(IoOp::Dictionary)
     }
 }

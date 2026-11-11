@@ -3,7 +3,9 @@
 //! whether the source's type is known or generic code's, one form of
 //! both; and `Cursor<T>`, std's struct, `{ inner, pos }`, its `pos` a `u64`.
 //! A `VecDeque<u8>`, read by `$dequeReader` where its type is known, but
-//! its `read` and `fill_buf` (#1302).
+//! its `read` and `fill_buf` (#1302). `io::empty()`, std's unit struct,
+//! `undefined`, read by `$emptyReader`, and `io::repeat(byte)`, std's
+//! struct, `{ byte }`, by `$repeatReader`.
 
 use crate::js::{Expr, Prop};
 use crate::lower::bindings;
@@ -83,6 +85,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::assigned(Expr::member(cursor, "pos"), next())
             }
             IoOp::CursorInner => Expr::member(next(), "inner"),
+            IoOp::Empty => Expr::undefined(),
+            IoOp::Repeat => Expr::object(vec![Prop::Field("byte".into(), next())]),
         }))
     }
 }

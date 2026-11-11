@@ -191,3 +191,37 @@ without the ring's layout, so a compile error. Held by the corpus case
 metamorphic rewrites; `diagnostics.test.ts`'s three refusals; mutations
 `deque-*` (`runtime/readers.ts`, `lower/std_types/io.ts`,
 `lower/traits/dictionaries.ts`, `lower/recognition/io.ts`).
+
+## Amendment: `io::empty()` and `io::repeat(byte)` are read (#1156)
+
+`io::empty()` and `io::repeat(byte)` were refused, as calls of std's
+functions rust-js didn't lower. **They're byte sources now
+(`ByteSource::Empty` and `ByteSource::Repeat`, `recognition/io.rs`), each
+with a runtime dictionary of what std's impls write
+(`src/runtime/readers.js`), approved by the coordinator for the user on
+2026-11-11.**
+
+- `$emptyReader` is `Empty`'s `Read`, `BufRead` and `Seek`. It reads
+  nothing. Its `read_exact` of a buffer that isn't empty is `UnexpectedEof`,
+  and of one that is, `Ok`. Every position it seeks or reports is 0. It
+  also holds `read_until`, `skip_until` and `read_line`, which std's impl
+  of `Empty` writes itself (`ByteSource::writes`). Generic code and a
+  `dyn` reach those through `BufRead`'s provided bodies instead, which
+  read nothing from it just the same.
+- `$repeatReader` is `Repeat`'s `Read`. It fills each buffer with its
+  `byte`. Its `read_to_end` and `read_to_string` are
+  `Err(Kind(OutOfMemory))`, as std's are, never a loop without end.
+
+Their values are std's structs: `io::empty()` is `undefined`, a unit
+struct's JS, and `io::repeat(5)` is `{ byte: 5 }`, as `Cursor::new` is
+`{ inner, pos }`. A known reader is given its dictionary's receiver in a
+box, as generic code gives it, though neither reader writes it; the
+noise is P3 #1329. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, each result std's. Held by the corpus case
+`io_read_empty_and_repeat.rs`, known, generic, a `&mut dyn Read` and a
+`Box<dyn BufRead>`, against native Rust in both builds and through its
+metamorphic rewrites; mutations `empty-read-exact-of-nothing-fails`,
+`repeat-read-fills-nothing` and `repeat-read-to-end-ends`
+(`runtime/readers.ts`), and `empty-no-byte-source`,
+`repeat-made-unanswered` and `empty-own-lines-unwritten`
+(`lower/recognition/io.ts`).

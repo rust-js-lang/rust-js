@@ -50,4 +50,28 @@ export const mutations: Mutation[] = [
     replace: "                \"position\" => Some(IoOp::CursorInner),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
   },
+  {
+    name: "empty-no-byte-source",
+    breaks: "an `io::Empty` isn't one of std's byte sources, so its reads are refused (#1156)",
+    file: "src/lower/recognition/io.rs",
+    find: '                "std::io::Empty" => Some(ByteSource::Empty),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat\\.rs$"],
+  },
+  {
+    name: "repeat-made-unanswered",
+    breaks: "`io::repeat(b)` is std's function, called, which rust-js refuses (#1156)",
+    file: "src/lower/recognition/io.rs",
+    find: '        "std::io::repeat" => Some(IoOp::Repeat),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat\\.rs$"],
+  },
+  {
+    name: "empty-own-lines-unwritten",
+    breaks: "`read_line` and `read_until` of an `io::Empty`, which std's impl writes itself, are taken as provided by `BufRead`, its impl's method, which rust-js refuses to call (#1156)",
+    file: "src/lower/recognition/io.rs",
+    find: '            || (self == ByteSource::Empty && matches!(name, "read_until" | "skip_until" | "read_line"))\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat\\.rs$"],
+  },
 ];

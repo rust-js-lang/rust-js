@@ -6,6 +6,7 @@ const cursor = ["test/corpus.test.ts", "-t", "^io_cursor.rs$"];
 const bufRead = ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"];
 const generic = ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"];
 const deque = ["test/corpus.test.ts", "-t", "^io_read_deque.rs$"];
+const emptyRepeat = ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -127,5 +128,29 @@ export const mutations: Mutation[] = [
     find: "  readExact: (r, buf) => r.value.impl.readExact(r.value, buf),\n",
     replace: "  readExact: (r, buf) => r.impl.readExact(r, buf),\n",
     tests: generic,
+  },
+  {
+    name: "empty-read-exact-of-nothing-fails",
+    breaks: "an `io::empty()`'s `read_exact` of an empty buffer is `UnexpectedEof`, where std's is `Ok(())` (#1156)",
+    file: "src/runtime/readers.js",
+    find: "    if (buf.length !== 0) throw $readExactEof();\n",
+    replace: "    throw $readExactEof();\n",
+    tests: emptyRepeat,
+  },
+  {
+    name: "repeat-read-fills-nothing",
+    breaks: "an `io::repeat(b)`'s `read` says it read the buffer's length but leaves it as it was (#1156)",
+    file: "src/runtime/readers.js",
+    find: "  read(r, buf) {\n    buf.fill(r.value.byte);\n",
+    replace: "  read(r, buf) {\n",
+    tests: emptyRepeat,
+  },
+  {
+    name: "repeat-read-to-end-ends",
+    breaks: "an `io::repeat(b)`'s `read_to_end` reads nothing and is `Ok(0)`, where std's is out of memory (#1156)",
+    file: "src/runtime/readers.js",
+    find: '  readToEnd: () => ({ TAG: "Err", _0: new $IoError("OutOfMemory") }),\n',
+    replace: '  readToEnd: () => ({ TAG: "Ok", _0: 0 }),\n',
+    tests: emptyRepeat,
   },
 ];

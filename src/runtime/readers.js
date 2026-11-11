@@ -97,6 +97,40 @@ const $dequeReader = {
   },
 };
 
+// `impl Read for Empty`, `impl BufRead` and `impl Seek`: nothing is read,
+// a `read_exact` of anything is past its end, and every position is 0.
+const $emptyReader = {
+  Read: () => $emptyReader,
+  read: () => ({ TAG: "Ok", _0: 0 }),
+  readExact(r, buf) {
+    if (buf.length !== 0) throw $readExactEof();
+  },
+  readToEnd: () => ({ TAG: "Ok", _0: 0 }),
+  readToString: () => ({ TAG: "Ok", _0: 0 }),
+  fillBuf: () => ({ TAG: "Ok", _0: [] }),
+  consume() {},
+  readUntil: () => ({ TAG: "Ok", _0: 0 }),
+  skipUntil: () => ({ TAG: "Ok", _0: 0 }),
+  readLine: () => ({ TAG: "Ok", _0: 0 }),
+  seek: () => ({ TAG: "Ok", _0: 0n }),
+  streamPosition: () => ({ TAG: "Ok", _0: 0n }),
+};
+
+// `impl Read for Repeat`: every byte read is its `byte`, without end, so
+// what reads to the end is out of memory.
+const $repeatReader = {
+  Read: () => $repeatReader,
+  read(r, buf) {
+    buf.fill(r.value.byte);
+    return { TAG: "Ok", _0: buf.length };
+  },
+  readExact(r, buf) {
+    buf.fill(r.value.byte);
+  },
+  readToEnd: () => ({ TAG: "Err", _0: new $IoError("OutOfMemory") }),
+  readToString: () => ({ TAG: "Err", _0: new $IoError("OutOfMemory") }),
+};
+
 // `impl Read for Cursor<T>`, `impl BufRead` and `impl Seek`, of `T`'s
 // `AsRef<[u8]>`: read at its position, `pos`, a `u64`, of its inner value's
 // bytes, `TAsRef.asRef(inner)`; what's past its end is nothing. Its

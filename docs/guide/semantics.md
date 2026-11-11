@@ -998,6 +998,13 @@ Differences:
   refused, and so is the deque given as generic code's reader, whose
   dictionary would hold them, and what the traits provide of it, which
   asks that dictionary (#1302).
+- **`io::empty()` and `io::repeat(byte)` are readers too,** as std's
+  are, `$emptyReader`'s and `$repeatReader`'s: an empty reader reads
+  nothing, and its `read_exact` of anything is `UnexpectedEof`; a
+  repeating one fills each buffer with its byte, and reading it to its end
+  is `OutOfMemory`. `io::empty()` is `undefined`, a unit struct's JS, and
+  `io::repeat(5)` is std's struct, `{ byte: 5 }`
+  ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md), amended).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
   read in place, and its `Clone`, `Debug`, `PartialEq` and `Default` are
