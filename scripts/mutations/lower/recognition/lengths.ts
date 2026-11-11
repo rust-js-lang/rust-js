@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/lengths.rs",
     find: "            if self.grows_by_exact_len(ty) {\n                return false;\n            }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a chain of a skip"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
   },
   {
     name: "range-hinted-as-counted",
