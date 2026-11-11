@@ -438,4 +438,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Ref(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code.rs$"],
   },
+  {
+    name: "collected-write-results-untagged",
+    breaks: "a collect of writes' results into a `Result` reads each as `{ TAG }`, `undefined.TAG` (#1410)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)) else {\n",
+    replace: "        let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)).filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
 ];

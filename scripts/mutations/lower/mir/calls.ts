@@ -764,4 +764,20 @@ export const mutations: Mutation[] = [
     replace: "        let called = match false {\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
+  {
+    name: "callback-write-result-thrown",
+    breaks: "a `map(|w| writeln!(out, ..))` closure throws its error past what steps it, not an item (#1410)",
+    file: "src/lower/mir/calls.rs",
+    find: "        if !self.is_write_result(output) || !self.closure_may_fail(ty) {\n            return f;\n        }\n",
+    replace: "        if true {\n            return f;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
+  {
+    name: "dyn-callback-output-unread",
+    breaks: "a `Box<dyn FnMut(&&str) -> io::Result<()>>` given to `map` throws its error past what steps it, not an item (#1410)",
+    file: "src/lower/mir/calls.rs",
+    find: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()) {\n",
+    replace: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
 ];

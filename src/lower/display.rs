@@ -136,7 +136,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder()
             .output();
-        if !self.is_write_result(output) || self.formatter_param(def_id).is_some() || !self.call_may_fail(def_id, args)
+        // One whose generic code holds it as a value, `same<T>(t: T) -> T`'s,
+        // whose error its caller's form throws, `Form::Valued`'s (#1410).
+        let declared = (self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder())
+        .output();
+        let valued = self.krate.failing.any
+            && self.is_rust_fn(def_id)
+            && self.form_differs(crate::lower::generic_facts::Form::Valued, (def_id, declared, output));
+        if !self.is_write_result(output)
+            || self.formatter_param(def_id).is_some()
+            || !(valued || self.call_may_fail(def_id, args))
         {
             return value;
         }

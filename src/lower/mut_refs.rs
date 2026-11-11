@@ -429,8 +429,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     )
             })
             .and_then(|projection| projection.term.as_type());
-        let back = output.and_then(|out| self.form_of((def_id, out, self.instantiated(out, generic_args))));
-        (unboxed.iter().any(Option::is_some) || back == Some(Form::Handle)).then_some((unboxed, back))
+        let back = output.and_then(|out| self.form_of_result((def_id, out, self.instantiated(out, generic_args))));
+        (unboxed.iter().any(Option::is_some) || matches!(back, Some(Form::Handle | Form::Tagged | Form::Valued)))
+            .then_some((unboxed, back))
     }
 
     /// Whether a generic function's instance `def_id` given `args`, given
@@ -920,17 +921,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder()
             .output();
-        // A generic `Result` of a `fmt::Error`: a `fmt::Result` here.
-        if self.generic_fmt_result(declared, generic_args) {
-            return Ok(Expr::call_helper("$writeOf", vec![value]));
-        }
         // In the caller's form: a raw pointer of a type parameter's, a
         // handle in generic code, a slice's the array (ADR 1114); a `&mut`
         // generic code boxes, an object's the object (ADR 0454); a `&mut`
         // to a type parameter given a `&mut` to an object, a box of its
-        // box, a box of the object (#1303).
+        // box, a box of the object (#1303); a generic `Result` of a write's
+        // result, `undefined` or its error, `$writeOf(r)` (ADR 0461,
+        // amended, #1408), one held inside it refused.
         let crossing = (def_id, declared, self.instantiated(declared, generic_args));
-        Ok(match self.form_of(crossing) {
+        if let Some(held) = self.write_result_inside(crossing) {
+            return Err(self.unsupported(span, &crate::lower::generic_facts::held_write_result(held)));
+        }
+        Ok(match self.form_of_result(crossing) {
             Some(form) => self.form_back(form, crossing, value),
             None => value,
         })

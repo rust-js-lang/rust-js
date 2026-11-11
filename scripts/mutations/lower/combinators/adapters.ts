@@ -482,4 +482,20 @@ export const mutations: Mutation[] = [
     replace: "        Ok(inserted(subject, at, value, false, None))\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
+  {
+    name: "flattened-write-result-tagged",
+    breaks: "`flatten()` of writes' results reads each as `{ TAG }`, `undefined.TAG` (#1410)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "            true => Expr::undefined(),\n            false => crate::js::result::held(result),\n",
+    replace: "            _ => crate::js::result::held(result),\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
+  {
+    name: "result-items-test-tagged",
+    breaks: "`flatten()` and std's `Flatten` struct's `IntoIterator` of writes' results read each as `{ TAG }`, `undefined.TAG` (#1410)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);\n",
+    replace: "        let ok = crate::js::result::is(result.clone(), true);\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^write_result_items.rs$|^write_result_items with"],
+  },
 ];

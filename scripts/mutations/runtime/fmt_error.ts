@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "fmt-of-err-dropped",
     breaks: "a generic `Result`'s `Err` read as a `fmt::Result` is `undefined`, `Ok`",
     file: "src/runtime/fmt_error.js",
-    find: "  return result.TAG === \"Ok\" ? undefined : result._0;\n",
+    find: "  if (result.TAG === \"Ok\") return undefined;\n",
     replace: "  return undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "function $writeCaught(error) {\n  if (error instanceof $WriteError) return error;\n  throw error;\n",
     replace: "function $writeCaught(error) {\n  return error;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_panic.rs$"],
+  },
+  {
+    name: "fmt-error-of-generic-code-unmade",
+    breaks: "`Err(fmt::Error)` made by generic code, whose `fmt::Error` is `undefined`, given back as a write's result reads as `Ok` (#1408)",
+    file: "src/runtime/fmt_error.js",
+    find: "  return result._0 ?? new $FmtError();\n",
+    replace: "  return result._0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
   },
 ];

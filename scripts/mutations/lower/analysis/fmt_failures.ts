@@ -59,8 +59,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer that calls generic code whose `Result<(), S::Error>` is a `fmt::Result` isn't known to fail: its error is thrown out of `write!` to a `String`",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "                calls.push((caller, Callee::Unknown));\n                continue;\n",
-    replace: "                continue;\n",
+    find: "            if is_generic_fmt_result(tcx, typing_env, declared, args) {\n                calls.push((caller, Callee::Unknown));\n",
+    replace: "            if is_generic_fmt_result(tcx, typing_env, declared, args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
   {
@@ -238,5 +238,21 @@ export const mutations: Mutation[] = [
     find: "        Some(index) => !index.is_null(),\n",
     replace: "        Some(index) => index.is_null(),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
+  {
+    name: "valued-callee-never-fails",
+    breaks: "a function that gives back `same(r)` of a write's result is taken never to fail, so `held_back(true)?` goes on (#1410)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                && crate::lower::generic_facts::valued_where(tcx, declared, output)\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
+  },
+  {
+    name: "iterator-write-result-never-fails",
+    breaks: "a function that collects writes into an `io::Result<()>` is taken never to fail, so its `Err` is thrown past its caller (#1410)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                    .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))\n",
+    replace: "                    .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },
 ];

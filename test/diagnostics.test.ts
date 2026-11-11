@@ -188,6 +188,11 @@ for (const [name, source, message, crate] of [
   // refused for now (#1156).
   ["a File's Debug", "pub fn f(file: std::fs::File) -> String { format!(\"{file:?}\") }", "`{:?}` of a `std::fs::File`, which shows what the OS says of it (#1156)"],
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1156)"],
+  // A write's result held inside what generic code has as a `Result` of its
+  // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where
+  // the caller's is `undefined` or its error (#1408).
+  ["a write's result inside generic code's Vec of Results", "use std::io::Write;\nfn first_ok<T, E>(rs: Vec<Result<T, E>>) -> Option<T> { rs.into_iter().find_map(Result::ok) }\npub fn f() -> bool { let mut v = Vec::new(); first_ok(vec![writeln!(v, \"x\")]).is_some() }", "a write's result, `std::result::Result<(), std::io::Error>`, held inside what generic code has as a `Result` of its type parameters"],
+  ["a write's result read as a Result through a bound", "use std::fmt::{Debug, Write};\ntrait Get<T> { fn get(&self) -> &T; }\nimpl<T> Get<T> for T { fn get(&self) -> &T { self } }\nfn shown<T: Debug, E: Debug>(r: &impl Get<Result<T, E>>) -> String { format!(\"{:?}\", r.get()) }\npub fn f() -> String { let mut s = String::new(); shown(&write!(s, \"x\")) }", "which a bound reads as a `Result` of type parameters"],
   ["a BufReader of a &mut to an object", "use std::io::{BufReader, Cursor};\npub fn f() -> usize { let mut c = Cursor::new(vec![1u8]); let r = BufReader::new(&mut c); r.capacity() }", "a `&mut` to an object, which generic code reads as its box (#1374)"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],

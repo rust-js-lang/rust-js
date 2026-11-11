@@ -91,6 +91,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     exprs.push(self.form_given(Form::HeldBox, crossing, held));
                     continue;
                 }
+                // A write's result given where generic code has a `Result` of
+                // its type parameters: tagged, `$writeTagged(r)`, its form
+                // there; one held inside what's given, refused (ADR 0461,
+                // amended, #1408).
+                if let Some(held) = self.write_result_inside(crossing) {
+                    return Err(self.unsupported(span, &crate::lower::generic_facts::held_write_result(held)));
+                }
+                if self.write_result_through_bound(crossing) {
+                    return Err(self.unsupported(
+                        span,
+                        &format!(
+                            "a write's result, `{}`, given for `{}`, which a bound reads as a `Result` of type parameters, `{{ TAG }}` there (#1408)",
+                            crossing.2.peel_refs(),
+                            crossing.1.peel_refs()
+                        ),
+                    ));
+                }
+                if self.form_differs(Form::Tagged, crossing) {
+                    let result = self.value_expr(value, span)?;
+                    exprs.push(self.form_given(Form::Tagged, crossing, result));
+                    continue;
+                }
             }
             let place = match value {
                 // A `&mut` to a function or an iterator given for a type
@@ -162,6 +184,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let called = Expr::call(f, given);
                             let called = match back {
                                 Some(Form::Handle) => Expr::call_helper("$ptrTo", vec![called]),
+                                // A write's result it gives, `undefined` or its
+                                // error thrown, where generic code takes a
+                                // `Result` of its type parameters: `{ TAG }`
+                                // of it, `$writeResult(() => f())` (#1408).
+                                Some(Form::Tagged) => Expr::call_helper(
+                                    "$writeResult",
+                                    vec![Expr::arrow(
+                                        Vec::new(),
+                                        vec![StmtKind::Return(Some(called)).at(js::Span::NONE)],
+                                    )],
+                                ),
+                                // Held as a value, `undefined` or its error,
+                                // where generic code holds a type parameter
+                                // (#1410).
+                                Some(Form::Valued) => {
+                                    self.fmt_try(vec![StmtKind::Return(Some(called)).at(js::Span::NONE)])
+                                }
                                 _ => called,
                             };
                             let body = vec![StmtKind::Return(Some(called)).at(js::Span::NONE)];

@@ -677,7 +677,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(tag(true), subject, other)
             }
             Comb::ResultFlatten => Expr::cond(tag(true), inside(), subject),
-            Comb::ResultIter => Expr::cond(tag(true), Expr::array(vec![inside()]), Expr::array(Vec::new())),
+            Comb::ResultIter => self.result_items(subject.clone(), subject_ty.peel_refs()),
             Comb::ResultIterMut | Comb::ResultAsMut => {
                 let ty::Adt(_, sides) = subject_ty.peel_refs().kind() else {
                     return Err(self.unsupported(span, "this `Result`"));

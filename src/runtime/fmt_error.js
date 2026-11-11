@@ -39,10 +39,17 @@ function $writeResult(write) {
     throw error;
   }
 }
+// A write's result given where generic code has a `Result` of its type
+// parameters, `{ TAG }` (#1408): `Ok`, or `Err` of its error.
+function $writeTagged(result) {
+  return result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: result };
+}
 // A generic `Result` of a write's error, as a write's result is a value:
-// `undefined`, or its error.
+// `undefined`, or its error; a `fmt::Error` generic code made, which holds
+// nothing, `undefined`, a write's error of its own (#1408).
 function $writeOf(result) {
-  return result.TAG === "Ok" ? undefined : result._0;
+  if (result.TAG === "Ok") return undefined;
+  return result._0 ?? new $FmtError();
 }
 // What a function that gives a value's `Result` caught: a write's error,
 // its `Err`'s; anything else thrown on (ADR 0462).

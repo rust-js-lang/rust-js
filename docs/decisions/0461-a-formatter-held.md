@@ -89,6 +89,48 @@ on, `$writeCheck($writeOf(encode(..)))` of a generic one. It gave `Ok`.
 - A held `Formatter`'s options, `f.width()` or `f.pad(s)` through the
   struct, aren't the handle's: each is refused.
 
+## Amendment: every write's result generic code holds, and std's iterators (#1408, #1410)
+
+The rule above held of `Result<(), E>` of a `fmt::Error` alone, given back.
+Given to generic code, `report<T: Debug>(r: io::Result<T>)` called as
+`report(writeln!(v, "x"))`, a write's result kept its own form and the
+callee read `undefined.TAG`; given back from `passed<T>(r: io::Result<T>)`,
+`{ TAG }` was read as a write's; an `io::Result<()>`'s had no rule at all.
+**A write's result meets generic code as a `Form` of ADR 1115's, decided by
+`form_differs` in `generic_facts.rs` alone:**
+
+- **`Form::Tagged`**: a `Result` of generic code's type parameters,
+  `io::Result<T>` or `Result<(), E>`, whose caller's is a write's result.
+  Given, `$writeTagged(r)`; given back, `$writeOf(r)`; a closure's result
+  generic code takes, `$writeResult(() => f(..))`. A trait's generic
+  method's, a generic method's, a `fn` pointer's and a closure's
+  `F: Fn() -> io::Result<T>` cross so, as a call's do; one held inside,
+  `Vec<Result<T, E>>`'s items or a `&mut` of one, is refused, naming
+  #1408.
+- **`Form::Valued`**: a type parameter, `B` of std's `map<B, F>` or `T` of
+  `same<T>(t: T) -> T`, whose caller's is a write's result: held as a
+  value, `undefined` or its error, where a call of the caller's function
+  throws its error. A closure given there gives it back
+  `$writeTry(() => f(..))`, as an item; a generic function of the crate's
+  or a library's gives it back to its caller `$writeCheck(r)`, and its call
+  may fail where any write may; a trait's method, `from_residual`'s `Self`,
+  is its impl's, of the caller's own form.
+
+std's iterators are generic code too (the user's decision, 2026-11-11:
+convert at the boundary, where the boundary is). A callback that gives a
+write's result gives it as a value, `$writeTry`, in the plain build, as the
+`Valued` form is in the build of std's structs; a collect into a `Result`,
+which reads each item as one, is given each tagged, `std_reads_tagged`,
+and a write's result it collects into given back, `$writeOf`. Concrete code
+between keeps the write's form: `filter(|r| r.is_ok())` reads
+`r === undefined`. `flatten()` and `IntoIterator` of a write's result take
+its `Ok` by the one test of it, `variant_test`; `try_for_each` into an
+`io::Result<()>` is `forEach`, as into a `fmt::Result`; and a call of
+std's iterator code that gives a write's result may fail where any write
+may. Corpus cases `write_result_given_to_generic_code` and
+`write_result_items` run as native Rust in both builds; the latter is one
+of `test/iterator-forms.test.ts`' few.
+
 ## Amendment: a `fmt` trait's method called on a held `Formatter`
 
 `Display::fmt(&x, self.0)`, `Debug::fmt` or another `fmt` trait's,

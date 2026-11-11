@@ -205,6 +205,10 @@ const few = [
   // A unit struct's iterator, `undefined`, given as it is: its hint asked
   // of std's struct around it (itertools' laziness tests).
   "trait_default_takes_an_iterator_as_its_callers_give_it.rs",
+  // A write's result a closure gives std's `Map` struct, which holds it as
+  // its `B`, a value, not its error thrown; flattened by std's `Flatten`
+  // through its `IntoIterator` (#1410).
+  "write_result_items.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")

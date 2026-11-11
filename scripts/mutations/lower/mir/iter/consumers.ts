@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`try_for_each` into a `fmt::Result` reads its function's nothing as a `Result`, and throws",
     file: "src/lower/mir/iter/consumers.rs",
-    find: "        if self.recognition().is_fmt_result(output) {\n",
-    replace: "        if false {\n",
+    find: "        if self.is_write_result(output) {\n            return match method {\n",
+    replace: "        if false {\n            return match method {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -333,5 +333,13 @@ export const mutations: Mutation[] = [
     find: "                    || self.keeps_a_dropping_key(method, arg_tys)))\n",
     replace: "                    || false))\n",
     tests: ["test/corpus.test.ts", "-t", "^key_function_drops_before_its_key.rs$"],
+  },
+  {
+    name: "try-for-each-into-io-as-a-result",
+    breaks: "`try_for_each` into an `io::Result<()>` is folded as a `Result`'s, reading `undefined.TAG` (#1410)",
+    file: "src/lower/mir/iter/consumers.rs",
+    find: "        if self.is_write_result(output) {\n            return match method {\n",
+    replace: "        if self.recognition().is_fmt_result(output) {\n            return match method {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },
 ];

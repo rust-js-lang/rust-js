@@ -352,15 +352,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
-    name: "generic-result-not-fmt",
-    breaks:
-      "a generic `Result` of a `fmt::Error`, read where a `fmt::Result` goes, is the object, whose `Err` a writer never throws",
-    file: "src/lower/mut_refs.rs",
-    find: '            return Ok(Expr::call_helper("$writeOf", vec![value]));\n',
-    replace: "            return Ok(value);\n",
-    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
-  },
-  {
     name: "callee-fields-caller-terms",
     breaks:
       "a generic function's fields are read in its caller's terms, whose type parameters it doesn't have, and rustc panics",

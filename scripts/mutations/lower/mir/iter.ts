@@ -862,4 +862,12 @@ export const mutations: Mutation[] = [
     replace: "            true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
   },
+  {
+    name: "tried-callback-valued",
+    breaks: "`try_for_each(|w| writeln!(..))`'s callback gives its error as a value, which `forEach` drops, so its `Err` is lost (#1410)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if method.is_some_and(IterMethod::tries) {\n            return (receiver, values);\n",
+    replace: "        if false {\n            return (receiver, values);\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
 ];

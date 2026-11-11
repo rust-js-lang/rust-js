@@ -824,6 +824,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What a std iterator method is given, `values` of `arg_tys`: its
+    /// receiver, and the rest, each callback that gives back a write's result
+    /// giving it as a value, an item, but `try_fold`'s and `try_for_each`'s,
+    /// whose error ends what steps it (#1410).
+    fn receiver_and_callbacks(
+        &mut self,
+        method: Option<IterMethod>,
+        values: Vec<Expr>,
+        arg_tys: &[Ty<'tcx>],
+    ) -> (Expr, std::vec::IntoIter<Expr>) {
+        let mut values = values.into_iter();
+        let receiver = values.next().expect("the receiver");
+        if method.is_some_and(IterMethod::tries) {
+            return (receiver, values);
+        }
+        let rest: Vec<Expr> = (values.enumerate())
+            .map(|(at, value)| match arg_tys.get(at + 1) {
+                Some(&ty) => self.write_result_valued(value, ty),
+                None => value,
+            })
+            .collect();
+        (receiver, rest.into_iter())
+    }
+
     /// `mir_iter_call`'s, once what it drops is seen to.
     fn mir_iter_method(
         &mut self,
@@ -955,8 +979,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if std_method.is_none() {
             return Ok(None);
         }
-        let mut values = values.into_iter();
-        let receiver = values.next().expect("the receiver");
+        let (receiver, mut values) = self.receiver_and_callbacks(std_method, values, arg_tys);
         // `next(&mut it)`: a range's start moved, or the JS iterator stepped.
         if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");

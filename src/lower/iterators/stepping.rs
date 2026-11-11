@@ -27,6 +27,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iter_ty: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Expr> {
+        // Of a write's result, `undefined` or its error: std's code, which
+        // reads each as a `Result`, given it tagged, `{ TAG }`, and a write's
+        // result it collects into given back as one (`Form::Tagged`, #1410).
+        let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)) else {
+            return self.collect_fallible_items(items, target, item, iter_ty, span);
+        };
+        let r = self.fresh("r");
+        let tagged = self.form_given(crate::lower::generic_facts::Form::Tagged, crossing, Expr::var(&r));
+        let f = Expr::arrow(vec![r.into()], vec![StmtKind::Return(Some(tagged)).at(js::Span::NONE)]);
+        let items = Expr::call(Expr::member(items, "map"), vec![f]);
+        let collected = self.collect_fallible_items(items, target, item, iter_ty, span)?;
+        let (std, declared, _) = crossing;
+        Ok(self.form_back(
+            crate::lower::generic_facts::Form::Tagged,
+            (std, declared, target),
+            collected,
+        ))
+    }
+
+    /// `collect_fallible`'s, of items in the form std's code reads.
+    fn collect_fallible_items(
+        &mut self,
+        items: Expr,
+        target: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
         let ty::Adt(_, target_args) = target.kind() else {
             unreachable!("a `Result` or an `Option`")
         };

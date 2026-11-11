@@ -162,9 +162,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call that returns a `fmt::Result` and may fail isn't caught as its value",
     file: "src/lower/display.rs",
-    find: "        if !self.is_write_result(output) || self.formatter_param(def_id).is_some()",
-    replace:
-      "        if true || !self.is_write_result(output) || self.formatter_param(def_id).is_some()",
+    find: "        if !self.is_write_result(output)\n            || self.formatter_param(def_id).is_some()",
+    replace: "        if true\n            || self.formatter_param(def_id).is_some()",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
@@ -397,5 +396,13 @@ export const mutations: Mutation[] = [
       "-t",
       "a writer from its MIR takes its Formatter's options",
     ],
+  },
+  {
+    name: "valued-call-never-fails",
+    breaks: "a call of `same<T>(t: T) -> T` given a write's result is taken never to fail, so its value is read as a write's that threw (#1410)",
+    file: "src/lower/display.rs",
+    find: "            || !(valued || self.call_may_fail(def_id, args))\n",
+    replace: "            || !self.call_may_fail(def_id, args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
   },
 ];

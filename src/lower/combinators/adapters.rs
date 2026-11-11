@@ -163,9 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.as_js_iterator(value, inner, span).map(Some);
         }
         if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {
-            let ok = crate::js::result::is(value.clone(), true);
-            let items = Expr::array(vec![crate::js::result::held(value)]);
-            return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
+            return Ok(Some(self.result_items(value, inner)));
         }
         // A B-tree's, in its keys' order: a JS `Set` a caller gives may be in
         // any (ADR 0404, amended).
@@ -173,6 +171,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.in_order_of(value, inner, span).map(Some);
         }
         Ok(None)
+    }
+
+    /// The items of `result`, a `Result` of type `ty`: its `Ok`'s value, by
+    /// the one test of it, or none; a write's result's, `undefined` or its
+    /// error, its `()` (#1410).
+    pub(in crate::lower) fn result_items(&self, result: Expr, ty: Ty<'tcx>) -> Expr {
+        let ty::Adt(adt, _) = *ty.kind() else {
+            unreachable!("a `Result`")
+        };
+        let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);
+        let held = match self.is_write_result(ty) {
+            true => Expr::undefined(),
+            false => crate::js::result::held(result),
+        };
+        Expr::cond(ok, Expr::array(vec![held]), Expr::array(Vec::new()))
     }
 
     /// `(item) => <inner_iterable of f(item)>`, of `f`'s returned value,

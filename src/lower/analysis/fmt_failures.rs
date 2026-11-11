@@ -146,6 +146,15 @@ pub(super) fn failing_fns<'tcx>(
                 .output();
             let output =
                 (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(output))).unwrap_or(output);
+            // A write's result generic code rust-js compiled holds as a value,
+            // `same<T>(t: T) -> T`'s: an `Err` of what it was given, which may
+            // be any write's (`Form::Valued`, #1410).
+            if (callee.is_local() || foreign.compiled(callee))
+                && crate::lower::generic_facts::valued_where(tcx, declared, output)
+            {
+                calls.push((caller, Callee::Unknown));
+                continue;
+            }
             if !is_write_result_type(tcx, output)
                 && of_write_error(tcx, output)
                 && let Some(Callee::Known(id)) = resolve(tcx, typing_env, callee, args)
@@ -185,6 +194,18 @@ pub(super) fn failing_fns<'tcx>(
             // code may be given to write (#1156).
             if of_files(tcx, callee, args) {
                 failing.insert(caller);
+                continue;
+            }
+            // std's iterator code that gives a write's result of what it
+            // steps, `collect()` of `map(|w| writeln!(out, ..))`'s items or
+            // `try_for_each(|w| writeln!(..))`: an `Err` of an item, which may
+            // be any write's (#1410).
+            if is_write_result_type(tcx, output)
+                && tcx
+                    .trait_of_assoc(callee)
+                    .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))
+            {
+                calls.push((caller, Callee::Unknown));
                 continue;
             }
             if is_write_result_type(tcx, output)

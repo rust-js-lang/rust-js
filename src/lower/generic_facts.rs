@@ -20,7 +20,7 @@
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `src/lower/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
-//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
+//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
 //! | an iterator given where generic code steps a JS iterator, adapted at every route to it, a call, a `fn` pointer, a function value (ADR 0061) | Form | `src/lower/iterators/stepping.rs given_iterators` |
@@ -69,6 +69,22 @@ pub(in crate::lower) enum Form {
     /// is the object, `$heldObjectOf(box)` (#1303), a direct call's as a
     /// function value's, a `fn` pointer's (#1322).
     HeldBox,
+    /// A `Result` of generic code's type parameters, `io::Result<T>` or
+    /// `Result<(), E>`, whose caller's is a write's result, `fmt::Result` or
+    /// `io::Result<()>`: generic code's `Result`, `{ TAG }`, where its
+    /// caller's is `undefined` or the error (ADR 0187, ADR 0462). Given,
+    /// `$writeTagged(result)`; given back, `$writeOf(result)` (ADR 0461,
+    /// amended, #1408).
+    Tagged,
+    /// A type parameter, `B` of `map<B, F: FnMut(Self::Item) -> B>` or `T`
+    /// of `same<T>(t: T) -> T`, whose caller's type is a write's result, as
+    /// what a function gives back: generic code holds it as a value,
+    /// `undefined` or its error, where a call of the caller's function
+    /// throws its error. A function given there gives it back
+    /// `$writeTry(() => f(..))`; given back to its caller, its error is
+    /// thrown, `$writeCheck(r)`, as a call of one throws (#1410). As an
+    /// argument, the same form on both sides.
+    Valued,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -107,7 +123,114 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => false,
             },
+            // Through shared references, which are the value, a `Result` not
+            // a write's whose caller's is one.
+            Form::Tagged => {
+                let (declared, instantiated) = past_shared_refs(declared, instantiated);
+                self.tagged_where(declared, instantiated)
+            }
+            Form::Valued => valued_where(self.tcx, declared, instantiated),
         }
+    }
+
+    /// The form generic code has of what a function gives back, generic
+    /// code's `declared` result, its caller's `instantiated`: a value's
+    /// (`form_of`), or a write's result held as a value where generic code
+    /// holds a type parameter, `Form::Valued` (#1410).
+    pub(in crate::lower) fn form_of_result(&self, crossing: Crossing<'tcx>) -> Option<Form> {
+        self.form_of(crossing)
+            .or_else(|| self.form_differs(Form::Valued, crossing).then_some(Form::Valued))
+    }
+
+    /// Whether `declared`, a type of generic code's, is a `Result` it has as
+    /// `{ TAG }` where its caller's, `instantiated`, is a write's result:
+    /// `Form::Tagged`'s place.
+    fn tagged_where(&self, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> bool {
+        let generic = !self.is_write_result(declared) && self.is_write_result(instantiated);
+        generic && self.recognition().is_result(declared)
+    }
+
+    /// Where std's code given an item of type `item` reads it as a `Result`
+    /// of its type parameters, a collect into a `Result`'s: the crossing,
+    /// of std's `Result`, its `Result<T, E>` and `item`, where it's a write's
+    /// result, `Form::Tagged`'s, as a generic function's is (#1410).
+    pub(in crate::lower) fn std_reads_tagged(&self, item: Ty<'tcx>) -> Option<Crossing<'tcx>> {
+        let result = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Result);
+        let declared = self.tcx.type_of(result).instantiate_identity().skip_normalization();
+        let crossing = (result, declared, item);
+        self.form_differs(Form::Tagged, crossing).then_some(crossing)
+    }
+
+    /// Whether a write's result, of the caller's `instantiated` type, is
+    /// held inside generic code's `declared` type where generic code has a
+    /// `Result` of its type parameters, past where a value's form is
+    /// adapted (`Form::Tagged`'s, at the top, past shared references): in a
+    /// `Vec<Result<T, E>>`, an `Option` of one or a `&mut` to one, whose
+    /// items generic code reads as `{ TAG }` and its caller holds as
+    /// `undefined` or the error, refused (#1408). A type parameter holds
+    /// what it's given as it is, whatever it is.
+    pub(in crate::lower) fn write_result_inside(
+        &self,
+        (_, declared, instantiated): Crossing<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        let (declared, instantiated) = past_shared_refs(declared, instantiated);
+        if self.tagged_where(declared, instantiated) {
+            return None;
+        }
+        self.tagged_below(declared, instantiated)
+    }
+
+    /// Whether a write's result, the caller's `instantiated`, is given for a
+    /// type parameter, `declared` past shared references, that a bound of
+    /// `def_id`'s reads as a `Result` of its type parameters, `r: &impl
+    /// AsRef<Result<T, E>>`: generic code reads it as `{ TAG }` through its
+    /// bound, where it has the value as it is, refused (#1408).
+    pub(in crate::lower) fn write_result_through_bound(
+        &self,
+        (def_id, declared, instantiated): Crossing<'tcx>,
+    ) -> bool {
+        let (declared, instantiated) = past_shared_refs(declared, instantiated);
+        if !matches!(declared.kind(), ty::Param(_)) || !self.is_write_result(instantiated) {
+            return false;
+        }
+        let generic_result = |ty: Ty<'tcx>| {
+            ty.walk()
+                .filter_map(|part| part.as_type())
+                .any(|part| self.recognition().is_result(part) && part.has_param() && !self.is_write_result(part))
+        };
+        (self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter())
+            .map(|(clause, _)| clause.skip_normalization())
+            .filter_map(|clause| clause.as_trait_clause())
+            .map(|bound| bound.skip_binder().trait_ref)
+            .any(|tr| tr.self_ty() == declared && tr.args.types().skip(1).any(generic_result))
+    }
+
+    /// The write's result of `instantiated` held where `declared` has a
+    /// `Result` of its type parameters, at or below the top.
+    fn tagged_below(&self, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        if self.tagged_where(declared, instantiated) {
+            return Some(instantiated);
+        }
+        let parts = |ty: Ty<'tcx>| -> Vec<Ty<'tcx>> {
+            match *ty.kind() {
+                ty::Adt(_, args) => args.types().collect(),
+                ty::Tuple(items) => items.to_vec(),
+                ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => vec![inner],
+                _ => Vec::new(),
+            }
+        };
+        let same_shape = match (*declared.kind(), *instantiated.kind()) {
+            (ty::Adt(d, _), ty::Adt(i, _)) => d.did() == i.did(),
+            (ty::Tuple(_), ty::Tuple(_))
+            | (ty::Ref(..), ty::Ref(..))
+            | (ty::Array(..), ty::Array(..))
+            | (ty::Slice(_), ty::Slice(_)) => true,
+            _ => false,
+        };
+        if !same_shape {
+            return None;
+        }
+        (parts(declared).into_iter().zip(parts(instantiated))).find_map(|(d, i)| self.tagged_below(d, i))
     }
 
     /// Whether `declared`, a type of generic code's, `def_id`'s, is, past
@@ -141,7 +264,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
-        let form = [Form::Handle, Form::Box, Form::HeldBox]
+        let form = [Form::Handle, Form::Box, Form::HeldBox, Form::Tagged]
             .into_iter()
             .find(|&form| self.form_differs(form, crossing));
         let answer = match form {
@@ -149,6 +272,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Form::Handle) => "handle",
             Some(Form::Box) => "box",
             Some(Form::HeldBox) => "held-box",
+            Some(Form::Tagged) => "tagged",
+            Some(Form::Valued) => "valued",
         };
         crate::decisions::record("generic-form", answer);
         form
@@ -246,6 +371,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Form::Handle => Expr::call_helper("$ptrTo", vec![value]),
             Form::Box => Expr::call_helper("$cellOf", vec![value]),
             Form::HeldBox => Expr::call_helper("$heldCellOf", vec![value]),
+            Form::Tagged => Expr::call_helper("$writeTagged", vec![value]),
+            Form::Valued => value,
         }
     }
 
@@ -260,8 +387,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match form {
             Form::Handle | Form::Box => Expr::held(value),
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
+            Form::Tagged => Expr::call_helper("$writeOf", vec![value]),
+            Form::Valued => Expr::call_helper("$writeCheck", vec![value]),
         }
     }
+}
+
+/// Whether generic code's `declared` type, a type parameter's or an
+/// associated type's, holds as a value what its caller has as a write's
+/// result, `instantiated`, which a call of the caller's function throws:
+/// `Form::Valued`'s place, which the analysis of what fails asks too
+/// (#1410).
+pub(in crate::lower) fn valued_where<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    declared: Ty<'tcx>,
+    instantiated: Ty<'tcx>,
+) -> bool {
+    crate::lower::recognition::known_by_bounds(declared)
+        && crate::lower::recognition::is_write_result_type(tcx, instantiated)
+}
+
+/// What's refused of a write's result held inside what generic code has as
+/// a `Result` of its type parameters (#1408).
+pub(in crate::lower) fn held_write_result(held: Ty<'_>) -> String {
+    format!(
+        "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1408)"
+    )
+}
+
+/// `declared` and `instantiated` past the shared references both have.
+fn past_shared_refs<'tcx>(mut declared: Ty<'tcx>, mut instantiated: Ty<'tcx>) -> (Ty<'tcx>, Ty<'tcx>) {
+    while let (ty::Ref(_, d, Mutability::Not), ty::Ref(_, i, Mutability::Not)) =
+        (*declared.kind(), *instantiated.kind())
+    {
+        (declared, instantiated) = (d, i);
+    }
+    (declared, instantiated)
 }
 
 /// Whether `imp`, an `Error` impl, gives its dictionary its type's

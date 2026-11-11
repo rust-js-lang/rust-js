@@ -274,6 +274,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
     }
 
+    /// A callback of type `ty` given to std's iterator code that gives back
+    /// a write's result, `map(|w| writeln!(out, "{w}"))`: what it gives an
+    /// item, a value, `undefined` or its error, `$writeTry(..)` of its
+    /// body, as a call of it is (`fmt_try`), not its error thrown past what
+    /// steps it (#1410). Any other, `f` as it is.
+    pub(super) fn write_result_valued(&mut self, f: Expr, ty: Ty<'tcx>) -> Expr {
+        let callable = ty.peel_refs();
+        let callable = callable.boxed_ty().unwrap_or(callable);
+        let output = match *callable.kind() {
+            // A `dyn FnMut(&str) -> io::Result<()>`'s, its `Output`.
+            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()) {
+                Some(output) => output,
+                None => return f,
+            },
+            ty::Closure(_, args) => args.as_closure().sig().output().skip_binder(),
+            ty::FnDef(id, args) => self
+                .tcx
+                .fn_sig(id)
+                .instantiate(self.tcx, args.skip_binder())
+                .skip_normalization()
+                .output()
+                .skip_binder(),
+            ty::FnPtr(sig, header) => sig.with(header).output().skip_binder(),
+            _ => return f,
+        };
+        if !self.is_write_result(output) || !self.closure_may_fail(ty) {
+            return f;
+        }
+        match f.kind {
+            js::ExprKind::Arrow(params, body) => Expr::arrow(
+                params,
+                vec![StmtKind::Return(Some(self.fmt_try(body))).at(js::Span::NONE)],
+            ),
+            kind => {
+                let args = self.fresh("args");
+                let called = Expr::call(Expr { kind, ..f }, vec![Expr::spread(Expr::var(&args))]);
+                Expr::arrow(
+                    vec![js::Pattern::Rest(args)],
+                    vec![
+                        StmtKind::Return(Some(
+                            self.fmt_try(vec![StmtKind::Return(Some(called)).at(js::Span::NONE)]),
+                        ))
+                        .at(js::Span::NONE),
+                    ],
+                )
+            }
+        }
+    }
+
     /// `a += b` of a number or a string, through its `&mut`: the place
     /// assigned, as the operator's is; `None` of another call.
     pub(super) fn mir_assign_call(

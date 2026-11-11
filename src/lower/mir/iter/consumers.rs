@@ -449,16 +449,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<Expr> {
-        // Into a `fmt::Result`, whose `Ok(())` is nothing and whose `Err` is
-        // thrown (ADR 0187): `try_for_each(f)` is each item's call, as
-        // `for_each`'s (ADR 0539).
-        if self.recognition().is_fmt_result(output) {
+        // Into a write's result, a `fmt::Result` or an `io::Result<()>`,
+        // whose `Ok(())` is nothing and whose `Err` is thrown (ADRs 0187,
+        // 0462): `try_for_each(f)` is each item's call, as `for_each`'s
+        // (ADR 0539, #1410).
+        if self.is_write_result(output) {
             return match method {
                 IterMethod::TryForEach => Ok(Expr::call(
                     Expr::member(it, "forEach"),
                     vec![self.unary_callback(arg(), own)],
                 )),
-                _ => Err(self.unsupported(span, "`try_fold` into a `fmt::Result`, from its MIR")),
+                _ => Err(self.unsupported(
+                    span,
+                    match self.recognition().is_fmt_result(output) {
+                        true => "`try_fold` into a `fmt::Result`, from its MIR",
+                        false => "`try_fold` into an `io::Result<()>`, from its MIR",
+                    },
+                )),
             };
         }
         // Into another `Try`, std's generic code's `R` or a `ControlFlow`:

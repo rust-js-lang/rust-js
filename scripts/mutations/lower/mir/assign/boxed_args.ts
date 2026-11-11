@@ -117,4 +117,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && self.form_differs(Form::HeldBox, crossing) {",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_back_by_generic_code.rs$"],
   },
+  {
+    name: "tagged-argument-as-it-is",
+    breaks: "a write's result given as an argument where generic code has a `Result` of its type parameters is given as it is (#1408)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                if self.form_differs(Form::Tagged, crossing) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
+  },
+  {
+    name: "valued-callback-throws",
+    breaks: "a closure given to std's `Map` struct that gives a write's result throws its error, not an item (#1410)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                                    self.fmt_try(vec![StmtKind::Return(Some(called)).at(js::Span::NONE)])\n",
+    replace: "                                    called\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^write_result_items with"],
+  },
 ];
