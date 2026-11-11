@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumer-rcs-uncounted",
     breaks:
-      "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852)",
+      "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852): its clone of one its library made and counts isn't counted, and the library's `strong_count` reads `1` where Rust's is `2`",
     file: "src/lower/analysis.rs",
     find: "                (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {\n",
     replace:
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/crates.test.ts",
       "-t",
-      "two crates: rc_per_type|three crates: rc_generic",
+      "two crates: rc_per_type|two crates: rc_counted_by_its_library_alone|three crates: rc_generic",
     ],
   },
   {
