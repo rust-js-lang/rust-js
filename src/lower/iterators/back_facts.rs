@@ -185,16 +185,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         knows
     }
 
-    /// Why what steps a `ty` from its back is refused, said after it: of
-    /// what holds std's struct, an adapter a function gives, which its
-    /// value is (#1226, the user's decision (A)), its follow-up; else
-    /// nothing.
+    /// Why what steps a `ty` from its back is refused, said after it: of a
+    /// map whose JS is its source's (`as_is_map_because`); of what holds
+    /// std's struct, an adapter a function gives, which its value is
+    /// (#1226, the user's decision (A)), its follow-up; else nothing.
     pub(in crate::lower) fn back_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
+        let as_is = self.as_is_map_because(ty);
+        if !as_is.is_empty() {
+            return as_is;
+        }
         let compiled = (ty.walk().filter_map(|part| part.as_type()))
             .any(|part| part != ty && crate::lower::recognition::is_held_compiled(self.tcx, part));
         match compiled {
             true => ", which holds std's struct of an adapter a function gives (#1235)",
             false => "",
+        }
+    }
+
+    /// Why a map refused as a double-ended or exact-sized iterator is,
+    /// said after it: one whose function gives each item as it is,
+    /// `map(|x| Some(x))`, is its source's JS (`mir/iter.rs`), so what
+    /// steps it from its back or counts it finds no map to make knowing
+    /// that (#1342); else nothing.
+    pub(in crate::lower) fn as_is_map_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
+        match crate::lower::recognition::mapped_source(self.tcx, ty) {
+            Some(_) => ", a map whose JS is its source's, its function giving each item as it is (#1342)",
+            None => "",
         }
     }
 }

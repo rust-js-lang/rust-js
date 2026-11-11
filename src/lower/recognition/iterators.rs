@@ -575,6 +575,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .ok()
     }
 
+    /// Of a flatten of `Option`s, through a reference too, `iter()`'s
+    /// `&Some(x)`, or a `flat_map` whose function returns one, of type
+    /// `ty`: its source, the `Option`s' payload, and whether a function
+    /// makes them, `flat_map`'s. What the recognizers make a filter of the
+    /// `Some`s, as a `filter_map` is, `src.map(f).filter(present)` or
+    /// `src.filter(present)` (ADRs 0515, 0526): the one answer, of where
+    /// it's made and of making it know its back (#1326).
+    pub(in crate::lower) fn flattened_options(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>, bool)> {
+        let (source, made) = flattened_source(self.tcx, ty)?;
+        match made {
+            Some(returned) => Some((source, self.option_of(returned)?, true)),
+            None => Some((source, self.option_of(self.iterator_item(source)?.peel_refs())?, false)),
+        }
+    }
+
     /// A B-tree's `iter()`, `keys()`, `range()` and the like: its items in
     /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325).
     /// Its `extract_if()`, which takes them as it's stepped, is asked

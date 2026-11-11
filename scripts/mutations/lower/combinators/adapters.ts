@@ -29,15 +29,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
-    name: "flatten-of-option-refs-flat",
-    breaks:
-      '`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `"a  b "`',
-    file: "src/lower/combinators/adapters.rs",
-    find: "Some(item) if let Some(payload) = self.option_of(item.peel_refs()) =>",
-    replace: "Some(item) if let Some(payload) = self.option_of(item) =>",
-    tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
-  },
-  {
     name: "items-never-cells",
     breaks:
       "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
@@ -165,8 +156,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`flat_map` of a function that gives an `Option` is JS's `flatMap`, which throws of a number",
     file: "src/lower/combinators/adapters.rs",
-    find: "                if let Some(payload) = self.option_of(returned) {\n",
-    replace: "                if let Some(payload) = None::<Ty<'tcx>> {\n",
+    find: "                if let Some((_, payload, true)) = self.recognition().flattened_options(output) {\n",
+    replace: "                if let Some((_, payload, true)) = None::<(Ty<'tcx>, Ty<'tcx>, bool)> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {

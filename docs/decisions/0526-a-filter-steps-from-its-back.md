@@ -87,3 +87,48 @@ one owner of `Filter::next`, which already asked its source's `tryFold`.
 `test/corpus/filter_of_a_take_reversed_trims_by_its_try_rfold.rs` holds it
 against native Rust in both builds, and the mutation
 `filter-ends-steps-by-next` holds the line.
+
+## Amendment: a flatten of `Option`s knows its back as a `filter_map` does (2026-11-11, #1326)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A flatten of `Option`s made in place, `v.iter().map(Some).flatten()` or
+`o.iter().flatten()` of `&Option`s, is a filter of the `Some`s,
+`src.filter((item) => item != null)`, and a `flat_map` whose function
+returns an `Option` is `src.map(f).filter(..)`, as a `filter_map` is (ADR
+0515). Stepped from its back, by `rfold`, `rfind` or `next_back`, it was
+left as JS's own filter, which has no back, so `$foldBack` threw "it[by]
+is not a function" where Rust runs; of items with a destructor, after a
+drop native Rust doesn't print. `as_double_ended` made only a
+`filter_map`'s form know its back, `$filterEnds($mapEnds(..))`. Now it
+makes a flatten's the same way: `$filterEnds(src, present)`, or a
+`flat_map`'s `$filterEnds($mapEnds(src, f), present)`, each `Some` taken
+out of its box after where it looks like `None`, as std's `Flatten` steps
+an `Option`'s from either end.
+
+Which flattens are that filter is one answer, `Recognition::
+flattened_options` (`recognition/iterators.rs`): of a `Flatten` of
+`Option`s, through a reference too, or a `FlatMap` whose function returns
+one, its source, the payload, and whether a function makes them. The
+recognizers make the filter of it (`combinators/adapters.rs`) and
+`iterators/knowing.rs` makes that filter know its back of it; neither
+tests `option_of` itself.
+
+`test/corpus/flatten_of_options_from_its_back.rs` (items that drop,
+references, a nested `Option`, a `flat_map` to `Option`s, `rev()` and
+one stepped from both ends through a variable, which is std's struct)
+runs against native Rust in both builds. #1326's 111 rows are off
+`test/iterator-matrix-known.txt`. 105 run as Rust does now. Six, a
+flatten of `(1..6).map(|x| Some(x))` from its back, are refused at
+compile time where they threw: a map whose function gives each item as
+it is compiles to its source's JS (`mir/iter.rs`), so a back step
+over it finds no map to make knowing its back. That refusal was main's
+already for `(1..6).map(|x| x).filter(..).rfold(..)`. It's #1342, which
+it names now, as the refusal of counting one does
+(`back_facts.rs`' `as_is_map_because`; `test/diagnostics.test.ts`). Mutations: `flattened-options-unknowing` and
+`flattened-options-source-unread` (`lower/iterators/knowing.ts`),
+`flat-map-options-unmapped` and `flatten-of-option-refs-flat`, moved from
+the recognizers (`lower/recognition/iterators.ts`), and
+`flat-map-of-options-js`, refitted; `as-is-map-refusal-unnamed`
+(`lower/iterators/back_facts.ts`).

@@ -664,4 +664,21 @@ export const mutations: Mutation[] = [
     replace: "        match self.owned_into_items(inner) {",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_given_to_generic_code\\.rs$"],
   },
+  {
+    name: "flat-map-options-unmapped",
+    breaks: "a `flat_map` to `Option`s isn't said to make them by its function, so it's made `src.filter(present)`, its function never called (#1326)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            Some(returned) => Some((source, self.option_of(returned)?, true)),\n",
+    replace: "            Some(returned) => Some((source, self.option_of(returned)?, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_from_its_back.rs$"],
+  },
+  {
+    name: "flatten-of-option-refs-flat",
+    breaks:
+      '`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `"a  b "`; and one from its back JS\'s own `flatMap` of each, which isn\'t iterable (#1326)',
+    file: "src/lower/recognition/iterators.rs",
+    find: "            None => Some((source, self.option_of(self.iterator_item(source)?.peel_refs())?, false)),\n",
+    replace: "            None => Some((source, self.option_of(self.iterator_item(source)?)?, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "iter_flatten|^flatten_of_options_from_its_back.rs$"],
+  },
 ];

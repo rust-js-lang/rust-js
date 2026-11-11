@@ -552,9 +552,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),
             };
         }
+        let why = self.as_is_map_because(ty);
         Err(self.unsupported(
             span,
-            &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count"),
+            &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count{why}"),
         ))
     }
 
@@ -672,8 +673,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // source that knows its back is (`iter_comb`, ADR 0526): made so
         // where it's made, of one the crate steps from its back, itertools'
         // `self.iter.filter_map(..).rfold(..)` of a source given as it is
-        // (#473).
-        if let Some(source) = crate::lower::recognition::filter_mapped_source(self.tcx, ty) {
+        // (#473). And a flatten of `Option`s, `src.filter(present)`, or a
+        // `flat_map` to them, made so as a `filter_map` is
+        // (`flattened_options`), which std's `Flatten` steps from either end
+        // as its `Some`s (#1326).
+        let somes = crate::lower::recognition::filter_mapped_source(self.tcx, ty)
+            .map(|source| (source, true))
+            .or_else(|| (self.recognition().flattened_options(ty)).map(|(source, _, mapped)| (source, mapped)));
+        if let Some((source, mapped)) = somes {
             let (kept, unboxed) = match &value.kind {
                 js::ExprKind::Call(callee, args)
                     if let js::ExprKind::Member(kept, method) = &callee.kind
@@ -685,17 +692,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => (&value, None),
             };
+            // Its source's, each `f`'s where a function makes the `Option`s.
+            fn made(mapped: bool, source_value: &Expr) -> Option<(&Expr, Option<&Expr>)> {
+                match (mapped, &source_value.kind) {
+                    (false, _) => Some((source_value, None)),
+                    (true, js::ExprKind::Call(map_callee, map_args))
+                        if let js::ExprKind::Member(source_value, map) = &map_callee.kind
+                            && map == "map"
+                            && let [f] = map_args.as_slice() =>
+                    {
+                        Some((&**source_value, Some(f)))
+                    }
+                    _ => None,
+                }
+            }
             if let js::ExprKind::Call(callee, args) = &kept.kind
-                && let js::ExprKind::Member(mapped, method) = &callee.kind
+                && let js::ExprKind::Member(filtered, method) = &callee.kind
                 && method == "filter"
                 && let [present] = args.as_slice()
-                && let js::ExprKind::Call(map_callee, map_args) = &mapped.kind
-                && let js::ExprKind::Member(source_value, map) = &map_callee.kind
-                && map == "map"
-                && let [f] = map_args.as_slice()
+                && let Some((source_value, f)) = made(mapped, filtered)
             {
-                let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-                let mapped = Expr::call_helper("$mapEnds", vec![source_value, f.clone()]);
+                let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
+                let mapped = match f {
+                    Some(f) => Expr::call_helper("$mapEnds", vec![source_value, f.clone()]),
+                    None => source_value,
+                };
                 let some = Expr::call_helper("$filterEnds", vec![mapped, present.clone()]);
                 return Ok(match unboxed {
                     Some(unbox) => Expr::call_helper("$mapEnds", vec![some, unbox.clone()]),

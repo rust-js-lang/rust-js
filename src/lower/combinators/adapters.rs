@@ -341,7 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::FlatMap => {
                 // A closure that returns an `Option` is a `filter_map`.
                 let returned = generic_args.type_at(1);
-                if let Some(payload) = self.option_of(returned) {
+                if let Some((_, payload, true)) = self.recognition().flattened_options(output) {
                     unboxed(
                         method(method(items, "map", vec![next()]), "filter", vec![present()]),
                         Some(payload),
@@ -361,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which is `x`: the `Some`s, each taken out of its box where it
             // looks like `None` (ADR 0515).
             IterComb::Flatten => match item_ty() {
-                Some(item) if let Some(payload) = self.option_of(item.peel_refs()) => {
+                Some(_) if let Some((_, payload, false)) = self.recognition().flattened_options(output) => {
                     unboxed(method(items, "filter", vec![present()]), Some(payload))
                 }
                 // Of what owns items with a destructor, each closed (ADR 0510).

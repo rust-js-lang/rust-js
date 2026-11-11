@@ -759,4 +759,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
   },
+  {
+    name: "flattened-options-unknowing",
+    breaks: "a flatten of `Option`s made in place, a filter of the `Some`s, isn't made knowing its back, so `rfold` asks its source's `back`, which JS's own filter hasn't: a `TypeError` (#1326)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            .or_else(|| (self.recognition().flattened_options(ty)).map(|(source, _, mapped)| (source, mapped)));\n",
+    replace: "            .or_else(|| (self.recognition().flattened_options(ty)).map(|(source, _, mapped)| (source, mapped)).filter(|_| false));\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_from_its_back.rs$"],
+  },
+  {
+    name: "flattened-options-source-unread",
+    breaks: "a flatten of `Option`s, `src.filter(present)`, is read as a `filter_map`'s, `src.map(f).filter(present)`, which it isn't, so it's refused from its back (#1326)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    (false, _) => Some((source_value, None)),\n",
+    replace: "                    (false, _) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_from_its_back.rs$"],
+  },
 ];

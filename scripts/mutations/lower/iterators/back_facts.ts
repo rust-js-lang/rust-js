@@ -88,4 +88,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
+  {
+    name: "as-is-map-refusal-unnamed",
+    breaks: "a map whose JS is its source's, beneath what steps it from its back or counts it, is refused without saying why or naming #1342",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "            Some(_) => \", a map whose JS is its source's, its function giving each item as it is (#1342)\",\n",
+    replace: "            Some(_) => \"\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "as-is map"],
+  },
 ];
