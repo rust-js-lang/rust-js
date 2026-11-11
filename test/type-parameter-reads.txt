@@ -101,7 +101,8 @@ src/lower/std_types/values.rs	1
 src/lower/support.rs	1
 src/lower/traits.rs	5
 src/lower/traits/calls.rs	1
-src/lower/traits/dictionaries.rs	8
+src/lower/traits/dictionaries.rs	6
+src/lower/traits/dictionaries/references.rs	2
 src/lower/traits/drop_params.rs	7
 src/lower/traits/dyns.rs	2
 src/lower/traits/given.rs	4
