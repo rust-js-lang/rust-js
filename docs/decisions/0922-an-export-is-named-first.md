@@ -140,3 +140,27 @@ importer of `delete` and `console`, the crate's other modules by `use`, a
 `export-named-apart-*` (`analysis/naming.ts`, `pipeline.ts`, `items.ts`,
 `library.ts`, `reexports.ts`, `declarations.ts`), `kept-word-declared-by-its-name`
 (`declarations.ts`) and `own-name-alias-kept` (`prepare/reclaim.ts`).
+
+## Amendment: a copy alike its function is read by that function's export (2026-11-11, #1390)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): JS threw where Rust
+runs, so Rust's behavior is kept.
+
+itertools' `chunk_by`, a default of its `Itertools`, threw "`Groupbylazy.new$`
+is not a function". `groupbylazy::new` is named apart in its module,
+`new$`, and exported by its own name, `export { new$ as new }`, as #338
+decided. The default's call made a copy of it for what it's given (ADR
+0051), `new$Boxed`, read through the module's namespace by the copy's
+name. The copy came out alike the function's own JS, so `settle` renamed
+each read of it to what it's alike: the function's name in its module,
+`new$`, right of a read in that module, wrong of one through its
+namespace, which the module exports by `new`. A read through a namespace
+of a copy alike its function's own JS is now renamed to the function's
+export (`copies::Renamed`), as `own_fn_ref_through` names the function
+itself.
+
+Held by `reserved_named_function_called_across_modules.rs` (`new`,
+`delete`, `class`, `function` and `switch`, words JS keeps, and `fetch`, a
+global, each another module's function, called directly and from a trait
+default's copy) against native Rust in both builds, and the mutation
+`merged-copy-read-by-local-name`.

@@ -13,6 +13,12 @@ use crate::js::{self, Expr, ExprKind};
 /// methods if it's a method, and its name.
 type Named = (LocalModId, Option<String>, String);
 
+/// What a copy is renamed to, as what it's alike: its name in its module,
+/// and what a read through its module's namespace names, of one alike its
+/// function's own JS that function's export, `new` of `new$` (#1390), as
+/// `own_fn_ref_through` names it.
+type Renamed = (String, String);
+
 /// A call of a namespace's method through a value whose call needs a copy:
 /// the method, the copy's index, and where it's called (rd311).
 pub(super) type ThroughCopy = (DefId, usize, rustc_span::Span);
@@ -47,9 +53,17 @@ pub(super) fn settle(
         }
         copy
     };
-    let renames = |same: &IndexMap<(DefId, usize), Option<usize>>| -> IndexMap<Named, String> {
+    let renames = |same: &IndexMap<(DefId, usize), Option<usize>>| -> IndexMap<Named, Renamed> {
         (same.keys())
-            .map(|&(id, at)| (named(id, Some(at)), named(id, settled(same, id, Some(at))).2))
+            .map(|&(id, at)| {
+                let to = settled(same, id, Some(at));
+                let local = named(id, to).2;
+                let through = match to {
+                    Some(_) => local.clone(),
+                    None => super::super::default_exports::exported_as(tcx, id, fns[&id].exported()),
+                };
+                (named(id, Some(at)), (local, through))
+            })
             .collect()
     };
     let main = |id: DefId| items.iter().find(|(of, _)| *of == id).map(|(_, item)| &item.function);
@@ -70,7 +84,8 @@ pub(super) fn settle(
             // calls itself.
             let found = (main(*id).map(|function| (None, function)).into_iter().chain(earlier)).find(|(to, other)| {
                 let mut as_if = renamed.clone();
-                as_if.insert(named(*id, Some(*at)), named(*id, settled(&same, *id, *to)).2);
+                let local = named(*id, settled(&same, *id, *to)).2;
+                as_if.insert(named(*id, Some(*at)), (local.clone(), local));
                 alike(other, module, &as_if) == alike(&copy.function, module, &as_if)
             });
             if let Some((to, _)) = found {
@@ -129,7 +144,7 @@ fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCo
 
 /// `function` as it reads apart from its name and its export, of a module's
 /// `module`, each copy `renamed` named as what it's alike.
-fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) -> js::Function {
+fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) -> js::Function {
     let mut function = function.clone();
     rename(&mut function, module, renamed);
     function.name = String::new();
@@ -143,11 +158,11 @@ fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, 
 /// `parseInternalUnboxed` (ADR 0569) before that became `parseInternal`,
 /// `const parseInternal = parseInternal(..)`, which threw where it's made
 /// (#467). One named apart is `parseInternal$1`, as tidy names one.
-fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) {
+fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
     let mut called = IndexSet::default();
     js::function_exprs_mut(function, &mut |e| {
         if let ExprKind::Var(name) = &e.kind
-            && let Some(to) = renamed.get(&(module, None, name.clone()))
+            && let Some((to, _)) = renamed.get(&(module, None, name.clone()))
         {
             called.insert(to.clone());
         }
@@ -157,7 +172,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
     js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
     let mut taken: IndexSet<String> = declared.clone();
     js::names_in(&function.body, &mut taken);
-    taken.extend(renamed.values().cloned());
+    taken.extend(renamed.values().map(|(to, _)| to.clone()));
     let mut called: Vec<String> = called.into_iter().filter(|to| declared.contains(to)).collect();
     called.sort();
     for to in called {
@@ -175,10 +190,10 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
 
 /// Each call of a copy in `function`, of a module's `module`, named as the
 /// copy's `renamed` says.
-fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) {
+fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
     let mut each = |e: &mut Expr| match &mut e.kind {
         ExprKind::Var(name) => {
-            if let Some(to) = renamed.get(&(module, None, name.clone())) {
+            if let Some((to, _)) = renamed.get(&(module, None, name.clone())) {
                 *name = to.clone();
             }
         }
@@ -187,7 +202,7 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Na
                 .find(|((of, owner, name), _)| {
                     owner.is_none() && of.to_def_id().index.as_u32() == symbol.module && *name == symbol.export
                 })
-                .map(|(_, to)| to)
+                .map(|(_, (to, _))| to)
             {
                 symbol.export = to.clone();
             }
@@ -206,10 +221,14 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Na
                     }),
                 _ => None,
             };
+            // Through a namespace, by what's read there, its export.
             if let Some((of, owner)) = owner
-                && let Some(to) = renamed.get(&(of, owner, name.clone()))
+                && let Some((local, through)) = renamed.get(&(of, owner.clone(), name.clone()))
             {
-                *name = to.clone();
+                *name = match owner {
+                    None => through.clone(),
+                    Some(_) => local.clone(),
+                };
             }
         }
         _ => {}
