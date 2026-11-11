@@ -100,7 +100,7 @@ function main() {
                 $collectVec(
                   items,
                   4,
-                  $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen),
+                  $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
                 ),
               ),
           ),
@@ -114,7 +114,7 @@ function main() {
   );
   console.log(`sorted ${r.TAG === "Err"}`);
   console.log(
-    `[${collected([[5], [6]], { fromIter: (items, ITrustedLen, IInPlace) => $collecting(items, () => $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen))) }).join(", ")}]`,
+    `[${collected([[5], [6]], { fromIter: (items, ITrustedLen, IInPlace) => $collecting(items, () => $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace))) }).join(", ")}]`,
   );
   console.log(
     `${$isSortedBy(

@@ -27,7 +27,7 @@ function wrapIterator_last(wrap, IIterator, IVecCollect, IItemSize) {
 }
 
 function main() {
-  const value = wrapIterator_last([$iter([1, 2, 3])], { next: $next }, "inPlace", 4);
+  const value = wrapIterator_last([$iter([1, 2, 3])], { next: $next }, { inPlace: 4 }, 4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = Array.from(
     $iterator(
@@ -39,7 +39,7 @@ function main() {
       undefined,
       undefined,
       undefined,
-      (iterator) => wrapIterator_last(iterator, { next: $next }, "inPlace", 1),
+      (iterator) => wrapIterator_last(iterator, { next: $next }, { inPlace: 1 }, 1),
     ).map((x) => (x * 2) & 255),
   ).at(-1);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);

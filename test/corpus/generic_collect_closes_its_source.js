@@ -86,7 +86,7 @@ function main() {
     }`,
   );
   console.log(
-    `${$catchUnwind(() => collected($iter([[7], [8]]), "inPlace", $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => collected($iter([[7], [8]]), { inPlace: 4 }, $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log(
     `${

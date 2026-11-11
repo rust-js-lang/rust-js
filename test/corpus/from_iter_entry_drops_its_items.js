@@ -25,7 +25,11 @@ export const reqFromIteratorD = {
   fromIter(arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) {
     return reqFromIteratorD_fromIter(
       arg0,
-      $vecCollectWay($collectsInPlace(TIntoIterInPlace, 4, 4), TIntoIterTrustedLen),
+      $vecCollectWay(
+        $collectsInPlace(TIntoIterInPlace, 4, 4),
+        TIntoIterTrustedLen,
+        TIntoIterInPlace,
+      ),
       dropT,
       dropTIntoIter,
     );

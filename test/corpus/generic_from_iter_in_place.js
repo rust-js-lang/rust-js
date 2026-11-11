@@ -45,7 +45,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }),
-    "inPlace",
+    { inPlace: 4 },
     4,
     (map) => {
       map.return();
@@ -61,7 +61,9 @@ function main() {
     throw error;
   }
   $dropItems(v, dDrop_drop);
-  console.log(`[${sorted($iter([3, 1, 2]), $intsOrdered, "inPlace", 4, "general8").join(", ")}]`);
+  console.log(
+    `[${sorted($iter([3, 1, 2]), $intsOrdered, { inPlace: 4 }, 4, "general8").join(", ")}]`,
+  );
   // Of one whose map drops what it's given, a panic: what it collected
   // and what's left dropped, as std's in-place collect drops them.
   const r = $catchUnwind(() => {
@@ -71,7 +73,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }),
-      "inPlace",
+      { inPlace: 4 },
       4,
       (map) => {
         map.return();

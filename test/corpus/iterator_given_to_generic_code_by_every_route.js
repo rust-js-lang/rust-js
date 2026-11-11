@@ -15,7 +15,7 @@ import {
   $sortedKeys,
 } from "@rust-js/std";
 
-const listedVecU32 = (arg0) => listed(arg0, "inPlace");
+const listedVecU32 = (arg0) => listed(arg0, { inPlace: 4 });
 
 export function entry() {
   main();
@@ -118,7 +118,7 @@ function byValues() {
   // Direct calls.
   const value = summed($lazyRange(0, 4));
   const value$1 = summed($iterator({ n: 0 }, countIterator_next));
-  const value$2 = listed([5, 6], "inPlace");
+  const value$2 = listed([5, 6], { inPlace: 4 });
   const value$3 = back($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack));
   console.log(
     `${value} ${value$1} [${value$2.join(", ")}] ${value$3 == null ? "None" : `Some(${value$3})`} ${sized(
@@ -152,7 +152,7 @@ function byValues() {
       { start: 2, end: 5 },
     )}`,
   );
-  console.log(`${apply((v) => listed(v, "inPlace").length, [1, 2, 3])}`);
+  console.log(`${apply((v) => listed(v, { inPlace: 4 }).length, [1, 2, 3])}`);
   // Through dyn.
   const d = (x) => summed($iterator(x, $rangeNext));
   console.log(`${d({ start: 0, end: 5 })}`);

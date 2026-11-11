@@ -150,7 +150,11 @@ function main() {
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>
-          $collectVec(items, 2, $vecCollectWay($collectsInPlace(IInPlace, 2, 1), ITrustedLen)),
+          $collectVec(
+            items,
+            2,
+            $vecCollectWay($collectsInPlace(IInPlace, 2, 1), ITrustedLen, IInPlace),
+          ),
         ),
     },
     false,

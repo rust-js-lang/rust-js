@@ -28,7 +28,11 @@ export const reqFromIteratorD = {
   fromIter(arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) {
     return reqFromIteratorD_fromIter(
       arg0,
-      $vecCollectWay($collectsInPlace(TIntoIterInPlace, 4, 4), TIntoIterTrustedLen),
+      $vecCollectWay(
+        $collectsInPlace(TIntoIterInPlace, 4, 4),
+        TIntoIterTrustedLen,
+        TIntoIterInPlace,
+      ),
       dropT,
       dropTIntoIter,
     );
@@ -87,7 +91,7 @@ function relayed(iter, TFromIteratorD, IIntoIterTrustedLen, IIntoIterInPlace, dr
 function main() {
   const direct = reqFromIteratorD_fromIter(
     $iter([[1], [2]]),
-    "inPlace",
+    { inPlace: 4 },
     $dropEach(dDrop_drop),
     $dropEach(dDrop_drop),
   );

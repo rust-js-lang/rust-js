@@ -143,7 +143,7 @@ function main() {
       ),
     ).join(", ")}}`,
   );
-  console.log(`{${Array.from($sortedKeys(sortedSet([9, 7], "inPlace"), $cmp)).join(", ")}}`);
+  console.log(`{${Array.from($sortedKeys(sortedSet([9, 7], { inPlace: 1 }), $cmp)).join(", ")}}`);
   const louds = $collectDropping(
     $iterator(
       [

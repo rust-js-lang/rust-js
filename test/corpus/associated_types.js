@@ -77,7 +77,7 @@ function main() {
   console.log(
     `[${all(
       $mapEnds($iter([1, 2]), (n) => (n * 10) >>> 0),
-      "inPlace",
+      { inPlace: 4 },
       4,
     ).join(", ")}]`,
   );

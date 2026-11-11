@@ -60,7 +60,7 @@ function through(t, TSorted, TItemOrd, TItemSize, TItemStableSort) {
 }
 
 function main() {
-  const IntoIterSorted = iSorted({ next: $next }, "inPlace", 4);
+  const IntoIterSorted = iSorted({ next: $next }, { inPlace: 4 }, 4);
   console.log(
     `[${through($iter([5, 3, 9, 1]), IntoIterSorted, $intsOrdered, 4, "general8").join(", ")}]`,
   );

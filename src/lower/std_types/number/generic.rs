@@ -242,9 +242,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let trusted = (in_place == Some(true)
             || crate::lower::recognition::vec_collect_trusted_facts(self.tcx, self.typing_env, of).is_empty())
         .then(|| crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, of));
+        // In place, `{ inPlace: n }`: of its source's items `n` bytes, the
+        // buffer's capacity in its own items is its collect's (#1259).
         if let (Some(in_place), Some(trusted)) = (in_place, trusted) {
-            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, trusted)));
+            let way = crate::lower::recognition::vec_collect_way(in_place, trusted);
+            if in_place
+                && let Some(crate::lower::recognition::InPlaceSource::Items(source)) =
+                    crate::lower::recognition::in_place_source(self.tcx, self.typing_env, of)
+            {
+                let size = self.type_fact_value(source, TypeFact::Size, span)?;
+                return Ok(Expr::object(vec![crate::js::Prop::Field(way.into(), size)]));
+            }
+            if !in_place {
+                return Ok(Expr::str(way));
+            }
         }
+        // As the caller's facts say, `$vecCollectWay(..)`, given its source's
+        // items' layout where it may be in place, `IInPlace` (#1259).
+        let layout = match in_place {
+            Some(false) => None,
+            _ => Some(self.type_fact_value(of, TypeFact::InPlace, span)?),
+        };
         let in_place = match in_place {
             Some(known) => Expr::bool(known),
             None => self.caller_in_place(of, item, span)?,
@@ -253,7 +271,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(known) => Expr::bool(known),
             None => self.type_fact_value(of, TypeFact::TrustedLen, span)?,
         };
-        Ok(Expr::call_helper("$vecCollectWay", vec![in_place, trusted]))
+        let mut given = vec![in_place, trusted];
+        given.extend(layout);
+        Ok(Expr::call_helper("$vecCollectWay", given))
     }
 
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out

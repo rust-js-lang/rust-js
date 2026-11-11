@@ -147,7 +147,7 @@ function main() {
   const [m, left] = takeTwo([4], { next: countdownIterator_next });
   console.log(`${m} ${left[0]}`);
   console.log(
-    `[${Pass.all([$iter([1, undefined, 3])], { next: $nextSome }, "inPlace", 8)
+    `[${Pass.all([$iter([1, undefined, 3])], { next: $nextSome }, { inPlace: 8 }, 8)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );

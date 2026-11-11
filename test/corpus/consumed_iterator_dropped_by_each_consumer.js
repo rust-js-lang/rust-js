@@ -195,7 +195,11 @@ function main() {
   let g = built(loud([7], "generic vec"), {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () =>
-        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        ),
       ),
   });
   console.log(`[${g.join(", ")}]`);
@@ -205,7 +209,11 @@ function main() {
         items,
         () =>
           new $BTreeSet(
-            $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+            $collectVec(
+              items,
+              4,
+              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+            ),
           ),
       ),
   });

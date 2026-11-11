@@ -57,14 +57,14 @@ function $consume(it, step, init, f, unwind, ends) {
 // collected in place, and whether it's `TrustedLen` (#1239). The compiler's
 // `vec_collect_way` answers it of a type known; test/vec-collect-ways.txt
 // holds both to one table.
-function $vecCollectWay(inPlace, trusted) {
-  return inPlace ? "inPlace" : trusted ? "fold" : "next";
+function $vecCollectWay(inPlace, trusted, source) {
+  return inPlace ? { inPlace: source[0] } : trusted ? "fold" : "next";
 }
 
 // `collect()` into a `Vec` of what generic code was given, as std's
 // `SpecFromIter` collects the type its caller knows, `how`, its
-// `IVecCollect` (#1239): "inPlace", in the buffer it holds, by its
-// `try_fold`, nothing asked of its hint; "fold", a `TrustedLen`'s, room for
+// `IVecCollect` (#1239): `{ inPlace: n }`, in the buffer it holds, of items
+// `n` bytes, by its `try_fold`, nothing asked of its hint; "fold", a `TrustedLen`'s, room for
 // its hint, then each item by its fold, `extend_trusted`; "next",
 // `SpecFromIterNested`'s, its first item, then room for its hint as the
 // `Vec` grows (`$roomForHint`), as of `undefined`, a JS caller's, whose
@@ -73,11 +73,12 @@ function $vecCollectWay(inPlace, trusted) {
 // in place (#423, #672).
 // Its capacity std's (#1263): by `next`, what `$roomForHint` reached
 // (`$grownVec`); by its fold, a `TrustedLen`'s, its length, as std reserves
-// its exact upper bound; in place, its source's buffer's, which isn't kept,
-// so `capacity()` refuses it, as a collect made in place where its type is
-// known (#1180).
+// its exact upper bound; in place, its source's buffer's in its own items,
+// `src_cap * src_size / dst_size`, of the `Vec` its adapters step, as std's
+// `SourceIter` finds it (`$inPlaceCapacityFrom`), not known where that's not
+// found or its capacity isn't kept (#1259).
 function $collectVec(it, size, how, drop) {
-  if (how === "inPlace") return $untracked($foldToArray(it, drop, false, true));
+  if (typeof how === "object") return $inPlaceCapacityFrom($foldToArray(it, drop, false, true), it, how.inPlace, size);
   if (how === "fold") return $foldToArray($roomForHint(it, size, true, false), drop, true, false);
   return $grownVec($roomForHint(it, size, false, false, drop), (grown) => $collectDropping(grown, drop, true));
 }

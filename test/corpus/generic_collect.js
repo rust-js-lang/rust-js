@@ -67,7 +67,11 @@ function main() {
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () =>
-        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        ),
       ),
   };
   const v = gather(3, vecFromIterator);

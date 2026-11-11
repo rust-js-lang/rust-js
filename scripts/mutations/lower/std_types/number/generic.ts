@@ -282,8 +282,8 @@ export const mutations: Mutation[] = [
     name: "vec-collect-trusted-by-next",
     breaks: "a caller gives `IVecCollect` of a `TrustedLen` as `\"next\"`, so generic code's collect of an endless one steps it before std's \"capacity overflow\" (#1239)",
     file: "src/lower/std_types/number/generic.rs",
-    find: "            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, trusted)));\n",
-    replace: "            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, false)));\n",
+    find: "            let way = crate::lower::recognition::vec_collect_way(in_place, trusted);\n",
+    replace: "            let way = crate::lower::recognition::vec_collect_way(in_place, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
   {
@@ -309,5 +309,13 @@ export const mutations: Mutation[] = [
     find: "            let instance = crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
     replace: "            let instance = false && crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
+  },
+  {
+    name: "in-place-way-a-bare-string",
+    breaks: "a caller tells generic code a collect is in place as the string `\"inPlace\"`, which `$collectVec` doesn't take for in place: it's grown by `next`, its capacity room for its hint, not its source's buffer's (#1259)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                return Ok(Expr::object(vec![crate::js::Prop::Field(way.into(), size)]));\n",
+    replace: "                return Ok(Expr::str(way));\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
 ];

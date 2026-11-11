@@ -68,7 +68,7 @@ function dynamic(s) {
 }
 function main() {
   const CountReversed = iReversed({ next: countIterator_next }, "next", 1);
-  const IntoIterReversed = iReversed({ next: $next }, "inPlace", 4);
+  const IntoIterReversed = iReversed({ next: $next }, { inPlace: 4 }, 4);
   console.log(
     `[${through($iter([5, 3, 9, 1]), IntoIterReversed, $intsOrdered).join(
       ", ",

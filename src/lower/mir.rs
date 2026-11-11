@@ -170,6 +170,10 @@ pub(super) struct Found {
     /// `&mut`, made only by `a..=b`, which `range_state` reads as it is
     /// (#418).
     pub(super) fresh_ranges: IndexSet<String>,
+    /// Of a body lowered from its MIR, the `Vec` each `collect()` std may
+    /// make in place is made of, by the call's span: its variable's name,
+    /// `in_place_collect_sources`'s (#1259).
+    pub(super) in_place_sources: crate::collections::IndexMap<rustc_span::Span, String>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
@@ -275,6 +279,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`fresh_ranges`, #418).
     pub(super) fn note_fresh_ranges(&mut self, names: Vec<String>) {
         self.locals.mir.fresh_ranges.extend(names);
+    }
+
+    /// Each in-place collect's source `Vec`'s variable, by the call's span
+    /// (`in_place_sources`, #1259).
+    pub(super) fn note_in_place_sources(&mut self, names: crate::collections::IndexMap<rustc_span::Span, String>) {
+        self.locals.mir.in_place_sources.extend(names);
+    }
+
+    /// The `Vec` the `collect()` at `span` is made of, where std may make it
+    /// in place: its variable, or the place in it the chain moved, its
+    /// fields projected as the body reads them, whose capacity is the
+    /// collect's buffer's (`in_place_sources`, #1259).
+    pub(in crate::lower) fn in_place_source(&self, span: rustc_span::Span) -> Option<Expr> {
+        let name = self.locals.mir.in_place_sources.get(&span)?;
+        let source = self.frame.facts.in_place_collect_sources.get(&span)?;
+        let place = (source.fields.iter()).fold(Expr::var(name), |base, &(ty, i)| self.project(base, ty, i));
+        Some(place)
     }
 
     /// Whether `range` is a variable no step can leave exhausted, a `let`

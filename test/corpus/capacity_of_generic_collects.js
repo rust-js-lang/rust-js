@@ -46,7 +46,11 @@ function main() {
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () =>
-        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        ),
       ),
   };
   const set = new Set($reserveHint($lazyRange(0, 9), 4, 4));
@@ -87,7 +91,11 @@ function main() {
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>
-          $collectVec(items, 8, $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen)),
+          $collectVec(
+            items,
+            8,
+            $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
+          ),
         ),
     },
     false,

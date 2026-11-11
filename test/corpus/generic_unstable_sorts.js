@@ -61,7 +61,7 @@ function main() {
   console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
   console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, $intsOrdered, "network").join(", ")}]`);
   console.log(
-    `[${iSorted({ next: $next }, "inPlace", 4)
+    `[${iSorted({ next: $next }, { inPlace: 4 }, 4)
       .sortedUnstable($iter([5, 3, 9, 1]), $intsOrdered, "network")
       .join(", ")}]`,
   );

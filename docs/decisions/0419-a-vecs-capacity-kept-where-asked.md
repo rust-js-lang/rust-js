@@ -521,3 +521,48 @@ native Rust does, and are taken off test/neighbours-known.txt but one.
 That one is a zip of an `inspect` collected in the plain build, which
 fails on its exact length, not its hint, and is now #1394's. Mutations: 5
 new, 2 refitted.
+
+## Amendment: an in-place collect's capacity is its source buffer's (2026-11-12, #1259)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change; a
+refusal (#1180's) narrowed to where the source can't be found. A
+`collect()` std makes in place, of items as aligned as its source's and
+no larger (alloc's `in_place_collectible`), reuses the source `Vec`'s
+buffer, so its capacity is that buffer's in its own items, `src_cap *
+src_size / dst_size`, rounded down where the bytes don't divide, as the
+shrink `needs_realloc` makes leaves it. Two routes give it.
+
+- Of a type its body knows: the `Vec` its chain moved, `v` of
+  `v.into_iter().map(f).collect()`, a variable of the body's or a place in
+  one, a field's or a `Box`'s (`held.items`, `*boxed`), found on its
+  THIR by the collect's span (`body_queries::in_place_collect_sources`) and
+  named once the body's locals are (`in_place_source`):
+  `$inPlaceCapacity(collected, v, srcSize, dstSize)`, of `v`'s kept
+  capacity. The chain moves `v`, so nothing grows it between.
+- Of generic code's, as its caller says: `IVecCollect`'s in-place way is
+  `{ inPlace: srcSize }`, the source's items' size, beside `"fold"` and
+  `"next"` (the runtime's `$vecCollectWay` given the `IInPlace` layout as
+  the caller's caller says it), and `$collectVec` finds the `Vec` it
+  collects in by the adapters' source links, `from` and `iter`, as std's
+  `SourceIter` reaches it (`$inPlaceCapacityFrom`).
+
+Where neither finds it, a `Vec` a call made and moved at once, `f().
+into_iter().map(g)`, a chain through an opaque function (#1428, the std
+build's), or one whose capacity isn't kept, it stays unknown and
+`capacity()` refuses it, naming #1180, as before: loud, never another
+number.
+
+Tests: corpus case `vec_collected_in_place_capacity` (same-size, `[u32; 2]`
+into `u32`, `[u32; 3]` into `[u32; 2]` whose bytes don't divide, a filter
+in place, `u64` into `u32` aligned apart and so no in-place collect, a
+source grown just before it's moved, a field's and a `Box`'s `Vec`, and
+generic code's of a `map()` and of the `IntoIter` itself), against native
+Rust in each build, and its rewrites but `opaque`'s std build (#1428);
+test/vec-capacity.test.ts's generic in-place collect now 8, std's, its
+static one of a call's `Vec` still refused. 29 corpus snapshots changed,
+each only `"inPlace"` to `{ inPlace: n }` and `$vecCollectWay`'s third
+argument. Mutations `in-place-collect-source-unfound`,
+`in-place-capacity-unscaled`, `in-place-source-unwalked`,
+`in-place-way-a-bare-string`, `vec-collect-way-in-place-a-bare-string`,
+`in-place-sources-of-the-last-body`, `in-place-source-of-a-field-unfound`
+and `in-place-source-of-a-box-unfound`, caught; five refitted.

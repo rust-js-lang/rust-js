@@ -96,7 +96,7 @@ function main() {
     )}`,
   );
   console.log(`${passedOn($iter([5, 1, 9]))}`);
-  const value = lastThenRest($iter([7, 8, 9]), "inPlace");
+  const value = lastThenRest($iter([7, 8, 9]), { inPlace: 4 });
   console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
   const value$1 = lastThenRest(
     $iterator({ start: 1, end: 4 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),

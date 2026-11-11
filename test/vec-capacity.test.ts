@@ -9,9 +9,9 @@ import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
 // A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
-// reads one: one std may collect in place, whose capacity is its source's,
-// where its type is known or generic code collects it into the `Vec` its
-// caller gives as `B: FromIterator` (#1263), and a string's bytes, whose capacity is the string's. `capacity()` of it
+// reads one: one std collects in place, whose capacity is its source's,
+// where that source is no variable the chain moves nor found through
+// generic code's adapters (#1259), and a string's bytes, whose capacity is the string's. `capacity()` of it
 // throws a refusal naming #1180, `$unsupported`'s, never another number,
 // which no `catch_unwind` takes for a panic (#1193); `shrink_to_fit()` knows it again, and a `push`
 // past it leaves it unknown (the user's decision, #1180).
@@ -72,10 +72,13 @@ pub fn known() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.inPlace, lib.genericInPlace, lib.bytes, lib.pushed, lib.caught]) {
+  for (const f of [lib.inPlace, lib.bytes, lib.pushed, lib.caught]) {
     expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
-  expect([lib.fitted(), lib.known()]).toEqual([5, 8]);
+  // Generic code's in-place collect finds its source `Vec` through the
+  // adapters it steps, so its capacity is its source's buffer's, std's 8
+  // (#1259); a collect whose source is a call's `Vec`, no variable, isn't.
+  expect([lib.fitted(), lib.known(), lib.genericInPlace()]).toEqual([5, 8, 8]);
 });
 
 // A `Vec` generic code grows by an iterator its caller gives, whose hint

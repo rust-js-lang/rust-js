@@ -15,6 +15,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
 
+mod collect_sources;
 mod constants;
 mod getter_unwraps;
 mod in_place;
@@ -175,6 +176,9 @@ pub(super) struct BodyFacts<'tcx> {
     /// maker marks what it makes so (`made_in_place`, #730). Decided once the
     /// crate's `Recognition` exists (`decide_in_place`), none reads it before.
     pub(super) in_place_adapters: InPlace,
+    /// The `Vec` each `collect()` std may make in place is made of, by the
+    /// call's span, `in_place_collect_sources`'s (#1259).
+    pub(super) in_place_collect_sources: IndexMap<Span, collect_sources::CollectSource<'tcx>>,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
@@ -207,6 +211,7 @@ impl<'tcx> BodyFacts<'tcx> {
             method_calls,
             called_methods,
             in_place_adapters: InPlace(None),
+            in_place_collect_sources: collect_sources::in_place_collect_sources(tcx, thir),
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,

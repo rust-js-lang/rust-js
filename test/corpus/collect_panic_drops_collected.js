@@ -62,7 +62,7 @@ function main() {
   );
   console.log(
     `${panicked(
-      () => gathered([1, 2, 3, 4].values().map(made), "inPlace"),
+      () => gathered([1, 2, 3, 4].values().map(made), { inPlace: 4 }),
       $dropEach(dDrop_drop),
     )}`,
   );

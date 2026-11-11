@@ -287,7 +287,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its inclusive ranges no step can leave exhausted, by name (#418).
         let fresh = self.fresh_ranges(body, &locals.names);
         self.note_fresh_ranges(fresh);
+        // Each in-place collect's source `Vec`, by its variable's name
+        // (#1259): kept beside an enclosing body's, a closure's lowered inside
+        // it, each by its call's own span.
+        let sources = self.in_place_source_names(body, &locals.names);
+        self.note_in_place_sources(sources);
         locals
+    }
+
+    /// The name of each `Vec` a `collect()` std may make in place is made of,
+    /// by the call's span (`in_place_collect_sources`): its variable's,
+    /// found by where its binding is, as its debug info has it, inside the
+    /// binding's pattern, `mut v`'s `v` (#1259).
+    fn in_place_source_names(
+        &self,
+        body: &mir::Body<'tcx>,
+        names: &IndexVec<Local, String>,
+    ) -> crate::collections::IndexMap<rustc_span::Span, String> {
+        let thir = self.frame.thir;
+        let bound = |var: thir::LocalVarId| {
+            let lets = (thir.stmts.iter()).filter_map(|stmt| match &stmt.kind {
+                thir::StmtKind::Let { pattern, .. } => Some(&**pattern),
+                _ => None,
+            });
+            let params = (thir.params.iter()).filter_map(|param| param.pat.as_deref());
+            // The binding itself, inside what its pattern holds, a type
+            // ascribed to it, `let mut v: Vec<u32>`.
+            let mut found = None;
+            for pattern in lets.chain(params) {
+                pattern.walk_always(|inner| {
+                    if let thir::PatKind::Binding { var: of, .. } = inner.kind
+                        && of == var
+                    {
+                        found = Some(inner.span);
+                    }
+                });
+            }
+            found
+        };
+        (self.frame.facts.in_place_collect_sources.iter())
+            .filter_map(|(&span, source)| {
+                let at = bound(source.var)?;
+                let local = (body.var_debug_info.iter()).find_map(|info| match info.value {
+                    mir::VarDebugInfoContents::Place(place)
+                        if place.projection.is_empty() && at.contains(info.source_info.span) =>
+                    {
+                        Some(place.local)
+                    }
+                    _ => None,
+                })?;
+                Some((span, names[local].clone()))
+            })
+            .collect()
     }
 
     /// The names of the closures a `let` names that a hook's function

@@ -463,8 +463,9 @@ of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its
 `TypeId` (a `T: 'static` made a `dyn Any` or compared by `TypeId::of`),
 `needs_drop::<T>()`, the class of a map keyed by it, an unstable sort of
 its items, how std collects it into a `Vec` where it's an iterator, by
-`collect()` or `Vec::from_iter`, `IVecCollect`, `"inPlace"`, `"fold"` or
-`"next"`, which picks what it asks of its hint and what a panic drops
+`collect()` or `Vec::from_iter`, `IVecCollect`, `{ inPlace: n }` (of
+its source's items `n` bytes, which its capacity is made of, #1259),
+`"fold"` or `"next"`, which picks what it asks of its hint and what a panic drops
 first, and which a JS caller leaves out, so such a function stays
 declared, or, of an iterator its adapters keep collected into a `Vec` of items
 with a destructor, whether std collects it in place, `IInPlace`, which

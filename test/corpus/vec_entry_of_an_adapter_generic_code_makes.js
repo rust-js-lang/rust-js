@@ -82,7 +82,11 @@ function main() {
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () =>
-        $collectVec(items, 8, $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen)),
+        $collectVec(
+          items,
+          8,
+          $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
+        ),
       ),
   };
   let v = mappedIterator_collect(

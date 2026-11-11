@@ -44,7 +44,7 @@ function main() {
     { next: $next },
     clone,
     { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` },
-    "inPlace",
+    { inPlace: 4 },
     4,
   );
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);

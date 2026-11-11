@@ -71,7 +71,7 @@ function relayedTwice(it, JTrustedLen, JInPlace, JItemSize, JItemAlign) {
     (relayed(
       Iterator.from(it).map((x) => x),
       JItemSize,
-      $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen),
+      $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen, JInPlace),
     ) +
       items($iter([]), "fold", JItemSize).length) >>>
     0

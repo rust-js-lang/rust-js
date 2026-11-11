@@ -343,4 +343,20 @@ export const mutations: Mutation[] = [
     replace: "    } else if (false) {\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
+  {
+    name: "in-place-capacity-unscaled",
+    breaks: "an in-place collect's capacity is its source's in the source's items, not its own: `[[u32; 2]]` of 3 collected into `u32`s says 3 where std's says 6 (#1259)",
+    file: "src/runtime/capacity.js",
+    find: "  $capacities.set(collected, Math.floor((capacity * sourceSize) / size));\n",
+    replace: "  $capacities.set(collected, capacity);\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
+  },
+  {
+    name: "in-place-source-unwalked",
+    breaks: "generic code's in-place collect looks no further than the iterator it's given for its source `Vec`, so a `map()`'s isn't found and `capacity()` refuses it (#1259)",
+    file: "src/runtime/capacity.js",
+    find: "    at = at.from?.[0] ?? at.iter;\n",
+    replace: "    at = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
+  },
 ];

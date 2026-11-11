@@ -1188,7 +1188,8 @@ test("$vecCollectWay answers the table vec_collect_way answers", () => {
   const script = `
 const { $vecCollectWay } = await import(${JSON.stringify(module)});
 const rows = ${JSON.stringify(rows)};
-console.log(rows.map(([inPlace, trusted]) => $vecCollectWay(inPlace === "true", trusted === "true")).join(","));`;
+const way = (how) => (typeof how === "object" ? "inPlace" : how);
+console.log(rows.map(([inPlace, trusted]) => way($vecCollectWay(inPlace === "true", trusted === "true", [8, 8]))).join(","));`;
   const printed = run([node ?? "node", "--input-type=module", "--eval", script]).trim();
   expect(printed).toBe(rows.map(([, , way]) => way).join(","));
 });

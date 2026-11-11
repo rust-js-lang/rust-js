@@ -83,7 +83,7 @@ function mapped(it, JTrustedLen, JInPlace) {
       console.log(`stepped ${x}`);
       return (x + 1) >>> 0;
     }),
-    $vecCollectWay($collectsInPlace(JInPlace, 4, 4), JTrustedLen),
+    $vecCollectWay($collectsInPlace(JInPlace, 4, 4), JTrustedLen, JInPlace),
     4,
   );
 }
@@ -111,7 +111,7 @@ function kept(it, JInPlace, dropJ) {
           $collectVec(
             items,
             4,
-            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen),
+            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
             loudDrop_drop,
           ),
         ),
@@ -144,11 +144,11 @@ function main() {
   let source = [1, 2, 3];
   let v = all(
     $mapEnds($iter(source), (x) => (x * 2) >>> 0),
-    "inPlace",
+    { inPlace: 4 },
     4,
   );
   shown("in place", v);
-  v = fromItems([1, 2], 4, "inPlace");
+  v = fromItems([1, 2], 4, { inPlace: 4 });
   shown("in place, from its items", v);
   // By its fold: room for its hint's upper bound first.
   v = all(
@@ -189,7 +189,11 @@ function main() {
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>
-          $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+          $collectVec(
+            items,
+            4,
+            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+          ),
         ),
     },
     true,
@@ -213,7 +217,7 @@ function main() {
             $collectVec(
               items,
               4,
-              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen),
+              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
               loudDrop_drop,
             ),
           ),
@@ -332,7 +336,7 @@ function main() {
           }
         }
       }),
-      "inPlace",
+      { inPlace: 4 },
       4,
       (map) => {
         map.return();

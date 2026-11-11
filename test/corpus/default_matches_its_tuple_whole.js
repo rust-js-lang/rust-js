@@ -183,7 +183,7 @@ function main() {
   const _D__D_Tuple = _A__A_Tuple(dDrop_drop);
   const IntoIterExt = iExt(
     { next: $next, advanceBy: $advanceSlice },
-    "inPlace",
+    { inPlace: 4 },
     4,
     $dropEach(dDrop_drop),
     dDrop_drop,

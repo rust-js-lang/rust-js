@@ -478,4 +478,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_parameter_taken_by_value\\.rs$"],
   },
+  {
+    name: "in-place-sources-of-the-last-body",
+    breaks: "each body's in-place collect sources replace its enclosing body's, so a closure lowered inside `main` leaves `main`'s collects with none, their capacity unknown (#1259)",
+    file: "src/lower/mir.rs",
+    find: "        self.locals.mir.in_place_sources.extend(names);\n",
+    replace: "        self.locals.mir.in_place_sources = names;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
+  },
 ];

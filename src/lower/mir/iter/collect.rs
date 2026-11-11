@@ -691,7 +691,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             iterable,
             span,
         )?;
-        let collected = self.untracked_where_in_place(collected, output, iter_ty, item);
+        let collected = self.untracked_where_in_place(collected, (output, iter_ty, item), span)?;
         // Kept where its collect steps it, not where it's collected in place.
         Ok(match grown_call {
             Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(
@@ -709,22 +709,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `collected`, of a crate that keeps capacities, where std may collect
-    /// it in place, whose capacity is its source's, which isn't kept: not
+    /// it in place, in its source's buffer: where it does and its source is
+    /// a `Vec` the body names (`in_place_source`), that buffer's capacity in
+    /// its own items, `src_cap * src_size / dst_size`,
+    /// `$inPlaceCapacity(collected, v, srcSize, dstSize)` (#1259); else not
     /// known, which `capacity()` refuses (#1180).
     fn untracked_where_in_place(
-        &self,
+        &mut self,
         collected: Expr,
-        output: Ty<'tcx>,
-        iter_ty: Ty<'tcx>,
-        item: Option<Ty<'tcx>>,
-    ) -> Expr {
-        match self.krate.keeps_capacity
-            && self.recognition().grows_as_vec(output)
-            && self.collects_in_place(Some(iter_ty), item) != Some(false)
-        {
-            true => Expr::call_helper("$untracked", vec![collected]),
-            false => collected,
+        (output, iter_ty, item): (Ty<'tcx>, Ty<'tcx>, Option<Ty<'tcx>>),
+        span: Span,
+    ) -> R<Expr> {
+        use crate::lower::recognition::{InPlaceSource, TypeFact, in_place_source};
+        let in_place = self.collects_in_place(Some(iter_ty), item);
+        if !self.krate.keeps_capacity || !self.recognition().grows_as_vec(output) || in_place == Some(false) {
+            return Ok(collected);
         }
+        if in_place == Some(true)
+            && let Some(item) = item
+            && let Some(InPlaceSource::Items(source_item)) = in_place_source(self.tcx, self.typing_env, iter_ty)
+            && let Some(source) = self.in_place_source(span)
+        {
+            let source_size = self.type_fact_value(source_item, TypeFact::Size, span)?;
+            let size = self.type_fact_value(item, TypeFact::Size, span)?;
+            return Ok(Expr::call_helper(
+                "$inPlaceCapacity",
+                vec![collected, source, source_size, size],
+            ));
+        }
+        Ok(Expr::call_helper("$untracked", vec![collected]))
     }
 
     /// How std collects an iterator of `iter_ty`, a type parameter's or an

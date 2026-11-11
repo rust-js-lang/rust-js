@@ -282,7 +282,7 @@ function main() {
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = secondOf([[7, 8]], listedSource);
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  console.log(`[${replaced($iter([1, 2]), $iter([7, 8, 9]), "inPlace").join(", ")}]`);
+  console.log(`[${replaced($iter([1, 2]), $iter([7, 8, 9]), { inPlace: 4 }).join(", ")}]`);
   let n = 0;
   console.log(
     `${called(() => {

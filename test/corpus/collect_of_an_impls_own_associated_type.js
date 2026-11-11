@@ -146,7 +146,11 @@ function main() {
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>
-          $collectVec(items, 12, $vecCollectWay($collectsInPlace(IInPlace, 12, 4), ITrustedLen)),
+          $collectVec(
+            items,
+            12,
+            $vecCollectWay($collectsInPlace(IInPlace, 12, 4), ITrustedLen, IInPlace),
+          ),
         ),
     },
     true,
@@ -172,7 +176,7 @@ function main() {
           $collectVec(
             items,
             8,
-            $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen),
+            $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
             (result) => {
               if (result.TAG === "Ok") {
                 loudDrop_drop(result._0);

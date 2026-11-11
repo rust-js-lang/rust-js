@@ -64,7 +64,7 @@ function countedSource_items(counted) {
 const listedSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: listedSource_items,
-  IterVecCollect: "inPlace",
+  IterVecCollect: { inPlace: 4 },
 };
 function listedSource_items(listed) {
   return $iter(listed[0]);

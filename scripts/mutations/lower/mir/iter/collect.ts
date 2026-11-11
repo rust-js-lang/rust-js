@@ -612,8 +612,8 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-capacity-known",
     breaks: "a collect std may make in place, in a crate that reads a capacity, gives its length as its capacity, where std's is its source's (#1180)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            true => Expr::call_helper(\"$untracked\", vec![collected]),\n",
-    replace: "            true => collected,\n",
+    find: "        Ok(Expr::call_helper(\"$untracked\", vec![collected]))\n",
+    replace: "        Ok(collected)\n",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {

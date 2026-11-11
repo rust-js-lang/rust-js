@@ -71,7 +71,7 @@ function passedOn(it, IIterator, IClone, ITrustedLen, IInPlace) {
     copied,
     { next: $next, fold: $foldOf, last: $last, count: $count },
     { clone: (value) => $givenClone(value, IClone.clone) },
-    $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen),
+    $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
   );
 }
 

@@ -34,6 +34,33 @@ function $untracked(v) {
   return v;
 }
 
+// `collected`, which std collected in place in `source`'s buffer, a `Vec`
+// of items `sourceSize` bytes, into items `size` bytes: that buffer's
+// capacity in its own items, `src_cap * src_size / dst_size`, shrunk to it
+// where it's no whole number, as alloc's `from_iter_in_place` gives it
+// (#1259); not known where `source`'s isn't, which `capacity()` refuses.
+// `source` as it was, which its collect stepped and changed nothing of.
+function $inPlaceCapacity(collected, source, sourceSize, size) {
+  const kept = $capacities.get(source);
+  if (kept === $unknownCapacity) return $untracked(collected);
+  const capacity = Math.max(source.length, kept ?? 0);
+  $capacities.set(collected, Math.floor((capacity * sourceSize) / size));
+  return collected;
+}
+
+// `collected`, which std collected in place in the buffer of the `Vec` `it`
+// steps, through each adapter to its source, `from` or `iter`, as std's
+// `SourceIter` reaches it: `$inPlaceCapacity`'s of that `Vec`, an array or
+// what steps one, `items`; not known where none is found (#1259).
+function $inPlaceCapacityFrom(collected, it, sourceSize, size) {
+  let at = it;
+  while (at !== undefined && at !== null && !Array.isArray(at) && !Array.isArray(at.items)) {
+    at = at.from?.[0] ?? at.iter;
+  }
+  if (at === undefined || at === null) return $untracked(collected);
+  return $inPlaceCapacity(collected, Array.isArray(at) ? at : at.items, sourceSize, size);
+}
+
 // `value`, given or given back by a library's function whose library keeps
 // no capacity and which the crate can't compile itself, as it reads its
 // library's private state: each `Vec` it reaches, through arrays, plain
