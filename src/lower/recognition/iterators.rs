@@ -716,6 +716,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()),
             "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"
+            // `once(x)`'s, `[x]`, as an `Option`'s `into_iter()` is (#1375).
+            | "std::iter::Once"
             // A slice's chunks and windows, the array of them `$chunks` and
             // the like make (ADR 0335).
             | "std::slice::Chunks" | "std::slice::ChunksMut" | "std::slice::Windows"

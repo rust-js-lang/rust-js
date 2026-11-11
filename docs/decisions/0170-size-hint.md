@@ -214,3 +214,28 @@ and with a held `Take` of a type parameter's. Neither case prints
 where the host's native run's is wider. `repeat_n_hint_held.rs`'s
 `generic-instances` rewrite, a `capacity()` after generic code's collect,
 is #1263's.
+
+## Amendment (2026-11-11, #1375): `once` and `once_with` hint as std's
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results;
+refusals lifted. `size_hint()` of `iter::once(x)` and `iter::once_with(f)`
+was refused, "from its MIR". So was a `peekable()` of either, and a `Vec`
+that a crate reading capacities grows by a chain of `once_with` with what
+isn't `TrustedLen`. Std's hint is exact for both: `(1, Some(1))` until
+stepped, then `(0, Some(0))`.
+
+`once(x)` is `[x]`, an array of items, as an `Option`'s `into_iter()` is.
+So it joins `iterates_items`, the one answer of which std iterators' JS
+values are their items' arrays, and is made `$iter([x])` where its hint is
+asked. Where nothing asks it, it stays `[x]`: `[3].map(f).reduce(..)`.
+
+`once_with(f)` is `$onceWith`. It now carries std's hint by whether it
+still holds `f`, which it still calls only when first stepped. It joins
+`source_hint_kept` (#1357), the sources whose forms give std's hint.
+
+Held by corpus case `once_and_once_with_hint.rs`, against native Rust in
+both builds: each hint before and after a step, a `peekable()` of each,
+one peeked, and a chain's and a zip's collect with its capacity.
+Mutations `once-no-array-of-items`, `once-with-hint-unkept` and
+`once-with-hint-after-stepped` are new; `once-with-calls-f-where-made` and
+`once-with-calls-f-each-step` are refitted to the new form.

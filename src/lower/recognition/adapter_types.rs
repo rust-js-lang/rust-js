@@ -212,12 +212,14 @@ pub(crate) fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// `repeat`'s `$repeating` and `repeat_with`'s `$repeatingWith`,
 /// `(usize::MAX, None)`; `repeat_n`'s `$repeatingN`, what it has left both
 /// ways; `successors`' `$successors`, `(1, None)` while it holds one;
-/// `from_fn`'s `$fromFn`, a `$Steps`, std's `(0, None)`. Not `once`'s, an
-/// array made in place, which no adapter of it holds as its source.
+/// `from_fn`'s `$fromFn`, a `$Steps`, std's `(0, None)`; `once_with`'s
+/// `$onceWith`, `(1, Some(1))` while it holds its closure (#1375). Not
+/// `once`'s, `[x]`, an array of items (`iterates_items`), `$iter([x])`
+/// where its hint is asked, as an `Option`'s `into_iter()` is.
 pub(crate) fn source_hint_kept(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(tcx, adt.did()),
         "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::RepeatWith" | "std::iter::Successors"
-        | "std::iter::FromFn"))
+        | "std::iter::FromFn" | "std::iter::OnceWith"))
 }
 
 /// Whether std's struct of type `ty` is an iterator in `typing_env`, so

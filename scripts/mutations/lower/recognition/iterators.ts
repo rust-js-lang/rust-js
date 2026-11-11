@@ -681,4 +681,12 @@ export const mutations: Mutation[] = [
     replace: "            None => Some((source, self.option_of(self.iterator_item(source)?)?, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "iter_flatten|^flatten_of_options_from_its_back.rs$"],
   },
+  {
+    name: "once-no-array-of-items",
+    breaks: "`iter::once(x)`, `[x]`, isn't taken for an array of items, so its `size_hint()` is refused, \"from its MIR\", where std's is `(1, Some(1))` (#1375)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            | \"std::iter::Once\"",
+    replace: "            | \"std::iter::OnceNever\"",
+    tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
+  },
 ];

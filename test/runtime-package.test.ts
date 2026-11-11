@@ -41,9 +41,10 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
 // where it's made (#1189), `$decodeUtf16` (#1151), `$cycle`,
 // which carries its hint (#1179), `$chars` and `$charIndices`, a string's
 // `chars()` and `char_indices()` lazy (#1186), `$repeatingWith`, a
-// generator that carries std's hint (#1357), and each of the runtime's
+// generator that carries std's hint (#1357), `$onceWith`, which carries
+// std's hint too (#1375), and each of the runtime's
 // generators (ADR 0472): the compiler's list, held to the runtime.
-test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith and the runtime's generators", () => {
+test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith, $onceWith and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -102,6 +103,7 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
       "$chars",
       "$charIndices",
       "$repeatingWith",
+      "$onceWith",
       ...generators,
     ].toSorted(),
   );

@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "        \"std::iter::Repeat\" | \"std::iter::RepeatN\"\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_hint_held.rs$"],
   },
+  {
+    name: "once-with-hint-unkept",
+    breaks: "`once_with(f)`'s `$onceWith` isn't said to give std's hint, so a `peekable()` of it is refused, where std's is `(1, Some(1))` (#1375)",
+    file: "src/lower/recognition/adapter_types.rs",
+    find: " | \"std::iter::OnceWith\"))",
+    replace: "))",
+    tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
+  },
 ];
