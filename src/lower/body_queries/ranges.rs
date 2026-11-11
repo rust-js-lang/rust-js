@@ -24,6 +24,7 @@ mod loops;
 mod narrowing;
 mod present;
 mod reads;
+mod settling;
 mod tables;
 mod volatile;
 
@@ -31,6 +32,7 @@ use cells::reads_a_cell;
 use known::{Below, Bounds, ITEM, Known, Range, VALUE, either};
 pub(in crate::lower) use present::present_item_of_sized;
 use reads::{calls, pure, read_vars};
+use settling::Settling;
 use tables::chosen;
 use volatile::volatile;
 
@@ -164,7 +166,7 @@ pub(in crate::lower) fn ranges<'tcx>(
     // What each is told, `None` while no call of it, or where a closure is
     // made, is reached; each body's last walk, and what it told.
     let mut entries: IndexMap<DefId, Option<Known>> = (callees.keys().chain(&closures)).map(|&f| (f, None)).collect();
-    let mut changed: IndexMap<DefId, usize> = IndexMap::default();
+    let mut settling: IndexMap<DefId, Settling> = IndexMap::default();
     let mut found: Vec<Ranges> = bodies.iter().map(|_| Ranges::default()).collect();
     let mut told: Vec<IndexMap<DefId, Option<Known>>> = bodies.iter().map(|_| IndexMap::default()).collect();
     let index: IndexMap<DefId, usize> = (bodies.iter().enumerate())
@@ -242,24 +244,16 @@ pub(in crate::lower) fn ranges<'tcx>(
                 Some(this) => either(all, this.clone()),
                 None => all,
             });
-            let times = changed.entry(callee).or_default();
+            let settled = settling.entry(callee).or_default();
             let entry = entries.get_mut(&callee).expect("a callee");
             // Told otherwise again and again, what still changes is
-            // forgotten, and past that, all of it.
-            let joined = match (*times, joined, &*entry) {
-                (64.., _, _) => Some(Known::default()),
-                (4.., Some(mut next), Some(was)) => {
-                    next.vars.retain(|v, r| was.vars.get(v) == Some(r));
-                    next.lengths.retain(|s, l| was.lengths.get(s) == Some(l));
-                    Some(next)
-                }
-                (_, joined, _) => joined,
-            };
+            // forgotten, and past that, all of it (`Settling`).
+            let joined = settled.told(joined, &*entry);
             if joined != *entry {
                 *entry = joined;
                 let at = index.get(&callee).copied();
                 if at.is_none_or(|at| std::mem::take(&mut walked[at])) {
-                    *times += 1;
+                    *settled = settled.counted();
                 }
                 if let Some(at) = at
                     && !queued[at]

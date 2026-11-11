@@ -169,3 +169,21 @@ giving it more than the one before, which never wraps, and
 makes `small` forget its `n` and wrap: mutations
 `ranges-callees-walked-as-a-stack` and `ranges-each-tell-counted`.
 test/determinism.test.ts compiles it eight times.
+
+## Amendment: how what a function is told settles is one state of three (#873)
+
+What a function only calls reach, or a closure, is told settled by a count
+of how often it was told otherwise, read at two thresholds in one match,
+`(64.., ..)` and `(4.., ..)`, beside the entry itself. **It is a
+`Settling`, `ranges/settling.rs`, one state of three: `Joining(times)`,
+told what its calls tell it, joined; past `WIDENS_AFTER`, four,
+`Widening(times)`, told only what it was told before too, what still
+changes forgotten; past `GIVES_UP_AFTER`, 64, `GivenUp`, told nothing for
+good. `told(joined, was)` says what it's told in each state, and
+`counted()` is its one transition, made where a walk of it came between.**
+The JS is byte for byte what it was, the corpus in both builds and the
+determinism net; `test/corpus/ranges_kept_of_what_stops_changing.rs`, a
+function whose own call tells it a wider `n` each walk, holds the widening
+rule, which nothing held: its `k`, told the same each time, keeps its
+range, so `k + 1` is exact. Five mutations, one per transition and state,
+all caught, four held by the unit tests of `counted` and `told`.
