@@ -512,4 +512,28 @@ export const mutations: Mutation[] = [
     replace: "    for &(trait_id, imp) in lowered.iter().filter(|(_, imp)| imp.is_local()) {\n        let facts = match trait_id.is_local() {\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
+  {
+    name: "rc-instance-unasked",
+    breaks: "generic code's `Rc::new` of a type parameter a counted class may be asks its caller nothing, so it's given no `TInstance` and is refused (#1423)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    .then_some(pointee)\n",
+    replace: "    .then_some(pointee)\n    .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
+  },
+  {
+    name: "rc-new-cyclic-instance-unasked",
+    breaks: "generic code's `Rc::new_cyclic` of a type parameter a counted class may be asks its caller nothing, so it's given no `TInstance` and is refused (#1423)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        _ if new_cyclic => args.type_at(0),\n",
+    replace: "        _ if false && new_cyclic => args.type_at(0),\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
+  },
+  {
+    name: "rc-instance-asked-by-classify",
+    breaks: "every call is classified to find `Rc::new_cyclic`, a library's const generic's too, whose arguments `classify` resolves in no environment of their own: rustc panics, `cannot find` the const parameter (#1423)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        _ if new_cyclic => args.type_at(0),\n",
+    replace: "        _ if new_cyclic || recognition.classify(callee, args).is_some() && false => args.type_at(0),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: const_generic_(with_type|inside)$"],
+  },
 ];

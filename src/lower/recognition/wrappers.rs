@@ -48,6 +48,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
     }
 
+    /// Whether `def_id` is `Rc::new_cyclic` or `Arc::new_cyclic`, by its
+    /// `Rc`'s impl and its name alone: what `classify` would say of it,
+    /// without resolving the call's arguments, which a const generic's
+    /// can't be in no environment of their own (#1423).
+    pub(in crate::lower) fn is_rc_new_cyclic(&self, def_id: DefId) -> bool {
+        let tcx = self.tcx;
+        tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
+            let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new_cyclic"
+        })
+    }
+
     /// What a wrapper of std's that's what it holds holds: `ManuallyDrop`'s
     /// and `MaybeDangling`'s, and a C string's bytes (#1157), whose `==` and
     /// clone are its value's, as it is in JS (`transparent`).

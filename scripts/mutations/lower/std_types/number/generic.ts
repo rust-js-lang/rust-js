@@ -302,4 +302,12 @@ export const mutations: Mutation[] = [
     replace: "            None => Expr::bool(false),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
+  {
+    name: "rc-instance-fact-false",
+    breaks: "a caller says a class's counted `Rc` is a box, so generic code's `Rc::new` of its instance makes a box its readers take for the instance: `chunk.bump is not a function` (#1423)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            let instance = crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
+    replace: "            let instance = false && crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
+  },
 ];

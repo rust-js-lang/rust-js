@@ -346,6 +346,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((set, sorted)) = fact.map_kind() {
             return self.map_class(set, sorted, (Some(of), None), span);
         }
+        // Whether a counted `Rc` of it is its class's instance itself, so a
+        // callee's `Rc::new` of it makes it so (#1423).
+        if fact == TypeFact::Instance {
+            let instance = crate::lower::std_types::rc::counted_as_instance(self.tcx, of)
+                && self.krate.counted.counts(self.tcx, of);
+            return Ok(Expr::bool(instance));
+        }
         // Whether its `Fuse` keeps it as it ends (ADR 0543).
         if fact == TypeFact::Fused {
             return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));

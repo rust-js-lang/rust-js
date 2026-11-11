@@ -8632,6 +8632,13 @@ export function $countedInstance(instance) {
   return instance;
 }
 
+// `Rc::new(value)` in generic code of a type parameter a counted class may
+// be: the instance with its box hidden beside it, where its caller says
+// it's a class's, `instance`, else a box (#1423).
+export function $countedNew(value, instance) {
+  return instance ? $countedInstance(value) : { value, strong: 1, weak: 0 };
+}
+
 // The `Rc` a box counts: the class instance it's hidden beside, or itself.
 export function $countedRc(box) {
   return box.value?.[$countedKey] === box ? box.value : box;

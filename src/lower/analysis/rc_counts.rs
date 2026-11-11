@@ -141,16 +141,21 @@ impl<'tcx> Counted<'tcx> {
     }
 
     /// May `pointee`, not itself a struct, a type parameter or a type a
-    /// call gives, be one of the crate's `#[rust_js::class]`es whose `Rc`
-    /// it counts, which is the instance itself, its counts hidden beside
-    /// it (#1228)? Then an `Rc` of it is told apart as it runs.
+    /// call gives, be a `#[rust_js::class]` whose `Rc` the crate counts,
+    /// which is the instance itself, its counts hidden beside it (#1228)?
+    /// Then an `Rc` of it is told apart as it runs. Of the crate's classes,
+    /// and a library's it counts the `Rc`s of, which a copy of the
+    /// library's generic code it compiles itself may be given (#1423).
     pub fn may_be_counted_class(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
-        (tcx.hir_crate_items(()).definitions())
+        let own = (tcx.hir_crate_items(()).definitions())
             .map(|id| id.to_def_id())
             .filter(|&id| {
                 tcx.def_kind(id) == rustc_hir::def::DefKind::Struct && crate::lower::classes::is_class(tcx, id)
             })
-            .map(|id| tcx.type_of(id).instantiate_identity().skip_normalization())
+            .map(|id| tcx.type_of(id).instantiate_identity().skip_normalization());
+        let counted = (self.types.iter().copied())
+            .filter(|ty| matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::classes::is_class(tcx, adt.did())));
+        own.chain(counted)
             .any(|class| may_be(tcx, pointee, class) && self.counts(tcx, class))
     }
 

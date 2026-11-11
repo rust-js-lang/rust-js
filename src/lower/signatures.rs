@@ -288,6 +288,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // caller leaves out: what it gives is no Rust iterator, which
                 // `undefined` collects by `next`, as JS steps it (#1239).
                 Slot::Fact(_, crate::lower::recognition::TypeFact::VecCollect) => (String::new(), Form::LeftOut),
+                // Whether a counted `Rc` of it is a class's instance,
+                // `TInstance`, which a JS caller leaves out: a box, which the
+                // `Rc`'s readers tell apart from an instance as it runs (#1423).
+                Slot::Fact(_, crate::lower::recognition::TypeFact::Instance) => (String::new(), Form::LeftOut),
                 Slot::Fact(..) => (String::new(), Form::Unknowable),
                 Slot::Drop(_) => (String::new(), Form::LeftOut),
             };

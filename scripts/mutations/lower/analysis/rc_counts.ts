@@ -548,4 +548,12 @@ export const mutations: Mutation[] = [
     replace: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                    && false\n                {\n                    match args.type_at(0).has_non_region_param() {\n                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),\n                        false => _ = counted.insert(erased(args.type_at(0))),\n                    }\n                }\n            }\n            for (from_owner",
     tests: ["test/crates.test.ts", "-t", "two crates: library_rc_counted_by_its_consumers_instance"],
   },
+  {
+    name: "counted-library-class-unseen",
+    breaks: "a consumer's copy of its library's generic code, given the library's class whose `Rc` it counts, takes it for no class, so `Rc::new` of it makes a box its readers take for the instance: `chunk.bump is not a function` (#1423)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        own.chain(counted)\n",
+    replace: "        own.chain(counted.filter(|_| false))\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_class_rc_made_by_its_generic_code$"],
+  },
 ];

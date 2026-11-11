@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
   },
+  {
+    name: "counted-new-always-a-box",
+    breaks: "generic code's `Rc::new` of a class's instance makes a box whatever its caller says, which its readers take for the instance (#1423)",
+    file: "src/runtime/rc.js",
+    find: "  return instance ? $countedInstance(value) : { value, strong: 1, weak: 0 };\n",
+    replace: "  return { value, strong: 1, weak: 0 };\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
+  },
 ];

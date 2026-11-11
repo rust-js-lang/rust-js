@@ -1023,7 +1023,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         taken: &drop_params,
     };
     let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
-    let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, kept);
+    let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, (&recognition, &counted), kept);
     let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);

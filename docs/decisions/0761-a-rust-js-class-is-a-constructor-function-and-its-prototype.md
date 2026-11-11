@@ -975,3 +975,35 @@ counts or names the hidden box's helpers. Eleven mutations, caught, and
 fourteen refitted, caught; two removed with the code they mutated
 (`class-constructor-of-a-counted-rc-allowed`,
 `counted-rc-self-method-allowed`).
+
+## Amendment: generic code's `Rc::new` of what a counted class may be is told by its caller (2026-11-12, #1423)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted.
+The amendment above refused an `Rc::new` or `Rc::new_cyclic` in generic
+code of a type parameter a counted class of the crate's may be: what it's
+given doesn't say whether it's a class's instance. Its caller knows, so it
+says: a type fact, `TypeFact::Instance`, `TInstance`, true of a class
+whose `Rc` the crate counts (`counted_as_instance`), which the type-fact
+analysis asks of such a call (`instance_asked`) and each caller gives, as
+it gives `TFused`. The call is `$countedNew(value, TInstance)`, the
+instance with its box hidden beside it or a box, and
+`$newCyclic(f, TInstance)`; its readers tell the two apart as they run, as
+before. A JS caller leaves it out, `undefined`, a box, which they read as
+well. A crate with no counted class asks it of nothing, and no other
+corpus case's JS changed. Which classes a type parameter may be is the
+crate's own and a library's whose `Rc`s it counts
+(`Counted::may_be_counted_class`): a consumer's copy of its library's
+generic code (ADR 0914), given the library's class, takes `TInstance` as
+the library's own does. And `new_cyclic` is recognized by its `Rc`'s impl
+and its name, not by `classify`, which resolved every call's arguments,
+a const generic's too, in no environment of their own: rustc panicked.
+
+Tests: corpus case `class_rc_made_by_generic_code`, generic code's
+`Rc::new` and `Rc::new_cyclic` given a class's instance and a `Loud`, each
+counted, upgraded and dropped, against native Rust in each build, and its
+13 metamorphic rewrites; the pair `library_class_rc_made_by_its_generic_code`;
+mutations `rc-instance-unasked`, `rc-new-cyclic-instance-unasked`,
+`rc-instance-fact-false`, `counted-new-always-a-box`,
+`rc-instance-asked-by-classify` (the const generic pairs) and
+`counted-library-class-unseen`, caught;
+`mir-body-std-call-asks-unread` refitted.

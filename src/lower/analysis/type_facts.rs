@@ -44,7 +44,7 @@ pub(super) fn type_fact_params<'tcx>(
     fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
-    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    (recognition, counted): (&crate::lower::recognition::Recognition<'_, 'tcx>, &super::Counted<'tcx>),
     (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
 ) -> FactParams<'tcx> {
     let iterator = std_item(tcx, StdItem::Iterator);
@@ -89,6 +89,13 @@ pub(super) fn type_fact_params<'tcx>(
                 // library's copies do (`map_made`, #990).
                 for (index, fact) in map_made(tcx, foreign, caller, (callee, args)) {
                     asking.asked.insert((caller, index, fact));
+                }
+                // Generic code's `Rc::new` of a type parameter a counted class may
+                // be: whether it's its class's instance, its caller's, `TInstance` (#1423).
+                if let Some(of) = instance_asked(recognition, counted, (callee, args))
+                    && let Some(index) = slot_of(tcx, foreign, caller, of)
+                {
+                    asking.asked.insert((caller, index, TypeFact::Instance));
                 }
                 // What std's call asks of its items' type, a body read from
                 // MIR alone too, a library's default compiled here (#1370).
@@ -229,6 +236,13 @@ pub(super) fn type_fact_params<'tcx>(
             }
             for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {
                 asking.asked.insert((caller, index, TypeFact::LengthFirst));
+            }
+            // Generic code's `Rc::new` of a type parameter a counted class may
+            // be: whether it's its class's instance, its caller's, `TInstance` (#1423).
+            if let Some(of) = instance_asked(recognition, counted, (callee, args))
+                && let Some(index) = slot_of(tcx, foreign, caller, of)
+            {
+                asking.asked.insert((caller, index, TypeFact::Instance));
             }
             // What std's call asks of its items' type (`std_call_asks`).
             if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {
@@ -526,6 +540,31 @@ pub(super) struct FactParams<'tcx> {
 /// `HashMap::new()`'s, `collect()`'s, `or_insert_with(BTreeMap::new)`'s,
 /// what it gives, or what a `&mut` it gives points at, which it may have
 /// made, an entry's `or_default()`'s. Its class, its caller's (ADR 0466).
+/// What a call of `callee`, std's `Rc::new` or `Rc::new_cyclic`, of an
+/// `Rc` the crate counts of a type parameter a counted class of the crate's
+/// may be, asks of its caller: whether that `Rc` is its class's instance
+/// itself, `TInstance`, which makes it so or a box (#1423).
+fn instance_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    counted: &super::Counted<'tcx>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<ty::Ty<'tcx>> {
+    let tcx = recognition.tcx;
+    // Of `Rc`'s own `new_cyclic` by its impl and name: not `classify`, which
+    // resolves every call's arguments, a const generic's too, in no
+    // environment of its own, and rustc panics.
+    let new_cyclic = recognition.is_rc_new_cyclic(callee);
+    let pointee = match recognition.rc_same(callee, args) {
+        Some((true, pointee)) => pointee,
+        _ if new_cyclic => args.type_at(0),
+        _ => return None,
+    };
+    (!matches!(pointee.kind(), ty::Adt(..) | ty::Dynamic(..))
+        && counted.counts(tcx, pointee)
+        && counted.may_be_counted_class(tcx, pointee))
+    .then_some(pointee)
+}
+
 fn map_made<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,

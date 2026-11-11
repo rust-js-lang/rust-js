@@ -288,13 +288,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             RcOp::WeakNew => self.weak_to_nothing(output),
             RcOp::NewCyclic => {
                 let f = values.next().expect("a function");
-                match self.rc_form(rc_pointee(self.tcx, output).expect("an `Rc`")) {
+                let pointee = rc_pointee(self.tcx, output).expect("an `Rc`");
+                match self.rc_form(pointee) {
                     RcForm::Instance => helper("$newCyclic", vec![f, Expr::bool(true)]),
+                    // Of a type parameter a counted class may be, as its
+                    // caller says, `TInstance` (#1423).
                     RcForm::Either => {
-                        return Err(self.unsupported(
-                            span,
-                            "`Rc::new_cyclic` of a type parameter a counted `#[rust_js::class]` may be (#1228)",
-                        ));
+                        let instance =
+                            self.type_fact_value(pointee, crate::lower::recognition::TypeFact::Instance, span)?;
+                        helper("$newCyclic", vec![f, instance])
                     }
                     RcForm::Box | RcForm::Pair => helper("$newCyclic", vec![f]),
                 }
@@ -375,16 +377,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Rc::new(value)` of a counted one of `pointee`, held as `rc_form`
     /// says: `{ value, strong: 1, weak: 0 }`, or a class's instance with its
-    /// box hidden beside it, `$countedInstance(value)` (#1228). Of a type
-    /// parameter a counted class may be, refused: what it's given doesn't
-    /// say which it is.
-    pub(in crate::lower) fn new_counted_rc(&self, value: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// box hidden beside it, `$countedInstance(value)` (#1228); of a type
+    /// parameter a counted class may be, as its caller says it is,
+    /// `$countedNew(value, TInstance)` (#1423).
+    pub(in crate::lower) fn new_counted_rc(&mut self, value: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         match self.rc_form(pointee) {
             RcForm::Instance => Ok(Expr::call_helper("$countedInstance", vec![value])),
-            RcForm::Either => Err(self.unsupported(
-                span,
-                "`Rc::new` of a type parameter a counted `#[rust_js::class]` may be (#1228)",
-            )),
+            RcForm::Either => {
+                let instance = self.type_fact_value(pointee, crate::lower::recognition::TypeFact::Instance, span)?;
+                Ok(Expr::call_helper("$countedNew", vec![value, instance]))
+            }
             RcForm::Pair | RcForm::Box => Ok(Self::new_rc(value)),
         }
     }
@@ -394,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Rc::new(x)` or `*rc` of a counted `Rc`, each `Std::Same` of one that
     /// isn't: `{ value: x, strong: 1, weak: 0 }`, or `rc.value`.
     pub(in crate::lower) fn counted_same(
-        &self,
+        &mut self,
         def_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
         value: Expr,
