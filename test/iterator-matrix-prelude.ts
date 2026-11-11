@@ -140,6 +140,11 @@ fn show<T: V>(items: &[T]) -> String {
     out
 }
 
+/** What a function that asks the hint of what it's given gives (#1323). */
+fn hint_of<I: Iterator>(it: I) -> (usize, Option<usize>) {
+    it.size_hint()
+}
+
 fn sorted<T: Ord>(mut items: Vec<T>) -> Vec<T> {
     items.sort();
     items

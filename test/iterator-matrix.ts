@@ -563,6 +563,21 @@ const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 +
 
 /** The adapters only the table runs, besides the matrix's. */
 const stepAdapters: Adapter[] = [
+  // Flattens of items whose sizes std's flatten counts, an array's
+  // constant size and an `Option`'s one at most, which a `vec`'s hides
+  // (#1323).
+  {
+    name: "flat_map array",
+    closure: true,
+    shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
+    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map array", from.item === "D" ? "[D(x.0 + 10), x]" : "[x + 10, x]")})`,
+  },
+  {
+    name: "flatten option",
+    closure: true,
+    shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
+    text: (_, panics) => `.map(|x| ${counted(panics, "flatten option", "Some(x)")}).flatten()`,
+  },
   {
     name: "take_while",
     closure: true,
@@ -635,6 +650,10 @@ const back = (shape: Shape) => shape.back;
  * step of the contract that isn't one already, and the folds by value of
  * a closure that holds what has a destructor (#734). */
 const stepConsumers: Consumer[] = [
+  // Given, made in place, to a function that asks its hint: what's given
+  // there knows it as Rust's does, a flatten's of its items' constant
+  // size, not JS's own `flatMap`'s `(0, None)` (#1323).
+  { name: "hint given", closure: false, takes: any, text: (it) => `println!("given hint {:?}", hint_of(${it}));` },
   {
     name: "next",
     closure: false,
