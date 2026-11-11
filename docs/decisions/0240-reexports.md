@@ -168,7 +168,7 @@ names a type is still that type where it's written.
   `type-reexports-ungrouped` and `type-reexports-of-values`
   (`declarations/imports.ts`).
 
-## Amendment: std's items in no JS module, re-exported, export nothing (rd802, #1315)
+## Amendment: std's items in no JS module, re-exported, export nothing (difference 50, #1315)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the second case's, which
 the user decided (2026-11-11). A public re-export of std's function,

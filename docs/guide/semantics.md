@@ -2100,7 +2100,7 @@ React and JSX are [their own pages](README.md#react).
     doesn't: no JS module of rust-js's has `forget`. A Rust consumer
     naming it through the re-export calls std's own; a JS caller of the
     module doesn't find it there (ADR 0262, the user's decision,
-    2026-11-11, rd802, #1315; [ADR 0240](../decisions/0240-reexports.md),
+    2026-11-11, #1315; [ADR 0240](../decisions/0240-reexports.md),
     amended).
 
 51. A `File` is closed once it's collected, not where Rust drops it:
@@ -2109,7 +2109,7 @@ React and JSX are [their own pages](README.md#react).
     `File` is refused, so only a program that holds more files at once
     than the OS allows, counting those Rust has dropped and JS hasn't
     collected, sees it; exact close is #1391 (ADR 0262, the user's
-    decision, 2026-11-11, rd803, #1156; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
+    decision, 2026-11-11, #1156; [ADR 0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md),
     amended).
 
 52. An error of the OS's whose code std's table maps is std's kind and

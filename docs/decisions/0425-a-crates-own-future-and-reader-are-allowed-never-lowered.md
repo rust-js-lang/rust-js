@@ -450,7 +450,7 @@ and writes where it is, and its `seek` is `ESPIPE`.
   `write_all` the OS refuses is its caller's error, though generic code
   writes it (`fs_write_only_fails`).
 - **Closed once it's collected,** one `FinalizationRegistry` (the user's
-  decision, rd803, a rare and harmless exception of ADR 0262): rustc checks a
+  decision, difference 51, a rare and harmless exception of ADR 0262): rustc checks a
   program for wasm32-unknown-unknown, whose `File` is
   `sys::fs::unsupported::File(!)`, which drops nothing, so its MIR has no
   drop of a `File` for a close to be written at. Exact close at Rust's drop

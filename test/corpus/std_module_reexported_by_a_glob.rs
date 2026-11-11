@@ -1,7 +1,7 @@
 // A public re-export of std's items, by a glob, `pub use core::mem::*;`, as
 // zerocopy's `core_reexport` writes, and by name: std's, in no JS module,
 // exports nothing, as a type's or a trait's doesn't, and code naming them
-// through the re-export calls std's own (rd802, #1315).
+// through the re-export calls std's own (difference 50, #1315).
 pub mod core_reexport {
     pub use core::*;
 

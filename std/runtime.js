@@ -12359,7 +12359,7 @@ export function $abortExit(code) {
 export const $appending = new Set();
 
 // Each file's descriptor, closed once the file is collected, its error
-// unseen, as std's drop's is (rd803; exact close at Rust's drop, #1391):
+// unseen, as std's drop's is (difference 51; exact close at Rust's drop, #1391):
 // made where a file is first opened.
 export let $openFiles;
 // A file of a descriptor just opened, `{ fd, pos }`, closed once it's collected.

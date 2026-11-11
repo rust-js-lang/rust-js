@@ -1,6 +1,6 @@
 //! A library that re-exports std's items, by globs, as zerocopy's
 //! `core_reexport` does, and by name: each exports nothing, being in no JS
-//! module (rd802, #1315).
+//! module (difference 50, #1315).
 pub mod core_reexport {
     pub use core::*;
 

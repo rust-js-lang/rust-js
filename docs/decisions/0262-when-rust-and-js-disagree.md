@@ -108,7 +108,7 @@ react.dev's TopNav passes the same closure instead.
   is refused, as it removes nothing (ADR 1021, amended). And a function
   that only passes its parameters on to a function at one instantiation
   is that function, re-exported by its name (the user's decision,
-  2026-11-02, rd575, ADR 1064): a JS caller sees the function itself,
+  2026-11-02, gap rd575, ADR 1064): a JS caller sees the function itself,
   `===` it, its `name` and `length` the function's. Listed in the
   guide's differences (`semantics.md`, 45).
   And a dictionary's entry that passes on its first parameters, in
@@ -125,7 +125,7 @@ react.dev's TopNav passes the same closure instead.
   method's `length` and identity, a forwarding closure's difference.
   Listed in the guide's differences (`semantics.md`, 27).
 - **A binding getter's function unwrapped where it's called is the read**,
-  the user's decision (2026-11-02, rd519, ADR 1066):
+  the user's decision (2026-11-02, gap rd519, ADR 1066):
   `console::create_task().unwrap()(name)` is `console.createTask(name)`
   and `function::bind(console::create_task().unwrap(), ..)`
   `console.createTask.bind(console, ..)`. Of a host without it, JS's call
@@ -228,7 +228,7 @@ react.dev's TopNav passes the same closure instead.
   `test/lowering-held-receivers.test.ts`. Listed in the guide's
   differences (`semantics.md`, 35).
 - **`js::is_function` of a path guards each part before the last**, the
-  second case's, which the user accepted (2026-10-31, rd320): ADR 0942's
+  second case's, which the user accepted (2026-10-31, gap rd320): ADR 0942's
   `typeof performance !== "undefined" && typeof
   performance.getEntriesByType === "function"` gives `false` on a host
   without `performance`, as Rust is told, where upstream's bare `typeof
@@ -258,7 +258,7 @@ react.dev's TopNav passes the same closure instead.
   differences (`semantics.md`, 38).
 - **A guard that's only a call's receiver is held after the call's
   arguments run**, the second case's, which the user decided (2026-11-01,
-  rd360, ADR 0863, amended): `target.borrow_mut().push(show(value));` is
+  gap rd360, ADR 0863, amended): `target.borrow_mut().push(show(value));` is
   `target.push(show(value))`, which JS evaluates in that order, as React
   DOM's Fizz config's `stringToChunk(escapeTextForBrowser(value))` of a
   prop does. Rust takes the guard first. Only an argument whose code
@@ -270,7 +270,7 @@ react.dev's TopNav passes the same closure instead.
   arguments". Listed in the guide's differences (`semantics.md`, 39).
 - **A guard read only for a binding's argument is held while it's read,
   not while the binding runs**, the second case's, which the user decided
-  (2026-11-02, rd427, ADR 0863, amended): `prepare(loading,
+  (2026-11-02, gap rd427, ADR 0863, amended): `prepare(loading,
   response.nonce.borrow().as_deref());` is `prepare(loading,
   response.nonce)`, as React's Flight client's
   `prepareDestinationForModule(response._moduleLoading, response._nonce,
@@ -295,15 +295,15 @@ react.dev's TopNav passes the same closure instead.
   (`interop/global-scope.md`).
 - **A class that extends nothing is a constructor function and its
   prototype**, which was the second case's, decided by the user
-  (2026-11-01, rd331), is no case now: ADR 0761's form differs from an
+  (2026-11-01, gap rd331), is no case now: ADR 0761's form differs from an
   ES class only to JS that calls it without `new` or enumerates its
   prototype, and the ports whose upstream wrote an ES class, react-art's
   LinearGradient, RadialGradient and Pattern, mark their structs
-  `#[rust_js::class(es)]` (ADR 0761, amended, rd682), as a port does
+  `#[rust_js::class(es)]` (ADR 0761, amended, gap rd682), as a port does
   where upstream writes one. The guide's difference 37 is gone (the
   coordinator's decision on the user's behalf, 2026-11-04).
 - **A closure given as a descriptor's `get` is an arrow**, the second
-  case's, which the user decided (2026-11-01, rd331f): react-art's Text
+  case's, which the user decided (2026-11-01, gap rd331f): react-art's Text
   defines `width` and the rest on its instance, `Object.defineProperty(this,
   key, { get: function () { return this._text ? this._text[key] :
   undefined; } })`, which the port's `PropertyDescriptor { get: Some(&||
@@ -315,7 +315,7 @@ react.dev's TopNav passes the same closure instead.
   node or none, so `?.` gives what the ternary does. Listed in the guide's
   differences (`semantics.md`, 40).
 - **A ref callback that sets a field returns `undefined`**, the second
-  case's, which the user decided (2026-11-01, rd331): `ref={move |r|
+  case's, which the user decided (2026-11-01, gap rd331): `ref={move |r|
   self._tag_ref.set(r)}` is `ref={(r) => { this._tagRef = r; }}`, a block,
   as `Cell::set` gives `()`, where react-art's `ref={ref => (this._tagRef
   = ref)}` returns the element, or `null` as it's detached. React reads a
@@ -326,7 +326,7 @@ react.dev's TopNav passes the same closure instead.
   guide's differences (`semantics.md`, 41).
 - **An object's `None` field is no key where upstream writes `key:
   undefined`**, the second case's, which the user decided (2026-11-01,
-  rd391, ADR 0280): React's Flight client's element and lazy node
+  gap rd391, ADR 0280): React's Flight client's element and lazy node
   literals, `{$$typeof, type, key, props, _owner: undefined}` say, are
   `{ $$typeof, type, key, props }` of a struct whose field is `None`.
   A read of the key gives `undefined` either way, and JSON leaves it out
@@ -335,7 +335,7 @@ react.dev's TopNav passes the same closure instead.
   readers of these objects don't do. Listed in the guide's differences
   (`semantics.md`, 42).
 - **A returned closure is an anonymous function where upstream names
-  it**, the second case's, which the user decided (2026-11-02, rd335):
+  it**, the second case's, which the user decided (2026-11-02, gap rd335):
   react-art's createEventHandler is `return function handleEvent(event) {
   .. }`, whose port's `function::with_this(move |_, (event,)| { .. })`,
   returned, prints `return function (event) { .. }`. The function's
@@ -371,7 +371,7 @@ react.dev's TopNav passes the same closure instead.
   `test/lowering-fn-identity.test.ts`. Listed in the guide's differences
   (`semantics.md`, 48).
 - **A library's public re-export of std's item in no JS module exports
-  nothing**, the second case's, which the user decided (2026-11-11, rd802,
+  nothing**, the second case's, which the user decided (2026-11-11, difference 50,
   #1315, ADR 0240, amended). Zerocopy's `pub use core::mem::*;`, or a
   named `pub use core::mem::forget;`, is in its module's JS as a type's
   or a trait's re-export is: not at all. A Rust consumer naming the item
@@ -382,7 +382,7 @@ react.dev's TopNav passes the same closure instead.
   pair `std_items_reexported_by_a_library`. Listed in the guide's
   differences (`semantics.md`, 50).
 - **A `File` is closed once it's collected, not where Rust drops it**, the
-  second case's, which the user decided (2026-11-11, rd803, #1156, ADR 0425,
+  second case's, which the user decided (2026-11-11, difference 51, #1156, ADR 0425,
   amended). rustc checks a program for wasm32-unknown-unknown, whose `File`
   drops nothing, so its MIR has no drop of one; one `FinalizationRegistry`
   closes its descriptor once JS collects it. Its descriptor isn't shown,
@@ -522,3 +522,17 @@ awaited after, dropped unawaited, or given where its `.await` can't be
 followed. A future given to a binding is the JS boundary's, a running
 promise by design (ADR 0029, amended).
 
+
+## Amendment: an exception's name is its difference's number (2026-11-11)
+
+An exception the second case allows is named by its number in the
+guide's one list of differences, `semantics.md`'s "difference 51", and
+its issue: the guide's list already numbers each one, so the number is
+the one name for it. An `rd` id is the React port's review gap, rd114 or
+rd731, never an exception's own: two exceptions had taken rd802 and
+rd803, ids the port's gaps already held, and are now differences 50 and
+51 (the coordinator's decision, 2026-11-11). In the Consequences an `rd`
+id is only the gap that led to an exception, written `gap rdN` or `gaps
+rdN, rdM`. `test/docs-differences.test.ts` holds both: each exception of
+the second case names a difference the guide has, and no `rd` id there
+is anything but a gap.

@@ -317,7 +317,7 @@ pub mod client {
 // of one is std's wherever it's named, and no JS outside the crate sees
 // those names, so the glob says nothing of them; of what it gives JS, the
 // crate's own, it says each. A public glob of std's says nothing of them
-// either, as no JS module of rust-js's has them (rd802, the user's
+// either, as no JS module of rust-js's has them (difference 50, the user's
 // decision, #1315).
 test("a glob of std's names the crate alone sees says nothing of them", async () => {
   const dir = fixture("glob-of-std-within-the-crate");

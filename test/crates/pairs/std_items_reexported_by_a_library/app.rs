@@ -1,5 +1,5 @@
 //! A consumer naming std's items through its library's re-exports, which
-//! are std's own (rd802, #1315).
+//! are std's own (difference 50, #1315).
 pub fn main() {
     let (mut a, mut b) = (1u8, 2u8);
     dep::named::swap(&mut a, &mut b);

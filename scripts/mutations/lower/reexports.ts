@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-reexport-without-js-refused",
     breaks:
-      "a public re-export of std's items in no JS module, by name or by a glob, `pub use core::mem::*;`, is refused, \"it's in no JS module of rust-js's to be re-exported from\", where it should export nothing (rd802, #1315)",
+      "a public re-export of std's items in no JS module, by name or by a glob, `pub use core::mem::*;`, is refused, \"it's in no JS module of rust-js's to be re-exported from\", where it should export nothing (difference 50, #1315)",
     file: "src/lower/reexports.rs",
     find: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none()\n",
     replace: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none() && false\n",
@@ -509,7 +509,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-glob-reexport-refused",
     breaks:
-      "a glob `pub use core::mem::*;` of std's items in no JS module is refused, \"a `pub use` of every name of a module, of `forget`\", though a named one exports nothing (rd802, #1315)",
+      "a glob `pub use core::mem::*;` of std's items in no JS module is refused, \"a `pub use` of every name of a module, of `forget`\", though a named one exports nothing (difference 50, #1315)",
     file: "src/lower/reexports.rs",
     find: "        let unsaid = unsaid || std_without_js(tcx, foreign, id);\n",
     replace: "",

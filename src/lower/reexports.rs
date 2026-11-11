@@ -202,7 +202,7 @@ pub(super) fn reexports(
                     continue;
                 }
             }
-            // std's, in no JS module: nothing (rd802).
+            // std's, in no JS module: nothing (difference 50).
             if std_without_js(tcx, foreign, def_id) {
                 continue;
             }
@@ -512,7 +512,7 @@ fn globbed(
         // module's JS imports it from here, as a call of it is std's own
         // wherever it's named, and no JS outside the crate sees the name.
         let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();
-        // And std's, in no JS module, whoever sees the name (rd802).
+        // And std's, in no JS module, whoever sees the name (difference 50).
         let unsaid = unsaid || std_without_js(tcx, foreign, id);
         match kind {
             _ if unsaid => {}
@@ -585,7 +585,7 @@ fn globbed(
 /// core::mem::*;`, exports nothing, as a type's, a trait's or a macro's
 /// doesn't (ADR 0240). A Rust consumer naming it through the re-export calls
 /// std's own, as rust-js knows it wherever it's named; a JS caller of the
-/// module doesn't find it there (rd802, the user's decision, #1315).
+/// module doesn't find it there (difference 50, the user's decision, #1315).
 fn std_without_js(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
     !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none()
 }
