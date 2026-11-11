@@ -530,4 +530,22 @@ export const mutations: Mutation[] = [
     replace: "            || !self.resolved.contains(&pointee)",
     tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_uncounted_beside_a_counted_one\\.rs$"],
   },
+  {
+    name: "instance-rcs-owned-unseen",
+    breaks:
+      "an `Rc` of a value a caller gives a drop for, which a library's function the consumer compiles itself makes and shares, isn't counted, so the consumer is refused \"a std type holding a value with a destructor, `std::rc::Rc<T>`\" (#1332)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    owned_dropping(tcx, (env, &given), decl.ty, &mut owned_seen, &mut counted);\n",
+    replace: "                    _ = (&given, &owned_seen);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_rc_shared_by_its_consumers_instance"],
+  },
+  {
+    name: "instance-rc-counts-unread",
+    breaks:
+      "a count a library's function the consumer compiles itself reads, `Rc::strong_count`, isn't seen, so its `Rc` of a `Copy` value isn't counted where nothing else counts it (#1332)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                {\n                    match args.type_at(0).has_non_region_param() {\n                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),\n                        false => _ = counted.insert(erased(args.type_at(0))),\n                    }\n                }\n            }\n            for (from_owner",
+    replace: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                    && false\n                {\n                    match args.type_at(0).has_non_region_param() {\n                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),\n                        false => _ = counted.insert(erased(args.type_at(0))),\n                    }\n                }\n            }\n            for (from_owner",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_rc_counted_by_its_consumers_instance"],
+  },
 ];

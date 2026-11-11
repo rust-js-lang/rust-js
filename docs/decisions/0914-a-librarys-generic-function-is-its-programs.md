@@ -1446,3 +1446,33 @@ rest and `{:#?}`), against native Rust. Mutations
 `instance-borrows-uncounted` (`lower/drops/ref_cells.ts`),
 `instance-chars-unasked` (`lower/analysis/chars_asked.ts`) and
 `instance-writers-take-nothing` (`lower/library.ts`).
+
+## Amendment: the `Rc`s an instance's MIR has are counted as the crate's own (#1332)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal of valid Rust,
+which compiled in one crate. #1325's audit found that an `Rc<T>` of a value
+the consumer gives with a destructor, made by a library's generic function
+it compiles itself, was refused: "a std type holding a value with a
+destructor, `std::rc::Rc<T>`". The `Rc`s counted (`rc_counts`, ADRs 0320,
+0852) are found from each body's THIR: each expression's type that owns
+one, and each call that reads a count. An instance has none.
+
+**An instance's MIR answers what THIR does of the crate's own bodies**:
+each `Rc` and `Weak` its locals hold, those that own a value a caller
+gives a drop for, and each count its calls read, `Rc::strong_count` or a
+`Weak`'s `upgrade`. Its `Rc` is counted, and the last of them drops the
+value, as native Rust does.
+
+The refusal's span was never missing. It points at the library's own
+source, `let a = Rc::new(held);`, which rustc reads; the audit's filter had
+dropped the ` --> ` line. That half of #1332 needed no change.
+
+Held by `test/crates/pairs/library_rc_shared_by_its_consumers_instance`
+(owned and shared, no count read) and
+`library_rc_counted_by_its_consumers_instance` (the counts of a `Copy`
+value the consumer changes in place, no drop), each alone. A parameter's
+`Rc` counted counts every other parameter's, which would mask the other.
+`library_rc_of_what_its_consumer_drops` has every shape together, a `Weak`
+too. All three run against native Rust. Mutations
+`instance-rcs-owned-unseen` and `instance-rc-counts-unread`
+(`lower/analysis/rc_counts.ts`).

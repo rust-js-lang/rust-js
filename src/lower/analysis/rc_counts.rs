@@ -354,6 +354,30 @@ pub(super) fn counted_rcs<'tcx>(
             && !is_std_crate(tcx, body.def_id)
             && let Some(mir) = &body.mir
         {
+            // And what its MIR has and asks, as a body's THIR's expressions
+            // and calls are of the crate's own (#1332): each `Rc` and `Weak`
+            // its locals hold, those owning a value a caller gives a drop
+            // for, and each count its calls read.
+            for decl in mir.body.local_decls.iter() {
+                found(decl.ty, Some(owner), true, &mut seen);
+                if let Some(pointee) = weak_pointee(tcx, decl.ty) {
+                    weaks.insert(erased(pointee));
+                }
+                if params_may_drop {
+                    owned_dropping(tcx, (env, &given), decl.ty, &mut owned_seen, &mut counted);
+                }
+            }
+            for data in mir.body.basic_blocks.iter() {
+                if let rustc_middle::mir::TerminatorKind::Call { func, .. } = &data.terminator().kind
+                    && let Some((def_id, args)) = func.const_fn_def()
+                    && reads_rc_count(tcx, def_id, args.types().next())
+                {
+                    match args.type_at(0).has_non_region_param() {
+                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),
+                        false => _ = counted.insert(erased(args.type_at(0))),
+                    }
+                }
+            }
             for (from_owner, to_owner) in owners_made_others(tcx, &mir.body) {
                 if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner)) {
                     made_others.insert((erased(from), erased(to)));
