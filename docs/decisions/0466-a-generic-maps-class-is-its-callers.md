@@ -202,3 +202,26 @@ own `Ord`, and arrays) runs against native Rust in both builds;
 `tuple-key-parts-unasked` (`lower/recognition/type_facts.ts`),
 `tuple-key-class-uncomposed` (`lower/std_types/map.ts`) and five of
 `runtime/key_class.ts`; four refitted.
+
+## Amendment: a key of no type parameter isn't taken apart (#1368)
+
+Since #1346 the classes a caller gives of a map's key were found by taking
+the key apart, a tuple into its parts and an array into an item for each
+place (`key_class_parts`), whatever the key: of every map the crate makes,
+concrete too. `HashMap::<[u8; 536870907], ()>::with_capacity`,
+runtime-package's test of room past wasm32's, was 536,870,907 parts, and
+its compile held 10.8 GB (8.6 GB of the one function alone), so a
+mutation's baseline, given half the machine's 10 GB budget, was stopped as
+it began and reported nothing (#1368, two runs in three of m6-lily's). A
+key of no type parameter, whose class is made where it's made, has no part
+a caller gives: `map_of_param` and `held_facts` take apart only one that
+mentions a type parameter (`mentions_param`), no answer changed. The
+compile holds about 120 MB; runtime-package's file takes 6 s in each of
+twelve baselines at once, where each took 67 s and failed. Held by
+`test/runtime-package.test.ts`' "a map keyed by an array of half a billion
+bytes compiles within a gigabyte"; mutation `concrete-key-taken-apart`
+(`lower/recognition/type_facts.ts`); `tuple-key-parts-unasked` and
+`tuple-key-class-asked-whole` refitted. An array key of a type parameter,
+`[T; N]`, is still one part an item, its JS `$keyClassOf` of `N` classes,
+so a huge `N` there costs as much: left, as no program has met it.
+

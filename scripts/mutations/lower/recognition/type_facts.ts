@@ -76,8 +76,16 @@ export const mutations: Mutation[] = [
     name: "tuple-key-parts-unasked",
     breaks: "a map a std function makes keyed by a tuple of a type parameter asks no part's class of its caller, so its composition finds none given, and it's refused (#1346)",
     file: "src/lower/recognition/type_facts.rs",
-    find: "            Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),\n",
-    replace: "            Some(_) => {}\n",
+    find: "            each.extend(parts.into_iter().rev().map(class_key));\n",
+    replace: "            let _ = parts;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "concrete-key-taken-apart",
+    breaks: "a map's key of no type parameter is taken apart for the classes a caller gives, an array an item a part: `HashMap<[u8; 536870907], ()>` holds 8.6 GB of the compiler's memory, and a mutation's baseline given 5 GB is stopped, reporting nothing (#1368)",
+    file: "src/lower/recognition/type_facts.rs",
+    find: "        } else if mentions_param(key)\n            && let Some(parts) = key_class_parts(tcx, key)\n",
+    replace: "        } else if let Some(parts) = key_class_parts(tcx, key)\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a map keyed by an array of half a billion bytes"],
   },
 ];

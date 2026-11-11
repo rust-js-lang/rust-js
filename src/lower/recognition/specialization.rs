@@ -143,20 +143,24 @@ pub(crate) fn held_facts<'tcx>(
 ) -> Vec<(Ty<'tcx>, TypeFact)> {
     if fact.map_kind().is_some()
         && let key = class_key(of)
+        && mentions_param(key)
         && key_class_parts(tcx, key).is_some()
-        && (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds))
     {
         let mut held = Vec::new();
         let mut each = vec![key];
         while let Some(key) = each.pop() {
-            let generic = (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds));
-            match key_class_parts(tcx, key) {
-                _ if known_by_bounds(key) => held.push((key, fact)),
-                Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
-                // A struct made of one, which the lowering refuses (#1360):
-                // asked whole. One known here, its class made here: none.
-                None if generic => held.push((key, fact)),
-                None => {}
+            // One known here, its class made here: none, and not taken
+            // apart, as an array of half a billion bytes was one part an
+            // item (#1368).
+            if known_by_bounds(key) {
+                held.push((key, fact));
+            } else if mentions_param(key) {
+                match key_class_parts(tcx, key) {
+                    Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
+                    // A struct made of one, which the lowering refuses
+                    // (#1360): asked whole.
+                    None => held.push((key, fact)),
+                }
             }
         }
         return held;

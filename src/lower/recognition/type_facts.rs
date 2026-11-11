@@ -194,13 +194,25 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<(Ty<'tc
     let mut given = Vec::new();
     let mut each = vec![class_key(key)];
     while let Some(key) = each.pop() {
-        match key_class_parts(tcx, key) {
-            _ if known_by_bounds(key) => given.push((key, fact)),
-            Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
-            None => {}
+        if known_by_bounds(key) {
+            given.push((key, fact));
+        } else if mentions_param(key)
+            && let Some(parts) = key_class_parts(tcx, key)
+        {
+            // A key of no type parameter's, whose class is made here, has no
+            // part a caller gives, and isn't taken apart: an array of half a
+            // billion bytes, `HashMap<[u8; 536870907], ()>`, was one part an
+            // item, 8.6 GB of the compiler's memory (#1368).
+            each.extend(parts.into_iter().rev().map(class_key));
         }
     }
     given
+}
+
+/// Whether `key` is built of a type parameter, or a std associated type of
+/// one, a part of it a caller may give the class of.
+pub(crate) fn mentions_param(key: Ty<'_>) -> bool {
+    (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds))
 }
 
 /// The parts of a key whose class is its parts' classes composed, a

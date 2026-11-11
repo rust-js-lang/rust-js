@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { run as runAsync } from "./child";
 import { node } from "./programs";
 import { buildCompiler, compiler, fixture, helpersModule, outsideFixture, root, run, stdDir } from "./support";
 
@@ -484,6 +485,21 @@ pub fn bigs(n: usize) -> usize {
     expect(call(name, 2047)).toBe("2047");
     expect(call(name, 2048)).toBe("capacity overflow");
   }
+});
+
+// A map's key of no type parameter, however big, isn't taken apart into
+// its parts for the classes a caller gives (#1368): an array of half a
+// billion bytes was one part an item, so the compile of the test below held
+// 10.8 GB, and a mutation's baseline, given 5 GB, was stopped as it began,
+// reporting nothing. It compiles in 1 GB now, about 120 MB.
+test("a map keyed by an array of half a billion bytes compiles within a gigabyte", async () => {
+  const dir = fixture("room-of-a-huge-key");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    "use std::collections::HashMap;\n\npub fn four_past(n: usize) -> usize {\n    HashMap::<[u8; 536870907], ()>::with_capacity(n).len()\n}\n",
+  );
+  const p = await runAsync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 120_000, {}, 2 ** 30);
+  expect([p.overgrown ?? false, p.code, p.stderr]).toEqual([false, 0, ""]);
 });
 
 // Room for a length that's asked, a `resize`'s, a range's `collect()`'s,

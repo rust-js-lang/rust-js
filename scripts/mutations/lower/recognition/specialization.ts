@@ -169,8 +169,8 @@ export const mutations: Mutation[] = [
     name: "tuple-key-class-asked-whole",
     breaks: "a map keyed by a tuple of a type parameter asks its caller the tuple's class, which no caller gives where a blanket impl's copy builds it, so it's refused, \"whose class isn't given\" (#1346)",
     file: "src/lower/recognition/specialization.rs",
-    find: "                Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),\n",
-    replace: "                Some(_) => held.push((key, fact)),\n",
+    find: "                    Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),\n",
+    replace: "                    Some(_) => held.push((key, fact)),\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
   },
 ];

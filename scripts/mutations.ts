@@ -364,6 +364,12 @@ export const crateFiles = [
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;
 
+/** How a test run ended, to say of one that reported nothing: why it was
+ * stopped, or its exit code (#1368). */
+function endedAs(exit: Exit): string {
+  return stopped(exit, testTimeout) ?? `exited ${exit.code}`;
+}
+
 /** The source as it is, with `mutation` in it, or why it can't be. */
 export function mutate(source: string, mutation: Mutation): string | { problem: string } {
   const at = source.indexOf(mutation.find);
@@ -986,12 +992,17 @@ async function main() {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
         const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
-        const { output } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
+        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
         const junit = existsSync(report) ? readFileSync(report, "utf8") : "";
         rmSync(report, { force: true });
         // What the run as the compiler is printed, of one that fails or runs
-        // nothing: its setup's error, Node missing say, is why.
-        if (run.compiler === unmutated) printedBy.set(`${run.snapshots}\0${run.file}`, `${printedBy.get(`${run.snapshots}\0${run.file}`) ?? ""}${output.slice(-1500)}`);
+        // nothing: its setup's error, Node missing say, is why; and how it
+        // ended, a signal, its memory or its exit code, where it printed
+        // nothing more than bun's header (#1368).
+        if (run.compiler === unmutated) {
+          const key = `${run.snapshots}\0${run.file}`;
+          printedBy.set(key, `${printedBy.get(key) ?? ""}${output.slice(-1500)}\n(${endedAs(exit)}${run.part ? `, part ${run.part}` : ""})\n`);
+        }
         const byFile = ran.get(ranOf(run)) ?? new Map<string, Map<string, boolean>>();
         ran.set(ranOf(run), byFile);
         const results = byFile.get(run.file) ?? new Map<string, boolean>();
