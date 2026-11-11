@@ -27,7 +27,8 @@ import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touc
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
-import { elapsed, loadScale, median, timed, timings } from "./timing";
+import { readJobTimes, recordJobTimes } from "./jobTimes";
+import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
@@ -454,31 +455,24 @@ function run(list: Job[], compiler: string, cores: number, { began, samples }: C
     loads.push({ at: Date.now(), load: loadavg()[0] });
     scale = Math.max(scale, loadScale(loads.at(-1)!.load, cores));
   }, 5000);
-  // Each step's last runs, read once: a job's usual, or a test file's from
-  // what `bun test` and this pool keep of each (`fileTimings`).
-  const earlier = timings();
-  const files = fileTimings();
-  const before = ({ name }: Job) => earlier.filter((t) => t.step === `check:fast ${name}`).map((t) => t.seconds);
-  const usual = (job: Job) => {
-    if (job.group !== undefined) return job.name in files ? files[job.name] / 1000 : Number.POSITIVE_INFINITY;
-    const last = before(job).slice(-10);
-    return last.length > 0 ? median(last) : Number.POSITIVE_INFINITY;
-  };
-  // What it may take, by which the pool starts it: a group's file's usual,
-  // or the longest of a job's last five, so that one whose usual is cached,
-  // cargo test's under a second, but whose change rebuilds it, 36 s, isn't
-  // started last and run alone at the end.
-  const longest = (job: Job) => {
-    if (job.group !== undefined) return usual(job);
-    const last = before(job).slice(-5);
-    return last.length > 0 ? Math.max(...last) : Number.POSITIVE_INFINITY;
-  };
+  // Each job's last runs on this machine, in any of its checkouts, read
+  // once (scripts/jobTimes.ts, #1364): a worktree's own, which a new one
+  // hasn't, started every job in its list's order, the iterators' slices
+  // last, alone at the end.
+  const machine = readJobTimes();
+  const last = ({ name }: Job) => machine[name]?.seconds ?? [];
+  const usual = (job: Job) => (last(job).length > 0 ? median(last(job)) : Number.POSITIVE_INFINITY);
+  // What it may take, by which the pool starts it: the longest of its last
+  // runs, so that one whose usual is cached, cargo test's under a second,
+  // but whose change rebuilds it, 36 s, isn't started last and run alone at
+  // the end.
+  const longest = (job: Job) => (last(job).length > 0 ? Math.max(...last(job)) : Number.POSITIVE_INFINITY);
   // The cores it keeps busy, as its last runs measured them, or, of a job
   // not yet run, as it says: the corpus's parts, said to keep two, kept
   // one, and the browsers' files, said to keep all twelve, kept 3.6, so
-  // the cores sat a third idle (2026-11-07). A group's, each file's.
-  const weight = ({ name, group, weight: said }: Job) => {
-    const measured = earlier.filter((t) => t.step === `check:fast ${group ?? name}` && t.cores !== undefined).slice(-5).map((t) => t.cores!);
+  // the cores sat a third idle (2026-11-07).
+  const weight = ({ name, weight: said }: Job) => {
+    const measured = machine[name]?.cores ?? [];
     return Math.min(cores, measured.length > 0 ? Math.max(0.25, median(measured)) : said);
   };
   const queue = [...list].sort((a, b) => longest(b) - longest(a));
@@ -570,33 +564,18 @@ function run(list: Job[], compiler: string, cores: number, { began, samples }: C
   return started
     .then(() => Promise.all(ran))
     .then((results) => {
-      noteFileTimings(results.filter((r) => r.job.group !== undefined && r.code === 0));
+      // Each job's that passed, for the machine's next run, in any checkout.
+      recordJobTimes(
+        results
+          .filter((r) => r.code === 0)
+          .map((r) => ({ name: r.job.name, seconds: r.end - r.start, cores: kept(r.cpu, began + r.start * 1000, began + r.end * 1000) })),
+      );
       return results;
     })
     .finally(() => {
       clearInterval(watching);
       clearInterval(sampling);
     });
-}
-
-/** Where each test file's time is kept, in ms, as `bun test --timings`
- * keeps it (scripts/test.ts writes it too): the pool starts the longest
- * first, so the last to end isn't one long file alone. */
-const fileTimingsPath = join(root, "target", "test-timings.json");
-
-function fileTimings(): Record<string, number> {
-  try {
-    return JSON.parse(readFileSync(fileTimingsPath, "utf8"));
-  } catch {
-    return {};
-  }
-}
-
-function noteFileTimings(results: Ran[]) {
-  const kept = fileTimings();
-  for (const { job, start, end } of results) kept[job.name] = Math.round((end - start) * 1000);
-  mkdirSync(join(root, "target"), { recursive: true });
-  writeFileSync(fileTimingsPath, JSON.stringify(kept, null, 2));
 }
 
 /** How busy the machine's cores were while the jobs ran, on average and

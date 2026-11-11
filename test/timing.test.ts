@@ -3,8 +3,10 @@
 import { expect, test } from "bun:test";
 import { realpathSync } from "node:fs";
 
+import { keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, type Stray } from "../scripts/strays";
 import { compared, median, shown, slower, type Timing } from "../scripts/timing";
+import { floorBytes } from "./bounded";
 import { fixture, root } from "./support";
 
 const runs = (step: string, seconds: number[]): Timing[] =>
@@ -55,4 +57,23 @@ test("a process the loop left running in a target is named, with how to stop it"
     process.kill(pid);
   }
   expect(said([])).toBeUndefined();
+});
+
+// check:fast's pool starts the longest job first by each job's last runs on
+// the machine, in any of its checkouts (#1364): a new worktree's own
+// `target/` has none. Each job's last five runs are kept, of at most a
+// thousand jobs, the least recently run dropped first, and nothing is
+// written below the disk's floor.
+test("the machine keeps each job's last runs, bounded, for every checkout's pool", () => {
+  const store = fixture("job-times");
+  const roomy = () => floorBytes + 2 ** 30;
+  for (let i = 1; i <= keptRuns + 2; i++) recordJobTimes([{ name: "corpus 1/12", seconds: i, cores: 1 }], { store, now: i, free: roomy });
+  expect(readJobTimes(store)["corpus 1/12"]).toEqual({ seconds: [3, 4, 5, 6, 7], cores: [1, 1, 1, 1, 1], at: keptRuns + 2 });
+  const many = Array.from({ length: keptJobs + 5 }, (_, i) => ({ name: `test/f${i}.test.ts`, seconds: 1, cores: 1 }));
+  recordJobTimes(many, { store, now: 100, free: roomy });
+  const kept = readJobTimes(store);
+  expect(Object.keys(kept).length).toBe(keptJobs);
+  expect(kept["corpus 1/12"]).toBeUndefined();
+  recordJobTimes([{ name: "below the floor", seconds: 1, cores: 1 }], { store, now: 200, free: () => floorBytes - 1 });
+  expect(readJobTimes(store)["below the floor"]).toBeUndefined();
 });

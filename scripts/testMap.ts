@@ -44,6 +44,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
+import { readJobTimes } from "./jobTimes";
 import { plainSuiteFiles, shard } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -652,11 +653,13 @@ async function record(keep: boolean) {
     })),
     ...files.map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file } })),
   ];
-  // The longest first, by what check:fast keeps of each file's time, so no
-  // long one runs alone at the end; the corpus's parts first of all.
-  const timings = existsSync(join(root, "target", "test-timings.json")) ? JSON.parse(readFileSync(join(root, "target", "test-timings.json"), "utf8")) : {};
+  // The longest first, by what check:fast keeps of each file's time on this
+  // machine (scripts/jobTimes.ts), so no long one runs alone at the end; the
+  // corpus's parts first of all.
+  const times = readJobTimes();
+  const took = (name: string) => Math.max(0, ...(times[name]?.seconds ?? []));
   const parted = (name: string) => (caseFiles.some((file) => name.startsWith(`${file} `)) ? -1 : 0);
-  units.sort((a, b) => parted(a.name) - parted(b.name) || (timings[b.name] ?? 0) - (timings[a.name] ?? 0));
+  units.sort((a, b) => parted(a.name) - parted(b.name) || took(b.name) - took(a.name));
   const ended = await runUnits(units, cores, recording, {
     RUST_JS_COMPILER: join(root, "scripts", "testMapCompiler.ts"),
     RUST_JS_TEST_MAP_COMPILER: binary,
