@@ -19,6 +19,10 @@ use rustc_middle::ty::TypeVisitableExt;
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 
+mod carried;
+pub(in crate::lower) use carried::{CarriedSuper, super_item_of};
+use carried::{carried_by, carries, default_super_item, slot_super_item};
+
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
 /// through a generic function of the crate's it passes the parameter on to:
@@ -486,48 +490,6 @@ pub(super) struct FactParams<'tcx> {
     pub(super) carried_super: CarriedSuper,
 }
 
-/// The trait and the std associated type of `of` where `caller` is one of
-/// the trait's defaults and `of` is `<Self as Trait>::Item` of a std
-/// supertrait of it, `Iterator::Item` of a `Tools: Iterator`'s (#990).
-fn default_super_item(tcx: TyCtxt<'_>, caller: DefId, of: ty::Ty<'_>) -> Option<(DefId, DefId)> {
-    let trait_id = tcx
-        .trait_of_assoc(caller)
-        .filter(|_| tcx.defaultness(caller).has_value())?;
-    let ty::Alias(
-        _,
-        alias @ ty::AliasTy {
-            kind: ty::Projection { def_id },
-            ..
-        },
-    ) = *of.kind()
-    else {
-        return None;
-    };
-    let own_self = matches!(alias.self_ty().kind(), ty::Param(param) if param.index == 0);
-    (own_self && crate::lower::recognition::is_std_crate(tcx, def_id)).then_some((trait_id, def_id))
-}
-
-/// Of each of the crate's traits, the facts its dictionaries carry of an
-/// associated type of a std supertrait of their `Self`, `IteratorItemSize`
-/// of `<Self as Iterator>::Item` of a `Tools: Iterator` whose default asks
-/// it (#990): by the trait, the associated type and the fact. Its manifest
-/// says them, which a consumer's impls' dictionaries carry; a library's
-/// trait's are its manifest's (`Foreign::carried_super`).
-pub(in crate::lower) type CarriedSuper = IndexMap<DefId, Vec<(DefId, TypeFact)>>;
-
-/// `<self_ty as Trait>::assoc`, where its bounds hold, of an impl's
-/// `Self`: `<I as Iterator>::Item` of a `Wrap<I>` whose `Item` is `I`'s.
-pub(in crate::lower) fn super_item_of<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    assoc: DefId,
-    self_ty: ty::Ty<'tcx>,
-) -> ty::Ty<'tcx> {
-    let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, assoc, [self_ty]);
-    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
-        .unwrap_or(projection)
-}
-
 /// What `caller` asks of its slots where it names `callee`, a std
 /// function, with `args`, as a body read from its THIR or its MIR alike: a
 /// map or a set of a type parameter's keys it makes, called or given,
@@ -553,18 +515,6 @@ fn map_made<'tcx>(
     };
     let (key, fact) = map_of_param(tcx, made)?;
     Some((slot_of(tcx, foreign, caller, key)?, fact))
-}
-
-/// `default_super_item` of `id`'s slot `index`.
-fn slot_super_item<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    id: DefId,
-    index: u32,
-) -> Option<(DefId, DefId)> {
-    crate::lower::traits::slot_item(tcx, id, index)?;
-    let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);
-    default_super_item(tcx, id, slot)
 }
 
 /// Whether dropping a value of a type runs anything where a function is,
@@ -1213,31 +1163,6 @@ impl<'tcx> Asking<'tcx> {
             }
         }
     }
-}
-
-/// The associated type of the crate's own trait or a library's `ty`
-/// projects, whose facts the trait's dictionaries carry: `<A as
-/// Array>::Item`. Not std's, whose facts a caller gives (ADR 0466).
-fn carried_by(foreign: &crate::lower::library::Foreign<'_, '_>, ty: ty::Ty<'_>) -> Option<DefId> {
-    match ty.kind() {
-        ty::Alias(
-            _,
-            ty::AliasTy {
-                kind: ty::Projection { def_id },
-                ..
-            },
-        ) if def_id.is_local() || foreign.is_library(def_id.krate) => Some(*def_id),
-        _ => None,
-    }
-}
-
-/// Whether the dictionaries of `assoc`'s trait carry `fact` of it: of the
-/// crate's own trait, each its code asks; of a library's, only what its
-/// manifest says they carry, which its consumer's code may read of any of
-/// them, and the consumer's dictionaries of its own impls carry too
-/// (`Foreign::carried`, #476).
-fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: DefId, fact: TypeFact) -> bool {
-    assoc.is_local() || foreign.carried(assoc).contains(&fact)
 }
 
 /// Where a library's function's slot `index` is read, as its manifest says:
