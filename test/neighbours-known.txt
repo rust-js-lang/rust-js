@@ -11,16 +11,20 @@
 
 #1006 P2: a `RefCell` of a struct whose last field is a `dyn` refused beside another case
 plain std dyn_tail_in_a_ref_cell.rs beside dyn_ref_cell_drop.rs
+plain std dyn_tail_in_a_ref_cell.rs beside rc_dyn_sinks.rs
 
 #1038 P2 (neighbours): identity_inside_keys.rs refused beside owner_handle_field_cloned.rs and rc_eq_generic_by_address_first.rs
 plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_params_function_drops.rs
+plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.rs
 
 #1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
+plain std untagged_ref_cells.rs beside rc_dropped_where_callers_unseen.rs
 
 #1112 P2 (neighbours): a generic whose callers can't be seen, a pub trait's method, counts every Rc beside it
 plain std class_constructor_rc.rs beside rc_dropped_where_callers_unseen.rs
+plain std rc_counted_by_a_generic_beside_a_class.rs beside rc_counted_where_callers_unseen.rs
 
 #1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address
 plain std once_cells.rs beside module_text_truth.rs tagged_pointers.rs
@@ -30,19 +34,32 @@ plain std own_fold_through_adapters.rs beside pointer_addresses.rs
 plain std option_result_methods.rs beside bytes_through_pointers.rs
 plain std adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs beside collect_fallible.rs consumer_closure_dropped_first.rs
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
+plain std path_keys.rs beside address_of_a_tuple_item_asked_first.rs
+plain std nth_passes_a_slice_or_each.rs beside address_of_an_item_moved_in_its_vec.rs
+plain std path_methods.rs beside adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs
+plain std loop_exits.rs beside address_of_a_nested_field.rs
+plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
+plain std iterator_consumed_by_extend_unzip_partition_eq.rs beside bytes_through_pointers.rs
 
 #1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address
 plain std btree_given_in_order.rs beside address_of_a_field_where_its_object_is_stored.rs
 plain std deque_range_mut.rs beside address_of_a_field_through_a_reference.rs
 plain std generic_mut_moved_out_other_ways.rs beside address_of_a_nested_field_through_a_deref.rs static_mut_pointers.rs
 plain std text_edits.rs beside address_of_an_item_moved_in_its_vec.rs
+plain std deque_range_mut.rs beside address_of_an_item_std_lends.rs
+plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_cast.rs
 
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
+plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
 
-#1316 P2 (neighbours): a Vec grown by a Take of Successors or of Cycle is refused in a crate that reads a Vec's capacity
+#1316 P2 (neighbours): an iterator whose JS size hint isn't std's (Take of Successors/Cycle, CharIndices, Inspect, Rev<FlatMap>, Take<FlatMap>) is refused in a crate that reads a Vec's capacity
 plain std iterator_sources.rs beside adapter_size_hints.rs
 plain std std_map.rs beside collection_capacity.rs
+plain std matrix_strings.rs beside iterator_replaced_where_capacities_are_kept.rs
+plain std panic_part_way_drops.rs beside map_of_own_size_hint.rs
+plain std flat_map_of_maps_from_its_back.rs beside collection_capacity.rs
+plain std flat_map_drops.rs beside generic_extend_of_own_hints.rs
 
 #1317 P2 (neighbours): a Take of IntoValues, or a Map of a Skip of a vec's IntoIter, is refused as an ExactSizeIterator beside a case that counts one
 plain collection_taken_drops_what_is_left.rs beside map_of_own_size_hint.rs
@@ -50,3 +67,7 @@ plain held_beneath_adapters_from_its_back.rs beside capacity_of_what_std_hints_l
 
 #1318 P2 (neighbours): cloning a lent Map of an fn item (Option::Some) is refused beside generic_map_cloned_beside_another_bound
 plain generic_collect_closes_its_source.rs beside generic_map_cloned_beside_another_bound.rs
+plain rc_count_fn_value.rs beside generic_map_cloned_beside_another_bound.rs
+
+#1343 P2 (neighbours): `ptr::addr_eq` of two `dyn Fn` `Arc`s is refused beside a case that counts an `Rc` of a `dyn Fn`
+plain std dyn_fn_addresses_of_rcs.rs beside rc_fn_made_of_a_counted_rc.rs
