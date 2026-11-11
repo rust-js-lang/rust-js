@@ -186,3 +186,32 @@ No other snapshot changes. Mutations `enumerated-knowing-unmarked`
 (`iterators/value.ts`), `enumerate-of-a-dropping-map-unrecorded`
 (`analysis/back_stepped.ts`); ten others name their lines as they now
 read, two moved with their code to value.rs's list.
+
+## Amendment: a map a variable holds, counted from its back (2026-11-11, #1354)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior was
+refused, so it's kept now.
+
+An enumeration stepped from its back counts its source: its index there
+is its length less one. A map of a range a variable holds, `let e =
+(1..6u32).map(|x| x + 1); e.enumerate().rfold(..)`, was made knowing its
+back where it's made, `$mapEnds`, as the analysis marks what's stepped
+from its back, but not its length, so the enumeration refused it: "a
+`Map<Range<u32>, ..>` as an `ExactSizeIterator`, which rust-js can't
+count", whatever the map's function. A map in a chain was made knowing
+both where it's asked; a variable's was made before.
+
+The analysis records, beside what's stepped from its back, each local an
+enumeration stepped from its back is made of (`back_stepped.rs`'
+`BackStepped::counted`), and a range's map made into one is made knowing
+its length too, `$rangeLen` (`knowing.rs`' `knows_its_length`, through
+`back_facts.rs`' `made_counted_from_its_back`), as #775 makes one whose
+closure has a destructor. A range's map nothing counts keeps no
+`$rangeLen`, as #775 decided.
+
+`test/corpus/map_held_then_enumerated_from_its_back.rs` (a closure that
+captures and a function, by `rfold`, `next_back`, `rev().take(..)` and
+`rfind`) runs against native Rust in both builds. Mutations:
+`enumerated-source-uncounted` (`lower/analysis/back_stepped.ts`) and
+`counted-range-map-length-unknown` (`lower/iterators/knowing.ts`);
+`back-stepped-range-map-length-always` refitted.

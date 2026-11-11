@@ -448,7 +448,9 @@ test("what's stepped from its back is asked where a value is made, or as a type'
 // set of the types stepped from their back, only `typed`, those whose
 // question is a type's, a type behind an `impl`, a library's, a generic
 // function's of its callers'; and nothing compares a value's answer with a
-// type's, as the migration's cross-check did.
+// type's, as the migration's cross-check did. `counted`, the locals an
+// enumeration stepped from its back is made of, is a value's too, by the
+// MIR local that holds it (#1354).
 test("what's stepped from its back is its value's, no type's set", () => {
   const owner = read("src/lower/analysis/back_stepped.rs");
   const struct = owner.slice(owner.indexOf("pub(in crate::lower) struct BackStepped<'tcx> {"));
@@ -458,7 +460,7 @@ test("what's stepped from its back is its value's, no type's set", () => {
   const crossChecks = loweringSources().filter((file) => read(file).includes("BACK_STEPPED_CROSS_CHECK"));
   expect([owned("a type's set of what's stepped from its back"), fields, returns, crossChecks]).toEqual([
     owned("a type's set of what's stepped from its back"),
-    ["typed", "borrows", "locals", "fields"],
+    ["typed", "borrows", "locals", "fields", "counted"],
     "IndexSet<Ty<'tcx>>",
     [],
   ]);

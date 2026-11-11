@@ -517,4 +517,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
   },
+  {
+    name: "enumerated-source-uncounted",
+    breaks: "a local an enumeration stepped from its back is made of isn't said to be counted there, so a range's map it holds isn't made knowing its length, and is refused (#1354)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                counted.insert((owner, local));\n",
+    replace: "                                let _ = local;\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
+  },
 ];

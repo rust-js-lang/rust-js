@@ -33,6 +33,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
     }
 
+    /// Whether what the call being lowered makes is what an enumeration
+    /// the crate steps from its back is made of, which counts it there, so
+    /// it's made knowing its length (`BackStepped::counted`, #1354).
+    pub(in crate::lower) fn made_counted_from_its_back(&self) -> bool {
+        self.made_into.is_some_and(|(local, _)| {
+            let local = (self.krate.back_stepped.borrows)
+                .get(&(self.frame.owner, local))
+                .copied()
+                .unwrap_or(local);
+            self.krate.back_stepped.counted.contains(&(self.frame.owner, local))
+        })
+    }
+
     /// Whether `ty` is an adapter whose maker makes it knowing its back
     /// where it's stepped so (#851): a map's, a filter's, a `filter_map`'s,
     /// an `inspect`'s, a chain's, a copy's, an enumeration's, a flatten's or a

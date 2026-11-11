@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every range's map stepped from its back is made knowing its length, though its closure drops nothing and nothing asks it: `$rangeLen` where it wasn't (#775)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    && matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::lower::drops::Drops::Nothing)\n",
+    find: "                    && (matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::lower::drops::Drops::Nothing)\n                        || self.made_counted_from_its_back())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|range_mapped_by_a_function).rs$"],
     snapshots: true,
@@ -789,5 +789,13 @@ export const mutations: Mutation[] = [
     find: "            return self.as_double_ended(source_value, source.peel_refs(), span);\n",
     replace: "            return self.as_double_ended(value, source.peel_refs(), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "counted-range-map-length-unknown",
+    breaks: "a range's map a variable holds for an enumeration stepped from its back isn't made knowing its length, so its index from the back is refused, \"as an `ExactSizeIterator`, which rust-js can't count\" (#1354)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                        || self.made_counted_from_its_back())\n",
+    replace: "                        || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
 ];

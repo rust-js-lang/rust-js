@@ -287,12 +287,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.made_knowing(source, self.recognition().exact_size_iterator())
                 || self.steps_an_array(source) && self.knows_its_back(ty)
                 // And a map of a range's whose closure has a destructor, held
-                // in a variable to drop it, a zip's `b` read by index say:
-                // made knowing its length where it's made, `$rangeLen` (#775).
+                // in a variable to drop it, a zip's `b` read by index say, or
+                // that a variable holds for an enumeration counted from its
+                // back (#1354): made knowing its length where it's made,
+                // `$rangeLen` (#775).
                 || self.range_kind(source.peel_refs()).is_some()
                     && self.stepped_from_its_back(ty)
                     && crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
-                    && matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::lower::drops::Drops::Nothing)
+                    && (matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::lower::drops::Drops::Nothing)
+                        || self.made_counted_from_its_back())
                 || crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
                     && compiled_exact()
                     && self.stepped_from_its_back(ty);

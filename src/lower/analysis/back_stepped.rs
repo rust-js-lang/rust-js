@@ -36,13 +36,14 @@ pub(super) fn of_crate<'tcx>(
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, drops, cloned);
+    let (locals, fields, typed_sources, counted) = stepped_locals(tcx, recognition, all_bodies, drops, cloned);
     typed.extend(typed_sources);
     BackStepped {
         typed,
         borrows: borrows(all_bodies),
         locals,
         fields,
+        counted,
     }
 }
 
@@ -405,6 +406,9 @@ pub(in crate::lower) struct BackStepped<'tcx> {
     /// each value MIR moves into it marked `Given` (`stepped_locals`'s): a
     /// read of it is of a value made knowing its back (#851).
     pub(in crate::lower) fields: IndexSet<SteppedField>,
+    /// Each local an enumeration stepped from its back is made of, which
+    /// counts it there, made knowing its length where it's made (#1354).
+    pub(in crate::lower) counted: IndexSet<(rustc_span::def_id::DefId, rustc_middle::mir::Local)>,
 }
 
 /// The body that makes what a call of `callee` with `args` gives: its own,
@@ -426,6 +430,7 @@ type SteppedValues<'tcx> = (
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
     IndexSet<SteppedField>,
     IndexSet<Ty<'tcx>>,
+    IndexSet<(rustc_span::def_id::DefId, rustc_middle::mir::Local)>,
 );
 
 /// A field of a struct or an enum's variant: its ADT, its variant and its
@@ -500,6 +505,7 @@ pub(super) fn stepped_locals<'tcx>(
     // its maker (#851).
     let mut stepped_fields: IndexSet<SteppedField> = IndexSet::default();
     let mut typed_sources: IndexSet<Ty<'tcx>> = IndexSet::default();
+    let mut counted: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
     let mark = |stepped: &mut IndexMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
@@ -866,6 +872,11 @@ pub(super) fn stepped_locals<'tcx>(
                         let copy = copied_source(tcx, made).or_else(|| cloned_source(tcx, made)).is_some();
                         if ty == source && (chain && made_asked || user || spilled || copy && made_asked) {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                            // An enumeration's source, counted from its back:
+                            // its index there is its length less one (#1354).
+                            if made_asked && enumerated_source(tcx, made).is_some() {
+                                counted.insert((owner, local));
+                            }
                             if held_by_struct {
                                 typed_sources.insert(ty);
                             }
@@ -917,7 +928,7 @@ pub(super) fn stepped_locals<'tcx>(
             for at in held_whole {
                 stepped.entry(at).or_insert(SteppedLocal::Lent);
             }
-            return (stepped, stepped_fields, typed_sources);
+            return (stepped, stepped_fields, typed_sources, counted);
         }
     }
 }
