@@ -653,7 +653,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-copy-of-whole-arrays-unrefused",
-    breaks: "`ptr::copy` of two `[u32; 2]`s through a pointer to part of an array throws a `TypeError`, not #1353's refusal",
+    breaks: "`ptr::copy` of two `[u32; 2]`s through a pointer to an array that's part of none, past its end, throws a `TypeError`, not rust-js's refusal (#1353)",
     file: "src/runtime/pointers.js",
     find: "  if ([src, dst].some((p) => Array.isArray(p.of) && typeof p.at !== \"number\")) {\n",
     replace: "  if (false) {\n",
@@ -714,5 +714,29 @@ export const mutations: Mutation[] = [
     find: "      if (this.signed === \"float\") {\n        $writeInt(this, this.width, $floatToBits(value, this.width));\n        return;\n      }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
+  },
+  {
+    name: "whole-arrays-copied-in-turn",
+    breaks: "arrays copied through pointers to parts of one array are read as they're written, so a copy forward over itself copies what it already wrote (#1353)",
+    file: "src/runtime/pointers.js",
+    find: "    const read = $slots(from.of, from.at, items);\n",
+    replace: "    const read = { slice: (a, b) => from.of.slice(from.at + a, from.at + b) };\n",
+    tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
+  },
+  {
+    name: "whole-arrays-uncopied",
+    breaks: "arrays of `Copy` structs copied through pointers to parts of one array share the structs, so a write to one is a write to its copy (#1353)",
+    file: "src/runtime/pointers.js",
+    find: "      const copied = copy === undefined ? array : copy(array);\n",
+    replace: "      const copied = array;\n",
+    tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
+  },
+  {
+    name: "whole-pointer-stepped-by-items",
+    breaks: "a pointer to part of an array as one to an array is stepped by one item, not by its array (#1353)",
+    file: "src/runtime/pointers.js",
+    find: "  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count * whole.width), whole.width);\n",
+    replace: "  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count), whole.width);\n",
+    tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
   },
 ];

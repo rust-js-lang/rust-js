@@ -305,3 +305,20 @@ field replaced and one written through it, an array's item and one past it by
 made) and `pointer_to_a_parameter_taken_by_value`, now printing its caller's
 value too, against native Rust in both builds and through `METAMORPHIC=all`;
 mutation `raw-pointer-part-write-unseen` (`lower/analysis/mutation.ts`).
+
+## Amendment: more than one array through a pointer to part of one (2026-11-12, #1353)
+
+A pointer to part of an array cast to an array's type, `p.cast::<[u32; 2]>()`,
+is `$ptrWhole`'s view of those items. It knew no index along an array of such
+arrays, so a `ptr::copy` of more than one was refused where it ran, and an
+`add` of one threw. Its view now says where it is, by the array it's part of
+and where it starts there (`$placeOfPart`, `$wholeOf`). `$ptrAdd` steps it by
+its array's length, and `$ptrCopy` copies `count` such arrays' items as
+`memmove` does, every one read before any is written, each array `copy`'d
+where a `Copy` item is an object. Copying past the end of what they're part
+of, which Rust leaves undefined, is still refused where it runs. Held by
+`test/corpus/arrays_copied_through_a_pointer_to_part_of_one.rs` against
+native Rust in both builds: overlapping forward and back, apart, a `Copy`
+struct's arrays, and a pointer stepped by its array. Also held by
+`test/lowering-pointers.test.ts`. Mutations `whole-arrays-copied-in-turn`,
+`whole-arrays-uncopied` and `whole-pointer-stepped-by-items`.

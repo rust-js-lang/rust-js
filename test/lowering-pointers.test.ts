@@ -9,10 +9,11 @@ import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
 // `ptr::copy` of more than one `[T; N]` through a pointer to part of an
-// array cast to an array's type, `$ptrWhole`'s, which has no index along
-// an array of such arrays: refused naming #1353, where it threw a
-// `TypeError`. One, which overlaps its source, is copied as Rust's is.
-test("ptr::copy of more than one [T; N] through a pointer to part of an array is refused", async () => {
+// array cast to an array's type, `$ptrWhole`'s: as many items of the array
+// it's part of, read before any is written (#1353), where it threw a
+// `TypeError`; of an array that's part of none, past its end, refused. One,
+// which overlaps its source, is copied as Rust's is.
+test("ptr::copy of more than one [T; N] through a pointer to part of an array copies them", async () => {
   const dir = fixture("pointer-whole-copies");
   writeFileSync(
     join(dir, "lib.rs"),
@@ -27,6 +28,15 @@ pub fn two() -> Vec<u32> {
     k.to_vec()
 }
 
+pub fn past() -> Vec<u32> {
+    let a: [u32; 2] = [1, 2];
+    let mut b = [0u32; 4];
+    unsafe {
+        ptr::copy(&a as *const [u32; 2], b.as_mut_ptr().cast::<[u32; 2]>(), 2);
+    }
+    b.to_vec()
+}
+
 pub fn one() -> Vec<u32> {
     let mut k: [u32; 6] = [0, 1, 2, 3, 4, 5];
     unsafe {
@@ -39,8 +49,12 @@ pub fn one() -> Vec<u32> {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  expect(() => lib.two()).toThrow(
-    "rust-js does not support copying more than one value through a pointer to part of an array cast to an array's type, which reads memory by where it is (#1353)",
+  // Native Rust: [0, 0, 1, 2, 3, 5].
+  expect(lib.two()).toEqual([0, 0, 1, 2, 3, 5]);
+  // Past the end of an array that's part of none, which Rust leaves
+  // undefined: refused where it runs.
+  expect(() => lib.past()).toThrow(
+    "rust-js does not support copying more than one array through a pointer to one that isn't part of another",
   );
   // Native Rust: [1, 2, 3, 3, 4, 5].
   expect(lib.one()).toEqual([1, 2, 3, 3, 4, 5]);

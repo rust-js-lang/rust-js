@@ -119,6 +119,10 @@ function $ptrAdd(pointer, count) {
   if (pointer !== null && pointer.bytes !== undefined) {
     return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
   }
+  // Of a pointer to part of an array as one to an array, `$ptrWhole`'s, the
+  // array of as many items `count` such arrays along (#1353).
+  const whole = $wholeOf(pointer);
+  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count * whole.width), whole.width);
   if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined || pointer.offset !== undefined) {
     // Not stepped, where it is (#1280).
     if (pointer !== null && count === 0) return pointer;
@@ -729,9 +733,24 @@ function $ptrCopy(src, dst, count, copy) {
     return;
   }
   // More than one of a pointer to part of an array as one to an array,
-  // `$ptrWhole`'s, which has no index along an array of such arrays.
+  // `$ptrWhole`'s: as many items of the arrays they're part of, every one
+  // read before any is written, each array `copy`'d (#1353).
+  const [from, to] = [$wholeOf(src), $wholeOf(dst)];
+  if (from !== undefined && to !== undefined && from.width === to.width) {
+    const [width, items] = [from.width, count * from.width];
+    if (from.at + items > from.of.length || to.at + items > to.of.length) {
+      throw $unsupported("rust-js does not support copying arrays past the end of what they're part of, which reads memory by where it is");
+    }
+    const read = $slots(from.of, from.at, items);
+    for (let i = 0; i < count; i++) {
+      const array = read.slice(i * width, (i + 1) * width);
+      const copied = copy === undefined ? array : copy(array);
+      for (let j = 0; j < width; j++) to.of[to.at + i * width + j] = copied[j];
+    }
+    return;
+  }
   if ([src, dst].some((p) => Array.isArray(p.of) && typeof p.at !== "number")) {
-    throw $unsupported("rust-js does not support copying more than one value through a pointer to part of an array cast to an array's type, which reads memory by where it is (#1353)");
+    throw $unsupported("rust-js does not support copying more than one array through a pointer to one that isn't part of another, which reads memory by where it is");
   }
   if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
     throw $unsupported("rust-js does not support copying items but between arrays, which reads memory by where it is");
@@ -826,6 +845,15 @@ function $ptrItems(pointer, count) {
 // slice's part, `fst.as_ptr() as *const [T; N]`, a view of those items,
 // placed where they are (#1218). Past the array's end, it would be memory
 // by where it is.
+// Of a pointer `$ptrWhole` made, a view of part of an array, the array
+// it's part of, the index it starts at and its length; none of another.
+function $wholeOf(pointer) {
+  if (pointer === null || pointer.at !== undefined || !Array.isArray(pointer.of)) return undefined;
+  const part = pointer.of[$placeOfPart];
+  if (part?.of === undefined || part.first !== undefined) return undefined;
+  return { of: part.of, at: part.start, width: pointer.of.length };
+}
+
 function $ptrWhole(pointer, length) {
   if (Array.isArray(pointer.of) && typeof pointer.at === "number" && pointer.at + length <= pointer.of.length) {
     if (pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
