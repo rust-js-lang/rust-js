@@ -229,7 +229,8 @@ test("the JS's copy turns on getrandom's WebAssembly feature of each release its
   expect(forTheJs(manifest, lock)).toBe(
     manifest +
       '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-2]\npackage = "getrandom"\nversion = "0.2"\nfeatures = ["js"]\n\n' +
-      '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-3]\npackage = "getrandom"\nversion = "0.3"\nfeatures = ["wasm_js"]\n\n',
+      '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-3]\npackage = "getrandom"\nversion = "0.3"\nfeatures = ["wasm_js"]\n\n' +
+      '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-1]\npackage = "getrandom"\nversion = "0.1"\nfeatures = ["wasm-bindgen"]\n\n',
   );
   expect(forTheJs(manifest, "")).toBe(manifest);
 });

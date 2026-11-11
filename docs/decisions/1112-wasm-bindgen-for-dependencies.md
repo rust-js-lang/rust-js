@@ -373,3 +373,45 @@ getrandom 0.3.4 with `wasm_js` is a row of the crate corpus: its probe as
 native, the Crater 6 of its 9 tests (#1191, #1192). `test/compat.test.ts`:
 a feature's wasm-bindgen patched, an attribute imported as `test`.
 
+
+## Amendment: getrandom 0.1, imported types, methods, getters and statics (2026-11-12, #1404)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, each a mapping onto
+the JS upstream's binds.
+
+itertools' quickcheck tests need rand 0.7, whose getrandom 0.1 binds JS
+with more of `#[wasm_bindgen]` than functions: rust-js refused its whole
+graph, and the Crater turned no WebAssembly feature on for 0.1, which then
+used its `dummy` backend, failing where native Rust gets randomness. Its
+`src/wasm32_bindgen.rs` binds now, and `covered.txt` lists `getrandom 0.1`:
+
+- **An imported type, `type NodeCrypto;`,** is a JS value of it, owned,
+  `struct NodeCrypto { obj: JsValue }`, upstream's own shape, so its kept
+  `#[derive(Clone, Debug)]` behaves as upstream's; `From` and `Into` a
+  `JsValue`, and one by `Deref`.
+- **`method`** takes its first parameter as its receiver, `this.f(..)`, a
+  method of its type, as upstream's `n.random_fill_sync(dest)` calls it;
+  **`getter`** reads a property, `this.x`, or a static's, `X.x`;
+  **`static_method_of = Global, js_class = self`** is an associated
+  function, `Global::get_self()`, of `self.self`; **`structural`** binds
+  each as it is.
+- **A `JsValue`, an imported type's or js-sys's `Uint8Array`** is passed
+  and given as the value itself.
+- **A `static`** is a `JsStatic`, read where it's used. Of CommonJS's
+  `module`, which an ES module has none of, the user's decision on #1400:
+  `{ require }` of `process.getBuiltinModule("module").createRequire(
+  import.meta.url)`, read only where it's used, after the browser's
+  `self.crypto` getrandom looks for first, so a browser's bundle imports
+  nothing of Node's.
+- **js-sys's `Uint8Array`**: `new_with_length`, `subarray`, `length` and
+  `copy_to`, which asserts equal lengths, as js-sys's does.
+- The macro's code names `wasm_bindgen::`, as upstream's does, so a crate
+  that renames it, getrandom 0.1's `extern crate bindgen as
+  wasm_bindgen;`, finds it.
+- **The Crater** turns on `wasm-bindgen` of getrandom 0.1, as it does `js`
+  of 0.2 and `wasm_js` of 0.3 and 0.4.
+
+Held by compat.test.ts's getrandom 0.1 backend, written as getrandom 0.1
+writes it and run in Node, its crypto by `module.require`, and with a
+browser's `self.crypto`, 300 bytes in chunks through a view; and by
+crater.test.ts's feature switch.

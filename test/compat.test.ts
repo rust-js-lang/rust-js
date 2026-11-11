@@ -12,6 +12,7 @@ import { join, relative } from "node:path";
 import { runSync } from "./child";
 import { compatRefused } from "../tooling/cargo.js";
 import { compatCrates, writePatch } from "../tooling/patch.js";
+import { node } from "./programs";
 import { buildCompiler, compiler, fixture, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -197,14 +198,150 @@ console.log(JSON.stringify([bytes.length, bytes.some((b) => b !== 0), bytes.ever
   expect(JSON.parse(ran.stdout)).toEqual([64, true, true, [255, 254, 1], [0, 1, 254], 6, 1, null]);
 }, 600_000);
 
+// getrandom 0.1's wasm-bindgen backend, as it writes it, wasm-bindgen named
+// `bindgen` (#1404): imported types, a static getter that throws where
+// there's no \`self\`, methods and getters, CommonJS's \`module\`, served its
+// \`require\` (the user's decision on #1400), and js-sys's \`Uint8Array\`.
+const getrandom01 = `extern crate bindgen as wasm_bindgen;
+
+use std::cell::RefCell;
+
+use js_sys::Uint8Array;
+use wasm_bindgen::prelude::*;
+
+const CHUNK_SIZE: usize = 256;
+
+#[derive(Clone, Debug)]
+enum RngSource {
+    Node(NodeCrypto),
+    Browser(BrowserCrypto, Uint8Array),
+}
+
+thread_local!(
+    static RNG_SOURCE: RefCell<Option<RngSource>> = RefCell::new(None);
+);
+
+/// Which source filled \`dest\`, \`"node"\` or \`"browser"\`, or why none.
+pub fn fill(dest: &mut [u8]) -> Result<String, String> {
+    RNG_SOURCE.with(|f| {
+        let mut source = f.borrow_mut();
+        if source.is_none() {
+            *source = Some(init()?);
+        }
+        match source.as_ref().unwrap() {
+            RngSource::Node(n) => {
+                n.random_fill_sync(dest);
+                Ok("node".to_string())
+            }
+            RngSource::Browser(crypto, buf) => {
+                for chunk in dest.chunks_mut(CHUNK_SIZE) {
+                    let sub_buf = buf.subarray(0, chunk.len() as u32);
+                    crypto.get_random_values(&sub_buf);
+                    sub_buf.copy_to(chunk);
+                }
+                Ok("browser".to_string())
+            }
+        }
+    })
+}
+
+fn init() -> Result<RngSource, String> {
+    if let Ok(self_) = Global::get_self() {
+        let crypto: BrowserCrypto = match (self_.crypto(), self_.ms_crypto()) {
+            (crypto, _) if !crypto.is_undefined() => crypto.into(),
+            (_, crypto) if !crypto.is_undefined() => crypto.into(),
+            _ => return Err("no crypto".to_string()),
+        };
+        if crypto.get_random_values_fn().is_undefined() {
+            return Err("no getRandomValues".to_string());
+        }
+        let buf = Uint8Array::new_with_length(CHUNK_SIZE as u32);
+        return Ok(RngSource::Browser(crypto, buf));
+    }
+    Ok(RngSource::Node(MODULE.require("crypto")))
+}
+
+pub fn random(n: usize) -> (String, Vec<u8>) {
+    let mut bytes = vec![0; n];
+    let source = fill(&mut bytes).unwrap_or_else(|why| why);
+    (source, bytes)
+}
+
+#[wasm_bindgen]
+extern "C" {
+    type Global;
+    #[wasm_bindgen(getter, catch, static_method_of = Global, js_class = self, js_name = self)]
+    fn get_self() -> Result<Self_, JsValue>;
+
+    type Self_;
+    #[wasm_bindgen(method, getter, js_name = "msCrypto", structural)]
+    fn ms_crypto(me: &Self_) -> JsValue;
+    #[wasm_bindgen(method, getter, structural)]
+    fn crypto(me: &Self_) -> JsValue;
+
+    #[derive(Clone, Debug)]
+    type BrowserCrypto;
+
+    #[wasm_bindgen(method, js_name = getRandomValues, structural, getter)]
+    fn get_random_values_fn(me: &BrowserCrypto) -> JsValue;
+    #[wasm_bindgen(method, js_name = getRandomValues, structural)]
+    fn get_random_values(me: &BrowserCrypto, buf: &Uint8Array);
+
+    #[derive(Clone, Debug)]
+    type NodeCrypto;
+
+    #[wasm_bindgen(method, js_name = randomFillSync, structural)]
+    fn random_fill_sync(me: &NodeCrypto, buf: &mut [u8]);
+
+    type NodeModule;
+
+    #[wasm_bindgen(js_name = module)]
+    static MODULE: NodeModule;
+
+    #[wasm_bindgen(method)]
+    fn require(this: &NodeModule, s: &str) -> NodeCrypto;
+}
+`;
+
+test("getrandom 0.1's backend: imported types, methods, getters, its static `module`'s require, a Uint8Array", () => {
+  const dir = fixture("compat-getrandom-01");
+  const crate = gitCrate(dir, 'bindgen = { package = "wasm-bindgen", version = "0.2.29" }\njs-sys = "0.3"\n', getrandom01, "getrandom", "0.1.16");
+  const at = app(dir, crate, "pub use getrandom::random;\n");
+  writePatch(at, [...compatCrates().keys()]);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  const js = readFileSync(join(at, "rust-js", "crates", "getrandom-0.1.16", "src", "lib.js"), "utf8");
+  // The browser's \`self\` read where it's asked, as upstream's \`catch\`.
+  expect(js).toContain("return $try(() => self.self);");
+  const run = (prelude: string) => {
+    const program = `${prelude}
+const app = await import(${JSON.stringify(join(at, "src", "lib.js"))});
+const [source, bytes] = app.random(300);
+console.log(JSON.stringify([source, bytes.length, bytes.some((b) => b !== 0), bytes.every((b) => Number.isInteger(b) && b >= 0 && b < 256), bytes[0], bytes[299]]));`;
+    writeFileSync(join(at, "check.mjs"), program);
+    // Node's, whose global has no \`self\`, as Bun's has.
+    const ran = runSync([node ?? "node", join(at, "check.mjs")], at, 60_000);
+    expect(ran.stderr).toBe("");
+    return JSON.parse(ran.stdout);
+  };
+  // In Node, no \`self\`: Node's crypto, by \`module.require\`.
+  const [source, length, some, bytes] = run("");
+  expect([source, length, some, bytes]).toEqual(["node", 300, true, true]);
+  // In a browser's, \`self.crypto\`, each chunk of 256 through a view.
+  expect(run("let n = 0;\nglobalThis.self = { crypto: { getRandomValues(view) { view.forEach((_, i) => { view[i] = (n++ % 250) + 1; }); } } };\nself.self = self;"))
+    .toEqual(["browser", 300, true, true, 1, (299 % 250) + 1]);
+}, 600_000);
+
 // What rust-js's wasm-bindgen doesn't know, an option or a type, is a
 // compile error naming it, never a guess.
 test("an import rust-js's wasm-bindgen doesn't know is a compile error naming what", () => {
   const dir = fixture("compat-unknown");
   for (const [source, said] of [
-    ["#[wasm_bindgen(method)]\n    fn go(x: u32);", "rust-js's wasm-bindgen doesn't take `method` of an imported function yet"],
+    ["#[wasm_bindgen(constructor)]\n    fn go(x: u32);", "rust-js's wasm-bindgen doesn't take `constructor` of an imported function yet"],
+    ["#[wasm_bindgen(method)]\n    fn go(x: u32);", "rust-js's wasm-bindgen: a method's receiver is a name of a `&T`"],
     ["fn go(x: String);", "rust-js's wasm-bindgen doesn't pass `String` to JS yet"],
-    ["type Thing;", "rust-js's wasm-bindgen doesn't bind an imported JS type yet"],
+    ["#[wasm_bindgen(js_name = Other)]\n    type Thing;", "rust-js's wasm-bindgen doesn't bind an imported JS type's options yet"],
   ]) {
     const crate = gitCrate(dir, 'wasm-bindgen = "0.2.98"\n', `use wasm_bindgen::prelude::wasm_bindgen;\n\n#[wasm_bindgen]\nextern "C" {\n    ${source}\n}\n\npub fn answer() -> u32 {\n    42\n}\n`);
     const at = app(dir, crate);

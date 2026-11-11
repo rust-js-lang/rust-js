@@ -68,7 +68,7 @@ fn is_uninit_u8(ty: &Type) -> bool {
 /// The argument `name`, the `index`th, of type `ty`.
 pub fn argument(name: &Ident, ty: &Type, index: usize) -> syn::Result<Argument> {
     let view = format_ident!("__view{index}");
-    let rt = quote!(::wasm_bindgen::__rt::js);
+    let rt = quote!(wasm_bindgen::__rt::js);
     if let Type::Reference(reference) = ty
         && let Type::Slice(slice) = &*reference.elem
     {
@@ -105,6 +105,21 @@ pub fn argument(name: &Ident, ty: &Type, index: usize) -> syn::Result<Argument> 
             _ => Err(unsupported(ty, "to JS")),
         };
     }
+    // A JS value, a `JsValue`, an imported type's or js-sys's, by reference
+    // or by value: the value itself (#1404).
+    let value = match ty {
+        Type::Reference(reference) if reference.mutability.is_none() && is_js_value(&reference.elem) => Some(quote!(#name)),
+        other if is_js_value(other) => Some(quote!(&#name)),
+        _ => None,
+    };
+    if let Some(value) = value {
+        return Ok(Argument {
+            binding_param: quote!(#name: ::core::option::Option<&'static #rt::Unknown>),
+            before: None,
+            passed: quote!(::core::convert::AsRef::<wasm_bindgen::JsValue>::as_ref(#value).__value),
+            after: None,
+        });
+    }
     let passed = match ty {
         Type::Reference(reference)
             if reference.mutability.is_none() && last(&reference.elem).is_some_and(|s| s.ident == "str") =>
@@ -138,6 +153,10 @@ pub fn result(output: &ReturnType, catch: bool) -> syn::Result<Outcome> {
                 binding: quote!(),
                 finish: quote!(__result),
             }),
+            Some(ty) if is_js_value(ty) => Ok(Outcome {
+                binding: quote!(-> ::core::option::Option<&'static wasm_bindgen::__rt::js::Unknown>),
+                finish: quote!(<#ty as ::core::convert::From<wasm_bindgen::JsValue>>::from(wasm_bindgen::JsValue { __value: __result })),
+            }),
             Some(ty) => {
                 given(ty)?;
                 Ok(Outcome {
@@ -168,12 +187,36 @@ pub fn result(output: &ReturnType, catch: bool) -> syn::Result<Outcome> {
             "rust-js's wasm-bindgen: a `catch` function gives `Result<T, JsValue>`",
         ));
     };
+    let thrown = quote!(.map_err(|__thrown| wasm_bindgen::JsValue {
+        __value: __thrown.as_unknown()
+    }));
+    if is_js_value(ok) {
+        return Ok(Outcome {
+            binding: quote!(-> ::core::result::Result<::core::option::Option<&'static wasm_bindgen::__rt::js::Unknown>, &'static wasm_bindgen::__rt::js::JsError>),
+            finish: quote!(__result
+                .map(|__value| <#ok as ::core::convert::From<wasm_bindgen::JsValue>>::from(wasm_bindgen::JsValue { __value }))
+                #thrown),
+        });
+    }
     given(ok)?;
     Ok(Outcome {
-        binding: quote!(-> ::core::result::Result<#ok, &'static ::wasm_bindgen::__rt::js::JsError>),
-        finish: quote!(__result.map_err(|__thrown| ::wasm_bindgen::JsValue {
-            __value: __thrown.as_unknown()
-        })),
+        binding: quote!(-> ::core::result::Result<#ok, &'static wasm_bindgen::__rt::js::JsError>),
+        finish: quote!(__result #thrown),
+    })
+}
+
+/// Of std's types of no arguments, those that aren't JS values: `String`,
+/// and the numbers wasm-bindgen gives JS as `BigInt`s, which it doesn't
+/// pass yet, each refused by its name.
+const NOT_VALUES: [&str; 8] = ["str", "String", "char", "i64", "u64", "i128", "u128", "isize"];
+
+/// A JS value's type: a path of no arguments that isn't a number's, a
+/// `bool`'s or std's, `JsValue`, an imported type, js-sys's `Uint8Array`,
+/// which converts to and from a `JsValue`, as rustc then checks (#1404).
+fn is_js_value(ty: &Type) -> bool {
+    last(ty).is_some_and(|segment| {
+        let name = segment.ident.to_string();
+        segment.arguments.is_empty() && !NOT_VALUES.contains(&name.as_str()) && !PASSED.contains(&name.as_str())
     })
 }
 

@@ -9,8 +9,10 @@
 pub use wasm_bindgen_macro::wasm_bindgen;
 
 /// Any JS value, `undefined` too: what JS threw at a `catch` function. The
-/// value itself, as its one field is (ADR 0584).
+/// value itself, as its one field is (ADR 0584); a clone the same value, as
+/// wasm-bindgen's clone holds the same JS value.
 #[repr(transparent)]
+#[derive(Clone)]
 pub struct JsValue {
     /// The value, `None` where it's `undefined`: what `#[wasm_bindgen]`'s
     /// functions make, not to be named.
@@ -94,10 +96,37 @@ fn class_name(tag: &str) -> Option<&str> {
 }
 
 impl JsValue {
+    /// Whether it's `undefined`.
+    pub fn is_undefined(&self) -> bool {
+        matches!(js::classify(self.__value), js::Kind::Undefined)
+    }
+
     /// The number `n` as a JS value: itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     pub fn from_f64(this: f64) -> JsValue {
         unreachable!()
+    }
+}
+
+impl AsRef<JsValue> for JsValue {
+    fn as_ref(&self) -> &JsValue {
+        self
+    }
+}
+
+/// A JS value an `extern` block's `static` names, `static MODULE:
+/// NodeModule`: read where it's used, as wasm-bindgen's reads it the first
+/// time and keeps it, of a value that stays the same (#1404).
+pub struct JsStatic<T: 'static> {
+    #[doc(hidden)]
+    pub __get: fn() -> T,
+}
+
+impl<T> core::ops::Deref for JsStatic<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        Box::leak(Box::new((self.__get)()))
     }
 }
 
@@ -147,4 +176,30 @@ pub mod prelude {
 #[doc(hidden)]
 pub mod __rt {
     pub use js;
+
+    /// `#[wasm_bindgen(js_name = module)] static`, CommonJS's `module`, which
+    /// an ES module has none of, served its `require` of Node's
+    /// `createRequire(import.meta.url)`, as getrandom 0.1's `MODULE.require(
+    /// "crypto")` asks: `{ require }`, read where it's used, after the
+    /// browser's `self.crypto` it looks for first, so a browser's bundle
+    /// imports nothing of Node's (the user's decision on #1400, #1404).
+    pub fn node_module() -> Option<&'static js::Unknown> {
+        #[cfg_attr(rust_js, rust_js::link_name = "process.getBuiltinModule")]
+        fn builtin(name: &str) -> &'static js::Unknown {
+            unreachable!()
+        }
+        #[cfg_attr(rust_js, rust_js::link_name = "get import.meta.url")]
+        fn url() -> &'static str {
+            unreachable!()
+        }
+        #[cfg_attr(rust_js, rust_js::link_name = "createRequire")]
+        fn create_require(this: &'static js::Unknown, url: &str) -> &'static js::Unknown {
+            unreachable!()
+        }
+        #[cfg_attr(rust_js, rust_js::link_name = "{require}")]
+        fn holder(require: &'static js::Unknown) -> &'static js::Unknown {
+            unreachable!()
+        }
+        Some(holder(create_require(builtin("module"), url())))
+    }
 }

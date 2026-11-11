@@ -16,7 +16,8 @@ of an unused patch.
 
 Their API grows from what crates use, crate by crate:
 `tooling/compat/covered.txt` lists the crates they serve: getrandom 0.3,
-chrono 0.4, whose default `wasmbind` reads the local time zone through
+getrandom 0.1 with its `wasm-bindgen` feature, which rand 0.7 and
+quickcheck 0.9 use, chrono 0.4, whose default `wasmbind` reads the local time zone through
 `js_sys::Date`, so `Local::now()` is your user's local time, and uuid 1 with
 its `js` feature. They're compiled to JS as your crates.io dependencies are,
 vendored under `rust-js/crates/`. Where wasm-bindgen behaves differently on
@@ -27,10 +28,20 @@ as it did before, and such a crate is its types alone, a call into it
 refused.
 
 Of wasm-bindgen's API, an `extern "C"` block's `#[wasm_bindgen]` binds a
-function by its `js_namespace`, `js_name` and `catch`. A number, a `bool`
-or `&str` is passed as it is; a slice of bytes as a `Uint8Array`, made
-once, and of a `&mut` one, what JS wrote copied back once. What it doesn't
-bind yet is a compile error naming it
+function by its `js_namespace`, `js_name` and `catch`; a method of an
+imported type, `method`, its first parameter its receiver, a property's
+read, `getter`, and a static of a class, `static_method_of` and
+`js_class`, `structural` binding each the same. An imported type, `type
+NodeCrypto;`, is a JS value of it, owned, `From` and `Into` a `JsValue`
+and one by `Deref`, as upstream's. A `static` is read where it's used;
+CommonJS's `module`, which an ES module has none of, is given its
+`require`, `process.getBuiltinModule("module").createRequire(
+import.meta.url)`, read only where it's used, so a browser's bundle
+imports nothing of Node's. A number, a `bool` or `&str` is passed as it
+is; a `JsValue`, an imported type's or js-sys's `Uint8Array` as the value
+itself; a slice of bytes as a `Uint8Array`, made once, and of a `&mut`
+one, what JS wrote copied back once. What it doesn't bind yet is a compile
+error naming it
 ([ADR 1112](../../decisions/1112-wasm-bindgen-for-dependencies.md),
 amended).
 

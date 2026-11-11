@@ -617,14 +617,14 @@ export function oneIntegrationTest(text: string, file: string, named: (lib: stri
 }
 
 /** A crate's manifest, `text`, as the JS's copy builds it: getrandom's
- * WebAssembly feature on, of each release its lock has, `js` of 0.2's and
- * `wasm_js` of 0.3's and 0.4's, as a wasm-bindgen app's manifest turns it
- * on, which wasm32 needs; its backend's `wasm-bindgen` and `js-sys` are
- * rust-js's own (ADR 1112). */
+ * WebAssembly feature on, of each release its lock has, `wasm-bindgen` of
+ * 0.1's (#1404), `js` of 0.2's and `wasm_js` of 0.3's and 0.4's, as a
+ * wasm-bindgen app's manifest turns it on, which wasm32 needs; its
+ * backend's `wasm-bindgen` and `js-sys` are rust-js's own (ADR 1112). */
 export function forTheJs(text: string, lock: string): string {
-  const majors = [...new Set([...lock.matchAll(/^name = "getrandom"\nversion = "(0\.[234])\.\d+"/gm)].map((m) => m[1]))];
+  const majors = [...new Set([...lock.matchAll(/^name = "getrandom"\nversion = "(0\.[1234])\.\d+"/gm)].map((m) => m[1]))];
   const features = majors.map((major) => {
-    const feature = major === "0.2" ? "js" : "wasm_js";
+    const feature = major === "0.1" ? "wasm-bindgen" : major === "0.2" ? "js" : "wasm_js";
     return `[target.'cfg(target_arch = "wasm32")'.dev-dependencies.crater-getrandom-${major.replace(".", "-")}]\npackage = "getrandom"\nversion = "${major}"\nfeatures = ["${feature}"]\n\n`;
   });
   return [text.endsWith("\n") ? text : `${text}\n`, ...features].join("");
