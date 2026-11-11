@@ -125,4 +125,19 @@ export const mutations: Mutation[] = [
     replace: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
+  {
+    name: "instance-default-asked-through-copies",
+    breaks: "a library's default the crate compiles itself as a function over `Self`, an instance, is asked its collect's facts only through the crate's impls that copy it, none, so its `collect()` of `Self` into a `Vec` is refused, \"the buffer std collects an iterator in place in\", itertools' `collect_vec` (#1370)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        .filter(|_| tcx.defaultness(caller).has_value() && !instance_over_self(tcx, foreign, caller));\n",
+    replace: "        .filter(|_| tcx.defaultness(caller).has_value());\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+  },  {
+    name: "instance-over-self-though-copied",
+    breaks: "a library's default the crate compiles itself is a function over `Self` asking its own facts though the crate's impls copy it, whose dictionaries give them already, so each impl's entry is refused, \"a trait method's type parameter's fact here\" (#990, #1370)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "            .all(|&imp| tcx.impl_item_implementor_ids(imp.to_def_id()).contains_key(&default))\n",
+    replace: "            .all(|_| true)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts$"],
+  },
 ];

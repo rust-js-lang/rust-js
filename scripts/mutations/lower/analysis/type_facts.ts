@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an unstable sort of a type parameter's items is given no `TSort`, and refused",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                asking.asked.insert((caller, index, TypeFact::Sort));\n",
+    find: "            self.asked.insert((caller, index, TypeFact::Sort));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
@@ -377,8 +377,8 @@ export const mutations: Mutation[] = [
     name: "tree-built-entries-unasked",
     breaks: "generic code's collect into a B-tree of a type parameter's keys asks its caller no `TStableSort`, and is refused (#926)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            if let Some(entries) = tree_built_entries(tcx, callee, args) {\n",
-    replace: "            if let Some(entries) = tree_built_entries(tcx, callee, args).filter(|_| false) {\n",
+    find: "        if let Some(entries) = tree_built_entries(tcx, callee, args) {\n",
+    replace: "        if let Some(entries) = tree_built_entries(tcx, callee, args).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^generic_btree_keys.rs$"],
   },
   {
@@ -460,5 +460,22 @@ export const mutations: Mutation[] = [
     find: "                        .is_some_and(|index| index >= tcx.generics_of(caller).parent_count as u32)\n",
     replace: "                        .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_facts_its_callers.rs$"],
+  },
+
+  {
+    name: "instance-self-facts-unasked",
+    breaks: "a library's default compiled here as a function over `Self` asks its callers nothing of `Self`, as a trait method's dictionary would give it, so its collect of `Self` is refused (#1370)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            crate::lower::recognition::is_compiled_std(tcx, id) || collects::instance_over_self(tcx, foreign, id);\n",
+    replace: "            crate::lower::recognition::is_compiled_std(tcx, id);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+  },
+  {
+    name: "mir-body-std-call-asks-unread",
+    breaks: "a body read from its MIR alone, a library's default compiled here, asks nothing of a sort of its items, so itertools' `sorted` is refused, \"a stable sort of items that hold a type parameter\" (#1370)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                // What std's call asks of its items' type, a body read from\n                // MIR alone too, a library's default compiled here (#1370).\n                if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {\n                    continue;\n                }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
   },
 ];

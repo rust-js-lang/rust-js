@@ -1476,3 +1476,36 @@ value the consumer changes in place, no drop), each alone. A parameter's
 too. All three run against native Rust. Mutations
 `instance-rcs-owned-unseen` and `instance-rc-counts-unread`
 (`lower/analysis/rc_counts.ts`).
+
+## Amendment: an instance of a library's default asks of `Self` as a function does (2026-11-11, #1370)
+
+itertools' probe was refused at "`the buffer std collects an iterator in
+place in` of a type parameter", at `collect_vec`, `sorted`,
+`sorted_by_key` and `multi_cartesian_product`: defaults of its blanket
+`impl<T: Iterator> Itertools for T` that collect `Self` into a `Vec`. A
+consumer compiles such a default itself, an instance, where its call gives
+it what the library's JS takes nothing for, items that drop or what the
+default's own where clause asks. The instance is a function over `Self`,
+but the analysis took it for a trait's default, whose `Self` its impls'
+dictionaries give: it asked its collect only through the crate's impls
+that copy it, none, and kept no fact of `Self`. An instance none of the
+crate's impls copies, called through its library's impl alone
+(`instance_over_self`), now asks as any function does (`collect_asks`),
+`Self`'s facts too, as a std default compiled over `Self` does
+(`is_compiled_std`), so its caller gives `SelfVecCollect`, `"inPlace"` of a
+`vec::IntoIter`. One the crate's impls copy is asked through them as
+before, their dictionaries giving its facts (#990): asked of itself too,
+each impl's entry would be given them twice. And a body read from
+its MIR alone asks what a sort, a B-tree built, a `sort_by_cached_key` or
+`==` of `Rc`s asks of its items as one read from its THIR does, one list
+(`Asking::std_call_asks`): `sorted`'s `v.sort()` asks `TStableSort`.
+
+Held by test/crates/pairs/library_default_collects_self_in_place (a
+library's `collect_vec` and `sorted` of numbers, of a map of them, of items
+with a destructor, and of a map whose closure panics part-way, what it took
+and what's left dropped as std's in-place collect drops them) against
+native Rust, and the mutations `instance-default-asked-through-copies`,
+`instance-self-facts-unasked`, `instance-over-self-though-copied` and
+`mir-body-std-call-asks-unread`.
+itertools' probe now stops at whether `vec::IntoIter<MultiProductIter<I>>`
+is a `TrustedRandomAccessNoCoerce`, which no caller gives.

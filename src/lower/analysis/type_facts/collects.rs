@@ -63,9 +63,12 @@ pub(super) fn collect_asks<'tcx>(
         ));
         asked
     };
+    // A library's default the crate compiles itself as a function over
+    // `Self` alone, asks as any function does, of `Self` too
+    // (`instance_over_self`, #1370).
     let default_of = tcx
         .trait_of_assoc(caller)
-        .filter(|_| tcx.defaultness(caller).has_value());
+        .filter(|_| tcx.defaultness(caller).has_value() && !instance_over_self(tcx, foreign, caller));
     if default_of.is_none() {
         return (asked_by(typing_env, caller, args).into_iter())
             .map(|asked| (caller, asked))
@@ -218,6 +221,26 @@ pub(super) struct DefaultCopy<'tcx> {
     /// The default's own type parameters, numbered after the impl's: not
     /// the impl's, nor its callers' to give (#804).
     pub(super) own: Vec<ty::Ty<'tcx>>,
+}
+
+/// Whether `default`, a library trait's default, is compiled here as a
+/// function over `Self` alone (ADR 0914): an instance none of the crate's
+/// impls copies, called through its library's impl, itertools'
+/// `collect_vec` of its blanket `impl<T: Iterator> Itertools for T`, which
+/// asks its callers its facts of `Self` as a function does. One the crate's
+/// impls copy is asked through them, their dictionaries giving its facts
+/// (#990). The one answer of what it asks and what it takes (#1370).
+pub(super) fn instance_over_self(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    default: DefId,
+) -> bool {
+    let Some(trait_id) = tcx.trait_of_assoc(default) else {
+        return false;
+    };
+    foreign.is_instance(default)
+        && (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten())
+            .all(|&imp| tcx.impl_item_implementor_ids(imp.to_def_id()).contains_key(&default))
 }
 
 pub(super) fn copies_of_default<'tcx>(

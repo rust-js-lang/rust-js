@@ -90,6 +90,11 @@ pub(super) fn type_fact_params<'tcx>(
                 for (index, fact) in map_made(tcx, foreign, caller, (callee, args)) {
                     asking.asked.insert((caller, index, fact));
                 }
+                // What std's call asks of its items' type, a body read from
+                // MIR alone too, a library's default compiled here (#1370).
+                if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {
+                    continue;
+                }
                 // A std trait's method whose impl the caller's type picks,
                 // `FuseImpl::next`'s of a `Fuse<I>`: whether `I` is a
                 // `FusedIterator`, its caller's, `IFused` (ADRs 0543, 0561),
@@ -225,50 +230,9 @@ pub(super) fn type_fact_params<'tcx>(
             for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {
                 asking.asked.insert((caller, index, TypeFact::LengthFirst));
             }
-            // An unstable sort of a type parameter's items, whose order std
-            // picks by their layout: its caller's, `TSort` (ADR 0471).
-            if let Some(item) = unstable_sort_items(tcx, callee, args)
-                && let Some(index) = slot_of(tcx, foreign, caller, item)
-            {
-                asking.asked.insert((caller, index, TypeFact::Sort));
+            // What std's call asks of its items' type (`std_call_asks`).
+            if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {
                 continue;
-            }
-            // A stable sort of a type parameter's items, which is std's own
-            // where its caller's type's order may be seen: what it picks by
-            // their type and their size, `TStableSort` and `TSize` (#925).
-            if let Some(item) = stable_sort_items(tcx, callee, args)
-                && let Some(index) = slot_of(tcx, foreign, caller, item)
-            {
-                asking.asked.insert((caller, index, TypeFact::StableSort));
-                asking.asked.insert((caller, index, TypeFact::Size));
-                continue;
-            }
-            // A B-tree built of items, of a key that holds a type parameter,
-            // whose class may be std's nodes, which sort its entries by std's
-            // stable sort, as their type picks: their caller's, a slot's or a
-            // built slot's (#926).
-            if let Some(entries) = tree_built_entries(tcx, callee, args) {
-                for fact in [TypeFact::StableSort, TypeFact::Size] {
-                    if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact), &None) {
-                        asking.ask(caller, each);
-                    }
-                }
-            }
-            // `sort_by_cached_key` of a key that holds a type parameter, whose
-            // `(K, usize)` pairs std sorts unstably, as their type picks:
-            // their caller's, a built slot's (#925).
-            if let Some(pairs) = cached_key_pairs(tcx, callee, args)
-                && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (pairs, TypeFact::Sort), &None)
-            {
-                asking.ask(caller, each);
-            }
-            // `==` of `Rc`s of a type parameter's value, whose `Eq` only the
-            // caller knows, by which std's `RcEqIdent` asks whether they're
-            // one allocation first: its caller's, `TEq` (#931).
-            for (of, fact) in crate::lower::recognition::rc_eq_asked(tcx, typing_env, callee, args) {
-                if let Some(index) = slot_of(tcx, foreign, caller, of) {
-                    asking.asked.insert((caller, index, fact));
-                }
             }
             for (id, each) in collect_asks(
                 recognition,
@@ -471,8 +435,10 @@ pub(super) fn type_fact_params<'tcx>(
         let own = index >= tcx.generics_of(id).parent_count as u32;
         // A std trait's provided method compiled as a function over `Self`
         // (ADRs 0185, 0561), `Iterator::fuse`'s: of `Self` too, given as a
-        // value is.
-        let compiled = crate::lower::recognition::is_compiled_std(tcx, id);
+        // value is; and a library's the crate compiles itself so, alone
+        // (`instance_over_self`), itertools' `collect_vec` (#1370).
+        let compiled =
+            crate::lower::recognition::is_compiled_std(tcx, id) || collects::instance_over_self(tcx, foreign, id);
         let ask = match (tcx.trait_of_assoc(id), tcx.trait_impl_of_assoc(id)) {
             (Some(_), _) => own || compiled,
             (None, Some(impl_id)) => own || (index as usize) < tcx.generics_of(impl_id).count(),
@@ -760,6 +726,67 @@ fn ask<'tcx>(
 }
 
 impl<'tcx> Asking<'tcx> {
+    /// What a call of `callee`, std's, given `args`, asks of `caller`'s
+    /// slots of its items' type: a sort's, a B-tree built's, a
+    /// `sort_by_cached_key`'s and `==` of `Rc`s'. Of a body read from its
+    /// THIR and of one from its MIR alone, a library's default compiled
+    /// here (#1370), the one list. True of a sort's, which asks nothing
+    /// more.
+    fn std_call_asks(
+        &mut self,
+        (tcx, foreign): (TyCtxt<'tcx>, &crate::lower::library::Foreign<'_, 'tcx>),
+        typing_env: ty::TypingEnv<'tcx>,
+        caller: DefId,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    ) -> bool {
+        // An unstable sort of a type parameter's items, whose order std
+        // picks by their layout: its caller's, `TSort` (ADR 0471).
+        if let Some(item) = unstable_sort_items(tcx, callee, args)
+            && let Some(index) = slot_of(tcx, foreign, caller, item)
+        {
+            self.asked.insert((caller, index, TypeFact::Sort));
+            return true;
+        }
+        // A stable sort of a type parameter's items, which is std's own
+        // where its caller's type's order may be seen: what it picks by
+        // their type and their size, `TStableSort` and `TSize` (#925).
+        if let Some(item) = stable_sort_items(tcx, callee, args)
+            && let Some(index) = slot_of(tcx, foreign, caller, item)
+        {
+            self.asked.insert((caller, index, TypeFact::StableSort));
+            self.asked.insert((caller, index, TypeFact::Size));
+            return true;
+        }
+        // A B-tree built of items, of a key that holds a type parameter,
+        // whose class may be std's nodes, which sort its entries by std's
+        // stable sort, as their type picks: their caller's, a slot's or a
+        // built slot's (#926).
+        if let Some(entries) = tree_built_entries(tcx, callee, args) {
+            for fact in [TypeFact::StableSort, TypeFact::Size] {
+                if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact), &None) {
+                    self.ask(caller, each);
+                }
+            }
+        }
+        // `sort_by_cached_key` of a key that holds a type parameter, whose
+        // `(K, usize)` pairs std sorts unstably, as their type picks:
+        // their caller's, a built slot's (#925).
+        if let Some(pairs) = cached_key_pairs(tcx, callee, args)
+            && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (pairs, TypeFact::Sort), &None)
+        {
+            self.ask(caller, each);
+        }
+        // `==` of `Rc`s of a type parameter's value, whose `Eq` only the
+        // caller knows, by which std's `RcEqIdent` asks whether they're
+        // one allocation first: its caller's, `TEq` (#931).
+        for (of, fact) in crate::lower::recognition::rc_eq_asked(tcx, typing_env, callee, args) {
+            if let Some(index) = slot_of(tcx, foreign, caller, of) {
+                self.asked.insert((caller, index, fact));
+            }
+        }
+        false
+    }
+
     /// `default`, a default of `trait_id`, asks `fact` of `<Self as
     /// Trait>::assoc`, of a std supertrait of its `Self`: its dictionaries
     /// carry it, so a library's default compiled over `Self` reads it of
