@@ -7,6 +7,7 @@ const bufRead = ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"];
 const generic = ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"];
 const deque = ["test/corpus.test.ts", "-t", "^io_read_deque.rs$"];
 const emptyRepeat = ["test/corpus.test.ts", "-t", "^io_read_empty_and_repeat.rs$"];
+const toEndCapacity = ["test/corpus.test.ts", "-t", "^io_read_to_end_capacity.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -152,5 +153,29 @@ export const mutations: Mutation[] = [
     find: '  readToEnd: () => ({ TAG: "Err", _0: new $IoError("OutOfMemory") }),\n',
     replace: '  readToEnd: () => ({ TAG: "Ok", _0: 0 }),\n',
     tests: emptyRepeat,
+  },
+  {
+    name: "slice-read-to-end-reserves-nothing",
+    breaks: "a `&[u8]`'s `read_to_end` grows the `Vec` by each push, its capacity its length, where std's `try_reserve(len)` first gives 8 of 2 (#1338)",
+    file: "src/runtime/readers.js",
+    find: "    const all = r.value;\n    $reserve(v, all.length, 1);\n",
+    replace: "    const all = r.value;\n",
+    tests: toEndCapacity,
+  },
+  {
+    name: "deque-read-to-end-reserves-nothing",
+    breaks: "a `VecDeque<u8>`'s `read_to_end` grows the `Vec` by each push, where std's `try_reserve(len)` first gives 8 of 2 (#1338)",
+    file: "src/runtime/readers.js",
+    find: "    $reserve(v, n, 1);\n",
+    replace: "",
+    tests: toEndCapacity,
+  },
+  {
+    name: "cursor-read-to-end-reserves-nothing",
+    breaks: "a `Cursor`'s `read_to_end` grows the `Vec` by each push, where std's `try_reserve(len)` first gives 8 of 3 (#1338)",
+    file: "src/runtime/readers.js",
+    find: "      $reserve(v, from.length, 1);\n",
+    replace: "",
+    tests: toEndCapacity,
   },
 ];

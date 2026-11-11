@@ -401,3 +401,19 @@ in both builds. Mutations `std-bodies-keep-no-capacity`
 (`lower/pipeline.ts`, by the committed package's test) and
 `std-asks-consumers-keep-capacity` (`lower/library.ts`, form only); two
 refitted.
+## Amended (2026-11-11, #1338): a byte source's `read_to_end` reserves first
+
+std's `read_to_end` of a `&[u8]`, a `Cursor<T>` and a `VecDeque<u8>` each
+`buf.try_reserve(len)` all it adds before it adds it, `grow_amortized`'s
+`max(cap * 2, len + n, MIN_NON_ZERO_CAP)`. The runtime's `$sliceReader`,
+`$cursorReader` and `$dequeReader` pushed alone, so a `Vec` read into
+from empty had its length as its capacity, `2` where native Rust has `8`,
+known and generic alike. Each `readToEnd` now asks `$reserve(v, n, 1)`
+first, the capacity's one owner. Case C of
+[0262](0262-when-rust-and-js-disagree.md): `capacity()` is printed. Held by
+`test/corpus/io_read_to_end_capacity.rs`, each source from empty, with
+room, with too little and generic, against native Rust in both builds;
+mutations `slice-read-to-end-reserves-nothing`,
+`deque-read-to-end-reserves-nothing` and
+`cursor-read-to-end-reserves-nothing` (`runtime/readers.ts`). What a body
+`@rust-js/std` compiles grows, `read_until`'s, keeps std's growth too (#1339).

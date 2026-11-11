@@ -1115,8 +1115,11 @@ export const $sliceReader = {
     $readInto(buf, r.value, buf.length);
     r.value = $part(r.value, buf.length);
   },
+  // Room for all of it first, `try_reserve(len)`, as std's does, so its
+  // capacity is native Rust's (#1338).
   readToEnd(r, v) {
     const all = r.value;
+    $reserve(v, all.length, 1);
     for (let i = 0; i < all.length; i++) v.push(all[i]);
     r.value = $part(all, all.length);
     return { TAG: "Ok", _0: all.length };
@@ -1153,6 +1156,7 @@ export const $dequeReader = {
   readToEnd(r, v) {
     const d = r.value;
     const n = d.length;
+    $reserve(v, n, 1);
     for (let i = 0; i < n; i++) v.push(d[i]);
     d.length = 0;
     return { TAG: "Ok", _0: n };
@@ -1243,6 +1247,7 @@ export function $cursorReader(TAsRef) {
     },
     readToEnd(r, v) {
       const from = rest(r.value);
+      $reserve(v, from.length, 1);
       for (let i = 0; i < from.length; i++) v.push(from[i]);
       moved(r.value, from.length);
       return { TAG: "Ok", _0: from.length };
