@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     "name": "rev-never-in-place",
     "breaks": "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            if steps_as_js(callee, index, &found, at, (made, maker)) {\n",
-    "replace": "            if false && steps_as_js(callee, index, &found, at, (made, maker)) {\n",
+    "find": "            if steps_as_js(callee, index, &found, at, (made, maker, made_ty)) {\n",
+    "replace": "            if false && steps_as_js(callee, index, &found, at, (made, maker, made_ty)) {\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     "name": "rev-own-impl-in-place",
     "breaks": "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n                && (std ||",
-    "replace": "            (std || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n                && (std ||",
+    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    "replace": "        (std || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     "name": "holder-param-steps-js",
     "breaks": "a `map()` given to the crate's `T` bound by nothing, `set_get(&mut it, (5..8).map(f))`'s, is made a JS iterator, which the caller's std struct then reads as its own (#537)",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n                && (std ||",
-    "replace": "            (callee.is_local() || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n                && (std ||",
+    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    "replace": "        (callee.is_local() || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -233,8 +233,8 @@ export const mutations: Mutation[] = [
     name: "flatten-wanted-made-in-place",
     breaks: "a flatten given where its hint is asked is made in place, JS's own `flatMap`, which knows no items' constant size: `(0, None)` (#1323)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "            if flattens(maker) && wanted.contains(&made) {\n",
-    replace: "            if flattens(maker) && false {\n",
+    find: "        if flattens(maker) && wanted.contains(&made) {\n",
+    replace: "        if flattens(maker) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
@@ -269,5 +269,13 @@ export const mutations: Mutation[] = [
     find: "    if std_iterators {\n",
     replace: "    if false && std_iterators {\n",
     tests: ["test/iterator-forms.test.ts"],
+  },
+  {
+    name: "chars-map-under-a-cycle-in-place",
+    breaks: "a `map` of a string's `chars()` a `cycle()` holds is JS's own `map`, which knows no hint, so the cycle hints `(0, None)` and the collect steps it forever where std panics `capacity overflow` (#1367)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "        if callee == cycle && hint_lost(made_ty) {\n",
+    replace: "        if false && hint_lost(made_ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_a_chars_map_reserves_by_its_hint.rs$"],
   },
 ];

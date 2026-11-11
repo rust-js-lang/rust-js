@@ -46,7 +46,14 @@ pub(in crate::lower) fn decide<'tcx>(
         let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
         let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
         let observed = |at: (DefId, usize), given: ty::Ty<'tcx>| recognition.collect_hint_seen(at, given);
-        in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart, (&hint_asked, &observed))
+        let hint_lost = |made: ty::Ty<'tcx>| recognition.in_place_hint_lost(made);
+        in_place_adapters(
+            tcx,
+            &body.thir,
+            stepped_result,
+            cloned_apart,
+            (&hint_asked, &observed, &hint_lost),
+        )
     };
     let mut sets: Vec<IndexSet<Span>> = bodies.iter().map(|body| made(body, None)).collect();
     // Each closure given a `flat_map` made in place.
@@ -93,7 +100,11 @@ pub(super) fn in_place_adapters<'tcx>(
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
     cloned_apart: impl Fn(ty::Ty<'tcx>) -> bool,
-    (hint_asked, observed): (&IndexSet<DefId>, &impl Fn((DefId, usize), ty::Ty<'tcx>) -> bool),
+    (hint_asked, observed, hint_lost): (
+        &IndexSet<DefId>,
+        &impl Fn((DefId, usize), ty::Ty<'tcx>) -> bool,
+        &impl Fn(ty::Ty<'tcx>) -> bool,
+    ),
 ) -> IndexSet<Span> {
     use crate::lower::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
@@ -147,7 +158,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 && !held_to_clone
                 && (!crate::lower::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))
             {
-                given.push((fn_span, at, callee, index, maker));
+                given.push((fn_span, at, callee, index, (maker, thir[arg].ty)));
             }
         }
     }
@@ -215,38 +226,49 @@ pub(super) fn in_place_adapters<'tcx>(
             break;
         }
     }
-    let steps_as_js =
-        |callee: DefId, index: usize, in_place: &IndexSet<Span>, at: Span, (made, maker): (Span, DefId)| {
-            // A flatten whose hint is asked where it's given (`wanted`): held,
-            // std's struct, which knows its items' constant size, as of
-            // `size_hint()` itself; JS's own `flatMap` knows none (ADR 0899,
-            // #1323).
-            if flattens(maker) && wanted.contains(&made) {
-                return false;
-            }
-            // Another of them, itself made in place, `enumerate().rev()`'s: in
-            // place too.
-            if crate::lower::recognition::makes_held_compiled(tcx, callee) {
-                return in_place.contains(&at);
-            }
-            if callee == size_hint && !sized(maker) {
-                return false;
-            }
-            let std = crate::lower::recognition::is_std_crate(tcx, callee)
-                && !crate::lower::recognition::is_compiled_std(tcx, callee);
-            // What it's given for, a type parameter bound by `Iterator` or
-            // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
-            // `next_back()`'s and `len()`'s too: not one that holds it,
-            // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
-            // `Self`, its own compiled impl's, of its struct (#537).
-            let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
-            let input = inputs.get(index).map(|input| *input.peel_refs().kind());
-            let Some(ty::Param(param)) = input else {
-                return false;
-            };
-            crate::lower::iterators::bound_as_iterator(tcx, callee, param)
-                && (std || callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))
+    let steps_as_js = |callee: DefId,
+                       index: usize,
+                       in_place: &IndexSet<Span>,
+                       at: Span,
+                       (made, maker, made_ty): (Span, DefId, ty::Ty<'tcx>)| {
+        // A flatten whose hint is asked where it's given (`wanted`): held,
+        // std's struct, which knows its items' constant size, as of
+        // `size_hint()` itself; JS's own `flatMap` knows none (ADR 0899,
+        // #1323).
+        if flattens(maker) && wanted.contains(&made) {
+            return false;
+        }
+        // One a `cycle()` holds, whose JS made in place loses std's hint, a
+        // `map` of a string's `chars()`: held, std's struct, whose hint asks
+        // its source's, as the cycle's own asks it, wherever its hint is
+        // asked, a `String`'s collect's reserve, a crate's iterator that
+        // holds the cycle (`in_place_hint_lost`, #1367).
+        if callee == cycle && hint_lost(made_ty) {
+            return false;
+        }
+        // Another of them, itself made in place, `enumerate().rev()`'s: in
+        // place too.
+        if crate::lower::recognition::makes_held_compiled(tcx, callee) {
+            return in_place.contains(&at);
+        }
+        if callee == size_hint && !sized(maker) {
+            return false;
+        }
+        let std = crate::lower::recognition::is_std_crate(tcx, callee)
+            && !crate::lower::recognition::is_compiled_std(tcx, callee);
+        // What it's given for, a type parameter bound by `Iterator` or
+        // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
+        // `next_back()`'s and `len()`'s too: not one that holds it,
+        // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
+        // `Self`, its own compiled impl's, of its struct (#537).
+        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        let input = inputs.get(index).map(|input| *input.peel_refs().kind());
+        let Some(ty::Param(param)) = input else {
+            return false;
         };
+        crate::lower::iterators::bound_as_iterator(tcx, callee, param)
+            && (std || callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))
+    };
     let mut found = IndexSet::default();
     // What a closure gives that's stepped where it's given, `flat_map`'s:
     // made in place, as one given to it would be.
@@ -366,8 +388,8 @@ pub(super) fn in_place_adapters<'tcx>(
     // steps, those of another made of it in place too, to the fixed point.
     loop {
         let before = found.len();
-        for &(made, at, callee, index, maker) in &given {
-            if steps_as_js(callee, index, &found, at, (made, maker)) {
+        for &(made, at, callee, index, (maker, made_ty)) in &given {
+            if steps_as_js(callee, index, &found, at, (made, maker, made_ty)) {
                 found.insert(made);
             }
         }

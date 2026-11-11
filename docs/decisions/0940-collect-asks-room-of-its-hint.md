@@ -294,3 +294,21 @@ ask nothing as before. The runtime's `$reserveHint` panics as std does. Corpus c
 builds; mutations `room-hint-asked-of-own-alone` and
 `cycle-room-never-passed`. A `cycle()` of JS's own adapter in the plain
 build, `chars().map(f).cycle()`, whose JS hint isn't std's, is #1367's.
+
+## Amendment (2026-11-11): what a cycle steps is held where JS would lose its hint (#1367)
+
+#1358's ask of the hint before a `String` or a hash table is filled met, in
+the plain build, a `cycle()` of JS's own `map` of a string's `chars()`. The
+runtime's `$chars` knows std's hint, but JS's adapters of it keep none of
+it (#1186). So `$cycleOf` read `(0, None)` of its source where std's
+`Cycle` gives `usize::MAX`, and the collect stepped it forever. A `cycle()`
+asks its source's hint wherever its own is asked: by a collect's reserve, by
+generic code it's given to, by the crate's own iterator that holds it, which
+no ask at the collect can see. So an adapter a `cycle()` holds whose JS made
+in place loses std's hint (`in_place_hint_lost`, one over `chars()` or
+`char_indices()`) is held, std's struct, `iterator_map($chars("ab"), f)`,
+whose hint asks its source's, as #1323 holds a flatten. A plain `map` of
+`chars()` is made as before. Corpus case
+`cycle_of_a_chars_map_reserves_by_its_hint.rs` against native Rust in both
+builds and every metamorphic rewrite; mutation
+`chars-map-under-a-cycle-in-place`.

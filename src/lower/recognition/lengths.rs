@@ -87,6 +87,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.hint_reaches_own(ty) || self.lower_bound_may_pass_room(ty)
     }
 
+    /// Whether JS's own adapter, made in place, of an iterator of type
+    /// `ty` loses std's hint: one over a string's `chars()` or
+    /// `char_indices()`, the runtime's `$chars`, whose hint JS's adapters
+    /// keep none of (#1186), through std's adapters. Where its hint is asked,
+    /// a `cycle()` above it, it's held, std's struct, whose hint asks its
+    /// source's (#1367).
+    pub(in crate::lower) fn in_place_hint_lost(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
+            (held.into_iter()).any(|held| {
+                let held = self.reveal(held.peel_refs());
+                self.is_str_chars(held) || self.is_char_indices(held) || self.in_place_hint_lost(held)
+            })
+        })
+    }
+
     /// Whether std's lower bound of an iterator of type `ty` may pass the
     /// room a `String` or a hash table has, `isize::MAX` bytes: of an
     /// endless one, a `repeat`, `repeat_n`'s or `repeat_with`'s, an `n..`;
