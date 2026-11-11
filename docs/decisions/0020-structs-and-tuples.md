@@ -307,3 +307,18 @@ a function's. The metamorphic net's `for-each` rewrite of
 `enumerate_mut_patterns` found it. Held by the corpus case
 `for_each_changes_items_in_place` against native Rust; mutation
 `closure-param-binding-unchanging` (`lower/analysis/mutation.ts`).
+
+## Amendment: what custom MIR changes in place, and gives (#1396)
+
+A body written in custom MIR (`injection_phase`) has a THIR of the
+`mir!` macro's calls, not of its writes, so `mutated_types` read nothing
+it changes: its write to an enum variant's field, `(_2 as A).0 = 9`,
+which Rust can't write of an enum but its MIR may, left the `Copy` enum
+uncopied, `_5 = _2` one object in JS, the write changing both. Of such a
+body, what it changes in place is read from its MIR (`analysis/mutation.rs`'
+`custom_mir_writes`): each object a write through a projection goes
+through, and what a `&mut` or `*mut` is made of. And `assign`'s hand-over
+of what the function gives uncopied, a variable nothing reads after,
+which rustc's MIR writes last, isn't made of custom MIR, which may write
+the variable after: `RET = _5` then `(_5 as A).0 = 7`. Rustlantis's seed
+1646 printed `_2 = -64` where Rust's is `0`; now as Rust.

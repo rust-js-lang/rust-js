@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(raw_pointer_writes_a_copy|pointer_to_a_parameter_taken_by_value).rs$"],
   },
+  {
+    name: "custom-mir-writes-unread",
+    breaks: "what custom MIR changes in place, a write to an enum variant's field, isn't read from its MIR, so a `Copy` enum's copy shares one object with what it's copied from (#1396)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        custom_mir_writes(tcx, body, &mut mutated);\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
+  },
 ];

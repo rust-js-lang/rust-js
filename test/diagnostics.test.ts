@@ -607,3 +607,19 @@ test("intrinsics called as themselves run as their methods", () => {
   const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
   expect(ran.stdout.toString()).toBe("78563412 807060504030201 1329227995784915872903807060280344576\n32767 128\n13 63 7\n34567812 81234567\n5.551115123125783e-17 1.4901161e-8\n1.0004884 1.0004883\n30\n");
 });
+
+// Custom MIR may copy a `Copy` enum and change either after, by a write
+// to its variant's field, `(_2 as A).0 = 9`, which Rust can't write of an
+// enum, and give a variable as the function's result then change it: each
+// copy is apart, as Rust's, where JS shared one object (#1396). Its THIR
+// is the `mir!` macro's calls, so what it changes in place is read from
+// its MIR; and what a function gives is copied where custom MIR writes
+// the variable after.
+test("custom MIR's copy of a Copy enum it changes after is apart", () => {
+  const dir = fixture("custom-mir-copied-enum");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, "#![feature(custom_mir, core_intrinsics)]\n#![allow(internal_features)]\nuse core::intrinsics::mir::*;\n\n#[derive(Debug, Clone, Copy)]\npub enum E {\n    A { x: i8, y: i64 },\n    B(u8),\n}\n\n#[custom_mir(dialect = \"runtime\", phase = \"initial\")]\npub fn f(n: i8) -> E {\n    mir! {\n        let _2: E;\n        let _5: E;\n        {\n            _2 = E::A { x: n, y: 2_i64 };\n            _5 = _2;\n            place!(Field::<i8>(Variant(_2, 0), 0)) = 9_i8;\n            RET = _5;\n            place!(Field::<i8>(Variant(_5, 0), 0)) = 7_i8;\n            Return()\n        }\n    }\n}\n\npub fn main() {\n    println!(\"{:?}\", f(1));\n}\n");
+  run([compiler, input, "-o", join(dir, "lib.js")], 120_000, { RUSTC_BOOTSTRAP: "1" });
+  const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  expect(ran.stdout.toString()).toBe("A { x: 1, y: 2 }\n");
+});

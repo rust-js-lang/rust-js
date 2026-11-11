@@ -70,12 +70,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What the function gives, a variable of its own nothing reads after:
         // that, handed over uncopied. Not of a `Cell` in it, which
-        // a drop after may set.
+        // a drop after may set. Nor of custom MIR, which may write the
+        // variable after it's given, `RET = _5` then `(_5 as A).0 = 9`:
+        // rustc writes what a function gives last (#1396).
         let handed;
         let rvalue = match rvalue {
             Rvalue::Use(Operand::Copy(from), retag)
                 if *place == Place::from(mir::RETURN_PLACE)
                     && from.projection.is_empty()
+                    && state.body.injection_phase.is_none()
                     && (from.ty(state.body, self.tcx).ty).is_freeze(self.tcx, self.typing_env) =>
             {
                 handed = Rvalue::Use(Operand::Move(*from), *retag);

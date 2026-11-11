@@ -12,6 +12,3 @@ refused custom-mir a `&mut` of a number kept or given, from its MIR
 # A `*mut` through a shared reference, `addr_of_mut!((*r))` of an `&u128`, E0596 in Rust;
 # ordinary code's own refusal of it is #1283's.
 refused custom-mir addressable memory yet: a raw pointer to this place
-#
-# Wrong: a copy of a value whose type isn't `Copy`, `_5 = RET;` of an enum, one object in JS.
-wrong #1396 \n_\d+ = RET;\n

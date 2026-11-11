@@ -993,4 +993,12 @@ export const mutations: Mutation[] = [
     replace: "            ))\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
   },
+  {
+    name: "custom-mir-result-handed-over",
+    breaks: "a variable custom MIR gives as the function's result, then writes, is handed over uncopied, so the write changes the result (#1396)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    && state.body.injection_phase.is_none()\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
+  },
 ];

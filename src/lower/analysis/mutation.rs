@@ -19,6 +19,7 @@ use rustc_span::def_id::DefId;
 pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
     let mut mutated = IndexSet::default();
     for body in all_bodies {
+        custom_mir_writes(tcx, body, &mut mutated);
         // A `let`'s pattern's too, `let (a, _) = &mut t;`, and a closure's
         // or a function's parameter's, `|(a, b)|` of `iter_mut()`'s items,
         // `for_each(|(a, b)| *a += 1)` as a `for` loop's pattern (#1076).
@@ -234,6 +235,67 @@ fn written_through_capture(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>,
 /// place's, and a string can't change. Nor an `Rc` or a `Weak`, which its
 /// owners share: a `&mut` to one is a cell, whose `*r = v` gives the place
 /// another (ADR 0147, amended).
+/// Of a body written in custom MIR (`injection_phase`), whose THIR is the
+/// `mir!` macro's calls, not its writes: each object its MIR changes in
+/// place, read from the MIR itself. A write through a projection,
+/// `(RET as Variant0).1 = v` or `_5.0 = v`, changes each object along it,
+/// the enum, the tuple; a `&mut` or `*mut` of a place may change it. Its
+/// copy, `_5 = RET` of a `Copy` enum, is then made apart, where JS shared
+/// one object and a write through either changed both (#1396).
+fn custom_mir_writes<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, mutated: &mut IndexSet<Ty<'tcx>>) {
+    use rustc_middle::mir::{Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind};
+    let Some(mir) = &body.mir else {
+        return;
+    };
+    let mir = &mir.body;
+    if mir.injection_phase.is_none() {
+        return;
+    }
+    let mut changed = |place: &Place<'tcx>, whole: bool| {
+        let mut ty = mir.local_decls[place.local].ty;
+        let mut on = vec![ty];
+        for elem in place.projection {
+            if matches!(elem, ProjectionElem::Deref) {
+                on.clear();
+            }
+            ty = rustc_middle::mir::PlaceTy::from_ty(ty).projection_ty(tcx, elem).ty;
+            on.push(ty);
+        }
+        // What's written whole isn't changed in place; what holds it is.
+        if !whole {
+            on.pop();
+        }
+        for ty in on {
+            if object_like(tcx, ty) {
+                mutated.insert(ty);
+            }
+        }
+    };
+    for block in mir.basic_blocks.iter() {
+        for statement in &block.statements {
+            match &statement.kind {
+                StatementKind::Assign(assign) => {
+                    if !assign.0.projection.is_empty() {
+                        changed(&assign.0, false);
+                    }
+                    match &assign.1 {
+                        Rvalue::Ref(_, rustc_middle::mir::BorrowKind::Mut { .. }, place)
+                        | Rvalue::RawPtr(rustc_middle::mir::RawPtrKind::Mut, place) => changed(place, true),
+                        _ => {}
+                    }
+                }
+                StatementKind::SetDiscriminant { place, .. } => changed(place, true),
+                _ => {}
+            }
+        }
+        if let TerminatorKind::Call { destination, .. } = &block.terminator().kind
+            && !destination.projection.is_empty()
+        {
+            changed(destination, false);
+        }
+    }
+}
+
 fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     match ty.kind() {
         ty::Adt(..)

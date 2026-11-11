@@ -131,6 +131,6 @@ test("the Rustlantis net's list holds what each of its issues is", () => {
   expect(of("refused", "error: rust-js does not support calling `std::env::args` yet")).toBeUndefined();
   expect(of("crashed", "thread 'rustc' has overflowed its stack")).toBeUndefined();
   expect(of("refused", "error: rust-js does not support addressable memory yet: a raw pointer to this place")).toBe("custom-mir");
-  expect(of("wrong", "_2 = 1_i8;\n_5 = RET;\n_2 = 3_i8;")).toBe("#1396");
+  expect(of("wrong", "_2 = 1_i8;\n_5 = RET;\n_2 = 3_i8;")).toBeUndefined();
   expect(of("threw", "ReferenceError: _3 is not defined")).toBeUndefined();
 });
