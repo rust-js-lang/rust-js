@@ -181,4 +181,13 @@ export const mutations: Mutation[] = [
     replace: "                    Some(parts) => each.extend(match parts { KeyParts::Array(item) => vec![item; 536870907], KeyParts::Tuple(parts) => parts }.into_iter().rev().map(class_key)),\n",
     tests: ["test/runtime-package.test.ts", "-t", "a type parameter's items compiles within a gigabyte"],
   },
+  {
+    name: "never-holding-fact-asked",
+    breaks: "a fact a type built of a type parameter can never have, whatever its callers give, `vec::IntoIter<Held<I>>`'s `TrustedRandomAccessNoCoerce`, no impl making `Held<_>` `Copy`, is asked of callers, none of whom gives it, and refused (#1385)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        Err(_) if !crate::lower::generic_facts::may_hold_for_some(tcx, ty, trait_id) => Some(false),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_what_is_never_random_access"],
+  },
+
 ];

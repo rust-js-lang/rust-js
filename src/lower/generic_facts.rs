@@ -32,6 +32,7 @@
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `src/lower/instances.rs given_calls_of` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
+//! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
 
 use super::FnCx;
 use crate::js::Expr;
@@ -260,4 +261,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
         }
     }
+}
+
+/// Whether any types given for `ty`'s type parameters, and values for its
+/// const parameters, may make `trait_id` hold of it, each an unknown: of `vec::IntoIter<T>`'s
+/// `TrustedRandomAccessNoCoerce`, whose impl asks `T: Copy`, yes; of
+/// `vec::IntoIter<MultiProductIter<I>>`'s, no, as no impl makes
+/// `MultiProductIter<_>` `Copy`, whatever `I` is (#1385).
+pub(in crate::lower) fn may_hold_for_some<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    trait_id: DefId,
+) -> bool {
+    use rustc_middle::ty::TypeFoldable;
+    use rustc_trait_selection::infer::TyCtxtInferExt;
+    use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
+    let infcx = tcx.infer_ctxt().build(ty::TypingMode::non_body_analysis());
+    let mut unknown = ty::BottomUpFolder {
+        tcx,
+        ty_op: |t: Ty<'tcx>| match t.kind() {
+            ty::Param(_) => infcx.next_ty_var(rustc_span::DUMMY_SP),
+            _ => t,
+        },
+        lt_op: |r| r,
+        ct_op: |c: ty::Const<'tcx>| match c.kind() {
+            ty::ConstKind::Param(_) => infcx.next_const_var(rustc_span::DUMMY_SP),
+            _ => c,
+        },
+    };
+    let ty = tcx.erase_and_anonymize_regions(ty).fold_with(&mut unknown);
+    let obligation = rustc_trait_selection::traits::Obligation::new(
+        tcx,
+        rustc_trait_selection::traits::ObligationCause::dummy(),
+        ty::ParamEnv::empty(),
+        ty::TraitRef::new(tcx, trait_id, [ty]),
+    );
+    infcx.predicate_may_hold(&obligation)
 }

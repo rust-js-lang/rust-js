@@ -119,3 +119,27 @@ both builds. The mutations are:
 - `struct-steps-own-params-unfilled`
 - `zip-clone-uncompiled`
 - `index-reader-array-first`
+
+## Amendment: a fact no types given its parameters can make hold is known here (2026-11-11, #1385)
+
+itertools' probe, past #1370, was refused at "whether it's a
+`TrustedRandomAccessNoCoerce` of `vec::IntoIter<MultiProductIter<I>>`,
+which no caller gives", `MultiProduct::last`'s zip. `trait_holds` took any
+type holding a type parameter, whose head has an impl of the trait, for one
+only its callers can answer. But `vec::IntoIter<T>`'s impl asks `T: Copy`,
+and no impl makes `MultiProductIter<_>` `Copy`, whatever `I` is: it never
+holds. `may_hold_for_some` (`generic_facts.rs`, the catalogue's owner)
+asks rustc whether the trait may hold of the type with each type parameter,
+and each const parameter, an unknown; where it can't, the fact is `false`,
+known here, asked of no caller. Of `vec::IntoIter<T>` it may, so it stays
+its callers', as before.
+
+Held by test/crates/pairs/library_zip_of_what_is_never_random_access (a
+library's zip of a `Vec` of what's never `Copy` with a slice's iterator,
+compiled by its consumer, given numbers and items that drop) against native
+Rust, refused without it, and the mutation `never-holding-fact-asked`.
+itertools' probe now stops at the same zip's other side,
+`vec::IntoIter<<I as Iterator>::Item>`, which may be `Copy`: a fact of a
+type built of a slot that `Iterator::zip`'s manifest asks, which no caller
+of a library's function compiled here is asked (`asked_of_caller` gives no
+ask of it), a gap of its own.

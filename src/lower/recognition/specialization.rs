@@ -866,6 +866,9 @@ pub(crate) fn trait_holds_in<'tcx>(
         {
             Some(false)
         }
+        // Of one holding a type parameter that no types given for it can
+        // make hold (`may_hold_for_some`), never, whatever its callers give.
+        Err(_) if !crate::lower::generic_facts::may_hold_for_some(tcx, ty, trait_id) => Some(false),
         Err(_) => None,
     }
 }
