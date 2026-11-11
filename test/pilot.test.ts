@@ -16,6 +16,7 @@ import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, KeptApp, root, run, stdDir } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
+import { browserDeadline, polled, seen, watcherSettled } from "./browser-waits";
 
 const checkout = join(root, "examples", "pilot");
 
@@ -101,8 +102,9 @@ beforeAll(async () => {
   // The client's Rust compiled, its maps too, as the developer builds it first.
   const first = rustJs();
   if (first.code !== 0) throw new Error(`rust-js build failed:\n${first.stderr}`);
-  vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0 } });
+  vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0, watch: polled } });
   await vite.listen();
+  await watcherSettled(vite, vite.config.root);
 }, 600_000);
 
 afterAll(async () => {
@@ -133,6 +135,7 @@ async function launched(): Promise<Browser> {
 
 async function open(hash = "#/"): Promise<Page> {
   const page = await (await launched()).newPage();
+  page.setDefaultTimeout(browserDeadline());
   await page.goto(vite!.resolvedUrls!.local[0] + hash);
   return page;
 }
@@ -187,13 +190,13 @@ test("the pilot's committed JS is what rust-js writes from its Rust", async () =
 test("the list loads from the server, and a search shows only what matches", async () => {
   const page = await open();
   const names = page.locator(".contacts li a");
-  await names.first().waitFor();
+  await seen(names.first());
   expect(await names.allTextContents()).toEqual(["Ada Lovelace", "Alan Turing", "Grace Hopper"]);
   await page.getByLabel("Search").fill("gr");
-  await page.locator(".contacts li a", { hasText: "Grace Hopper" }).waitFor();
+  await seen(page.locator(".contacts li a", { hasText: "Grace Hopper" }));
   expect(await settled(names, ["Grace Hopper"])).toEqual(["Grace Hopper"]);
   await page.getByLabel("Search").fill("nobody");
-  await page.getByText("No contacts match.").waitFor();
+  await seen(page.getByText("No contacts match."));
   await page.close();
 }, underLoad(60_000));
 
@@ -201,7 +204,7 @@ test("the list loads from the server, and a search shows only what matches", asy
 // older request is aborted.
 test("a slow answer to an older search doesn't replace a newer one's", async () => {
   const page = await open();
-  await page.locator(".contacts li a").first().waitFor();
+  await seen(page.locator(".contacts li a").first());
   let slow = 0;
   await page.route(/\/api\/contacts\?q=a$/, async (route) => {
     slow++;
@@ -211,7 +214,7 @@ test("a slow answer to an older search doesn't replace a newer one's", async () 
   await page.getByLabel("Search").fill("a");
   await page.getByLabel("Search").fill("alan");
   const names = page.locator(".contacts li a");
-  await page.locator(".contacts li a", { hasText: "Alan Turing" }).waitFor();
+  await seen(page.locator(".contacts li a", { hasText: "Alan Turing" }));
   expect(await settled(names, ["Alan Turing"])).toEqual(["Alan Turing"]);
   await Bun.sleep(1_500);
   expect(slow).toBe(1);
@@ -222,13 +225,13 @@ test("a slow answer to an older search doesn't replace a newer one's", async () 
 test("a contact is its own page, and one that doesn't exist says so", async () => {
   const page = await open();
   await page.getByRole("link", { name: "Grace Hopper" }).click();
-  await page.getByRole("heading", { name: "Grace Hopper" }).waitFor();
+  await seen(page.getByRole("heading", { name: "Grace Hopper" }));
   expect(page.url()).toEndWith("#/contacts/3");
   expect(await page.locator("dd").allTextContents()).toEqual(["grace@example.com", "85"]);
   await page.goto(vite!.resolvedUrls!.local[0] + "#/contacts/99");
-  await page.getByText("There's no contact 99.").waitFor();
+  await seen(page.getByText("There's no contact 99."));
   await page.goto(vite!.resolvedUrls!.local[0] + "#/nowhere");
-  await page.getByText("There's no such page.").waitFor();
+  await seen(page.getByText("There's no such page."));
   await page.close();
 }, underLoad(60_000));
 
@@ -244,7 +247,7 @@ test("the form checks as the server does, shows the server's errors, and adds a 
   await page.getByLabel("Age").fill("old");
   await submit.click();
   const errors = page.locator(".field-error");
-  await errors.first().waitFor();
+  await seen(errors.first());
   expect(await errors.allTextContents()).toEqual(['a name is required', '"not an email" isn\'t an email address', '"old" isn\'t a whole number']);
   expect(await page.getByLabel("Email").getAttribute("aria-invalid")).toBe("true");
   expect(posts).toEqual([]);
@@ -253,18 +256,18 @@ test("the form checks as the server does, shows the server's errors, and adds a 
   await page.getByLabel("Email").fill("ADA@example.com");
   await page.getByLabel("Age").fill("30");
   await submit.click();
-  await page.getByText("ADA@example.com is taken").waitFor();
+  await seen(page.getByText("ADA@example.com is taken"));
   expect(posts.map((body) => JSON.parse(body))).toEqual([{ name: "Ada Again", email: "ADA@example.com", age: 30 }]);
 
   await page.getByLabel("Name").fill("  Katherine Johnson ");
   await page.getByLabel("Email").fill("katherine@example.com");
   await page.getByLabel("Age").fill("101");
   await submit.click();
-  await page.getByRole("heading", { name: "Katherine Johnson" }).waitFor();
-  await page.getByText("Added Katherine Johnson").waitFor();
+  await seen(page.getByRole("heading", { name: "Katherine Johnson" }));
+  await seen(page.getByText("Added Katherine Johnson"));
   expect(page.url()).toMatch(/#\/contacts\/\d+$/);
   await page.getByRole("link", { name: "Contacts", exact: true }).click();
-  await page.getByRole("link", { name: "Katherine Johnson" }).waitFor();
+  await seen(page.getByRole("link", { name: "Katherine Johnson" }));
   await page.close();
 }, underLoad(60_000));
 
@@ -309,17 +312,17 @@ function saved(text: string) {
 test("a build of the Rust is a Fast Refresh, which keeps what's typed", async () => {
   const page = await open();
   await page.getByLabel("Search").fill("gr");
-  await page.locator(".contacts li a", { hasText: "Grace Hopper" }).waitFor();
+  await seen(page.locator(".contacts li a", { hasText: "Grace Hopper" }));
   await page.evaluate(() => Object.assign(window, { kept: true }));
   try {
     saved(heading("People"));
-    await page.getByRole("heading", { name: "People" }).waitFor();
+    await seen(page.getByRole("heading", { name: "People" }));
     expect(await page.getByLabel("Search").inputValue()).toBe("gr");
     expect(await page.evaluate(() => "kept" in window)).toBe(true);
   } finally {
     saved(listSource);
   }
-  await page.getByRole("heading", { name: "Contacts" }).waitFor();
+  await seen(page.getByRole("heading", { name: "Contacts" }));
   await page.close();
 }, underLoad(120_000));
 
@@ -327,7 +330,7 @@ test("a build of the Rust is a Fast Refresh, which keeps what's typed", async ()
 // app runs on as it last compiled, and the next build is the fix (M3.4).
 test("a compile error is rust-js build's, and the app runs on until it's fixed", async () => {
   const page = await open();
-  await page.locator(".contacts li a").first().waitFor();
+  await seen(page.locator(".contacts li a").first());
   try {
     writeFileSync(list, listSource + "\npub fn broken(");
     const broken = rustJs();
@@ -335,11 +338,11 @@ test("a compile error is rust-js build's, and the app runs on until it's fixed",
     await page.getByLabel("Search").fill("ada");
     expect(await settled(page.locator(".contacts li a"), ["Ada Lovelace"])).toEqual(["Ada Lovelace"]);
     saved(heading("Fixed"));
-    await page.getByRole("heading", { name: "Fixed" }).waitFor();
+    await seen(page.getByRole("heading", { name: "Fixed" }));
   } finally {
     saved(listSource);
   }
-  await page.getByRole("heading", { name: "Contacts" }).waitFor();
+  await seen(page.getByRole("heading", { name: "Contacts" }));
   await page.close();
 }, underLoad(120_000));
 
@@ -347,7 +350,7 @@ test("a compile error is rust-js build's, and the app runs on until it's fixed",
 // `list.rs`, as it was saved, and set its breakpoints there.
 test("the client the browser runs maps back to its Rust", async () => {
   const page = await open();
-  await page.locator(".contacts li a").first().waitFor();
+  await seen(page.locator(".contacts li a").first());
   const loaded = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
   const url = loaded.find((name) => /\/list\.jsx(\?|$)/.test(name));
   expect(url).toBeDefined();
@@ -385,14 +388,15 @@ test("the production build, served by the native server with its API, works", as
   const [server, at] = await startServer({ DIST: dist });
   try {
     const page = await (await launched()).newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(`${at}/#/`);
     const names = page.locator(".contacts li a");
-    await names.first().waitFor();
+    await seen(names.first());
     expect(await names.allTextContents()).toEqual(["Ada Lovelace", "Alan Turing", "Grace Hopper"]);
     await page.getByLabel("Search").fill("gr");
     expect(await settled(names, ["Grace Hopper"])).toEqual(["Grace Hopper"]);
     await names.first().click();
-    await page.getByRole("heading", { name: "Grace Hopper" }).waitFor();
+    await seen(page.getByRole("heading", { name: "Grace Hopper" }));
     expect(await page.locator("dd").allTextContents()).toEqual(["grace@example.com", "85"]);
     await page.close();
     // Its files, and nothing outside them.
@@ -413,12 +417,12 @@ test("the list says when the server can't answer, and tries again", async () => 
   api!.kill();
   await api!.exited;
   const page = await open();
-  await page.getByRole("alert").waitFor();
+  await seen(page.getByRole("alert"));
   expect(await page.getByRole("alert").textContent()).toContain("the server answered");
   const port = new URL(address).port;
   api = Bun.spawn([join(pilot, "target", "debug", "server")], { env: { ...process.env, PORT: port }, stdout: "ignore", stderr: "inherit" });
   await Bun.sleep(500);
   await page.getByRole("button", { name: "Try again" }).click();
-  await page.getByRole("link", { name: "Ada Lovelace" }).waitFor();
+  await seen(page.getByRole("link", { name: "Ada Lovelace" }));
   await page.close();
 }, underLoad(60_000));

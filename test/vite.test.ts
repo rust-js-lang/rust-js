@@ -9,6 +9,7 @@ import { chromium } from "@playwright/test";
 import { buildCompiler, cargoApp, compiler, fixture, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 import { underLoad } from "../scripts/timing";
+import { browserDeadline, polled, seen, watcherSettled } from "./browser-waits";
 
 // A Vite app is Vite's alone, its plugins React's and Tailwind's, and its
 // Rust is compiled by `rust-js build`, its own process (ADR 0412): Vite
@@ -69,23 +70,25 @@ pub fn App() -> JSX::Element {
   saved(dir, text, 'pub fn label() -> &\'static str { "Count " }');
   await build({ root: dir, configFile: false, plugins: [react()], logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0, watch: polled } });
   let browser;
   try {
     await server.listen();
+    await watcherSettled(server, server.config.root);
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const button = page.getByRole("button");
-    await button.filter({ hasText: "Count 0" }).waitFor();
+    await seen(button.filter({ hasText: "Count 0" }));
     await button.click();
-    await button.filter({ hasText: "Count 1" }).waitFor();
+    await seen(button.filter({ hasText: "Count 1" }));
     saved(dir, text, 'pub fn label() -> &\'static str { "Changed " }');
-    await button.filter({ hasText: "Changed 1" }).waitFor();
+    await seen(button.filter({ hasText: "Changed 1" }));
 
     saved(dir, app, source.replace("<button onClick", '<button className="updated" onClick'));
-    await page.locator("button.updated").waitFor();
+    await seen(page.locator("button.updated"));
     expect(await button.textContent()).toBe("Changed 1");
 
     // An error is rustc's, rust-js build's, and nothing is written: the page
@@ -96,20 +99,20 @@ pub fn App() -> JSX::Element {
     expect([broken.code, broken.output.includes("unclosed delimiter")]).toEqual([1, true]);
     expect(readFileSync(output, "utf8")).toBe(good);
     saved(dir, app, source);
-    await button.filter({ hasText: "Changed 1" }).waitFor();
+    await seen(button.filter({ hasText: "Changed 1" }));
 
     // A module gone is an error too, and back, it's what the page shows.
     unlinkSync(text);
     expect(rustJs(dir).code).toBe(1);
     saved(dir, text, 'pub fn label() -> &\'static str { "Restored " }');
-    await button.filter({ hasText: "Restored 1" }).waitFor();
+    await seen(button.filter({ hasText: "Restored 1" }));
 
     // A declared module, added and edited before a build: the build is of
     // the latest source.
     writeFileSync(app, source.replace("mod text;", "mod text; mod extra;").replace("text::label()", "extra::label()"));
     writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "First " }');
     saved(dir, join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }');
-    await button.filter({ hasText: /Latest [01]/ }).waitFor();
+    await seen(button.filter({ hasText: /Latest [01]/ }));
   } finally {
     await browser?.close();
     await server.close();
@@ -140,27 +143,29 @@ pub fn App() -> JSX::Element {
   writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "./App"; createRoot(document.getElementById("root")).render(<App/>);');
   expect(rustJs(dir).code).toBe(0);
   const plugins = [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins, logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins, logLevel: "silent", server: { port: 0, watch: polled } });
   let browser;
   try {
     await server.listen();
+    await watcherSettled(server, server.config.root);
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     const url = server.resolvedUrls.local[0];
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(url);
     const button = page.getByRole("button");
-    await button.filter({ hasText: "Count 0" }).waitFor();
+    await seen(button.filter({ hasText: "Count 0" }));
     expect(await button.evaluate(b => getComputedStyle(b).fontWeight)).toBe("700");
     // React Compiler's memo cache, in the component rust-js wrote.
     expect(await (await fetch(new URL("src/App.jsx", url))).text()).toMatch(/const \$ = _c\(\d+\);/);
     await button.click();
-    await button.filter({ hasText: "Count 1" }).waitFor();
+    await seen(button.filter({ hasText: "Count 1" }));
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     // A class that's new to Tailwind: its CSS arrives, and the state stays.
     saved(dir, join(dir, "src/App.rs"), app("font-bold underline"));
-    await page.locator("button.underline").waitFor();
+    await seen(page.locator("button.underline"));
     await page.waitForFunction(() => getComputedStyle(document.querySelector("button")!).textDecorationLine === "underline");
     expect(await button.textContent()).toBe("Count 1");
     expect(await page.evaluate(() => (window as any).sameDocument)).toBe(true);
@@ -297,25 +302,27 @@ thread_local! {
     pub static THEME: Context<&'static str> = create_context("light");
 }
 `);
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0, watch: polled } });
   let browser;
   try {
     await server.listen();
+    await watcherSettled(server, server.config.root);
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const theme = readFileSync(join(dir, "src/theme.js"), "utf8");
     expect(theme).toContain('export const Theme = createContext("light");');
     expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toContain('<Theme value="dark">');
     const button = page.getByRole("button");
-    await button.filter({ hasText: "Count 0" }).waitFor();
+    await seen(button.filter({ hasText: "Count 0" }));
     await button.click();
-    await button.filter({ hasText: "Count 1" }).waitFor();
+    await seen(button.filter({ hasText: "Count 1" }));
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     saved(dir, join(dir, "src/App.rs"), app("Clicks"));
-    await button.filter({ hasText: /^Clicks/ }).waitFor();
+    await seen(button.filter({ hasText: /^Clicks/ }));
     // The state, the context's value, and the page are all still there.
     expect(await button.textContent()).toBe("Clicks 1");
     expect(await button.getAttribute("class")).toBe("dark");
@@ -377,24 +384,26 @@ pub fn App() -> JSX::Element {
   expect(existsSync(join(dir, "models/src/lib.js"))).toBe(true);
   await build({ root: web, configFile: false, plugins: [react()], logLevel: "silent" });
   expect(readFileSync(join(web, "dist/index.html"), "utf8")).toContain("/assets/");
-  const server = await createServer({ root: web, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: web, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0, watch: polled } });
   let browser;
   try {
     await server.listen();
+    await watcherSettled(server, server.config.root);
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const button = page.getByRole("button");
-    await button.filter({ hasText: "Count 0" }).waitFor();
+    await seen(button.filter({ hasText: "Count 0" }));
     expect(await button.getAttribute("title")).toBe("hello from widget");
     await button.click();
-    await button.filter({ hasText: "Count 1" }).waitFor();
+    await seen(button.filter({ hasText: "Count 1" }));
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     writeFileSync(models, 'pub fn label() -> &\'static str {\n    "Changed "\n}\n');
     expect(rustJs(dir, ["--package", "ui"]).code).toBe(0);
-    await button.filter({ hasText: "Changed 1" }).waitFor();
+    await seen(button.filter({ hasText: "Changed 1" }));
     expect(await page.evaluate(() => (window as any).sameDocument)).toBe(true);
   } finally {
     await browser?.close();
