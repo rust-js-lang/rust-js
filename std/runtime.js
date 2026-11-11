@@ -850,8 +850,9 @@ export function $given(value, iterator, boxed = false, back, len) {
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a
   // JS iterator made of it, given its length, passes them over as it does
-  // (#703, #704).
-  if (Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
+  // (#703, #704). A unit struct's value is `undefined`, which has none
+  // (itertools' laziness tests).
+  if (value != null && Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
     $forward(it, value, {
       advanceBy: "advanceBy",
       advanceBackBy: "advanceBackBy",
@@ -4705,9 +4706,10 @@ export function $collectUnwinding(run, it, items, drop, restFirst) {
 // `it`, an iterator a variable or a temporary holds, which its owner drops
 // where Rust drops it, at its scope's or its statement's end: held, so
 // nothing it steps is dropped as it's done or ends early, but as it's
-// closed (ADR 0570 amended, #206).
+// closed (ADR 0570 amended, #206). A unit struct's, given as it is, is
+// `undefined`, which holds nothing (itertools' laziness tests).
 export function $held(it) {
-  it.hold?.();
+  it?.hold?.();
   return it;
 }
 
@@ -16331,12 +16333,13 @@ export function $sizeHint(it, iterator) {
   // `{ next: $rangeFromNext }`, `usize::MAX` and none known (ADR 0918, #400).
   const ranged = iterator === undefined ? undefined : $rangeHintOf(iterator.next);
   if (ranged !== undefined) return ranged(it);
-  // An explicit adapter's, its own, of what it steps (ADR 0542).
-  if (it.sizeHint !== undefined) return it.sizeHint();
+  // An explicit adapter's, its own, of what it steps (ADR 0542). Of a unit
+  // struct given as it is, `undefined`, none of these (itertools' laziness tests).
+  if (it?.sizeHint !== undefined) return it.sizeHint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
-  if (typeof it.of?.next === "function") return $sizeHint(it.of);
-  const left = Array.isArray(it.items) ? it.end - it.at : undefined;
+  if (typeof it?.of?.next === "function") return $sizeHint(it.of);
+  const left = Array.isArray(it?.items) ? it.end - it.at : undefined;
   if (left !== undefined) return [left, left];
   // Of a form of rust-js's own, `$Steps`, std's default, none known; of
   // JS's own iterator, a string's or an array's `drop(n)`, which knows no

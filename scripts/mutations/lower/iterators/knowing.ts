@@ -806,4 +806,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_hint_held.rs$"],
   },
+  {
+    name: "default-self-not-its-traits",
+    breaks: "a trait default's `Self`, lowered into an impl's dictionary, is asked of the default alone, which says it's a JS iterator, so `self.take(2)` is `Iterator.from(self)` of the value its callers give as it is, which throws (itertools' laziness tests)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        crate::lower::iterators::given_by_its_trait(self.tcx, owner, param.index)\n            || given_as_it_is(self.tcx, owner, param)\n",
+    replace: "        given_as_it_is(self.tcx, owner, param)\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
+  },
 ];

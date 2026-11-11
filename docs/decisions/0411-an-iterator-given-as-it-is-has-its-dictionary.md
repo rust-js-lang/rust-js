@@ -201,3 +201,40 @@ at the caller; it changed no corpus case's JS but the new one's.
 Results changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's are
 kept. Corpus case `own_iterator_given_on_behind_impl_trait`, both
 builds; mutation `given-as-it-is-blind-to-what-impl-trait-hides`.
+
+## Amendment: a default in a dictionary asks itself, and a unit struct is a value too (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): JS gave a wrong answer
+or threw where Rust runs, so Rust's behavior is kept. A P0: 12 of
+itertools' laziness tests failed as JS, each passing natively.
+
+**A trait's default lowered into an impl's dictionary asks itself how it
+takes its type parameters, as its callers ask it.** `fn then_all<J:
+IntoIterator>(self, other: J) -> Both<Self, J::IntoIter>` holds `J`'s
+iterator in a struct of its crate's, so its callers give `other` as it is,
+with its `IntoIterator` dictionary (ADR 0552). Its body asked the impl
+instead, `impl<T: Iterator> Tools for T`, the item it's lowered in, which
+has no `J`. So `other.into_iter()` became `$intoIter(other)`, a JS
+iterator's. Given a tuple struct, `Three(0)`, `[0]`, it read the array, and
+gave `[2, 3]` where Rust gives `[2, 3, 1, 2, 3]`. Given a unit struct, it
+threw. The function whose generics a body's types are in is now one
+answer, `FnCx::generics_fn`: the item's, a std closure's MIR inlined into
+it too, but a default's own where the item is an impl. The iterator facts
+ask it: given as it is, an `IntoIterator` held, `DoubleEndedIterator`,
+`ExactSizeIterator`. A trait's own parameter, `Self` of a default, is given
+as the trait's impl takes it (ADR 0551), `param_given_as_it_is`.
+
+**A unit struct's iterator is `undefined`, given as it is like any other
+value.** `$given` asked it for its own `advanceBackBy`, `$sizeHint` for its
+own `sizeHint`, and `$held` for its `hold`. Each read a property of
+`undefined` and threw. Each now asks only a value that has properties: a
+unit struct's has none of these.
+
+Held by `trait_default_takes_an_iterator_as_its_callers_give_it.rs` against
+native Rust in both builds, also in iterator forms' list; by the pair
+`library_default_takes_an_iterator_as_its_callers_give_it`, a library's
+default and function a consumer gives a unit struct's and a tuple struct's
+iterators; and by the mutations `default-in-a-dictionary-asks-its-impl`,
+`default-self-not-its-traits`, `given-unit-value-read`,
+`held-unit-value-read` and `size-hint-unit-value-read`. itertools'
+laziness tests now pass as JS, 67 of 67.

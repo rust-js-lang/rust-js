@@ -10,6 +10,20 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The function whose generics the types being lowered are in, which
+    /// its callers ask how it takes its type parameters: the item's, a
+    /// std closure's MIR inlined into it too; but of a trait's default
+    /// lowered into an impl's dictionary, whose item is the impl, the
+    /// default's, `J` of `fn chain_all<J: IntoIterator>(self, other: J)`
+    /// its own (itertools' laziness tests).
+    pub(super) fn generics_fn(&self) -> DefId {
+        let item = self.tcx.typeck_root_def_id(self.item);
+        match self.tcx.def_kind(item) {
+            rustc_hir::def::DefKind::Impl { .. } => self.tcx.typeck_root_def_id(self.frame.owner),
+            _ => item,
+        }
+    }
+
     /// The directives of a function's or a closure's body, `"use cache";`,
     /// its first statements (ADR 0349); a std body, read from its MIR, has none.
     pub(super) fn directives(&self, owner: DefId) -> Vec<Stmt> {

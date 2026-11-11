@@ -202,6 +202,9 @@ const few = [
   // Std's struct's `close`, an arrow made outside a function's body, its
   // cleanup guarded where it's made: a second panic aborts (#938).
   "collected_adapters_dropped_after_a_predicates_panic_abort.rs",
+  // A unit struct's iterator, `undefined`, given as it is: its hint asked
+  // of std's struct around it (itertools' laziness tests).
+  "trait_default_takes_an_iterator_as_its_callers_give_it.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")

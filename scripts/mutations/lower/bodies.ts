@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
+  {
+    name: "default-in-a-dictionary-asks-its-impl",
+    breaks: "a trait's default lowered into a blanket impl's dictionary asks the impl, not itself, whether it takes `J` as it is, so its `other.into_iter()` is `$intoIter(other)` of what its callers give as it is, and reads a tuple struct `[0]` as an array: `[2, 3]` where Rust gives `[2, 3, 1, 2, 3]` (itertools' laziness tests)",
+    file: "src/lower/bodies.rs",
+    find: "            rustc_hir::def::DefKind::Impl { .. } => self.tcx.typeck_root_def_id(self.frame.owner),\n",
+    replace: "            rustc_hir::def::DefKind::Impl { .. } => item,\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
+  },
 ];

@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(self.mut_ref_iterator_dictionary(of));
             }
             if let ty::Param(param) = tr.self_ty().kind()
-                && crate::lower::iterators::given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param)
+                && self.param_given_as_it_is(*param)
             {
                 return Err(self.unsupported(
                     span,
@@ -583,7 +583,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // iterator of it, as a `for` of it steps, stepped as one (ADR 0976).
         if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
             && let ty::Param(param) = *ty.kind()
-            && !crate::lower::iterators::given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), param)
+            && !self.param_given_as_it_is(param)
         {
             let items = crate::lower::iterators::given_into_iter(Expr::var("items"));
             let itself = Expr::arrow(

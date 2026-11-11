@@ -141,8 +141,9 @@ function $given(value, iterator, boxed = false, back, len) {
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a
   // JS iterator made of it, given its length, passes them over as it does
-  // (#703, #704).
-  if (Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
+  // (#703, #704). A unit struct's value is `undefined`, which has none
+  // (itertools' laziness tests).
+  if (value != null && Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
     $forward(it, value, {
       advanceBy: "advanceBy",
       advanceBackBy: "advanceBackBy",

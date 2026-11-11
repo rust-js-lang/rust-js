@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "given-slicing-hidden",
     breaks: "a `Vec`'s `IntoIter` given generic code its length asks is made a JS iterator that hides its slice's steps, so its `nth` there drops each, stopping at a panic (#703)",
     file: "src/runtime/iterator.js",
-    find: "  if (Object.hasOwn(value, \"advanceBackBy\") && value.items !== undefined) {\n",
+    find: "  if (value != null && Object.hasOwn(value, \"advanceBackBy\") && value.items !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
@@ -294,5 +294,13 @@ export const mutations: Mutation[] = [
     find: "    advanceBackBy: advanceBack && ((m) => advanceBack(iterator, m)),\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_advanced_by_its_bounds with std's iterator structs$"],
+  },
+  {
+    name: "given-unit-value-read",
+    breaks: "a unit struct's iterator, `undefined`, given as it is, is asked whether it has its own `advanceBackBy`, which throws, \"Cannot convert undefined or null to object\" (itertools' laziness tests)",
+    file: "src/runtime/iterator.js",
+    find: "  if (value != null && Object.hasOwn(value, \"advanceBackBy\")",
+    replace: "  if (Object.hasOwn(value, \"advanceBackBy\")",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
   },
 ];
