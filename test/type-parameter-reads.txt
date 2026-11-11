@@ -65,7 +65,8 @@ src/lower/mut_refs.rs	10
 src/lower/ordering.rs	6
 src/lower/passed_on.rs	2
 src/lower/plain.rs	2
-src/lower/pointers.rs	5
+src/lower/pointers.rs	2
+src/lower/pointers/casts.rs	3
 src/lower/recognition/calls.rs	1
 src/lower/recognition/fmt.rs	1
 src/lower/recognition/iterators.rs	4

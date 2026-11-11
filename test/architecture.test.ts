@@ -1148,9 +1148,11 @@ test("whether an item is rust-js's is compiled_by_rust_js alone", () => {
 
 // Whether a type is a raw pointer, a `NonNull`, which is its pointer, or a
 // pattern type of one, has one answer, `pointers::raw_pointee` (ADR 0407):
-// no other module matches rustc's raw pointer itself.
+// no other module matches rustc's raw pointer itself. Its casts, split from
+// it by concept, take apart a cast's two pointer types.
 test("a raw pointer is one by raw_pointee alone", () => {
-  const matching = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/pointers.rs")
+  const owner = ["src/lower/pointers.rs", "src/lower/pointers/casts.rs"];
+  const matching = files("src/lower").filter((file) => file.endsWith(".rs") && !owner.includes(file))
     .filter((file) => /ty::RawPtr\b/.test(read(file)));
   expect(matching).toEqual([]);
 });
