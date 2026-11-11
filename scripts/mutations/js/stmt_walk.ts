@@ -387,4 +387,12 @@ export const mutations: Mutation[] = [
       "on_load bodies that bind one name",
     ],
   },
+  {
+    name: "namespace-constants-read-nothing-at-load",
+    breaks: "a type's object is taken to read nothing as it's loaded, so one whose constant's value is a module's `const` declared after it is made first, and loading the module throws, `Cannot access 'UNSUPPORTED' before initialization`",
+    file: "src/js/stmt_walk.rs",
+    find: "                    Item::Namespace(namespace) => namespace.constants.iter().map(|c| &c.value).collect(),\n",
+    replace: "                    Item::Namespace(_) => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_const_of_a_later_const.rs$"],
+  },
 ];

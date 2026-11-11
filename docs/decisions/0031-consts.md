@@ -594,3 +594,20 @@ Held by `test/lowering-constants.test.ts`'s "constants side by side of a JS
 module's members are each their own", run in JS, and `test/modules.test.ts`'s
 clz32 order, `test/lowering-math.test.ts` and `test/crates.test.ts`'s
 library flag; mutation `module-members-read-together` (`prepare.ts`).
+
+## Amendment: a type's object is made after what its constants read (2026-11-12)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as Rust's
+constants have no order of their own.
+
+A module's items are laid out so each is made after what it reads as it's
+loaded: a `const`'s value, a statement. A type's object, which holds its
+inherent constants (ADR 0410), was taken to read nothing, so getrandom
+0.1's `impl Error { pub const UNKNOWN: Error = UNSUPPORTED; }`, with
+`const UNSUPPORTED` declared below it, made `export const Error$ = {
+UNKNOWN: UNSUPPORTED, .. }` first, and loading the module threw, "Cannot
+access 'UNSUPPORTED' before initialization", where Rust runs. A type's
+object reads what its constants' values do now, as a `const`'s, so it's
+made after them. Held by `associated_const_of_a_later_const.rs` against
+native Rust in both builds, and the mutation
+`namespace-constants-read-nothing-at-load`.

@@ -971,13 +971,25 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
             .map(|(i, item)| {
                 let mut seen = IndexSet::default();
                 let mut work = Vec::new();
-                match item {
-                    Item::Const(constant) => constant.value.visit_held_vars(&mut |v, only_held| match only_held {
+                // What's evaluated as it's loaded: a `const`'s value, and a
+                // type's object's constants' values, `UNKNOWN: UNSUPPORTED`
+                // of getrandom's `impl Error { const UNKNOWN: Error =
+                // UNSUPPORTED; }`, a module's `const` declared after it,
+                // which it read before it was made (#1404).
+                let values: Vec<&Expr> = match item {
+                    Item::Const(constant) => vec![&constant.value],
+                    Item::Namespace(namespace) => namespace.constants.iter().map(|c| &c.value).collect(),
+                    Item::Statements(stmts) => {
+                        visit_stmts(stmts, &mut |v| work.push(v));
+                        Vec::new()
+                    }
+                    Item::Function(_) => Vec::new(),
+                };
+                for value in values {
+                    value.visit_held_vars(&mut |v, only_held| match only_held {
                         true => _ = seen.insert(v),
                         false => work.push(v),
-                    }),
-                    Item::Statements(stmts) => visit_stmts(stmts, &mut |v| work.push(v)),
-                    Item::Namespace(_) | Item::Function(_) => {}
+                    });
                 }
                 let mut ran = IndexSet::default();
                 while let Some(name) = work.pop() {
