@@ -360,8 +360,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Into a BigInt, then into range.
                     (false, true) if fits => to_bigint(v),
                     (false, true) => target.wrap(to_bigint(v)),
-                    // A constant, or what a mask keeps in range: `x & 1023n`.
-                    (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),
+                    // A constant, folded exactly as the BigInt it is, never
+                    // through a JS number past 2^53, `18446744073709551615n`
+                    // as a `u32` `4294967295` (`Num::wrap`, #1380); or what a
+                    // mask keeps in range: `x & 1023n`.
+                    (true, false) if v.as_bigint().is_some() => target.wrap(v),
                     (true, false) if masked(&v).is_some_and(|mask| mask >= 0 && mask as u128 <= thi) => {
                         Expr::call(Expr::var("Number"), vec![v])
                     }

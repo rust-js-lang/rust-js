@@ -3,7 +3,9 @@
 // plain, `wrapping_`, `checked_`, `saturating_` and `overflowing_`; `/`,
 // `%`, their `_euclid`s; shifts and rotations; `pow`; negation and `abs`;
 // the bitwise operators; bit counts, `ilog`s and `isqrt`; `as` between
-// every pair of the 14 number types; `parse`, `from_str_radix` and
+// every pair of the 14 number types, of a value and of a literal a `let`
+// binds, which rustc gives as a constant cast, `let cast =
+// 18446744073709551615_u64 as u32;` (#1380); `parse`, `from_str_radix` and
 // `to_string`. Float arithmetic, `%`, the `_euclid`s, rounding, `sqrt`,
 // `powi`, `mul_add`, `to_bits` and the class of a float. The values are each
 // type's 0, ±1, 2, MIN, MIN+1, MAX-1 and MAX, and those about 2^31, 2^32,
@@ -194,6 +196,22 @@ export type NumberCase = Row & { group: string; ty: string; text: string; tys: s
 
 const cast = (from: Num, to: Num) => `${from.ty} as ${to.ty}`;
 
+/** An integer type's boundary value, `intValues`' expression, as the typed
+ * literal it is, `(-128_i8)`, exact: of what a type alias names, `Isz`
+ * and `Usz`, none, as no literal's suffix is one; they're `i32`'s and
+ * `u32`'s width, whose literals are. */
+function literal(n: Num, expr: string): string | undefined {
+  if (n.float || n.ty === "Isz" || n.ty === "Usz") return undefined;
+  const top = n.signed ? (1n << BigInt(n.bits - 1)) - 1n : (1n << BigInt(n.bits)) - 1n;
+  const bottom = n.signed ? -(1n << BigInt(n.bits - 1)) : 0n;
+  const js = expr
+    .replaceAll(`${n.ty}::MAX`, `(${top})`)
+    .replaceAll(`${n.ty}::MIN`, `(${bottom})`)
+    .replace(/\b(\d+)\b/g, "$1n");
+  const value: bigint = new Function(`return ${js};`)();
+  return value < 0n ? `(-${-value}_${n.ty})` : `${value}_${n.ty}`;
+}
+
 /** Each operation of each type it applies to, of each of its values and
  * each second operand it's given; each cast between every pair; each
  * string parsed as each type, and in each radix. */
@@ -215,6 +233,13 @@ export function numberCases(): NumberCase[] {
     for (const to of nums) {
       for (const a of valuesOf(from)) {
         out.push({ id: `${cast(from, to)} | ${a}`, group: "as", ty: from.ty, text: `${v(a, from.ty)} as ${to.ty}`, tys: [from.ty, to.ty] });
+        const lit = literal(from, a);
+        if (lit !== undefined) {
+          // Bound by a `let`, which rustc gives as the cast of a constant;
+          // a cast in `println!`'s arguments it promotes, and folds itself.
+          const text = `{ let cast = ${lit} as ${to.ty}; cast }`;
+          out.push({ id: `literal ${cast(from, to)} | ${a}`, group: "as literal", ty: from.ty, text, tys: [from.ty, to.ty] });
+        }
       }
     }
   }

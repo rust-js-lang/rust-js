@@ -122,10 +122,10 @@ for (const seed of seeds) {
 // (`known`), and its patterns hold what the experiment found of each.
 test("the Rustlantis net's list holds what each of its issues is", () => {
   const of = (kind: Known["kind"], text: string) => knownAs(list, [kind], text)?.by;
-  expect(of("wrong", "_2 = 4706315301130638003_i64 as u32;")).toBe("#1380");
-  expect(of("wrong", "_3 = (-57850311006394435500531941819513103853_i128) as isize;")).toBe("#1380");
-  expect(of("wrong", "RET = -(-121074413017490068518913278327093031545_i128);\n_4 = RET as i8;")).toBe("#1380");
-  expect(of("wrong", "_3 = 29156_i16 as i8;")).toBeUndefined();
+  // A wide literal's cast, #1380's, runs as Rust does: none holds it.
+  expect(of("wrong", "_2 = 4706315301130638003_i64 as u32;")).toBeUndefined();
+  expect(of("wrong", "_3 = (-57850311006394435500531941819513103853_i128) as isize;")).toBeUndefined();
+  expect(of("wrong", "RET = -(-121074413017490068518913278327093031545_i128);\n_4 = RET as i8;")).toBeUndefined();
   expect(of("refused", "error: rust-js does not support calling `std::intrinsics::bswap` yet")).toBe("#1384");
   expect(of("refused", "error: rust-js does not support a use of a local before any write of it whole yet: ..")).toBe("custom-mir");
   expect(of("refused", "error: rust-js does not support calling `std::env::args` yet")).toBeUndefined();

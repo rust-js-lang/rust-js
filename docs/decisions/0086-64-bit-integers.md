@@ -107,3 +107,30 @@ expected u64`), and a `Value`'s `as_u64()` and `as_i64()` work.
 holds a `&js::BigInt` now, of any size, with `to_string(radix)` its
 `toString` and `js::number::from_big_int` its `Number`. See
 [1057](1057-a-bigint-kind-is-a-bigint-of-any-size.md).
+
+## Amendment (2026-11-11, #1380): a wide constant cast narrower is folded exactly
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is preserved. The cast of a BigInt constant to a type a JS number
+holds, `let e = 18446744073709551615_u64 as u32;`, the cast of a constant
+as rustc gives it, was folded through a JS number: `18446744073709552000
+>>> 0`, 0, where Rust gives 4294967295. Past 2^53 a number isn't the
+literal it was written from. That was all 26 of the wrong answers in
+Rustlantis's first 300 programs.
+
+`cast` (`std_types/number/operators.rs`), the one owner of integer casts,
+now hands the BigInt itself to `Num::wrap`. That folds a constant exactly,
+as the `i128` it is, into the target's range, as it already folded every
+other constant. A negation of a wide literal reaches it already folded by
+rustc, `-(-18446744073709551615_i128) as u32`. A `u128` past `i128::MAX`
+is cast as it runs, `BigInt.asUintN`, which is exact too.
+
+Held by corpus case `wide_literals_cast_narrower.rs`, against native Rust
+in both builds. The numbers grid gained a group, `as literal`: each
+integer type's boundary values written as typed literals that a `let`
+binds and casts to each of the 14 number types, 1,918 cases. (A cast in
+`println!`'s arguments is promoted, and rustc folds it itself.) With the
+fix reverted, 168 of them fail; with it, all pass. Rustlantis's net no
+longer holds #1380's wrong answers: with the fix reverted, seeds 28, 54
+and 5534 print otherwise, and with it, all 200 of seeds 1–200 and 5534
+pass. Mutation `wide-constant-cast-through-a-number`.

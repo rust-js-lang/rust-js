@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
   },
+  {
+    name: "wide-constant-cast-through-a-number",
+    breaks: "a wide integer constant cast to a narrower type is folded through a JS number, which past 2^53 isn't it: `18446744073709551615_u64 as u32` is `18446744073709552000 >>> 0`, 0, where Rust's is 4294967295 (a wrong answer, #1380)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "                    (true, false) if v.as_bigint().is_some() => target.wrap(v),\n",
+    replace: "                    (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^wide_literals_cast_narrower.rs$"],
+  },
 ];
