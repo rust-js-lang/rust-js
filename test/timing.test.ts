@@ -3,7 +3,7 @@
 import { expect, test } from "bun:test";
 import { realpathSync } from "node:fs";
 
-import { keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
+import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, type Stray } from "../scripts/strays";
 import { compared, median, shown, slower, type Timing } from "../scripts/timing";
 import { floorBytes } from "./bounded";
@@ -76,4 +76,31 @@ test("the machine keeps each job's last runs, bounded, for every checkout's pool
   expect(kept["corpus 1/12"]).toBeUndefined();
   recordJobTimes([{ name: "below the floor", seconds: 1, cores: 1 }], { store, now: 200, free: () => floorBytes - 1 });
   expect(readJobTimes(store)["below the floor"]).toBeUndefined();
+});
+
+// A job whose work the change sizes, the rows of the iterator tables it
+// names, is expected to take its size at its last runs' pace, not its last
+// time (#1364): 0.1 s after a change that named none, the rows of the next
+// one started last and ran alone for two minutes. An unsized job's is its
+// last times'; one not yet measured, or of no run of some size, starts first.
+test("a job the change sizes is expected to take its size at its runs' pace", () => {
+  const store = fixture("job-times-sized");
+  const roomy = () => floorBytes + 2 ** 30;
+  const rows = "the rows the change names";
+  recordJobTimes([{ name: rows, seconds: 0.1, cores: 1 }], { store, now: 1, free: roomy });
+  expect(expected(readJobTimes(store)[rows], 9000).longest).toBe(Number.POSITIVE_INFINITY);
+  recordJobTimes([{ name: rows, seconds: 0.1, cores: 1, size: 0 }], { store, now: 2, free: roomy });
+  recordJobTimes([{ name: rows, seconds: 30, cores: 5, size: 3000 }], { store, now: 3, free: roomy });
+  recordJobTimes([{ name: rows, seconds: 12, cores: 5, size: 600 }], { store, now: 4, free: roomy });
+  const kept = readJobTimes(store)[rows];
+  expect(kept.sizes).toEqual([null, 0, 3000, 600]);
+  expect(expected(kept, 9000).longest).toBeCloseTo(180);
+  expect(expected(kept, 9000).usual).toBeCloseTo(135);
+  expect(expected(kept, 0)).toEqual({ longest: 0, usual: 0 });
+  // Of none, it's nothing, measured or not: not started first.
+  expect(expected(undefined, 0)).toEqual({ longest: 0, usual: 0 });
+  expect(expected(kept)).toEqual({ longest: 30, usual: 6.05 });
+  expect(expected(undefined).longest).toBe(Number.POSITIVE_INFINITY);
+  recordJobTimes([{ name: "fmt", seconds: 8, cores: 1 }], { store, now: 5, free: roomy });
+  expect(readJobTimes(store).fmt.sizes).toBeUndefined();
 });

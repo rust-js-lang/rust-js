@@ -26,7 +26,7 @@ import {
   testSet,
   unitTestsModule,
 } from "../scripts/mutations";
-import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
+import { jobs, leftToCi, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -819,6 +819,33 @@ test("a change adding or editing a corpus case runs each of its rewrites", () =>
     expect(ofCases({ all, changed: ["src/lower/mir.rs", "test/corpus/new_case.js"], branch: [] })).toEqual([]);
   }
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}");
+});
+
+// A job whose work the change sizes says its size, which the pool expects
+// it to take the time of at its last runs' pace (#1364): the rows of the
+// iterator tables a change names, the corpus cases whose rewrites it runs,
+// the mutations it adds, and the corpus cases with std's iterator structs
+// it picks, or all of them. By its last time alone, 0.1 s after a change
+// that named no rows, the rows of the next started last and ran alone.
+test("a job whose work the change sizes says its size", () => {
+  const sized = (scope: Partial<Scope>) =>
+    Object.fromEntries(
+      jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores: 12, ...scope })
+        .jobs.filter((job) => job.size !== undefined)
+        .map((job) => [job.name, job.size]),
+    );
+  const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
+  expect(sized({ branch: ["src/lower/iterators/clones.rs", "test/corpus/a.rs", "test/corpus/b.rs"], added: ["m", "m", "n"], rows: 9175 })).toEqual({
+    "the rows the change names": 9175,
+    [runs.forms[0].name]: cases,
+    [runs.metamorphic[0].name]: 2,
+    "mutations the change adds": 2,
+  });
+  expect(sized({ branch: ["src/lower/iterators/clones.rs"], rows: 0, forms: { forms: ["a.rs", "b.rs", "c.rs"], formsList: "forms.txt" } })).toEqual({
+    "the rows the change names": 0,
+    [runs.forms[0].name]: 3,
+  });
+  expect(sized({ branch: ["src/lower/mir.rs"] })).toEqual({});
 });
 
 // A push's check asks every row but the top crates by downloads', and of

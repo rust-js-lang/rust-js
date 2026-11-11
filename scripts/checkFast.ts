@@ -23,11 +23,11 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
+import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
-import { readJobTimes, recordJobTimes } from "./jobTimes";
+import { expected, readJobTimes, recordJobTimes } from "./jobTimes";
 import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -40,8 +40,21 @@ const root = join(import.meta.dir, "..");
  * keeps busy unless it says (scripts/shard.ts's `peakGB`, #1084), and, of
  * one that runs a command of
  * check.yml's, that command, as `test/ci.test.ts` matches it to check.yml's;
- * and of a test file, the `group` of files it's said with. */
-export type Job = { name: string; cmd: string[]; env: Record<string, string>; timeout: number; weight: number; memory: number; ci?: string; group?: string };
+ * of a test file, the `group` of files it's said with; and of a job whose
+ * work the change sizes, its `size`, the units of it this run runs, which
+ * the pool expects it to take the time of, at its last runs' pace
+ * (scripts/jobTimes.ts' `expected`, #1364). */
+export type Job = {
+  name: string;
+  cmd: string[];
+  env: Record<string, string>;
+  timeout: number;
+  weight: number;
+  memory: number;
+  ci?: string;
+  group?: string;
+  size?: number;
+};
 
 /** What the check is of: `--all`, or the files the change touches, those
  * the branch changed since `main`, the mutations it adds and the files
@@ -52,8 +65,11 @@ export type Job = { name: string; cmd: string[]; env: Record<string, string>; ti
  * those with std's iterator structs alone, `forms`, where the map can say:
  * the corpus whole runs in its plain build, as a push's check runs it, and
  * in std's of the cases whose compiles ran what the change touches, the
- * nightly and CI running it whole (#986). */
+ * nightly and CI running it whole (#986); and of a change to the
+ * iterators' code, the `rows` of their tables it names, as
+ * `changePicks` picks them (#1364). */
 export type Scope = {
+  rows?: number;
   all: boolean;
   changed: string[];
   branch: string[];
@@ -63,6 +79,10 @@ export type Scope = {
   picked?: { files: Set<string>; cases: string[]; caseList: string; forms: string[]; formsList: string };
   forms?: { forms: string[]; formsList: string };
 };
+
+/** The corpus's cases, which the corpus with std's iterator structs runs
+ * whole where no list picks some. */
+const corpusCases = () => readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({
   name,
@@ -126,7 +146,7 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
  * `--all`, what a push's check runs (check.yml); else the suites the
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
-export function jobs({ all, changed, branch, added, extra, cores, picked, forms }: Scope): { jobs: Job[]; shared: boolean } {
+export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows }: Scope): { jobs: Job[]; shared: boolean } {
   // What the snapshots and the diagnostics read: the compiler and `@rust-js/std`.
   const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("std/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
@@ -304,6 +324,11 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
                     timeout: of === "rows" ? 1200 : 600,
                     weight: parts,
                     ci: `bun scripts/iteratorSlice.ts run ${of}`,
+                    // Sized by the change: the rows it names, and the corpus
+                    // cases with std's iterator structs it picks, or all of
+                    // them (#1364).
+                    ...(of === "rows" && rows !== undefined ? { size: rows } : {}),
+                    ...(of === "forms" ? { size: (picked ?? forms)?.forms.length ?? corpusCases() } : {}),
                   },
                 ),
               ),
@@ -386,6 +411,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 600,
               weight: Math.min(parts, cases.length),
               ci: "bun scripts/iteratorSlice.ts run metamorphic",
+              // Sized by the cases whose rewrites it runs (#1364).
+              size: Math.min(cases.length, metamorphicMost),
             }),
           ]
         : []),
@@ -394,6 +421,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
             job("mutations the change adds", ["bun", "scripts/mutations.ts", `--jobs=${builds}`, ...new Set(added)], {
               weight: builds,
               memory: builds * peakGB.compilerBuild,
+              // Sized by the mutations it runs (#1364).
+              size: new Set(added).size,
             }),
           ]
         : []),
@@ -460,13 +489,14 @@ function run(list: Job[], compiler: string, cores: number, { began, samples }: C
   // hasn't, started every job in its list's order, the iterators' slices
   // last, alone at the end.
   const machine = readJobTimes();
-  const last = ({ name }: Job) => machine[name]?.seconds ?? [];
-  const usual = (job: Job) => (last(job).length > 0 ? median(last(job)) : Number.POSITIVE_INFINITY);
-  // What it may take, by which the pool starts it: the longest of its last
-  // runs, so that one whose usual is cached, cargo test's under a second,
-  // but whose change rebuilds it, 36 s, isn't started last and run alone at
-  // the end.
-  const longest = (job: Job) => (last(job).length > 0 ? Math.max(...last(job)) : Number.POSITIVE_INFINITY);
+  // What it usually takes, and what it may take, by which the pool starts
+  // it: the longest of its last runs, so that one whose usual is cached,
+  // cargo test's under a second, but whose change rebuilds it, 36 s, isn't
+  // started last and run alone at the end; of a job the change sizes, its
+  // size at its runs' pace, so the rows a change names aren't started last
+  // because the last change named none (#1364).
+  const usual = (job: Job) => expected(machine[job.name], job.size).usual;
+  const longest = (job: Job) => expected(machine[job.name], job.size).longest;
   // The cores it keeps busy, as its last runs measured them, or, of a job
   // not yet run, as it says: the corpus's parts, said to keep two, kept
   // one, and the browsers' files, said to keep all twelve, kept 3.6, so
@@ -568,7 +598,7 @@ function run(list: Job[], compiler: string, cores: number, { began, samples }: C
       recordJobTimes(
         results
           .filter((r) => r.code === 0)
-          .map((r) => ({ name: r.job.name, seconds: r.end - r.start, cores: kept(r.cpu, began + r.start * 1000, began + r.end * 1000) })),
+          .map((r) => ({ name: r.job.name, seconds: r.end - r.start, cores: kept(r.cpu, began + r.start * 1000, began + r.end * 1000), size: r.job.size })),
       );
       return results;
     })
@@ -764,7 +794,12 @@ if (import.meta.main) {
       console.log(`${test} reads ${read}: it runs`);
     }
   }
-  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked, forms });
+  // Of a change to the iterators' code, the rows of their tables it names,
+  // which size its job (#1364): some 0.1 s.
+  const rows = touchesIterators([...changed, ...branch])
+    ? changePicks(caseParts(availableParallelism())).reduce((sum, p) => sum + p.rows, 0)
+    : undefined;
+  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked, forms, rows });
   const cores = availableParallelism();
   const clock: Clock = { began: Date.now(), samples: [] };
   const results = await run(check.jobs, compiler, cores, clock);

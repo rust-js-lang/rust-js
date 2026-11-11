@@ -40,7 +40,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
-import { noteRate, pick } from "./iteratorRows";
+import { noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
 import { caseParts } from "./shard";
 import { twinHelpers } from "../test/iterator-matrix";
@@ -432,12 +432,19 @@ export function changedSince(since?: string): string[] {
   return [...git(["diff", "--name-only", "--diff-filter=d", base]), ...git(["ls-files", "--others", "--exclude-standard"])];
 }
 
-function changeRows(parts: number): Run[] {
+/** What of each table the change names, the working tree's since it left
+ * `main`, in `parts` (scripts/iteratorRows.ts): the rows `run rows` runs,
+ * and check:fast's pool expects that job to take the time of (#1364). */
+export function changePicks(parts: number): Picked[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const base = git(["merge-base", "HEAD", "origin/main"])[0];
   if (base === undefined) return [];
   const files = [...git(["diff", "--name-only", base]), ...git(["ls-files", "--others", "--exclude-standard"])].filter((file) => touchesIterators([file]));
-  return pick(base, undefined, files, parts).map((p) => {
+  return pick(base, undefined, files, parts);
+}
+
+function changeRows(parts: number): Run[] {
+  return changePicks(parts).map((p) => {
     for (const line of p.why) console.log(`  ${line}`);
     console.log(`${p.table}: ${p.rows} rows, ITERATOR_MATRIX='${p.setting}'`);
     return {
