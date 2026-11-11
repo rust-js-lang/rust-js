@@ -387,7 +387,7 @@ jobs:
         with:
           name: ${{ github.job }}.${{ strategy.job-index }}
 
-  # The Rustlantis net (ADR 1125): 200 programs of custom MIR from the
+  # The Rustlantis net (ADR 1125): 1,000 programs of custom MIR from the
   # day's seed, UB-free by construction, made by Rustlantis at its pinned
   # commit with rust-js's wasm32 patch, natively on wasm32 and as JS in both
   # builds; what rust-js does to each is to run it as native Rust does,
@@ -410,7 +410,7 @@ jobs:
       - uses: ./.github/actions/build-rust-js
       - name: Run its 4 parts
         env:
-          RUSTLANTIS_SEEDS: '200'
+          RUSTLANTIS_SEEDS: '1000'
           RUSTLANTIS_START: ${{ needs.seeds.outputs.start }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/parts.ts 4 test/rustlantis.test.ts --timeout=900000

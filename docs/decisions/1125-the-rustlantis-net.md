@@ -29,7 +29,7 @@ which Rust can't write, refused now (#1382).
 
 ## Decision
 
-**The nightly runs 200 of Rustlantis's small programs from the day's
+**The nightly runs 1,000 of Rustlantis's small programs from the day's
 seed, each natively for wasm32 and as JS in both builds**
 (`test/rustlantis.test.ts`, `test/rustlantis.ts`).
 
@@ -50,9 +50,16 @@ seed, each natively for wasm32 and as JS in both builds**
   writes, refused for good; wrong answers by their program's source;
   throws by the JS's error; crashes by their message. Anything else fails
   the night with the command that makes it again. A fixed issue takes
-  its lines off, so the list only shrinks.
+  its lines off, so the list only shrinks. `custom-mir` is said of a
+  refusal only once ordinary Rust is shown not to reach it: #1382's;
+  "arithmetic checked for overflow, from its MIR", as rust-js compiles
+  the crate with overflow checks off, a constant's and an inline
+  constant's are rustc's to evaluate, and a std body's wraps (ADR 0899),
+  so only `#[rustc_inherit_overflow_checks]`, behind a feature, reaches
+  it; and "a `&mut` of a number kept or given, from its MIR", of seed
+  341's `&mut (*r)` of a shared `&i16`, which the borrow checker refuses.
 - **Where it runs.** The nightly, 4 parts of `scripts/parts.ts`, and
-  `bun run nightly`; a push runs the list's own test. Of 200 seeds, 9.5 s
+  `bun run nightly`; a push runs the list's own test. Of 1,000 seeds, 37 s
   in 12 parts on the 14-core Mac, the generator built once in 10 s; it
   counts its decisions as every nightly job does (ADR 1124).
 - **Its default size** waits on #1384: until `bswap`, `fma` and

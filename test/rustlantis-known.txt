@@ -13,9 +13,8 @@ refused #1384 calling `std::intrinsics::(bswap|fmaf32|fmaf64|arith_offset)`
 #
 # Wrong: a wide literal cast to a narrower type, through a lossy Number.
 wrong #1380 \d+_(i64|u64|i128|u128)\)? as (i8|u8|i16|u16|i32|u32|isize|usize|char)\b
-#
-# Threw: a raw pointer to a by-value parameter, a cell its callers never make.
-threw #1381 Cannot create property 'value' on|Invalid value used as weak map key|Cannot convert -?\d+ to a BigInt
+# And of a negated one, folded first: `-(-18446744073709551615_i128) as u32` is 0.
+wrong #1380 -\(-\d+_(i64|u64|i128|u128)\)[\s\S]* as (i8|u8|i16|u16|i32|u32|isize|usize|char)\b
 #
 # Crashed: rust-js's stack, of a program's size.
 crashed #1383 has overflowed its stack

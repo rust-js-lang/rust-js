@@ -114,10 +114,10 @@ export const jobs: Record<string, Part[]> = {
     timeout: 30 * minutes,
   })),
   // The memory net's 400 seeds from the day's, each under Miri (#1172).
-  // The Rustlantis net (ADR 1125): 200 custom MIR programs of the day's.
+  // The Rustlantis net (ADR 1125): 1,000 custom MIR programs of the day's.
   rustlantis: parts("rustlantis", 4, (i) => ({
     cmd: ["bun", "test", "--timeout=900000", "test/rustlantis.test.ts"],
-    env: { ...compiler, RUSTLANTIS_SEEDS: "200", RUSTLANTIS_START: String(fuzzStart), RUST_JS_CASES: `${i}/4` },
+    env: { ...compiler, RUSTLANTIS_SEEDS: "1000", RUSTLANTIS_START: String(fuzzStart), RUST_JS_CASES: `${i}/4` },
     after: ["build"],
     cores: 1,
     timeout: 15 * minutes,

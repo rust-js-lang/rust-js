@@ -10,7 +10,7 @@
 //   bun test test/rustlantis.test.ts                                           # the list's own tests
 //   RUSTLANTIS_START=1 RUSTLANTIS_SEEDS=200 RUST_JS_CASES=1/4 bun test test/rustlantis.test.ts  # 200 seeds, a quarter
 //
-// The nightly runs 200 seeds of the day's, in 4 parts.
+// The nightly runs 1,000 seeds of the day's, in 4 parts.
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -124,8 +124,8 @@ test("the Rustlantis net's list holds what each of its issues is", () => {
   const of = (kind: Known["kind"], text: string) => knownAs(list, [kind], text)?.by;
   expect(of("wrong", "_2 = 4706315301130638003_i64 as u32;")).toBe("#1380");
   expect(of("wrong", "_3 = (-57850311006394435500531941819513103853_i128) as isize;")).toBe("#1380");
+  expect(of("wrong", "RET = -(-121074413017490068518913278327093031545_i128);\n_4 = RET as i8;")).toBe("#1380");
   expect(of("wrong", "_3 = 29156_i16 as i8;")).toBeUndefined();
-  expect(of("threw", "TypeError: Cannot create property 'value' on boolean 'true'")).toBe("#1381");
   expect(of("refused", "error: rust-js does not support calling `std::intrinsics::bswap` yet")).toBe("#1384");
   expect(of("refused", "error: rust-js does not support a use of a local before any write of it whole yet: ..")).toBe("custom-mir");
   expect(of("refused", "error: rust-js does not support calling `std::env::args` yet")).toBeUndefined();
