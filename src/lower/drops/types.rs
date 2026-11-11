@@ -141,9 +141,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// THIR asks of a type's drops, it asks of this.
     pub(in crate::lower) fn thir_ty(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         match self.thir_args {
-            Some(args) => ty::EarlyBinder::bind(self.recognition.tcx, ty)
-                .instantiate(self.recognition.tcx, args)
-                .skip_normalization(),
+            Some(args) => {
+                let ty = ty::EarlyBinder::bind(self.recognition.tcx, ty)
+                    .instantiate(self.recognition.tcx, args)
+                    .skip_normalization();
+                self.normalized(ty).unwrap_or(ty)
+            }
             None => ty,
         }
     }

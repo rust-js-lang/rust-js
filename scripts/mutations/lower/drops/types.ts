@@ -480,4 +480,13 @@ export const mutations: Mutation[] = [
     replace: "                (false, true) if false && self.shares_its_word(ty) => Drops::Unsupported(\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
   },
+  {
+    name: "thir-ty-unnormalized",
+    breaks:
+      "a copied default's `Vec<Self::Item>` of a `Wrapper<I>` impl is asked what it drops as `<Wrapper<I> as Iterator>::Item`, which the slots take for one dropping nothing, so a part-and-whole `match` of a pair of them compiles by luck where the blanket impl's is refused (#1337)",
+    file: "src/lower/drops/types.rs",
+    find: "                self.normalized(ty).unwrap_or(ty)\n",
+    replace: "                ty\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_of_a_wrapper_normalizes_its_items_drop\\.rs$"],
+  },
 ];

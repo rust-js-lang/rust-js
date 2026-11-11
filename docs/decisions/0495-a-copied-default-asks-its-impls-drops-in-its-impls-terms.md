@@ -243,3 +243,23 @@ right, against native Rust in both builds; mutations
 `array-pattern-parts-unfollowed`, and `binding-at-whole-unfollowed`
 refitted. `closure-problems-unfiltered` (`drops/parts.ts`), whose catch
 was an array's pattern, catches that `match` now.
+
+## Amendment: a copied default's type, in its impl's terms, is normalized where its drop is asked (#1109, #1337)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results. The
+facts were wrong, and the outputs right by luck. `DropQuery::thir_ty`
+instantiated a type a copied default's THIR names with its impl's
+arguments, but didn't normalize it. `Vec<<Wrapper<I> as Iterator>::Item>`
+of a non-blanket impl was then asked as that alias, which the drop slots
+take for one dropping nothing. The blanket impl's `Vec<<T as Iterator>::Item>`
+drops. So a part-and-whole `match` of a pair of them compiled in the
+`Wrapper<I>` impl, agreeing with native Rust only by luck, while the blanket
+impl's was refused, "moving part of a value with a destructor".
+
+**What a copied default's THIR names is normalized in its impl's terms
+before its drop is asked**, as the doc comment always said, so both
+impls answer alike and both are refused. Facts must be true; that refusal
+is #1337's to lift where MIR's lowering follows the moves (the
+coordinator's decision). Corpus case
+`copied_default_of_a_wrapper_normalizes_its_items_drop` (compile-fail);
+mutation `thir-ty-unnormalized` (`lower/drops/types.ts`).
