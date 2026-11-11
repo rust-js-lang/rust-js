@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// adapted (`Form::Tagged`'s, at the top, past shared references): in a
     /// `Vec<Result<T, E>>`, an `Option` of one or a `&mut` to one, whose
     /// items generic code reads as `{ TAG }` and its caller holds as
-    /// `undefined` or the error, refused (#1408). A type parameter holds
+    /// `undefined` or the error, refused (#1416). A type parameter holds
     /// what it's given as it is, whatever it is.
     pub(in crate::lower) fn write_result_inside(
         &self,
@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameter, `declared` past shared references, that a bound of
     /// `def_id`'s reads as a `Result` of its type parameters, `r: &impl
     /// AsRef<Result<T, E>>`: generic code reads it as `{ TAG }` through its
-    /// bound, where it has the value as it is, refused (#1408).
+    /// bound, where it has the value as it is, refused (#1416).
     pub(in crate::lower) fn write_result_through_bound(
         &self,
         (def_id, declared, instantiated): Crossing<'tcx>,
@@ -408,10 +408,10 @@ pub(in crate::lower) fn valued_where<'tcx>(
 }
 
 /// What's refused of a write's result held inside what generic code has as
-/// a `Result` of its type parameters (#1408).
+/// a `Result` of its type parameters (#1416).
 pub(in crate::lower) fn held_write_result(held: Ty<'_>) -> String {
     format!(
-        "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1408)"
+        "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1416)"
     )
 }
 

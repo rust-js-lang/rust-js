@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-write-result-allowed",
-    breaks: "a write's result inside a `Vec<Result<T, E>>` given to generic code is given as it is, whose items generic code reads as `{ TAG }` (#1408)",
+    breaks: "a write's result inside a `Vec<Result<T, E>>` given to generic code is given as it is, whose items generic code reads as `{ TAG }` (#1416)",
     file: "src/lower/generic_facts.rs",
     find: "        if self.tagged_where(declared, instantiated) {\n            return Some(instantiated);\n        }\n",
     replace: "",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "write-result-through-bound-allowed",
-    breaks: "a write's result given for an `impl Get<Result<T, E>>` is given as it is, which generic code reads as `{ TAG }` through the bound (#1408)",
+    breaks: "a write's result given for an `impl Get<Result<T, E>>` is given as it is, which generic code reads as `{ TAG }` through the bound (#1416)",
     file: "src/lower/generic_facts.rs",
     find: "        if !matches!(declared.kind(), ty::Param(_)) || !self.is_write_result(instantiated) {\n",
     replace: "        if true {\n",

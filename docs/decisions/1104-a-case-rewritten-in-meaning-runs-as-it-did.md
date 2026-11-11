@@ -87,9 +87,11 @@ natively and as JS in both builds** (`scripts/metamorph`,
 - **test/metamorphic-known.txt** lists each failing rewrite under its
   issue, `<builds> <rewrite> <case>`; the nightly runs each, so the list
   only shrinks. A rewrite whose difference the user decided, listed in
-  ADR 0262 and the guide's differences, is listed under that decision,
-  `#rd<n>` (rd360's `refcell_borrow_while_mut`, #1032), not an issue's
-  `#<n>`: no wrong answer to fix, and taken off where it runs as Rust does.
+  ADR 0262 and the guide's differences, is listed under that difference's
+  number in the guide's list, `#difference <n>` (difference 39's
+  `refcell_borrow_while_mut`, #1032), not an issue's `#<n>`: no wrong
+  answer to fix, and taken off where it runs as Rust does (ADR 0262's
+  amendment, an exception's name is its difference's number).
 - **Where it runs**: each push runs one case in 128, by a hash of its name,
   so a case added changes only whether it's sampled (as #853's groups);
   the nightly's `metamorphic` job runs every case, in four parts. Of the

@@ -1418,7 +1418,7 @@ those it lends (#1054, a P2). Held by the crates test of it; mutations
 A library call among a receiver guard's arguments stays code rust-js
 can't see (rd360 above), a library's function among them: the metamorphic
 net lists `refcell_borrow_while_mut`'s library rewrite as that decided
-difference (`#rd360` in `test/metamorphic-known.txt`).
+difference (`#difference 39` in `test/metamorphic-known.txt`).
 
 ## Amendment: a library's quiet field given by its method is lent as by its name (#1073)
 

@@ -85,6 +85,20 @@ test("an rd id in ADR 0262's Consequences is only the port's gap, never an excep
   expect(named).toEqual([]);
 });
 
+test("the metamorphic net's decided exceptions are named by their difference's number, which the guide has", () => {
+  // `#difference 39`, never `#rd360`, under which test/metamorphic-known.txt
+  // lists a rewrite whose difference the user decided.
+  const known = readFileSync(join(root, "test/metamorphic-known.txt"), "utf8");
+  const headings = known.split("\n").filter((line) => line.startsWith("#"));
+  expect(headings.filter((line) => /^#rd\d/.test(line))).toEqual([]);
+  const listed = differences();
+  for (const line of headings) {
+    const number = /^#difference (\d+) /.exec(line)?.[1];
+    if (number !== undefined) expect(listed.has(Number(number)), line).toBe(true);
+  }
+  expect(headings.some((line) => line.startsWith("#difference "))).toBe(true);
+});
+
 test("ADR 0262's exceptions are named by their difference's number, not an rd id", () => {
   // An exception's own name, `difference 51`, is the guide's number of it;
   // one gone, `The guide's difference 37 is gone`, names none.

@@ -220,8 +220,9 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
   let issue: string | undefined;
   for (const line of text.split("\n")) {
     if (line === "" || line.startsWith("//")) continue;
-    // An issue's, `#1032`, or a decided difference's, `#rd360` (ADR 0262).
-    const heading = /^#(\d+|rd\d+) /.exec(line);
+    // An issue's, `#1032`, or a decided difference's, by its number in the
+    // guide's list, `#difference 39` (ADR 0262).
+    const heading = /^#(\d+|difference \d+) /.exec(line);
     if (heading) {
       issue = heading[1];
       continue;
@@ -230,7 +231,7 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
     const [name, rewrite] = [words.at(-1)!, words.at(-2)!];
     const builds = words.slice(0, -2);
     if (issue === undefined || !(rewrites as readonly string[]).includes(rewrite) || !name.endsWith(".rs") || builds.length === 0 || builds.some((b) => b !== "plain" && b !== "std")) {
-      throw new Error(`test/metamorphic-known.txt: \`${line}\` isn't \`<builds> <rewrite> <case.rs>\` under an \`#<issue>\` or a \`#rd<decision>\``);
+      throw new Error(`test/metamorphic-known.txt: \`${line}\` isn't \`<builds> <rewrite> <case.rs>\` under an \`#<issue>\` or a \`#difference <number>\``);
     }
     known.push({ issue, builds, rewrite, name });
   }

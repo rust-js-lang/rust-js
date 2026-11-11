@@ -250,8 +250,9 @@ test("a case that compares functions is moved into no library", () => {
 test("a listed rewrite is read under its issue or its decision, and a malformed line is refused", () => {
   expect(readKnown("#7 P0: a title\nplain std boxed a.rs\n")).toEqual([{ issue: "7", builds: ["plain", "std"], rewrite: "boxed", name: "a.rs" }]);
   // A difference the user decided, under its decision's id (ADR 0262).
-  expect(readKnown("#rd360 a decision\nplain library a.rs\n")).toEqual([{ issue: "rd360", builds: ["plain"], rewrite: "library", name: "a.rs" }]);
-  expect(() => readKnown("#rdx t\nplain boxed a.rs\n")).toThrow();
+  expect(readKnown("#difference 39 a decision\nplain library a.rs\n")).toEqual([{ issue: "difference 39", builds: ["plain"], rewrite: "library", name: "a.rs" }]);
+  expect(() => readKnown("#rd360 t\nplain boxed a.rs\n")).toThrow();
+  expect(() => readKnown("#differencex t\nplain boxed a.rs\n")).toThrow();
   expect(() => readKnown("plain boxed a.rs\n")).toThrow();
   expect(() => readKnown("#7 t\nplain inlined a.rs\n")).toThrow();
 });

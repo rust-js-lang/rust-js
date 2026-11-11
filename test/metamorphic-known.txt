@@ -4,14 +4,15 @@
 // case. The nightly runs each, so the list only shrinks: one that runs as
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue. One whose difference the user decided, listed
-// in ADR 0262 and the guide's differences, is under that decision's id,
-// `#rd<n>`: no wrong answer, and taken off where it runs as Rust does too.
+// in ADR 0262 and the guide's differences, is under that difference's
+// number in the guide's list, `#difference <n>`: no wrong answer, and taken
+// off where it runs as Rust does too.
 
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 plain std generic maybe_uninit_array_written_through_its_pointer.rs
 
-#rd360 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, the guide's differences 39): a library's `total(&held)` doesn't
+#difference 39 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, gap rd360): a library's `total(&held)` doesn't
 plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs

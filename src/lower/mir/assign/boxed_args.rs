@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(
                         span,
                         &format!(
-                            "a write's result, `{}`, given for `{}`, which a bound reads as a `Result` of type parameters, `{{ TAG }}` there (#1408)",
+                            "a write's result, `{}`, given for `{}`, which a bound reads as a `Result` of type parameters, `{{ TAG }}` there (#1416)",
                             crossing.2.peel_refs(),
                             crossing.1.peel_refs()
                         ),

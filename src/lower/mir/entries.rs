@@ -365,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let Some(answer) = crate::lower::recognition::fmt_result_answer(self.tcx, def_id) else {
-            return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
+            return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR (#1416)"));
         };
         let mut values = values.into_iter();
         let result = self.value_expr(values.next().expect("the result"), span)?;

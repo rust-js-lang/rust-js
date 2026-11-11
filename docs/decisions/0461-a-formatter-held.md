@@ -106,7 +106,7 @@ callee read `undefined.TAG`; given back from `passed<T>(r: io::Result<T>)`,
   method's, a generic method's, a `fn` pointer's and a closure's
   `F: Fn() -> io::Result<T>` cross so, as a call's do; one held inside,
   `Vec<Result<T, E>>`'s items or a `&mut` of one, is refused, naming
-  #1408.
+  #1416.
 - **`Form::Valued`**: a type parameter, `B` of std's `map<B, F>` or `T` of
   `same<T>(t: T) -> T`, whose caller's is a write's result: held as a
   value, `undefined` or its error, where a call of the caller's function

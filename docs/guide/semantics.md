@@ -268,7 +268,7 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   closure that gives one gives it as an item, `map(|w| writeln!(out,
   "{w}"))`, and a collect of them into one is std's, the first `Err`. One
   held inside what generic code holds, a `Vec<Result<T, E>>`'s items, is
-  refused (#1408, #1410; [0461](../decisions/0461-a-formatter-held.md),
+  refused, #1416 (#1408, #1410; [0461](../decisions/0461-a-formatter-held.md),
   amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
