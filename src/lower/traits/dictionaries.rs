@@ -1201,7 +1201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let made = self.with_given_facts(typing_env, given, |cx| {
-            cx.collected_into(Expr::var("items"), output, Some(item), Some(param), span)
+            cx.collected_into((Expr::var("items"), None), output, Some(item), Some(param), span)
         });
         let made = made?;
         // What's left of what it's given closed where collecting it panics,

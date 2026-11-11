@@ -667,8 +667,8 @@ export const mutations: Mutation[] = [
     name: "from-iter-entry-folds-to-an-array",
     breaks: "a std collection's `from_iter` given generic code is its own fold into an array, `$foldToArray(items)`, not the collect generic code's own `Vec` collect is, so `collect::<B>()` of `B = Vec<u32>` asks no hint where std's asks it as it grows (#1239)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            cx.collected_into(Expr::var(\"items\"), output, Some(item), Some(param), span)\n",
-    replace: "            cx.collected_into(Expr::call_helper(\"$foldToArray\", vec![Expr::var(\"items\")]), output, Some(item), None, span)\n",
+    find: "            cx.collected_into((Expr::var(\"items\"), None), output, Some(item), Some(param), span)\n",
+    replace: "            cx.collected_into((Expr::call_helper(\"$foldToArray\", vec![Expr::var(\"items\")]), None), output, Some(item), None, span)\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_a_type_parameter_is_stds\\.rs$"],
   },
   {

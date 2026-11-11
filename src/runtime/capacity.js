@@ -50,15 +50,17 @@ function $inPlaceCapacity(collected, source, sourceSize, size) {
 
 // `collected`, which std collected in place in the buffer of the `Vec` `it`
 // steps, through each adapter to its source, `from` or `iter`, as std's
-// `SourceIter` reaches it: `$inPlaceCapacity`'s of that `Vec`, an array or
-// what steps one, `items`; not known where none is found (#1259).
+// `SourceIter` reaches it: `$inPlaceCapacity`'s of that `Vec`, what a
+// `vec::IntoIter` steps, its `$iter`'s `items`; not known where none is
+// found (#1259). Never an array itself, which may be what an adapter made,
+// `v.map(f)`'s, no `Vec`'s buffer (#1428).
 function $inPlaceCapacityFrom(collected, it, sourceSize, size) {
   let at = it;
-  while (at !== undefined && at !== null && !Array.isArray(at) && !Array.isArray(at.items)) {
+  while (at !== undefined && at !== null && !Array.isArray(at.items)) {
     at = at.from?.[0] ?? at.iter;
   }
   if (at === undefined || at === null) return $untracked(collected);
-  return $inPlaceCapacity(collected, Array.isArray(at) ? at : at.items, sourceSize, size);
+  return $inPlaceCapacity(collected, at.items, sourceSize, size);
 }
 
 // `value`, given or given back by a library's function whose library keeps

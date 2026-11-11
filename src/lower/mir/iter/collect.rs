@@ -31,7 +31,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(_, args) => args.types().next(),
                 _ => None,
             };
-            return Ok(Some(self.collected_into(items, output, item, None, span)?));
+            return Ok(Some(self.collected_into((items, None), output, item, None, span)?));
         }
         // A map's or a set's items, in its order: its entries, a map's, or
         // its items, a set's.
@@ -43,7 +43,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Ty::new_tup(self.tcx, &[args.type_at(0), args.type_at(1)]),
             };
             let items = self.map_items(items, iter_ty, crate::lower::std_types::map::Part::Entries, span)?;
-            return Ok(Some(self.collected_into(items, output, Some(item), None, span)?));
+            return Ok(Some(self.collected_into(
+                (items, None),
+                output,
+                Some(item),
+                None,
+                span,
+            )?));
         }
         Ok(None)
     }
@@ -198,7 +204,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => receiver,
             false => iter_ty,
         };
-        self.collected_into(it, output, item, Some(collected), span)
+        // Where std collects it in place but no variable of the body is its
+        // source, an `impl Iterator` function's chain: of std's struct, which
+        // links each adapter to its source, the iterator held first, so its
+        // links are walked to the `Vec` it collects in once it's collected
+        // (`$inPlaceCapacityFrom`, #1428).
+        let (it, walk) = match self.krate.keeps_capacity
+            && self.recognition().grows_as_vec(output)
+            && self.collects_in_place(Some(collected), item) == Some(true)
+            && self.in_place_source(span).is_none()
+            && self.compiled_struct(collected, &it)
+        {
+            true => {
+                let held = if it.reads_same() {
+                    it
+                } else {
+                    self.spill("iter", it, made)
+                };
+                (held.clone(), Some(held))
+            }
+            false => (it, None),
+        };
+        self.collected_into((it, walk), output, item, Some(collected), span)
     }
 
     /// Whether std collects an iterator of `iter_ty` into a `Vec` of
@@ -456,7 +483,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn collected_into(
         &mut self,
-        it: Expr,
+        (it, walk): (Expr, Option<Expr>),
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
         iter_ty: Option<Ty<'tcx>>,
@@ -510,7 +537,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as it grows, collects in place and unwinds as any does (#797).
             let grown = item.map_or(output, |item| self.vec_grown_for(output, item));
             let items = match iter_ty {
-                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,
+                Some(iter_ty) => {
+                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?
+                }
                 None => it,
             };
             match heap {
@@ -526,7 +555,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
-            self.collected_as_vec((it, &given), output, item, iter_ty, false, span)?
+            self.collected_as_vec((it, &given, walk.as_ref()), output, item, iter_ty, false, span)?
         } else if self.is_lang_adt(output, LangItem::String) {
             // Of `char`s, its hint asked first, as std's `Extend<char>`
             // reserves by it (string.rs:2507); of strings, none.
@@ -604,7 +633,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`compiled_struct`).
     fn collected_as_vec(
         &mut self,
-        (it, given): (Expr, &Expr),
+        (it, given, walk): (Expr, &Expr, Option<&Expr>),
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
         iter_ty: Ty<'tcx>,
@@ -691,7 +720,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             iterable,
             span,
         )?;
-        let collected = self.untracked_where_in_place(collected, (output, iter_ty, item), span)?;
+        let collected = self.untracked_where_in_place((collected, walk), (output, iter_ty, item), span)?;
         // Kept where its collect steps it, not where it's collected in place.
         Ok(match grown_call {
             Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(
@@ -716,7 +745,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// known, which `capacity()` refuses (#1180).
     fn untracked_where_in_place(
         &mut self,
-        collected: Expr,
+        (collected, walk): (Expr, Option<&Expr>),
         (output, iter_ty, item): (Ty<'tcx>, Ty<'tcx>, Option<Ty<'tcx>>),
         span: Span,
     ) -> R<Expr> {
@@ -728,14 +757,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if in_place == Some(true)
             && let Some(item) = item
             && let Some(InPlaceSource::Items(source_item)) = in_place_source(self.tcx, self.typing_env, iter_ty)
-            && let Some(source) = self.in_place_source(span)
         {
             let source_size = self.type_fact_value(source_item, TypeFact::Size, span)?;
             let size = self.type_fact_value(item, TypeFact::Size, span)?;
-            return Ok(Expr::call_helper(
-                "$inPlaceCapacity",
-                vec![collected, source, source_size, size],
-            ));
+            if let Some(source) = self.in_place_source(span) {
+                return Ok(Expr::call_helper(
+                    "$inPlaceCapacity",
+                    vec![collected, source, source_size, size],
+                ));
+            }
+            // Of std's struct no variable is the source of, by its links
+            // (`collected_counted`'s walk, #1428).
+            if let Some(walk) = walk {
+                return Ok(Expr::call_helper(
+                    "$inPlaceCapacityFrom",
+                    vec![collected, walk.clone(), source_size, size],
+                ));
+            }
         }
         Ok(Expr::call_helper("$untracked", vec![collected]))
     }

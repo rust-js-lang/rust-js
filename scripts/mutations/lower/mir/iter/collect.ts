@@ -158,9 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`String::from_iter` of an array steps it as an iterator, which an array isn't, and JS throws",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            return Ok(Some(self.collected_into(items, output, item, None, span)?));\n",
-    replace:
-      "            return Ok(Some(self.collected_into(items, output, item, Some(iter_ty), span)?));\n",
+    find: "            return Ok(Some(self.collected_into((items, None), output, item, None, span)?));\n",
+    replace: "            return Ok(Some(self.collected_into((items, None), output, item, Some(iter_ty), span)?));\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
@@ -283,8 +282,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a B-tree isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
-    replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
+    find: "                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
+    replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -301,8 +300,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `BinaryHeap` isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
-    replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
+    find: "                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
+    replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -639,5 +638,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call_helper(\"$collectVec\", args));\n",
     replace: "            return Ok(self.untracked_where_in_place(Expr::call_helper(\"$collectVec\", args), output, iter_ty, Some(item)));\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
+  },
+  {
+    name: "in-place-opaque-chain-unwalked",
+    breaks: "a `collect()` std makes in place of a chain an `impl Iterator` function gives, of std's structs, isn't walked to its source `Vec`, so in the std build its capacity isn't known and `capacity()` refuses it (#1428)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        self.collected_into((it, walk), output, item, Some(collected), span)\n",
+    replace: "        self.collected_into((it, walk.filter(|_| false)), output, item, Some(collected), span)\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "an in-place collect through an impl Iterator function"],
   },
 ];

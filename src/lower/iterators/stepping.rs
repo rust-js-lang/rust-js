@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty::Adt(_, args) => args.types().next(),
                     _ => None,
                 });
-                let made = self.collected_into(Expr::var(&values), collection, value, None, span)?;
+                let made = self.collected_into((Expr::var(&values), None), collection, value, None, span)?;
                 let made = match boxed_some {
                     true => self.some(made),
                     false => made,

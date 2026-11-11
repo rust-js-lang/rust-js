@@ -17,6 +17,3 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
-
-#1428 P2: an in-place collect through an opaque function finds no source, so capacity() refuses it (std build)
-std opaque vec_collected_in_place_capacity.rs

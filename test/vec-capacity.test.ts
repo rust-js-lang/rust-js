@@ -227,3 +227,44 @@ pub fn never_grown() -> usize {
   }
   expect([lib.range(), lib.filtered(), lib.roomy(), lib.neverGrown(), lib.anyCounted(), lib.ownMapped(), lib.anyOwn()]).toEqual([40, 16, 100, 1, 32, 5, 32]);
 });
+
+// A `collect()` std makes in place of a chain an `impl Iterator` function
+// gives, which no variable of the body is the source of: in the std build,
+// std's structs link each adapter to its source, walked to the `Vec` it
+// collects in, so its capacity is std's, `src_cap * src_size / dst_size`;
+// in the plain build, JS's own helpers keep no link, so `capacity()` refuses
+// it, naming #1180, never another number (#1428, the user's decision:
+// won't-fix, the readability of giving them links isn't worth a capacity).
+test("an in-place collect through an impl Iterator function has std's capacity in the std build", async () => {
+  const dir = fixture("capacity-in-place-opaque");
+  writeFileSync(join(dir, "lib.rs"), `fn evens(v: Vec<u32>) -> impl Iterator<Item = u32> {
+    v.into_iter().filter(|x| x % 2 == 0)
+}
+
+fn passed<I: Iterator>(it: I) -> impl Iterator<Item = I::Item> {
+    it
+}
+
+pub fn through_a_function() -> usize {
+    let mut v: Vec<u32> = Vec::with_capacity(9);
+    v.extend([1, 2, 3, 4]);
+    let halves: Vec<u32> = evens(v).map(|x| x / 2).collect();
+    halves.capacity()
+}
+
+pub fn through_an_identity() -> usize {
+    let mut v: Vec<[u32; 2]> = Vec::with_capacity(3);
+    v.extend([[1, 2], [3, 4]]);
+    let sums: Vec<u32> = passed(v.into_iter()).map(|[a, b]| a + b).collect();
+    sums.capacity()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
+  const structs = await import(join(dir, "structs.js"));
+  expect([structs.throughAFunction(), structs.throughAnIdentity()]).toEqual([9, 6]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  for (const f of [lib.throughAFunction, lib.throughAnIdentity]) {
+    expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
+  }
+});

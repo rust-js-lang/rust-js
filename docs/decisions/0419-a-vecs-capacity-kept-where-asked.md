@@ -547,8 +547,8 @@ shrink `needs_realloc` makes leaves it. Two routes give it.
   `SourceIter` reaches it (`$inPlaceCapacityFrom`).
 
 Where neither finds it, a `Vec` a call made and moved at once, `f().
-into_iter().map(g)`, a chain through an opaque function (#1428, the std
-build's), or one whose capacity isn't kept, it stays unknown and
+into_iter().map(g)`, a chain through an opaque function in the plain
+build (#1428, amended below), or one whose capacity isn't kept, it stays unknown and
 `capacity()` refuses it, naming #1180, as before: loud, never another
 number.
 
@@ -566,3 +566,39 @@ argument. Mutations `in-place-collect-source-unfound`,
 `in-place-way-a-bare-string`, `vec-collect-way-in-place-a-bare-string`,
 `in-place-sources-of-the-last-body`, `in-place-source-of-a-field-unfound`
 and `in-place-source-of-a-box-unfound`, caught; five refitted.
+
+## Amendment: an in-place collect through an `impl Iterator` function (2026-11-12, #1428)
+
+A chain an `impl Iterator` function gives, `fn evens(v: Vec<u32>) -> impl
+Iterator<Item = u32> { v.into_iter().filter(..) }` then `evens(v).map(f).
+collect()`, has no variable of the body as its source, so #1259's static
+way finds none and `capacity()` refused it. Native Rust gives std's number.
+
+- **In the std build** (`--std-iterators`) the chain is std's structs,
+  which link each adapter to its source, `from` and `iter`, as std's
+  `SourceIter` does. Where std collects in place, no variable is the
+  source, and the collected iterator is std's struct (`compiled_struct`,
+  the representation owner's answer), it's held first and its links are
+  walked once it's collected, `$inPlaceCapacityFrom(collected, it,
+  srcSize, dstSize)`, generic code's walk. Results change otherwise, so
+  std's behaviour is kept (ADR 0262's third case).
+- **The walk takes only a `vec::IntoIter`'s `$iter`**, its `items`, never
+  an array itself, which may be what an adapter made, `v.map(f)`'s, a new
+  array, not the `Vec`'s buffer, and would give a wrong number. No path
+  reached a bare array before: the corpus in both builds, the crate pairs
+  and test/vec-capacity.test.ts, run with that root made to throw, never
+  threw.
+- **In the plain build** JS's own helpers, `v.values().filter(f)`, keep no
+  link to their source, so no walk can find it. Giving them links, rust-js's
+  own adapters in place of the helpers in capacity-reading crates, would
+  cost readability wherever such a crate collects, for a capacity read: the
+  user's decision is won't-fix, and `capacity()` of it stays refused where
+  it runs, naming #1180, loud and never another number (ADR 0262's fourth
+  case; the guide's limitations list it).
+
+Tests: test/vec-capacity.test.ts's in-place collect through an `impl
+Iterator` function and through an identity one, std's 9 and 6 in the std
+build, refused in the plain build; corpus case
+`vec_collected_in_place_capacity`'s `opaque` rewrite in the std build, off
+test/metamorphic-known.txt. Mutation `in-place-opaque-chain-unwalked`,
+caught; four refitted to the new arguments.

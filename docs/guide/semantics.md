@@ -913,14 +913,17 @@ What's refused is in [the limitations](limitations.md).
   `src_cap * src_size / dst_size`, `$inPlaceCapacity(w, v, 8, 4)` of a
   `v.into_iter()` chain of the body's variable `v`, or of the `Vec` generic
   code's iterator steps, its caller's `IVecCollect`, `{ inPlace: 8 }`, the
-  source's items' size (#1259); `reserve(n)` as std's does, `reserve_exact(n)` as many as it
+  source's items' size (#1259), or, with `--std-iterators`, of the `Vec`
+  an `impl Iterator` function's chain steps, by std's structs' links,
+  `$inPlaceCapacityFrom` (#1428); `reserve(n)` as std's does, `reserve_exact(n)` as many as it
   needs; items of no size `usize::MAX`. Of a type parameter's items, by
   its caller's `TSize`. A crate that reads no capacity prints none of
   this; one that does compiles its own copy of each function it reaches
   of a library that keeps none, so what that library grows has std's
   capacity too, but of one that reads its library's private state, which
   a copy can't reach, whose `Vec`s' capacities are unknown. Of a `Vec` whose growth isn't kept, a `collect()` std makes in
-  place of a source no variable holds, `f().into_iter().map(g)`'s, a string's `into_bytes()`, one generic code grew by an
+  place of a source no variable holds, `f().into_iter().map(g)`'s, or, in the plain build, an `impl Iterator` function's
+  chain's, whose JS helpers keep no link to it (#1428, won't-fix), a string's `into_bytes()`, one generic code grew by an
   iterator whose JS hint isn't std's, `chars().skip(n)` given to it, or
   one a `Chain`'s or a `Take`'s `read_to_end`, std's default over its
   `read`, grew past its room (#1340), `capacity()` throws an error
