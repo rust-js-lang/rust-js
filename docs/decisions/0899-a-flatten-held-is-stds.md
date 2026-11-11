@@ -457,3 +457,26 @@ runs against native Rust. Mutations: `into-iterator-sizes-uncarried` and
 `iterator-assoc-sizes-carried` (`lower/analysis/type_facts/carried.ts`),
 `iterator-const-size-unknown` (`lower/recognition/type_facts.ts`); the
 guard's five went with it.
+
+## Amendment (2026-11-11): an impl's built associated type is asked of its makers (#1348)
+
+#1341's `Asked::Carried` takes any fact a std callee asks of an associated
+type no slot names as the trait's dictionaries', its layout too, as
+smallvec's `A::Item` needs. Each impl's dictionary then carries it of its
+own type for it, which the impl asked its makers only where that type is
+one of its parameters, `T` of `type Item = T`. itertools'
+`impl<F, T, U, E> MapSpecialCaseFn<Result<T, E>> for MapSpecialCaseFnOk<F>`
+has `type Out = Result<U, E>`, built of its parameters: a generic `collect`
+into a `Vec` of `<R as Call<T>>::Out`, which std may make in place, asks
+its layout, so the dictionary was refused, "`size_of` of a type parameter",
+a regression of itertools bisected to ec99f10af. An impl now asks its type
+for it as any fact is asked (`asked_of`): its parameter's slot, a built
+type's layout of its makers, `mapOkCallResult(ResultSize, ResultAlign)`,
+which a concrete caller gives, `(12, 4)` of a `Result<u32, String>`, or an
+associated type's its trait carries. Narrowing `Carried` to `ConstSize`
+alone, as first proposed, refused smallvec's shape (associated_type_facts)
+and lost the `OneShot` a flatten of an impl's `option::IntoIter` hints by,
+`(0, None)` where std's says `(0, Some(3))`. Corpus cases
+`collect_of_an_impls_own_associated_type.rs` and
+`flatten_of_a_traits_one_shot_items_hinted.rs` against native Rust;
+mutation `impl-carried-built-type-unasked`.

@@ -122,9 +122,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            if let ty::Param(param) = ty.kind() {\n                changed |= asked.insert((imp, param.index, fact));\n",
-    replace:
-      "            if let ty::Param(param) = ty.kind() {\n                let _ = (imp, param, fact);\n",
+    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {\n",
+    replace: "            if let Some(each) = None::<Asked<'tcx>>.filter(|_| typing_env == typing_env) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
   {
@@ -445,5 +444,13 @@ export const mutations: Mutation[] = [
     find: "            let copies = copies_of_default(tcx, caller, args);\n",
     replace: "            let copies: Vec<collects::DefaultCopy<'tcx>> = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^default_gives_its_callee_what_self_collects_in_place.rs$"],
+  },
+  {
+    name: "impl-carried-built-type-unasked",
+    breaks: "an impl whose dictionary carries a fact of its associated type asks its makers for it only where that type is one of its own parameters, not built of them, itertools' `type Out = Result<U, E>`, so its dictionary is refused, \"`size_of` of a type parameter\" (#1348)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {\n",
+    replace: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None).filter(|each| matches!(each, Asked::Slot(..))) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
   },
 ];

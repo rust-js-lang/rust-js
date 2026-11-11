@@ -424,8 +424,11 @@ pub(super) fn type_fact_params<'tcx>(
                 }
             }
         }
-        // Each impl's dictionary carries it of its type for it: `T`'s of
-        // `type Item = T`, which its impl asks of its own parameter.
+        // Each impl's dictionary carries it of its type for it, which its
+        // impl asks as any fact is asked (`asked_of`): `T`'s of `type Item
+        // = T`, of its own parameter; of one built of them, itertools'
+        // `type Out = Result<U, E>`, the built type's, of the impl's makers
+        // (#1348); of another's associated type, what its trait carries.
         let impls: Vec<_> = (carried.iter())
             .flat_map(|&(assoc, fact)| {
                 let trait_id = tcx.trait_of_assoc(assoc).expect("an associated type");
@@ -438,13 +441,9 @@ pub(super) fn type_fact_params<'tcx>(
             })
             .collect();
         for (imp, ty, fact) in impls {
-            if let ty::Param(param) = ty.kind() {
-                changed |= asked.insert((imp, param.index, fact));
-            }
-            if let Some(assoc) = carried_by(foreign, ty)
-                && carries(foreign, assoc, fact)
-            {
-                changed |= carried.insert((assoc, fact));
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {
+                changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
             }
         }
     }
