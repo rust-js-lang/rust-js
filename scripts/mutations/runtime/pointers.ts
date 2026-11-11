@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "ptr-slice-past-length-unread",
     breaks: "`slice::from_raw_parts` past a vector's length has nothing of what `set_len` left there",
     file: "src/runtime/pointers.js",
-    find: "  return start === 0 && count === items.length ? items : $slots(items, start, count);\n",
-    replace: "  return start === 0 && count === items.length ? items : items.slice(start, start + count);\n",
+    find: "  return start === 0 && count === items.length ? items : $partPlaced($slots(items, start, count), items, start);\n",
+    replace: "  return start === 0 && count === items.length ? items : $partPlaced(items.slice(start, start + count), items, start);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
   },
   {
@@ -658,5 +658,13 @@ export const mutations: Mutation[] = [
     find: "  if ([src, dst].some((p) => Array.isArray(p.of) && typeof p.at !== \"number\")) {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering-pointers.test.ts"],
+  },
+  {
+    name: "raw-parts-slice-unplaced",
+    breaks: "a slice made from raw parts is a copy that forgets where it is, so its `as_ptr() as usize` is a new allocation's address and httparse's count of what it parsed is billions (#1424)",
+    file: "src/runtime/pointers.js",
+    find: "items : $partPlaced($slots(items, start, count), items, start);\n",
+    replace: "items : $slots(items, start, count);\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_slice_made_of_pointers.rs$"],
   },
 ];

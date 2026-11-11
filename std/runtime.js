@@ -8329,7 +8329,9 @@ export function $ptrSlice(pointer, count) {
     return Array.from({ length: count }, (_, i) => $byteView({ ...pointer, at: pointer.at + i * pointer.width }).value);
   }
   const [items, start] = $ptrItems(pointer, count);
-  return start === 0 && count === items.length ? items : $slots(items, start, count);
+  // A part, where it is in what holds it, so a pointer into it, its
+  // address, is there too, httparse's `as_ptr() as usize` (#1283).
+  return start === 0 && count === items.length ? items : $partPlaced($slots(items, start, count), items, start);
 }
 
 // `slice::from_raw_parts_mut(p, n)`: a view of the `n` items from where `p`

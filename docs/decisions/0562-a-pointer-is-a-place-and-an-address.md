@@ -1287,3 +1287,13 @@ memory of `*const [u32]`. **A slice of any expression is spilled first,
 (`pointer_cast`, given the statements to spill into). Held by
 `test/corpus/block_results_read_as_another_width.rs` against native Rust on
 wasm32 in both builds, and the mutation `slice-pointer-recast-of-a-call-refused`.
+
+## Amendment: a slice made from raw parts is where its items are (#1424)
+
+`slice::from_raw_parts(p, n)` of part of an array was a copy of its
+items that forgot where they were. Its `as_ptr()` was a new allocation's,
+at a new address, so httparse's count of what it parsed, the difference
+of two such slices' `as_ptr() as usize`, was billions (P0, #1424). The
+copy now records its place in the array, `$partPlaced`, as a part made
+by indexing does (#1185), so its pointer is the array's item's, at its
+address. Case C of ADR 0262: results change, so Rust's behaviour is kept.
