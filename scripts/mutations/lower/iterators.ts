@@ -392,4 +392,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
   },
+  {
+    name: "binding-iterator-mark-not-held",
+    breaks: "a variable holding a binding's iterator loses its mark, so `let values = map.values(); values.collect()` asks its hint, `Array.from($roomForHint(values, 4, false))`, where React's ReactFlightWebpackPlugin writes `Array.from(chunkModules)`",
+    file: "src/lower/iterators.rs",
+    find: "    [js::Known::InPlace, js::Known::BindingIterator]\n",
+    replace: "    [js::Known::InPlace]\n",
+    tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
 ];

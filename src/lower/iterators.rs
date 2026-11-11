@@ -1028,12 +1028,13 @@ pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
 }
 
 /// Of `facts`, a value's, what's known of the value that what holds it
-/// keeps on its name: its form's marks (`its_facts`) and whether it's made
-/// in place (`made_in_place`).
+/// keeps on its name: its form's marks (`its_facts`), whether it's made in
+/// place (`made_in_place`), and whether a binding made it, JS's own
+/// iterator (`binding_made`), so `let modules = graph.modules(chunk);
+/// modules.collect()` asks no hint, as upstream React's `Array.from(chunkModules)`.
 pub(in crate::lower) fn held_marks(facts: js::Facts) -> js::Facts {
-    let marks = its_facts(facts);
-    match facts.has(js::Known::InPlace) {
-        true => marks.with(js::Known::InPlace),
-        false => marks,
-    }
+    [js::Known::InPlace, js::Known::BindingIterator]
+        .into_iter()
+        .filter(|&fact| facts.has(fact))
+        .fold(its_facts(facts), js::Facts::with)
 }

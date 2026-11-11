@@ -490,17 +490,25 @@ pub fn pairs(map: &Map<str, u32>) -> Vec<(&'static str, u32)> {
 pub fn counts(map: &Map<str, u32>) -> Vec<u32> {
     map.values().collect()
 }
+
+// Held by a variable first, as React's ReactFlightWebpackPlugin holds
+// \`getChunkModulesIterable(chunk)\`: the variable keeps the binding's mark.
+pub fn held(map: &Map<str, u32>) -> Vec<u32> {
+    let values = map.values();
+    values.collect()
+}
 `);
   expect(js).toContain("  return Array.from(set);\n");
   expect(js).toContain("  return Array.from(map);\n");
   expect(js).toContain("  return Array.from(map.values());\n");
+  expect(js).not.toContain("$roomForHint");
   expect(js).not.toContain("set.values()");
   const out = ran(dir, `const lib = await import("./lib.js");
 const a = {};
 const map = new Map([["a", 1], ["bc", 2]]);
-console.log(JSON.stringify([lib.transitions(new Set([a, 3]))[0] === a, lib.keys(new Set(["x", "y"])), lib.pairs(map), lib.counts(map)]));
+console.log(JSON.stringify([lib.transitions(new Set([a, 3]))[0] === a, lib.keys(new Set(["x", "y"])), lib.pairs(map), lib.counts(map), lib.held(map)]));
 `);
-  expect(out).toBe('[true,["x","y"],[["a",1],["bc",2]],[1,2]]\n');
+  expect(out).toBe('[true,["x","y"],[["a",1],["bc",2]],[1,2],[1,2]]\n');
 });
 
 // React's `[${prevDeps.join(', ')}]`: `js::array::join` of any values, each

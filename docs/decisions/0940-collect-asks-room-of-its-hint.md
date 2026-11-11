@@ -357,3 +357,21 @@ Rust in both builds, js-collections' binding iteration, and the mutations
 `dyn-hint-unasked` and `binding-iterator-unmarked`. Left as it was: an
 `extend` by a Rust-made `dyn` whose `size_hint` runs the crate's own
 asks it not as std's extend does as it fills.
+
+## Amendment: a variable keeps a binding's mark (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as before: a
+binding's iterator's hint is its contract's `(0, None)`, which asking runs
+nothing of, so the JS reads as upstream's.
+
+React's ReactFlightWebpackPlugin holds `getChunkModulesIterable(chunk)`, a
+binding's `Box<dyn Iterator>`, in a `let` and collects it, `let
+chunk_modules = ..; chunk_modules.collect::<Vec<_>>()`: its JS became
+`Array.from($roomForHint(chunkModules, 4, false))`, where upstream writes
+`Array.from(chunkModules)`, and the port's job failed. A variable a value
+is written to once keeps what's known of it on its name (`held_marks`);
+the binding's mark is one of those now, so a `let` no longer loses it.
+Given through a function, it still does, and asks, std's still. Held by
+js-collections' binding iteration (`held`, its value and its JS) and the
+mutation `binding-iterator-mark-not-held`; the port regenerated on it is
+the JS it commits, file for file.
