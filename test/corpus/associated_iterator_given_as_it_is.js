@@ -55,6 +55,7 @@ const countedSource = {
   $dropIter(it) {
     countdownDrop_drop(it.of);
   },
+  IterVecCollect: "next",
 };
 function countedSource_items(counted) {
   return [counted[0], "counted"];
@@ -63,6 +64,7 @@ function countedSource_items(counted) {
 const listedSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: listedSource_items,
+  IterVecCollect: "inPlace",
 };
 function listedSource_items(listed) {
   return $iter(listed[0]);
@@ -77,19 +79,29 @@ function listedContainer_iter(listed) {
 
 const $keptSource = new WeakMap();
 
-function keptSource(IIterator, IDoubleEndedIterator, IClone, dropI) {
-  return $traitImpl($keptSource, [IIterator, IDoubleEndedIterator, IClone, dropI], () => ({
-    IterDoubleEndedIterator() {
-      return { next_back: $nextBack };
-    },
-    items(arg0) {
-      return $given(keptSource_items(arg0, IClone, dropI), IIterator, false, IDoubleEndedIterator);
-    },
-    $drop(kept) {
-      dropI?.(kept[0]);
-    },
-    $dropIter: $givenDrop(dropI),
-  }));
+function keptSource(IIterator, IDoubleEndedIterator, IClone, IVecCollect, dropI) {
+  return $traitImpl(
+    $keptSource,
+    [IIterator, IDoubleEndedIterator, IClone, IVecCollect, dropI],
+    () => ({
+      IterDoubleEndedIterator() {
+        return { next_back: $nextBack };
+      },
+      items(arg0) {
+        return $given(
+          keptSource_items(arg0, IClone, dropI),
+          IIterator,
+          false,
+          IDoubleEndedIterator,
+        );
+      },
+      $drop(kept) {
+        dropI?.(kept[0]);
+      },
+      $dropIter: $givenDrop(dropI),
+      IterVecCollect: IVecCollect,
+    }),
+  );
 }
 function keptSource_items(kept, IClone, dropI) {
   return IClone.clone(kept[0]);
@@ -276,6 +288,7 @@ function main() {
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_nextBack },
     { clone: (value) => [value[0], value[1]] },
+    "next",
     countdownDrop_drop,
   );
   const value = second([3], countedSource);

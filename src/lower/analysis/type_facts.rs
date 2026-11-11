@@ -284,7 +284,6 @@ pub(super) fn type_fact_params<'tcx>(
         mut asked,
         mut built,
         mut carried,
-        passed_carried,
         passed,
         calls,
         carried_super,
@@ -376,7 +375,7 @@ pub(super) fn type_fact_params<'tcx>(
             for (slot, fact, gates) in facts {
                 let relayed = (caller, callee, args);
                 for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &gates)) {
-                    changed |= ask((&mut asked, &mut built), caller, each);
+                    changed |= ask((&mut asked, &mut built, &mut carried), caller, each);
                 }
             }
         }
@@ -384,13 +383,6 @@ pub(super) fn type_fact_params<'tcx>(
             for fact in TypeFact::ALL {
                 if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {
                     changed = true;
-                }
-            }
-        }
-        for &(assoc, (callee, to)) in &passed_carried {
-            for fact in TypeFact::ALL {
-                if asked.contains(&(callee, to, fact)) && carries(foreign, assoc, fact) {
-                    changed |= carried.insert((assoc, fact));
                 }
             }
         }
@@ -635,6 +627,8 @@ fn collect_asks<'tcx>(
     for each in asked_by(typing_env, caller, args) {
         let own = match &each {
             Asked::Built(ty, ..) => names_params(*ty, |index| index >= parents as u32),
+            // Its trait's dictionaries', whoever asks.
+            Asked::Carried(..) => true,
             Asked::Slot(index, fact) => {
                 // Of `<Self as Iterator>::Item`, what its trait's
                 // dictionaries carry, for a library's default compiled over
@@ -668,11 +662,14 @@ fn names_params(ty: ty::Ty<'_>, which: impl Fn(u32) -> bool) -> bool {
 /// associated type's, by its index; or the layout of a type built of them,
 /// `Held<J>` of a `Vec<Held<J>>` collected in place, by the type, its
 /// index decided once every one of its function's is found (#737), and
-/// whether one of its gates' `IInPlace` must be given for it to be read.
+/// whether one of its gates' `IInPlace` must be given for it to be read;
+/// or what its trait's dictionaries carry of an associated type of the
+/// crate's trait or a library's, `<S as Source>::Iter`'s (ADR 0145).
 #[derive(Clone, Debug)]
 enum Asked<'tcx> {
     Slot(u32, TypeFact),
     Built(ty::Ty<'tcx>, TypeFact, Gates),
+    Carried(DefId, TypeFact),
 }
 
 /// What a built slot's layout is read where: `None` wherever its function
@@ -715,6 +712,14 @@ fn asked_of<'tcx>(
 ) -> Option<Asked<'tcx>> {
     if let Some(slot) = slot_of(tcx, foreign, caller, of) {
         return Some(Asked::Slot(slot, fact));
+    }
+    // Of an associated type whose trait's dictionaries carry it, theirs,
+    // wherever a callee asks it of what it's given, a flatten's items'
+    // constant size of `(1..4).flat_map(S::hidden)` (#1312, #1341).
+    if let Some(assoc) = carried_by(foreign, of)
+        && carries(foreign, assoc, fact)
+    {
+        return Some(Asked::Carried(assoc, fact));
     }
     built_of(tcx, typing_env, of, fact).then(|| Asked::Built(tcx.erase_and_anonymize_regions(of), fact, gates.clone()))
 }
@@ -858,7 +863,6 @@ struct Asking<'tcx> {
     /// `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
     /// as a callee's type parameter.
     carried: IndexSet<(DefId, TypeFact)>,
-    passed_carried: Vec<(DefId, (DefId, u32))>,
     /// What a trait's dictionaries carry of a std supertrait's associated
     /// type of its `Self`, its defaults' (#990).
     carried_super: IndexSet<(DefId, DefId, TypeFact)>,
@@ -874,13 +878,22 @@ struct Asking<'tcx> {
 /// and where they're read.
 type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), (std::collections::BTreeSet<TypeFact>, Gates)>;
 
+/// What its trait's dictionaries carry of each associated type, by the
+/// type and the fact.
+type CarriedAsks = IndexSet<(DefId, TypeFact)>;
+
 /// `caller` asks `asked`: whether that's new.
 fn ask<'tcx>(
-    (asked, built): (&mut IndexSet<(DefId, u32, TypeFact)>, &mut BuiltAsks<'tcx>),
+    (asked, built, carried): (
+        &mut IndexSet<(DefId, u32, TypeFact)>,
+        &mut BuiltAsks<'tcx>,
+        &mut CarriedAsks,
+    ),
     caller: DefId,
     each: Asked<'tcx>,
 ) -> bool {
     match each {
+        Asked::Carried(assoc, fact) => carried.insert((assoc, fact)),
         Asked::Slot(index, fact) => asked.insert((caller, index, fact)),
         Asked::Built(ty, fact, gates) => match built.get_mut(&(caller, ty)) {
             Some((facts, read)) => {
@@ -933,7 +946,7 @@ impl<'tcx> Asking<'tcx> {
 
     /// `caller` asks `asked`.
     fn ask(&mut self, caller: DefId, each: Asked<'tcx>) {
-        ask((&mut self.asked, &mut self.built), caller, each);
+        ask((&mut self.asked, &mut self.built, &mut self.carried), caller, each);
     }
 
     /// What `caller` asks by naming `callee` with `args`: a std function's
@@ -1157,20 +1170,17 @@ impl<'tcx> Asking<'tcx> {
             return;
         }
         self.calls.push((caller, callee, args));
-        for (index, arg) in args.iter().enumerate() {
-            if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(foreign, ty)) {
-                self.passed_carried.push((assoc, (callee, index as u32)));
-            }
-        }
     }
 }
 
-/// Whether `caller`'s callers give the constant size of `of`, a flatten's
-/// items, which std's struct held asks (ADR 0899): of a type known here, a
-/// type parameter or one of its slots, `I::Item`, as a flatten's
-/// `ConstSize` is asked above; not of another type only a caller knows,
-/// `<S as Source>::Iter` or a trait method's `impl Trait` (#1312), which
-/// none gives yet.
+/// Whether the constant size of `of`, a flatten's items, which std's
+/// struct held asks (ADR 0899), is given where `caller` asks it, as a
+/// flatten's `ConstSize` is asked above: of a type known here; by its
+/// callers, of a type parameter or one of its slots, `I::Item`; by its
+/// trait's dictionaries, of an associated type of the crate's trait or a
+/// library's, `<S as Source>::Iter` or a trait method's `impl Trait`
+/// (#1312, #1341). Not of another, a library's trait's its manifest
+/// doesn't say it carries.
 pub(in crate::lower) fn const_size_given<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
@@ -1178,7 +1188,9 @@ pub(in crate::lower) fn const_size_given<'tcx>(
     of: ty::Ty<'tcx>,
 ) -> bool {
     let of = of.peel_refs();
-    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()
+    !crate::lower::recognition::known_by_bounds(of)
+        || slot_of(tcx, foreign, caller, of).is_some()
+        || carried_by(foreign, of).is_some_and(|assoc| carries(foreign, assoc, TypeFact::ConstSize))
 }
 
 /// Where a library's function's slot `index` is read, as its manifest says:

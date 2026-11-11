@@ -45,6 +45,7 @@ const countedSource = {
   $dropIter(it) {
     console.log(`drop at ${it.of[0]}`);
   },
+  IterVecCollect: "next",
 };
 function countedSource_items(counted) {
   return [counted[0]];

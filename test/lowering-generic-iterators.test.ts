@@ -137,9 +137,9 @@ pub fn of_str(text: &str) -> String {
 // flatten of them, stepped from its back, steps each by its compiled
 // `next_back`, as the impl's dictionary makes it a JS iterator that knows
 // it, where it was stepped as an empty one; native Rust prints these
-// lines (#1292). The build of std's structs alone refuses the flatten's
-// constant size, so test/corpus/associated_iterator_of_stds_struct_from_its_back.rs
-// holds the rest.
+// lines (#1292). The build of std's structs too, which asks the flatten's
+// constant size of the trait's dictionaries, `IterConstSize` and
+// `HiddenConstSize`, where it refused it (#1312, #1341).
 test("a flatten of a trait's associated iterators steps each from its back as the impl's dictionary makes it", async () => {
   const dir = fixture("associated-iterator-flatten-back");
   writeFileSync(
@@ -175,12 +175,15 @@ pub fn flattened() -> Vec<Vec<u32>> {
 }
 `,
   );
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const lib = await import(join(dir, "lib.js"));
-  expect(lib.flattened()).toEqual([
-    [20, 10, 0, 10, 0, 0],
-    [3, 2, 1, 2, 1, 1],
-  ]);
+  for (const build of [[], ["--std-iterators"]]) {
+    const out = join(dir, build.length === 0 ? "lib.js" : "structs.js");
+    run([compiler, join(dir, "lib.rs"), "-o", out, ...build]);
+    const lib = await import(out);
+    expect(lib.flattened()).toEqual([
+      [20, 10, 0, 10, 0, 0],
+      [3, 2, 1, 2, 1, 1],
+    ]);
+  }
 });
 
 // Of a trait method with generics of its own, a type's, `items<U: Copy>`,
@@ -188,10 +191,9 @@ pub fn flattened() -> Vec<Vec<u32>> {
 // each gives, stepped from its back, steps each by its compiled
 // `next_back`, as the impl's dictionary makes it, where `$iter` threw that
 // it doesn't know its back; native Rust prints these lines (#1308). The
-// build of std's structs refuses the flatten's constant size of `hidden`'s
-// `impl Trait`, naming #1312, which no dictionary carries yet; so
-// test/corpus/associated_iterator_of_a_method_with_its_own_generics.rs
-// holds the rest.
+// build of std's structs too, which asks the flatten's constant size of
+// `hidden`'s `impl Trait` of the trait's dictionaries, `HiddenConstSize`,
+// where it refused it (#1312).
 test("a flatten of what a trait method with its own generics gives steps each from its back", async () => {
   const dir = fixture("associated-iterator-own-generics-flatten");
   writeFileSync(
@@ -233,9 +235,13 @@ pub fn flattened() -> Vec<Vec<u32>> {
     [20, 10, 0, 10, 0, 0],
     [4, 2, 0, 2, 0, 0],
   ]);
-  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"])).toThrow(
-    "its constant size of a trait method's `impl std::iter::DoubleEndedIterator + std::iter::Iterator<Item = u32>` (#1312)",
-  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
+  expect(readFileSync(join(dir, "structs.js"), "utf8")).toContain("SSource.HiddenConstSize");
+  const structs = await import(join(dir, "structs.js"));
+  expect(structs.flattened()).toEqual([
+    [20, 10, 0, 10, 0, 0],
+    [4, 2, 0, 2, 0, 0],
+  ]);
 });
 
 // `$iter` of what's neither an array nor an iterator that knows its back,

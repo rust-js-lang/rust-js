@@ -361,3 +361,57 @@ to 89.9 in 10,000 lines, the held flatten's dictionary's `intoIter:
 `growing-extend-capacity-unkept` and `held-flat-map-results-in-place`
 were moved or refitted, and `hint-asked-bodies-unrevisited` was taken
 off: the pass it named is gone.
+
+## Amendment: its items' constant size, carried by their trait's dictionaries (2026-11-11, #1312, #1341)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+#1327 held a flatten for a seen hint only where its callers give its
+items' constant size, a type parameter's or one of its slots', `I::Item`.
+Of another associated type, `<S as Source>::Items`, none was given, so
+generic code's `Own(4).flat_map(|n| S::items(n)).collect()` stayed made in
+place: where a caller made `Items` an array, std counts its constant size
+and asks the hint once, but the `Vec` asked it again as it grew (#1341).
+And the build of std's structs, which holds every flatten, refused one of
+a trait method's `impl Trait`, `flat_map(S::hidden)`, as no dictionary
+carried its facts (#1312).
+
+What a std callee asks of an associated type no slot names is now what
+its trait's dictionaries carry (`type_facts.rs`' `asked_of`,
+`Asked::Carried`), as a fact the crate's code asks of `<A as
+Array>::Item` already was (ADR 0145). Each impl's dictionary carries it
+of its own type, `ItemsConstSize: 2` of an array, and generic code reads
+it, `SSource.ItemsConstSize`; a trait method's `impl Trait`'s is named
+by its method, `HiddenConstSize` (the user's decision through m6, as its
+`$dropHidden` is, #1296). So is any fact a std callee asks so, how
+generic code's collect of `S::Iter` into a `Vec` collects it, its
+`IterVecCollect` (#1239): two snapshots, `associated_iterator_given_as_it_is`
+and `associated_iterator_dropped`, carry it now, `"inPlace"` of a `Vec`'s
+iterator, where the collect took it for one it steps by `next`. An entry that's `undefined`, a `Range`'s or a
+`Map`'s constant size, which is none, is left out. `const_size_given`
+says it's given where the trait's dictionaries carry it, of the crate's
+trait or a library's whose manifest says so, so `flattens_sized` holds
+these flattens. A library's trait whose manifest doesn't say so is made
+in place as before, which `test/crates/pairs/library_trait_items_flattened_where_its_hint_is_seen`
+holds, of a `Range`'s items, which have no constant size: where a
+consumer's own impl makes them an array, its hint is asked again as the
+`Vec` grows, which stays #1341's. The crate's own callee given `A::Item`,
+whose ask its caller's dictionary carried by a list of its own
+(`passed_carried`), is that relay too now, its list gone. `generic.rs`' refusal of a trait method's `impl
+Trait`'s facts by name goes: what's left is the refusal of a fact no
+caller gives.
+
+`test/corpus/flatten_of_a_traits_items_sized_by_its_dictionary.rs` (an
+associated `IntoIterator` an impl makes an array, an associated
+`DoubleEndedIterator` and an `impl DoubleEndedIterator`, collected where
+the crate's own hint prints and stepped from the back) runs against native
+Rust in both builds, and `test/lowering-generic-iterators.test.ts` runs
+#1292's and #1308's flattens in the build of std's structs too.
+Mutations: `callee-fact-of-assoc-uncarried` and
+`const-size-of-carried-ungiven` (`lower/analysis/type_facts.ts`);
+`rpitit-fact-refusal-unnamed` and `assoc-fact-unpassed` are taken off with
+what they held, three were refitted, and `collect-hint-seen-unsized-held`
+and `flattens-sized-unwalked` are held by the crate pair now. An `impl IntoIterator` alone, whose `IntoIterator`
+dictionary of the opaque type no evidence gives, is still refused in both
+builds: #1345.

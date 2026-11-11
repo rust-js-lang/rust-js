@@ -118,16 +118,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
   {
-    name: "assoc-fact-unpassed",
-    breaks:
-      "a callee given `A::Item` that asks its size doesn't make its caller's dictionary carry it",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "                    changed |= carried.insert((assoc, fact));\n                }\n            }\n        }\n",
-    replace:
-      "                    let _ = (assoc, fact);\n                }\n            }\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
-  },
-  {
     name: "assoc-fact-impl-unasked",
     breaks:
       "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
@@ -189,7 +179,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                    changed |= ask((&mut asked, &mut built), caller, each);\n",
+    find: "                    changed |= ask((&mut asked, &mut built, &mut carried), caller, each);\n",
     replace: "                    let _ = each;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
@@ -568,16 +558,32 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic flatten of `Self::Item`s, whose constant size its callers give as one of its slots, is made in place where a collect sees its hint, and asks it as it grows (#1327)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()\n",
-    replace: "    !crate::lower::recognition::known_by_bounds(of)\n",
+    find: "        || slot_of(tcx, foreign, caller, of).is_some()\n",
+    replace: "        || false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_its_callers_items_where_its_hint_is_seen.rs$"],
   },
   {
     name: "const-size-of-known-ungiven",
     breaks: "a flatten of arrays collected where its hint is seen is made in place, and asks its source's hint as it grows (#1327)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "    !crate::lower::recognition::known_by_bounds(of) || slot_of(tcx, foreign, caller, of).is_some()\n",
-    replace: "    slot_of(tcx, foreign, caller, of).is_some()\n",
+    find: "    !crate::lower::recognition::known_by_bounds(of)\n        || slot_of(tcx, foreign, caller, of).is_some()\n",
+    replace: "    false\n        || slot_of(tcx, foreign, caller, of).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+  },
+  {
+    name: "callee-fact-of-assoc-uncarried",
+    breaks: "a fact a std callee asks of an associated type no slot names, a flatten's items' constant size of `<S as Source>::Items`, isn't carried by its trait's dictionaries, so it's refused, \"which no caller gives\" (#1312, #1341)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        return Some(Asked::Carried(assoc, fact));\n",
+    replace: "        return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_traits_items_sized_by_its_dictionary.rs$"],
+  },
+  {
+    name: "const-size-of-carried-ungiven",
+    breaks: "a flatten of an associated type's items, whose constant size its trait's dictionaries carry, is made in place where a collect sees its hint, and asks it again as the `Vec` grows (#1341)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        || carried_by(foreign, of).is_some_and(|assoc| carries(foreign, assoc, TypeFact::ConstSize))\n",
+    replace: "        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_traits_items_sized_by_its_dictionary.rs$"],
   },
 ];

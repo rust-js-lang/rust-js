@@ -273,19 +273,19 @@ export const mutations: Mutation[] = [
   {
     name: "collect-hint-seen-unsized-held",
     breaks:
-      "a generic flatten whose items' constant size no caller gives, a trait's associated iterator's, is held where a collect sees its hint, and refused, \"its constant size of `<S as Source>::Iter`, which no caller gives yet\", where it compiled made in place (#1327)",
+      "a generic flatten of a library's trait's items, whose constant size its manifest says no dictionary carries, is held where a collect sees its hint, and refused, \"which no caller gives\", where it compiled made in place (#1327, #1341)",
     file: "src/lower/body_queries/in_place.rs",
     find: "            recognition.collect_hint_seen(at, given) && flattens_sized(here, caller, given)\n",
     replace: "            recognition.collect_hint_seen(at, given)\n",
-    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of a trait's associated iterators"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
   },
   {
     name: "flattens-sized-unwalked",
     breaks:
-      "only the flatten a collect is given is asked its items' constant size, not one beneath a `rev()`, which is held and refused (#1327)",
+      "only the flatten a collect is given is asked its items' constant size, not one beneath a `map()`, which is held and refused (#1327)",
     file: "src/lower/body_queries/in_place.rs",
     find: "        .is_none_or(|held| held.into_iter().all(|held| flattens_sized(recognition, caller, held)))\n",
     replace: "        .is_none_or(|_| true)\n",
-    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of a trait's associated iterators"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
   },
 ];
