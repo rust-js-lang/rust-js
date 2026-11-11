@@ -2,6 +2,7 @@
 
 import {
   $addr,
+  $apart,
   $cleanup,
   $debugStr,
   $part,
@@ -59,7 +60,7 @@ const Stack = {
 
   /** Of a whole array: its items, read as `MaybeUninit`s. */
   fromArray(array, CAP) {
-    const xs = array;
+    const xs = $apart(array);
     return { xs, len: CAP };
   },
 
@@ -68,7 +69,7 @@ const Stack = {
     if (!Stack.isFull(stack, CAP)) {
       throw new Error("assertion failed: self.is_full()");
     }
-    const array = $ptrWhole(Stack.asPtr(stack, CAP), CAP).value;
+    const array = $apart($ptrWhole(Stack.asPtr(stack, CAP), CAP).value);
     return array;
   },
 

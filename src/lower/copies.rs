@@ -270,6 +270,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A value read out of `place` as `ptr::read` reads it, its bits apart
+    /// from the place, which a write after may change in place: a `Copy`
+    /// value's copy, `copy_if_needed`'s; another's, of a type a `&mut`
+    /// writes whole in place (ADR 0147), its top level apart, `$apart(v)`,
+    /// as `mem::replace`'s `$take` gives what was there (#1351, the user's
+    /// form). What it holds by a pointer, a `Vec`'s items, a `Box`'s
+    /// value, is shared, as the read shares it.
+    pub(super) fn read_out(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        if self.is_copy(ty) || !self.mut_ref_form(ty).written_in_place() {
+            return self.copy_if_needed(place, ty);
+        }
+        Expr::call_helper("$apart", vec![place])
+    }
+
     /// Is `ty` a `Copy` closure that captures something, one of size, a
     /// reference to which the crate makes a `&dyn Fn` where it reads a `dyn
     /// Fn`'s address (`Counted::copied_apart`, #1053's owner)? Its JS

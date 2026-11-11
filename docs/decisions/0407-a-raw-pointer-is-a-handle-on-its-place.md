@@ -209,3 +209,57 @@ value out of a place that no longer holds it, so neither needs a copy.
 Corpus case `pointer_read_is_a_copy.rs`, against native Rust, both builds,
 through `METAMORPHIC=all`. Mutations `pointer-read-uncopied`,
 `uninit-read-uncopied` and `uninit-read-not-a-whole-read`.
+
+## Amendment: what a pointer moves is read whole first, apart from its place (2026-11-11, #1349–#1353)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+The amendment above said `replace` and `swap` need no copy, as they move
+a value out of a place that no longer holds it. That holds of a handle on
+a slot, `$ptr(object, key)`, whose write gives the slot another value. It
+doesn't hold of a handle on an object JS holds as itself, `$ptrTo`'s,
+`$ptrOuter`'s, and a `$ptrWhole` view's of part of an array, whose write
+is the object's in place, `$assign` (ADR 0147): what was read of it is
+the object, and the write changes it. So `ptr::swap` of two `[u32; 2]`s
+of one array an item apart gave `[1, 1, 1, 3]` where Rust's is
+`[1, 0, 1, 3]` (#1349), and of two arrays, structs or `Vec`s that don't
+overlap, each the other's (#1350); `ptr::replace` returned the new value;
+`ptr::read` of a `Vec` or a struct that isn't `Copy`, followed by a write
+there, read the write (#1351), the hand-written `take` and `swap` of
+unsafe code; and `ptr::write(v, ..)` or `*p = ..` through a `&mut` made a
+pointer, `$ptrTo(v)`, gave the name `v` another value, so the caller's
+was never written (#1352).
+
+**What a pointer moves is read whole before anything is written, apart
+from its place, as std's definitions read it**:
+
+- `$ptrSwap`, `$ptrReplace` and a one-value `$ptrCopy` read each source
+  first, a handle on an object JS holds as itself giving its top level
+  apart, `$apart`, as `mem::replace`'s `$take` does (`$ptrMoved`).
+  No output changes.
+- `ptr::read` of what isn't `Copy`, of a type a `&mut` writes whole in
+  place (`MutRefForm::written_in_place`), is `$apart(p.value)`
+  (`copies.rs`' `read_out`), the user's form; a `Copy` value's is
+  `copy_if_needed`'s, as before. What the value holds by a pointer, a
+  `Vec`'s items, a `Box`'s value, is shared, as the read shares it.
+- A write through `$ptrTo(object)`, `ptr::write`'s and `*p = v`'s of a
+  pointer made where it's written, is `$assign(object, v)`, the handle's
+  own write: `pointee_place` marks the object it reads of `$ptrTo(object)`
+  `Known::HandledObject`, and `pointers.rs`' `written_through` writes a
+  place so marked in place, for `ptr::write` and MIR's `*p = v` alike.
+- `ptr::copy` through a view of bytes copies each item's `width` bytes,
+  `[u8; 4]`'s 4, where it copied one per item (#1356, found by the net's
+  `overlaps/copy-whole`).
+
+`ptr::copy` of more than one `[T; N]` through a `$ptrWhole` pointer, which
+threw a `TypeError`, is refused where it runs, naming #1353.
+
+Corpus cases `overlapping_moves_through_pointers.rs` (items of 1, 4 and
+16 bytes, runs of 2, 3, 4 and 7, every distance from 0 to the run, each
+way, of `ptr::swap`, `ptr::copy`, `copy_within`, `rotate_*`, a slice's
+`swap`, `ptr::replace`, and `swap_nonoverlapping` as the control) and
+`whole_values_moved_through_pointers.rs`, against native Rust in both
+builds and under Miri; the memory net's `arith/swap-overlapping-array`
+and `overlaps` family (ADR 0092); test/lowering-pointers.test.ts holds
+the refusal.

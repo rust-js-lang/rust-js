@@ -977,4 +977,12 @@ export const mutations: Mutation[] = [
     replace: "                    && instance.def_id() != def_id\n                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
+  {
+    name: "pointer-deref-write-names-another",
+    breaks: "`*(&raw mut v) = vec![2, 3]` gives the name `v` another value, a `const`'s, which throws, where a pointer kept to `v` reads the write in Rust (#1352)",
+    file: "src/lower/mir/assign.rs",
+    find: "        out.push(crate::lower::pointers::written_through(target, value).at(js_span));\n",
+    replace: "        out.push(StmtKind::Assign(target, value).at(js_span));\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
+  },
 ];

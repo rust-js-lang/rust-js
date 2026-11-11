@@ -638,8 +638,16 @@ export const mutations: Mutation[] = [
     name: "pointer-read-uncopied",
     breaks: "`p.read()` of a `[u8; 2]` is the array in place, so a later `(*p)[0] = 9` shows in what was read, `[9, 4]` where native Rust's is `[3, 4]` (#1265)",
     file: "src/lower/pointers.rs",
-    find: '            PointerOp::Read => self.copy_if_needed(self.pointee_place(arg()), pointee.expect("a pointer")),\n',
+    find: '            PointerOp::Read => self.read_out(self.pointee_place(arg()), pointee.expect("a pointer")),\n',
     replace: "            PointerOp::Read => self.pointee_place(arg()),\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],
+  },
+  {
+    name: "pointer-write-names-another",
+    breaks: "`ptr::write(v, Vec::new())` through a `&mut` made a pointer gives the name `v` another value, so the caller's `Vec` is never written (#1352)",
+    file: "src/lower/pointers.rs",
+    find: "                    object.facts = object.facts.with(js::Known::HandledObject);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
   },
 ];

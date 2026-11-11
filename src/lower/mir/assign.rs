@@ -997,7 +997,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty() {
             super::temporaries::note_marks(state, local, &value);
         }
-        out.push(StmtKind::Assign(target, value).at(js_span));
+        // `*p = v` of a pointer made where it's written, `*(&raw mut v) =
+        // ..`: of an object JS holds as itself, the object's in place (#1352).
+        out.push(crate::lower::pointers::written_through(target, value).at(js_span));
         Ok(())
     }
 

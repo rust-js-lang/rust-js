@@ -5,8 +5,9 @@
 // types, a `union`'s other field read, `MaybeUninit` slots, a `MaybeUninit`
 // of a number of each width written through a view of its bytes, as
 // getrandom fills one (#1279), a slice made of a cast pointer, a typed
-// array's bytes, `ptr::copy` and `write_bytes`, and reads and writes at any
-// byte. Each family of them is in a seed's program
+// array's bytes, `ptr::copy` and `write_bytes`, reads and writes at any
+// byte, and runs of items moved over runs they overlap, by each move std
+// defines where they do (#1349). Each family of them is in a seed's program
 // by a coin, swarm testing's (Groce et al., ISSTA 2012), so a program of
 // few families has more of each. Each operation is in a block of its own,
 // its pointers made there of the place they point into, so none outlives a
@@ -19,7 +20,7 @@
 import { random, type Random } from "./generate";
 
 /** The families of operations, each in a seed's program by a coin. */
-export const families = ["arith", "offsets", "transmute", "unions", "uninit", "uninit-bytes", "views", "copies", "unaligned", "helpers"] as const;
+export const families = ["arith", "offsets", "transmute", "unions", "uninit", "uninit-bytes", "views", "copies", "unaligned", "helpers", "overlaps"] as const;
 export type Family = (typeof families)[number];
 
 const ints = ["u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64"] as const;
@@ -235,6 +236,19 @@ function operation(
         "replace": () => {
           uses.ptr = true;
           return { body: [`let old${op} = unsafe { ptr::replace(${b.name}.as_mut_ptr().add(${i}), ${v()}) };`], shown: [`old${op}`, b.name] };
+        },
+        // Two `[T; w]`s of the buffer `k` items apart, which overlap where
+        // `k < w`: std's swap reads one whole before writing (#1349).
+        "swap-overlapping-array": () => {
+          uses.ptr = true;
+          const w = 2 + r.int(Math.min(6, b.n - 1));
+          const k = r.int(Math.min(w, b.n - w) + 1);
+          const [x, y] = r.chance(0.5) ? [0, k] : [k, 0];
+          const at = r.int(b.n - w - k + 1);
+          return {
+            body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    ptr::swap(p.add(${at + x}).cast::<[${b.ty}; ${w}]>(), p.add(${at + y}).cast::<[${b.ty}; ${w}]>());`, `}`],
+            shown: [b.name],
+          };
         },
         "read-at": () => ({ body: [`let x${op} = unsafe { *${b.name}.as_ptr().add(${i}) };`], shown: [`x${op}`] }),
         "wrapping-read": () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().wrapping_add(${i}).read() };`], shown: [`x${op}`] }),
@@ -634,6 +648,57 @@ function operation(
             body: [`unsafe { ptr::swap_nonoverlapping(${b.name}.as_mut_ptr().add(${i}), ${o.name}.as_mut_ptr().add(${k}), ${n}) };`],
             shown: [b.name, o.name],
           };
+        },
+      });
+    }
+    case "overlaps": {
+      // An array of its own, of items of 1, 4 or 16 bytes, two runs of `w`
+      // of whose items `k` apart, from 0 to `w`, either way, are moved
+      // over each other by each operation std defines where they overlap
+      // (#1349), and `swap_nonoverlapping`'s, at least `w` apart, the
+      // control.
+      uses.ptr = true;
+      const ty = r.pick(["u8", "u32", "u128"] as const);
+      const w = r.pick([2, 3, 4, 7]);
+      const k = r.int(w + 1);
+      const len = 3 * w + 2;
+      const item = () => {
+        if (ty === "u8") return `${r.int(256)}`;
+        if (ty === "u32") return `${r.int(2 ** 32)}`;
+        return `${(BigInt(r.int(2 ** 32)) << 96n) | BigInt(r.int(2 ** 32))}`;
+      };
+      const o = `o${op}`;
+      const made = `let mut ${o}: [${ty}; ${len}] = [${Array.from({ length: len }, item).join(", ")}];`;
+      const start = r.int(len - w - k + 1);
+      const [a, c] = r.chance(0.5) ? [start, start + k] : [start + k, start];
+      const whole = `[${ty}; ${w}]`;
+      const pointer = (body: string[]) => [made, `unsafe {`, `    let p = ${o}.as_mut_ptr();`, ...body.map((line) => `    ${line}`), `}`];
+      return oneOf(r, family, {
+        "swap": () => ({ body: pointer([`ptr::swap(p.add(${a}).cast::<${whole}>(), p.add(${c}).cast::<${whole}>());`]), shown: [o] }),
+        "copy": () => ({ body: pointer([`ptr::copy(p.add(${a}), p.add(${c}), ${w});`]), shown: [o] }),
+        "copy-whole": () => ({ body: pointer([`ptr::copy(p.add(${a}).cast::<${whole}>(), p.add(${c}).cast::<${whole}>(), 1);`]), shown: [o] }),
+        "copy-within": () => ({ body: [made, `${o}.copy_within(${a}..${a + w}, ${c});`], shown: [o] }),
+        "rotate-left": () => ({ body: [made, `${o}[${start}..${start + w}].rotate_left(${k});`], shown: [o] }),
+        "rotate-right": () => ({ body: [made, `${o}[${start}..${start + w}].rotate_right(${k});`], shown: [o] }),
+        "slice-swap": () => ({ body: [made, `${o}.swap(${a}, ${c});`], shown: [o] }),
+        "replace": () => ({
+          body: [
+            made,
+            `let old${op} = unsafe {`,
+            `    let p = ${o}.as_mut_ptr();`,
+            `    ptr::replace(p.add(${a}).cast::<${whole}>(), p.add(${c}).cast::<${whole}>().read())`,
+            `};`,
+          ],
+          shown: [`old${op}`, o],
+        }),
+        "swap-nonoverlapping": () => {
+          // `w` apart and more, within the array.
+          const from = r.int(len - 2 * w - Math.min(k, len - 2 * w) + 1);
+          const to = from + w + Math.min(k, len - 2 * w - from);
+          const body = r.chance(0.5)
+            ? `ptr::swap_nonoverlapping(p.add(${from}), p.add(${to}), ${w});`
+            : `ptr::swap_nonoverlapping(p.add(${from}).cast::<${whole}>(), p.add(${to}).cast::<${whole}>(), 1);`;
+          return { body: pointer([body]), shown: [o] };
         },
       });
     }

@@ -38,7 +38,11 @@ JS has no addressable memory: a value is an object or a number, not bytes
 at an address. rust-js gives raw pointers, `transmute` and the like the
 meaning Rust's have where it can model them: a raw pointer to a local or
 into an array, its `add`, `offset_from` and `byte_offset_from`, a slice's
-`as_ptr_range`, `ptr::swap_nonoverlapping`, a `transmute` between types of
+`as_ptr_range`, `ptr::swap_nonoverlapping`, `ptr::swap`, `ptr::replace`
+and `ptr::copy` of what overlaps, each source read whole before it's
+written, as std's are (a `ptr::copy` of more than one `[T; N]` through a
+pointer to part of an array cast to an array's type is refused where it
+runs, #1353), a `transmute` between types of
 numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
 `slice::from_raw_parts` of an array's pointer, its items read as the
 pointer's type, and `from_raw_parts_mut`'s, written where their bytes are,

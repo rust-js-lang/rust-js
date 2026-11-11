@@ -292,4 +292,9 @@ pub enum Known {
     /// captures that's read no more after may be shadowed past it (tidy's
     /// `captured`, #1168).
     RunsInItsCall,
+    /// The object a raw pointer made here is a handle on, `object` of
+    /// `$ptrTo(object)`, read as `*p` (`pointee_place`): its whole write is
+    /// the handle's, the object's in place, `$assign(object, v)`, as `*r =
+    /// v`'s is (ADR 0147), not the name given another (#1352).
+    HandledObject,
 }

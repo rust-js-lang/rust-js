@@ -350,3 +350,22 @@ starts with its operation's number. A known one passes in any seed, the
 slice's or the nightly's; a new refusal, a new form's wrong answer, or
 a crash fails either. A run prints how many programs each line met. The
 seeds' programs are as before: the names cost the generator no draw.
+
+**Memory moved over memory it overlaps** (2026-11-11, #1349). The
+families had no operation std defines for overlapping places, and the
+`arith` swap was of two items, which can't half overlap, so #1349, a
+`ptr::swap` of two `[u32; 2]`s an item apart, was found by hand. `arith`
+gains `swap-overlapping-array`, two `[T; w]`s of a buffer `k` items
+apart, `k` from 0 to `w`, either way; and an 11th family, `overlaps`,
+an array of its own of items of 1, 4 or 16 bytes (`u8`, `u32`, `u128`),
+runs of 2, 3, 4 or 7, every distance from 0 to the run, either way,
+through `ptr::swap` of whole runs, `ptr::copy` of items and of one whole
+run, `copy_within`, `rotate_left`, `rotate_right`, a slice's `swap`,
+`ptr::replace` of a run with one read along it, and the control,
+`swap_nonoverlapping` of items or of whole runs at least `w` apart.
+A family more changes each seed's swarm, so the slice's programs are
+others than before. With the fix reverted, `swap-overlapping-array`
+alone makes seed 19 fail in both builds, and the widened net fails 8 of
+the slice's 24 seeds in both (1, 7, 11, 12, 14, 15, 16 and 20), first by
+`overlaps/swap`, `replace`, `swap-nonoverlapping`, `copy-whole` and
+`arith/swap-overlapping-array`; restored, it passes.

@@ -432,4 +432,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
   },
+  {
+    name: "read-out-not-apart",
+    breaks: "`ptr::read` of a `Vec` and a write there after: what was read is the `Vec` in place, and shows the write, `[8, 9]` where Rust's is `[7]` (#1351)",
+    file: "src/lower/copies.rs",
+    find: "        Expr::call_helper(\"$apart\", vec![place])\n    }\n",
+    replace: "        self.copy_if_needed(place, ty)\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
+  },
+  {
+    name: "read-out-apart-of-text",
+    breaks: "`ptr::read` of a `String`, which no write changes in place, is `$apart(text)`, a copy of nothing (#1351)",
+    file: "src/lower/copies.rs",
+    find: "        if self.is_copy(ty) || !self.mut_ref_form(ty).written_in_place() {\n",
+    replace: "        if self.is_copy(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
+    snapshots: true,
+  },
 ];

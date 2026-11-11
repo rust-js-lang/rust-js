@@ -174,6 +174,17 @@ pub(in crate::lower) enum Offset {
     LaidOutByCaller,
 }
 
+/// A whole write of `place`, `pointee_place`'s of a pointer: of the object
+/// a `$ptrTo(object)` is a handle on (`Known::HandledObject`), the
+/// handle's own write, the object's in place, as `*r = v`'s is (ADR 0147),
+/// so each name for it sees it, not the name given another (#1352).
+pub(in crate::lower) fn written_through(place: Expr, value: Expr) -> StmtKind {
+    match place.facts.has(js::Known::HandledObject) {
+        true => StmtKind::Expr(Expr::call_helper("$assign", vec![place, value])),
+        false => StmtKind::Assign(place, value),
+    }
+}
+
 pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
     match ty.kind() {
         ty::RawPtr(pointee, mutability) => Some((*pointee, *mutability)),
@@ -768,7 +779,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => Expr::index(object.clone(), key.clone()),
                     };
                 }
-                (Some("$ptrTo"), [object]) => return object.clone(),
+                // Marked, so a whole write of it is the object's in place
+                // (`written_through`, #1352).
+                (Some("$ptrTo"), [object]) => {
+                    let mut object = object.clone();
+                    object.facts = object.facts.with(js::Known::HandledObject);
+                    return object;
+                }
                 _ => {}
             }
         }
@@ -780,6 +797,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return value.clone();
         }
         Expr::held(pointer)
+    }
+
+    /// `*p = value`, `ptr::write(p, value)`: its place written, `pointee_place`'s;
+    /// of an object JS holds as itself, `$ptrTo(object)`, the handle's own
+    /// write, the object's in place, as `*r = v`'s is (ADR 0147), so each
+    /// name for it sees it, not the name given another (#1352).
+    pub(super) fn pointee_write(&self, pointer: Expr, value: Expr) -> StmtKind {
+        written_through(self.pointee_place(pointer), value)
     }
 
     /// A call of std's of a raw pointer, of its arguments' values. `None` if
@@ -812,12 +837,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match op {
             PointerOp::Null => Expr::null(),
             PointerOp::IsNull => Expr::bin(Op::Eq, arg(), Expr::null()),
-            // A read of its place, copied as `*p` is where what's there is
-            // changed in place after (#1265).
-            PointerOp::Read => self.copy_if_needed(self.pointee_place(arg()), pointee.expect("a pointer")),
+            // A read of its place, its bits apart from it, as a write there
+            // after may change it in place (#1265, #1351).
+            PointerOp::Read => self.read_out(self.pointee_place(arg()), pointee.expect("a pointer")),
             PointerOp::Write => {
                 let (pointer, value) = (arg(), arg());
-                out.push(StmtKind::Assign(self.pointee_place(pointer), value).at(self.js_span(span)));
+                out.push(self.pointee_write(pointer, value).at(self.js_span(span)));
                 Expr::undefined()
             }
             PointerOp::FirstItem => helper("$ptr", vec![arg(), Expr::int(0)]),

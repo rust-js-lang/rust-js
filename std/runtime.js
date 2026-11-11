@@ -7470,21 +7470,34 @@ export function $byteOffset(pointer) {
   return stride === undefined ? undefined : { of: pointer.of, at: pointer.at * stride };
 }
 
+// What a pointer points to, read out as Rust reads its bits, apart from
+// its place: of a handle on an object JS holds as itself, `$ptrTo`'s,
+// `$ptrOuter`'s, a `$ptrWhole` view's, whose write is the object's in
+// place (ADR 0147), its top level apart, as `mem::replace`'s is, so a
+// write there after, or one of what overlaps it, leaves it as it was
+// (#1349).
+export function $ptrMoved(pointer) {
+  const value = pointer.value;
+  return pointer.bytes === undefined && pointer.at === undefined && pointer.of !== undefined ? $apart(value) : value;
+}
+
 // `ptr::replace(p, v)`: what it pointed to, and `v` there now.
 export function $ptrReplace(pointer, value) {
-  const old = pointer.value;
+  const old = $ptrMoved(pointer);
   pointer.value = value;
   return old;
 }
 
-// `ptr::swap(a, b)`: what each points to, the other's; and
+// `ptr::swap(a, b)`: what each points to, the other's, each read whole
+// before either is written, as std's is, so two that overlap, `[T; N]`s
+// of one array a few items apart, swap as Rust's do (#1349); and
 // `ptr::swap_nonoverlapping(a, b, count)`, of each of the `count` items
 // from where each points, along its array or its bytes' view.
 export function $ptrSwap(a, b, count = 1) {
   for (let i = 0; i < count; i++) {
     const [x, y] = i === 0 ? [a, b] : [$ptrAdd(a, i), $ptrAdd(b, i)];
-    const held = x.value;
-    x.value = y.value;
+    const [held, other] = [$ptrMoved(x), $ptrMoved(y)];
+    x.value = other;
     y.value = held;
   }
 }
@@ -7958,15 +7971,25 @@ export function $ptrCmp(p, q, size) {
 // `copyWithin`.
 export function $ptrCopy(src, dst, count, copy) {
   if (count === 0) return;
+  // Through a view of bytes, each item `width` of them, `[u8; 4]`'s 4: every
+  // byte of the `count` items read before any is written (#1349).
   if (src.bytes !== undefined || dst.bytes !== undefined) {
     const [from, to] = [$asBytes(src), $asBytes(dst)];
-    const read = Array.from({ length: count }, (_, i) => $byteAt(from, i));
-    for (let i = 0; i < count; i++) $byteSet(to, i, read[i]);
+    const bytes = count * (src.bytes !== undefined ? src.width : dst.width);
+    const read = Array.from({ length: bytes }, (_, i) => $byteAt(from, i));
+    for (let i = 0; i < bytes; i++) $byteSet(to, i, read[i]);
     return;
   }
+  // One, read whole before it's written, as one `[T; N]` over another
+  // that overlaps it is (#1349).
   if (count === 1) {
-    dst.value = copy === undefined ? src.value : copy(src.value);
+    dst.value = copy === undefined ? $ptrMoved(src) : copy(src.value);
     return;
+  }
+  // More than one of a pointer to part of an array as one to an array,
+  // `$ptrWhole`'s, which has no index along an array of such arrays.
+  if ([src, dst].some((p) => Array.isArray(p.of) && typeof p.at !== "number")) {
+    throw $unsupported("rust-js does not support copying more than one value through a pointer to part of an array cast to an array's type, which reads memory by where it is (#1353)");
   }
   if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
     throw $unsupported("rust-js does not support copying items but between arrays, which reads memory by where it is");
