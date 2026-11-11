@@ -438,4 +438,12 @@ export const mutations: Mutation[] = [
     replace: "        return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_traits_items_sized_by_its_dictionary.rs$"],
   },
+  {
+    name: "default-call-facts-unasked-of-copies",
+    breaks: "a trait's default that gives its `Self` to a function asking `IInPlace` of it is copied into a blanket impl that asks its caller nothing, so its call is refused, \"the buffer std collects an iterator in place in\", itertools' `multi_cartesian_product(self)` (#1313)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            let copies = copies_of_default(tcx, caller, args);\n",
+    replace: "            let copies: Vec<collects::DefaultCopy<'tcx>> = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_gives_its_callee_what_self_collects_in_place.rs$"],
+  },
 ];

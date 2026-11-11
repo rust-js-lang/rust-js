@@ -44,8 +44,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's default copied into an impl collects in the impl's terms where only the impl's bounds hold, so what it collects isn't known there and asks nothing, and the collect is refused (#737)",
     file: "src/lower/analysis/type_facts/collects.rs",
-    find: "        let impl_env = crate::lower::traits::default_typing_env(tcx, imp, caller, in_impl);\n",
-    replace: "        let impl_env = ty::TypingEnv::post_analysis(tcx, imp);\n",
+    find: "            typing_env: crate::lower::traits::default_typing_env(tcx, imp, default, in_impl),\n",
+    replace: "            typing_env: ty::TypingEnv::post_analysis(tcx, imp),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the analysis numbers a copied default's own parameters as its trait does, where its lowering numbers them after the impl's, so what it asks of them is another's (#804)",
     file: "src/lower/analysis/type_facts/collects.rs",
-    find: "        let in_impl = crate::lower::traits::default_args(tcx, imp, caller, in_impl);\n",
+    find: "        let in_impl = crate::lower::traits::default_args(tcx, imp, default, in_impl);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(in_place_collect_of_a_built_type_relayed|default_own_param_drops|default_own_param_numbered_as_the_impls).rs$"],
   },

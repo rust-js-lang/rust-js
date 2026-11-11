@@ -412,3 +412,26 @@ the metamorphic net's `generic-instances` rows of
 `fold_drops_moved_function_first.rs`, now off its list, and the whole
 corpus's `generic` and `generic-instances` rewrites. Mutations
 `vec-collect-*` and `collect-vec-*`.
+
+## Amendment (2026-11-11): what a default's call asks, each copy asks (#1313)
+
+A trait's default copied into each of the crate's impls that doesn't write
+its own, `impl<T: Iterator> Tools for T` (ADR 0049), asked of the impl what
+its collects ask of the trait's `Self`, in the impl's terms, `T`. What a
+function it calls asks of what the default gives it was asked of the
+default alone: itertools' `multi_cartesian_product(self)`, whose callee
+collects into a `Vec` std may make in place, asks `IInPlace` of `Self`, and
+the copy in the blanket impl, which its caller calls, was given none, so
+it was refused, "the buffer std collects an iterator in place in". Both now
+take one translation, `copies_of_default`: a default's `args`, in each
+copying impl's terms and environment as the lowering has them
+(`default_args`, `default_typing_env`), which `collect_asks` and the calls'
+fixpoint read. Of a call, the slots' facts alone, `T`'s of `Self`: the
+layout or map class of a type built of them, asked of a copy, its caller
+asks of what it gives, and a default that calls the blanket impl's copy at
+`Enumerate<Self>`, itertools' `minmax_by_key`, asks it again of
+`Enumerate<T>`, and so on, which no finite set of facts settles (#1346,
+where itertools is refused now, past #1313's site).
+Held by `test/corpus/default_gives_its_callee_what_self_collects_in_place.rs`
+against native Rust, a panic part-way among it; mutation
+`default-call-facts-unasked-of-copies`.

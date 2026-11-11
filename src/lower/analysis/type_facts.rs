@@ -23,7 +23,7 @@ mod carried;
 mod collects;
 pub(in crate::lower) use carried::{CarriedSuper, super_item_of};
 use carried::{carried_by, carried_by_every_impl, carries, default_super_item, slot_super_item};
-use collects::collect_asks;
+use collects::{collect_asks, copies_of_default};
 
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
@@ -376,10 +376,44 @@ pub(super) fn type_fact_params<'tcx>(
             for ((_, of), (asked_facts, gates)) in built.iter().filter(|((id, _), _)| *id == callee) {
                 facts.extend(asked_facts.iter().map(|&fact| (*of, fact, gates.clone())));
             }
+            // Of a trait's default, in each impl's terms that copies it, as
+            // its collects' are (`copies_of_default`, #1313).
+            let copies = copies_of_default(tcx, caller, args);
             for (slot, fact, gates) in facts {
                 let relayed = (caller, callee, args);
                 for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &gates)) {
                     changed |= ask((&mut asked, &mut built, &mut carried), caller, each);
+                }
+                for collects::DefaultCopy {
+                    imp,
+                    args,
+                    typing_env: impl_env,
+                    own,
+                } in &copies
+                {
+                    let (imp, args, impl_env) = (*imp, *args, *impl_env);
+                    // Not of what names any of the default's own parameters,
+                    // numbered after the impl's: they aren't the impl's, nor
+                    // its callers' to give (#804).
+                    let own =
+                        |ty: ty::Ty<'tcx>| (ty.walk()).any(|part| part.as_type().is_some_and(|ty| own.contains(&ty)));
+                    if own(ty::EarlyBinder::bind(tcx, slot)
+                        .instantiate(tcx, args)
+                        .skip_normalization())
+                    {
+                        continue;
+                    }
+                    // Its slots' facts alone, `T`'s of the trait's `Self`. A
+                    // type built of them, asked of a copy, its caller asks of
+                    // what it gives, and a default that calls the blanket
+                    // impl's copy at `Enumerate<Self>`, itertools'
+                    // `counts_by`, asks it again of `Enumerate<T>`, and so on,
+                    // wider each round, which never settles (#1313).
+                    for each in asked_of_caller(tcx, foreign, impl_env, (imp, callee, args), (slot, fact, &gates)) {
+                        if matches!(each, Asked::Slot(..)) {
+                            changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
+                        }
+                    }
                 }
             }
         }

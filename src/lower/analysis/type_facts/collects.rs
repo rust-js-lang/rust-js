@@ -66,28 +66,21 @@ pub(super) fn collect_asks<'tcx>(
     let default_of = tcx
         .trait_of_assoc(caller)
         .filter(|_| tcx.defaultness(caller).has_value());
-    let Some(trait_id) = default_of else {
+    if default_of.is_none() {
         return (asked_by(typing_env, caller, args).into_iter())
             .map(|asked| (caller, asked))
             .collect();
-    };
+    }
     let parents = tcx.generics_of(caller).parent_count;
     let own = ty::GenericArgs::identity_for_item(tcx, caller);
     let mut asked = Vec::new();
-    for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
-        let imp = imp.to_def_id();
-        if tcx.impl_item_implementor_ids(imp).contains_key(&caller) {
-            continue;
-        }
-        // In the impl's terms as the lowering has them, and where they're
-        // known as it knows them (`default_args`, `default_typing_env`).
-        let trait_args = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization().args;
-        let in_impl = tcx.mk_args_from_iter(trait_args.iter().chain(own.iter().skip(parents)));
-        let in_impl = crate::lower::traits::default_args(tcx, imp, caller, in_impl);
-        let args = ty::EarlyBinder::bind(tcx, args)
-            .instantiate(tcx, in_impl)
-            .skip_normalization();
-        let impl_env = crate::lower::traits::default_typing_env(tcx, imp, caller, in_impl);
+    for DefaultCopy {
+        imp,
+        args,
+        typing_env: impl_env,
+        ..
+    } in copies_of_default(tcx, caller, args)
+    {
         // Not what names the default's own parameters, which aren't the
         // impl's (`default_args`): its caller gives those (#804).
         let first = tcx.generics_of(imp).count() as u32;
@@ -209,4 +202,55 @@ fn grown_asked<'tcx>(
     }
     let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
     size.into_iter().collect()
+}
+
+/// Of `default`, a trait's default, what its body names, `args`, in the
+/// terms of each of the crate's impls of the trait that copies it, as the
+/// lowering has them (`default_args`), with the environment it's lowered in
+/// there (`default_typing_env`): what it asks of the trait's `Self`, the
+/// impl asks of its own type for it, `T` of `impl<T: Iterator> Tools for
+/// T`, a collect's (ADR 0049) and a call's alike (#1313). None of another
+/// function.
+pub(super) struct DefaultCopy<'tcx> {
+    pub(super) imp: DefId,
+    pub(super) args: ty::GenericArgsRef<'tcx>,
+    pub(super) typing_env: ty::TypingEnv<'tcx>,
+    /// The default's own type parameters, numbered after the impl's: not
+    /// the impl's, nor its callers' to give (#804).
+    pub(super) own: Vec<ty::Ty<'tcx>>,
+}
+
+pub(super) fn copies_of_default<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<DefaultCopy<'tcx>> {
+    let Some(trait_id) = tcx
+        .trait_of_assoc(default)
+        .filter(|_| tcx.defaultness(default).has_value())
+    else {
+        return Vec::new();
+    };
+    let parents = tcx.generics_of(default).parent_count;
+    let own = ty::GenericArgs::identity_for_item(tcx, default);
+    let mut copies = Vec::new();
+    for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
+        let imp = imp.to_def_id();
+        if tcx.impl_item_implementor_ids(imp).contains_key(&default) {
+            continue;
+        }
+        let trait_args = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization().args;
+        let in_impl = tcx.mk_args_from_iter(trait_args.iter().chain(own.iter().skip(parents)));
+        let in_impl = crate::lower::traits::default_args(tcx, imp, default, in_impl);
+        let args = ty::EarlyBinder::bind(tcx, args)
+            .instantiate(tcx, in_impl)
+            .skip_normalization();
+        copies.push(DefaultCopy {
+            imp,
+            args,
+            typing_env: crate::lower::traits::default_typing_env(tcx, imp, default, in_impl),
+            own: in_impl.iter().skip(parents).filter_map(|arg| arg.as_type()).collect(),
+        });
+    }
+    copies
 }

@@ -30,9 +30,9 @@ function hint(it, IFused) {
 
 const $tExt = new WeakMap();
 
-function tExt(TIterator) {
-  return $traitImpl($tExt, [TIterator], () => ({
-    hinted: (self) => hint($given(self, TIterator, true), false),
+function tExt(TIterator, TFused) {
+  return $traitImpl($tExt, [TIterator, TFused], () => ({
+    hinted: (self) => hint($given(self, TIterator, true), TFused),
   }));
 }
 
@@ -43,7 +43,7 @@ function main() {
   console.log(
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
-  const value$2 = tExt({ next: $next }).hinted($iter(items));
+  const value$2 = tExt({ next: $next }, true).hinted($iter(items));
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
 }
 //# sourceMappingURL=case.js.map
