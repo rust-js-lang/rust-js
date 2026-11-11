@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/unwind.js",
     find: "  return e instanceof $Abort || e instanceof $InternalError || e instanceof $Unsupported;\n",
     replace: "  return e instanceof $Abort || e instanceof $InternalError;\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "abort-said-twice",

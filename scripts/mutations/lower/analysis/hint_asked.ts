@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
     replace: "                None => _ = asked.hinted.lost.insert((owner, iter_ty)),\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "generic-growth-instances-unasked",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
     replace: "if false && (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "generic-growth-unseen-not-by-value",
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
     replace: "                None => {}\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "chain-parts-unmarked",

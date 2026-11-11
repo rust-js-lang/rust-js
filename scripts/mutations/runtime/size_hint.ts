@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/size_hint.js",
     find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "hint-of-own-steps-unknown",
@@ -90,6 +90,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/size_hint.js",
     find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
     replace: "  $hintUnknown = true;\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
 ];

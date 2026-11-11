@@ -733,6 +733,6 @@ export const mutations: Mutation[] = [
     file: "src/prepare/catches.rs",
     find: "    if caught != js::Caught::Unwound {\n        return (binding, handler);\n",
     replace: "    if true {\n        return (binding, handler);\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
 ];

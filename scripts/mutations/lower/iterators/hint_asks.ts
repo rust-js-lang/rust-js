@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "self.krate.hinted.lost.contains(&site)",
     replace: "false",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "generic-growth-own-hint-lost",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        self.given_hint_is_stds(instance) || self.hint_reaches_own(instance)\n",
     replace: "        self.given_hint_is_stds(instance)\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "generic-growth-by-value-unread",
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "self.krate.hinted.by_value.contains(&site)",
     replace: "false",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "collect-hint-seen-of-none",

@@ -614,7 +614,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "            true => Expr::call_helper(\"$untracked\", vec![collected]),\n",
     replace: "            true => collected,\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "from-iter-given-closed-drops-as-its-type",

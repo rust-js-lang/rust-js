@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "  if (kept === $unknownCapacity) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "shrunk-unknown-stays",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "    if (min <= v.length) $capacities.set(v, v.length);\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "unknown-capacity-forgotten-by-push",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "  if ($capacityUnknown(v)) return made;\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "grown-by-lost-unasked",
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "    if (unkept && asked) $untracked(v);\n",
     replace: "    if (unkept) $untracked(v);\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "grown-by-lost-kept",
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "    if (unkept && asked) $untracked(v);\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "grown-by-value-unasked",
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/capacity.js",
     find: "            unkept ||= !known;\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+    tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
     name: "untracked-in-arrays-unmarked",

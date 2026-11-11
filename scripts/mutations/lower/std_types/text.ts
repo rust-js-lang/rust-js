@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "            TextOp::IntoBytes if self.krate.keeps_capacity => call(\"$untracked\", vec![utf8_bytes(arg())]),\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+    tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
   {
     name: "chars-always-js-iterator",
