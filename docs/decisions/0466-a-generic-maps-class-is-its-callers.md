@@ -225,3 +225,53 @@ bytes compiles within a gigabyte"; mutation `concrete-key-taken-apart`
 `[T; N]`, is still one part an item, its JS `$keyClassOf` of `N` classes,
 so a huge `N` there costs as much: left, as no program has met it.
 
+## Amendment: an array key's class is its item's, once (#1371)
+
+#1368 left an array key of a type parameter, `[T; N]`, one part an item:
+`key_class_parts` gave `N` copies of `T`, `map_of_param` and `held_facts`
+walked each, and the class was `$keyClassOf(set, sorted, [TMap, TMap,
+...])`, `N` classes long. A generic function's
+`HashMap::<[T; 536870907], ()>::with_capacity(n)` held 4.5 GB of the
+compiler's memory within 0.7 s; `[T; 4096]` compiled, its JS 4,096 lines
+of `TMap`.
+
+An array's items are of one type, so its class is that type's applied to
+each item: std's `Hash` of an array is its slice's, each item in turn
+after the length every key of the type shares; its `PartialEq` compares
+each in turn, short of the first unequal; its `Ord` orders them
+lexicographically. That's a tuple's of parts all of one way. So
+`key_class_parts` gives a tuple's parts, or an array's item once
+(`KeyParts`), whatever its length; a caller is asked the item's class
+once; and the class is `$arrayKeyClassOf(set, sorted, Item)`, which
+shares `$keyClassOf`'s composition (`$composedKeyClass`), each part of a
+key found by its way, `ways[index(i)]`, a tuple's `i`th, an array's one.
+The user chose this (A) over `$keyClassOf` given one class for an array's
+items, and over a list kept for small arrays, two forms of one construct.
+`[T; 0]` asks its item's class too, harmless, as every key of it is one.
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, each result std's.
+
+A generic function's `[T; 536870907]`, made where it's made and given a
+callee that asks it of what it's given, compiles in about 120 MB, held by
+`test/runtime-package.test.ts`' "a map keyed by an array of half a billion
+of a type parameter's items compiles within a gigabyte" (1 GiB cap).
+`test/key-class-ways.txt` says an array's way is its item's, each of the
+six, held by `$arrayKeyClassOf` itself. The corpus case
+`map_keyed_by_an_array_of_a_type_parameter.rs` (a `HashSet<[T; 3]>` of
+keys found by value and by their own `Hash` and `Eq`, a `HashMap<[T;
+4096], _>`, `BTreeSet<[T; 2]>`s by std's order and by an `Ord` of their
+own, a `BTreeMap` of arrays of tuples, and `[T; 0]`) runs against native
+Rust in both builds and through its metamorphic rewrites. Mutations
+`array-key-item-unasked` and `array-key-an-item-a-part`
+(`lower/recognition/type_facts.ts`), `array-key-held-as-its-items`
+(`lower/recognition/specialization.ts`), `array-key-class-uncomposed` and
+`array-key-class-a-tuple-of-one` (`lower/std_types/map.ts`), and
+`array-key-way-its-first-items-alone`, `array-key-way-by-value` and
+`key-compared-by-its-classes-parts` (`runtime/key_class.ts`); five
+refitted. The class lowering asks `mentions_param`, the one owner of
+whether a key is made of a type parameter, where it walked the key itself.
+And `map_of_param` no longer asks it: with an array one part, taking a
+key of no type parameter apart costs a part a tuple's part, and gives
+nothing, so #1368's guard was an answer no input could tell from its
+absence; `concrete-key-taken-apart` survived, and went with it. The
+#1368 test holds `array-key-an-item-a-part` too.
+

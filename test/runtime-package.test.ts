@@ -502,6 +502,22 @@ test("a map keyed by an array of half a billion bytes compiles within a gigabyte
   expect([p.overgrown ?? false, p.code, p.stderr]).toEqual([false, 0, ""]);
 });
 
+// And one of a type parameter's items, `[T; N]`, is its item's class, the
+// caller's, once for every item (#1371): one class an item, a generic
+// function's `[T; 536870907]` held 4.5 GB within 0.7 s, and its JS was a
+// list of `N` classes.
+test("a map keyed by an array of half a billion of a type parameter's items compiles within a gigabyte", async () => {
+  const dir = fixture("room-of-a-huge-generic-key");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    "use std::collections::HashMap;\nuse std::hash::Hash;\n\nfn counted<K: Hash + Eq>(n: usize) -> usize {\n    HashMap::<K, ()>::with_capacity(n).len()\n}\n\npub fn room<T: Hash + Eq>(n: usize) -> usize {\n    HashMap::<[T; 536870907], ()>::with_capacity(n).len() + counted::<[T; 536870907]>(n)\n}\n\npub fn four_past(n: usize) -> usize {\n    room::<u8>(n)\n}\n",
+  );
+  const p = await runAsync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 120_000, {}, 2 ** 30);
+  expect([p.overgrown ?? false, p.code, p.stderr]).toEqual([false, 0, ""]);
+  // Made here, and given a callee that asks it of what it's given.
+  expect(readFileSync(join(dir, "lib.js"), "utf8").split("$arrayKeyClassOf(false, false, TMap)").length).toBe(3);
+});
+
 // Room for a length that's asked, a `resize`'s, a range's `collect()`'s,
 // or a hash table's, ends where std's for wasm32 ends it (ADR 0774,
 // amended): a table's where native wasm32 hashbrown's `try_reserve` first
@@ -1129,17 +1145,27 @@ test("a long text's kept facts are its own, at every byte, and at most $textKept
 // How a map or a set keyed by a tuple or an array finds its keys, of its
 // parts' ways, where generic code is given each part's class (#1346): the
 // runtime's `$keyClassUnsorted` and `$keyClassSorted`, the rules
-// `$keyClassOf` composes by, held to test/key-class-ways.txt.
+// `$keyClassOf` composes by, held to test/key-class-ways.txt; and of an
+// array's, `way[]`, the class `$arrayKeyClassOf` makes of an item's class
+// of that way, its item's way (#1371).
 test("$keyClassOf's rules answer test/key-class-ways.txt", () => {
   const module = join(fixture("runtime-key-class-ways"), "runtime.js");
   writeFileSync(module, run([compiler, "--runtime-module"]));
   const rows = readFileSync(join(root, "test/key-class-ways.txt"), "utf8").split("\n")
     .filter((line) => line && !line.startsWith("#")).map((line) => line.split("\t"));
-  expect(rows.length).toBe(11);
+  expect(rows.length).toBe(17);
   const script = `
-const { $keyClassUnsorted, $keyClassSorted } = await import(${JSON.stringify(module)});
+const { $keyClassUnsorted, $keyClassSorted, $arrayKeyClassOf, $keyMap, $hashedMap, $btreeMap, $ordMap, $ordTreeMap } = await import(${JSON.stringify(module)});
 const rows = ${JSON.stringify(rows)};
-console.log(rows.map(([sorted, parts]) => (sorted === "sorted" ? $keyClassSorted : $keyClassUnsorted)(parts.split(","))).join(","));`;
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const items = { value: Map, parts: $keyMap((key) => [key]), hashed: $hashedMap({ hash() {} }, () => true), cmp: $btreeMap(cmp, Map), own: $ordMap(cmp), tree: $ordTreeMap(cmp) };
+const way = ([sorted, parts]) => {
+  const item = parts.match(/^(\\w+)\\[\\]$/);
+  if (item === null) return (sorted === "sorted" ? $keyClassSorted : $keyClassUnsorted)(parts.split(","));
+  const { way } = $arrayKeyClassOf(false, sorted === "sorted", items[item[1]]);
+  return sorted === "sorted" ? way.sorted : way.find;
+};
+console.log(rows.map(way).join(","));`;
   const printed = run([node ?? "node", "--input-type=module", "--eval", script]).trim();
   expect(printed).toBe(rows.map(([, , way]) => way).join(","));
 });

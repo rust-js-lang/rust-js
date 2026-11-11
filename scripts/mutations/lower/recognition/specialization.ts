@@ -169,8 +169,16 @@ export const mutations: Mutation[] = [
     name: "tuple-key-class-asked-whole",
     breaks: "a map keyed by a tuple of a type parameter asks its caller the tuple's class, which no caller gives where a blanket impl's copy builds it, so it's refused, \"whose class isn't given\" (#1346)",
     file: "src/lower/recognition/specialization.rs",
-    find: "                    Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),\n",
+    find: "                    Some(parts) => each.extend(parts.types().iter().rev().map(|&part| class_key(part))),\n",
     replace: "                    Some(_) => held.push((key, fact)),\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "array-key-held-as-its-items",
+    breaks: "a map keyed by an array of a type parameter, `[T; N]`, a callee asks of what it's given, holds its item's class once an item, so `[T; 536870907]` of a blanket impl's copy takes the compiler's memory (#1371)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "                    Some(parts) => each.extend(parts.types().iter().rev().map(|&part| class_key(part))),\n",
+    replace: "                    Some(parts) => each.extend(match parts { KeyParts::Array(item) => vec![item; 536870907], KeyParts::Tuple(parts) => parts }.into_iter().rev().map(class_key)),\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a type parameter's items compiles within a gigabyte"],
   },
 ];

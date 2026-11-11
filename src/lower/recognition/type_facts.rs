@@ -174,8 +174,8 @@ pub(crate) fn const_size_unknown<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::Typing
 /// std associated type's of one, `ty` itself: each key part a caller gives
 /// the class of, and the class's fact, `Map`, `Set`, `TreeMap` or
 /// `TreeSet` (ADRs 0466, 0404): the key's own, or of a key that's a tuple
-/// or an array, each part's, whose classes `$keyClassOf` composes
-/// (`key_class_parts`, #1346).
+/// or an array, each part's, whose classes `$keyClassOf` and
+/// `$arrayKeyClassOf` compose (`key_class_parts`, #1346, #1371).
 pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<(Ty<'tcx>, TypeFact)> {
     let ty::Adt(adt, args) = ty.kind() else {
         return Vec::new();
@@ -196,14 +196,12 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<(Ty<'tc
     while let Some(key) = each.pop() {
         if known_by_bounds(key) {
             given.push((key, fact));
-        } else if mentions_param(key)
-            && let Some(parts) = key_class_parts(tcx, key)
-        {
-            // A key of no type parameter's, whose class is made here, has no
-            // part a caller gives, and isn't taken apart: an array of half a
-            // billion bytes, `HashMap<[u8; 536870907], ()>`, was one part an
-            // item, 8.6 GB of the compiler's memory (#1368).
-            each.extend(parts.into_iter().rev().map(class_key));
+        } else if let Some(parts) = key_class_parts(key) {
+            // An array's item is one part, of however many: one an item, an
+            // array of half a billion bytes, `HashMap<[u8; 536870907], ()>`,
+            // held 8.6 GB of the compiler's memory (#1368, #1371). A part of
+            // no type parameter's gives nothing.
+            each.extend(parts.types().iter().rev().map(|&part| class_key(part)));
         }
     }
     given
@@ -215,17 +213,34 @@ pub(crate) fn mentions_param(key: Ty<'_>) -> bool {
     (key.walk()).any(|part| part.as_type().is_some_and(known_by_bounds))
 }
 
-/// The parts of a key whose class is its parts' classes composed, a
-/// tuple's and an array's of a known length, as std's derived `Hash`,
-/// `PartialEq` and `Ord` of one ask each part's in turn (#1346): `None` of
-/// another key.
-pub(crate) fn key_class_parts<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
-    match key.kind() {
-        ty::Tuple(parts) if !parts.is_empty() => Some(parts.to_vec()),
-        ty::Array(item, len) => {
-            let len = len.try_to_target_usize(tcx)?;
-            Some(vec![*item; usize::try_from(len).ok()?])
+/// The parts of a key whose class is its parts' classes composed, as std's
+/// derived `Hash`, `PartialEq` and `Ord` of a tuple, and std's of an array,
+/// a slice's, ask each part's in turn (#1346): a tuple's, each part its
+/// own class, `$keyClassOf`; an array's, its item's class for every item,
+/// `$arrayKeyClassOf`, of whatever length, one class however many items
+/// (#1371).
+pub(crate) enum KeyParts<'tcx> {
+    Tuple(Vec<Ty<'tcx>>),
+    Array(Ty<'tcx>),
+}
+
+impl<'tcx> KeyParts<'tcx> {
+    /// The types whose classes make the key's: a tuple's parts, an
+    /// array's item once.
+    pub(crate) fn types(&self) -> &[Ty<'tcx>] {
+        match self {
+            KeyParts::Tuple(parts) => parts,
+            KeyParts::Array(item) => std::slice::from_ref(item),
         }
+    }
+}
+
+/// A key's parts whose classes make its own, a tuple's or an array's:
+/// `None` of another key.
+pub(crate) fn key_class_parts(key: Ty<'_>) -> Option<KeyParts<'_>> {
+    match key.kind() {
+        ty::Tuple(parts) if !parts.is_empty() => Some(KeyParts::Tuple(parts.to_vec())),
+        ty::Array(item, _) => Some(KeyParts::Array(*item)),
         _ => None,
     }
 }

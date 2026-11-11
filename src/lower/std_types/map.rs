@@ -4,7 +4,7 @@
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
-use crate::lower::recognition::{StdItem, TypeFact, std_item};
+use crate::lower::recognition::{KeyParts, StdItem, TypeFact, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -360,26 +360,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return given
                 .ok_or_else(|| self.unsupported(span, &format!("a map of `{key}` keys, whose class isn't given")));
         }
-        // One made of a type parameter: of a tuple or an array, `(usize, T)`,
-        // its parts' classes, each given or known here, composed where it's
-        // made, as std's derived `Hash`, `PartialEq` and `Ord` of one ask
-        // each part's (`$keyClassOf`, #1346), so a caller is asked its parts'
-        // classes alone, never the tuple's. Another, `Key<T>` or `Option<T>`:
+        // One made of a type parameter: of a tuple, `(usize, T)`, its parts'
+        // classes, each given or known here, composed where it's made, as
+        // std's derived `Hash`, `PartialEq` and `Ord` of one ask each part's
+        // (`$keyClassOf`, #1346), so a caller is asked its parts' classes
+        // alone, never the tuple's; of an array, `[T; N]`, its item's class,
+        // once, for every item (`$arrayKeyClassOf`, #1371): one class an
+        // item, `[T; 536870907]` took the compiler's memory. Another, `Key<T>` or `Option<T>`:
         // which class finds it is its parameter's too, an object's of equal
         // ones found as one only by value, which no class given here says
         // of it: refused, never a JS `Set` of objects found by themselves
         // (#401); a struct's `Hash` and `Eq` may be its own (#1360).
         if let Some(key) = key
-            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))
+            && crate::lower::recognition::mentions_param(key)
         {
-            if let Some(parts) = crate::lower::recognition::key_class_parts(self.tcx, key) {
-                let classes = (parts.into_iter())
-                    .map(|part| self.map_class(set, sorted, (Some(part), None), span))
-                    .collect::<R<Vec<_>>>()?;
-                return Ok(Expr::call_helper(
-                    "$keyClassOf",
-                    vec![Expr::bool(set), Expr::bool(sorted), Expr::array(classes)],
-                ));
+            match crate::lower::recognition::key_class_parts(key) {
+                Some(KeyParts::Tuple(parts)) => {
+                    let classes = (parts.into_iter())
+                        .map(|part| self.map_class(set, sorted, (Some(part), None), span))
+                        .collect::<R<Vec<_>>>()?;
+                    return Ok(Expr::call_helper(
+                        "$keyClassOf",
+                        vec![Expr::bool(set), Expr::bool(sorted), Expr::array(classes)],
+                    ));
+                }
+                Some(KeyParts::Array(item)) => {
+                    let class = self.map_class(set, sorted, (Some(item), None), span)?;
+                    return Ok(Expr::call_helper(
+                        "$arrayKeyClassOf",
+                        vec![Expr::bool(set), Expr::bool(sorted), class],
+                    ));
+                }
+                None => {}
             }
             let what = match key.kind() {
                 ty::Adt(adt, _) if adt.is_struct() => format!(

@@ -19,3 +19,13 @@ sorted	cmp,own	own
 sorted	own,cmp	own
 sorted	cmp,tree	tree
 sorted	own,tree	tree
+# An array's, `[T; N]`, of an item of each way, `way[]`, is its item's,
+# whatever its length, as std's `Hash`, `PartialEq` and `Ord` of an array,
+# a slice's, ask each item's in turn (#1371): `$arrayKeyClassOf` of a
+# class of that way is held to these.
+unsorted	value[]	value
+unsorted	parts[]	parts
+unsorted	hashed[]	hashed
+sorted	cmp[]	cmp
+sorted	own[]	own
+sorted	tree[]	tree

@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $KeyMap,
+  $arrayKeyClassOf,
   $cmp,
   $count,
   $debugStr,
@@ -154,7 +155,7 @@ function distinct(items, THash, TPartialEq, TCopy, TSet) {
 }
 
 function pairs(items, THash, TPartialEq, TSet) {
-  return new ($keyClassOf(true, false, [TSet, TSet]))(
+  return new ($arrayKeyClassOf(true, false, TSet))(
     $windows(items, 2)
       .values()
       .map((w) => [$index(w, 0), $index(w, 1)]),

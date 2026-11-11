@@ -486,7 +486,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a set in generic code keyed by `Key<T>` is a JS `Set`, which holds `Key(0, 1)` twice, as it finds objects by themselves (#401, #1360)",
     file: "src/lower/std_types/map.rs",
-    find: "            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))\n",
+    find: "            && crate::lower::recognition::mentions_param(key)\n",
     replace: "            && false\n",
     tests: [
       "test/limitations.test.ts",
@@ -640,8 +640,24 @@ export const mutations: Mutation[] = [
     name: "tuple-key-class-uncomposed",
     breaks: "a map or a set keyed by a tuple of a type parameter in generic code is refused, \"made of a type parameter\", where its parts' classes compose it (#1346)",
     file: "src/lower/std_types/map.rs",
-    find: "            if let Some(parts) = crate::lower::recognition::key_class_parts(self.tcx, key) {\n",
-    replace: "            if let Some(parts) = None::<Vec<Ty<'tcx>>> {\n",
+    find: "            match crate::lower::recognition::key_class_parts(key) {\n",
+    replace: "            match crate::lower::recognition::key_class_parts(key).filter(|parts| matches!(parts, KeyParts::Array(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "array-key-class-uncomposed",
+    breaks: "a map or a set keyed by an array of a type parameter in generic code, `[T; N]`, is refused, \"made of a type parameter\", where its item's class composes it (#1371)",
+    file: "src/lower/std_types/map.rs",
+    find: "            match crate::lower::recognition::key_class_parts(key) {\n",
+    replace: "            match crate::lower::recognition::key_class_parts(key).filter(|parts| matches!(parts, KeyParts::Tuple(_))) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "array-key-class-a-tuple-of-one",
+    breaks: "a map or a set keyed by an array of a type parameter is a tuple's of one part, so of an array of two or more items each past the first has no class: a `HashSet<[T; 3]>` throws on its first key (#1371)",
+    file: "src/lower/std_types/map.rs",
+    find: '                        "$arrayKeyClassOf",\n                        vec![Expr::bool(set), Expr::bool(sorted), class],\n',
+    replace: '                        "$keyClassOf",\n                        vec![Expr::bool(set), Expr::bool(sorted), Expr::array(vec![class])],\n',
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
   },
 ];

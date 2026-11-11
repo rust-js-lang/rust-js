@@ -144,7 +144,7 @@ pub(crate) fn held_facts<'tcx>(
     if fact.map_kind().is_some()
         && let key = class_key(of)
         && mentions_param(key)
-        && key_class_parts(tcx, key).is_some()
+        && key_class_parts(key).is_some()
     {
         let mut held = Vec::new();
         let mut each = vec![key];
@@ -155,8 +155,9 @@ pub(crate) fn held_facts<'tcx>(
             if known_by_bounds(key) {
                 held.push((key, fact));
             } else if mentions_param(key) {
-                match key_class_parts(tcx, key) {
-                    Some(parts) => each.extend(parts.into_iter().rev().map(class_key)),
+                match key_class_parts(key) {
+                    // An array's item once, of however many (#1371).
+                    Some(parts) => each.extend(parts.types().iter().rev().map(|&part| class_key(part))),
                     // A struct made of one, which the lowering refuses
                     // (#1360): asked whole.
                     None => held.push((key, fact)),

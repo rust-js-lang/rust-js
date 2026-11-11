@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "      return order;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
   },
+  {
+    name: "array-key-way-its-first-items-alone",
+    breaks: "an array key's items past the first have no way, so a `HashSet<[T; 3]>` throws on its first key (#1371)",
+    file: "src/runtime/key_class.js",
+    find: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], () => 0);\n",
+    replace: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], (i) => i);\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "array-key-way-by-value",
+    breaks: "an array key is found by value whatever its item's class, so arrays of items equal by their own `Eq` are two keys (#1371)",
+    file: "src/runtime/key_class.js",
+    find: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], () => 0);\n",
+    replace: '  return $composedKeyClass(set, sorted, [sorted ? $keyWayOf(Item) : { find: "value" }], () => 0);\n',
+    tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
+  },
+  {
+    name: "key-compared-by-its-classes-parts",
+    breaks: "a key found by its own `Eq` is compared by the parts its class names, an array's one, so arrays equal in their first item alone are one key (#1371)",
+    file: "src/runtime/key_class.js",
+    find: "      for (let i = 0; i < a.length; i++) {\n        const way = ways[index(i)];\n        if (!(",
+    replace: "      for (let i = 0; i < ways.length; i++) {\n        const way = ways[index(i)];\n        if (!(",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
+  },
 ];
