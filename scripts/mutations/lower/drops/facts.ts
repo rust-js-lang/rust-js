@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that holds a value with a destructor is assigned where its drop can't see what it took",
     file: "src/lower/drops/facts.rs",
-    find: '                self.closure_problem(expr.span, "assigning a closure that holds a value with a destructor");',
+    find: '                self.problem(expr.span, "assigning a closure that holds a value with a destructor");',
     replace: "                let _ = expr;",
     tests: ["test/traits.test.ts", "-t", "closure assigned"],
   },

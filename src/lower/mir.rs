@@ -820,9 +820,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seeds: local_facts::Seeds,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
-        // What THIR's drop facts refuse of its closures holding what has a
-        // destructor.
-        self.check_closure_drops()?;
+        // What THIR's drop facts refuse of it, its closures holding what has
+        // a destructor.
+        self.check_drop_facts()?;
         let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
         let outer_tested = std::mem::take(&mut self.locals.mir.tested);
         let outer_made = std::mem::take(&mut self.locals.mir.made);

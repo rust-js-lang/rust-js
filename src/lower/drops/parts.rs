@@ -401,7 +401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ));
         self.drop_state.facts.insert(key, facts.clone());
         let mut failed = None;
-        for (span, what, _) in &facts.problems {
+        for (span, what) in &facts.problems {
             failed = Some(self.unsupported(*span, what));
         }
         match failed {
@@ -410,10 +410,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What THIR's facts refuse of the closures of the body being lowered
-    /// that hold a value with a destructor: one made where JS can't see what
-    /// it took, given away uncalled, or assigned.
-    pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
+    /// What THIR's facts refuse of the body being lowered from its MIR: a
+    /// closure that holds a value with a destructor made where JS can't see
+    /// what it took, given away uncalled, or assigned, and a value whose drop
+    /// rust-js can't run, which MIR's lowering refuses too. What they refused
+    /// of a part moved, MIR's lowering follows, and they follow it as it
+    /// does now (`pattern_paths`, #1337), so they're asked of it whole.
+    pub(in crate::lower) fn check_drop_facts(&self) -> R<()> {
         let facts = find_facts(
             &self.drop_query(),
             self.krate.cell_borrows,
@@ -421,7 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.frame.owner,
         );
         let mut failed = None;
-        for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {
+        for (span, what) in &facts.problems {
             failed = Some(self.unsupported(*span, what));
         }
         match failed {

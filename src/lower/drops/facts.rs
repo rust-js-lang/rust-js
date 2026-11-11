@@ -32,10 +32,9 @@ use quiet::{Quiet, ended};
 /// refused of it, and its momentary borrows, which destructors ask.
 #[derive(Default)]
 pub(in crate::lower) struct Facts {
-    /// What this body does that isn't supported yet, each where and what,
-    /// and whether it's of a closure that holds a value with a destructor,
-    /// which a body lowered from its MIR is refused too.
-    pub(super) problems: Vec<(Span, String, bool)>,
+    /// What this body does that isn't supported yet, each where and what:
+    /// a body lowered from its MIR is refused it too (`check_drop_facts`).
+    pub(super) problems: Vec<(Span, String)>,
     /// Each borrow, by its call's `fun`, whose guard is held only while
     /// nothing can ask whether its cell is borrowed: checked, and not
     /// counted, nor dropped (ADR 0328).
@@ -189,12 +188,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     }
 
     fn problem(&mut self, span: Span, what: &str) {
-        self.facts.problems.push((span, what.to_string(), false));
-    }
-
-    /// A closure that holds a value with a destructor, refused where it is.
-    fn closure_problem(&mut self, span: Span, what: &str) {
-        self.facts.problems.push((span, what.to_string(), true));
+        self.facts.problems.push((span, what.to_string()));
     }
 
     /// A closure that holds a value with a destructor drops it through the
@@ -213,7 +207,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     let carried = matches!(expr.kind, ExprKind::Closure(ref c)
                         if self.cx.closure_facts.carries_its_drop(self.cx.recognition.tcx, c.closure_id.to_def_id()));
                     if !placed && !carried {
-                        self.closure_problem(expr.span, "a closure that holds a value with a destructor, made here");
+                        self.problem(expr.span, "a closure that holds a value with a destructor, made here");
                     }
                 }
             },
@@ -227,7 +221,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                             && !matches!(*ty.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))
                     }) =>
             {
-                self.closure_problem(
+                self.problem(
                     expr.span,
                     "a closure that holds a value with a destructor, given away without being called once",
                 );
@@ -238,7 +232,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         .is_some_and(|t| matches!(t.kind(), ty::Closure(..)) && self.drops_of(t) != Drops::Nothing)
                 }) =>
             {
-                self.closure_problem(expr.span, "assigning a closure that holds a value with a destructor");
+                self.problem(expr.span, "assigning a closure that holds a value with a destructor");
             }
             _ => {}
         }

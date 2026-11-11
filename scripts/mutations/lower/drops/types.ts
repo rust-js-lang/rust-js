@@ -474,10 +474,10 @@ export const mutations: Mutation[] = [
   {
     name: "thir-ty-unnormalized",
     breaks:
-      "a copied default's `Vec<Self::Item>` of a `Wrapper<I>` impl is asked what it drops as `<Wrapper<I> as Iterator>::Item`, which the slots take for one dropping nothing, so a part-and-whole `match` of a pair of them compiles by luck where the blanket impl's is refused (#1337)",
+      "a copied default's `Vec<Self::Item>` of a `Wrapper<I>` impl is asked what it drops as `<Wrapper<I> as Iterator>::Item`, which the slots take for one dropping nothing, so a closure holding it made in a tuple, where JS can't see what it took, compiles by luck where the blanket impl's and a generic function's are refused (#1337)",
     file: "src/lower/drops/types.rs",
     find: "                self.normalized(ty).unwrap_or(ty)\n",
     replace: "                ty\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_of_a_wrapper_normalizes_its_items_drop\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_in_a_wrappers_copied_default_holding_its_items\\.rs$"],
   },
 ];

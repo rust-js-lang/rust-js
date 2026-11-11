@@ -317,3 +317,35 @@ dropping nothing, and the case passed by luck (main's mutations, run
 a `Vec` of items with a destructor through generic code's dictionary,
 whose drops, and those of a step that panics, are native Rust's only where
 the entry knows its items (Refs #1239).
+
+## Amendment: a body lowered from its MIR is refused what THIR's facts refuse of it (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; no
+program compiles or runs otherwise. Two mutations survived on main after
+#1337 made a part-and-whole `match` compile, because that `match` was what
+caught them.
+
+`closure-problems-unfiltered` refused a MIR-lowered body everything THIR's
+facts refuse, not only what they refuse of its closures. The filter kept
+out what they refused of a part moved, which MIR's lowering follows. That
+can't be refused any more: `pattern_paths` follows every pattern, an
+array's too, since #1109, and #1337 took off the `match` rule's whole arm.
+What else they refuse is a value whose drop rust-js can't run, which MIR's
+lowering refuses too, or a `dyn` that a value with a destructor makes, which
+MIR's bodies didn't reach. With the filter taken off, the corpus in both
+builds, and rustc's `drop/`, `closures/`, `moves/` and `borrowck/` tests,
+compiled and ran exactly as before. Probes compiled exactly as before:
+moving part of a boxed or temporary pair, `Box`/`Rc` to `dyn Show` and
+`dyn Send`, an associated type's value, and a #1320 `impl Trait` value
+passed on. The only difference was one more error at a closure holding a
+#1320 value, which MIR's lowering already refuses. So the facts no longer
+say which problem is a closure's. `check_drop_facts` refuses each of them,
+the one rule both lowerings ask. The mutation is taken off.
+
+`thir-ty-unnormalized`, which asked a copied default's types un-normalized,
+is held now by THIR's closure rule, which asks what a closure holds drops.
+That is `closure_in_a_wrappers_copied_default_holding_its_items.rs`, a
+compile-fail case: a `Wrapper<I>` impl's copied default making a closure
+that holds its `Vec<Self::Item>` in a tuple. Un-normalized, the items are
+taken to drop nothing, and it compiles by luck, where a generic function's
+and a blanket impl's are refused.

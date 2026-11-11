@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's closure holding a destructor, given away uncalled, is never dropped",
     file: "src/lower/mir.rs",
-    find: "        self.check_closure_drops()?;\n",
+    find: "        self.check_drop_facts()?;\n",
     replace: "",
     tests: ["test/traits.test.ts", "-t", "closure assigned"],
   },
