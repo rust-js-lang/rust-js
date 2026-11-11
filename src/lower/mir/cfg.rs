@@ -160,6 +160,19 @@ impl Graph {
         }
     }
 
+    /// A block whose edge goes into a loop other than at its start: back,
+    /// in reverse postorder, to a block that doesn't dominate it. That's an
+    /// irreducible graph, which only custom MIR makes, as Rust's loops are
+    /// entered at their start alone; Ramsey's structuring takes the edge for
+    /// a forward one, writes its target's tree in place, and never ends
+    /// (#1383).
+    pub(super) fn entered_mid_loop(&self) -> Option<BasicBlock> {
+        self.rpo.iter().copied().find(|&b| {
+            (self.succ[b.as_usize()].iter())
+                .any(|&s| self.order[s.as_usize()] <= self.order[b.as_usize()] && !self.dominates(s, b))
+        })
+    }
+
     /// Whether the edge `from` to `to` goes back to a loop's header.
     pub(super) fn backward(&self, from: BasicBlock, to: BasicBlock) -> bool {
         self.headers.contains(&to) && self.dominates(to, from)

@@ -448,11 +448,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let payload_tests = self.mir_payload_tests(body);
         let mut unlowered = handles.unlowered(def_id);
         unlowered.extend(crate::lower::classes::unread_namespaces(self.tcx, body));
+        let graph = cfg::Graph::of(body, &held_arms, &payload_tests);
+        if let Some(from) = graph.entered_mid_loop() {
+            let span = body.basic_blocks[from].terminator().source_info.span;
+            let why = "only custom MIR writes it, as Rust's loops are entered at their start alone, and JS's loops have no other way in (#1383)";
+            return Err(crate::lower::refusal::refuse(
+                self.tcx,
+                span,
+                crate::lower::refusal::Refused::Because("a jump into a loop other than at its start", why),
+            ));
+        }
         let facts = LocalFacts {
             awaits: &mir.awaits,
             cases: &mir.cases,
             promoted: &mir.promoted,
-            graph: cfg::Graph::of(body, &held_arms, &payload_tests),
+            graph,
             rests: (self.let_pattern_bindings(body).into_iter())
                 .filter_map(|(local, rest)| rest.then_some(local))
                 .collect(),

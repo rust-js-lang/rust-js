@@ -390,3 +390,18 @@ seeds, 112 such programs are refused and the 133 that ran as native
 Rust still do; the throws left are #1381's and the wrong answers #1380's.
 Case D ([0262](0262-when-rust-and-js-disagree.md)): what JS can't hold
 as Rust's, refused.
+
+**Custom MIR's jump into a loop other than at its start is refused**
+(2026-11-11, #1383). A loop custom MIR enters at two blocks, an
+irreducible graph, which Rust's loops never are, can't be written as JS's
+loops by the structuring of Ramsey's "Beyond Relooper": its edge back to
+a block that doesn't dominate it is taken for a forward one, and tidy
+broke its contracts, a crash. `cfg::Graph::entered_mid_loop` finds such
+an edge, an edge back in reverse postorder to a block that doesn't
+dominate its source, of every body, Rust's never having one; it's
+refused, "a jump into a loop other than at its start". #1383's own crash,
+Rustlantis's default seed 863 overflowing the compiler's stack, was of a
+body that read locals before any write of them, whose tidied tuple reads
+then wrote each other's items into each other without end; #1382's
+refusal now stops such a body first: of 1,000 default seeds on `main`,
+none crashes.

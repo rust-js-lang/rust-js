@@ -572,3 +572,19 @@ test("custom MIR that writes a local whole before a part of it compiles and runs
   const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
   expect(ran.stdout.toString()).toBe("(1, 5)\n");
 });
+
+// Custom MIR may jump into a loop other than at its start, which Rust's
+// loops never are: an irreducible graph, which the structuring of Ramsey's
+// "Beyond Relooper" can't write as JS's loops; it's refused, where tidy
+// broke its contracts (found probing #1383).
+test("custom MIR's jump into a loop other than at its start is refused", () => {
+  const dir = fixture("custom-mir-irreducible");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, "#![feature(custom_mir, core_intrinsics)]\n#![allow(internal_features)]\nuse core::intrinsics::mir::*;\n#[custom_mir(dialect = \"runtime\", phase = \"initial\")]\npub fn f(x: i32) -> i32 {\n    mir! {\n        let _2: i32;\n        let _3: bool;\n        {\n            _2 = 0_i32;\n            match x { 0 => bb1, _ => bb2 }\n        }\n        bb1 = {\n            _2 = _2 + 1_i32;\n            Goto(bb2)\n        }\n        bb2 = {\n            _2 = _2 + 2_i32;\n            _3 = _2 > 9_i32;\n            match _3 { true => bb3, _ => bb1 }\n        }\n        bb3 = {\n            RET = _2;\n            Return()\n        }\n    }\n}\npub fn main() {\n    println!(\"{} {}\", f(0), f(1));\n}\n");
+  const compiled = Bun.spawnSync([compiler, input, "-o", join(dir, "lib.js")], { env: { ...process.env, RUSTC_BOOTSTRAP: "1" } });
+  expect(compiled.exitCode).not.toBe(0);
+  expect(compiled.stderr.toString()).toContain(
+    "rust-js does not support a jump into a loop other than at its start yet: only custom MIR writes it, as Rust's loops are entered at their start alone, and JS's loops have no other way in (#1383)",
+  );
+  expect(compiled.stderr.toString()).not.toContain("panicked");
+});

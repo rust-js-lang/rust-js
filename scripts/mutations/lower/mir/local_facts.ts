@@ -24,9 +24,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard that holds still tests in each alternative of its arm, its graph made without the arms it goes on to (ADR 0790)",
     file: "src/lower/mir/local_facts.rs",
-    find: "            graph: cfg::Graph::of(body, &held_arms, &payload_tests),\n",
+    find: "        let graph = cfg::Graph::of(body, &held_arms, &payload_tests);\n",
     replace:
-      "            graph: cfg::Graph::of(body, &Default::default(), &payload_tests),\n",
+      "        let graph = cfg::Graph::of(body, &Default::default(), &payload_tests);\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",

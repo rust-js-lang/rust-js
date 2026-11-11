@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     replace: "        children.sort_by_key(|c| self.order[c.as_usize()]);\n",
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
+  {
+    name: "loop-entered-mid-way-unrefused",
+    breaks: "custom MIR's jump into a loop other than at its start is lowered, where tidy breaks its contracts, a crash (#1383)",
+    file: "src/lower/mir/cfg.rs",
+    find: "                .any(|&s| self.order[s.as_usize()] <= self.order[b.as_usize()] && !self.dominates(s, b))\n",
+    replace: "                .any(|&s| self.order[s.as_usize()] <= self.order[b.as_usize()] && !self.dominates(s, b) && false)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "custom MIR's jump into a loop other than at its start is refused"],
+  },
 ];
