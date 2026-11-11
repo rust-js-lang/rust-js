@@ -209,7 +209,7 @@ fn is_cursor(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Whether `id` is std's `io::BufReader`.
-fn is_buf_reader(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(crate) fn is_buf_reader(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_path(tcx, id) == "std::io::BufReader"
 }
 

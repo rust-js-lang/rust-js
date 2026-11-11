@@ -205,7 +205,7 @@ keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 - A `VecDeque<u8>`'s `read` and `fill_buf`, which read its front slice alone (#1302): `use std::io::Read; let mut d = std::collections::VecDeque::from(vec![1u8]); let _ = d.read(&mut [0u8; 1]);`
 - A `VecDeque<u8>` as generic code's reader (#1302): `fn first<R: std::io::Read>(mut r: R) -> u8 { let mut b = [0u8]; r.read_exact(&mut b).unwrap(); b[0] } let _ = first(std::collections::VecDeque::from(vec![1u8]));`
 - `{:?}` of a `BufReader` (#1418): `let r = std::io::BufReader::new(&b"x"[..]); println!("{r:?}");`
-- A `BufReader` of a `&mut` to an object, a reader (#1374): `let mut c = std::io::Cursor::new(vec![1u8]); let r = std::io::BufReader::new(&mut c); println!("{}", r.capacity());`
+- `get_mut` of a `BufReader` of a `&mut` to an object, a reader: `let mut c = std::io::Cursor::new(vec![1u8]); let mut r = std::io::BufReader::new(&mut c); r.get_mut().set_position(0);`
 - `panic::take_hook`: `let h = std::panic::take_hook(); drop(h);`
 
 ## Async, threads and time

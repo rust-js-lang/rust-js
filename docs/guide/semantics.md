@@ -1049,8 +1049,10 @@ Differences:
   `seek_relative` stay within it where they can. What its inner is asked
   shows where it is. `BufReader::new`, `with_capacity`, `get_ref`,
   `get_mut`, `into_inner`, `buffer`, `capacity` and `seek_relative` are
-  read in place. `{:?}` of one is refused (#1156), and so is one of a
-  `&mut` to an object, `BufReader::new(&mut cursor)` (#1374)
+  read in place. One of a `&mut` to an object, `BufReader::new(&mut
+  cursor)`, holds generic code's box of it, which its `get_ref` and
+  `into_inner` give back; its `get_mut` is refused. `{:?}` of one is
+  refused (#1156)
   ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-bufreader-is-read-1156)).
 - **A `VecDeque<u8>` is read from its front, in place:** its
   `read_exact`, `read_to_end`, `read_to_string` and `consume` are

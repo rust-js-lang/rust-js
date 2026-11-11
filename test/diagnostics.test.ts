@@ -180,9 +180,8 @@ for (const [name, source, message, crate] of [
   // A `&mut` to an object is the object, whose place a one-item slice's
   // `s[0] = other` would replace (#1336).
   ["slice::from_mut of an object", "pub fn f() -> usize { let mut v = vec![1u8]; std::slice::from_mut(&mut v).len() }", "`slice::from_mut` of a `std::vec::Vec<u8>`, an object, whose place `s[0] = other` would replace (#1336)"],
-  // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now;
-  // one of a `&mut` to an object is held as the object, where generic code
-  // reads its box (#1418, #1374).
+  // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now
+  // (#1418).
   ["a BufReader's Debug", "use std::io::{BufReader, Cursor};\npub fn f() -> String { format!(\"{:?}\", BufReader::new(Cursor::new(vec![1u8]))) }", "which shows its inner and how much of its buffer is filled (#1418)"],
   // An `OpenOptions`' and a `Metadata`'s `{:?}` show what the OS says of
   // them, refused for now; a `File`'s is std's (#1397, #1418).
@@ -193,7 +192,9 @@ for (const [name, source, message, crate] of [
   // the caller's is `undefined` or its error (#1416).
   ["a write's result inside generic code's Vec of Results", "use std::io::Write;\nfn first_ok<T, E>(rs: Vec<Result<T, E>>) -> Option<T> { rs.into_iter().find_map(Result::ok) }\npub fn f() -> bool { let mut v = Vec::new(); first_ok(vec![writeln!(v, \"x\")]).is_some() }", "a write's result, `std::result::Result<(), std::io::Error>`, held inside what generic code has as a `Result` of its type parameters"],
   ["a write's result read as a Result through a bound", "use std::fmt::{Debug, Write};\ntrait Get<T> { fn get(&self) -> &T; }\nimpl<T> Get<T> for T { fn get(&self) -> &T { self } }\nfn shown<T: Debug, E: Debug>(r: &impl Get<Result<T, E>>) -> String { format!(\"{:?}\", r.get()) }\npub fn f() -> String { let mut s = String::new(); shown(&write!(s, \"x\")) }", "which a bound reads as a `Result` of type parameters"],
-  ["a BufReader of a &mut to an object", "use std::io::{BufReader, Cursor};\npub fn f() -> usize { let mut c = Cursor::new(vec![1u8]); let r = BufReader::new(&mut c); r.capacity() }", "a `&mut` to an object, which generic code reads as its box (#1374)"],
+  // One of a `&mut` to an object holds generic code's box of it (#1374); a
+  // `&mut` to that `&mut`, its `get_mut`, is refused.
+  ["get_mut of a BufReader of a &mut to an object", "use std::io::{BufReader, Cursor};\npub fn f() { let mut c = Cursor::new(vec![1u8]); let mut r = BufReader::new(&mut c); r.get_mut().set_position(0); }", "a `&mut &mut std::io::Cursor<std::vec::Vec<u8>>` from `std::io::BufReader::<R>::get_mut` used as a value"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).

@@ -378,11 +378,15 @@ per function as `chainRead` is; inherent methods in place as `Cursor`'s are;
   calls `make()` before it panics, as std does (found in review: the inner
   was evaluated after the check, a wrong answer). Where the room surely
   fits, `with_capacity(4, cursor(..))`, nothing is spilled.
-- **A `BufReader` of a `&mut` to an object is refused** (#1374),
-  `BufReader::new(&mut cursor)`: its inner is held as the object, where
-  `$mutReader`, `&mut R`'s `Read`, takes generic code's box of it
-  (`Form::Box`), as `Read::take(&mut c, n)` is refused. `buf_reader_holds_a_value`
-  asks `form_differs`.
+- **A `BufReader` of a `&mut` to an object holds generic code's box of
+  it** (#1374, amended), `BufReader::new(&mut cursor)`: `$mutReader`, `&mut
+  R`'s `Read`, takes generic code's box (`Form::Box`), so `new` and
+  `with_capacity` hold `$cellOf(cursor)` (`buf_reader_inner_given`, `form_given`),
+  and `get_ref` and `into_inner` give the reader back out of it, `.value`
+  (`buf_reader_inner_back`, `form_back`). It was refused, as the object
+  held where the box is read. What it reads moves the reader it borrows,
+  which is read on once the `BufReader` is gone. Its `get_mut`, a `&mut`
+  to the `&mut` it holds, is refused at compile time.
 - **`{:?}` of a `BufReader` is refused**, naming #1156: std shows its
   inner's and `filled - pos` of its capacity.
 - **A body that writes a `BufReader`'s dictionary twice declares it once**,

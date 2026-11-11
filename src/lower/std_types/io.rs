@@ -124,20 +124,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cursor = next();
                 Expr::assigned(Expr::member(cursor, "pos"), next())
             }
-            IoOp::Inner => Expr::member(next(), "inner"),
+            IoOp::Inner => {
+                let inner = Expr::member(next(), "inner");
+                self.buf_reader_inner_back(&call, inner)?
+            }
             // std's fields flattened, its `buf` a zeroed array of its
             // capacity: std's room for it checked first (ADR 0774).
             IoOp::BufReaderNew => {
-                self.buf_reader_holds_a_value(&call)?;
+                let inner = self.buf_reader_inner_given(&call, next());
                 Expr::object(vec![
-                    Prop::Field("inner".into(), next()),
+                    Prop::Field("inner".into(), inner),
                     Prop::Field("buf".into(), plain::filled(Expr::int(8192), Some(Expr::int(0)))),
                     Prop::Field("pos".into(), Expr::int(0)),
                     Prop::Field("filled".into(), Expr::int(0)),
                 ])
             }
             IoOp::BufReaderWithCapacity => {
-                self.buf_reader_holds_a_value(&call)?;
                 // Each argument is evaluated, in order, before std asks the
                 // room: where the room is asked, an inner made by a call is
                 // made first, though the room fails.
@@ -147,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let mut check = Vec::new();
                 self.room_for((None, capacity.clone()), Expr::int(1), call.span, &mut check);
-                let mut inner = next();
+                let mut inner = self.buf_reader_inner_given(&call, next());
                 if !check.is_empty() && !inner.reads_same() {
                     inner = self.spill("inner", inner, out);
                 }
@@ -179,22 +181,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// A `BufReader` of a `&mut` to an object is refused: its inner is held
-    /// as the object, where `$mutReader`, its `Read`, takes generic code's
-    /// box of it (ADR 0454, as `nested_mut_object` refuses a generic
-    /// function's), `Form::Box`'s (#1374).
-    fn buf_reader_holds_a_value(&self, call: &Call<'_, 'tcx>) -> R<()> {
+    /// A `BufReader`'s inner, as `new` and `with_capacity` hold it: of a
+    /// `&mut` to an object, generic code's box of it, which std's `impl Read
+    /// for &mut R`, `$mutReader`, its `Read`, reads, `Form::Box`'s (ADR 0454,
+    /// #1374); any other as it is.
+    fn buf_reader_inner_given(&self, call: &Call<'_, 'tcx>, inner: Expr) -> Expr {
         let inputs = self.signature_of(call.def_id).0;
         let declared = *inputs.last().expect("a constructor of its reader");
         let held = self.instantiated(declared, call.generic_args);
-        match self.form_differs(Form::Box, (call.def_id, declared, held)) {
-            true => Err(self.unsupported(
-                call.span,
-                &format!(
-                    "a `BufReader` of a `{held}`, a `&mut` to an object, which generic code reads as its box (#1374)"
-                ),
-            )),
-            false => Ok(()),
+        self.form_given(Form::Box, (call.def_id, declared, held), inner)
+    }
+
+    /// What a `BufReader`'s `get_ref` and `into_inner` give of its inner,
+    /// held as `buf_reader_inner_given` holds it: the `&mut` to an object
+    /// out of generic code's box (#1374); its `get_mut`, a `&mut` to that
+    /// `&mut`, is refused before it's asked, as a value from its MIR. A
+    /// `Cursor`'s inner as it is.
+    fn buf_reader_inner_back(&self, call: &Call<'_, 'tcx>, inner: Expr) -> R<Expr> {
+        let inputs = self.signature_of(call.def_id).0;
+        let ty::Adt(adt, args) = inputs[0].peel_refs().kind() else {
+            return Ok(inner);
+        };
+        if !crate::lower::recognition::is_buf_reader(self.tcx, adt.did()) {
+            return Ok(inner);
         }
+        let declared = args.type_at(0);
+        let held = self.instantiated(declared, call.generic_args);
+        let crossing = (call.def_id, declared, held);
+        if !self.form_differs(Form::Box, crossing) {
+            return Ok(inner);
+        }
+        Ok(self.form_back(Form::Box, crossing, inner))
     }
 }
