@@ -13,6 +13,7 @@
 //! lowering asks the value (`stepped_from_its_back`).
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::generic_facts::{GivenADrop, given_a_drop_of};
 use crate::lower::mir::locals::user_variable;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
@@ -33,11 +34,12 @@ pub(super) fn of_crate<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, drops, keeps_capacity): (bool, impl Fn(Ty<'tcx>) -> bool + Copy, bool),
+    given: (bool, Option<&GivenADrop<'_>>),
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
     let (locals, fields, typed_sources, counted) =
-        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), cloned);
+        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given, cloned);
     typed.extend(typed_sources);
     BackStepped {
         typed,
@@ -375,8 +377,16 @@ fn dropping_items<'tcx>(
         }
         source
     };
+    // Of generic code's owning one, whose item the crate's typing
+    // environment can't normalize, `vec::IntoIter<T>`'s: the `T` it owns,
+    // its first type, which `drops` asks as its owner's (#1406).
     let array_of_drops = |source: Ty<'tcx>| {
-        recognition.array_source(source).is_some() && recognition.iterator_item(source).is_some_and(&drops)
+        let owned = || match (recognition.array_source(source), source.kind()) {
+            (Some(true), ty::Adt(_, args)) => args.types().next(),
+            _ => None,
+        };
+        recognition.array_source(source).is_some()
+            && (recognition.iterator_item(source).or_else(owned)).is_some_and(&drops)
     };
     if let Some((a, b)) = zipped_sources(tcx, adapter) {
         return array_of_drops(a.peel_refs()) || array_of_drops(b.peel_refs());
@@ -473,6 +483,7 @@ pub(super) fn stepped_locals<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (drops, keeps_capacity): (impl Fn(Ty<'tcx>) -> bool, bool),
+    (params_may_drop, given_a_drop): (bool, Option<&GivenADrop<'_>>),
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
@@ -805,6 +816,15 @@ pub(super) fn stepped_locals<'tcx>(
                                 && receiver
                                 && back_stepped_adapter(tcx, recognition, ty, false, &drops).is_some()
                                 || dropping_items(recognition, ty, &drops)
+                                // Of its own type parameter's, where a caller
+                                // gives it a drop (`drop_params`', ADR 0098),
+                                // closed where it's made, which no form of a
+                                // map's own steps from its back (#1406).
+                                || own_method
+                                    && receiver
+                                    && dropping_items(recognition, ty, |item| {
+                                        given_a_drop_of(tcx, owner, item, (params_may_drop, given_a_drop))
+                                    })
                                 || closure_drops(tcx, ty, &drops)
                                 || enumerates_a_compiled_struct(tcx, ty)
                                 // A chain of items with a destructor, which

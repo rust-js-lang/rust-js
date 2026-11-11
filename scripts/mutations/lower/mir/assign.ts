@@ -965,8 +965,8 @@ export const mutations: Mutation[] = [
     name: "map-of-held-items-unrecorded",
     breaks: "a map of a variable that holds a `Vec`'s `IntoIter`, made where a `move` closure copies a field of a value with a destructor, isn't made again where it's stepped from its back, and its `rfind` is refused (#780)",
     file: "src/lower/mir/assign.rs",
-    find: "            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())\n",
-    replace: "            && crate::lower::iterators::is_items_map(&expr)\n",
+    find: "                || of_held_items()\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
   },
   {
@@ -1008,5 +1008,13 @@ export const mutations: Mutation[] = [
     find: "                        if crate::lower::display::may_be_write_error(&value) && self.krate.failing.any {\n",
     replace: "                        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
+  {
+    name: "as-is-map-temporary-unrecorded",
+    breaks: "a map giving each item as it is, `v.into_iter().map(|x| x)`, that MIR holds in a temporary isn't kept for its `next_back`, which reads only its name and is refused (#1406)",
+    file: "src/lower/mir/assign.rs",
+    find: "                || crate::lower::iterators::source_mapped_as_it_is(&expr).is_some())\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
   },
 ];

@@ -722,6 +722,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         recognition,
         all_bodies,
         (library, drop_runs, keeps_capacity),
+        (params_may_drop, (!library).then_some(&given_a_drop)),
         &cloned,
     );
     // What generic code asks the hint of, made knowing it where it's made,

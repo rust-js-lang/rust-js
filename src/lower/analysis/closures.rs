@@ -4,6 +4,7 @@
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
 use crate::collections::IndexSet;
+use crate::lower::generic_facts::GivenADrop;
 use crate::lower::passed_on::Taker;
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
@@ -318,10 +319,6 @@ pub(super) struct DroppingFnDyn<'tcx> {
     /// The `dyn Fn` it's made.
     pub(super) to: Ty<'tcx>,
 }
-
-/// Whether a caller gives function `DefId`'s type parameter of an index
-/// one whose drop runs, `drop_params`' answer (ADR 0098).
-pub(super) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
 
 /// Each of `all_bodies`' coercions of a function to a `dyn Fn` that
 /// `drops` says has something to drop, or that holds a value of a type

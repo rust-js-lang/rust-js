@@ -1723,3 +1723,36 @@ in both builds. The neighbour pair under #1394 runs as native Rust does,
 and is taken off test/neighbours-known.txt. Mutations
 `grown-zip-length-unasked` and `inspect-length-unkept` are new; three of
 `length_kept_source`'s are refitted.
+
+## Amendment (2026-11-12, #1406): a map stepped from its back where it's made, of a type parameter's items or giving each as it is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal lifted. `v.into_iter().map(|x| x).next_back()` was refused, "`next_back()`
+of a lazy or generic `std::iter::Map`, from its MIR". So was
+`v.into_iter().map(|x| (x, 1)).next_back()` of a `Vec<T>` whose `T` a
+caller gives a value with a destructor. MIR holds the map in a temporary
+before its `next_back`, and two things were lost there:
+
+- **A map giving each item as it is** is its source, marked so
+  (`mapped_as_it_is`, #1342). `IterLocals::maps`, which keeps a
+  temporary's map of an array's items for the `next_back` that reads it,
+  now keeps one of these too. `next_back_made_here` steps its source made
+  knowing its back (`as_double_ended`): `$nextBack($iter(v))`, in generic
+  code and not.
+- **A map of a type parameter's items whose caller gives it a drop**
+  (`drop_params`', ADR 0098) is closed where it's made, as one of items
+  with a destructor is. A closed source has no form that steps it from its
+  back. `stepped_locals` asked `drops`, which counts no type parameter's,
+  and `dropping_items` asked the item of `vec::IntoIter<T>`, which the
+  crate's typing environment can't normalize. Now a receiver of
+  `next_back` whose items are its function's own type parameter, given a
+  drop (`given_a_drop`, or any of a library's, whose callers it can't
+  see), is marked as stepped from its back. An owning array's source gives
+  its item as its first type. Its maker makes it as the concrete one is,
+  `$held($mapEnds($closing($iter(v), drop), f))`, the rest dropped as the
+  temporary is. Where no caller gives a drop, the form is the plain one,
+  `$nextBack($iter(v))`, its item mapped.
+
+Held by corpus case `map_as_it_is_stepped_from_its_back.rs` (generic and
+not, items with a destructor, `Option`s, a clone, a real closure), against
+native Rust in both builds.

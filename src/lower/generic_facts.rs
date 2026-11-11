@@ -33,6 +33,7 @@
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
 //! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `src/lower/generic_facts.rs error_impl_has_type_id` |
+//! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `src/lower/generic_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
 
 use super::FnCx;
@@ -494,4 +495,24 @@ pub(in crate::lower) fn may_hold_for_some<'tcx>(
 /// typed answer of one apart (`recognition::kind_of`, ADR 1124).
 pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
+}
+
+/// Whether a caller gives function `DefId`'s type parameter of an index
+/// one whose drop runs, `drop_params`' answer (ADR 0098).
+pub(in crate::lower) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
+
+/// Whether `item` is a type parameter of `owner`'s function that a caller
+/// gives a value with a destructor, so a drop (`drop_params`', ADR 0098):
+/// `given` answers it by the function and the parameter's index. Of a
+/// library's, whose callers it can't see, `given` is `None`, and any may
+/// be, where `params_may_drop` (ADR 0521, amended by #580).
+pub(in crate::lower) fn given_a_drop_of<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    owner: DefId,
+    item: Ty<'tcx>,
+    (params_may_drop, given): (bool, Option<&GivenADrop<'_>>),
+) -> bool {
+    params_may_drop
+        && matches!(item.kind(), ty::Param(param)
+            if given.is_none_or(|given| given(tcx.typeck_root_def_id(owner), param.index)))
 }

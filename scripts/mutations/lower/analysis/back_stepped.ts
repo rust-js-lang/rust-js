@@ -533,4 +533,20 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_an_inspect_counted_where_capacity_is_read.rs$"],
   },
+  {
+    name: "own-param-items-dropping-unasked",
+    breaks: "a map of a type parameter's items a caller gives a drop, stepped from its back where it's made, isn't made knowing its back, its closed source has no back, and `next_back()` is refused (#1406)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                        given_a_drop_of(tcx, owner, item, (params_may_drop, given_a_drop))\n",
+    replace: "                                        false && given_a_drop_of(tcx, owner, item, (params_may_drop, given_a_drop))\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "owning-source-item-unread",
+    breaks: "of generic code's `vec::IntoIter<T>`, whose item the crate's typing environment can't normalize, no item is found, so a map of its items a caller gives a drop isn't made knowing its back, and is refused (#1406)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "(recognition.iterator_item(source).or_else(owned))",
+    replace: "(recognition.iterator_item(source).or_else(|| None.or_else(owned).filter(|_| false)))",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
+  },
 ];

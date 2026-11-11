@@ -182,4 +182,13 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },
+  {
+    name: "every-param-given-a-drop",
+    breaks: "every type parameter is taken as given a drop, so a map of items no caller gives one is made `$mapEnds` where it's stepped from its back, its JS other than the snapshot's (#1406)",
+    file: "src/lower/generic_facts.rs",
+    find: "            if given.is_none_or(|given| given(tcx.typeck_root_def_id(owner), param.index)))\n",
+    replace: "            if given.is_none_or(|_| true))\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

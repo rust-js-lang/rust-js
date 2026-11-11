@@ -929,7 +929,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if place.projection.is_empty()
             && !state.locals.user[local]
-            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())
+            && (crate::lower::iterators::is_items_map(&expr)
+                || of_held_items()
+                || crate::lower::iterators::source_mapped_as_it_is(&expr).is_some())
         {
             state.iter_locals.maps.insert(local, expr.clone());
         }

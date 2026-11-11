@@ -155,6 +155,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mapped = crate::lower::calls::apply(args[0].clone(), vec![last]);
             return Ok(Some(Expr::cond(none, Expr::undefined(), mapped)));
         }
+        // Of a map giving each item as it is, `v.into_iter().map(|x| x)`,
+        // its source made knowing its back (`as_double_ended`'s), whose last
+        // item it gives, as Rust's `Map::next_back` gives it (#1406).
+        if let Some(source) = crate::lower::iterators::source_mapped_as_it_is(&it) {
+            let source_ty = crate::lower::recognition::mapped_source(self.tcx, iter_ty).expect("a map's source");
+            let back = self.as_double_ended(source, source_ty.peel_refs(), span)?;
+            let next_back = if boxed { "$nextBackSome" } else { "$nextBack" };
+            return Ok(Some(Expr::call_helper(next_back, vec![back])));
+        }
         Ok(None)
     }
 

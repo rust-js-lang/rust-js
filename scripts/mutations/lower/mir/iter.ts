@@ -870,4 +870,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return (receiver, values);\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },
+  {
+    name: "as-is-map-next-back-unmade",
+    breaks: "`next_back()` of a map giving each item as it is, made where it's stepped, isn't its source's last item, and is refused (#1406)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if let Some(source) = crate::lower::iterators::source_mapped_as_it_is(&it) {\n",
+    replace: "        if let Some(source) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
+  },
 ];
