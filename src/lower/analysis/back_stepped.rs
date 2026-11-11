@@ -32,11 +32,12 @@ pub(super) fn of_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool + Copy),
+    (library, drops, keeps_capacity): (bool, impl Fn(Ty<'tcx>) -> bool + Copy, bool),
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources, counted) = stepped_locals(tcx, recognition, all_bodies, drops, cloned);
+    let (locals, fields, typed_sources, counted) =
+        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), cloned);
     typed.extend(typed_sources);
     BackStepped {
         typed,
@@ -471,7 +472,7 @@ pub(super) fn stepped_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    drops: impl Fn(Ty<'tcx>) -> bool,
+    (drops, keeps_capacity): (impl Fn(Ty<'tcx>) -> bool, bool),
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
@@ -719,6 +720,27 @@ pub(super) fn stepped_locals<'tcx>(
                     for &(other, other_lent, other_ty, _) in &given {
                         if !other_lent && Some(other) != local && other_ty == ty {
                             mark(&mut stepped, (owner, other), SteppedLocal::Given);
+                        }
+                    }
+                }
+                // A zip a `Vec` is grown by, in a crate that keeps capacities,
+                // exact-sized but not `TrustedLen`, whose length the collect
+                // or the extend asks to grow it by (`grown_ask`'s `exact`),
+                // MIR holding it in a temporary, no form of it left to count:
+                // made knowing its back and length where it's made,
+                // `$zipEnds`, the one form that knows it (#1394).
+                if keeps_capacity {
+                    let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
+                    if let Some(grown) = recognition.vec_grown_by(callee, generic_args, typing_env)
+                        && let grown = erased(grown)
+                        && zipped_sources(tcx, grown).is_some()
+                        && recognition.grows_by_exact_len(grown)
+                        && !crate::lower::recognition::is_trusted_len(tcx, typing_env, grown)
+                    {
+                        for &(local, lent, ty, _) in &given {
+                            if !lent && ty == grown {
+                                mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                            }
                         }
                     }
                 }

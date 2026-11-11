@@ -697,19 +697,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     scopes.retain(|s| !counted.counts(tcx, tcx.type_of(s.adt).instantiate_identity().skip_normalization()));
     // What it steps from its back (ADR 0545, #814, #851), and of an array's
     // items with a destructor, which its native forms don't step.
-    let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
-    let mut back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs), &cloned);
-    // What generic code asks the hint of, made knowing it where it's made,
-    // by the makers of what's stepped from its back (#1236).
     // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
-    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, asks_capacity || foreign.keeps_capacity());
-    back_stepped.typed.extend(hint_asked.knowing);
-    let chars_whole = chars_asked::asks_chars_whole(
+    let keeps_capacity = asks_capacity || foreign.keeps_capacity();
+    let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
+    let mut back_stepped = back_stepped::of_crate(
         tcx,
         recognition,
         all_bodies,
-        (library, asks_capacity || foreign.keeps_capacity()),
+        (library, drop_runs, keeps_capacity),
+        &cloned,
     );
+    // What generic code asks the hint of, made knowing it where it's made,
+    // by the makers of what's stepped from its back (#1236).
+    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, keeps_capacity);
+    back_stepped.typed.extend(hint_asked.knowing);
+    let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, (library, keeps_capacity));
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).

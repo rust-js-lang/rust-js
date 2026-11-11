@@ -1696,3 +1696,30 @@ its back, against native Rust in both builds. Still refused, naming
 #1235: a function computed where it's given, `flat_map(pick())`, which
 runs once, where `each` would call it for each item. Mutations
 `flatten-each-by-name-unknowing` and `flatten-each-with-a-body-unknowing`.
+
+## Amendment (2026-11-11, #1394): a zip a capacity-reading crate grows a `Vec` by is made knowing its length
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal lifted. A crate that reads a `Vec`'s capacity grows one by an
+exact-sized iterator that isn't `TrustedLen` knowing its length (#1200), so
+it asks that length (`as_exact_size`). A zip of an `inspect` is one, and a
+zip of items with a destructor is held by MIR in a temporary. Of a held
+zip, `knows_its_length` knew the length only where the crate stepped it
+from its back (`$zipEnds`), so the plain build refused it, "can't count".
+The neighbour shuffle found it beside a case that reads a capacity.
+
+`stepped_locals` now marks such a zip's temporary as given to what asks
+it. This applies in a crate that keeps capacities, where `vec_grown_by` says
+a `collect()` or an `extend` grows a `Vec` by it, exact-sized and not
+`TrustedLen`, as `grown_ask`'s `exact` asks. Its maker then makes it
+`$zipEnds`, the one form that knows a zip's length, and its sides knowing
+their backs, as a zip's held sides already are. An `inspect` so made is
+`$mapEnds`, which keeps its source's length as a map's does, so it joins
+`length_kept_source`.
+
+Held by corpus case `zip_of_an_inspect_counted_where_capacity_is_read.rs`
+(a collect and an extend, of items with a destructor), against native Rust
+in both builds. The neighbour pair under #1394 runs as native Rust does,
+and is taken off test/neighbours-known.txt. Mutations
+`grown-zip-length-unasked` and `inspect-length-unkept` are new; three of
+`length_kept_source`'s are refitted.

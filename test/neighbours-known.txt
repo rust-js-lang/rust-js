@@ -53,9 +53,6 @@ plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
 
-#1394 P2 (neighbours): a zip held in a local isn't counted as an ExactSizeIterator where a crate that reads capacity collects it
-plain panic_part_way_drops.rs beside map_of_own_size_hint.rs
-
 #1317 P2 (neighbours): a Take of IntoValues, or a Map of a Skip of a vec's IntoIter, is refused as an ExactSizeIterator beside a case that counts one
 plain collection_taken_drops_what_is_left.rs beside map_of_own_size_hint.rs
 plain held_beneath_adapters_from_its_back.rs beside capacity_of_what_std_hints_less.rs

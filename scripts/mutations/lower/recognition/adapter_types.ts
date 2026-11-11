@@ -36,8 +36,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate` of what knows its length isn't seen to know its own",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
-    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Rev\"\n",
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Rev\"\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of an iterator that knows its length doesn't, so its `len()` is refused",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
     replace: "                \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
     tests: [
       "test/corpus.test.ts",
@@ -61,8 +61,8 @@ export const mutations: Mutation[] = [
     name: "rev-length-unknown",
     breaks: "a `rev()` of what knows its length isn't seen to know its own",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
-    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n",
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -161,5 +161,13 @@ export const mutations: Mutation[] = [
     find: " | \"std::iter::OnceWith\"))",
     replace: "))",
     tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
+  },
+  {
+    name: "inspect-length-unkept",
+    breaks: "an `inspect` made knowing its back, `$mapEnds`, isn't taken for one that knows its source's length, so a zip of it a capacity-reading crate collects is refused (#1394)",
+    file: "src/lower/recognition/adapter_types.rs",
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Inspect\"\n                    | \"std::iter::Copied\"\n",
+    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_an_inspect_counted_where_capacity_is_read.rs$"],
   },
 ];

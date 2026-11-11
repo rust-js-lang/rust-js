@@ -151,14 +151,16 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
 }
 
 /// Of std's adapter of type `ty` that knows its length where its source
-/// does, `Map`, `Copied`, `Cloned`, `Enumerate` or `Rev`, its source (ADRs
-/// 0456, 0528, 0530, #792).
+/// does, `Map`, `Inspect`, `Copied`, `Cloned`, `Enumerate` or `Rev`, its
+/// source (ADRs 0456, 0528, 0530, #792); an `Inspect` made knowing its
+/// back is `$mapEnds`, as a map is (#1394).
 pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()),
                 "std::iter::Map"
+                    | "std::iter::Inspect"
                     | "std::iter::Copied"
                     | "std::iter::Cloned"
                     | "std::iter::Enumerate"

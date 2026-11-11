@@ -525,4 +525,12 @@ export const mutations: Mutation[] = [
     replace: "                                let _ = local;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
+  {
+    name: "grown-zip-length-unasked",
+    breaks: "a zip a `Vec` is grown by in a crate that keeps capacities, exact-sized but not `TrustedLen`, held in a temporary, isn't made knowing its length, so the collect is refused, \"can't count\" (#1394)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if keeps_capacity {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_an_inspect_counted_where_capacity_is_read.rs$"],
+  },
 ];
