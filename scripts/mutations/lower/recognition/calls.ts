@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: '        "clear" | "truncate" | "set_len" | "pop" | "pop_if"',
     replace: '        "never" | "truncate" | "set_len" | "pop" | "pop_if"',
-    tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(collection_capacity|capacity_kept_by_clear_alone).rs$"],
   },
   {
     name: "next-arg-unknown",

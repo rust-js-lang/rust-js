@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            || self.explicit_adapter(ty)\n            || self.range_kind(ty).is_some()\n",
     replace: "            || self.range_kind(ty).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(held_cycle).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_cycle|held_explicit_adapters_hint).rs$"],
   },
   {
     name: "dropping-take-dropless",
