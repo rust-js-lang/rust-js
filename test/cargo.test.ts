@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { rustcShim } from "../tooling/cargo.js";
+import { cargoSaid, rustcShim } from "../tooling/cargo.js";
 import { fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
@@ -37,3 +37,12 @@ for (;;) {
   }
   expect(failed.slice(0, 3)).toEqual([]);
 }, underLoad(60_000));
+
+// A Cargo command that failed saying nothing, `cargo metadata` under load
+// in test/manifest.test.ts, says how it ended: killed by a signal, or not
+// spawned at all, which its stderr never has.
+test("a Cargo command that failed with nothing on stderr says how it ended", () => {
+  expect(cargoSaid({ stderr: "error: no such package\n", message: "Command failed: cargo metadata" })).toBe("error: no such package\n");
+  expect(cargoSaid({ stderr: "", message: "Command failed: cargo metadata", signal: "SIGKILL", code: null })).toBe("Command failed: cargo metadata, killed by SIGKILL");
+  expect(cargoSaid({ stderr: "", message: "spawn cargo EAGAIN", code: "EAGAIN" })).toBe("spawn cargo EAGAIN");
+});

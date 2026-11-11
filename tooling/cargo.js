@@ -17,6 +17,19 @@ export const target = "wasm32-unknown-unknown";
 
 const execute = promisify(execFile);
 
+/** What a Cargo command that failed said: its stderr; where it said
+ * nothing, how it ended, a signal or an error spawning it, `spawn cargo
+ * EAGAIN` under load, which its stderr never has (test/manifest.test.ts's
+ * "cargo metadata failed:" with nothing after it). The one form of each
+ * Cargo failure's words.
+ * @param {any} error
+ * @returns {string} */
+export function cargoSaid(error) {
+  if (error.stderr) return error.stderr;
+  const ended = error.signal ? `killed by ${error.signal}` : typeof error.code === "number" ? `exit ${error.code}` : "";
+  return [error.message, ended].filter(Boolean).join(", ");
+}
+
 /** Cargo's environment of a check through rust-js: rust-js as the wrapper
  * of every crate, compiling those `crates` names, the app's own, and
  * rustc's shim, the React the react crate is built for, the apps,
@@ -78,7 +91,7 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false, fea
   if (noDefaultFeatures) args.push("--no-default-features");
   const read = async () => {
     const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
-      throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
+      throw new Error(`cargo metadata failed:\n${cargoSaid(error)}`);
     });
     return JSON.parse(stdout);
   };
@@ -99,7 +112,7 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false, fea
     if (locked.length > 0) {
       const update = [...(toolchain ? [`+${toolchain}`] : []), "update", ...locked.flatMap((name) => ["-p", name]), "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
       await execute("cargo", update, { cwd: dirname(manifest) }).catch((error) => {
-        throw new Error(`cargo update of rust-js's own ${locked.join(", ")} failed:\n${error.stderr ?? error.message}`);
+        throw new Error(`cargo update of rust-js's own ${locked.join(", ")} failed:\n${cargoSaid(error)}`);
       });
     }
     metadata = await read();
@@ -351,7 +364,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     // the app can't act on, as ReScript has a dependency's (ADR 0414).
     const quiet = (m) => m.message.level === "warning" && packageOf(packages, realpathSync(m.manifest_path));
     const rendered = messages.filter(m => m.reason === "compiler-message" && !quiet(m)).map(m => m.message.rendered).join("");
-    throw new Error(`cargo check failed:\n${rendered}${error.stderr ?? ""}`);
+    throw new Error(`cargo check failed:\n${rendered}${rendered && !error.stderr ? "" : cargoSaid(error)}`);
   });
   const crates = new Map();
   // Every crate it built, two of one name too, two releases of cfg-if,
@@ -684,7 +697,7 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false,
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--no-deps", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
   const env = { ...process.env, ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
-    throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
+    throw new Error(`cargo metadata failed:\n${cargoSaid(error)}`);
   });
   const metadata = JSON.parse(stdout);
   const packages = new Map(metadata.packages.map((pkg) => [pkg.name, dirname(pkg.manifest_path)]));
