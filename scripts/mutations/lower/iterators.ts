@@ -336,8 +336,8 @@ export const mutations: Mutation[] = [
     breaks:
       "whether a function holds what an `IntoIterator` makes as it is asks of a type of the crate compiling, so a library's `both` returning its own `Both<I::IntoIter, J::IntoIter>` takes its dictionaries and its consumer gives none, `IIntoIterator.intoIter is not a function` (#1025)",
     file: "src/lower/iterators.rs",
-    find: "                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, adt.did()) =>\n",
-    replace: "                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, adt.did()) =>\n",
+    find: "                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>\n",
+    replace: "                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
   },
   {

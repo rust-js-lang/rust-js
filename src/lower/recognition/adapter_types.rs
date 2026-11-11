@@ -178,8 +178,10 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
 /// compiled std struct's, `Peekable`'s, but one std's struct is only where
 /// it's held, `Map`'s, an adapter where it's made in place (ADR 0871).
 pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id).starts_with("std::iter::")
-        && (!is_compiled_std_type(tcx, id) || super::is_held_compiled_def(tcx, id))
+    std_path(tcx, id).starts_with("std::iter::") && {
+        let kind = tcx.type_of(id).instantiate_identity().skip_normalization();
+        !is_compiled_std_type(tcx, kind) || super::is_held_compiled(tcx, kind)
+    }
 }
 
 /// Whether a call of `def_id`, an `Iterator` method of a compiled std
@@ -194,7 +196,7 @@ pub(crate) fn stepped_as_js_iterator<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, arg
             .types()
             .next()
             .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))
-        && !is_compiled_std(tcx, def_id)
+        && !super::compiled_instance(tcx, def_id, args)
 }
 
 /// A compiled std type whose `Iterator` impl is compiled, `Peekable`'s: its
@@ -249,7 +251,7 @@ pub(crate) fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
 }
 
 pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, adt.did())
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
     && COMPILED_STD.iter().any(|&(type_name, tr, name)| {
         tr == Some("Iterator") && name == "next" && std_path(tcx, adt.did()) == format!("std::iter::{type_name}")
     }))

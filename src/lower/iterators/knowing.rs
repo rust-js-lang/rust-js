@@ -88,7 +88,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let explicit = self.krate.explicit_adapters.contains(&adapter.did());
         debug_assert!(
-            !explicit || !crate::lower::recognition::is_held_compiled_def(self.tcx, adapter.did()),
+            !explicit
+                || !crate::lower::recognition::is_held_compiled(
+                    self.tcx,
+                    self.tcx
+                        .type_of(adapter.did())
+                        .instantiate_identity()
+                        .skip_normalization()
+                ),
             "an explicit adapter compiled where it's held, {ty}",
         );
         explicit

@@ -617,7 +617,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // `Enumerate`, `Take` or `Skip`, compiled (ADRs 0871, 0913): its own
     // kind of held, a clone of one too.
     let mut explicit_adapters = held_adapters::held_adapters(tcx);
-    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));
+    explicit_adapters.retain(|&id| {
+        !super::recognition::is_held_compiled(tcx, tcx.type_of(id).instantiate_identity().skip_normalization())
+    });
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let (mut counted, given) = counted_with(&closure_facts);
     // Whether the crate makes a `dyn Fn` of a function holding a value with

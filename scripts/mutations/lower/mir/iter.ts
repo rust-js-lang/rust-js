@@ -563,9 +563,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` stepped where it's made is std's compiled `rev()`, not the recognizers'",
     file: "src/lower/mir/iter.rs",
-    find: "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)",
-    replace:
-      "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)\n            && false",
+    find: "        self.frame.facts.in_place_adapters.contains(&span)\n",
+    replace: "        self.frame.facts.in_place_adapters.contains(&span) && false\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },

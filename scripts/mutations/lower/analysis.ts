@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Enumerate` is also an explicit adapter beside std's struct, which code asking `explicit_adapter` relies on it never is: the debug build's check of it panics",
     file: "src/lower/analysis.rs",
-    find: "    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));\n",
+    find: "    explicit_adapters.retain(|&id| {\n        !super::recognition::is_held_compiled(tcx, tcx.type_of(id).instantiate_identity().skip_normalization())\n    });\n",
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(held_enumerate|std_enumerate).rs$"],

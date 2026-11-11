@@ -150,7 +150,7 @@ fn buf_reader_seek_relative(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_std_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if matches!(std_path(tcx, adt.did()), "std::io::Chain" | "std::io::Take")
-            && is_compiled_std_type(tcx, adt.did()))
+            && is_compiled_std_type(tcx, ty))
 }
 
 /// Whether `id` is std's impl of `io::Read` or `BufRead` for one of

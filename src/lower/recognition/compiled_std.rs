@@ -392,6 +392,33 @@ fn compiled_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
     !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()
 }
 
+/// Whether a value of `ty`, std's adapter `std::iter`'s or another type, is
+/// std's struct compiled for this build where it's held: the one answer,
+/// by the type, of what each query of the catalog below asks (#1401). Not
+/// another's than an adapter's, whose answer is its catalog's alone.
+fn compiled_for(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+    match ty.peel_refs().kind() {
+        ty::Adt(adt, _) if !adt.did().is_local() => {
+            (std_path(tcx, adt.did()).strip_prefix("std::iter::")).is_none_or(|name| compiled_for_build(tcx, name))
+        }
+        _ => true,
+    }
+}
+
+/// Whether a call of `id` with `args` is of std's body compiled into
+/// `@rust-js/std` for a value of the type it's of (#1401): one of
+/// `compiled_std`'s, and, of an impl's method of std's adapter, of a type
+/// compiled for this build (`compiled_for`). The one answer of where a call
+/// goes, its instance's, as `is_compiled_std` is of a body's.
+pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    is_compiled_std(tcx, id)
+        && tcx.impl_of_assoc(id).is_none_or(|imp| {
+            let of = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization());
+            let impl_args = &args[..tcx.generics_of(imp).count().min(args.len())];
+            compiled_for(tcx, of.instantiate(tcx, impl_args).skip_normalization())
+        })
+}
+
 /// Whether std's `Zip` is compiled for this build, which reads its sides by
 /// index, their dictionaries' `getUnchecked` (ADR 0975).
 pub(crate) fn zips_by_index_compiled(tcx: TyCtxt<'_>) -> bool {
@@ -664,44 +691,46 @@ fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> V
     named.0
 }
 
-/// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
-/// adapters, `rev`: the one answer, of what's made in place.
-pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    (HELD_COMPILED.iter())
-        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
-        .any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
+/// Whether `id`, called to make `made`, is the `Iterator` method that makes
+/// one of `HELD_COMPILED`'s adapters, `rev`, held where it's held, std's
+/// struct, of a type compiled for this build: the one answer, of what's
+/// made in place.
+pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId, made: ty::Ty<'_>) -> bool {
+    compiled_for(tcx, made)
+        && (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
-/// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place is
-/// sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
-pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    (HELD_COMPILED.iter())
-        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
-        .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
-}
-
-/// Whether `id` is one of `HELD_COMPILED`'s adapters' definitions.
-pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    is_compiled_std_type(tcx, id)
-        && (std_path(tcx, id).strip_prefix("std::iter::"))
-            .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path))
+/// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place,
+/// `made`, is sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
+pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId, made: ty::Ty<'_>) -> bool {
+    compiled_for(tcx, made)
+        && (HELD_COMPILED.iter())
+            .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
 /// A std type whose bodies are compiled into `@rust-js/std` (the std-bodies
 /// decision), `Peekable`: std's struct, `{ iter, peeked }`, as a type of
-/// the crate's is, wherever a value of it is made or read.
-pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// the crate's is, wherever a value of it is made or read; of an adapter,
+/// of a type compiled for this build (`compiled_for`).
+pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+        return false;
+    };
+    let id = adt.did();
     !id.is_local()
         && (std_path(tcx, id).strip_prefix("std::iter::").is_some_and(|name| {
-            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name && compiled_for_build(tcx, type_name))
+            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name) && compiled_for(tcx, ty)
         }) || std_path(tcx, id)
             .strip_prefix("std::io::")
             .is_some_and(|name| (COMPILED_STD_IO.iter()).any(|&(type_name, _, _)| type_name == name)))
 }
 
-/// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`.
+/// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`, std's
+/// struct where it's held, of a type compiled for this build.
 pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
-    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_held_compiled_def(tcx, adt.did()))
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
+        && (std_path(tcx, adt.did()).strip_prefix("std::iter::"))
+            .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path)))
 }
 
 /// What an `impl` in `ty` hides that's std's compiled struct, `HELD_COMPILED`'s

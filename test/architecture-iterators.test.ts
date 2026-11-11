@@ -680,3 +680,20 @@ test("in-place adapters are decided once, then read", () => {
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
   expect(deciding).toEqual(["src/lower/pipeline.rs"]);
 });
+
+// Whether a value of std's adapter is std's struct, compiled for this build,
+// is asked of its type, never its definition's name alone (#1401): the
+// catalogue's queries of a value, a maker's, a type's or a call's, take the
+// type, the made type or the call's arguments, so a type `{:?}` shows can be
+// compiled where another of the same adapter isn't. A query by definition
+// alone, `is_held_compiled_def`, was the name's answer for every value.
+test("the compiled std catalogue is asked of a type, not a definition", () => {
+  const source = read("src/lower/recognition/compiled_std.rs");
+  const signature = (name: string) => source.match(new RegExp(`pub\\(crate\\) fn ${name}\\b[^{]*`))?.[0];
+  for (const name of ["makes_held_compiled", "sized_in_place", "is_compiled_std_type", "is_held_compiled", "compiled_instance"]) {
+    expect([name, /\bTy<|GenericArgsRef/.test(signature(name) ?? "")]).toEqual([name, true]);
+  }
+  const byDefinition = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .filter((file) => /\bfn (is_held_compiled_def|makes_held_compiled_def|compiled_for_build_def)\b|\bis_held_compiled_def\(/.test(read(file)));
+  expect(byDefinition).toEqual([]);
+});

@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     "name": "local-adapter-made-of-held",
     "breaks": "a variable's `enumerate()` read only by a `map()` made in place of it is std's struct, not `entries()`",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                _ if crate::lower::recognition::makes_held_compiled(tcx, callee) => makers.push((arg, at)),\n",
+    "find": "                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, at)),\n",
     "replace": "",
     "snapshots": true,
     "tests": [

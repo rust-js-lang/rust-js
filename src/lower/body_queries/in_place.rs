@@ -154,11 +154,11 @@ pub(super) fn in_place_adapters<'tcx>(
             // Not a zip std folds otherwise than it steps (ADR 0997), but
             // where what it's given to steps it from its back (#812).
             if let ty::FnDef(maker, _) = *thir[fun].ty.kind()
-                && crate::lower::recognition::makes_held_compiled(tcx, maker)
+                && crate::lower::recognition::makes_held_compiled(tcx, maker, thir[arg].ty)
                 && !held_to_clone
                 && (!crate::lower::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))
             {
-                given.push((fn_span, at, callee, index, (maker, thir[arg].ty)));
+                given.push((fn_span, at, (callee, thir[e].ty), index, (maker, thir[arg].ty)));
             }
         }
     }
@@ -170,7 +170,7 @@ pub(super) fn in_place_adapters<'tcx>(
     // One is sized in place where its maker's form knows its hint; a
     // `rev()` of a zip is, `$rev($zipEnds(..))`, whatever its source is
     // (#400, #740).
-    let sized = |maker: DefId| crate::lower::recognition::sized_in_place(tcx, maker);
+    let sized = |maker: DefId, made: ty::Ty<'tcx>| crate::lower::recognition::sized_in_place(tcx, maker, made);
     let flattens = |maker: DefId| {
         let made = tcx.fn_sig(maker).instantiate_identity().skip_binder().output();
         crate::lower::recognition::flattened_source(tcx, made).is_some()
@@ -226,7 +226,7 @@ pub(super) fn in_place_adapters<'tcx>(
             break;
         }
     }
-    let steps_as_js = |callee: DefId,
+    let steps_as_js = |(callee, called): (DefId, ty::Ty<'tcx>),
                        index: usize,
                        in_place: &IndexSet<Span>,
                        at: Span,
@@ -248,10 +248,10 @@ pub(super) fn in_place_adapters<'tcx>(
         }
         // Another of them, itself made in place, `enumerate().rev()`'s: in
         // place too.
-        if crate::lower::recognition::makes_held_compiled(tcx, callee) {
+        if crate::lower::recognition::makes_held_compiled(tcx, callee, called) {
             return in_place.contains(&at);
         }
-        if callee == size_hint && !sized(maker) {
+        if callee == size_hint && !sized(maker, made_ty) {
             return false;
         }
         let std = crate::lower::recognition::is_std_crate(tcx, callee)
@@ -274,7 +274,7 @@ pub(super) fn in_place_adapters<'tcx>(
     // made in place, as one given to it would be.
     if let Some(result) = stepped_result.map(|e| tail(thir, e))
         && let ExprKind::Call { fun, fn_span, .. } = thir[result].kind
-        && matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id))
+        && matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, thir[result].ty))
     {
         found.insert(fn_span);
     }
@@ -290,7 +290,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 initializer: Some(init),
                 else_block: None,
                 ..
-            } => match (&pattern.kind, &thir[strip(thir, init)].kind) {
+            } => match (&pattern.kind, &thir[strip(thir, init)].kind, thir[strip(thir, init)].ty) {
                 (
                     &PatKind::Binding {
                         var,
@@ -299,7 +299,8 @@ pub(super) fn in_place_adapters<'tcx>(
                         ..
                     },
                     &ExprKind::Call { fun, fn_span, .. },
-                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id)) => {
+                    made,
+                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
                     Some((var, fn_span))
                 }
                 _ => None,
@@ -352,7 +353,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 _ if by_ref => lent.push((e, arg)),
                 // Another of them made of it, `it.rev()`, which steps it as
                 // a JS iterator where that's made in place.
-                _ if crate::lower::recognition::makes_held_compiled(tcx, callee) => makers.push((arg, at)),
+                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, at)),
                 _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, at)),
                 _ => {}
             }

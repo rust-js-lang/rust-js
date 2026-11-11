@@ -1278,8 +1278,12 @@ pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> FieldKey {
     let key = name_in_js(tcx, field.did);
     FieldKey::named(
         match STEPS_METHODS.contains(&key.as_str())
-            && super::recognition::is_compiled_std_type(tcx, tcx.parent(field.did))
-        {
+            && super::recognition::is_compiled_std_type(
+                tcx,
+                tcx.type_of(tcx.parent(field.did))
+                    .instantiate_identity()
+                    .skip_normalization(),
+            ) {
             true => format!("{key}$"),
             false => key,
         },

@@ -74,9 +74,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`Iterator`'s methods of a compiled std iterator, a `Peekable`'s `next`, resolve to the library's compiled impl and are called there, not stepped as the JS iterator its struct is",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && !is_compiled_std(tcx, def_id)\n",
+    find: "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && !super::compiled_instance(tcx, def_id, args)\n",
     replace:
-      "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && false\n        && !is_compiled_std(tcx, def_id)\n",
+      "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && false\n        && !super::compiled_instance(tcx, def_id, args)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
     snapshots: true,
   },
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled provided method of a compiled std iterator, `peekable()` of a `Fuse`, doesn't resolve to the library, and is refused",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "        && !is_compiled_std(tcx, def_id)\n}\n",
+    find: "        && !super::compiled_instance(tcx, def_id, args)\n}\n",
     replace: "}\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
@@ -103,8 +103,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map()` made in place, which a `rev()` steps from its back, isn't std's adapter, so it isn't made knowing its back",
     file: "src/lower/recognition/adapter_types.rs",
-    find: "        && (!is_compiled_std_type(tcx, id) || super::is_held_compiled_def(tcx, id))\n",
-    replace: "        && !is_compiled_std_type(tcx, id)\n",
+    find: "        !is_compiled_std_type(tcx, kind) || super::is_held_compiled(tcx, kind)\n",
+    replace: "        !is_compiled_std_type(tcx, kind)\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",

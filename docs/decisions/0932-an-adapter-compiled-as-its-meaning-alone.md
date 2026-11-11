@@ -75,3 +75,32 @@ one; no case reached the other way, and `find-dropping-keeps-rejected`,
 which took its drop away, survived every run. It went, with
 `find-dropping-by-next`, which made every iterator take it; the drop of
 what `tryFold` rejects is `find-dropping-keeps-rejected`'s now.
+
+## Amendment (2026-11-11, #1401): the catalogue is asked of a type
+
+The catalogue of std's compiled structs answered by an adapter's name
+(`compiled_for_build(type_name)`), so every value of `Filter` had one
+answer. A `{:?}` of one `Filter`, which only std's struct can show, couldn't
+make that one std's struct while every other stayed the recognizers' (the
+user's decision (a), 2026-11-11). So each question the catalogue answers of
+a value now takes its type:
+
+- `makes_held_compiled` and `sized_in_place` take the type the maker
+  makes;
+- `is_compiled_std_type` and `is_held_compiled` take the type;
+- `compiled_instance`, a call's, takes its arguments, so an impl's method
+  of an adapter is asked of the type it's of.
+
+They share one private answer, `compiled_for(ty)`. `is_held_compiled_def`,
+the name's answer for every value, is gone. A kind's own question, which
+adapters the crate's types hold (`explicit_adapters`), asks the kind's
+identity type, which no value's answer is. The queries that answer whether a
+body is in `@rust-js/std` stay a definition's (`is_compiled_std`, the
+library contract's `not_compiled_for_build`). `in_place_adapters` records
+only the spans of makers whose made type is held, so `adapter_in_place`
+asks the span alone.
+
+No behaviour changes yet: `compiled_for` still answers by the name, so the
+corpus's snapshots, in both builds, and `@rust-js/std` are byte-identical.
+test/architecture-iterators.test.ts holds the queries type-keyed, and a
+query by a definition alone from coming back.

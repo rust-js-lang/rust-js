@@ -325,7 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => self.tcx.mk_param_from_def(param),
             });
             self.resolve_instance(method, args).is_ok_and(|instance| {
-                instance.is_some_and(|i| crate::lower::recognition::is_compiled_std(self.tcx, i.def_id()))
+                instance.is_some_and(|i| crate::lower::recognition::compiled_instance(self.tcx, i.def_id(), i.args))
             })
         }
     }
@@ -479,7 +479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let try_fold = trait_method(tcx, trait_id, method);
         let args = tcx.mk_args(&[ty.into(), unit.into(), by.into(), tried.into()]);
         let Some(instance) = (self.resolve_instance(try_fold, args)?)
-            .filter(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()))
+            .filter(|instance| crate::lower::recognition::compiled_instance(tcx, instance.def_id(), instance.args))
         else {
             return Ok(None);
         };
@@ -525,9 +525,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(found) = self.fold_of(ty, (trait_id, method)) else {
             return Ok(None);
         };
-        let compiled = self
-            .resolve_instance(found.0, found.1)?
-            .is_some_and(|instance| crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id()));
+        let compiled = self.resolve_instance(found.0, found.1)?.is_some_and(|instance| {
+            crate::lower::recognition::compiled_instance(self.tcx, instance.def_id(), instance.args)
+        });
         Ok(compiled.then_some(found))
     }
 

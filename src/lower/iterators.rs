@@ -201,7 +201,7 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
             // as the library's own compile did, whose answer is the
             // dictionaries its JS takes (#1025).
             Some(ty::Adt(adt, args))
-                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, adt.did()) =>
+                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>
             {
                 args.types()
                     .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
