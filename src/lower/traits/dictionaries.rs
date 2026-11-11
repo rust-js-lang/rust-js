@@ -124,6 +124,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(ByteSource::Cursor(inner)) => {
                 let as_ref = crate::lower::recognition::std_item(self.tcx, StdItem::AsRef);
                 let bytes = ty::Ty::new_slice(self.tcx, self.tcx.types.u8);
+                // A `&mut` to an object, which the cursor made here holds as
+                // the object, where a dictionary of the `&mut` reads generic
+                // code's box of it (#1414): the object's, which std's `AsRef`
+                // of the `&mut` passes it on to.
+                let inner = match *inner.kind() {
+                    ty::Ref(_, object, Mutability::Mut)
+                        if self.in_generic_box(inner) && !self.mut_ref_form(object).is_cell() =>
+                    {
+                        object
+                    }
+                    _ => inner,
+                };
                 let of = self.dictionary(ty::TraitRef::new(self.tcx, as_ref, [inner, bytes]), span)?;
                 Ok(Expr::call_helper("$cursorReader", vec![of]))
             }
@@ -199,6 +211,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())
         {
             return Ok(dictionary);
+        }
+        // A `&mut` generic code holds as its box (ADR 0454), of a trait std
+        // passes on from a `&mut T` to its `T`, `impl<T: Display> Display
+        // for &mut T`: `T`'s dictionary, each entry given what each box
+        // holds (#1414). Not a writer's or `AsMut`'s, whose own read
+        // through it, `$mutWriter`'s and `as_mut`'s, nor an iterator's, a
+        // `&mut I` of which is given as it is (ADR 0061).
+        if self.in_generic_box(tr.self_ty())
+            && !rustc_middle::ty::elaborate::supertraits(self.tcx, ty::Binder::dummy(tr))
+                .any(|tr| crate::lower::recognition::is_iterator_trait(self.tcx, tr.def_id()))
+            && !is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite)
+            && !is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
+            && !is_std_def(self.tcx, tr.def_id, StdItem::AsMut)
+            && let Some(referent) = self.forwarded_to_referent(tr, self.typing_env)
+        {
+            return self.through_box(tr, referent, span);
         }
         // A std hasher's `Hasher`, and a std type's `Hash` (ADR 0463).
         if let Some(dictionary) = self.std_hash_dictionary(tr, span)? {
@@ -723,27 +751,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )]));
         }
         // std's `Borrow` where it's the same JS value: a value as itself, text
-        // as a `str`, a `Vec` as a slice (ADR 0167).
+        // as a `str`, a `Vec` as a slice (ADR 0167). Of a `&mut`, which
+        // generic code holds as its box, `$cellOf(parser)` or a number's
+        // cell, what the box holds (`Form::Box`, #1414).
+        let in_box = self.held_in_generic_box(ty);
         if is_std_def(self.tcx, tr.def_id, StdItem::Borrow)
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
         {
             let same = Expr::arrow(
                 vec!["value".into()],
-                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                vec![StmtKind::Return(Some(in_box(Expr::var("value")))).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("borrow".into(), same)]));
         }
         // And its `BorrowMut` of what's an object, a `Vec` as a slice, which a
-        // `&mut` to is it: the same array, and its `Borrow`'s entry (ADR 0483).
+        // `&mut` to is it: the same array, and its `Borrow`'s entry (ADR 0483);
+        // of a `&mut`, generic code's box of what it's to, the one it holds,
+        // a number's too (#1414).
         if is_std_def(self.tcx, tr.def_id, StdItem::BorrowMut)
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
-            && self.is_object(tr.args.type_at(1))
+            && (self.is_object(tr.args.type_at(1)) || ty.is_ref())
         {
             let same = Expr::arrow(
                 vec!["value".into()],
-                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                vec![StmtKind::Return(Some(in_box(Expr::var("value")))).at(js::Span::NONE)],
             );
             let mut props = vec![Prop::Field(
                 bindings::trait_method_name(self.tcx, tr.def_id, "borrow_mut"),
@@ -919,6 +952,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.dictionary(referent, span);
         }
         Err(self.no_evidence(span, tr))
+    }
+
+    /// `tr` of a `&mut` generic code holds as its box, whose impl std
+    /// passes on to `referent`, what it's to: `referent`'s dictionary, its
+    /// entries given what each box holds, `$throughBox(pointDisplay, { fmt:
+    /// [1] })`, `1` of a `Self` or a reference to one, `2` of a slice of
+    /// them, and its supertraits' entries of the `&mut` too (#1414). An
+    /// entry that gives one back, or a trait of another `&mut`, is refused.
+    fn through_box(&mut self, tr: ty::TraitRef<'tcx>, referent: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
+        let tcx = self.tcx;
+        let what = format!(
+            "`{}` of a `{}` in generic code",
+            tcx.def_path_str(tr.def_id),
+            tr.self_ty()
+        );
+        let names_mut = |ty: Ty<'tcx>| {
+            ty.walk()
+                .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
+        };
+        if tr.args.types().skip(1).any(names_mut) {
+            return Err(self.unsupported(span, &what));
+        }
+        let this = tcx.types.self_param;
+        let names_self = |ty: Ty<'tcx>| ty.walk().any(|part| part.as_type() == Some(this));
+        let mut entries = Vec::new();
+        let methods = (tcx.associated_items(tr.def_id).in_definition_order())
+            .filter(|item| tcx.def_kind(item.def_id) == DefKind::AssocFn);
+        for item in methods {
+            let sig = tcx
+                .fn_sig(item.def_id)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder();
+            if names_self(sig.output()) {
+                return Err(self.unsupported(span, &what));
+            }
+            let mut given = Vec::new();
+            for &input in sig.inputs() {
+                given.push(match *input.kind() {
+                    _ if input == this => 1,
+                    ty::Ref(_, inner, _) if inner == this => 1,
+                    ty::Ref(_, inner, _) if matches!(*inner.kind(), ty::Slice(item) if item == this) => 2,
+                    _ if names_self(input) => return Err(self.unsupported(span, &what)),
+                    _ => 0,
+                });
+            }
+            if given.iter().any(|&kind| kind != 0) {
+                let name = bindings::trait_method_name(tcx, tr.def_id, item.name().as_str());
+                entries.push(Prop::Field(
+                    name,
+                    Expr::array(given.into_iter().map(Expr::int).collect()),
+                ));
+            }
+        }
+        let dictionary = self.dictionary(referent, span)?;
+        let through = Expr::call_helper("$throughBox", vec![dictionary, Expr::object(entries)]);
+        let supertraits = self.supertrait_entries(tr, span)?;
+        if supertraits.is_empty() {
+            return Ok(through);
+        }
+        let mut props = vec![Prop::Spread(through)];
+        props.extend(supertraits);
+        Ok(Expr::object(props))
     }
 
     /// The crate's own impl's accessor, or one a library exports (ADR 0100),

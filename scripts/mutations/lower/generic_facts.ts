@@ -174,4 +174,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/diagnostics.test.ts", "-t", "write's result read as a Result through a bound"],
   },
+  {
+    name: "dyn-pair-boxed-again",
+    breaks: "a `&mut dyn Hasher` given for a type parameter, which generic code holds as the pair, is read through a box too: a hash through it throws (#1414)",
+    file: "src/lower/generic_facts.rs",
+    find: " && !pointee.is_trait())\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
+  },
 ];

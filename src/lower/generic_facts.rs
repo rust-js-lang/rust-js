@@ -261,6 +261,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.mut_ref_form_in(pointee, param_env).is_generic_box())
     }
 
+    /// How a dictionary's entry reads what a type parameter given a `ty`
+    /// holds: of a `&mut`, generic code's box, an object's in-place cell
+    /// (`Form::Box`) or its caller's cell of a number, whose `value` it is
+    /// to; else the value itself, a `&mut` to a function or an iterator's
+    /// too, given as it is (`given_as_the_value`, #1414).
+    pub(in crate::lower) fn held_in_generic_box(&self, ty: Ty<'tcx>) -> fn(Expr) -> Expr {
+        match self.in_generic_box(ty) {
+            true => Expr::held,
+            false => |value| value,
+        }
+    }
+
+    /// Whether a type parameter given a `ty` holds it as generic code's box,
+    /// whose `value` it's to: a `&mut`, but to a function or an iterator,
+    /// which may be given as it is (`given_as_the_value`, ADR 0061), or to
+    /// a `dyn`, whose pair it is (ADR 0099).
+    pub(in crate::lower) fn in_generic_box(&self, ty: Ty<'tcx>) -> bool {
+        matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
+            if !self.is_callable(pointee) && !self.implements_iterator(pointee) && !pointee.is_trait())
+    }
+
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {

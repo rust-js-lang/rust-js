@@ -863,3 +863,33 @@ apart: it survived on main. It's held by corpus case
 impl's `*self = ..` leaves the caller's object as it was with the mutation
 (`C { n: 5 }` where Rust's is `C { n: 0 }`), as crate pair
 `library_singles_across_crates` does too.
+
+## Amendment: every dictionary of a `&mut` reads generic code's box (#1414)
+
+A dictionary of a `&mut X`, given where a type parameter is, is read with
+generic code's box of `X`: `$cellOf(object)`, or its caller's cell of a
+number or text. A crate's impl for `&mut T` read it so, as did `AsMut`,
+`$mutWriter` and `$mutReader`. Three routes didn't, each a wrong answer
+(P0, #1414). `run(&mut parser)` of a `P: BorrowMut<Parser>` wrote the box,
+leaving the parser as it was, and `show(&mut point)` of a `D: Display`
+showed `undefined`:
+
+- **std's `Borrow` and `BorrowMut` of a `&mut`** give what the box holds,
+  `(value) => value.value`; a `&mut u32`'s too, which was refused.
+- **std's impls that pass a trait on from `&mut T` to `T`**, `impl<T:
+  Display> Display for &mut T`, `Debug`, `Hash`, `AsRef` and the rest, give
+  `T`'s dictionary through the box. `$throughBox(pointDisplay, { fmt: [1]
+  })` gives each entry what each box it takes holds: `1` a `Self` or a
+  reference to one, `2` a slice of them. The supertraits' entries are the
+  `&mut`'s too. An entry that gives a `Self` back, or a trait of another
+  `&mut`, is refused. An iterator trait's `&mut I` is given as it is (ADR
+  0061), and so is a `&mut dyn`'s pair, never boxed again.
+- **A `dyn` made of a `&mut` to an object**, `&r as &dyn Total`, holds the
+  box, `{ value: $cellOf(r), impl }`, as a type parameter given it does.
+  Its impl for `&mut T` read the object as the box and threw.
+
+A std struct that holds a `&mut` to an object as the object, a
+`Cursor<&mut Vec<u8>>` made where its type is known, is given the object's
+`AsRef`, which std's of the `&mut` passes it on to. Case C of ADR 0262:
+results change, so Rust's behaviour is kept. Corpus case
+mut_ref_given_for_a_bound covers each, against native Rust in both builds.

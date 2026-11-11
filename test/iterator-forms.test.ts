@@ -209,6 +209,9 @@ const few = [
   // its `B`, a value, not its error thrown; flattened by std's `Flatten`
   // through its `IntoIterator` (#1410).
   "write_result_items.rs",
+  // A `&mut` to the crate's iterator, `self.by_ref().take(1)` in std's
+  // `Take`, given as it is, never read through generic code's box (#1414).
+  "match_moves_a_part_or_the_whole.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")

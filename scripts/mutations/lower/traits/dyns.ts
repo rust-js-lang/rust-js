@@ -635,4 +635,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(Expr::call(Expr::helper(helper), vec![Expr::str(&format!(\"{ty}\"))]))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
+  {
+    name: "dyn-of-a-mut-holds-the-object",
+    breaks: "a `dyn` made of a `&mut` to an object holds the object, where its impl for `&mut T` reads generic code's box: `as_dyn.total()` throws (#1414)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                self.form_given(Form::Box, (tr.def_id, declared, pointee), value)\n",
+    replace: "                value\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
+  },
 ];

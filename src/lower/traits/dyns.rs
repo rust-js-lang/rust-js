@@ -2,6 +2,7 @@
 //! error, or a struct whose last field is one.
 
 use super::*;
+use crate::lower::generic_facts::Form;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `dyn` given for one of `id`'s type parameters that its signature,
@@ -800,6 +801,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Expr::stored_pair(object, dictionary, js::Storage::Assigned));
         }
+        // Of a `&mut` to an object, the `Self` its impl takes as generic
+        // code's box, a `impl<T: Trait> Trait for &mut T`'s or std's that
+        // passes it on (ADR 0454): the box, its in-place cell, as a type
+        // parameter given it is (#1414).
+        let value = match self.dyn_trait_ref(target, pointee) {
+            Some(tr) => {
+                let declared = ty::GenericArgs::identity_for_item(self.tcx, tr.def_id).type_at(0);
+                self.form_given(Form::Box, (tr.def_id, declared, pointee), value)
+            }
+            None => value,
+        };
         Ok(Expr::object(vec![
             Prop::Field(js::HELD.into(), value),
             Prop::Field(js::DICTIONARY.into(), dictionary),

@@ -23,4 +23,12 @@ export const mutations: Mutation[] = [
     replace: "      return cell.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_to_generic_code.rs$"],
   },
+  {
+    name: "through-box-not-through",
+    breaks: "`$throughBox` gives each entry the box as it is: `show(&mut parser)` shows `undefined` (#1414)",
+    file: "src/runtime/cell_of.js",
+    find: "given[i] === 1 ? arg.value :",
+    replace: "given[i] === 1 ? arg :",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
+  },
 ];
