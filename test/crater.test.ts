@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { boundCrater, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, undecided } from "../scripts/crater";
+import { afterDeaths, boundCrater, cascaded, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, undecided } from "../scripts/crater";
 import { attributesFrom, cut, cutFor, declaredIn, dropped, errorsAt, innerAttributes, items, modulePath, offTarget, onlyForTests, placeOf, testModulePath, testOnlyFile, underItems } from "../scripts/crater-cuts";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
@@ -405,4 +405,47 @@ test("the Crater's store is held to its cap, its kept verdicts never", () => {
   expect(held.removed).toBe(2);
   expect(readdirSync(dir)).toEqual(["kept"]);
   rmSync(dir, { recursive: true, force: true });
+});
+
+// A JS run that ran whole never ran a native test only a cut took with it,
+// byteorder's macro-made tests of an `impl Arbitrary` cut a round before:
+// refused for the cut nearest it by module path, not a wrong answer; of a
+// run whose file died, not so.
+test("a test a cut took with it is refused for that cut", () => {
+  const native = { "a::b": "ok", "stdtests::prop_i16::big": "ok", "other::c": "ok" } as const;
+  const js = { "a::b": "ok" } as const;
+  const cut = { "stdtests::big": "user impl of Arbitrary", "a::z": "another" };
+  const none = () => undefined;
+  expect(cascaded(native, js, cut, none)).toEqual({ ...cut, "stdtests::prop_i16::big": "user impl of Arbitrary", "other::c": "user impl of Arbitrary" });
+  expect(cascaded(native, { ...js, "/t/lib.test.js": "failed" }, cut, none)).toEqual(cut);
+  expect(cascaded(native, js, {}, none)).toEqual({});
+});
+
+// A test file whose process died: each test it hadn't reported run again
+// alone, one that dies again failed, the rest their own outcomes.
+test("a dead test file's remaining tests run again alone", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "crater-dead-"));
+  const file = join(dir, "lib.test.js");
+  writeFileSync(file, `import { test } from "node:test";
+test("a::first", () => {});
+test("a::dies", () => { process.exit(9); });
+test(
+  "a::after",
+  () => {},
+);
+test("a::fails", () => { throw new Error("no"); });
+`);
+  const outcomes = await afterDeaths({ "a::first": "ok", [file]: "failed" }, dir, 60);
+  expect(outcomes).toEqual({ "a::first": "ok", "a::dies": "failed", "a::after": "ok", "a::fails": "failed" });
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// libtest says a `#[should_panic]` test's note after its name: still a
+// test, byteorder's 288 of them (#1431).
+test("a should-panic test is a native outcome", () => {
+  expect(nativeOutcomes("test a::plain ... ok\ntest a::panics - should panic ... ok\ntest a::bad - should panic ... FAILED\n")).toEqual({
+    "a::plain": "ok",
+    "a::panics": "ok",
+    "a::bad": "failed",
+  });
 });

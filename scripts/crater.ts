@@ -90,10 +90,12 @@ export type Verdict =
   | { problem: string };
 
 /** `cargo test`'s line of each test, `test a::b ... ok`. */
+// A `#[should_panic]` test's line says so after its name, `test a::b -
+// should panic ... ok`, byteorder's 288 (#1431).
 export function nativeOutcomes(said: string): Outcomes {
   const outcomes: Outcomes = {};
   for (const [, name, how] of said.matchAll(
-    /^test (\S+) \.\.\. (ok|FAILED|ignored)\b/gm,
+    /^test (\S+)(?: - [^\n]*?)? \.\.\. (ok|FAILED|ignored)\b/gm,
   )) {
     outcomes[name] =
       how === "FAILED" ? "failed" : how === "ok" ? "ok" : "ignored";
@@ -123,6 +125,33 @@ export function jsOutcomes(said: string): Outcomes {
     if (outcomes[name] === "failed") outcomes[name] = `${refusedAtRunTime}${why}`;
   }
   return outcomes;
+}
+
+/** Of a test file whose process died mid-run, an out of memory's, its
+ * outcome the file's own: each of its tests that hadn't said one run again
+ * alone, so a test that kills its process is its own failure, and the rest
+ * count (the Crater's fidelity). One that dies alone failed. */
+export async function afterDeaths(outcomes: Outcomes, jsDir: string, seconds = 300): Promise<Outcomes> {
+  const dead = Object.keys(outcomes).filter((name) => name.endsWith(".test.js") && outcomes[name] === "failed" && existsSync(name));
+  if (dead.length === 0) return outcomes;
+  const result: Outcomes = { ...outcomes };
+  const pattern = (name: string) => `^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`;
+  for (const file of dead) {
+    delete result[file];
+    const left = [...readFileSync(file, "utf8").matchAll(/^test\(\s*"((?:[^"\\]|\\.)+)"/gm)]
+      .map((m) => JSON.parse(`"${m[1]}"`) as string)
+      .filter((name) => !(name in result));
+    const width = atOnce("test");
+    for (let at = 0; at < left.length; at += width) {
+      const ran = await Promise.all(
+        left.slice(at, at + width).map((name) => spawned(["node", "--test", `--test-name-pattern=${pattern(name)}`, file], jsDir, { TZ: zone }, seconds)),
+      );
+      left.slice(at, at + width).forEach((name, i) => {
+        result[name] = jsOutcomes(ran[i].said)[name] ?? "failed";
+      });
+    }
+  }
+  return result;
 }
 
 /** rust-js's refusals in what a build said, each once, in order. */
@@ -271,8 +300,11 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
  * couldn't compile, not of a message (#1174). 13: a test a cfg of its own
  * leaves off wasm32 is no test of rust-js's target, unicode-ident's
  * 64-bit `test_trieset_size`, and each package built by its ID, which
- * serde_json's own tests bringing another serde_json left ambiguous. */
-const asking = 13;
+ * serde_json's own tests bringing another serde_json left ambiguous. 14: a
+ * test file's tests a dead process left unreported each run again alone
+ * (`afterDeaths`), httparse's after an out of memory. 15: a `#[should_panic]`
+ * test, said with its note, `- should panic`, natively too (#1431). */
+const asking = 15;
 
 /** What a crate's kept verdict is of, beside its release and the
  * compiler's build: the features its row names, how the Crater asks, and
@@ -497,7 +529,7 @@ async function cutUntilBuilt(
       { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone, RUSTFLAGS: "--cap-lints=warn" },
       1200,
     );
-    const jsRan = jsOutcomes(js.said);
+    const jsRan = await afterDeaths(jsOutcomes(js.said), jsDir);
     if (Object.keys(jsRan).length > 0) return { js: jsRan, cut: cutTests, items };
     const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/") || (rootFile !== undefined && e.file.startsWith("tests/")));
     // Each of its tests cut: none left to run.
@@ -678,8 +710,9 @@ export function undecided(crate: string, differ: { name: string; js: string }[],
 
 /** A crate's verdict of its tests' outcomes: each native one not run as
  * JS of a module a cfg leaves off wasm32 apart from those that differ. */
-export function judged(native: Outcomes, js: Outcomes, cut: Record<string, string>, dir: string): Verdict {
+export function judged(native: Outcomes, js: Outcomes, given: Record<string, string>, dir: string): Verdict {
   const read = (path: string) => (existsSync(join(dir, path)) ? readFileSync(join(dir, path), "utf8") : undefined);
+  const cut = cascaded(native, js, given, read);
   const all = differences(native, js, cut);
   const off = all.filter((d) => d.js === "not run" && offTarget(d.name, read)).map((d) => d.name);
   // A refusal at run time is no wrong answer: a column of its own (#1192).
@@ -688,6 +721,30 @@ export function judged(native: Outcomes, js: Outcomes, cut: Record<string, strin
     .map((d) => ({ name: d.name, why: d.js.slice(refusedAtRunTime.length) }));
   const differ = all.filter((d) => !off.includes(d.name) && !d.js.startsWith(refusedAtRunTime));
   return { native, js, cut, differ, refusedAtRun, offTarget: off };
+}
+
+/** `cut`, and each test it took with it: of a JS run that ran whole, no
+ * file of it dead, a native test it never ran was cut from its build, by a
+ * cut a round before made a rustc error of, byteorder's `impl Arbitrary`
+ * whose cut left 388 macro-made tests unbuilt, refused for the cut nearest
+ * it by module path (the Crater's fidelity). */
+export function cascaded(native: Outcomes, js: Outcomes, cut: Record<string, string>, read: (path: string) => string | undefined): Record<string, string> {
+  const reasons = Object.entries(cut);
+  const ran = Object.keys(js);
+  if (reasons.length === 0 || ran.length === 0 || ran.some((name) => name.endsWith(".test.js"))) return cut;
+  const result = { ...cut };
+  for (const [name, how] of Object.entries(native)) {
+    if (how !== "ok" || name in js || name in cut || offTarget(name, read)) continue;
+    const parts = name.split("::");
+    const shared = (other: string) => {
+      const theirs = other.split("::");
+      let n = 0;
+      while (n < parts.length - 1 && n < theirs.length - 1 && parts[n] === theirs[n]) n++;
+      return n;
+    };
+    result[name] = reasons.reduce((best, at) => (shared(at[0]) > shared(best[0]) ? at : best))[1];
+  }
+  return result;
 }
 
 /** A refusal's reason, its place taken off, `(src/lib.rs:12)`: one reason
