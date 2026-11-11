@@ -60,6 +60,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.given_hint_is_stds(instance) || self.hint_reaches_own(instance)
     }
 
+    /// The iterator a call of `callee` grows a `Vec` by, whose hint std asks
+    /// as it fills: a `collect()`'s into what grows as a `Vec`, or an
+    /// `extend`'s (`extend_grows`), in `typing_env`. The one answer, of what
+    /// generic code grows (`hint_asked.rs`) and of a string's `chars()` a
+    /// crate that reads capacities asks the hint of (`chars_asked.rs`, #1316).
+    pub(in crate::lower) fn vec_grown_by(
+        &self,
+        callee: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        let iterator = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator);
+        let collect = crate::lower::recognition::trait_method(self.tcx, iterator, "collect");
+        if callee == collect && args.types().nth(1).is_some_and(|into| self.grows_as_vec(into)) {
+            return args.types().next();
+        }
+        (self.extend_grows(callee, args))
+            .then(|| args.types().nth(2))
+            .flatten()
+            .map(|iterable| crate::lower::recognition::iterator_type_of(self.tcx, typing_env, iterable))
+    }
+
     /// Whether `def_id` is an `extend` std's collection asks its hint of as
     /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
     pub(in crate::lower) fn extend_grows(
@@ -308,9 +330,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `size_hint()` is: so its capacity would be another (#1180). Not of
     /// one whose hint runs the crate's own, its own.
     fn refuse_unkept_lower_bound(&self, iter_ty: Ty<'tcx>, span: Span) -> R<()> {
+        // A string's `chars()` the crate makes `$chars`, whose hint is std's
+        // (#1186); and what `size_hint()` finds std's where it's made, a
+        // `take(n)` of `successors`, a `rev()` of a `flat_map` (#1316).
+        let chars_kept = self.krate.chars_whole;
         if self.hint_reaches_own(iter_ty)
-            || self.recognition().lower_bound_is_stds(iter_ty)
-            || self.recognition().lower_bound_kept_by_parts(iter_ty)
+            || self.recognition().lower_bound_is_stds_where(iter_ty, chars_kept)
+            || self.recognition().lower_bound_kept_by_parts_where(iter_ty, chars_kept)
+            || self.adapted_hint_known(iter_ty)
         {
             return Ok(());
         }

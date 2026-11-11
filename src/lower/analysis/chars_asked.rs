@@ -16,13 +16,14 @@ use rustc_middle::ty::{self, TyCtxt};
 
 /// Whether `all_bodies` ask a `Chars` more than its front's steps: a call
 /// that does (`Recognition::asks_chars_whole`), or a `dyn` made of what
-/// holds one. Of a `library`, too, where a function another crate may call
+/// holds one; of a crate that keeps capacities, a `Vec` grown by what holds
+/// one, whose hint std grows it by (`vec_grown_by`, #1316). Of a `library`, too, where a function another crate may call
 /// gives or takes what holds one, which that crate may ask anything.
 pub(super) fn asks_chars_whole<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    library: bool,
+    (library, keeps_capacity): (bool, bool),
 ) -> bool {
     all_bodies.iter().any(|body| {
         let thir = &body.thir;
@@ -53,8 +54,12 @@ pub(super) fn asks_chars_whole<'tcx>(
                     source,
                     ..
                 } => recognition.holds_str_chars(thir[source].ty),
-                ExprKind::ZstLiteral { .. } => crate::lower::fn_def(expr.ty)
-                    .is_some_and(|(callee, args)| recognition.asks_chars_whole(callee, args)),
+                ExprKind::ZstLiteral { .. } => crate::lower::fn_def(expr.ty).is_some_and(|(callee, args)| {
+                    recognition.asks_chars_whole(callee, args)
+                        || keeps_capacity
+                            && (recognition.vec_grown_by(callee, args, ty::TypingEnv::post_analysis(tcx, body.def_id)))
+                                .is_some_and(|grown| recognition.holds_str_chars(grown))
+                }),
                 _ => false,
             })
     })

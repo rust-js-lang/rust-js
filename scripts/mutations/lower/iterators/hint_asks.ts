@@ -210,8 +210,8 @@ export const mutations: Mutation[] = [
     name: "unkept-lower-bound-unrefused",
     breaks: "a `Vec` grown by what JS's hint hasn't std's lower bound of, `chars()`'s, in a crate that reads a capacity, compiles, its capacity another (#1180)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        if self.hint_reaches_own(iter_ty)\n            || self.recognition().lower_bound_is_stds(iter_ty)\n",
-    replace: "        if true\n            || self.recognition().lower_bound_is_stds(iter_ty)\n",
+    find: "        if self.hint_reaches_own(iter_ty)\n            || self.recognition().lower_bound_is_stds_where(iter_ty, chars_kept)\n",
+    replace: "        if true\n            || self.recognition().lower_bound_is_stds_where(iter_ty, chars_kept)\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
   },
   {
@@ -330,5 +330,13 @@ export const mutations: Mutation[] = [
     find: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return true;\n",
     replace: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return false;\n",
     tests: ["test/js-collections.test.ts", "-t", "forEach and iterators"],
+  },
+  {
+    name: "grown-by-a-hint-size-hint-knows-refused",
+    breaks: "a `Vec` grown by an iterator whose JS hint `size_hint()` finds std's, a `take(n)` of `successors`, a `rev()` of a `flat_map`, is refused in a crate that reads capacities, \"whose lower bound JS's doesn't have\" (#1316)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            || self.adapted_hint_known(iter_ty)\n        {\n            return Ok(());\n",
+    replace: "        {\n            return Ok(());\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
   },
 ];

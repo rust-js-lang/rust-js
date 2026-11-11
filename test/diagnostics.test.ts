@@ -100,7 +100,9 @@ for (const [name, source, message, crate] of [
   // whose JS hint hasn't std's lower bound, a string's `chars()`'s, by which
   // std grows it; and a bound's `extend` of a `Vec<T>` whose items' size is
   // a type parameter's, which its dictionary isn't given.
-  ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // Of a `skip(n)` of a string's `chars()`, JS's own `drop(n)` of `$chars`,
+  // which keeps no hint, where `chars()` itself is std's (#1316).
+  ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().skip(1).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A slice's, whose hint's lower bound is 1 where JS counts (a string's is
   // std's, #1180's (3)).
   ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u32]) -> usize {\n    let w: Vec<&[u32]> = v.split(|x| *x == 0).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],

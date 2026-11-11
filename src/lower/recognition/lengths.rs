@@ -376,16 +376,41 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// whose parts' JS, `drop(1)`, knows no hint, and whose runtime chain
     /// sums its parts' as std's `Chain` does, a zip's the fewer (#1216).
     pub(in crate::lower) fn lower_bound_kept_by_parts(&self, ty: Ty<'tcx>) -> bool {
+        self.lower_bound_kept_by_parts_where(ty, false)
+    }
+
+    /// `lower_bound_kept_by_parts`, where a string's `chars()` and
+    /// `char_indices()` are the runtime's `$chars`, `chars_kept`, whose hint
+    /// is std's: of a part of a chain or a zip, whose runtime one sums its
+    /// parts' hints (`lower_bound_is_stds_where`, #1316).
+    pub(in crate::lower) fn lower_bound_kept_by_parts_where(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if let Some(source) = super::copied_source(self.tcx, ty).or_else(|| super::mapped_source(self.tcx, ty)) {
-            return self.lower_bound_kept_by_parts(source);
+            return self.lower_bound_kept_by_parts_where(source, chars_kept);
         }
         let Some((a, b)) = super::chained_sources(self.tcx, ty).or_else(|| super::zipped_sources(self.tcx, ty)) else {
             return false;
         };
         [a, b].into_iter().all(|part| {
-            self.lower_bound_is_stds(part) || self.grows_by_exact_len(part) || self.lower_bound_kept_by_parts(part)
+            self.lower_bound_is_stds_where(part, chars_kept)
+                || self.grows_by_exact_len(part)
+                || self.lower_bound_kept_by_parts_where(part, chars_kept)
         })
+    }
+
+    /// `lower_bound_is_stds`, of an iterator as it's made, a chain's or a
+    /// zip's part too, whose runtime one sums its parts' hints: a string's
+    /// `chars()` or `char_indices()` where they're the runtime's `$chars`,
+    /// `chars_kept`, as a crate that asks them more than their front's steps
+    /// makes each (#1186), `((len + 3) / 4, Some(len))`; and a std source
+    /// whose form gives std's hint, `repeat`'s `$repeating` and the like
+    /// (`source_hint_kept`, #1357). Not an adapter of one, JS's own
+    /// `drop(n)` of `$chars`, which keeps none (#1316).
+    pub(in crate::lower) fn lower_bound_is_stds_where(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
+        let made = self.reveal(ty.peel_refs());
+        chars_kept && (self.is_str_chars(made) || self.is_char_indices(made))
+            || super::source_hint_kept(self.tcx, made)
+            || self.lower_bound_is_stds(ty)
     }
 
     /// `lower_bound_is_stds`, of an iterator of type `ty` a caller gives

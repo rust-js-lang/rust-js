@@ -64,7 +64,6 @@ pub(super) fn of_crate<'tcx>(
         hinted: Hinted::default(),
     };
     let asks = AsksHint::of(tcx);
-    let collect = asks.collect;
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     for body in all_bodies {
@@ -91,17 +90,9 @@ pub(super) fn of_crate<'tcx>(
             // `b.iter().skip(1)`, JS's own adapters know no hint of: each
             // made knowing it where it's made, `$skipping`, so the runtime's
             // chain sums them as std's does (#1216).
-            let grown_by = match () {
-                _ if !keeps_capacity => None,
-                _ if callee == collect && args.types().nth(1).is_some_and(|into| recognition.grows_as_vec(into)) => {
-                    args.types().next()
-                }
-                _ if recognition.extend_grows(callee, args) => args.types().nth(2).map(|iterable| {
-                    let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
-                    crate::lower::recognition::iterator_type_of(tcx, typing_env, iterable)
-                }),
-                _ => None,
-            };
+            let grown_by = (keeps_capacity)
+                .then(|| recognition.vec_grown_by(callee, args, ty::TypingEnv::post_analysis(tcx, body.def_id)))
+                .flatten();
             if let Some(iter_ty) = grown_by.map(|ty| tcx.erase_and_anonymize_regions(ty.peel_refs()))
                 && !rustc_middle::ty::TypeVisitableExt::has_param(&iter_ty)
                 && !recognition.lower_bound_is_stds(iter_ty)

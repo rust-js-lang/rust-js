@@ -486,3 +486,38 @@ in both builds, and by the generic in-place collect in
 `given-chain-marked-whole` and `given-hint-marked-of-any-source` are new,
 `chain-part-sources-unmarked` is refitted to `counted_parts`, and `collect-vec-by-next-unhinted` and
 `collect-vec-in-place-rest-first` are refitted.
+
+## Amended (2026-11-11, #1316): a `Vec` grown by what `size_hint()` knows
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results;
+refusals lifted. In a crate that reads a `Vec`'s capacity, a `Vec` grown by
+an iterator whose JS hint is std's was still refused, "whose lower bound
+JS's doesn't have". Examples: a `take(n)` of `successors` or of a
+`cycle()`, a `rev()` or a `take(n)` of a `flat_map`, an `inspect`, a
+string's `chars()` and `char_indices()`. The neighbour shuffle found it,
+where a neighbour that reads a capacity made the crate keep them.
+
+`refuse_unkept_lower_bound` now also asks `adapted_hint_known`, the one
+answer of whether `size_hint()` of an iterator made in place is std's. Std
+grows a `Vec` by that same hint, so where it's std's, so is the growth.
+
+A string's `chars()` is the runtime's `$chars`, whose hint is std's, where
+the crate asks it more than its front's steps (#1186). A crate that reads
+capacities now counts a `Vec` grown by what holds one as asking it
+(`chars_asked.rs`), through `vec_grown_by`, the one answer of which
+iterator a `collect()` or an `extend` grows a `Vec` by, which
+`hint_asked.rs` now asks too. `lower_bound_is_stds_where` and
+`lower_bound_kept_by_parts_where` (`lengths.rs`) take such a `chars()` as
+std's, itself or as a chain's or a zip's part. So do a std source whose
+form keeps std's hint, `repeat`'s `$repeating` and the like
+(`source_hint_kept`), since the runtime's chain and zip sum their parts'
+hints. An adapter of `$chars` isn't std's: JS's own `drop(n)` keeps no
+hint, so `chars().skip(n)` stays refused, which test/diagnostics.test.ts
+now holds.
+
+Held by corpus case `vec_grown_by_iterators_whose_hint_is_stds.rs`, against
+native Rust in both builds. The neighbour pairs listed under #1316 run as
+native Rust does, and are taken off test/neighbours-known.txt but one.
+That one is a zip of an `inspect` collected in the plain build, which
+fails on its exact length, not its hint, and is now #1394's. Mutations: 5
+new, 2 refitted.

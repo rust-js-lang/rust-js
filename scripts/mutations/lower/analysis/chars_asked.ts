@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "            || mir_asks && false\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
   },
+  {
+    name: "vec-grown-by-chars-unasked",
+    breaks: "a `Vec` grown by a string's `chars()` in a crate that reads capacities doesn't make it `$chars`, whose hint is std's, so it's refused where nothing else asks its hint (#1316)",
+    file: "src/lower/analysis/chars_asked.rs",
+    find: "                        || keeps_capacity\n",
+    replace: "                        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
+  },
 ];

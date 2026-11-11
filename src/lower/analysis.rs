@@ -704,7 +704,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
     let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, asks_capacity || foreign.keeps_capacity());
     back_stepped.typed.extend(hint_asked.knowing);
-    let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, library);
+    let chars_whole = chars_asked::asks_chars_whole(
+        tcx,
+        recognition,
+        all_bodies,
+        (library, asks_capacity || foreign.keeps_capacity()),
+    );
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).

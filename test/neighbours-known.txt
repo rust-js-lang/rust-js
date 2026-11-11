@@ -53,14 +53,8 @@ plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
 
-#1316 P2 (neighbours): an iterator whose JS size hint isn't std's (Take of Successors/Cycle, CharIndices, Inspect, Rev<FlatMap>, Take<FlatMap>) is refused in a crate that reads a Vec's capacity
-plain std iterator_sources.rs beside adapter_size_hints.rs
-plain std std_map.rs beside collection_capacity.rs
-plain std matrix_strings.rs beside iterator_replaced_where_capacities_are_kept.rs
-plain std panic_part_way_drops.rs beside map_of_own_size_hint.rs
-plain std flat_map_of_maps_from_its_back.rs beside collection_capacity.rs
-plain std flat_map_drops.rs beside generic_extend_of_own_hints.rs
-plain std zip_function.rs beside capacity_kept_by_clear_alone.rs
+#1394 P2 (neighbours): a zip held in a local isn't counted as an ExactSizeIterator where a crate that reads capacity collects it
+plain panic_part_way_drops.rs beside map_of_own_size_hint.rs
 
 #1317 P2 (neighbours): a Take of IntoValues, or a Map of a Skip of a vec's IntoIter, is refused as an ExactSizeIterator beside a case that counts one
 plain collection_taken_drops_what_is_left.rs beside map_of_own_size_hint.rs
