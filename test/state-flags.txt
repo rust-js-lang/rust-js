@@ -1,0 +1,47 @@
+# Each file's loose state flags, a `Cell<bool>`, a struct of two `bool`
+# fields or more, a runtime file's properties set to `true` or `false`, the
+# audit's of 2026-11-11 (test/architecture-state-flags.test.ts): a ratchet,
+# which only shrinks, as each becomes an enum with named transitions.
+src/command.rs	1
+src/js.rs	3
+src/library.rs	2
+src/lower/analysis/debug.rs	1
+src/lower/analysis/fmt_failures.rs	1
+src/lower/analysis/fn_pointers.rs	1
+src/lower/analysis/ground.rs	1
+src/lower/analysis/lazy_locals.rs	1
+src/lower/analysis/rc_counts.rs	1
+src/lower/analysis/shown_params.rs	1
+src/lower/analysis/stored_places.rs	1
+src/lower/analysis.rs	1
+src/lower/bindings/held.rs	1
+src/lower/calls.rs	2
+src/lower/declarations/written.rs	1
+src/lower/drops/facts/quiet.rs	1
+src/lower/drops/ref_cells.rs	1
+src/lower/drops/types.rs	1
+src/lower/format_spec.rs	1
+src/lower/iterators/hint_asks.rs	1
+src/lower/library.rs	2
+src/lower/mir/queries/reads.rs	1
+src/lower/mir/tidy/decisions/defaults.rs	1
+src/lower/mir/tidy/decisions/walk.rs	1
+src/lower/mir/tidy/decisions.rs	1
+src/lower/mir/tidy/shadows.rs	1
+src/lower/mir/tidy/switches.rs	1
+src/lower/mir/tidy/values.rs	1
+src/lower/mir.rs	1
+src/lower/passed_on.rs	1
+src/lower/pipeline/built.rs	1
+src/lower/recursive_fns.rs	1
+src/lower/serde.rs	1
+src/lower/session.rs	3
+src/lower/std_types/map.rs	1
+src/lower.rs	3
+src/main.rs	1
+src/program.rs	3
+src/settings.rs	1
+src/std_sysroot.rs	1
+src/to_oxc/arms.rs	1
+src/to_oxc/trailing.rs	1
+src/runtime/steps.js	2

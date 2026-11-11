@@ -91,6 +91,19 @@ When contributing code:
 - **Carry decisions forward as explicit data.** A later phase consumes an
   earlier phase's answer rather than reconstructing it from names, generated
   text, or implementation details.
+- **Decided once, then read.** A fact one owner decides at one point of
+  the pipeline is a type that's undecided until then, and its readers ask
+  it only through what refuses an undecided one, as `InPlace` is till
+  `body_queries/in_place.rs`' `decide` runs (#1327); an architecture test
+  holds that only the owner decides it. A state that changes as the work
+  goes is one enum whose transitions are named methods, matched
+  exhaustively, never two `bool`s whose fourth combination nothing makes:
+  tidy's `Again` (#872), ranges' `Settling` (#873), the runtime's
+  `$closing` (#870). `test/architecture-state-flags.test.ts` counts each
+  file's loose flags, a `Cell<bool>`, a struct of two `bool`s or more, a
+  runtime file's properties set to `true` or `false`, and the count only
+  shrinks: a new one is an enum's state, or says on the line above it why
+  it isn't one, `// Flags, not a state: ..`.
 - **Separate transformations from external effects where practical.** Keep
   compiler decisions testable from explicit inputs. Give filesystem access,
   process execution, and user-facing output clear owners; orchestration
