@@ -17,6 +17,7 @@ import {
   $partialEq,
   $partialOrd,
   $range,
+  $reserveHint,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
@@ -370,7 +371,13 @@ function main() {
   }
   let h;
   try {
-    h = new Map($lazyRange(0, 4).map((i) => [i, (i * 10) >>> 0]));
+    h = new Map(
+      $reserveHint(
+        $lazyRange(0, 4).map((i) => [i, (i * 10) >>> 0]),
+        8,
+        4,
+      ),
+    );
   } catch (error) {
     $cleanup(() => {
       for (const key of $sortedKeys(seen, seenOrd_cmp)) {

@@ -9,6 +9,7 @@ import {
   $lazyRange,
   $range,
   $rangeInclusiveNext,
+  $reserveHint,
   $sortedKeys,
   $unwrap,
 } from "@rust-js/std";
@@ -18,13 +19,19 @@ export function entry() {
 }
 
 function main() {
-  const s = new Set($lazyRange(1, 7));
+  const s = new Set($reserveHint($lazyRange(1, 7), 4, 4));
   const t = new $BTreeSet($range(1, 4));
-  const m = new Map($lazyRange(1, 4).map((i) => [i, Math.imul(i, i)]));
+  const m = new Map(
+    $reserveHint(
+      $lazyRange(1, 4).map((i) => [i, Math.imul(i, i)]),
+      8,
+      4,
+    ),
+  );
   const u = new $BTreeSet($iterator({ start: "a", end: "c" }, $rangeInclusiveNext));
   const more = new Set();
-  $extendMap(more, $lazyRange(2, 5), true);
-  $extendMap(more, $lazyRange(4, (s.size | 0) + 1), true);
+  $extendMap(more, $reserveHint($lazyRange(2, 5), 4, 4, more), true);
+  $extendMap(more, $reserveHint($lazyRange(4, (s.size | 0) + 1), 4, 4, more), true);
   const value = $unwrap(m.get(3), "no entry found for key");
   console.log(
     `${s.size} {${Array.from($sortedKeys(t, $cmp)).join(", ")}} ${value} {${Array.from(

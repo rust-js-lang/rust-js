@@ -19,6 +19,7 @@ import {
   $live,
   $range,
   $repeating,
+  $reserveHint,
   $roomForHint,
   $skipping,
   $sortedEntries,
@@ -112,7 +113,7 @@ function main() {
   const a = $range(0, 10);
   const rest = [7, 8, 9];
   const b = new $BTreeSet($range(0, 40));
-  const h = new Set($lazyRange(0, 20));
+  const h = new Set($reserveHint($lazyRange(0, 20), 4, 4));
   const d = $grownVec(
     $roomForHint(
       $lazyChain(

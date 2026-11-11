@@ -22,6 +22,7 @@ import {
   $partiallyOrdered,
   $range,
   $rangeNext,
+  $reserveHint,
   $roomForHint,
   $setAlgebra,
   $skipping,
@@ -39,9 +40,13 @@ export function entry() {
 function ranges(n) {
   const b = new $BTreeSet($range(0, n, 4));
   const c = new $BTreeSet($range((n / 2) >>> 0, ((n / 2) >>> 0) + ((n / 4) >>> 0), 4));
-  const h = new Set($lazyRange(0, n));
+  const h = new Set($reserveHint($lazyRange(0, n), 4, 4));
   const g = new Set(
-    $iterator({ start: (n / 2) >>> 0, end: ((n / 2) >>> 0) + ((n / 4) >>> 0) }, $rangeNext),
+    $reserveHint(
+      $iterator({ start: (n / 2) >>> 0, end: ((n / 2) >>> 0) + ((n / 4) >>> 0) }, $rangeNext),
+      4,
+      4,
+    ),
   );
   const m = new $BTreeMap($range(0, n, 8).map((i) => [i, i]));
   let none = $sortedKeys(c, $cmp)
@@ -220,9 +225,15 @@ function ranges(n) {
 }
 
 function exact(n) {
-  const hm = new Map($lazyRange(0, n).map((i) => [i, i]));
+  const hm = new Map(
+    $reserveHint(
+      $lazyRange(0, n).map((i) => [i, i]),
+      8,
+      4,
+    ),
+  );
   const bm = new $BTreeMap($range(0, n, 8).map((i) => [i, i]));
-  const hs = new Set($lazyRange(0, n));
+  const hs = new Set($reserveHint($lazyRange(0, n), 4, 4));
   const bs = new $BTreeSet($range(0, n, 4));
   const heap = $heapFrom($range(0, n, 4), $partiallyOrdered);
   const dq = $range(0, n, 4);

@@ -8,6 +8,7 @@ import {
   $print,
   $rangeFromNext,
   $rangeFromStep,
+  $reserveHint,
   $roomForHint,
   $stepBy,
 } from "@rust-js/std";
@@ -89,7 +90,9 @@ function main() {
     ).take(3),
   );
   console.log(`[${longs.join(", ")}]`);
-  const chars = Array.from($iterator({ start: "x" }, $rangeFromNext).take(4)).join("");
+  const chars = Array.from($reserveHint($iterator({ start: "x" }, $rangeFromNext).take(4), 1)).join(
+    "",
+  );
   console.log(`${chars}`);
 
   let seen = 0;

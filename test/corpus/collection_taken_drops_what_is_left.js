@@ -16,6 +16,7 @@ import {
   $iter,
   $lazyRange,
   $range,
+  $reserveHint,
   $skipping,
   $sortedEntries,
   $sortedKeys,
@@ -51,7 +52,11 @@ function limit() {
 function byNumber() {
   return $extendMap(
     new Map(),
-    $lazyRange(0, 3).map((i) => [i, [i]]),
+    $reserveHint(
+      $lazyRange(0, 3).map((i) => [i, [i]]),
+      8,
+      4,
+    ),
     false,
     loudDrop_drop,
   );
@@ -60,7 +65,11 @@ function byNumber() {
 function byLoud() {
   return $extendMap(
     new $KeyMap(),
-    $lazyRange(0, 3).map((i) => [[i], i]),
+    $reserveHint(
+      $lazyRange(0, 3).map((i) => [[i], i]),
+      8,
+      4,
+    ),
     false,
     undefined,
     loudDrop_drop,
@@ -111,7 +120,11 @@ function main() {
   console.log(`entries [${entries.join(", ")}] ${arg$2}`);
   const set = $extendMap(
     new $KeySet(),
-    $lazyRange(0, 3).map((value) => [value]),
+    $reserveHint(
+      $lazyRange(0, 3).map((value) => [value]),
+      4,
+      4,
+    ),
     true,
     undefined,
     loudDrop_drop,

@@ -16,6 +16,7 @@ import {
   $mapEnds,
   $next,
   $range,
+  $reserveHint,
   $roomForHint,
   $skipping,
   $sortedEntries,
@@ -41,7 +42,7 @@ function caps(n) {
     $roomForHint($skipping($enumerate($iter($sortedKeys(b, $cmp))), 1), 8, false),
     (grown) => Array.from(grown),
   );
-  const h = new Set($lazyRange(0, n));
+  const h = new Set($reserveHint($lazyRange(0, n), 4, 4));
   const w = $grownVec($roomForHint($skipping($iter(Array.from(h)), 1), 4, false), (grown) =>
     Array.from(grown),
   );

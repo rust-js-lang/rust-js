@@ -707,7 +707,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// not named, it's held first, so it's made once.
     pub(in crate::lower) fn extend_reserves(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
         self.extend_room(into, iterable)
-            .is_some_and(|(iter_ty, _)| self.hint_reaches_own(iter_ty))
+            .is_some_and(|(iter_ty, _)| self.recognition().hint_room_seen(iter_ty))
     }
 
     /// What `extend` of `into` by what's of type `iterable` reserves room
@@ -760,9 +760,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as std's `extend` of a `String` or hash table asks it, and room for
     /// its lower bound reserved as `room` says, `$reserveHint(it, size,
     /// align, of)`, counted with what `of` holds, the collection extended,
-    /// of a new one none. Only where asking it may run what the program
-    /// sees (`hint_reaches_own`), as std's own hints change nothing but
-    /// that room, which no JS string or table reaches (#733).
+    /// of a new one none. Only where asking it may change what the program
+    /// sees: run the crate's own hint (#733), or, of room it reserves, pass
+    /// the room there is, `capacity overflow` before an item's taken
+    /// (`hint_room_seen`, #1358). Else std's hints change nothing but that
+    /// room, which no JS string or table reaches.
     pub(in crate::lower) fn reserved_by_hint(
         &self,
         it: Expr,
@@ -770,7 +772,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         room: Room<'tcx>,
         of: Option<Expr>,
     ) -> Expr {
-        if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {
+        let seen = |iter_ty: Ty<'tcx>| match room {
+            Room::Nothing => self.hint_reaches_own(iter_ty),
+            Room::Bytes | Room::Entries(_) => self.recognition().hint_room_seen(iter_ty),
+        };
+        if !iter_ty.is_some_and(seen) {
             return it;
         }
         let mut args = vec![it];

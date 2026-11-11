@@ -10,6 +10,7 @@ import {
   $lazyRange,
   $mapGetDisjointMut,
   $partialEq,
+  $reserveHint,
 } from "@rust-js/std";
 
 export function entry() {
@@ -66,7 +67,13 @@ function main() {
       .join(", ")}]`,
   );
 
-  const scores = new Map($lazyRange(1, 4).map((i) => [i, { points: (i * 10) >>> 0 }]));
+  const scores = new Map(
+    $reserveHint(
+      $lazyRange(1, 4).map((i) => [i, { points: (i * 10) >>> 0 }]),
+      8,
+      4,
+    ),
+  );
   const [one, three] = $mapGetDisjointMut(scores, [1, 3]);
   if (one != null && three != null) {
     one.points = (one.points + three.points) >>> 0;

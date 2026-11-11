@@ -215,4 +215,20 @@ export const mutations: Mutation[] = [
     replace: "            self.lower_bound_is_stds(part) || self.lower_bound_kept_by_parts(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
   },
+  {
+    name: "room-hint-asked-of-own-alone",
+    breaks: "a `String` collected or extended from an endless `repeat('x')`, or a hash table from one, steps it without asking its hint, where std reserves its lower bound first and panics `capacity overflow` before taking an item (#1358)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        self.hint_reaches_own(ty) || self.lower_bound_may_pass_room(ty)\n",
+    replace: "        self.hint_reaches_own(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
+  },
+  {
+    name: "cycle-room-never-passed",
+    breaks: "a `String` collected from a `cycle()` of what has items, whose lower bound std makes `usize::MAX`, steps it without asking its hint, where std panics `capacity overflow` first (#1358)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            \"std::iter::Cycle\" => sources\n                .next()\n                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),\n",
+    replace: "            \"std::iter::Cycle\" => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
+  },
 ];

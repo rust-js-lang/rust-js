@@ -10,6 +10,7 @@ import {
   $mapExtractIf,
   $next,
   $range,
+  $reserveHint,
   $sortedEntries,
   $sortedKeys,
   $treeRange,
@@ -75,7 +76,7 @@ function main() {
   console.log(
     `[${high.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] [${left.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`,
   );
-  const set = new Set($lazyRange(1, 7));
+  const set = new Set($reserveHint($lazyRange(1, 7), 4, 4));
   const small = Array.from($mapExtractIf(set, (x) => x < 3, set, false, true));
   small.sort((a, b) => a - b);
   console.log(`[${small.join(", ")}] ${set.size}`);

@@ -15,6 +15,7 @@ import {
   $next,
   $repeating,
   $repeatingWith,
+  $reserveHint,
   $some,
   $successors,
   $unzip,
@@ -78,7 +79,7 @@ function main() {
   );
   const nothing = [];
   console.log(`[${nothing.join(", ")}]`);
-  const dashes = Array.from($repeating("-").take(5)).join("");
+  const dashes = Array.from($reserveHint($repeating("-").take(5), 1)).join("");
   const words = Array.from($repeating("hi").take(3));
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
   const padded = Array.from($lazyChain($iter([1, 2]), $repeating(0)).take(5));

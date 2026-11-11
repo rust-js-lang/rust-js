@@ -267,3 +267,30 @@ either side, a `zip`, `by_ref()` of a local and of a field, `&mut`, an
 The mutation is taken off with the code. That probe found #1358 (a
 `String` of `char`s asks no room first) and #1359 (a `Box<dyn Iterator>`'s
 collect asks none).
+
+## Amendment (2026-11-11): text and tables ask the hint that may pass their room (#1358)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A `String` collected or extended from `char`s and a hash table collected or
+extended reserve room for the hint's lower bound before they step what
+they're given, std's `Extend<char>` (string.rs) and hashbrown's `extend`.
+rust-js asked that hint only where asking it may run the crate's own
+(`hint_reaches_own`, #733), on the premise that std's hints change only that
+room, which no JS string or table reaches. But a lower bound past the room
+there is panics `capacity overflow` (hashbrown's "Hash table capacity
+overflow") before an item is taken: `repeat('x').collect::<String>()`, a
+range past `isize::MAX` bytes, `s.extend(repeat('z'))` stepped without end
+or until JS's array length gave out. So the hint is asked where it may run
+the crate's own or where std's lower bound may pass that room
+(`hint_room_seen`, `lower_bound_may_pass_room`): an endless `repeat`,
+`repeat_n` or `repeat_with`, an `n..`, a range of a type wider than 31 bits,
+a `cycle()` of what may have items, through the adapters that keep their
+source's lower bound or a part of it; never an `Option`'s, a collection's, a
+string's `chars()`, a char's range, a `filter`'s or a `flat_map`'s, which
+ask nothing as before. The runtime's `$reserveHint` panics as std does. Corpus case
+`text_and_tables_reserve_by_hint_first.rs` against native Rust in both
+builds; mutations `room-hint-asked-of-own-alone` and
+`cycle-room-never-passed`. A `cycle()` of JS's own adapter in the plain
+build, `chars().map(f).cycle()`, whose JS hint isn't std's, is #1367's.

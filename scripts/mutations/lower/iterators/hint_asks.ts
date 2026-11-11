@@ -98,8 +98,8 @@ export const mutations: Mutation[] = [
     name: "string-or-table-hint-unreserved",
     breaks: "a `String`'s or a hash table's collect of what may run the crate's own `size_hint` doesn't ask it before it's stepped, as std's `extend` reserves by it (a wrong answer, #733)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {\n",
-    replace: "        if true || !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {\n",
+    find: "        if !iter_ty.is_some_and(seen) {\n",
+    replace: "        if true || !iter_ty.is_some_and(seen) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_asks_hint_as_it_grows|map_ends_size_hint|size_hint_of_adapters).rs$"],
   },
   {

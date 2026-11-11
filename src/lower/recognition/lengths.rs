@@ -77,6 +77,61 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         at_most_its_source && args.types().next().is_some_and(|source| self.bounded_by_items(source))
     }
 
+    /// Whether asking the hint of an iterator of type `ty`, for room std
+    /// reserves by its lower bound before it's stepped, a `String`'s bytes
+    /// or a hash table's entries, may change what the program sees: where it
+    /// may run the crate's own (`hint_reaches_own`), or where that bound may
+    /// pass the room there is, `capacity overflow` before an item's taken
+    /// (`lower_bound_may_pass_room`, #1358).
+    pub(in crate::lower) fn hint_room_seen(&self, ty: Ty<'tcx>) -> bool {
+        self.hint_reaches_own(ty) || self.lower_bound_may_pass_room(ty)
+    }
+
+    /// Whether std's lower bound of an iterator of type `ty` may pass the
+    /// room a `String` or a hash table has, `isize::MAX` bytes: of an
+    /// endless one, a `repeat`, `repeat_n`'s or `repeat_with`'s, an `n..`;
+    /// a range of a type wider than 31 bits, `0..usize::MAX / 2 + 1`; a
+    /// `cycle()` of what may have items, whose bound is then `usize::MAX`;
+    /// through std's adapters that keep their source's lower bound or a
+    /// part of it, a chain of either side, a zip of both. Not of what gives
+    /// no more than what exists already, a collection's, an `Option`'s, a
+    /// string's `chars()`, nor of a char's or a narrow type's range, nor of
+    /// an adapter whose lower bound is none, a `filter`, a `flat_map` (#1358).
+    pub(in crate::lower) fn lower_bound_may_pass_room(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        let mut sources = args.types();
+        let wide = |item: Ty<'tcx>| {
+            !matches!(
+                item.kind(),
+                ty::Int(ty::IntTy::I8 | ty::IntTy::I16) | ty::Uint(ty::UintTy::U8 | ty::UintTy::U16)
+            ) && item.is_integral()
+        };
+        match std_path(self.tcx, adt.did()) {
+            "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::RepeatWith" | "std::ops::RangeFrom" => true,
+            "std::ops::Range" | "std::ops::RangeInclusive" => sources.next().is_some_and(wide),
+            "std::iter::Cycle" => sources
+                .next()
+                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),
+            "std::iter::Map"
+            | "std::iter::Enumerate"
+            | "std::iter::Inspect"
+            | "std::iter::Fuse"
+            | "std::iter::Peekable"
+            | "std::iter::Copied"
+            | "std::iter::Cloned"
+            | "std::iter::Rev"
+            | "std::iter::Skip"
+            | "std::iter::Take"
+            | "std::iter::StepBy" => sources
+                .next()
+                .is_some_and(|source| self.lower_bound_may_pass_room(source)),
+            "std::iter::Chain" => sources.take(2).any(|source| self.lower_bound_may_pass_room(source)),
+            "std::iter::Zip" => sources.take(2).all(|source| self.lower_bound_may_pass_room(source)),
+            _ => false,
+        }
+    }
+
     /// Whether an iterator of type `ty` has no end its type knows: a
     /// `RangeFrom` or a `repeat()`, through std's adapters that keep each
     /// item, or a chain or a zip of such. Of a `TrustedLen` one, `collect()`
