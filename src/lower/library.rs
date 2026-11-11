@@ -1064,6 +1064,17 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .flat_map(|library| library.items.values())
     }
 
+    /// The modules `@rust-js/std`'s items are imported from, the library
+    /// built into the compiler (ADR 0561), whose exports a module reserves
+    /// no name for where nothing imports them (#1156).
+    pub(super) fn builtin_modules(&self) -> IndexSet<&'a str> {
+        (self.dependencies.libraries.values())
+            .filter(|library| library.builtin)
+            .flat_map(|library| library.items.values())
+            .map(|item| item.from.as_str())
+            .collect()
+    }
+
     /// Every import of an item a library's module re-exports (rd704), its
     /// file and what that exports it as, which `import_key` gives a module
     /// naming it through that module.

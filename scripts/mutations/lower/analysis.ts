@@ -517,4 +517,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
   },
+  {
+    name: "std-exports-reserved-everywhere",
+    breaks: "every module reserves a name for each of `@rust-js/std`'s exports, imported or not, so std's `take` of `io::take` costs a crate's own `take` its name, `take$1` (#1156)",
+    file: "src/lower/analysis.rs",
+    find: "    let of_a_library = |(from, _): &Export| !builtin.contains(from.as_str());\n",
+    replace: "    let of_a_library = |_: &Export| !builtin.is_empty() || true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refused_drops_and_displays|consumer_drops_what_is_left).rs$"],
+    snapshots: true,
+  },
 ];

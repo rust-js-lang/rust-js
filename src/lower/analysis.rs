@@ -917,8 +917,16 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     let failed = failed | failed_uses | refuse_two_names(tcx, &modules, &foreign);
     let import_names = name_imports(tcx, &uses, &taken, &foreign);
+    // Each import's name is the module's, which its own names keep apart
+    // from; not `@rust-js/std`'s every export, which a module imports only
+    // where its lowering reads it, by a name the linker keeps apart then:
+    // std's `take` of `io::take` cost a crate's own `take` its name, `take$1`
+    // (#1156).
+    let builtin = foreign.builtin_modules();
+    let of_a_library = |(from, _): &Export| !builtin.contains(from.as_str());
     for (module, names) in taken.iter_mut() {
-        names.extend(import_names[module].values().cloned());
+        let imports = import_names[module].iter().filter(|(export, _)| of_a_library(export));
+        names.extend(imports.map(|(_, name)| name.clone()));
     }
     let imported = uses.imported;
     let required = uses.required;

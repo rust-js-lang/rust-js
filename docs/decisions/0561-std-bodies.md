@@ -544,3 +544,18 @@ array of items, `$iter` of it, is now one whose hint is known. Held by
 `test/corpus/zip_len_of_chunks.rs`, the function and zips of `chunks`,
 `windows`, `chunks_exact` and a stepped `rchunks`, against native Rust in
 both builds. Mutation `chunks-hint-unknown` (`lower/iterators/knowing.ts`).
+
+## Amendment: a module reserves no name for std's exports it doesn't import (2026-11-11, #1156)
+
+Every module reserved a name for each of `@rust-js/std`'s exports before
+lowering, as it does for a library's, whose imports are named then (ADR
+0100). std exports what its compiled bodies are, `lines` and, with #1156,
+`io::take`'s `take` and `io::chain`'s `chain`, which no crate names, so
+a function a crate's scope struct holds (ADR 1043), `W::take`, became
+`take$1` where nothing imported std's. Only a library's exports are
+reserved now (`Foreign::builtin_modules`); one of std's a module does
+import, which its lowering reads as a symbol, is named apart by the
+linker where a name of the module's has it, `Chain as Chain$1`. The
+corpus's JS is the same; held by the mutation
+`std-exports-reserved-everywhere` of `refused_drops_and_displays.rs` and
+`consumer_drops_what_is_left.rs`, which #1156's `take` changed without it.
