@@ -68,7 +68,6 @@ traits/dyn-drop-principal.rs	error: rust-js does not support calling `std::alloc
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
 traits/principal-less-objects.rs	error: rust-js does not support `size_of_val` of a value without one size yet
-try-trait/try-operator-various-contexts.rs	error: rust-js does not support calling `std::fs::File::open` yet
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*const T`, which aren't numbers alone
 union/union-drop-assign.rs	error: rust-js does not support a `&mut` to a union's field yet
