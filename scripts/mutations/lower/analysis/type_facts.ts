@@ -325,8 +325,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller giving an impl's dictionary for a type of its slots that isn't one of its type parameters, `impl<T: Iterator> Itertools for T` of `<I as IntoIterator>::IntoIter`, asks none of what the impl asks, and is refused, as itertools' `free::sorted` and semver's were (#794)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                true => self.calls.push((caller, impl_id, impl_args)),\n",
-    replace: "                true => {}\n",
+    find: "                true if (0..impl_args.len()).any(of_slots) => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "                true if (0..impl_args.len()).any(of_slots) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {
@@ -485,5 +485,13 @@ export const mutations: Mutation[] = [
     find: "            crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()\n",
     replace: "            false && crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
+  },
+  {
+    name: "library-impl-associated-slot-unrelayed",
+    breaks: "a library impl's fact of a std associated type of its parameter, `<T as Iterator>::Item` of `impl<T: Iterator> Tools for T`, isn't asked of a generic caller giving `<I as Iterator>::Item`, so its dictionary is refused, \"`size_of` of an associated type whose facts its caller's dictionary doesn't carry\" (#1401)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            let relayed = |at: usize| of_slots(at) || at >= impl_args.len();\n",
+    replace: "            let relayed = |at: usize| of_slots(at);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_given_an_associated_types_size$"],
   },
 ];

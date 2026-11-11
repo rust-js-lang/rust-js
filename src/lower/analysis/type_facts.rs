@@ -974,14 +974,18 @@ impl<'tcx> Asking<'tcx> {
                     .and_then(|arg| arg.as_type())
                     .is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())
             };
-            if !(0..impl_args.len()).any(of_slots) {
-                continue;
-            }
+            // And of a library's, its slots past its type parameters, a std
+            // associated type of one, `<T as Iterator>::Item` of
+            // `impl<T: Iterator> Itertools for T`, given `<I as
+            // Iterator>::Item` of the caller's `I`: its caller's, as a call's
+            // is (#1401).
+            let relayed = |at: usize| of_slots(at) || at >= impl_args.len();
             match impl_id.is_local() {
-                true => self.calls.push((caller, impl_id, impl_args)),
+                true if (0..impl_args.len()).any(of_slots) => self.calls.push((caller, impl_id, impl_args)),
+                true => {}
                 false => {
                     for (at, fact) in foreign.type_facts(impl_id) {
-                        if !of_slots(at as usize) {
+                        if !relayed(at as usize) {
                             continue;
                         }
                         let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
