@@ -415,3 +415,19 @@ Held by compat.test.ts's getrandom 0.1 backend, written as getrandom 0.1
 writes it and run in Node, its crypto by `module.require`, and with a
 browser's `self.crypto`, 300 bytes in chunks through a view; and by
 crater.test.ts's feature switch.
+
+## Amendment: a lock put back under a patch already written (2026-11-12, #1420)
+
+A build moved a locked crates.io wasm-bindgen family onto rust-js's only
+where it had just written the patch. The Crater puts a crate's own packed
+lock back for each of its builds, and the patch an earlier build wrote
+stays. itertools' lock has criterion's wasm-bindgen 0.2.92, which getrandom
+0.1 takes once the Crater turns its `wasm-bindgen` feature on, and Cargo
+took that locked release, not the patch's: "patch `wasm-bindgen v0.2.130`
+was not used in the crate graph". crates.io's wasm-bindgen was refused, and
+getrandom, rand_core, rand, rand_chacha and quickcheck with it, so
+itertools' 284 quickcheck tests failed to type-check. **Whenever the graph
+has crates.io's copy of a crate the patch names, the build moves it onto
+rust-js's first, `cargo update -p`, whether or not the patch changed.**
+Held by `test/compat.test.ts`'s lock put back under a settled patch, whose
+graph takes wasm-bindgen 0.2.92 anew by a feature.

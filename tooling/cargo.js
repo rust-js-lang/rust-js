@@ -88,11 +88,14 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false, fea
   const compat = compatCrates();
   let metadata = await read();
   const settled = settleCompat(dirname(manifest), metadata.workspace_root, metadata.packages.map((pkg) => pkg.name), compatDependents(metadata, compat));
-  if (settled.changed) {
-    // A lock of crates.io's of another release, a crate's own packed one,
-    // holds against the patch: each moved onto rust-js's, as Cargo's
-    // warning says to (#1121).
-    const locked = settled.patched.filter((name) => metadata.packages.some((pkg) => pkg.name === name && pkg.source !== null));
+  // A lock of crates.io's of another release, a crate's own packed one,
+  // holds against the patch: each moved onto rust-js's, as Cargo's
+  // warning says to (#1121). Whether or not the patch changed: one an
+  // earlier build wrote still holds against a lock put back since, as the
+  // Crater puts a crate's own back for each build, itertools' of
+  // wasm-bindgen 0.2.92, and Cargo would build crates.io's (#1420).
+  const locked = settled.patched.filter((name) => metadata.packages.some((pkg) => pkg.name === name && pkg.source !== null));
+  if (settled.changed || locked.length > 0) {
     if (locked.length > 0) {
       const update = [...(toolchain ? [`+${toolchain}`] : []), "update", ...locked.flatMap((name) => ["-p", name]), "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
       await execute("cargo", update, { cwd: dirname(manifest) }).catch((error) => {

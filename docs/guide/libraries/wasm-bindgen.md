@@ -12,7 +12,9 @@ You write nothing for it. Where Cargo's graph has one of them, `rust-js
 build` names rust-js's in the patch it writes in `.cargo/config.toml`,
 under the line `# rust-js's own, which the app's dependencies use in place
 of crates.io's:`, and drops them when none is left, so Cargo never warns
-of an unused patch.
+of an unused patch. Where your `Cargo.lock` holds crates.io's release of
+one, a lock checked out or packed with a crate, the build moves it onto
+rust-js's first, as Cargo's warning says to, `cargo update -p wasm-bindgen`.
 
 Their API grows from what crates use, crate by crate:
 `tooling/compat/covered.txt` lists the crates they serve: getrandom 0.3,

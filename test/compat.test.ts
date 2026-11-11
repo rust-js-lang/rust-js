@@ -104,6 +104,49 @@ test("a dependency's wasm-bindgen is rust-js's own, named while the graph has on
   expect(readFileSync(join(at, "Cargo.lock"), "utf8")).not.toContain("wasm-bindgen");
 }, 600_000);
 
+// A lock of crates.io's of another release that the graph takes anew, put
+// back under a patch an earlier build wrote, as the Crater puts a crate's
+// own packed lock back for each of its builds: itertools' has criterion's
+// wasm-bindgen 0.2.92, which getrandom 0.1 takes once the Crater turns its
+// `wasm-bindgen` feature on, and Cargo takes the locked release, not the
+// patch's. Moved onto rust-js's, though the patch didn't change (#1420).
+test("a lock of crates.io's wasm-bindgen put back under a patch already written moves onto rust-js's", () => {
+  const dir = fixture("compat-relocked");
+  const optional = '[dependencies.wasm-bindgen]\nversion = "0.2.92"\noptional = true\n\n[features]\njs = ["dep:wasm-bindgen"]\n';
+  const crate = gitCrate(dir, "", "#[cfg(feature = \"js\")]\nuse wasm_bindgen as _;\n\npub fn answer() -> u32 {\n    42\n}\n");
+  writeFileSync(join(crate, "Cargo.toml"), readFileSync(join(crate, "Cargo.toml"), "utf8").replace("[dependencies]\n", optional));
+  expect(git(crate, "commit", "-q", "-am", "js").code).toBe(0);
+  const at = app(dir, crate);
+  rmSync(join(at, ".cargo"), { recursive: true, force: true });
+  const manifest = readFileSync(join(at, "Cargo.toml"), "utf8");
+  // Its lock as the crate packed it: wasm-bindgen 0.2.92 of another
+  // dependency's, which the app's own stands in for, and getrandom's
+  // feature off.
+  writeFileSync(join(at, "Cargo.toml"), manifest.replace("\n\n[workspace]", '\nwasm-bindgen = "=0.2.92"\n\n[workspace]'));
+  rmSync(join(at, "Cargo.lock"), { force: true });
+  expect(runSync(["cargo", "generate-lockfile", "-q", "--manifest-path", join(at, "Cargo.toml")], at, 120_000).code).toBe(0);
+  const lock = readFileSync(join(at, "Cargo.lock"), "utf8");
+  expect(lock).toMatch(/name = "wasm-bindgen"\nversion = "0\.2\.92"\nsource = "registry\+/);
+  // The feature on, as the Crater turns it on, and the patch as builds
+  // leave it, settled: a build that finds it so changes nothing of it.
+  writeFileSync(join(at, "Cargo.toml"), manifest.replace(/^getrandom = \{ (.*) \}$/m, 'getrandom = { $1, features = ["js"] }'));
+  rmSync(join(at, "Cargo.lock"), { force: true });
+  for (let i = 0; i < 2; i++) expect(build(at).code).toBe(0);
+  const settled = config(at);
+  expect(settled).toContain("wasm-bindgen = { path =");
+  writeFileSync(join(at, "Cargo.lock"), lock);
+  const again = build(at);
+  expect(again.stderr).toBe("");
+  expect(again.code).toBe(0);
+  expect(config(at)).toBe(settled);
+  // Each of rust-js's, and none of crates.io's left beside it.
+  const relocked = readFileSync(join(at, "Cargo.lock"), "utf8");
+  for (const name of ["wasm-bindgen", "wasm-bindgen-macro"]) {
+    expect(relocked).toMatch(new RegExp(`name = "${name}"\\nversion = "[^"]*"\\n(?!source)`));
+    expect(relocked).not.toMatch(new RegExp(`name = "${name}"\\nversion = "[^"]*"\\nsource`));
+  }
+}, 600_000);
+
 // A dependency that asks for crates.io's at a version rust-js's isn't, an
 // exact `=`, gets crates.io's, which rust-js can't compile: refused, naming
 // the dependency, what it asks and rust-js's version.
