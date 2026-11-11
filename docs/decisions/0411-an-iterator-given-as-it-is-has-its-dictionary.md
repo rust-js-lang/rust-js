@@ -238,3 +238,31 @@ iterators; and by the mutations `default-in-a-dictionary-asks-its-impl`,
 `default-self-not-its-traits`, `given-unit-value-read`,
 `held-unit-value-read` and `size-hint-unit-value-read`. itertools'
 laziness tests now pass as JS, 67 of 67.
+
+## Amendment: what an impl's associated type holds, and an `IntoIter` another bound names (#1412)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change.
+itertools' `impl<I: Iterator> IteratorIndex<I> for RangeInclusive<usize>`
+gives `type Output = Take<Skip<I>>`, and `get<I: IntoIterator, R:
+IteratorIndex<I::IntoIter>>` gives back `R::Output`. Its caller
+normalizes that to `Take<Skip<Range<i32>>>` and steps it as std's struct
+of its own value, from its back too, `$rangeNextBack`; but the impl had
+been given `I` as a JS iterator, and `get` had made one of what it was
+given, `$intoIter(iter)`, so the struct held no range and `next_back()`
+was `NaN`. A function whose result holds `I` was already given it as it
+is (`holds_value_of` of its signature); an impl only where its own type
+held it. Now an impl's associated type's value that holds it counts as
+the impl's type does: the impl is given `I` as it is, with its
+dictionary. And an `I::IntoIter` another bound of the function names, as
+a trait argument, `R: IteratorIndex<I::IntoIter>`, is held as it is
+([0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)), as a
+type parameter another bound names is (#966): `get` is given `I`'s
+`IntoIterator` dictionary, `IIntoIterator.intoIter(iter)`, and hands the
+range on as it is.
+
+Tests: corpus case `index_gives_an_adapter_of_its_iterator`, in one
+crate and as a library, against native Rust; no other case's JS, and no
+`@rust-js/std` body, changed. Mutations
+`impl-associated-type-holding-param-unseen` and
+`into-iter-named-by-another-bound-unheld`, caught. itertools'
+test_core.rs: 36 of 36 tests as native.

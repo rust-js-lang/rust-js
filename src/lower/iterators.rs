@@ -192,9 +192,20 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
             kind: ty::Projection { def_id }, args, ..
         }) if def_id == into_iter && args.type_at(0) == into)
     };
-    let read = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+    let clauses: Vec<_> = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-        .any(|p| is_its_iter(p.self_ty().skip_binder()) && reads_its_value(tcx, p.def_id()));
+        .map(|p| p.skip_binder())
+        .collect();
+    let read = (clauses.iter()).any(|p| is_its_iter(p.self_ty()) && reads_its_value(tcx, p.def_id()));
+    // Or another bound names it, `R: IteratorIndex<I::IntoIter>` of
+    // itertools' `get`: what that one's impl makes of it, `Take<Skip<I>>`,
+    // holds the value as it is, which a caller steps as the type it names
+    // (#1412), as one another bound names is a caller's own value (#966).
+    let named = (clauses.iter()).any(|p| {
+        !is_its_iter(p.self_ty())
+            && (p.trait_ref.args.iter().skip(1))
+                .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
+    });
     let holds = |ty: Ty<'tcx>| {
         ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
             // A type of `id`'s own crate, which a library's consumer asks
@@ -235,7 +246,7 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
         .inputs_and_output
         .iter()
         .any(|ty| holds(ty) || hidden(ty));
-    read || held
+    read || named || held
 }
 
 /// Whether a bound of `id` names `param` the `IntoIter` of an
@@ -329,11 +340,20 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
     // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
     // projection isn't given back. What an `impl Trait` hides is (#1230).
     let has = |ty: Ty<'tcx>| holds_value_of(tcx, id, ty, param, &mut Vec::new());
+    // An impl's type, `Doubled<I>`, or an associated type's value it gives,
+    // `type Output = Take<Skip<I>>` of itertools' `IteratorIndex`, which
+    // its callers step as the type it names, std's struct holding their own
+    // value, as a function's result is (#1412).
     let held = match tcx.def_kind(id) {
         rustc_hir::def::DefKind::Impl { .. } => Some(id),
         _ => tcx.impl_of_assoc(id),
     }
-    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));
+    .is_some_and(|imp| {
+        has(tcx.type_of(imp).instantiate_identity().skip_normalization())
+            || (tcx.associated_items(imp).in_definition_order())
+                .filter(|item| item.is_type())
+                .any(|item| has(tcx.type_of(item.def_id).instantiate_identity().skip_normalization()))
+    });
     // A trait's own method takes `Self` as its dictionary gives it, but one
     // compiled into `@rust-js/std` as a function over `Self`, `peekable`'s
     // (ADR 0185, 0561), as a function's signature says.

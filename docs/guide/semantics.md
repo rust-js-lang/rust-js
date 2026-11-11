@@ -736,7 +736,16 @@ What's refused is in [the limitations](limitations.md).
   by `===` of numbers, strings and `bool`s, and by the items' own
   `PartialEq` of the rest ([0336](../decisions/0336-slice-prefixes-by-eq.md)).
 - **An `impl Iterator` is the iterator it stands for**
-  ([0061](../decisions/0061-generic-iterators.md)).
+  ([0061](../decisions/0061-generic-iterators.md)). A generic iterator,
+  `I: Iterator`, is given as a JS iterator; one whose value comes back
+  inside what a caller steps as its own type, a function's result
+  `Take<Skip<I>>`, an impl's type or an impl's associated type, itertools'
+  `type Output = Take<Skip<I>>`, is given as it is, with its `Iterator`
+  dictionary, `iterator_skip(iter, n, IIterator)`, and so is an
+  `I::IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>`
+  ([0411](../decisions/0411-an-iterator-given-as-it-is-has-its-dictionary.md),
+  [0552](../decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md),
+  #1412).
 - **A `Peekable`, a `Fuse`, and a held `Rev`, `Enumerate`, `Map`,
   `Inspect`, `Flatten`, `FlatMap`, `Skip`, `Take`, `StepBy` or `Chain` are std's own structs,** compiled from std's bodies into `@rust-js/std`: a
   `Rev` its `next_back()` asks of, `let mut r = v.iter().rev();

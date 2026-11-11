@@ -72,9 +72,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an adapter's `I`, which its type holds, is a JS iterator, so `Doubled { inner: 0..4 }`'s range is stepped as one",
     file: "src/lower/iterators.rs",
-    find: "    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));\n",
-    replace:
-      "    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()) && false);\n",
+    find: "        has(tcx.type_of(imp).instantiate_identity().skip_normalization())\n            || (tcx.associated_items(imp)",
+    replace: "        (has(tcx.type_of(imp).instantiate_identity().skip_normalization()) && false)\n            || (tcx.associated_items(imp)",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
@@ -207,7 +206,7 @@ export const mutations: Mutation[] = [
     breaks:
       "no `IntoIterator`'s `IntoIter` is held as it is, so a range is given as a JS iterator and stepped as a range",
     file: "src/lower/iterators.rs",
-    find: "    read || held\n",
+    find: "    read || named || held\n",
     replace: "    false\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
@@ -225,8 +224,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `IntoIterator` whose `IntoIter` a function holds in a struct of the crate's, `Pair<I::IntoIter>`, is given a JS iterator, which a compiled `Fuse` then holds where its callers read the struct",
     file: "src/lower/iterators.rs",
-    find: "    read || held\n",
-    replace: "    read\n",
+    find: "    read || named || held\n",
+    replace: "    read || named\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
@@ -399,5 +398,23 @@ export const mutations: Mutation[] = [
     find: "    [js::Known::InPlace, js::Known::BindingIterator]\n",
     replace: "    [js::Known::InPlace]\n",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
+  {
+    name: "impl-associated-type-holding-param-unseen",
+    breaks:
+      "an impl whose associated type's value holds its type parameter, `type Output = Take<Skip<I>>` of itertools' `IteratorIndex`, is given it as a JS iterator, which its caller steps as std's struct of its own value: `next_back()` is `NaN` (#1412)",
+    file: "src/lower/iterators.rs",
+    find: "                .any(|item| has(tcx.type_of(item.def_id).instantiate_identity().skip_normalization()))\n",
+    replace: "                .any(|item| has(tcx.type_of(item.def_id).instantiate_identity().skip_normalization()) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_gives_an_adapter_of_its_iterator.rs$"],
+  },
+  {
+    name: "into-iter-named-by-another-bound-unheld",
+    breaks:
+      "an `IntoIterator`'s `IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>` of itertools' `get`, is made a JS iterator, though that bound's impl holds it as it is: `next_back()` is `NaN` (#1412)",
+    file: "src/lower/iterators.rs",
+    find: "    read || named || held\n",
+    replace: "    read || held\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_gives_an_adapter_of_its_iterator.rs$"],
   },
 ];
