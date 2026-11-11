@@ -167,3 +167,27 @@ names a type is still that type where it's written.
   `library-plain-alias-expanded` (`declarations/aliases.ts`), and
   `type-reexports-ungrouped` and `type-reexports-of-values`
   (`declarations/imports.ts`).
+
+## Amendment: std's items in no JS module, re-exported, export nothing (rd802, #1315)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the second case's, which
+the user decided (2026-11-11). A public re-export of std's function,
+constant or module that no JS module of rust-js's has was refused, whether
+by name, "it's in no JS module of rust-js's to be re-exported from", or by
+a glob. Zerocopy's `pub mod core_reexport { pub use core::*; pub mod mem {
+pub use core::mem::*; } }` was one: "a `pub use` of every name of a
+module, of `forget`".
+
+**It exports nothing, as a type's, a trait's or a macro's re-export
+doesn't** (`reexports.rs std_without_js`). The named form and the glob
+share that one rule. A Rust consumer naming it through the re-export,
+`dep::core_reexport::mem::swap`, calls std's own, as rust-js knows a std
+function wherever it's named, as a value too. A JS caller of the library's
+module doesn't find it there: no JS module of rust-js's has it. An item
+`@rust-js/std`'s manifest exports is re-exported from it, as before.
+
+Pinned by corpus case `std_module_reexported_by_a_glob` and crate pair
+`std_items_reexported_by_a_library`, against native Rust. Mutations
+`std-reexport-without-js-refused` and `std-glob-reexport-refused`
+(`lower/reexports.ts`). Listed in ADR 0262's consequences and the guide's
+differences (`semantics.md`, 50).

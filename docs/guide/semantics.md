@@ -1983,3 +1983,12 @@ React and JSX are [their own pages](README.md#react).
     identity. Give Rust the object it made, `toRaw(state)`, where it
     compares or asks addresses ([ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
     amended, the user's decision, #1198).
+
+50. A library's `pub use` of std's items, a glob's, `pub use
+    core::mem::*;`, or one by name, `pub use core::mem::forget;`,
+    exports nothing from its module's JS, as a type's or a trait's
+    doesn't: no JS module of rust-js's has `forget`. A Rust consumer
+    naming it through the re-export calls std's own; a JS caller of the
+    module doesn't find it there (ADR 0262, the user's decision,
+    2026-11-11, rd802, #1315; [ADR 0240](../decisions/0240-reexports.md),
+    amended).

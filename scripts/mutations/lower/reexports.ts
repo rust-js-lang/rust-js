@@ -155,16 +155,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
-    name: "unexpressed-reexport-unrefused",
-    breaks:
-      "a `pub use` of std's function re-exports nothing, silently (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
-    find: "            refuse(\n                statement,\n                &what,\n",
-    replace:
-      "            let _ = (\n                statement,\n                &what,\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub use of std's function"],
-  },
-  {
     name: "reexports-alone-of-anything",
     breaks:
       "a crate's root with an item of its own is taken as re-exporting alone, so it writes no JS where its package's entry re-exports its `pub use`s, its item lost (ADR 1008, amended)",
@@ -496,5 +486,23 @@ export const mutations: Mutation[] = [
     find: "            DefKind::Struct if super::classes::is_class(tcx, id) => {\n",
     replace: "            DefKind::Struct if false && super::classes::is_class(tcx, id) => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub use of every name of a module, of a class"],
+  },
+  {
+    name: "std-reexport-without-js-refused",
+    breaks:
+      "a public re-export of std's items in no JS module, by name or by a glob, `pub use core::mem::*;`, is refused, \"it's in no JS module of rust-js's to be re-exported from\", where it should export nothing (rd802, #1315)",
+    file: "src/lower/reexports.rs",
+    find: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none()\n",
+    replace: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_module_reexported_by_a_glob\\.rs$"],
+  },
+  {
+    name: "std-glob-reexport-refused",
+    breaks:
+      "a glob `pub use core::mem::*;` of std's items in no JS module is refused, \"a `pub use` of every name of a module, of `forget`\", though a named one exports nothing (rd802, #1315)",
+    file: "src/lower/reexports.rs",
+    find: "        let unsaid = unsaid || std_without_js(tcx, foreign, id);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: std_items_reexported_by_a_library"],
   },
 ];

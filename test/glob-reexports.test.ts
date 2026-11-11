@@ -316,7 +316,9 @@ pub mod client {
 // where the program passed before. std's items have no JS module, a call
 // of one is std's wherever it's named, and no JS outside the crate sees
 // those names, so the glob says nothing of them; of what it gives JS, the
-// crate's own, it says each. A public glob of std's is refused still.
+// crate's own, it says each. A public glob of std's says nothing of them
+// either, as no JS module of rust-js's has them (rd802, the user's
+// decision, #1315).
 test("a glob of std's names the crate alone sees says nothing of them", async () => {
   const dir = fixture("glob-of-std-within-the-crate");
   writeFileSync(join(dir, "main.rs"), `use std::mem::*;
@@ -337,5 +339,5 @@ pub fn main() {
   expect([lib.main(), lib.bytes()]).toEqual([undefined, 2]);
   writeFileSync(join(dir, "public.rs"), "pub mod all {\n    pub use std::mem::*;\n}\n");
   const p = runSync([compiler, join(dir, "public.rs"), "-o", join(dir, "public.js"), "--", "--crate-type=lib"], root, 60_000);
-  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("a `pub use` of every name of a module, of `forget`")]);
+  expect([p.code, p.stderr.includes("does not support")]).toEqual([0, false]);
 });

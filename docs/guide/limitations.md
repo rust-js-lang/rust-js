@@ -128,7 +128,6 @@ depends on what the program does:
 ## Modules
 
 - A `pub use m::*;` of a module that holds a module or a class with JS, whose namespace or constructor it would re-export: `pub use` each of its names that has JS by its name ([ADR 0874](../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md), amended).
-- A `pub use` of std's function or constant, in no JS module of rust-js's to be re-exported from: `pub use std::cmp::max; println!("{}", max(1, 2));`
 - A `pub use` of another rust-js crate's module, whose namespace no file of this crate's is: `pub use` each of its items by its name.
 - Another module's write of a module's variable, a thread-local of a value or a `static mut`, whole, of a field or an item, or a pointer taken to it, which JS lets only its own module set: write a `pub fn` in its module that sets it ([ADR 0096](../decisions/0096-statics.md), amended): `mod counter { pub static mut LINES: usize = 0; } unsafe { counter::LINES = 3; }`
 - An exported `static mut` its module gives a pointer to on, `add(&raw mut TOTAL)`, which a JS module importing it would read as its box: read and write it by its name, or through a pointer only where it's taken ([ADR 0096](../decisions/0096-statics.md), amended): `mod total { pub static mut TOTAL: u32 = 0; fn add(t: *mut u32) { unsafe { *t += 1 } } pub fn bump() { add(&raw mut TOTAL) } } total::bump();`

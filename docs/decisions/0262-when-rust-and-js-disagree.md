@@ -370,6 +370,17 @@ react.dev's TopNav passes the same closure instead.
   the addresses tells them apart; calling them does the same. Pinned by
   `test/lowering-fn-identity.test.ts`. Listed in the guide's differences
   (`semantics.md`, 48).
+- **A library's public re-export of std's item in no JS module exports
+  nothing**, the second case's, which the user decided (2026-11-11, rd802,
+  #1315, ADR 0240, amended). Zerocopy's `pub use core::mem::*;`, or a
+  named `pub use core::mem::forget;`, is in its module's JS as a type's
+  or a trait's re-export is: not at all. A Rust consumer naming the item
+  through the re-export calls std's own, as rust-js knows a std function
+  wherever it's named. A JS caller of the library's module doesn't find
+  `forget` there; it has none to call, as no JS module of rust-js's has
+  it. Pinned by corpus case `std_module_reexported_by_a_glob` and crate
+  pair `std_items_reexported_by_a_library`. Listed in the guide's
+  differences (`semantics.md`, 50).
 
 ## Amendment: the stack's depth
 

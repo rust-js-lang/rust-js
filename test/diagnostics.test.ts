@@ -43,7 +43,6 @@ for (const [name, source, message, crate] of [
   ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
   // A `pub use` of what has JS but no module of rust-js's to be re-exported
   // from, and of a module's every name, refused, not left out (ADR 0240, amended).
-  ["a pub use of std's function", "pub use std::cmp::max;\npub fn f() -> u32 { 1 }", "does not support a `pub use` of `std::cmp::max` yet"],
   // Each of a glob's names is re-exported (rd153); a module among them,
   // whose namespace it would be, refused.
   ["a pub use of every name of a module, of a class", "mod m {\n    #[rust_js::class]\n    pub struct C {\n        pub n: u32,\n    }\n    #[rust_js::class]\n    impl C {\n        pub fn new(n: u32) -> C { C { n } }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::C::new(1).n }", "does not support a `pub use` of every name of a module, of its class `C` yet: `pub use` each of its names that has JS by its name"],
