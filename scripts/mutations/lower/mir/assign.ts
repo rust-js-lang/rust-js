@@ -310,7 +310,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "                state.refs.insert(place.local, list);\n                return Ok(());\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
+    tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-kept-ref-var-unheld",

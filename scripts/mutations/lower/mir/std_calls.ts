@@ -337,16 +337,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
-    name: "mir-split-off-held",
-    breaks:
-      "MIR's `r.split_off_mut(..n)`, `r` a `&mut` to `rest`, gives `r` what's left",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        if matches!(place.kind, js::ExprKind::Var(_)) && this.borrows_variable(def_id, span, 0) =>\n",
-    replace:
-      "                        if matches!(place.kind, js::ExprKind::Var(_)) =>\n",
-    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
-  },
-  {
     name: "mir-uninit-drop-skipped",
     breaks: "MIR's `assume_init_drop()` of a slice drops nothing",
     file: "src/lower/mir/std_calls.rs",

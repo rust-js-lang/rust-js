@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let this = self;
         let StdCall {
             known,
-            def_id,
+            def_id: _,
             generic_args,
             arg_tys,
             output,
@@ -803,16 +803,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `s.split_off(..n)` and the like: the slice's place given what's
             // left (ADR 0338).
             Std::Slice(SliceOp::SplitOff { end, mutable }) => lower(move |this, state, values, out| Ok(Value::Expr({
-                // Of a `&mut [T]`, which a `&mut` to isn't a cell: the
-                // variable `rest.split_off_mut(..)` borrows, not one holding a
-                // `&mut` to it, which JS would assign instead.
+                // The place of the slice, which a `&mut` to is a cell of
+                // (#1282): `rest` of `rest.split_off_mut(..)`, or of `r =
+                // &mut rest`, the place `r` holds.
                 let place = match values.next().expect("the slice") {
                     Value::Ref(place) if fixed_place(&place) => place,
-                    Value::Expr(place)
-                        if matches!(place.kind, js::ExprKind::Var(_)) && this.borrows_variable(def_id, span, 0) =>
-                    {
-                        place
-                    }
                     _ => return Err(this.unsupported(span, "splitting this slice")),
                 };
                 let bounds = match end {

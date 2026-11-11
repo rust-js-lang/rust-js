@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.mut_ref_form(pointee).is_cell() => {\n",
     replace: "                        (_, Value::Ref(e)) if false => {\n",
-    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
+    tests: ["test/corpus.test.ts", "-t", "^ref_mut_of_mut_payload.rs$"],
   },
   {
     name: "mir-borrow-root-unheld",
