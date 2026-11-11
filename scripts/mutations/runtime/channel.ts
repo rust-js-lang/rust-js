@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
   },
+  {
+    name: "channel-iter-waits-ends",
+    breaks: "a channel's `iter()` of an empty queue a sender is still there of ends, where Rust's waits forever, not refused (#1176)",
+    file: "src/runtime/channel.js",
+    find: "    else throw $wouldWaitForever();\n",
+    replace: "    else return;\n",
+    tests: ["test/lowering.test.ts", "-t", "a channel.s iteration that would wait forever is refused"],
+  },
+  {
+    name: "channel-iter-past-senders",
+    breaks: "a channel's `iter()` whose senders are gone is refused, not ended (#1176)",
+    file: "src/runtime/channel.js",
+    find: "    else if (channel.senders === 0) return;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
 ];

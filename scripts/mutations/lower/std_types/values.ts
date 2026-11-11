@@ -746,7 +746,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local's `with_borrow` whose closure gives an `Option` of an `Option`, React's SimpleEventPlugin's `names.get(dom).cloned()`, is refused, though it's the closure's own, boxed as it makes it (rd111)",
     file: "src/lower/std_types/values.rs",
-    find: "            // A thread-local's closure's, as it gives it (rd111).\n            | Std::LocalWith\n            | Std::LocalBorrow { .. }\n",
+    find: "            // A thread-local's closure's, as it gives it (rd111).\n            | Std::LocalWith { .. }\n            | Std::LocalBorrow { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^local_borrow_nested_option.rs$"],
   },

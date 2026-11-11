@@ -16221,11 +16221,32 @@ export function $send(channel, item) {
 }
 
 // Rust's `recv` waits for another thread to send; on one, none can, so an
-// empty channel whose senders are all there would wait forever.
+// empty channel a sender is still there of would wait forever: refused as
+// the program runs, which no `catch_unwind` takes for a panic, as Rust's
+// never returns (#1176).
 export function $recv(channel) {
   if (channel.queue.length > 0) return { TAG: "Ok", _0: channel.queue.shift() };
   if (channel.senders === 0) return { TAG: "Err", _0: undefined };
-  throw new Error("`recv` of an empty channel would wait forever: no other thread can send");
+  throw $wouldWaitForever();
+}
+
+export function $wouldWaitForever() {
+  return $unsupported("rust-js does not support a `recv` of an empty channel a sender is still there of, which on one thread waits forever (#1176)");
+}
+
+// `rx.iter()`: each item `recv` gives, ended once every sender is gone
+// and the queue empty, as Rust's is; refused where it would wait (#1176).
+export function* $recvItems(channel) {
+  for (;;) {
+    if (channel.queue.length > 0) yield channel.queue.shift();
+    else if (channel.senders === 0) return;
+    else throw $wouldWaitForever();
+  }
+}
+
+// `rx.try_iter()`: each item queued, as long as one is.
+export function* $tryRecvItems(channel) {
+  while (channel.queue.length > 0) yield channel.queue.shift();
 }
 
 export function $tryRecv(channel) {
@@ -19513,12 +19534,23 @@ export function $cleanup(run, e) {
     if ($endsTheProgram(e)) return;
     if ($isStackOverflow(e)) throw $overflowed(e);
   }
+  $cleanupDepth++;
   try {
     run();
   } catch (second) {
     if (second instanceof $InternalError || second instanceof $Unsupported) throw second;
     throw $abort(second);
+  } finally {
+    $cleanupDepth--;
   }
+}
+
+// How deep this thread is in cleanups a panic runs as it unwinds, and
+// `thread::panicking()`, whether it's in one: a drop a panic runs asks it
+// (#1285).
+export let $cleanupDepth = 0;
+export function $panicking() {
+  return $cleanupDepth > 0;
 }
 
 // What rust-js doesn't support as the program runs, where Rust's runs on:

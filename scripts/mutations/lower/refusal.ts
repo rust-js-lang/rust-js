@@ -51,10 +51,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "open-call-issue-unnamed",
-    breaks: "a refused call an open issue covers doesn't name it, `calling \`std::hint::spin_loop\` yet`, so whoever meets it can't find what's left to do (guide limitations.md)",
+    breaks: "a refused call an open issue covers doesn't name it, `calling \`std::thread::spawn\` yet`, so whoever meets it can't find what's left to do (guide limitations.md)",
     file: "src/lower/refusal.rs",
     find: '    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())\n',
     replace: '    format!("calling `{}`", tcx.def_path_str(id))\n',
-    tests: ["test/diagnostics.test.ts", "-t", "a spin loop's hint"],
+    tests: ["test/diagnostics.test.ts", "-t", "a thread's spawn"],
+  },
+  {
+    name: "thread-refusal-unnamed",
+    breaks: "a thread's start is refused without naming ADR 1126, which says why (ADR 1126)",
+    file: "src/lower/refusal.rs",
+    find: "        OpenCall::Thread => \" (ADR 1126)\",\n",
+    replace: "        OpenCall::Thread => \"\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a thread.s spawn"],
   },
 ];

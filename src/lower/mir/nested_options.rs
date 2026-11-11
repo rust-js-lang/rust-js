@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let Some((def_id, generic_args)) = func.const_fn_def()
                 && matches!(
                     self.recognition().classify(def_id, generic_args),
-                    Some(Std::LocalWith | Std::LocalBorrow { .. })
+                    Some(Std::LocalWith { .. } | Std::LocalBorrow { .. })
                 )
                 && let [_, f] = &args[..]
                 && let ty::Closure(closure, _) = *f.node.ty(body, self.tcx).kind()

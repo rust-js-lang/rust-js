@@ -844,7 +844,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(slot, next).at(js_span));
                 previous
             }
-            Std::LocalWith => {
+            Std::LocalWith { tried } => {
                 let (mut key, f) = (arg(), arg());
                 // What a `bool`'s lends, which JS's name of it doesn't show,
                 // as a `bool` constant's read (ADR 0031, amended):
@@ -852,7 +852,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if generic_args.type_at(0).is_bool() {
                     key.facts = key.facts.with(js::Known::Boolean);
                 }
-                crate::lower::calls::apply(f, vec![self.nullable_lent(key, &call)])
+                let given = crate::lower::calls::apply(f, vec![self.nullable_lent(key, &call)]);
+                match tried {
+                    true => crate::js::result::ok(given),
+                    false => given,
+                }
             }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];

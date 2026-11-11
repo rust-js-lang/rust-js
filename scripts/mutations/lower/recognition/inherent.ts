@@ -417,4 +417,28 @@ export const mutations: Mutation[] = [
     replace: "                if (owner.is_box() || rc)",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
+  {
+    name: "try-with-not-tried",
+    breaks: "a thread-local's `try_with` gives its closure's value, not `Ok` of it, and its `unwrap()` reads a field of a number (#1285)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "tried: name.as_str() == \"try_with\"",
+    replace: "tried: false",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
+  {
+    name: "channel-iter-unknown",
+    breaks: "a channel's `iter()` is refused (#1176)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        (ChannelEnd::Receiver, \"iter\") => ChannelOp::Iter,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
+  {
+    name: "channel-try-iter-unknown",
+    breaks: "a channel's `try_iter()` is refused (#1176)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        (ChannelEnd::Receiver, \"try_iter\") => ChannelOp::TryIter,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
 ];

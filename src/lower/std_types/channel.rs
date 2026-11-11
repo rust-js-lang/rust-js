@@ -23,6 +23,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ChannelOp::Send => ("$send", 2),
             ChannelOp::Recv => ("$recv", 1),
             ChannelOp::TryRecv => ("$tryRecv", 1),
+            ChannelOp::Iter => ("$recvItems", 1),
+            ChannelOp::TryIter => ("$tryRecvItems", 1),
         };
         Ok(Some(Expr::call(Expr::helper(helper), values.take(count).collect())))
     }

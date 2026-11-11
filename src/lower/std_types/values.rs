@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The fallback's, or the function's, as each is given.
             | Std::Comb(Comb::MapOr | Comb::MapOrElse)
             // A thread-local's closure's, as it gives it (rd111).
-            | Std::LocalWith
+            | Std::LocalWith { .. }
             | Std::LocalBorrow { .. }
             | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)
             | Std::Last
@@ -605,6 +605,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Rc` is the JS reference itself: the garbage collector does
             // its counting, so a clone is the same object.
             Std::Same | Std::Format => arg(),
+            // Whether this thread unwinds: the runtime's cleanup's depth (#1285).
+            Std::Panicking => Expr::call_helper("$panicking", Vec::new()),
             // `x.to_owned()` of a `T: Clone`: `x.clone()`'s copy.
             Std::ToOwnedClone => {
                 let value = arg();
@@ -729,7 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::AtomicFetch(_)
             | Std::AtomicFetchMax(_)
             | Std::AtomicCompareExchange
-            | Std::LocalWith
+            | Std::LocalWith { .. }
             | Std::LocalBorrow { .. }
             | Std::CellGetMut
             | Std::CellPointer

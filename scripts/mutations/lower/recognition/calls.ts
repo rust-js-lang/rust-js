@@ -226,8 +226,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
     file: "src/lower/recognition/calls.rs",
-    find: '        if path == "std::thread::yield_now" {\n',
-    replace: "        if false {\n",
+    find: '        if path == "std::thread::yield_now" || path == "std::hint::spin_loop" {\n',
+    replace: '        if path == "std::hint::spin_loop" {\n',
     tests: ["test/corpus.test.ts", "-t", "^thread_yield.rs$"],
   },
   {
@@ -662,5 +662,21 @@ export const mutations: Mutation[] = [
     find: "        \"get\" if unsafe_cell => Std::CellPointer,\n",
     replace: "        \"get\" if unsafe_cell => Std::CellGet,\n",
     tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
+  {
+    name: "spin-loop-unknown",
+    breaks: "`hint::spin_loop()`, of the one thread there is, is refused, not nothing (#1285)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if path == \"std::thread::yield_now\" || path == \"std::hint::spin_loop\" {\n",
+    replace: "        if path == \"std::thread::yield_now\" {\n",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
+  {
+    name: "panicking-unknown",
+    breaks: "`thread::panicking()` is refused (#1285)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if path == \"std::thread::panicking\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
   },
 ];

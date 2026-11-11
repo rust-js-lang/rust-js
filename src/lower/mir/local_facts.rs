@@ -759,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A nullable one lent, `KEY.with(f)` or `KEY.with_borrow_mut(f)`
             // (#541).
-            if let Some(Std::LocalWith | Std::LocalBorrow { mutable: true }) =
+            if let Some(Std::LocalWith { .. } | Std::LocalBorrow { mutable: true }) =
                 self.recognition().classify(def_id, generic_args)
                 && let Some(key) = local_key(&first.node)
                 && let Some(form) = nulled(crate::lower::representation::NonePlace::LocalCell(key))
@@ -795,7 +795,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `with_borrow` of one of this module's, given what it
                 // holds where it's called (`cell_call`, ADR 0866, amended),
                 // and a `with`, its cell.
-                Some(Std::LocalBorrow { .. } | Std::LocalWith)
+                Some(Std::LocalBorrow { .. } | Std::LocalWith { .. })
                     if let Some(key) = local_key(&first.node)
                         && let Some(key) = key.as_local()
                         && self.krate.quiet_locals.contains(&key)

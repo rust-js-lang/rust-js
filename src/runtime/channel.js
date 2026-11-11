@@ -13,11 +13,32 @@ function $send(channel, item) {
 }
 
 // Rust's `recv` waits for another thread to send; on one, none can, so an
-// empty channel whose senders are all there would wait forever.
+// empty channel a sender is still there of would wait forever: refused as
+// the program runs, which no `catch_unwind` takes for a panic, as Rust's
+// never returns (#1176).
 function $recv(channel) {
   if (channel.queue.length > 0) return { TAG: "Ok", _0: channel.queue.shift() };
   if (channel.senders === 0) return { TAG: "Err", _0: undefined };
-  throw new Error("`recv` of an empty channel would wait forever: no other thread can send");
+  throw $wouldWaitForever();
+}
+
+function $wouldWaitForever() {
+  return $unsupported("rust-js does not support a `recv` of an empty channel a sender is still there of, which on one thread waits forever (#1176)");
+}
+
+// `rx.iter()`: each item `recv` gives, ended once every sender is gone
+// and the queue empty, as Rust's is; refused where it would wait (#1176).
+function* $recvItems(channel) {
+  for (;;) {
+    if (channel.queue.length > 0) yield channel.queue.shift();
+    else if (channel.senders === 0) return;
+    else throw $wouldWaitForever();
+  }
+}
+
+// `rx.try_iter()`: each item queued, as long as one is.
+function* $tryRecvItems(channel) {
+  while (channel.queue.length > 0) yield channel.queue.shift();
 }
 
 function $tryRecv(channel) {

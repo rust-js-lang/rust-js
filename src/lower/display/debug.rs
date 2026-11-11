@@ -378,6 +378,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty) {
             return self.debug_string_with(Expr::member(value, js::positional(0)), borrowed, span, pretty);
         }
+        // A thread-local's `AccessError`, which no `try_with` here gives, as
+        // the key's destructor never runs (#1285): as std shows it.
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.tcx.def_path_str(adt.did()) == "std::thread::AccessError"
+        {
+            return Ok(Expr::str("AccessError"));
+        }
         // A parse error is its message (ADR 0063), which says its kind.
         if self.is_parse_error(ty) {
             let ty::Adt(adt, _) = ty.kind() else {

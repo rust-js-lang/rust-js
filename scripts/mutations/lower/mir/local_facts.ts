@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `with` of a module's variable isn't quiet, so a nullable one's cell is lent whole, kept a `$nullableCell`, not its module's variable (#541)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                Some(Std::LocalBorrow { .. } | Std::LocalWith)\n",
+    find: "                Some(Std::LocalBorrow { .. } | Std::LocalWith { .. })\n",
     replace: "                Some(Std::LocalBorrow { .. })\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,

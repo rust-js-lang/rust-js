@@ -834,3 +834,21 @@ try { console.log(read(addr)); } catch (error) { console.log(String(error.messag
   const ran = Bun.spawnSync(["node", "--input-type=module", "-e", script], { cwd: dir });
   expect(ran.stdout.toString()).toContain("an address asked before the module that makes it was loaded");
 });
+
+// A channel's `iter()`, and its `recv()`, of an empty queue a sender is
+// still there of would wait forever on the one thread there is: refused as
+// the program runs, which no `catch_unwind` takes for a panic (#1176).
+test("a channel's iteration that would wait forever is refused", () => {
+  const dir = fixture("channel-waits-forever");
+  writeFileSync(join(dir, "lib.rs"), `pub fn main() {
+    let (tx, rx) = std::sync::mpsc::channel::<u8>();
+    tx.send(1).unwrap();
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rx.iter().count()));
+    println!("{:?} {}", caught.is_ok(), tx.send(2).is_ok());
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  expect(ran.stdout.toString()).toBe("");
+  expect(ran.stderr.toString()).toContain("rust-js does not support a `recv` of an empty channel a sender is still there of, which on one thread waits forever (#1176)");
+});

@@ -88,7 +88,7 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
 pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
     let issue = open_call(tcx, id).map(|open| match open {
         OpenCall::Conversion => " (#1284)",
-        OpenCall::ThreadBlock => " (#1285)",
+        OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
     });
     format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())

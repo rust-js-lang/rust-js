@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^stack_overflow_aborts.rs$"],
   },
+  {
+    name: "panicking-never",
+    breaks: "`thread::panicking()` is `false` in a drop a panic runs (#1285)",
+    file: "src/runtime/unwind.js",
+    find: "  $cleanupDepth++;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
+  },
 ];

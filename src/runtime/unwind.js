@@ -124,12 +124,23 @@ function $cleanup(run, e) {
     if ($endsTheProgram(e)) return;
     if ($isStackOverflow(e)) throw $overflowed(e);
   }
+  $cleanupDepth++;
   try {
     run();
   } catch (second) {
     if (second instanceof $InternalError || second instanceof $Unsupported) throw second;
     throw $abort(second);
+  } finally {
+    $cleanupDepth--;
   }
+}
+
+// How deep this thread is in cleanups a panic runs as it unwinds, and
+// `thread::panicking()`, whether it's in one: a drop a panic runs asks it
+// (#1285).
+let $cleanupDepth = 0;
+function $panicking() {
+  return $cleanupDepth > 0;
 }
 
 // What rust-js doesn't support as the program runs, where Rust's runs on:

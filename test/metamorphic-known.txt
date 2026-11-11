@@ -17,3 +17,7 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
+
+#difference 11 a panic's message downcasts as a `&str` and a `String` both: a formatted `panic!`'s payload, a `String` natively, is a `&str` too, which a loud drop's `thread::panicking()`, answered since #1285, now reaches
+plain std loud-drop extend_by_a_dyn_iterator_asks_its_hint.rs
+plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs

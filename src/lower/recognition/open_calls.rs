@@ -1,11 +1,11 @@
 //! Std's calls rust-js refuses that an open issue covers, so a refusal of
-//! one names it, `(#1285)`, as a refusal names what's left to do (guide
+//! one names it, `(#1284)`, as a refusal names what's left to do (guide
 //! limitations.md; `refusal::words`). Known here, as only recognition
 //! spells std's names; the issues are the refusal's.
 
 use super::{StdItem, is_std_def};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 
 /// A refused call of std's that an open issue covers.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -13,9 +13,9 @@ pub(crate) enum OpenCall {
     /// `Into::into`, `TryInto::try_into` or `From::from` in a form not
     /// lowered yet, across crates, of a blanket impl or by its path (#1284).
     Conversion,
-    /// What a thread's building blocks call: a thread-local's `try_with`,
-    /// `thread::panicking` and `hint::spin_loop` (#1285).
-    ThreadBlock,
+    /// Another thread's start, `thread::spawn`, a `Builder`'s or a scope's:
+    /// a program has one thread, its realm's (ADR 1126).
+    Thread,
     /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
     /// answer: a reader's of the crate's own (#1297, ADR 0425).
     OwnReader,
@@ -39,10 +39,10 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
     {
         return Some(OpenCall::OwnReader);
     }
-    let try_with = tcx.inherent_impl_of_assoc(id).is_some_and(|imp| {
-        let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
-        matches!(owner.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
-    }) && tcx.item_name(id).as_str() == "try_with";
     let path = tcx.def_path_str(id);
-    (try_with || path == "std::thread::panicking" || path == "std::hint::spin_loop").then_some(OpenCall::ThreadBlock)
+    let spawns = matches!(
+        tcx.item_name(id).as_str(),
+        "spawn" | "spawn_scoped" | "scope" | "spawn_unchecked"
+    );
+    (spawns && path.starts_with("std::thread::")).then_some(OpenCall::Thread)
 }

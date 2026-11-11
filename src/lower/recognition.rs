@@ -101,6 +101,10 @@ pub(super) enum ChannelOp {
     Send,
     Recv,
     TryRecv,
+    /// `rx.iter()`: each item `recv` gives, until every sender's gone (#1176).
+    Iter,
+    /// `rx.try_iter()`: each item queued now.
+    TryIter,
 }
 
 /// A channel's end: the sending one or the receiving one (ADR 0142).
@@ -285,6 +289,9 @@ pub(super) enum Std {
     /// is (ADR 0142): its arguments, for what they do, and `undefined`
     /// (ADR 0315).
     Nothing,
+    /// `thread::panicking()`: whether this thread unwinds, the runtime's
+    /// `$panicking()`, its cleanup's depth (#1285).
+    Panicking,
     /// `vec![a, b]`.
     VecMacro,
     Push,
@@ -561,7 +568,11 @@ pub(super) enum Std {
     /// A thread-local's `with(f)`: `f(key)`; and `with_borrow(f)`,
     /// `with_borrow_mut(f)` of a `RefCell` one: `f` of its value, while it's
     /// borrowed (ADR 0328).
-    LocalWith,
+    /// `tried`: `try_with`'s, its result `Ok`, as the key's destructor, a
+    /// `static`'s on wasm32, never runs (#1285).
+    LocalWith {
+        tried: bool,
+    },
     LocalBorrow {
         mutable: bool,
     },

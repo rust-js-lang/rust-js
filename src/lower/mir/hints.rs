@@ -962,7 +962,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 compared(lhs, rhs)
             }
             // A thread-local's value, given to a closure that compares it.
-            _ => matches!(called(e), Some(Std::LocalWith | Std::LocalBorrow { mutable: false })),
+            _ => matches!(
+                called(e),
+                Some(Std::LocalWith { .. } | Std::LocalBorrow { mutable: false })
+            ),
         };
         read.then_some(1)
     }

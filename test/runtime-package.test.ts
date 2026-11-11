@@ -42,7 +42,8 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
 // which carries its hint (#1179), `$chars` and `$charIndices`, a string's
 // `chars()` and `char_indices()` lazy (#1186), `$repeatingWith`, a
 // generator that carries std's hint (#1357), `$onceWith`, which carries
-// std's hint too (#1375), and each of the runtime's
+// std's hint too (#1375), `$recvItems` and `$tryRecvItems`, a channel's
+// (#1176), and each of the runtime's
 // generators (ADR 0472), and a hash set's `union`, std's lazy chain of it
 // (#1219): the compiler's list, held to the runtime.
 test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $hashSetUnion, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith, $onceWith and the runtime's generators", () => {

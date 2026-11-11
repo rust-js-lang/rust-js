@@ -208,7 +208,7 @@ keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 
 ## Async, threads and time
 
-There's one thread ([the semantics](semantics.md#async-threads-and-time)).
+There's one thread ([the semantics](semantics.md#async-threads-and-time), [ADR 1126](../decisions/1126-a-program-has-one-thread.md)).
 
 - Spawning a thread: `let h = std::thread::spawn(|| 1); println!("{}", h.join().unwrap());`
 - Sleeping: `std::thread::sleep(std::time::Duration::from_millis(1));`

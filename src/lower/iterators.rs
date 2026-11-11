@@ -686,9 +686,10 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
 /// (`$decodeUtf16`, #1151), a string's `chars()` the crate steps from
 /// its back or asks its rest, and every `char_indices()`, `$chars` and
-/// `$charIndices` (#1186), and each of its generators,
+/// `$charIndices` (#1186), a channel's `iter()` and `try_iter()`,
+/// `$recvItems` and `$tryRecvItems` (#1176), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 44] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 46] = [
     "$stdIterator",
     "$chars",
     "$charIndices",
@@ -733,6 +734,8 @@ pub(crate) const ITERATOR_HELPERS: [&str; 44] = [
     "$splice",
     "$splicing",
     "$decodeUtf16",
+    "$recvItems",
+    "$tryRecvItems",
 ];
 
 /// What a binding's call made, `made`, of type `output`: of a `dyn

@@ -1664,10 +1664,15 @@ block or an `async` closure is an async arrow
   ends, where Rust's awaited future is dropped.
 - **`js::spawn` starts a future no one awaits;** `js::settle(p).await`
   makes a rejected promise an `Err` ([0102](../decisions/0102-js-and-webapi.md)).
-- **There's one thread.** `std::thread::spawn` is refused; a channel is a
-  queue its ends share, and `recv()` of an empty one whose senders are
-  alive panics, where Rust's would wait forever
-  ([0142](../decisions/0142-channels.md)).
+- **There's one thread** ([1126](../decisions/1126-a-program-has-one-thread.md)).
+  `Arc`, `Mutex`, `RwLock`, atomics and `OnceLock` work as they do on one
+  thread. A thread-local's `try_with` is `Ok`, `thread::panicking()` is
+  whether this thread unwinds, and `hint::spin_loop()` does nothing.
+  Starting a thread, `std::thread::spawn` or a scope's, is refused. A
+  channel is a queue its ends share ([0142](../decisions/0142-channels.md)):
+  its `iter()` ends once every sender is gone, and its `recv()` or
+  `iter()` of an empty one whose sender is still there is refused as the
+  program runs, where Rust's would wait forever.
 - **The time is JS's clocks'.** A `SystemTime` and an `Instant` are their
   nanoseconds, a BigInt; `SystemTime::now()` is `Date.now()`'s, to the
   millisecond, and `Instant::now()` is `performance`'s, which only goes
@@ -1897,7 +1902,8 @@ React and JSX are [their own pages](README.md#react).
 7. A JS getter that calls back into Rust and borrows a held cell isn't
    seen.
 8. A future starts when it's made, and runs though no one awaits it.
-9. There's one thread: a channel's `recv()` that would wait forever panics.
+9. There's one thread: a channel's `recv()` that would wait forever is refused
+   as the program runs.
 10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
     JS throws; a panic's message downcasts as a `&str` and a `String`, and

@@ -137,8 +137,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Forget));
         }
         // The one thread there is yields to none (ADR 0142).
-        if path == "std::thread::yield_now" {
+        // And a spin loop's hint, which no other thread waits on (#1285).
+        if path == "std::thread::yield_now" || path == "std::hint::spin_loop" {
             return Some(Some(Std::Nothing));
+        }
+        // Whether this thread unwinds, a drop in a panic's cleanup asks
+        // (#1285).
+        if path == "std::thread::panicking" {
+            return Some(Some(Std::Panicking));
         }
         // `hint::assert_unchecked(c)`, a promise that `c` holds, which a
         // program that's right keeps: nothing, its `c` made as it's given

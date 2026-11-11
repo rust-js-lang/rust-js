@@ -88,10 +88,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let slice_iter = adt(StdItem::SliceIter)
             || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::vec::IntoIter");
         let own = match name.as_str() {
-            "send" if self.channel_end(owner) == Some(ChannelEnd::Sender) => Some(Std::Channel(ChannelOp::Send)),
-            "recv" if self.channel_end(owner) == Some(ChannelEnd::Receiver) => Some(Std::Channel(ChannelOp::Recv)),
-            "try_recv" if self.channel_end(owner) == Some(ChannelEnd::Receiver) => {
-                Some(Std::Channel(ChannelOp::TryRecv))
+            name if let Some(op) = self.channel_end(owner).and_then(|end| channel_op(end, name)) => {
+                Some(Std::Channel(op))
             }
             name if peekable && let Some(step) = peekable_step(name) => Some(Std::Step(step)),
             "as_str" if chars || self.is_char_indices(owner) => Some(Std::Step(StepOp::AsStr)),
@@ -545,7 +543,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "unwrap_or" if option => Std::UnwrapOr,
             "map" if option => Std::OptionMap,
             // A thread-local (ADR 0037) is its `Cell` or `RefCell`: `{ value }`.
-            "with" if local_key => Std::LocalWith,
+            "with" | "try_with" if local_key => Std::LocalWith {
+                tried: name.as_str() == "try_with",
+            },
             "get" if local_key => Std::CellGet,
             "set" if local_key => Std::CellSet,
             "take" if local_cell => Std::CellTake,
@@ -781,4 +781,17 @@ fn guard_map(name: &str, (shared, mutable): (bool, bool)) -> Option<Std> {
         _ => return None,
     };
     Some(Std::GuardMap { mutable, op })
+}
+
+/// A channel's end's method (ADR 0142): a sender's `send`, a receiver's
+/// `recv`, `try_recv`, `iter` and `try_iter` (#1176).
+fn channel_op(end: ChannelEnd, name: &str) -> Option<ChannelOp> {
+    Some(match (end, name) {
+        (ChannelEnd::Sender, "send") => ChannelOp::Send,
+        (ChannelEnd::Receiver, "recv") => ChannelOp::Recv,
+        (ChannelEnd::Receiver, "try_recv") => ChannelOp::TryRecv,
+        (ChannelEnd::Receiver, "iter") => ChannelOp::Iter,
+        (ChannelEnd::Receiver, "try_iter") => ChannelOp::TryIter,
+        _ => return None,
+    })
 }

@@ -50,7 +50,7 @@ pub fn spawn() {
 ```
 
 ```
-error: rust-js does not support calling `std::thread::spawn` yet
+error: rust-js does not support calling `std::thread::spawn` (ADR 1126) yet
  --> src/lib.rs:2:5
   |
 2 |     std::thread::spawn(|| {});
