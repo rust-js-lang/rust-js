@@ -312,3 +312,48 @@ whose hint asks its source's, as #1323 holds a flatten. A plain `map` of
 `cycle_of_a_chars_map_reserves_by_its_hint.rs` against native Rust in both
 builds and every metamorphic rewrite; mutation
 `chars-map-under-a-cycle-in-place`.
+
+## Amendment (2026-11-11): a collect of a type that can't say whether it ends asks its hint (#1359)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept; of a binding's iterator, none changed, so JS's form.
+
+`collect()` into a `Vec` of a `Box<dyn Iterator>` asked no room where the
+crate read no capacity: `Array.from(b)`. So one holding what has no end, a
+`RangeFrom` or a `repeat`, stepped until JS's array length gave out, where
+std's `SpecFromIterNested` takes one item, asks room for its hint's lower
+bound and one more, `usize::MAX`, and panics `capacity overflow`, dropping
+that item; and the crate's own iterator behind it never had its
+`size_hint` asked, which std asks after its first item, so one that prints
+printed nothing. The user's choice: a collect of a type that can't say
+whether it ends, a `dyn Iterator`, boxed or lent, or an opaque type that
+can't be revealed, asks its hint, `Array.from($roomForHint(b, size,
+false))`, the form a collect of what's endless by its type writes
+already. `hint_reaches_own_where` (`recognition/lengths.rs`) answers it as
+`grown_ask` asks it of a value, and `grows_by_callers_size` alike, so
+generic code collecting a `Box<dyn Iterator<Item = T>>` is given `TSize`;
+elsewhere, an `extend`'s and the crate-wide passes, a `dyn`'s is as
+before.
+
+Not of a binding's (the user's choice, a1): a `dyn Iterator` a binding's
+call makes, a `Set`'s `values()`, `js::keys_in`, a typed array's
+`entries()`, is JS's own iterator, whose hint is its contract's `(0,
+None)`, which asking runs nothing of. Its call marks it
+(`Known::BindingIterator`, `mir_binding_call`), and a collect of it, or of
+a `map`, `filter`, `take` or `drop` of it, asks none
+(`iterators::binding_made`): `Array.from(set)` stays. One held in a
+variable first, or given through a function, loses the mark and asks,
+which is std's still.
+
+Snapshots changed, each a Rust-made `dyn`'s collect now asking:
+`dyn_iterators.js` (four), `rev_of_dyn_double_ended.js` (two),
+`mut_ref_of_a_boxed_iterator_is_the_iterators.js` (two). Held by
+`collect_of_a_dyn_iterator_asks_its_hint.rs` (a boxed range, a boxed
+`repeat`, a boxed endless map whose items drop, each `capacity overflow`
+after one item; finite and empty ones; the crate's own iterator boxed,
+mapped and lent, its hint asked once at its first item; a lent endless
+range; through a generic `Box<dyn Iterator<Item = T>>`) against native
+Rust in both builds, js-collections' binding iteration, and the mutations
+`dyn-hint-unasked` and `binding-iterator-unmarked`. Left as it was: an
+`extend` by a Rust-made `dyn` whose `size_hint` runs the crate's own
+asks it not as std's extend does as it fills.

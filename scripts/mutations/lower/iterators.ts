@@ -384,4 +384,12 @@ export const mutations: Mutation[] = [
     replace: "            )) if false && def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_given_on_behind_impl_trait.rs$"],
   },
+  {
+    name: "binding-iterator-unmarked",
+    breaks: "a `dyn Iterator` a binding made, a `Set`'s `values()`, isn't marked JS's own, so its collect asks the hint its contract says is `(0, None)`, `Array.from($roomForHint(set.values(), 4, false))` where it was `Array.from(set)` (#1359)",
+    file: "src/lower/iterators.rs",
+    find: "    if e.facts.has(js::Known::BindingIterator) {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
 ];

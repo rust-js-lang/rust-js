@@ -9,6 +9,7 @@ import {
   $next,
   $nextBack,
   $rangeNext,
+  $roomForHint,
   $take,
 } from "@rust-js/std";
 
@@ -59,11 +60,11 @@ function main() {
   console.log(`${total(boxed)}`);
   console.log(`[${Array.from(boxed).join(", ")}]`);
   const dynamic = $lazyRange(1, 6);
-  const two = Array.from($lent(dynamic).take(2));
+  const two = Array.from($roomForHint($lent(dynamic).take(2), 4, false));
   const arg$1 = $next(dynamic);
   console.log(`[${two.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
   resetDyn(dynamic);
-  console.log(`[${Array.from(dynamic).join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(dynamic, 4, false)).join(", ")}]`);
   const again = $iter([1, 2, 3]);
   $next(again);
   reset(again);

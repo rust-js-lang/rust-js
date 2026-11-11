@@ -34,6 +34,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// it and of what a generic function is given for that, its items'
     /// `TSize` (#796).
     pub(in crate::lower) fn hint_reaches_own(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.hint_reaches_own_where(ty, false)
+    }
+
+    /// `hint_reaches_own`, where what a `dyn Iterator`, boxed or lent, or
+    /// an opaque type that can't be revealed, holds may be the crate's
+    /// own, `unseen_own`, or what has no end, which only its hint says once
+    /// it runs: as a collect asks it of a value, so `capacity overflow`
+    /// panics after one item where the hint's lower bound is `usize::MAX`
+    /// (`grown_ask`); not of one a binding made, JS's own iterator, whose
+    /// hint is its contract's (`iterators::binding_made`, the user's
+    /// decision, #1359).
+    pub(in crate::lower) fn hint_reaches_own_where(&self, ty: ty::Ty<'tcx>, unseen_own: bool) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if self.is_user_iterator(ty) {
             return self.writes_size_hint(ty);
@@ -41,8 +53,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_unknown(ty) {
             return true;
         }
-        adapted_iterators(self.tcx, self.typing_env, ty)
-            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))
+        let held = ty.boxed_ty().unwrap_or(ty);
+        if matches!(
+            held.kind(),
+            ty::Dynamic(..)
+                | ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Opaque { .. },
+                        ..
+                    }
+                )
+        ) {
+            return unseen_own;
+        }
+        adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
+            held.into_iter()
+                .any(|held| self.hint_reaches_own_where(held, unseen_own))
+        })
     }
 
     /// Whether an iterator of type `ty` gives no more items than an array's

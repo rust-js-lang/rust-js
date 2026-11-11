@@ -713,6 +713,40 @@ pub(crate) const ITERATOR_HELPERS: [&str; 43] = [
     "$decodeUtf16",
 ];
 
+/// What a binding's call made, `made`, of type `output`: of a `dyn
+/// Iterator`, boxed or lent, marked JS's own (`Known::BindingIterator`,
+/// #1359).
+pub(in crate::lower) fn made_by_a_binding(made: Expr, output: Ty<'_>) -> Expr {
+    let held = output.peel_refs();
+    match held.boxed_ty().unwrap_or(held).kind() {
+        ty::Dynamic(..) => Expr {
+            facts: made.facts.with(js::Known::BindingIterator),
+            ..made
+        },
+        _ => made,
+    }
+}
+
+/// Whether what `e` steps is a `dyn Iterator` a binding made, JS's own
+/// (`made_by_a_binding`): `e` itself, or a JS adapter of one source alone
+/// made of it, `.map(f)`, `.filter(f)`, `.take(n)`, `.drop(n)`, whose hint
+/// is of that source's. Not a `flatMap`'s, whose inner iterators may be
+/// what Rust made.
+pub(in crate::lower) fn binding_made(e: &Expr) -> bool {
+    if e.facts.has(js::Known::BindingIterator) {
+        return true;
+    }
+    match &e.kind {
+        js::ExprKind::Call(callee, _) => match &callee.kind {
+            js::ExprKind::Member(object, name) if matches!(name.as_str(), "map" | "filter" | "take" | "drop") => {
+                binding_made(object)
+            }
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 /// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),
 /// or as it's made, `Iterator.from(..)`, a
 /// `$iter`, an `ITERATOR_HELPERS`' own, a range's `$iterator` or a

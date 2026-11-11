@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "hint-reaches-own-not-through-adapters",
     breaks: "a collect into a `HashSet` of a `filter()` of the crate's iterator asks its hint not first, as hashbrown's `extend` does (#733)",
     file: "src/lower/recognition/lengths.rs",
-    find: "            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))\n",
-    replace: "            .is_some_and(|_| false)\n",
+    find: "            held.into_iter()\n                .any(|held| self.hint_reaches_own_where(held, unseen_own))\n",
+    replace: "            held.into_iter().any(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
   {
@@ -230,5 +230,13 @@ export const mutations: Mutation[] = [
     find: "            \"std::iter::Cycle\" => sources\n                .next()\n                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),\n",
     replace: "            \"std::iter::Cycle\" => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
+  },
+  {
+    name: "dyn-hint-unasked",
+    breaks: "a `collect()` into a `Vec` of a `dyn Iterator` asks no hint, so one holding what has no end steps it forever where std panics `capacity overflow` after one item, and the crate's own `size_hint` behind it never runs where std's asks it (#1359)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            return unseen_own;\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_of_a_dyn_iterator_asks_its_hint.rs$"],
   },
 ];

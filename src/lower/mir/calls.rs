@@ -434,13 +434,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.frame.thir[fun].span),
         };
         let js_span = self.js_span(span);
-        Ok(Value::Expr(self.binding_values(
-            (def_id, generic_args),
-            exprs,
-            (js_span, named),
-            span,
-            out,
-        )?))
+        let made = self.binding_values((def_id, generic_args), exprs, (js_span, named), span, out)?;
+        // Of a `dyn Iterator`, JS's own, marked so (#1359).
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_normalization();
+        let output = self.tcx.instantiate_bound_regions_with_erased(output).output();
+        Ok(Value::Expr(crate::lower::iterators::made_by_a_binding(made, output)))
     }
 
     /// What `js::object::spread` spreads into the object it makes, `value`

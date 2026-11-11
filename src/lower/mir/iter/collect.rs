@@ -161,9 +161,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is, so it's collected as one made in place still.
             _ if by_hint
                 && item.is_some()
-                && (self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, &it), span)?).is_none() =>
+                && (self.grown_ask(
+                    output,
+                    item,
+                    (iter_ty, crate::lower::iterators::binding_made(&it)),
+                    self.compiled_struct(iter_ty, &it),
+                    span,
+                )?)
+                .is_none() =>
             {
-                match self.grown_ask(output, item, iter_ty, true, span)? {
+                match self.grown_ask(
+                    output,
+                    item,
+                    (iter_ty, crate::lower::iterators::binding_made(&it)),
+                    true,
+                    span,
+                )? {
                     Some(grown) => {
                         let marks = crate::lower::iterators::held_marks(it.facts);
                         let mut asked = self.grown_by_hint(it, grown, iter_ty, None, span)?;
@@ -620,7 +633,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What it asks of its hint as std grows a `Vec` of it (`grown_ask`).
         let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-        let grown = self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, given), span)?;
+        let grown = self.grown_ask(
+            output,
+            item,
+            (iter_ty, crate::lower::iterators::binding_made(given)),
+            self.compiled_struct(iter_ty, given),
+            span,
+        )?;
         // Whether it's `TrustedLen` where that's its caller's, a type
         // parameter's that folds by its `nth_back` (#670): as it says,
         // `ITrustedLen`, so its first item is taken by `next` before its

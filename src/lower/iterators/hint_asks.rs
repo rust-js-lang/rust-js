@@ -114,7 +114,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether a collect into `output` of an iterator of `iter_ty` grows a
     /// `Vec` of `item`s whose size is its caller's, a type parameter's or
     /// one built of them, `(T, u8)`, where the hint it asks as that `Vec`
-    /// fills may run the crate's own (`hint_reaches_own`), or, of a crate
+    /// fills may run the crate's own (`hint_reaches_own`, of a `dyn`'s too,
+    /// #1359), or, of a crate
     /// that keeps capacities, `keeps_capacity`, where it isn't `TrustedLen`,
     /// as its capacity says (#1180): so the size its caller gives, `TSize`
     /// (#796). Of a collect into a `Result` or an `Option`, `shunted`, the
@@ -130,7 +131,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (shunted, keeps_capacity): (bool, bool),
     ) -> bool {
         let trusted = !shunted && is_trusted_len(self.tcx, self.typing_env, iter_ty);
-        self.grows_as_vec(output) && item.has_param() && (self.hint_reaches_own(iter_ty) || keeps_capacity && !trusted)
+        // Of a `dyn` or an opaque type, as `grown_ask` asks it of a value
+        // Rust made, which no analysis of a type tells from a binding's.
+        let reaches_own = self.hint_reaches_own_where(iter_ty, !shunted);
+        self.grows_as_vec(output) && item.has_param() && (reaches_own || keeps_capacity && !trusted)
     }
 
     /// The items of a `Vec`, a `VecDeque` or a `BinaryHeap` that a call of
@@ -259,15 +263,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// bound and one more, `usize::MAX`: a `capacity overflow` of items of
     /// any size, the item it made dropped (ADR 0940, amended); of items of
     /// no size, room for any number, so it goes on as JS does. Refused
-    /// where its type doesn't say which.
+    /// where its type doesn't say which. Of a `dyn` a binding made,
+    /// `binding_made`, JS's own iterator, nothing its hint asks runs
+    /// (#1359).
     pub(in crate::lower) fn grown_ask(
         &self,
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
-        iter_ty: Ty<'tcx>,
+        (iter_ty, binding_made): (Ty<'tcx>, bool),
         std_struct: bool,
         span: Span,
     ) -> R<Option<Grown<'tcx>>> {
+        let reaches_own = self.recognition().hint_reaches_own_where(iter_ty, !binding_made);
         let trusted = is_trusted_len(self.tcx, self.typing_env, iter_ty);
         let endless = trusted && self.recognition().endless_by_type(iter_ty);
         let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
@@ -292,7 +299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of an `ExactSizeIterator`, it's given knowing its length, whose
         // hint then is std's (#1200); not one whose hint runs the crate's
         // own, which it asks as it is.
-        let exact = kept && !self.hint_reaches_own(iter_ty) && self.recognition().grows_by_exact_len(iter_ty);
+        let exact = kept && !reaches_own && self.recognition().grows_by_exact_len(iter_ty);
         if kept && !exact {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }
@@ -300,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (#1216); not one whose lower bound is std's as it is.
         let parts = kept
             && !exact
-            && !self.hint_reaches_own(iter_ty)
+            && !reaches_own
             && !self.recognition().lower_bound_is_stds(iter_ty)
             && self.recognition().lower_bound_kept_by_parts(iter_ty);
         Ok(item
@@ -309,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (endless
                         || endless_once
                         || std_struct && !self.recognition().bounded_by_items(iter_ty)
-                        || self.hint_reaches_own(iter_ty)
+                        || reaches_own
                         || kept)
             })
             .map(|item| Grown {

@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat(1).chain(own).take(counted(n)).collect()`, whose hint runs the crate's own `size_hint`, is asked its room by its hint as it's counted and again as a `Vec` grows it (#1044)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                && item.is_some()\n                && (self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, &it), span)?).is_none() =>\n",
+    find: "                && item.is_some()\n                && (self.grown_ask(\n                    output,\n                    item,\n                    (iter_ty, crate::lower::iterators::binding_made(&it)),\n                    self.compiled_struct(iter_ty, &it),\n                    span,\n                )?)\n                .is_none() =>\n",
     replace: "                && item.is_some() =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
     snapshots: true,

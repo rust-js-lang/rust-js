@@ -297,4 +297,10 @@ pub enum Known {
     /// the handle's, the object's in place, `$assign(object, v)`, as `*r =
     /// v`'s is (ADR 0147), not the name given another (#1352).
     HandledObject,
+    /// A `dyn Iterator` a binding's call made, JS's own iterator, a `Set`'s
+    /// `values()` or `js::keys_in`'s: its hint is the binding's contract's,
+    /// `(0, None)`, which asking runs nothing of, so a collect of it asks
+    /// none, `Array.from(set.values())`, where one of a `dyn` Rust made
+    /// asks it (`iterators::binding_made`, the user's decision, #1359).
+    BindingIterator,
 }
