@@ -43,4 +43,28 @@ export const mutations: Mutation[] = [
     replace: "  const own = f;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
   },
+  {
+    name: "iterator-dyn-drop-inherited",
+    breaks: "`$disposeIterator` reads `Symbol.dispose` through the prototype, so a generator given as a `dyn Iterator` that carries no drop is closed by `Iterator.prototype`'s (#1420)",
+    file: "src/runtime/dropping.js",
+    find: "  if (!Object.hasOwn(it, $disposeKey)) return;\n",
+    replace: "  if (it[$disposeKey] === undefined) return;\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a dyn Iterator's drop is its own"],
+  },
+  {
+    name: "iterator-dyn-reboxed-in-place",
+    breaks: "a `dyn Iterator` that carries a drop boxed again carries the new one in its place, whose drop disposes itself, again and again (#1420)",
+    file: "src/runtime/dropping.js",
+    find: "  const own = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;\n",
+    replace: "  const own = it;\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a dyn Iterator's drop is its own"],
+  },
+  {
+    name: "iterator-dyn-unclosed-by-its-consumer",
+    breaks: "a `Box<dyn Iterator>` a consumer takes by value, `count()` or `collect()`, never drops what it owns, as the consumer closes it and nothing runs the drop it carries (#1420)",
+    file: "src/runtime/dropping.js",
+    find: "    once();\n    return step;\n",
+    replace: "    return step;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
 ];

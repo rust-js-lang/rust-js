@@ -39,6 +39,7 @@ pub(in crate::lower) fn exports<'tcx>(
         makes_dropping_anys,
         makes_dropping_errors,
         makes_dropping_fn_dyns,
+        makes_dropping_iterators,
         program,
         counted,
         changed,
@@ -200,6 +201,7 @@ pub(in crate::lower) fn exports<'tcx>(
         makes_dropping_anys: *makes_dropping_anys,
         makes_dropping_errors: *makes_dropping_errors,
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
+        makes_dropping_iterators: *makes_dropping_iterators,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
         dyns_drop_nothing: program
             .as_ref()

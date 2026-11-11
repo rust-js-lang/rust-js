@@ -468,4 +468,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "a serde_json error dropped where the crate's dyn Errors drop"],
   },
+  {
+    name: "iterator-dyn-drop-lost",
+    breaks: "a `Box<dyn Iterator>` of a value with a destructor is refused, \"a `dyn` of a value with a destructor\", though it carries its drop (#1420)",
+    file: "src/lower/drops/types.rs",
+    find: "                        && !(target.is_box() && self.recognition.is_dyn_iter(to))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
+  {
+    name: "iterator-dyn-drops-nothing",
+    breaks: "a `Box<dyn Iterator>` drops nothing where the crate boxes one of what drops, so a `Counter` holding a `D` never prints its drop (#1420)",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match self.closure_facts.iterator_dyns_drop {\n",
+    replace: "            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
 ];

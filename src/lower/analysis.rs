@@ -676,6 +676,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closure_facts.error_dyns_drop = true;
         counted = counted_with(&closure_facts).0;
     }
+    // And a `Box<dyn Iterator>`, which carries the drop of what it owns
+    // (ADR 0521, #1420), as one pass does for a `dyn Any`.
+    if closures::iterator_dyns_drop(
+        tcx,
+        all_bodies,
+        (params_may_drop, foreign.makes_dropping_iterators()),
+        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+    ) {
+        closure_facts.iterator_dyns_drop = true;
+        counted = counted_with(&closure_facts).0;
+    }
     // A library that counts no `Rc` of a type hands the crate one, which the
     // two share as it is, the value itself: the crate can't count it either
     // (ADRs 0844, 0852).

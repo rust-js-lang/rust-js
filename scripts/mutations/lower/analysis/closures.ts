@@ -339,4 +339,12 @@ export const mutations: Mutation[] = [
     replace: "                    None\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_made_by_question_drops.rs$"],
   },
+  {
+    name: "iterator-dyns-drop-unfound",
+    breaks: "a crate that boxes a value with a destructor as a `dyn Iterator` is taken to box none, so no `Box<dyn Iterator>` drops what it owns (#1420)",
+    file: "src/lower/analysis/closures.rs",
+    find: "                .any(|(_, from)| drops(from) || params_may_drop && from.has_non_region_param())\n        })\n}\n",
+    replace: "                .any(|(_, from)| false && (drops(from) || params_may_drop && from.has_non_region_param()))\n        })\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
 ];

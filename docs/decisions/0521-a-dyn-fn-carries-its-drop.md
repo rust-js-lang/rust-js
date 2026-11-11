@@ -307,3 +307,59 @@ is how the JS reads, not what it does: mutation
 `boxed-fn-dyn-boxed-again-drops-itself` survived main's check, and is
 held by `dyn_fn_of_a_borrowed_function.rs`'s snapshot now (`snapshots:
 true`). ADR 0262's case: none, no JS changes.
+
+## Amendment: a `Box<dyn Iterator>` carries its drop (2026-11-12, #1420)
+
+A `dyn Iterator` is the JS iterator itself (ADR 0022), so, like a `dyn Fn`,
+it had nothing to carry the drop of what it owns. Boxing a value with a
+destructor as one was refused: "a `dyn` of a value with a destructor".
+quickcheck 0.9's shrinkers are `Box<dyn Iterator<Item = A>>` of a type
+parameter's `A`, `Box::new(iter::once(value))` and `VecShrinker`'s, so
+nothing that uses quickcheck compiled. That included itertools' 284
+quickcheck tests.
+
+**An iterator boxed as a `dyn Iterator` carries its drop, `$droppingIterator(it,
+drop)`, and a `Box<dyn Iterator>` is dropped by `$disposeIterator(it)`.** This
+is the same form a `dyn Fn` has. The drop is the boxed value's own:
+- a std iterator's is its closing, `it.return()`, which drops what it has
+  left (ADR 0422);
+- the crate's own iterator's is its drop glue, of the fields it has as it is
+  stepped.
+
+- **The drop is the iterator's own property** under `$disposeKey`, read with
+  `Object.hasOwn`. Node's `Iterator.prototype` has a `Symbol.dispose` of its
+  own, which calls `return()`. Read through the prototype, it would close an
+  iterator Rust never drops, a generator given as one, or close one twice.
+- **It's dropped once**, wherever that is first: by its `Box`'s drop, or
+  by a consumer that took it by value, `count()`, `collect()` or a `for`
+  that breaks, closing it as it ends, `return()`, as std drops the `Box`
+  it was given. A drop that panics isn't run again.
+- **One that carries a drop already**, a `Box<dyn Iterator>` that generic
+  code boxes again, is another allocation holding it. A `$lent` of it carries
+  the new drop, which disposes the one it holds.
+- **A `Box<dyn Iterator>` drops only where one may own what drops**
+  (`ClosureFacts::iterator_dyns_drop`), found as a `dyn Any`'s is:
+  - from the crate's owning coercions, not a `&dyn Iterator`'s or a
+    `&mut dyn Iterator`'s, of what drops or, where a type parameter's value
+    may, of a type parameter's;
+  - or from a library that boxes one so, as its contract's
+    `makes_dropping_iterators` says.
+  A crate with neither writes what it did.
+- **An `Rc<dyn Iterator>` of what drops stays refused**: its drop runs where
+  its last owner drops, which this doesn't follow.
+
+Case C (ADR 0262): what's dropped, and when, as std's.
+Held by:
+- the corpus case `dyn_iterator_drops`, against native Rust in both builds:
+  unstepped, part stepped, replaced, popped, after a `for` that breaks,
+  counted, collected, a `Vec`'s `IntoIter`, generic code's own box of a type
+  parameter's iterator, one boxed again, `iter::once` of a type parameter's
+  value, and a drop that panics;
+- `test/runtime-package.test.ts`: a generator given as one is never closed
+  by its drop, and one that carries a drop is closed once;
+- the corpus case `dyn_iterator_drop_panics`: a drop that panics as the
+  `Box` drops;
+- the mutations `iterator-dyn-drop-lost`, `iterator-dyn-drops-nothing`,
+  `iterator-dyn-disposed-as-a-pair`, `iterator-dyn-carries-no-drop`,
+  `iterator-dyns-drop-unfound`, `iterator-dyn-drop-inherited`,
+  `iterator-dyn-reboxed-in-place` and `iterator-dyn-unclosed-by-its-consumer`.

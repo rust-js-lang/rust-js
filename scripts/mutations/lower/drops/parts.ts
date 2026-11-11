@@ -336,4 +336,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
   },
+  {
+    name: "iterator-dyn-disposed-as-a-pair",
+    breaks: "a `Box<dyn Iterator>` is dropped as a pair `dyn`'s, by its dictionary's `$drop`, which a JS iterator has none of, so what it owns never drops (#1420)",
+    file: "src/lower/drops/parts.rs",
+    find: "            ty::Dynamic(..) if self.recognition().is_dyn_iter(ty) => {\n",
+    replace: "            ty::Dynamic(..) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
 ];

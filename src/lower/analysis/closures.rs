@@ -87,6 +87,9 @@ pub struct ClosureFacts<'tcx> {
     /// destructor: one it makes of one, by an unsizing or a std conversion
     /// that boxes it, or one a library makes (ADR 0462, amended).
     pub error_dyns_drop: bool,
+    /// Whether a `Box<dyn Iterator>` the crate has may own a value with a
+    /// destructor: one it boxes so, or a library does (ADR 0521, #1420).
+    pub iterator_dyns_drop: bool,
     /// The closures made a `dyn Fn`, each carrying its drop.
     made_fn_dyns: IndexSet<DefId>,
     /// The closures made a `dyn Fn` only to hand it to JS, which Rust never
@@ -143,6 +146,7 @@ impl<'tcx> ClosureFacts<'tcx> {
             fn_dyns_drop: FnDynDrops::default(),
             any_dyns_drop: false,
             error_dyns_drop: false,
+            iterator_dyns_drop: false,
             made_fn_dyns,
             handed_fn_dyns,
             cloned,
@@ -490,6 +494,28 @@ pub(super) fn any_dyns_drop<'tcx>(
             .flat_map(|body| dyn_sources(tcx, &body.thir, of_any))
             .map(|(_, from)| from)
             .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
+}
+
+/// Whether any of `all_bodies` boxes a value a `dyn Iterator` that `drops`
+/// says has something to drop, or a type parameter's, where
+/// `params_may_drop`; or, where `foreign_drops`, a library does, as its
+/// contract says (ADR 0521, #1420). A `Box`'s alone: a `&dyn Iterator` owns
+/// nothing to drop, and an `Rc` of one of what drops is refused.
+pub(super) fn iterator_dyns_drop<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    (params_may_drop, foreign_drops): (bool, bool),
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    foreign_drops
+        || all_bodies.iter().any(|body| {
+            dyn_sources(tcx, &body.thir, |_| true)
+                .filter(|&(at, _)| {
+                    let to = body.thir[at].ty;
+                    to.is_box() && crate::lower::recognition::is_dyn_iter(tcx, to)
+                })
+                .any(|(_, from)| drops(from) || params_may_drop && from.has_non_region_param())
+        })
 }
 
 /// Whether `all_bodies` make a `dyn Error` of what `drops`, or of a type

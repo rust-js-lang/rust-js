@@ -546,11 +546,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
-                            let it = match self.knows_its_back(*to) {
-                                true => self.as_double_ended(value, iterator, span)?,
-                                false => self.as_js_iterator(value, iterator, span)?,
+                            // A `Box`'s of what drops carries its drop, which the
+                            // `Box`'s drop runs (ADR 0521, #1420); an `Rc`'s is
+                            // refused above.
+                            // Not one that's a `dyn Iterator` already, a `Box`'s made
+                            // another's, which carries its drop as it is.
+                            let carried = to.is_box()
+                                && !self.recognition().is_dyn_iter(iterator)
+                                && self.drops(iterator) != crate::lower::drops::Drops::Nothing;
+                            let value = match carried && !value.reads_same() {
+                                true => self.spill("it", value, out),
+                                false => value,
                             };
-                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));
+                            let it = match self.knows_its_back(*to) {
+                                true => self.as_double_ended(value.clone(), iterator, span)?,
+                                false => self.as_js_iterator(value.clone(), iterator, span)?,
+                            };
+                            let it = crate::lower::iterators::behind_a_dyn(it);
+                            if !carried {
+                                return Ok(Value::Expr(it));
+                            }
+                            let mut dropped = Vec::new();
+                            self.drop_value(value, iterator, span, &mut dropped)?;
+                            return Ok(Value::Expr(Expr::call_helper(
+                                "$droppingIterator",
+                                vec![it, Expr::arrow(Vec::new(), dropped)],
+                            )));
                         }
                         // A `&dyn Debug`, made where it's read: shown there,
                         // by a placeholder, a builder's step or a derived

@@ -1192,3 +1192,44 @@ console.log(rows.map(([inPlace, trusted]) => $vecCollectWay(inPlace === "true", 
   const printed = run([node ?? "node", "--input-type=module", "--eval", script]).trim();
   expect(printed).toBe(rows.map(([, , way]) => way).join(","));
 });
+
+// A `dyn Iterator` carries the drop of what it owns as its own property
+// (ADR 0521, #1420): JS's `Iterator.prototype` has a `Symbol.dispose` of
+// its own, which closes what inherits it, so an iterator that carries none,
+// a generator given as one, is never closed by its drop, and one that does
+// is dropped once, by what it carries. A drop that panics throws out of
+// its `Box`'s drop. One boxed again is another that steps it, whose drop
+// drops the one it holds.
+test("a dyn Iterator's drop is its own, run once, never Iterator.prototype's Symbol.dispose", async () => {
+  const { $droppingIterator, $disposeIterator } = await import(helpersModule);
+  let closed = 0;
+  function* counted() {
+    try {
+      yield 1;
+      yield 2;
+    } finally {
+      closed++;
+    }
+  }
+  const plain = counted();
+  plain.next();
+  expect(typeof plain[Symbol.dispose]).toBe("function");
+  $disposeIterator(plain);
+  expect(closed).toBe(0);
+  const given = counted();
+  given.next();
+  const carried = $droppingIterator(given, () => given.return());
+  expect(carried).toBe(given);
+  $disposeIterator(carried);
+  expect(closed).toBe(1);
+  const again = $droppingIterator(carried, () => $disposeIterator(carried));
+  expect(again).not.toBe(carried);
+  expect(again.next()).toEqual({ done: true, value: undefined });
+  const fresh = counted();
+  const outer = $droppingIterator($droppingIterator(fresh, () => fresh.return()), () => {});
+  expect(outer.next()).toEqual({ done: false, value: 1 });
+  const panics = $droppingIterator(counted(), () => {
+    throw new Error("drop panicked");
+  });
+  expect(() => $disposeIterator(panics)).toThrow("drop panicked");
+});

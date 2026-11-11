@@ -1000,6 +1000,44 @@ export function $droppingOnce(f, drop) {
   return $dropping((...args) => $endsAfter(drop, () => f(...args)), drop);
 }
 
+// A JS iterator made a `dyn Iterator` of a value with a destructor: it,
+// carrying its drop, `drop`, under `$disposeKey` as its own property, as a
+// `dyn Fn`'s function does (ADR 0521, #1420). An own property: JS's
+// `Iterator.prototype` has a `Symbol.dispose` of its own, which closes
+// what inherits it, so one read through the prototype would close an
+// iterator Rust doesn't drop, or one it closed already. One that carries a
+// drop already, a `Box<dyn Iterator>` generic code boxes again, is another
+// allocation holding it: one of its own that steps it carries the new drop,
+// which drops the one it holds, its own kept.
+export function $droppingIterator(it, drop) {
+  const own = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;
+  // Run once, wherever it's dropped first: its `Box`'s drop, or a consumer
+  // that took it by value closing it as it ends, `count()`'s, `collect()`'s,
+  // a `for`'s that breaks, as std's drops the `Box` it was given. A drop
+  // that panics isn't run again.
+  let dropped = false;
+  const once = () => {
+    if (dropped) return;
+    dropped = true;
+    drop();
+  };
+  Object.defineProperty(own, $disposeKey, { value: once, configurable: true, writable: true });
+  const close = own.return;
+  own.return = function (value) {
+    const step = close === undefined ? { done: true, value } : close.call(this, value);
+    once();
+    return step;
+  };
+  return own;
+}
+
+// A `dyn Iterator` dropped: the drop it carries, `$droppingIterator`'s, if
+// any, its own, never its prototype's.
+export function $disposeIterator(it) {
+  if (!Object.hasOwn(it, $disposeKey)) return;
+  it[$disposeKey]();
+}
+
 // What a closure carries its clone under (ADR 0522).
 export const $cloneKey = Symbol("rust-js.clone");
 

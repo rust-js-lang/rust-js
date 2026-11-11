@@ -167,6 +167,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 Drops::Runs => {
                     !self.recognition.is_pair_dyn(predicates)
                         && !crate::lower::recognition::is_fn_dyn(self.recognition.tcx, predicates)
+                        && !(target.is_box() && self.recognition.is_dyn_iter(to))
                 }
                 Drops::Unsupported(..) => true,
             }
@@ -684,6 +685,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     false => Drops::Nothing,
                 }
             }
+            // An iterator's, the drop it carries, where the crate boxes one of
+            // what drops, or a library does (ADR 0521, #1420).
+            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match self.closure_facts.iterator_dyns_drop {
+                true => Drops::Runs,
+                false => Drops::Nothing,
+            },
             _ => Drops::Nothing,
         }
     }

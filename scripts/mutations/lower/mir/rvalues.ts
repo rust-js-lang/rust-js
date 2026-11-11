@@ -196,12 +196,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-dyn-drops-lost",
     breaks:
-      "MIR's `Box<dyn Iterator>` of a value with a destructor, a JS iterator, never drops it",
+      "MIR's `Rc<dyn Iterator>` of a value with a destructor, a JS iterator, never drops it",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if self\n                            .drop_query()\n                            .dyn_drop_lost(",
     replace:
       "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Iterator>"],
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses an Rc<dyn Iterator>"],
   },
   {
     name: "mir-named-divisor-unknown",
@@ -362,9 +362,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                true => self.as_double_ended(value, iterator, span)?,\n",
+    find: "                                true => self.as_double_ended(value.clone(), iterator, span)?,\n",
     replace:
-      "                                true => self.as_js_iterator(value, iterator, span)?,\n",
+      "                                true => self.as_js_iterator(value.clone(), iterator, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -472,8 +472,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));\n",
-    replace: "                            return Ok(Value::Expr(it));\n",
+    find: "                            let it = crate::lower::iterators::behind_a_dyn(it);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
@@ -748,5 +748,13 @@ export const mutations: Mutation[] = [
     find: "                    if let BorrowKind::Mut { .. } = kind {\n",
     replace: "                    if let BorrowKind::Fake(_) = kind {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a &mut to a field held as generic code"],
+  },
+  {
+    name: "iterator-dyn-carries-no-drop",
+    breaks: "an iterator boxed as a `dyn Iterator` carries no drop, so its `Box`'s drop drops nothing of what it owns (#1420)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                                && self.drops(iterator) != crate::lower::drops::Drops::Nothing;\n",
+    replace: "                                && false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
 ];

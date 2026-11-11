@@ -230,7 +230,6 @@ for (const [name, source, message, crate] of [
   ["a set keyed by an enum of a type parameter", "use std::collections::HashSet;\nuse std::hash::Hash;\npub fn count<T: Hash + Eq>(keys: Vec<Option<T>>) -> usize {\n    keys.into_iter().collect::<HashSet<_>>().len()\n}", "a map or a set keyed by `std::option::Option<T>`, made of a type parameter, in generic code"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["flatten of an Option of an Option of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<Option<D>>) -> bool { a.flatten().is_some() }', "`std::option::Option::<std::option::Option<T>>::flatten` of a value with a destructor"],
-  ["a Box<dyn Iterator> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() { let _: Box<dyn Iterator<Item = u32>> = Box::new(D); }', "a `dyn` of a value with a destructor"],
   ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() { let _: std::rc::Rc<dyn Iterator<Item = u32>> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
   // A std call given an iterator whose destructors rust-js can't follow would drop what it skips silently.
   // A generic iterator folded or looped over is one its callers give no destructor of (ADR 0190).

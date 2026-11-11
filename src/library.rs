@@ -417,6 +417,11 @@ pub struct Library {
     /// hold one. A library a compiler wrote before is taken to.
     #[serde(default = "made_before")]
     pub makes_dropping_fn_dyns: bool,
+    /// Whether it boxes a value with a destructor, or a type parameter's, a
+    /// `dyn Iterator` (ADR 0521, #1420): a consumer's `Box<dyn Iterator>` may
+    /// then carry a drop.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub makes_dropping_iterators: bool,
     /// A program's, `--tested`'s: the keys of the trait constants its
     /// dictionaries carry, those its own generic code reads, as `rust-js
     /// build` writes them (ADRs 0106, 1076, amended, #597). A consumer that
@@ -727,6 +732,8 @@ pub struct Exports {
     pub makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub makes_dropping_fn_dyns: bool,
+    /// Whether it boxes what drops a `dyn Iterator` (ADR 0521, #1420).
+    pub makes_dropping_iterators: bool,
     /// A program's dictionaries' constants, by key; None of a library's,
     /// which carry every one (#597).
     pub dictionary_consts: Option<IndexSet<String>>,
@@ -833,6 +840,7 @@ impl Exports {
             dyn_debug_hex,
             reads_formatter_options,
             merges_identities,
+            makes_dropping_iterators,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,
@@ -870,6 +878,7 @@ impl Exports {
             dyn_debug_hex,
             reads_formatter_options: reads_formatter_options.into_iter().collect(),
             merges_identities: merges_identities.into_iter().collect(),
+            makes_dropping_iterators,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,

@@ -277,6 +277,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {
                 out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
             }
+            // An iterator's, the drop it carries, if any (ADR 0521, #1420).
+            ty::Dynamic(..) if self.recognition().is_dyn_iter(ty) => {
+                out.push(StmtKind::Expr(Expr::call_helper("$disposeIterator", vec![value])).at(js_span));
+            }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
             ty::Dynamic(..) => {
                 let dictionary = Expr::member(value.clone(), js::DICTIONARY);

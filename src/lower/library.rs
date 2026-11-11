@@ -166,6 +166,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub(super) makes_dropping_fn_dyns: bool,
+    /// Whether it boxes what drops a `dyn Iterator` (ADR 0521, #1420).
+    pub(super) makes_dropping_iterators: bool,
     /// A program's, `--tested`'s (#597): the trait constants its
     /// dictionaries carry, its generic code's, a library's every one; and its
     /// own traits whose `dyn`s drop nothing, none of a library's.
@@ -862,6 +864,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// crate may be handed, or an `io::Error` holding one (ADR 0462, amended)?
     pub(super) fn makes_dropping_errors(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_errors)
+    }
+
+    /// Does any of the libraries box what drops a `dyn Iterator`, which the
+    /// crate may be handed (ADR 0521, #1420)?
+    pub(super) fn makes_dropping_iterators(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_iterators)
     }
 
     /// Do the `dyn Fn`s of the library `key` drop: does it make one of
