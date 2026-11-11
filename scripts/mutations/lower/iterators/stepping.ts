@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter generic code clones stands for every `map` and `filter`, each made cloned apart, which refuses what it can't clone",
     file: "src/lower/iterators/stepping.rs",
-    find: "            adapter(cloned)\n                && crate::lower::copies::instance_within_bounds(",
+    find: "            adapter(cloned_ty)\n                && crate::lower::copies::instance_within_bounds(",
     replace: "            true && crate::lower::copies::instance_within_bounds(",
     tests: ["test/corpus.test.ts", "-t", "^generic_clones_of_unseen_callers.rs$"],
   },
@@ -445,5 +445,13 @@ export const mutations: Mutation[] = [
     find: "        let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)) else {\n",
     replace: "        let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
+  {
+    name: "cloned-owners-bounds-unasked",
+    breaks: "a type taken for a `pub` generic function's cloned `Map<I, F>`, any type its callers may give, isn't asked of that function's bounds, so another generic function's `map(Some)` of items with a destructor is cloned apart and refused (#1318)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                && within_its_owners(cloned_ty, ty)\n",
+    replace: "                && (true || within_its_owners(cloned_ty, ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_beside_a_cloned_one_of_other_bounds.rs$"],
   },
 ];

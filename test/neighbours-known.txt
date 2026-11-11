@@ -47,7 +47,3 @@ plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
-
-#1318 P2 (neighbours): cloning a lent Map of an fn item (Option::Some) is refused beside generic_map_cloned_beside_another_bound
-plain generic_collect_closes_its_source.rs beside generic_map_cloned_beside_another_bound.rs
-plain rc_count_fn_value.rs beside generic_map_cloned_beside_another_bound.rs

@@ -3,7 +3,7 @@
 //! what cloning each clones in turn, its `Clone` impl's bounds, as rustc
 //! proves them: `Map<I, F>: Clone` clones its `I` and its `F`.
 
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{ExprKind, Thir};
@@ -21,6 +21,10 @@ pub(in crate::lower) struct Cloned<'tcx> {
     /// own decisions are of (`with_compiled_here`).
     compiled_here: IndexSet<Ty<'tcx>>,
     callers: crate::lower::instances::Callers<'tcx>,
+    /// Of each type cloned as it is of its function's own type parameters,
+    /// any type its callers may give them, a `pub` function's: that
+    /// function, whose bounds say what they may be (`owners_of`, #1318).
+    owners: IndexMap<Ty<'tcx>, IndexSet<DefId>>,
 }
 
 impl<'tcx> std::ops::Deref for Cloned<'tcx> {
@@ -35,6 +39,13 @@ impl<'tcx> Cloned<'tcx> {
     /// Each type the crate clones, and what a library's function it
     /// compiles of MIR alone clones too: what an `Rc<dyn Fn>` may be made
     /// of twice, a closure cloned (ADR 0959, #1053, #1249).
+    /// The functions whose own type parameters `ty`, cloned as it is, holds,
+    /// any type their callers may give them within their bounds; none of
+    /// another (#1318).
+    pub(in crate::lower) fn owners_of(&self, ty: Ty<'tcx>) -> impl Iterator<Item = DefId> + '_ {
+        self.owners.get(&ty).into_iter().flatten().copied()
+    }
+
     pub(in crate::lower) fn with_compiled_here(&self) -> impl Iterator<Item = Ty<'tcx>> + '_ {
         self.types.iter().chain(&self.compiled_here).copied()
     }
@@ -101,23 +112,24 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
             .map(|ty| tcx.erase_and_anonymize_regions(ty))
             .collect(),
         callers: crate::lower::instances::callers_of(tcx, all_bodies),
+        owners: IndexMap::default(),
     };
     // A clone in generic code of a type of its own parameters, `Chain<J,
     // J>`, is of each type its callers give them, where every one is seen
     // (#1009): so it's told apart from another generic function's adapter
     // of its own, which rustc names alike, its `Chain<I, I>` (#1119); else
     // as it is, any type they may be.
-    let instances = |owner: DefId, ty: Ty<'tcx>| -> Vec<Ty<'tcx>> {
+    let instances = |owner: DefId, ty: Ty<'tcx>| -> Vec<(Ty<'tcx>, Option<DefId>)> {
         match cloned.instances_of(tcx, ty, owner) {
-            Some(instances) => instances.into_iter().collect(),
-            None => vec![ty],
+            Some(instances) => instances.into_iter().map(|ty| (ty, None)).collect(),
+            None => vec![(ty, ty.has_non_region_param().then(|| tcx.typeck_root_def_id(owner)))],
         }
     };
     // What an `impl Clone` hides, revealed: a caller's clone of what a
     // function gives is of what that function makes. Not std's struct a
     // function makes, cloned by its compiled `Clone`, its value's (#1241).
     let mut compiled = IndexSet::default();
-    let mut todo: Vec<Ty<'tcx>> = (all_bodies.iter())
+    let mut todo: Vec<(Ty<'tcx>, Option<DefId>)> = (all_bodies.iter())
         .flat_map(|body| {
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
             let owner = body.def_id;
@@ -131,19 +143,22 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
         })
         .collect();
     if library {
-        todo.extend(given_out_clone(tcx, all_bodies));
+        todo.extend(given_out_clone(tcx, all_bodies).into_iter().map(|ty| (ty, None)));
     }
     // Each std's struct a function makes, never cloned apart, its parts
     // cloned in turn by its compiled `Clone` all the same (#1242).
     let mut compiled_seen: IndexSet<Ty<'tcx>> = IndexSet::default();
-    while let Some(ty) = todo.pop() {
+    while let Some((ty, owner)) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
+        if let Some(owner) = owner {
+            cloned.owners.entry(ty).or_default().insert(owner);
+        }
         let new = match compiled.contains(&ty) {
             true => compiled_seen.insert(ty),
             false => cloned.types.insert(ty),
         };
         if new {
-            todo.extend(clones_in_turn(tcx, ty));
+            todo.extend(clones_in_turn(tcx, ty).into_iter().map(|part| (part, owner)));
         }
     }
     cloned

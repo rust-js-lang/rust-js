@@ -733,15 +733,32 @@ pub(in crate::lower) fn cloned_apart<'tcx>(
         )
     };
     let adapter = |ty| crate::lower::recognition::cloned_parts(tcx, ty).is_some();
+    // And, of one cloned as it is of another function's own type
+    // parameters, any type its callers may give them, a `pub` function's:
+    // within that function's bounds, by which a `Map<I, F>` of an `I:
+    // Iterator<Item = i32>` is no `Map` of another's items (#1318).
+    let within_its_owners = |cloned_ty: ty::Ty<'tcx>, ty: ty::Ty<'tcx>| {
+        let mut owners = cloned.owners_of(cloned_ty).peekable();
+        owners.peek().is_none()
+            || owners.any(|owner| {
+                crate::lower::copies::instance_within_bounds(
+                    tcx,
+                    ty::TypingEnv::post_analysis(tcx, owner),
+                    generic_closures(ty),
+                    generic_closures(cloned_ty),
+                )
+            })
+    };
     let cloned_as = |ty: ty::Ty<'tcx>| {
-        cloned.iter().any(|&cloned| {
-            adapter(cloned)
+        cloned.iter().any(|&cloned_ty| {
+            adapter(cloned_ty)
                 && crate::lower::copies::instance_within_bounds(
                     tcx,
                     typing_env,
-                    generic_closures(cloned),
+                    generic_closures(cloned_ty),
                     generic_closures(ty),
                 )
+                && within_its_owners(cloned_ty, ty)
         })
     };
     // Of generic code's own type parameters, as each instance its callers

@@ -333,3 +333,28 @@ reached only where the callers aren't all seen, and
 `generic_map_of_pub_code_beside_a_cloned_map.rs`, the case with its
 generic functions `pub`, both builds against native Rust; the mutation is
 retargeted to it and caught. ADR 0262's case: none, no JS changes.
+
+## Amendment (2026-11-12, #1318): a cloned type of another function's own parameters is asked of that function's bounds
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal lifted. The neighbour shuffle found a generic `map(Some)` of items
+with a destructor, collected into an `Option<Vec<_>>`, refused beside a
+`pub` generic function that cycles its `Map<I, F>`. That function's
+callers may be anyone, so its clone is of any `I` and `F` its bounds
+allow, `I: Iterator<Item = i32>`, `F: FnMut(i32) -> i32`, and it stays
+generic in the crate's cloned types. Matching a type against it,
+`instance_within_bounds` asked the bounds of the function asking, not
+those of the function the cloned type's parameters belong to. With none
+given there, the neighbour's `Map<I, F>` stood for any `Map`: the
+victim's was taken as cloned apart, then refused for its items' drops.
+
+`Cloned` now keeps, for each type cloned as it is of its function's own
+parameters, that function (`owners_of`). A type matches such a cloned
+type only within that function's bounds too, by the same
+`instance_within_bounds`, asked the other way round. So a `Map` of `D`s is
+no `Map<I, F>` of an `I: Iterator<Item = i32>`.
+
+Held by corpus case `generic_map_beside_a_cloned_one_of_other_bounds.rs`
+against native Rust in both builds; both pairs run as native Rust does
+and are taken off test/neighbours-known.txt. Mutations
+`cloned-owners-bounds-unasked` and `cloned-owners-unrecorded`.

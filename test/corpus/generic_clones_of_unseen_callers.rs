@@ -3,6 +3,17 @@
 // `map` or `filter` it isn't given, and the `map` and `filter` it gives
 // behind an `impl Iterator + Clone`, each closure its caller's instance,
 // are those its caller clones, the filter cloned apart (ADR 0525; #1119).
+// Nor is a `map` of items that are `Clone` and have a destructor, which its
+// `I: Iterator + Clone` allows, but which is no type parameter (#1318).
+#[derive(Clone, Debug)]
+struct Loud(u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
 pub fn firsts<I: Iterator + Clone>(iter: I, n: usize) -> Vec<I::Item> {
     iter.cycle().take(n).collect()
 }
@@ -39,4 +50,6 @@ fn main() {
     let mut later = even.clone();
     later.next();
     println!("{:?} {:?}", later.collect::<Vec<_>>(), even.collect::<Vec<_>>());
+    let louds: Vec<Loud> = vec![Loud(1), Loud(2)].into_iter().map(|l| Loud(l.0 + 10)).collect();
+    println!("{louds:?}");
 }

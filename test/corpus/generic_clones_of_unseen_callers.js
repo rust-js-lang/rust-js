@@ -3,21 +3,33 @@
 import {
   $clone,
   $cloning,
+  $closing,
   $cycleOf,
   $debugStr,
+  $dropEach,
   $foldToArray,
   $given,
   $iter,
   $lazyRange,
+  $live,
   $next,
   $rangeNext,
   $roomForHint,
+  $unwindsOn,
   iterator_map,
   mapClone_clone,
 } from "@rust-js/std";
 
 export function entry() {
   main();
+}
+
+function loudDebug_fmt(loud) {
+  return `Loud(${loud[0]})`;
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
 }
 
 export function firsts(iter, n, IIterator, IClone, IItemSize) {
@@ -76,5 +88,24 @@ function main() {
   const later = $clone(even);
   $next(later);
   console.log(`[${Array.from(later).join(", ")}] [${Array.from(even).join(", ")}]`);
+  const louds = $foldToArray(
+    $closing($iter([[1], [2]]), $dropEach(loudDrop_drop)).map((l) => {
+      const result = [(l[0] + 10) >>> 0];
+      loudDrop_drop(l);
+      return result;
+    }),
+    loudDrop_drop,
+  );
+  try {
+    console.log(`[${louds.map((item) => loudDebug_fmt(item)).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of louds) {
+        loudDrop_drop(item);
+      }
+    }
+  }
 }
 //# sourceMappingURL=case.js.map

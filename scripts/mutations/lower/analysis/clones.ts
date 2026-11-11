@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a clone clones in turn, a derived `Clone`'s field's iterator, isn't seen to be cloned",
     file: "src/lower/analysis/clones.rs",
-    find: "            todo.extend(clones_in_turn(tcx, ty));\n",
-    replace: "",
+    find: "            todo.extend(clones_in_turn(tcx, ty).into_iter().map(|part| (part, owner)));\n",
+    replace: "            let _ = owner;\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's closure given out behind `impl FnMut() + Clone` is one it never clones, made with no clone, which its consumer's `tick.clone()` throws of (#1032)",
     file: "src/lower/analysis/clones.rs",
-    find: "        todo.extend(given_out_clone(tcx, all_bodies));\n",
+    find: "        todo.extend(given_out_clone(tcx, all_bodies).into_iter().map(|ty| (ty, None)));\n",
     replace: "        let _ = given_out_clone(tcx, all_bodies);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
@@ -53,8 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone in generic code of its own parameters' `Chain<J, J>` stays as rustc names it, though its callers are all seen, so another generic function's `Chain<I, I>` of `vec::IntoIter`s, whose bounds agree, is taken for it and its `next_back()` refused (#1119)",
     file: "src/lower/analysis/clones.rs",
-    find: "            Some(instances) => instances.into_iter().collect(),\n",
-    replace: "            Some(_) => vec![ty],\n",
+    find: "            Some(instances) => instances.into_iter().map(|ty| (ty, None)).collect(),\n",
+    replace: "            Some(_) => vec![(ty, None)],\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
   },
   {
@@ -108,5 +108,13 @@ export const mutations: Mutation[] = [
     find: "            .flat_map(|body| mir_called_clones(tcx, body))\n",
     replace: "            .flat_map(|_| Vec::<Ty<'tcx>>::new())\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
+  {
+    name: "cloned-owners-unrecorded",
+    breaks: "a type cloned as it is of its function's own parameters keeps no owner, so no bounds of it are asked, and another generic function's `map(Some)` is cloned apart and refused (#1318)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            cloned.owners.entry(ty).or_default().insert(owner);\n",
+    replace: "            let _ = owner;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_beside_a_cloned_one_of_other_bounds.rs$"],
   },
 ];
