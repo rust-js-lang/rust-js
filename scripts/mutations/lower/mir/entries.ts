@@ -140,10 +140,10 @@ export const mutations: Mutation[] = [
   {
     name: "io-residual-returned",
     breaks:
-      "`?` of a value's `Result` into an `io::Result<()>` gives its `{ TAG }` object back, which its callers take for `Err`",
+      "`?` of a value's `Result` into an `io::Result<()>` throws its `{ TAG }` object, not its error, which its callers take for the `Err`",
     file: "src/lower/mir/entries.rs",
-    find: '            false => Expr::call_helper("$ioThrow", vec![crate::js::result::held(residual)]),\n',
-    replace: "            false => residual,\n",
+    find: "        let error = crate::js::result::held(residual);\n",
+    replace: "        let error = residual;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
@@ -302,5 +302,13 @@ export const mutations: Mutation[] = [
     find: "        if once {\n            let entry = exprs.next().expect(\"the entry\");\n",
     replace: "        if false {\n            let entry = exprs.next().expect(\"the entry\");\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$|^btree_nodes_generic.rs$|^map_entry_hashes_its_key_once.rs$"],
+  },
+  {
+    name: "thrown-residual-unconverted",
+    breaks: "`?` of a `Result` of another error in a function giving back an `io::Result<()>` throws that error itself, not the `io::Error` its `From` makes, so no caller catches it as the `Err`",
+    file: "src/lower/mir/entries.rs",
+    find: "            Some(conversion) => conversion.of(error),\n",
+    replace: "            Some(_) => error,\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result_question_converts_its_error.rs$"],
   },
 ];

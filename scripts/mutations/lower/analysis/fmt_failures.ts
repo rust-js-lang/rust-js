@@ -215,4 +215,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
   },
+  {
+    name: "converted-residual-never-fails",
+    breaks: "a function whose `?` of another error's `Result` gives back an `io::Result<()>`'s `Err` is taken never to fail, so its caller doesn't catch what it throws, and the program stops where Rust reads the `Err`",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                && !of_write_error(tcx, residual)\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result_question_converts_its_error.rs$"],
+  },
 ];

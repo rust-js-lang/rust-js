@@ -326,6 +326,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::IterSource(IterSource::Successors)
                     // `vec![x; n]`, which owns `x`, or drops it of none.
                     | Std::FromElem
+                    // An `io::Error` made of an error, which it owns and drops
+                    // (ADR 0462, amended).
+                    | Std::IoError(crate::lower::std_types::io_error::IoErrorOp::New | crate::lower::std_types::io_error::IoErrorOp::Other)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

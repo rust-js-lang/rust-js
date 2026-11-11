@@ -835,6 +835,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<()> {
         let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        // What `?` of a write's result made, its `ControlFlow`, and its
+        // `Break`'s residual: its `Err` is thrown on, where a write may fail,
+        // or never made, where none may (`tried_write`), so it holds nothing
+        // to drop, and its value is the write's, never a `{ TAG }` (#1403).
+        if (state.branches.get(&place.local)).is_some_and(|&(_, tried)| self.is_write_result(tried)) {
+            return Ok(());
+        }
         let value = self.mir_place(state, place, span, out)?;
         self.drop_value(value, ty, span, out)
     }

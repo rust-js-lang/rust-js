@@ -37,6 +37,7 @@ pub(in crate::lower) fn exports<'tcx>(
         reads_formatter_options,
         merges_identities,
         makes_dropping_anys,
+        makes_dropping_errors,
         makes_dropping_fn_dyns,
         program,
         counted,
@@ -187,6 +188,7 @@ pub(in crate::lower) fn exports<'tcx>(
         // Its own: what it compiles of another library's is that one's.
         merges_identities: sorted_keys(tcx, merges_identities.iter().filter(|id| id.is_local())),
         makes_dropping_anys: *makes_dropping_anys,
+        makes_dropping_errors: *makes_dropping_errors,
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
         dyns_drop_nothing: program

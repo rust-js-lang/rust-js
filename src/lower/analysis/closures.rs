@@ -69,6 +69,8 @@ pub(in crate::lower) fn fn_dyn_args<'tcx>(
 }
 
 /// What the crate does with its closures.
+// Flags, not a state: whether its `dyn Any`s drop and whether its `dyn
+// Error`s do are facts of different values, each found apart.
 #[derive(Default)]
 pub struct ClosureFacts<'tcx> {
     /// Which `dyn Fn`s drop what they hold: those a function holding a value
@@ -80,6 +82,10 @@ pub struct ClosureFacts<'tcx> {
     /// drops it: what unwound, a panic's message or what JS threw, drops
     /// nothing, nor a `dyn Any` of anything else (ADR 0691).
     pub any_dyns_drop: bool,
+    /// Whether a `dyn Error` the crate has may hold a value with a
+    /// destructor: one it makes of one, by an unsizing or a std conversion
+    /// that boxes it, or one a library makes (ADR 0462, amended).
+    pub error_dyns_drop: bool,
     /// The closures made a `dyn Fn`, each carrying its drop.
     made_fn_dyns: IndexSet<DefId>,
     /// The closures made a `dyn Fn` only to hand it to JS, which Rust never
@@ -135,6 +141,7 @@ impl<'tcx> ClosureFacts<'tcx> {
         ClosureFacts {
             fn_dyns_drop: FnDynDrops::default(),
             any_dyns_drop: false,
+            error_dyns_drop: false,
             made_fn_dyns,
             handed_fn_dyns,
             cloned,
@@ -486,6 +493,69 @@ pub(super) fn any_dyns_drop<'tcx>(
             .flat_map(|body| dyn_sources(tcx, &body.thir, of_any))
             .map(|(_, from)| from)
             .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
+}
+
+/// Whether `all_bodies` make a `dyn Error` of what `drops`, or of a type
+/// parameter's value where `params_may_drop`, or a library does,
+/// `foreign_drops` (ADR 0462, amended): an unsizing the crate writes, or a
+/// std conversion it calls that boxes its error, `From<E> for Box<dyn
+/// Error>`'s, `?`'s or `.into()`'s, and `io::Error::new` and `other`'s, as a
+/// `dyn Any`'s are found (ADR 0691). Else a `dyn Error`, and the `io::Error`
+/// that holds one, drop nothing, whatever else in the crate does.
+pub(super) fn error_dyns_drop<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    (params_may_drop, foreign_drops): (bool, bool),
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    use crate::lower::recognition::{Std, StdItem, is_std_def};
+    use crate::lower::std_types::io_error::IoErrorOp;
+    let tcx = recognition.tcx;
+    let is_error = |id: DefId| is_std_def(tcx, id, StdItem::Error);
+    let of_error = move |predicates: &ty::List<ty::PolyExistentialPredicate<'tcx>>| {
+        predicates.principal_def_id().is_some_and(is_error)
+    };
+    let boxed_error = |ty: Ty<'tcx>| {
+        ty.boxed_ty()
+            .is_some_and(|inner| matches!(inner.kind(), ty::Dynamic(predicates, ..) if of_error(predicates)))
+    };
+    let error_of = |result: Ty<'tcx>| match result.kind() {
+        ty::Adt(_, args) if args.len() == 2 => args.types().nth(1),
+        _ => None,
+    };
+    let dropping =
+        |from: Ty<'tcx>| !boxed_error(from) && (drops(from) || params_may_drop && from.has_non_region_param());
+    let mut boxed = Vec::new();
+    for body in all_bodies {
+        boxed.extend(dyn_sources(tcx, &body.thir, of_error).map(|(_, from)| from));
+        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+            let types: Vec<Ty<'tcx>> = args.types().collect();
+            // Asked only of `io::Error`'s own functions, as the one catalogue
+            // of them says which make one of an error (`classify`).
+            let of_io_error = tcx.inherent_impl_of_assoc(callee).is_some_and(|imp| {
+                recognition.is_io_error(tcx.type_of(imp).instantiate_identity().skip_normalization())
+            });
+            let made = of_io_error.then(|| recognition.classify(callee, args)).flatten();
+            let from = match (made, tcx.trait_of_assoc(callee)) {
+                (Some(Std::IoError(IoErrorOp::New | IoErrorOp::Other)), _) => types.last().copied(),
+                (_, Some(tr)) if is_std_def(tcx, tr, StdItem::From) && types.len() == 2 && boxed_error(types[0]) => {
+                    Some(types[1])
+                }
+                (_, Some(tr)) if is_std_def(tcx, tr, StdItem::Into) && types.len() == 2 && boxed_error(types[1]) => {
+                    Some(types[0])
+                }
+                _ if tcx.is_lang_item(callee, LangItem::TryTraitFromResidual)
+                    && types.len() == 2
+                    && error_of(types[0]).is_some_and(boxed_error) =>
+                {
+                    error_of(types[1])
+                }
+                _ => None,
+            };
+            boxed.extend(from);
+        }
+    }
+    foreign_drops || boxed.into_iter().any(dropping)
 }
 
 /// The first of `all_bodies`' coercions to a `dyn` of the trait `tr`, of

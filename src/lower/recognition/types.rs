@@ -29,6 +29,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
     }
 
+    /// What an `io::Error` may hold and drops as it's dropped, as its
+    /// `into_inner()` gives it, std's own signature's
+    /// `Option<Box<dyn Error + Send + Sync>>` (ADR 0462, amended).
+    pub(in crate::lower) fn io_error_held(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(error, _) = ty.kind() else { return None };
+        // Core's type, whose methods alloc's and std's impls write.
+        let incoherent = self
+            .tcx
+            .incoherent_impls(rustc_middle::ty::fast_reject::SimplifiedType::Adt(error.did()));
+        let into_inner = (self.tcx.inherent_impls(error.did()).iter().chain(incoherent))
+            .flat_map(|&imp| self.tcx.associated_items(imp).in_definition_order())
+            .find(|item| item.is_fn() && item.name().as_str() == "into_inner")?;
+        let sig = self.tcx.fn_sig(into_inner.def_id).instantiate_identity().skip_binder();
+        Some(
+            self.tcx
+                .instantiate_bound_regions_with_erased(ty::Binder::dummy(sig.output())),
+        )
+    }
+
     /// `std::backtrace::Backtrace`, `undefined` or JS's stack (ADR 0568).
     pub(in crate::lower) fn is_backtrace(&self, ty: Ty<'tcx>) -> bool {
         is_backtrace_type(self.tcx, ty)

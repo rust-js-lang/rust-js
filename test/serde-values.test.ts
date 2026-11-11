@@ -50,6 +50,19 @@ pub fn show(text: &str) -> String {
     value: '(show("{\\"n\\": 3}"), show("{"), show("[1,]"), show("tru"))',
   },
   {
+    // Where the crate's `dyn Error`s may drop, serde_json's error, rust-js's
+    // own value, drops nothing: its struct's `ErrorCode::Io` isn't read
+    // (#1403, ADR 0462).
+    name: "a serde_json error dropped where the crate's dyn Errors drop",
+    definitions: `#[derive(Debug)] pub struct Loud(pub u32);
+impl std::fmt::Display for Loud { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "loud {}", self.0) } }
+impl std::error::Error for Loud {}
+impl Drop for Loud { fn drop(&mut self) {} }
+pub fn boxed(n: u32) -> Box<dyn std::error::Error> { Box::new(Loud(n)) }
+pub fn parses(text: &str) -> bool { serde_json::from_str::<serde_json::Value>(text).is_ok() }`,
+    value: '(boxed(1).to_string(), parses("{"), parses("[1]"))',
+  },
+  {
     name: "standard skip predicates recognize optional and empty fields",
     definitions: `#[derive(serde::Serialize)]
 pub struct Skips {

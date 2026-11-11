@@ -394,6 +394,13 @@ pub struct Library {
     /// compiler wrote before is taken to.
     #[serde(default = "made_before")]
     pub makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Error` of a value that drops, or of a type
+    /// parameter's, by an unsizing or a std conversion that boxes it, `?`'s
+    /// or `io::Error::new`'s (ADR 0462, amended): a consumer's `dyn Error`
+    /// or `io::Error` may then hold one. A library a compiler wrote before
+    /// is taken to.
+    #[serde(default = "made_before")]
+    pub makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of a function holding a value with a
     /// destructor, or is handed one so by its own libraries, as a program
     /// would (ADR 0626, amended): a `dyn Fn` it hands a consumer may then
@@ -699,6 +706,8 @@ pub struct Exports {
     pub merges_identities: IndexSet<String>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Error` of what drops (ADR 0462, amended).
+    pub makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub makes_dropping_fn_dyns: bool,
     /// A program's dictionaries' constants, by key; None of a library's,
@@ -803,6 +812,7 @@ impl Exports {
             reads_formatter_options,
             merges_identities,
             makes_dropping_anys,
+            makes_dropping_errors,
             makes_dropping_fn_dyns,
             dictionary_consts,
             dyns_drop_nothing,
@@ -838,6 +848,7 @@ impl Exports {
             reads_formatter_options: reads_formatter_options.into_iter().collect(),
             merges_identities: merges_identities.into_iter().collect(),
             makes_dropping_anys,
+            makes_dropping_errors,
             makes_dropping_fn_dyns,
             dictionary_consts: dictionary_consts.map(|keys| keys.into_iter().collect()),
             dyns_drop_nothing: dyns_drop_nothing.into_iter().collect(),

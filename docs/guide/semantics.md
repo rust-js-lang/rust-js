@@ -2117,3 +2117,11 @@ React and JSX are [their own pages](README.md#react).
     runtime's table hasn't is `Uncategorized`, with Node's words for it,
     `bad file descriptor`, where std's are the C library's (ADR 0262, the
     user's decision, 2026-11-11, #1156).
+
+53. A library's `dyn Error`, and the `io::Error` that holds one, drops
+    what the library and its dependencies make one of, as its `dyn Any`
+    does ([ADR 0691](../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)):
+    one a consumer makes of its own value with a destructor, and gives the
+    library to drop, isn't dropped there, a leak, as safe Rust's
+    `mem::forget` may be (ADR 0262, the user's decision, 2026-11-11,
+    #1403; [ADR 0462](../decisions/0462-io-error-values.md), amended).

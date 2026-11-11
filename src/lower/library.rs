@@ -160,6 +160,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) merges_identities: &'a IndexSet<DefId>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub(super) makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Error` of what drops (ADR 0462, amended).
+    pub(super) makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub(super) makes_dropping_fn_dyns: bool,
     /// A program's, `--tested`'s (#597): the trait constants its
@@ -835,6 +837,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// crate may be handed, or catch as what unwound (ADR 0691, amended)?
     pub(super) fn makes_dropping_anys(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_anys)
+    }
+
+    /// Does any of the libraries make a `dyn Error` of what drops, which the
+    /// crate may be handed, or an `io::Error` holding one (ADR 0462, amended)?
+    pub(super) fn makes_dropping_errors(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_errors)
     }
 
     /// Do the `dyn Fn`s of the library `key` drop: does it make one of

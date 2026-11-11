@@ -398,6 +398,14 @@ react.dev's TopNav passes the same closure instead.
   `no such device or address (os error 6)` where Rust's reads `No such
   device or address (os error 6)`. Listed in the guide's differences
   (`semantics.md`, 52).
+- **A library's `dyn Error`, and the `io::Error` that holds one, drops what
+  the library and its dependencies make one of**, the second case's, as
+  ADR 0691's `dyn Any` does, which the user decided (2026-11-11, #1403,
+  ADR 0462, amended): one a consumer makes of its own value with a
+  destructor, and gives the library to drop, isn't dropped there. A
+  consumer's destructor in a `dyn Error` a library drops is rare, and a
+  value not dropped is a leak, which safe Rust may do too. Listed in the
+  guide's differences (`semantics.md`, 53).
 
 ## Amendment: the stack's depth
 

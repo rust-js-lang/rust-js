@@ -328,4 +328,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
     snapshots: true,
   },
+  {
+    name: "io-error-drop-skipped",
+    breaks: "an `io::Error`'s drop runs nothing, so the error it holds is never dropped",
+    file: "src/lower/drops/parts.rs",
+    find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$ioErrorDrop\", vec![value])).at(js_span));\n",
+    replace: "                let _ = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
 ];

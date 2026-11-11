@@ -99,7 +99,7 @@ function $ioResultDebug(result, options) {
   return options?.alternate ? $pretty("Err(", [error], ")") : `Err(${error})`;
 }
 // An `io::Error`, of `TypeId` `type`, as a `dyn Error`'s dictionary (ADR
-// 0141); its `type_id` `type` (ADR 0331).
+// 0141); its `type_id` `type` (ADR 0331), and its drop, what it holds.
 function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
@@ -107,5 +107,12 @@ function $ioErrorDyn(type) {
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
     typeId: () => type,
+    $drop: $ioErrorDrop,
   };
+}
+// The drop of an `io::Error`: of the error it holds, a `dyn Error` pair, its
+// dictionary's drop, where what it holds has one; of an `io::Result<()>`,
+// `undefined` or its error, its error's (ADR 0462, amended).
+function $ioErrorDrop(e) {
+  e?.error?.impl.$drop?.(e.error.value);
 }

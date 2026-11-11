@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "    source: (e) => e.error?.impl.source(e.error.value),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
+  {
+    name: "io-error-dyn-drops-nothing",
+    breaks: "an `io::Error` boxed as a `dyn Error` drops nothing, so the error it holds is never dropped where Rust drops the box",
+    file: "src/runtime/io_error.js",
+    find: "    $drop: $ioErrorDrop,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "io-error-drop-empty",
+    breaks: "an `io::Error`'s drop doesn't drop the error it holds",
+    file: "src/runtime/io_error.js",
+    find: "  e?.error?.impl.$drop?.(e.error.value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
 ];

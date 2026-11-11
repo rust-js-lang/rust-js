@@ -98,6 +98,18 @@ pub(super) fn failing_fns<'tcx>(
                 failing.insert(caller);
                 continue;
             }
+            // `?` of a `Result` of another error, given back as a write's
+            // result's `Err` by its `From`, `Err(RandError(4))?` of a
+            // function giving an `io::Result<()>`: that `Err`, thrown.
+            if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+                && let [returned, residual] = args.types().collect::<Vec<_>>()[..]
+                && is_write_result_type(tcx, returned)
+                && matches!(residual.kind(), ty::Adt(_, parts) if parts.len() == 2)
+                && !of_write_error(tcx, residual)
+            {
+                failing.insert(caller);
+                continue;
+            }
             // `{}` of a value, or its `to_string()`: its trait's `fmt`,
             // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
             if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {

@@ -173,3 +173,48 @@ Held by `io_error_from_raw_os_error.rs` against native Rust in both builds
 and by the mutations `os-error-of-unknown-number-words`,
 `os-error-of-zero-words`, `os-error-of-named-number-unnamed` and
 `from-raw-os-error-unknown`.
+
+## Amendment: an `io::Error` drops the error it holds (2026-11-11, #1403)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as Rust drops.
+
+`io::Error::new(kind, error)` of a value with a destructor was refused, and
+rand_core 0.5's `From<Error> for io::Error` with it, whose error holds a
+`Box<dyn Error + Send + Sync>`: the `io::Error` owns what it's given, and
+drops it where it's dropped, which `$IoError` didn't. **An `io::Error`
+drops as what its `into_inner()` would give drops, std's own signature's
+`Option<Box<dyn Error + Send + Sync>>`**, read from alloc's and std's impls
+of core's type: its drop is `$ioErrorDrop(e)`, the held pair's `$drop`
+where it has one, which `$ioErrorDyn`'s dictionary carries too, so one
+boxed as a `dyn Error` drops what it holds. An `io::Result<()>`, `undefined`
+or its error, drops by it too; and the `ControlFlow` `?` of a write's result
+makes holds nothing to drop, as its `Err` is thrown on or never made (`state.branches`).
+`io::Error::new` and `other` own what they're given.
+
+**A `dyn Error`, and the `io::Error` that holds one, drops what it holds
+where the crate makes one of a value with a destructor**, as ADR 0691's
+`dyn Any`: an unsizing it writes, or a std conversion it calls that boxes
+its error, `From<E> for Box<dyn Error>`'s, by `?`, `.into()` or its path,
+and `io::Error::new` and `other`'s, of a value that drops or of a type
+parameter's where its types may; or where a library it uses makes one,
+its contract's `makes_dropping_errors` (`ClosureFacts::error_dyns_drop`).
+Else neither drops, whatever else in the crate does: a `dyn Error` of
+std's trait was taken to drop wherever any type had a destructor (ADR
+0320), which put a drop of every `io::Error` in programs that hold none
+that drops. A library's drops what it and its dependencies make one of:
+one a consumer makes, and gives it to drop, isn't dropped there, the
+second case of ADR 0262, as 0691's, which the user decided (2026-11-11),
+listed in the guide's differences (53). serde_json's error,
+rust-js's own value, holds none of the program's, as rust-js reads no
+`from_reader`'s, so drops nothing: its struct's `ErrorCode::Io` isn't
+read.
+
+**And `?` of a `Result` of another error in a function giving back an
+`io::Result<()>`, whose `Err` is thrown, converts its error by the `From`
+`?` calls first** (`thrown_residual`), and the function is one whose writes
+may fail (`fmt_failures`), so its caller catches what it throws. It threw
+the other error itself, which no caller caught: a P0, found by #1403's case.
+
+Held by `io_error_drops_what_it_holds.rs` and
+`io_unit_result_question_converts_its_error.rs` against native Rust in both
+builds, and by mutations.

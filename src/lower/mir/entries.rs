@@ -265,13 +265,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.spill(name, tried, out))
     }
 
-    /// `?`'s residual given back as a write's result, `output`: its error,
-    /// thrown, as its `Err` is (ADRs 0187, 0462).
-    pub(super) fn thrown_residual(&self, residual: Expr, output: Ty<'tcx>) -> Expr {
-        match self.is_fmt_result(output) {
-            true => Expr::call(Expr::helper("$fmtError"), Vec::new()),
-            false => Expr::call_helper("$ioThrow", vec![crate::js::result::held(residual)]),
+    /// `?`'s residual, of a `tried` result, given back as a write's
+    /// result, `output`: its error, thrown, as its `Err` is (ADRs 0187,
+    /// 0462); an `io::Result<()>`'s converted to an `io::Error` first, by
+    /// the `From` `?` calls, the crate's `From<RandError> for io::Error`,
+    /// as a `Result` given back is.
+    pub(super) fn thrown_residual(
+        &mut self,
+        residual: Expr,
+        (tried, output): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        if self.is_fmt_result(output) {
+            return Ok(Expr::call(Expr::helper("$fmtError"), Vec::new()));
         }
+        let error = crate::js::result::held(residual);
+        let error = match self.tried_conversion(tried, Some(output), span)? {
+            Some(conversion) => conversion.of(error),
+            None => error,
+        };
+        Ok(Expr::call_helper("$ioThrow", vec![error]))
     }
 
     /// What a function gives back of a write's result, `_0 = ..` of a

@@ -808,4 +808,12 @@ export const mutations: Mutation[] = [
     replace: "                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
   },
+  {
+    name: "io-error-new-of-dropping-refused",
+    breaks: "`io::Error::new` of a value with a destructor is refused, rand_core's `From<Error> for io::Error` with it",
+    file: "src/lower/std_types/values.rs",
+    find: "IoErrorOp::New | crate::lower::std_types::io_error::IoErrorOp::Other)",
+    replace: "IoErrorOp::FromRawOsError)",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
 ];

@@ -420,4 +420,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ranges_hashed_as_std_derives.rs$"],
   },
+  {
+    name: "io-error-held-not-found",
+    breaks: "what an `io::Error` holds is looked for in core's own impls alone, not alloc's and std's, which write `into_inner`, so it's taken to hold nothing that drops",
+    file: "src/lower/recognition/types.rs",
+    find: ".iter().chain(incoherent))",
+    replace: ".iter().chain(incoherent.iter().take(0)))",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
 ];

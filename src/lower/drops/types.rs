@@ -526,6 +526,19 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Runs,
                 }
             }
+            // serde_json's error, rust-js's own value of what it says, not
+            // its struct: it holds none of the program's, as rust-js reads
+            // no `from_reader`'s, so drops nothing, whatever its `ErrorCode`'s
+            // `Io` would (ADR 0462, amended).
+            ty::Adt(..) if self.recognition.is_json_error(ty) => Drops::Nothing,
+            // An `io::Error`: the error it may hold, a `Box<dyn Error + Send +
+            // Sync>`, which its drop drops (ADR 0462, amended).
+            ty::Adt(..)
+                if self.recognition.is_io_error(ty)
+                    && let Some(held) = self.recognition.io_error_held(ty) =>
+            {
+                self.drops_in(held, walk)
+            }
             // A set's items, and a map's keys and values (ADRs 0321, 0467).
             ty::Adt(_, args) if self.recognition.is_set(ty) => self.drops_in(args.type_at(0), walk),
             ty::Adt(_, args) if self.recognition.is_map(ty) => {
@@ -691,6 +704,17 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         // A `dyn Any`'s, where the crate makes one of what drops (ADR 0691).
         if predicates.principal_def_id().is_some() && predicates.principal_def_id() == any_trait(tcx) {
             return match self.closure_facts.any_dyns_drop {
+                true => Drops::Runs,
+                false => Drops::Nothing,
+            };
+        }
+        // A `dyn Error`'s, where the crate or a library makes one of what
+        // drops (ADR 0462, amended).
+        if predicates
+            .principal_def_id()
+            .is_some_and(|id| crate::lower::recognition::is_std_def(tcx, id, StdItem::Error))
+        {
+            return match self.closure_facts.error_dyns_drop {
                 true => Drops::Runs,
                 false => Drops::Nothing,
             };

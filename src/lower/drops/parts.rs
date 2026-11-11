@@ -102,6 +102,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 out.push(StmtKind::Expr(close).at(js_span));
             }
+            // An `io::Error`: the error it holds, by its dictionary's `$drop`;
+            // and an `io::Result<()>`, `undefined` or its error, as a write's
+            // result is (ADR 0462, amended).
+            ty::Adt(..)
+                if self.recognition().is_io_error(ty) || self.is_write_result(ty) && !self.is_fmt_result(ty) =>
+            {
+                out.push(StmtKind::Expr(Expr::call_helper("$ioErrorDrop", vec![value])).at(js_span));
+            }
             // A channel's end (ADR 0142): a receiver's drops what's still in
             // its queue, as Rust's does.
             ty::Adt(_, args) if let Some(end) = self.recognition().channel_end(ty) => {

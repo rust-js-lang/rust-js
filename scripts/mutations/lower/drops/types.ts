@@ -452,4 +452,20 @@ export const mutations: Mutation[] = [
     replace: "                ty\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_in_a_wrappers_copied_default_holding_its_items\\.rs$"],
   },
+  {
+    name: "io-error-drops-nothing",
+    breaks: "an `io::Error` is taken to drop nothing, so the error it holds is never dropped where Rust drops it",
+    file: "src/lower/drops/types.rs",
+    find: "                if self.recognition.is_io_error(ty)\n                    && let Some(held)",
+    replace: "                if false\n                    && let Some(held)",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "json-error-drops-as-its-struct",
+    breaks: "serde_json's error, rust-js's own value, is dropped as its struct, whose `ErrorCode::Io` reads a field it hasn't, `err.code.TAG`, which throws where a crate's errors may drop",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if self.recognition.is_json_error(ty) => Drops::Nothing,\n",
+    replace: "",
+    tests: ["test/serde-values.test.ts", "-t", "a serde_json error dropped where the crate's dyn Errors drop"],
+  },
 ];

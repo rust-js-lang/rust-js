@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     name: "library-dropping-anys-unread",
     breaks: "a consumer reads no library's `makes_dropping_anys`, so its `catch_unwind` never drops the guard a library resumed",
     file: "src/library.rs",
-    find: "            makes_dropping_anys,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
-    replace: "            makes_dropping_anys: { let _ = makes_dropping_anys; false },\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
+    find: "            makes_dropping_anys,\n            makes_dropping_errors,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
+    replace: "            makes_dropping_anys: { let _ = makes_dropping_anys; false },\n            makes_dropping_errors,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
     tests: ["test/cross-crate-items.test.ts", "-t", "where the library makes one of what drops"],
   },
   {
@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     name: "library-fn-dyns-unread",
     breaks: "a consumer reads no library's `makes_dropping_fn_dyns`, so a `dyn Fn` of what drops a library hands it is dropped as nothing (ADR 0626, amended)",
     file: "src/library.rs",
-    find: "            makes_dropping_anys,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
-    replace: "            makes_dropping_anys,\n            makes_dropping_fn_dyns: { let _ = makes_dropping_fn_dyns; false },\n            dictionary_consts: ",
+    find: "            makes_dropping_anys,\n            makes_dropping_errors,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
+    replace: "            makes_dropping_anys,\n            makes_dropping_errors,\n            makes_dropping_fn_dyns: { let _ = makes_dropping_fn_dyns; false },\n            dictionary_consts: ",
     tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
   },
   {
@@ -181,5 +181,13 @@ export const mutations: Mutation[] = [
     find: "            builtin: builtin.is_some(),\n",
     replace: "            builtin: false,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "library-dropping-errors-unread",
+    breaks: "a consumer reads no library's `makes_dropping_errors`, so a `Box<dyn Error>` of what drops a library hands it is dropped as nothing (ADR 0462, amended)",
+    file: "src/library.rs",
+    find: "            makes_dropping_anys,\n            makes_dropping_errors,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
+    replace: "            makes_dropping_anys,\n            makes_dropping_errors: { let _ = makes_dropping_errors; false },\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_makes_a_dropping_dyn_error"],
   },
 ];

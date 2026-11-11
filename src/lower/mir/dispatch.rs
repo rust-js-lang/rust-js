@@ -1085,7 +1085,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = arg_tys[0];
             let residual = self.value_expr(values.into_iter().next().expect("the residual"), span)?;
             if self.is_write_result(output) {
-                return Ok(Value::Expr(self.thrown_residual(residual, output)));
+                return Ok(Value::Expr(self.thrown_residual(residual, (ty, output), span)?));
             }
             let convert = self.tried_conversion(ty, Some(output), span)?;
             let converted = convert.map(|conversion| conversion.of(crate::js::result::held(residual.clone())));
