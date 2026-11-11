@@ -1610,7 +1610,43 @@ bounds, as #1062 does of the crate's own impls.
 Tests: pairs `library_blanket_impl_steps_a_callers_parameter` and
 `library_blanket_default_compiled_by_its_consumer`, each against native
 Rust; mutations `library-impl-dictionary-unstepped` and
-`instance-impl-defaults-unstepped`, caught. The same gap in the
-type-fact analysis, which also walks the crate's own impls alone, is
-next: test_core is now refused at "`whether it's a TrustedLen` of a type
-parameter".
+`instance-impl-defaults-unstepped`, caught.
+
+### Which impls a compile has: one owner, two questions (#1409)
+
+The same gap was in the type-fact analysis, and in each analysis that
+asked rustc's list of the crate's own impls, fifteen places: a library's
+impl the crate compiles itself was no impl to any of them. So which trait
+impls a compile has is now asked of `traits.rs` alone, by its question:
+`declared_impls` (`declared_impls_of`), the impls the crate's source
+declares, which its exports, classes, derives, symbol names and a trait
+default's copies read; or `lowered_impls` (`is_lowered_impl`), the impls
+whose dictionaries this compile makes, those and the instance impls. The
+analyses of dictionaries ask the second: what an impl steps
+(`stepped_params`), what its dictionary carries of `<T as
+Iterator>::Item` and what its callers give (`type_fact_params`). An
+instance impl calls each default it keeps, compiled over `Self` (#1370),
+so what the default asks of `Self`, a zip's `TrustedLen`, the impl asks
+of its own `T`, as a function passes its own on; and a caller's
+parameter given as it is that it's given is passed on to it as to the
+crate's own. A fact the dictionary already has that the default asks
+again, `<Self as Iterator>::Item`'s size, its entry takes in its place,
+as its caller through the dictionary gives it, and reads the
+dictionary's: the same type's same fact. `test/architecture-traits.test.ts`
+holds that nothing else asks `all_local_trait_impls`.
+
+`may_run` and `cell_borrows` keep the declared impls, as before: no case
+yet shows an instance impl's method run through a trait call there.
+
+Tests: pair `library_instance_impl_asks_its_defaults_facts` (a kept
+default's `size_of` of its items, a zip of `Self`, and a caller's own
+`I` given the impl), against native Rust; crates.test.ts's "a library's
+default the crate's impls copy takes no fact of its own"; mutations
+`lowered-impls-declared-only`, `lowered-impl-local-only`,
+`instance-impl-defaults-unasked`, `instance-impl-super-items-unasked`,
+`dictionary-fact-given-twice-refused` and
+`instance-impl-of-a-callers-param-unpassed`, caught;
+`instance-over-self-though-copied` now pointed at the JS test, since its
+duplicate is taken, not refused. itertools' test_core.rs: 35 of its 36
+tests as native, where all 29 the Crater asked were refused; the one
+left, `get_1_max`, is a wrong answer of its own, #1412.

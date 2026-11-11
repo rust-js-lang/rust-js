@@ -94,3 +94,17 @@ test("a trait's arguments of a type are args_of's alone", () => {
     .flatMap((file) => (/mk_args_from_iter\(\s*std::iter::repeat_n\(/.test(read(file)) ? [file] : []));
   expect(repeated).toEqual([]);
 });
+
+// Which trait impls a compile has is asked of one owner, traits.rs, by its
+// question (#1409): the impls the crate declares (`declared_impls`), which
+// its exports, classes and derives read, or the impls whose dictionaries
+// this compile makes (`lowered_impls`), those and its libraries' it compiles
+// itself (ADR 0914, amended). Each analysis had asked rustc's list of the
+// crate's own, so a library's impl compiled here reached none of them, and
+// itertools' test_core was refused twice over.
+test("which trait impls a compile has is asked of traits.rs alone", () => {
+  const asks = /\ball_local_trait_impls\b/;
+  expect(sources.filter(file => asks.test(read(file)))).toEqual(["src/lower/traits.rs"]);
+  const defines = /\bfn (declared_impls|declared_impls_of|lowered_impls|is_lowered_impl)\b/;
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits.rs"]);
+});

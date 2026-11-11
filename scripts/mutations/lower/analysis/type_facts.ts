@@ -494,4 +494,22 @@ export const mutations: Mutation[] = [
     replace: "            let relayed = |at: usize| of_slots(at);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_given_an_associated_types_size$"],
   },
+  {
+    name: "instance-impl-defaults-unasked",
+    breaks:
+      "a library's impl the crate compiles itself calls the defaults it keeps, compiled over `Self`, but asks its callers none of their facts of `Self`, so the dictionary's entry reads one it isn't given: itertools' test_core refused, \"`whether it's a `TrustedLen`` of a type parameter\" (#1409)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    passed.push(((imp, param.index), (item.def_id, index as u32)));\n",
+    replace: "                    let _ = (imp, param, index, &passed);\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+  },
+  {
+    name: "instance-impl-super-items-unasked",
+    breaks:
+      "a library's impl the crate compiles itself isn't asked what its dictionary carries of `<T as Iterator>::Item`, so a kept default's `size_of` of it is refused, \"an associated type whose facts its caller's dictionary doesn't carry\" (#1409)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    for &(trait_id, imp) in &lowered {\n        let facts = match trait_id.is_local() {\n",
+    replace: "    for &(trait_id, imp) in lowered.iter().filter(|(_, imp)| imp.is_local()) {\n        let facts = match trait_id.is_local() {\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+  },
 ];

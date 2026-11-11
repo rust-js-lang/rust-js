@@ -239,8 +239,8 @@ pub(super) fn instance_over_self(
         return false;
     };
     foreign.is_instance(default)
-        && (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten())
-            .all(|&imp| tcx.impl_item_implementor_ids(imp.to_def_id()).contains_key(&default))
+        && crate::lower::traits::declared_impls_of(tcx, trait_id)
+            .all(|imp| tcx.impl_item_implementor_ids(imp).contains_key(&default))
 }
 
 pub(super) fn copies_of_default<'tcx>(
@@ -257,8 +257,7 @@ pub(super) fn copies_of_default<'tcx>(
     let parents = tcx.generics_of(default).parent_count;
     let own = ty::GenericArgs::identity_for_item(tcx, default);
     let mut copies = Vec::new();
-    for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
-        let imp = imp.to_def_id();
+    for imp in crate::lower::traits::declared_impls_of(tcx, trait_id) {
         if tcx.impl_item_implementor_ids(imp).contains_key(&default) {
             continue;
         }

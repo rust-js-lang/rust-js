@@ -844,11 +844,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     fn own_impl_method(&self, adt: DefId, trait_id: DefId, method: &str) -> Option<DefId> {
         let tcx = self.tcx;
         let own = |trait_id: DefId, method: &str| -> Option<DefId> {
-            let imp = (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten()).find(|&&imp| {
+            let imp = crate::lower::traits::declared_impls_of(tcx, trait_id).find(|&imp| {
                 matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
                     ty::Adt(of, _) if of.did() == adt)
             })?;
-            let implementors = tcx.impl_item_implementor_ids(imp.to_def_id());
+            let implementors = tcx.impl_item_implementor_ids(imp);
             let partial_eq = tcx.lang_items().eq_trait()?;
             if trait_id == partial_eq && implementors.contains_key(&trait_method(tcx, partial_eq, "ne")) {
                 return None;

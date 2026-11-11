@@ -122,7 +122,6 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    instance_impls: &[DefId],
 ) -> IndexSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
@@ -233,10 +232,20 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     let Some((imp, impl_args)) = crate::lower::traits::evidence_impl(tcx, typing_env, bound) else {
                         continue;
                     };
-                    if imp.is_local() || foreign.item(imp).is_none() {
+                    // The crate's own are followed where their methods are
+                    // called (below); a library's it compiles itself, as the
+                    // crate's own impls are, by what its analysis finds it
+                    // steps (`lowered_impls`).
+                    if imp.is_local() {
                         continue;
                     }
-                    steps_through(&mut stepped, imp, impl_args);
+                    if crate::lower::traits::is_lowered_impl(foreign, imp) {
+                        pass_on(&mut passed, imp, impl_args);
+                    } else if foreign.item(imp).is_some() {
+                        steps_through(&mut stepped, imp, impl_args);
+                    } else {
+                        continue;
+                    }
                     asked.push((imp, impl_args));
                 }
             }
@@ -459,7 +468,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         else {
                             continue;
                         };
-                        if !held.is_local() {
+                        if !crate::lower::traits::is_lowered_impl(foreign, held) {
                             continue;
                         }
                         pass_on(&mut passed, held, held_args);
@@ -488,35 +497,28 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     let mut kept_through: Vec<(Param, (Param, Param))> = Vec::new();
     // The crate's impls, and its libraries' it compiles itself, whose
     // dictionaries it makes (ADR 0914, amended; #1409).
-    let impls: Vec<DefId> = (tcx.all_local_trait_impls(()).values().flatten())
-        .map(|imp| imp.to_def_id())
-        .chain(instance_impls.iter().copied())
-        .collect();
-    for &imp in &impls {
-        {
-            let trait_id = tcx.impl_trait_id(imp);
-            let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
-            let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
-            let overridden = tcx.impl_item_implementor_ids(imp);
-            let kept = (tcx.associated_items(trait_id).in_definition_order()).filter(|item| {
-                item.is_fn() && item.defaultness(tcx).has_value() && !overridden.contains_key(&item.def_id)
-            });
-            for item in kept {
-                for (index, arg) in trait_ref.args.iter().enumerate() {
-                    let Some(ty) = arg.as_type() else { continue };
-                    let default = (item.def_id, index as u32);
-                    if let ty::Param(param) = ty.kind() {
-                        passed.push(((imp, param.index), default));
-                    } else if let Ok(Some(instance)) =
-                        crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
-                        && fns.contains_key(&instance.def_id())
-                    {
-                        for (at, held) in instance.args.iter().enumerate() {
-                            if let Some(held) = held.as_type()
-                                && let ty::Param(param) = held.kind()
-                            {
-                                kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));
-                            }
+    let impls = crate::lower::traits::lowered_impls(tcx, foreign);
+    for &(trait_id, imp) in &impls {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+        let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+        let overridden = tcx.impl_item_implementor_ids(imp);
+        let kept = (tcx.associated_items(trait_id).in_definition_order())
+            .filter(|item| item.is_fn() && item.defaultness(tcx).has_value() && !overridden.contains_key(&item.def_id));
+        for item in kept {
+            for (index, arg) in trait_ref.args.iter().enumerate() {
+                let Some(ty) = arg.as_type() else { continue };
+                let default = (item.def_id, index as u32);
+                if let ty::Param(param) = ty.kind() {
+                    passed.push(((imp, param.index), default));
+                } else if let Ok(Some(instance)) =
+                    crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
+                    && fns.contains_key(&instance.def_id())
+                {
+                    for (at, held) in instance.args.iter().enumerate() {
+                        if let Some(held) = held.as_type()
+                            && let ty::Param(param) = held.kind()
+                        {
+                            kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));
                         }
                     }
                 }
@@ -528,53 +530,51 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // evidence, so the impl steps what that type's `next` steps, of a
     // parameter passed on as it is, or held in a std adapter, `Fuse<I>`
     // (ADR 0527).
-    for &imp in &impls {
+    for &(_, imp) in &impls {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+        for item in tcx
+            .associated_items(imp)
+            .in_definition_order()
+            .filter(|item| item.is_type())
         {
-            let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
-            for item in tcx
-                .associated_items(imp)
-                .in_definition_order()
-                .filter(|item| item.is_type())
-            {
-                let Some(declared) = item.trait_item_def_id() else {
-                    continue;
-                };
-                let iterates = (tcx.item_bounds(declared).skip_binder().iter())
+            let Some(declared) = item.trait_item_def_id() else {
+                continue;
+            };
+            let iterates = (tcx.item_bounds(declared).skip_binder().iter())
+                .filter_map(|clause| clause.as_trait_clause())
+                .any(|p| p.def_id() == iterator);
+            let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
+            // The impl's own parameter, `type Iter = I`: its dictionary's
+            // entries of the type's bounds are `I`'s, by each the trait
+            // declares, `Iterator` and its extensions (ADR 0106, #972).
+            if let ty::Param(param) = value.kind() {
+                let extensions: Vec<DefId> = (tcx.item_bounds(declared).skip_binder().iter())
                     .filter_map(|clause| clause.as_trait_clause())
-                    .any(|p| p.def_id() == iterator);
-                let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
-                // The impl's own parameter, `type Iter = I`: its dictionary's
-                // entries of the type's bounds are `I`'s, by each the trait
-                // declares, `Iterator` and its extensions (ADR 0106, #972).
-                if let ty::Param(param) = value.kind() {
-                    let extensions: Vec<DefId> = (tcx.item_bounds(declared).skip_binder().iter())
-                        .filter_map(|clause| clause.as_trait_clause())
-                        .map(|p| p.def_id())
-                        .filter(|&tr| is_iterator_extension(tcx, tr))
-                        .collect();
-                    if iterates || !extensions.is_empty() {
-                        stepped.insert((imp, param.index, iterator));
-                    }
-                    stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));
-                    continue;
+                    .map(|p| p.def_id())
+                    .filter(|&tr| is_iterator_extension(tcx, tr))
+                    .collect();
+                if iterates || !extensions.is_empty() {
+                    stepped.insert((imp, param.index, iterator));
                 }
-                let Ok(Some(instance)) =
-                    crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
-                else {
-                    continue;
-                };
-                if !iterates || !fns.contains_key(&instance.def_id()) {
-                    continue;
-                }
-                for (at, held) in instance.args.iter().enumerate() {
-                    let Some(held) = held.as_type() else { continue };
-                    match held.kind() {
-                        ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),
-                        _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {
-                            ty::Param(param) => Some((imp, param.index, iterator)),
-                            _ => None,
-                        })),
-                    }
+                stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));
+                continue;
+            }
+            let Ok(Some(instance)) =
+                crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
+            else {
+                continue;
+            };
+            if !iterates || !fns.contains_key(&instance.def_id()) {
+                continue;
+            }
+            for (at, held) in instance.args.iter().enumerate() {
+                let Some(held) = held.as_type() else { continue };
+                match held.kind() {
+                    ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),
+                    _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {
+                        ty::Param(param) => Some((imp, param.index, iterator)),
+                        _ => None,
+                    })),
                 }
             }
         }

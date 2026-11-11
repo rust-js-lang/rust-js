@@ -438,7 +438,7 @@ pub(in crate::lower) fn may_have_destructors(
     (foreign, library): (&crate::lower::library::Foreign<'_, '_>, bool),
 ) -> bool {
     let drop_trait = tcx.lang_items().drop_trait();
-    library || drop_trait.is_some_and(|id| tcx.all_local_trait_impls(()).contains_key(&id)) || foreign.any()
+    library || drop_trait.is_some_and(|id| super::declared_impls_of(tcx, id).next().is_some()) || foreign.any()
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a

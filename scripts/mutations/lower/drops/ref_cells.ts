@@ -499,8 +499,8 @@ export const mutations: Mutation[] = [
     name: "variant-derive-unasked",
     breaks: "a derived `Clone` of an enum, which borrows its variant's `RefCell` field while what it holds runs its own `clone`, is taken for no use of it, so that borrow is unchecked and the `clone` borrowing it mutably runs on, where std's panics (#503)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                    && let ty::Adt(adt, _) = self_ty.kind()\n                    && !adt.is_union()\n",
-    replace: "                    && let ty::Adt(adt, _) = self_ty.kind()\n                    && adt.is_struct()\n",
+    find: "                && let ty::Adt(adt, _) = self_ty.kind()\n                && !adt.is_union()\n",
+    replace: "                && let ty::Adt(adt, _) = self_ty.kind()\n                && adt.is_struct()\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derive_meets.rs$"],
   },
   {

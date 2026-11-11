@@ -581,6 +581,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         self.instances.contains(self.tcx, id)
     }
 
+    /// The trait impls of its libraries the crate compiles itself (ADR
+    /// 0914, amended), which `traits::lowered_impls` lists with its own.
+    pub(super) fn instance_impls(&self) -> Vec<DefId> {
+        self.instances.impls(self.tcx)
+    }
+
     /// Is each library's JS from the crate rustc loaded the metadata of? A
     /// library rebuilt since its JS was, or metadata from another build of it,
     /// isn't: its JS would be for another crate than the one this was checked

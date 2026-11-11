@@ -190,6 +190,17 @@ test("a zip of what's never random access asks no caller whether it is", () => {
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("RandomAccessNoCoerce");
 }, 300_000);
 
+// A library's default the crate's own impls copy is asked through them,
+// their dictionaries giving its facts (#990), so its entry takes none of
+// its own: one asked as a function over `Self` too would take each again,
+// read nowhere, as a fact the dictionary has is taken in its place (#1409).
+test("a library's default the crate's impls copy takes no fact of its own", () => {
+  const out = chain(pairs, "library_default_item_layouts", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  collectVec: (arg0) => tools_collectVec(arg0, countdownTools,");
+  expect(app).not.toContain("CountdownItemSize");
+}, 300_000);
+
 // ADR 0844: a library that reads no count of its `Rc`s counts none, and its
 // contract says so: its JS is the value itself, a context's
 // create-then-assign, as is its consumer's. A consumer that counts one it

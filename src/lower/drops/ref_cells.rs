@@ -633,24 +633,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Clone`'s, a `PartialEq`'s: it reads each `RefCell` field of its
         // struct through the `RefCell`'s own impl. Not a `Default`'s, which
         // makes them.
-        for impls in tcx.all_local_trait_impls(()).values() {
-            for &imp in impls {
-                let of = tcx
-                    .impl_trait_ref(imp)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .def_id;
-                let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
-                if crate::lower::recognition::known_derive(tcx, imp.to_def_id())
-                    && !crate::lower::recognition::is_std_def(tcx, of, StdItem::Default)
-                    && let ty::Adt(adt, _) = self_ty.kind()
-                    && !adt.is_union()
-                {
-                    for field in adt.all_fields() {
-                        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                        if self.is_std_type(ty, StdItem::RefCell) {
-                            derived.entry(field.did).or_insert(tcx.def_span(imp));
-                        }
+        for (_, imp) in crate::lower::traits::declared_impls(tcx) {
+            let of = tcx
+                .impl_trait_ref(imp)
+                .instantiate_identity()
+                .skip_normalization()
+                .def_id;
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            if crate::lower::recognition::known_derive(tcx, imp)
+                && !crate::lower::recognition::is_std_def(tcx, of, StdItem::Default)
+                && let ty::Adt(adt, _) = self_ty.kind()
+                && !adt.is_union()
+            {
+                for field in adt.all_fields() {
+                    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    if self.is_std_type(ty, StdItem::RefCell) {
+                        derived.entry(field.did).or_insert(tcx.def_span(imp));
                     }
                 }
             }
@@ -950,11 +948,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // An impl of the crate's for one, whose dictionary is generic code.
-        for impls in tcx.all_local_trait_impls(()).values() {
-            for &imp in impls {
-                let ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
-                all |= ty.walk().filter_map(|part| part.as_type()).any(any_value);
-            }
+        for (_, imp) in crate::lower::traits::declared_impls(tcx) {
+            let ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            all |= ty.walk().filter_map(|part| part.as_type()).any(any_value);
         }
         if all {
             return (true, IndexSet::default(), seen);

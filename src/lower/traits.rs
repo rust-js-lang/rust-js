@@ -36,6 +36,36 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
+/// The trait impls the crate declares, each with its trait, in rustc's
+/// order: its source's, which its exports, its classes and its derives
+/// read. The one place rustc's list of them is asked (#1409).
+pub(in crate::lower) fn declared_impls(tcx: TyCtxt<'_>) -> impl Iterator<Item = (DefId, DefId)> + '_ {
+    (tcx.all_local_trait_impls(()).iter())
+        .flat_map(|(&trait_id, impls)| impls.iter().map(move |imp| (trait_id, imp.to_def_id())))
+}
+
+/// The crate's own impls of `trait_id` (`declared_impls`).
+pub(in crate::lower) fn declared_impls_of(tcx: TyCtxt<'_>, trait_id: DefId) -> impl Iterator<Item = DefId> + '_ {
+    (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten()).map(|imp| imp.to_def_id())
+}
+
+/// The trait impls whose dictionaries this compile makes, each with its
+/// trait: the crate's own, and its libraries' it compiles itself, which no
+/// manifest answers for (ADR 0914, amended): what an analysis of the
+/// dictionaries the crate makes asks of each, it asks of these (#1409).
+pub(in crate::lower) fn lowered_impls<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+) -> Vec<(DefId, DefId)> {
+    let instances = (foreign.instance_impls().into_iter()).map(|imp| (tcx.impl_trait_id(imp), imp));
+    declared_impls(tcx).chain(instances).collect()
+}
+
+/// Whether `imp`'s dictionary is made by this compile (`lowered_impls`).
+pub(in crate::lower) fn is_lowered_impl(foreign: &super::library::Foreign<'_, '_>, imp: DefId) -> bool {
+    imp.is_local() || foreign.is_instance(imp)
+}
+
 /// A trait whose bounds take dictionaries (ADR 0049): the crate's own, and
 /// the std ones rust-js has dictionaries for (ADR 0052).
 pub(super) use super::recognition::operational;

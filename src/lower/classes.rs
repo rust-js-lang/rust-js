@@ -307,7 +307,7 @@ pub(crate) fn has_method_named(tcx: TyCtxt<'_>, adt: DefId, name: &str) -> bool 
 /// a library's, whose impls are in its class's crate or its trait's, one
 /// that uses its class's (#1073). None of std's crates has a class.
 fn class_trait_impls(tcx: TyCtxt<'_>, adt: DefId) -> impl Iterator<Item = DefId> + '_ {
-    let local = (tcx.all_local_trait_impls(()).values()).flat_map(|impls| impls.iter().map(|imp| imp.to_def_id()));
+    let local = crate::lower::traits::declared_impls(tcx).map(|(_, imp)| imp);
     let libraries = (tcx.crates(()).iter())
         .filter(move |&&krate| crate::lower::recognition::std_crate(tcx, krate).is_none())
         .flat_map(move |&krate| tcx.trait_impls_in_crate(krate).iter().copied());

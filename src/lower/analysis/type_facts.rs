@@ -251,7 +251,7 @@ pub(super) fn type_fact_params<'tcx>(
         mut asked,
         mut built,
         mut carried,
-        passed,
+        mut passed,
         calls,
         carried_super,
     } = asking;
@@ -261,7 +261,9 @@ pub(super) fn type_fact_params<'tcx>(
     carried.retain(|&(assoc, fact)| carries(foreign, assoc, fact));
     // What every impl's dictionary carries, whatever asks it (#1341).
     carried.extend(carried_by_every_impl(tcx));
-    for &trait_id in tcx.all_local_trait_impls(()).keys() {
+    let lowered = crate::lower::traits::lowered_impls(tcx, foreign);
+    let traits: IndexSet<DefId> = lowered.iter().map(|&(trait_id, _)| trait_id).collect();
+    for trait_id in traits {
         if trait_id.is_local() {
             continue;
         }
@@ -277,23 +279,41 @@ pub(super) fn type_fact_params<'tcx>(
     // `<I as Iterator>::Item` of an `impl<I: Iterator> Tools for Wrap<I>`,
     // its slot, or of an associated type of a trait whose dictionaries carry
     // it (#990).
-    for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
+    for &(trait_id, imp) in &lowered {
         let facts = match trait_id.is_local() {
             true => Vec::new(),
             false => foreign.carried_super(trait_id),
         };
-        for &imp in impls {
-            let imp = imp.to_def_id();
-            let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
-            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
-            for &(assoc, fact) in &facts {
-                let ty = super_item_of(tcx, typing_env, assoc, self_ty);
-                if let Some(index) = slot_of(tcx, foreign, imp, ty) {
-                    asked.insert((imp, index, fact));
-                } else if let Some(assoc) = carried_by(foreign, ty)
-                    && carries(foreign, assoc, fact)
+        let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+        let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        for &(assoc, fact) in &facts {
+            let ty = super_item_of(tcx, typing_env, assoc, self_ty);
+            if let Some(index) = slot_of(tcx, foreign, imp, ty) {
+                asked.insert((imp, index, fact));
+            } else if let Some(assoc) = carried_by(foreign, ty)
+                && carries(foreign, assoc, fact)
+            {
+                carried.insert((assoc, fact));
+            }
+        }
+    }
+    // A library's impl the crate compiles itself calls each default it
+    // keeps, compiled over `Self` (`instance_over_self`), given what its
+    // dictionary is given: what the default asks of the trait's `Self`,
+    // `collect`'s `TrustedLen`, the impl asks of its own parameter given
+    // for it, as a function passes its own on (#1409). The crate's own
+    // copy the default, asked in their terms (`copies_of_default`).
+    for &(trait_id, imp) in lowered.iter().filter(|(_, imp)| !imp.is_local()) {
+        let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+        let overridden = tcx.impl_item_implementor_ids(imp);
+        let kept = (tcx.associated_items(trait_id).in_definition_order())
+            .filter(|item| item.is_fn() && item.defaultness(tcx).has_value() && !overridden.contains_key(&item.def_id));
+        for item in kept {
+            for (index, arg) in trait_ref.args.iter().enumerate() {
+                if let Some(ty) = arg.as_type()
+                    && let ty::Param(param) = ty.kind()
                 {
-                    carried.insert((assoc, fact));
+                    passed.push(((imp, param.index), (item.def_id, index as u32)));
                 }
             }
         }
@@ -412,7 +432,7 @@ pub(super) fn type_fact_params<'tcx>(
             .flat_map(|&(assoc, fact)| {
                 let trait_id = tcx.trait_of_assoc(assoc).expect("an associated type");
                 tcx.all_impls(trait_id)
-                    .filter(|imp| imp.is_local())
+                    .filter(|&imp| crate::lower::traits::is_lowered_impl(foreign, imp))
                     .filter_map(move |imp| {
                         let item = *tcx.impl_item_implementor_ids(imp).get(&assoc)?;
                         Some((imp, tcx.type_of(item).instantiate_identity().skip_normalization(), fact))
@@ -819,8 +839,7 @@ impl<'tcx> Asking<'tcx> {
         if !trait_id.is_local() {
             return;
         }
-        for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
-            let imp = imp.to_def_id();
+        for imp in crate::lower::traits::declared_impls_of(tcx, trait_id) {
             if tcx.impl_item_implementor_ids(imp).contains_key(&default) {
                 continue;
             }
@@ -952,7 +971,7 @@ impl<'tcx> Asking<'tcx> {
                 if let Some(ty) = arg.as_type()
                     && let ty::Param(param) = ty.kind()
                 {
-                    match impl_id.is_local() {
+                    match crate::lower::traits::is_lowered_impl(foreign, impl_id) {
                         true => self.passed.push(((caller, param.index), (impl_id, index as u32))),
                         false => {
                             for (at, fact) in foreign.type_facts(impl_id) {
@@ -980,7 +999,7 @@ impl<'tcx> Asking<'tcx> {
             // Iterator>::Item` of the caller's `I`: its caller's, as a call's
             // is (#1401).
             let relayed = |at: usize| of_slots(at) || at >= impl_args.len();
-            match impl_id.is_local() {
+            match crate::lower::traits::is_lowered_impl(foreign, impl_id) {
                 true if (0..impl_args.len()).any(of_slots) => self.calls.push((caller, impl_id, impl_args)),
                 true => {}
                 false => {

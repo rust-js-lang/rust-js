@@ -120,11 +120,9 @@ impl<'tcx> CellBorrows<'tcx> {
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> Self {
         let mut impls: Impls = IndexMap::default();
-        for (&trait_id, of_trait) in tcx.all_local_trait_impls(()) {
-            for &imp in of_trait {
-                if let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
-                    impls.entry(adt.did()).or_default().push((trait_id, imp.to_def_id()));
-                }
+        for (trait_id, imp) in crate::lower::traits::declared_impls(tcx) {
+            if let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
+                impls.entry(adt.did()).or_default().push((trait_id, imp));
             }
         }
         // What each fn pointer the crate calls may be (ADR 0907).

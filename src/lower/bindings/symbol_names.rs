@@ -261,17 +261,11 @@ fn reading_trait(tcx: TyCtxt<'_>, adt: DefId) -> Option<String> {
                 .any(|item| is_std_def(tcx, trait_id, item))
             || crate::lower::serde::serde_trait(tcx, trait_id).is_some()
     };
-    for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
-        if !reads(trait_id) {
-            continue;
-        }
-        let of_adt = impls.iter().any(|&imp| {
-            matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
-                rustc_middle::ty::Adt(of, _) if of.did() == adt)
-        });
-        if of_adt {
-            return Some(tcx.item_name(trait_id).to_string());
-        }
-    }
-    None
+    crate::lower::traits::declared_impls(tcx)
+        .find(|&(trait_id, imp)| {
+            reads(trait_id)
+                && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    rustc_middle::ty::Adt(of, _) if of.did() == adt)
+        })
+        .map(|(trait_id, _)| tcx.item_name(trait_id).to_string())
 }

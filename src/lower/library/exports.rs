@@ -290,8 +290,7 @@ pub(in crate::lower) fn exports<'tcx>(
         partial_cmp_is_cmp: {
             let partial_ord =
                 tcx.require_lang_item(rustc_hir::attrs::lang_items::LangItem::PartialOrd, rustc_span::DUMMY_SP);
-            let mut keys: Vec<String> = (tcx.all_local_trait_impls(()).get(&partial_ord).into_iter().flatten())
-                .map(|imp| imp.to_def_id())
+            let mut keys: Vec<String> = crate::lower::traits::declared_impls_of(tcx, partial_ord)
                 .filter(|&imp| crate::lower::ordering::partial_cmp_is_cmp(tcx, imp))
                 .map(|imp| key(tcx, imp))
                 .collect();

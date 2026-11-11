@@ -49,9 +49,9 @@ pub(super) fn superclass_impls(tcx: TyCtxt<'_>, adt: DefId) -> Vec<DefId> {
     if !adt.is_local() || !is_class(tcx, adt) {
         return Vec::new();
     }
-    (tcx.all_local_trait_impls(()).iter())
-        .filter(|(trait_id, _)| base_class(tcx, **trait_id).is_some())
-        .flat_map(|(_, impls)| impls.iter().map(|imp| imp.to_def_id()))
+    crate::lower::traits::declared_impls(tcx)
+        .filter(|&(trait_id, _)| base_class(tcx, trait_id).is_some())
+        .map(|(_, imp)| imp)
         .filter(|&imp| class_of_impl(tcx, imp) == Some(adt))
         .collect()
 }

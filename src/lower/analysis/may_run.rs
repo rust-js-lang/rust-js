@@ -107,17 +107,11 @@ impl Impls {
             of_trait: IndexMap::default(),
             of_type: IndexMap::default(),
         };
-        for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
-            for &imp in impls {
-                found.of_trait.entry(trait_id).or_default().push(imp.to_def_id());
-                let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
-                if let Some(adt) = self_ty.ty_adt_def() {
-                    found
-                        .of_type
-                        .entry(adt.did())
-                        .or_default()
-                        .push((trait_id, imp.to_def_id()));
-                }
+        for (trait_id, imp) in crate::lower::traits::declared_impls(tcx) {
+            found.of_trait.entry(trait_id).or_default().push(imp);
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            if let Some(adt) = self_ty.ty_adt_def() {
+                found.of_type.entry(adt.did()).or_default().push((trait_id, imp));
             }
         }
         found

@@ -775,4 +775,13 @@ export const mutations: Mutation[] = [
     replace: "                if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
+  {
+    name: "dictionary-fact-given-twice-refused",
+    breaks:
+      "a default compiled over `Self` that asks `<Self as Iterator>::Item`'s size, of a library's impl the crate compiles itself whose dictionary has it, is refused, \"a trait method's type parameter's fact here\", where its caller gives it in its place (#1409)",
+    file: "src/lower/traits/impls.rs",
+    find: "                if !(self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {\n",
+    replace: "                if (self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {\n                    return Err(self.unsupported(span, \"a trait method's type parameter's fact here\"));\n                }\n                {\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+  },
 ];

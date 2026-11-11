@@ -134,10 +134,10 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
   },  {
     name: "instance-over-self-though-copied",
-    breaks: "a library's default the crate compiles itself is a function over `Self` asking its own facts though the crate's impls copy it, whose dictionaries give them already, so each impl's entry is refused, \"a trait method's type parameter's fact here\" (#990, #1370)",
+    breaks: "a library's default the crate compiles itself is a function over `Self` asking its own facts though the crate's impls copy it, whose dictionaries give them already, so each impl's entry takes them again, read nowhere (#990, #1370, #1409)",
     file: "src/lower/analysis/type_facts/collects.rs",
-    find: "            .all(|&imp| tcx.impl_item_implementor_ids(imp.to_def_id()).contains_key(&default))\n",
+    find: "            .all(|imp| tcx.impl_item_implementor_ids(imp).contains_key(&default))\n",
     replace: "            .all(|_| true)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts$"],
+    tests: ["test/crates.test.ts", "-t", "a library's default the crate's impls copy takes no fact of its own"],
   },
 ];

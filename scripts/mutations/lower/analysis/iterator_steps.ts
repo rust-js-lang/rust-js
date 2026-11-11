@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl whose associated type is its own type parameter, `type Iter = I`, isn't given `I`'s dictionaries, which the JS iterator its dictionary makes of it steps by: refused (#972)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));\n",
+    find: "                stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));\n",
     replace: "                    let _ = extensions;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
   },
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a blanket impl that keeps a default stepping its `Self` is given no `Iterator` dictionary for its `T`",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        passed.push(((imp, param.index), default));\n",
+    find: "                    passed.push(((imp, param.index), default));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl for `Holder<I>` that keeps a default stepping its `Self` is given no `Iterator` dictionary for `I`",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                                kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));\n",
+    find: "                            kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
@@ -165,9 +165,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                if !iterates || !fns.contains_key(&instance.def_id()) {\n",
+    find: "            if !iterates || !fns.contains_key(&instance.def_id()) {\n",
     replace:
-      "                if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
+      "            if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's `IntoIter` holding its type parameter as it is isn't given that parameter's dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),\n",
-    replace: "                        ty::Param(_) => {}\n",
+    find: "                    ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),\n",
+    replace: "                    ty::Param(_) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
@@ -184,9 +184,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's associated iterator holding a std adapter of its type parameter, `Fuse<I>`, isn't given that parameter's dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {\n",
+    find: "                    _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {\n",
     replace:
-      "                        _ => stepped.extend(held.walk().filter(|_| false).filter_map(|part| match part.as_type()?.kind() {\n",
+      "                    _ => stepped.extend(held.walk().filter(|_| false).filter_map(|part| match part.as_type()?.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
@@ -327,8 +327,8 @@ export const mutations: Mutation[] = [
     name: "item-param-iterator-unstepped",
     breaks: "an impl whose `type Iter = I` is bound by `Iterator` isn't seen to step `I`, so a trait's default it keeps that steps `Self::Iter` `.reduce`s a range given it as if a JS iterator, `TypeError` (#972, ADR 0977)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    if iterates || !extensions.is_empty() {\n                        stepped.insert((imp, param.index, iterator));\n",
-    replace: "                    if iterates || !extensions.is_empty() {\n",
+    find: "                if iterates || !extensions.is_empty() {\n                    stepped.insert((imp, param.index, iterator));\n",
+    replace: "                if iterates || !extensions.is_empty() {\n",
     tests: ["test/corpus.test.ts", "-t", "^kept_default_steps_assoc.rs$"],
   },
   {
@@ -363,17 +363,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller's `I: Iterator + Clone`, given as it is, given to a library's blanket impl's default that hands it on unstepped, `first_of`, isn't stepped though the impl's dictionary it makes steps it by its other defaults: refused, \"stepping `I`\" (#1409)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    steps_through(&mut stepped, imp, impl_args);\n                    asked.push((imp, impl_args));\n",
-    replace: "                    asked.push((imp, impl_args));\n",
+    find: "                    } else if foreign.item(imp).is_some() {\n                        steps_through(&mut stepped, imp, impl_args);\n",
+    replace: "                    } else if foreign.item(imp).is_some() {\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_impl_steps_a_callers_parameter$"],
   },
   {
-    name: "instance-impl-defaults-unstepped",
+    name: "instance-impl-of-a-callers-param-unpassed",
     breaks:
-      "a library's blanket impl the crate compiles itself (ADR 0914) isn't walked for the defaults it keeps, so its dictionary takes no `T: Iterator` though `collect_array` steps `T`: refused, \"stepping `T`\" (#1409)",
+      "a caller's `I: DoubleEndedIterator + Clone`, given as it is, given to a library's blanket impl the crate compiles itself, isn't stepped by what that impl's defaults step, so it's given no `Iterator` dictionary: refused, \"stepping `I`\" (#1409)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "        .chain(instance_impls.iter().copied())\n",
-    replace: "        .chain(instance_impls.iter().copied().filter(|_| false))\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_default_compiled_by_its_consumer$"],
+    find: "                    if crate::lower::traits::is_lowered_impl(foreign, imp) {\n                        pass_on(&mut passed, imp, impl_args);\n",
+    replace: "                    if crate::lower::traits::is_lowered_impl(foreign, imp) && false {\n                        pass_on(&mut passed, imp, impl_args);\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
 ];

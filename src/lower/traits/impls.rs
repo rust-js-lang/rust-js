@@ -563,18 +563,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .instantiate(self.tcx, args)
                     .skip_normalization();
                 let of = self.drop_slot_of(item.def_id, index, args);
-                // The same fact of it given twice; two facts of one type, its
-                // `IInPlace` and `IVecCollect`, are each their own (#1239).
-                if self
-                    .given
-                    .type_facts
-                    .iter()
-                    .any(|&(at, given, _)| at == of && given == fact)
-                {
-                    return Err(self.unsupported(span, "a trait method's type parameter's fact here"));
-                }
+                // The same fact of it the dictionary has already, a default
+                // compiled over `Self` asking `<Self as Iterator>::Item`'s
+                // size of a library's impl the crate compiles itself (ADR 0914,
+                // #1409): its caller gives it in its place, the same type's
+                // same fact, and the dictionary's is read. Two facts of one
+                // type, its `IInPlace` and `IVecCollect`, are each their own
+                // (#1239).
                 let name = self.fresh(&format!("{}{}", drop_word(self.tcx, declared), fact.word()));
-                self.given.type_facts.push((of, fact, Expr::var(&name)));
+                if !(self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {
+                    self.given.type_facts.push((of, fact, Expr::var(&name)));
+                }
                 fact_names.push(name);
             }
             // Everything the method takes that its caller through the dictionary

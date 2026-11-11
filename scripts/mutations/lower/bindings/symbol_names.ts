@@ -126,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "field-symbol-derives-allowed",
     breaks: "a struct that derives `Clone`, `PartialEq`, `Debug` or `Hash`, whose JS reads each field by name, may have a field a symbol names",
     file: "src/lower/bindings/symbol_names.rs",
-    find: "        if !reads(trait_id) {",
-    replace: "        if true {",
+    find: "            reads(trait_id)\n                && matches!(tcx.type_of(imp)",
+    replace: "            (false && reads(trait_id))\n                && matches!(tcx.type_of(imp)",
     tests: [
       "test/field-symbol-names.test.ts",
       "-t",

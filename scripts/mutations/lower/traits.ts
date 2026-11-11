@@ -394,4 +394,22 @@ export const mutations: Mutation[] = [
     replace: "            || item.is_impl_trait_in_trait()\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_into_iterator_of_a_trait_method_flattened.rs$"],
   },
+  {
+    name: "lowered-impls-declared-only",
+    breaks:
+      "a library's blanket impl the crate compiles itself (ADR 0914) is no impl whose dictionary the crate makes, so what its kept defaults step of `T` and ask of `T::Item` reach none: `collect_array`'s `self.next()` refused, \"stepping `T`\" (#1409)",
+    file: "src/lower/traits.rs",
+    find: "    declared_impls(tcx).chain(instances).collect()\n",
+    replace: "    declared_impls(tcx).chain(instances.filter(|_| false)).collect()\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_(blanket_default_compiled_by_its_consumer|instance_impl_asks_its_defaults_facts)$"],
+  },
+  {
+    name: "lowered-impl-local-only",
+    breaks:
+      "a library's impl the crate compiles itself is taken for its library's, whose manifest says nothing of it, so what a caller's type parameter given it asks reaches no caller (#1409)",
+    file: "src/lower/traits.rs",
+    find: "    imp.is_local() || foreign.is_instance(imp)\n",
+    replace: "    imp.is_local() || (foreign.is_instance(imp) && false)\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+  },
 ];
