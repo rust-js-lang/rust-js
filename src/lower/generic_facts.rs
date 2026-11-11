@@ -139,9 +139,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
-        [Form::Handle, Form::Box, Form::HeldBox]
+        let form = [Form::Handle, Form::Box, Form::HeldBox]
             .into_iter()
-            .find(|&form| self.form_differs(form, crossing))
+            .find(|&form| self.form_differs(form, crossing));
+        let answer = match form {
+            None => "as-it-is",
+            Some(Form::Handle) => "handle",
+            Some(Form::Box) => "box",
+            Some(Form::HeldBox) => "held-box",
+        };
+        crate::decisions::record("generic-form", answer);
+        form
     }
 
     /// A generic function's instance `def_id` of `args` as a `fn` pointer,

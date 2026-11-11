@@ -370,7 +370,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// property, by its declaration (`RefCells::holds_value`, ADR 0863,
     /// amended).
     pub(in crate::lower) fn holds_value(&self, field: &ty::FieldDef) -> bool {
-        self.ref_cells().holds_value(self.tcx, field)
+        let holds = self.ref_cells().holds_value(self.tcx, field);
+        crate::decisions::record("refcell-field", if holds { "holds-value" } else { "cell" });
+        holds
     }
 
     /// Whether `field`, a struct's `RefCell` field, is one no borrow of

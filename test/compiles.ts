@@ -74,6 +74,9 @@ const statOf = (path: string): Stat | undefined => {
 const identities = new Map<string, string | undefined>();
 function compilerIdentity(program: string, env: Record<string, string | undefined>): { identity: string; file: Stat } | undefined {
   if (process.env.RUST_JS_MUTANT || capBytes(env) <= 0) return undefined;
+  // A compile asked to count its decisions (ADR 1124) appends to a file
+  // no record names: given again, it would count nothing.
+  if (env.RUST_JS_DECISIONS ?? process.env.RUST_JS_DECISIONS) return undefined;
   const ours = statOf(testsCompiler);
   const given = statOf(program);
   if (!ours || !given || ours.dev !== given.dev || ours.ino !== given.ino) return undefined;

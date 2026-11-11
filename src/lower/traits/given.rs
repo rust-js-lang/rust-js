@@ -306,9 +306,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
-        (self.given.type_facts.iter())
+        let given = (self.given.type_facts.iter())
             .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)
-            .map(|(_, _, value)| value.clone())
+            .map(|(_, _, value)| value.clone());
+        crate::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
+        given
     }
 
     /// The fact of `of`, a std associated type of a type parameter, this

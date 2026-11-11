@@ -130,12 +130,14 @@ impl<'tcx> Counted<'tcx> {
     /// `Rc<dyn Fn>` they make of it uncounted too (#1227).
     pub fn counts(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
         let pointee = tcx.erase_and_anonymize_regions(pointee);
-        self.all
+        let counts = self.all
             || self.types.contains(&pointee)
             || !self.seen.contains(&pointee)
                 && (self.types.iter())
                     .filter(|t| !self.resolved.contains(*t))
-                    .any(|&t| may_be(tcx, t, pointee))
+                    .any(|&t| may_be(tcx, t, pointee));
+        crate::decisions::record("rc-counted", if counts { "counted" } else { "uncounted" });
+        counts
     }
 
     /// Is `owner`, a `Box`, an `Rc` or an `Arc` unsized to a `dyn Fn`, a

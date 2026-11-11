@@ -237,7 +237,14 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// What dropping a `ty` runs.
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.drops_in(ty, &mut Walk::new())
+        let drops = self.drops_in(ty, &mut Walk::new());
+        let answer = match drops {
+            Drops::Nothing => "nothing",
+            Drops::Runs => "runs",
+            Drops::Unsupported(..) => "unsupported",
+        };
+        crate::decisions::record("type-drops", answer);
+        drops
     }
 
     /// Whether dropping a `ty` drops a `ty` again, inside what it holds: a

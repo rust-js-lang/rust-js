@@ -34,7 +34,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let payload = self.payload(ty);
         // One JS gives is unboxed (ADR 0051, amended): `Params::js` is of
         // `Params::unboxed`, which `defined_by_its_bounds` reads.
-        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
+        let boxed = (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty);
+        crate::decisions::record("option-payload", if boxed { "boxed" } else { "unboxed" });
+        boxed
     }
 
     /// Of an `Option<Option<T>>`, or an `Option<&Option<T>>`, whose `Some`

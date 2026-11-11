@@ -261,11 +261,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         if fresh && items_plain {
+            crate::decisions::record("copy-if-needed", "fresh");
             return place;
         }
         if self.contains_mutated(ty) && self.is_copy(ty) {
+            crate::decisions::record("copy-if-needed", "copied");
             self.copy(place, ty)
         } else {
+            crate::decisions::record("copy-if-needed", "shared");
             place
         }
     }

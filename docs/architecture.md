@@ -175,7 +175,7 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs`, `std_sysroot.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `collections.rs` | Owned output; no rustc |
+| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `collections.rs`, `decisions.rs` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing

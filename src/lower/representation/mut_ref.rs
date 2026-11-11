@@ -153,6 +153,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `mut_ref_form`, of a type of another function's, whose type
     /// parameters `param_env` says what they're bound by: a callee's.
     pub(in crate::lower) fn mut_ref_form_in(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> MutRefForm {
+        let form = self.mut_ref_form_of(ty, param_env);
+        let answer = match form {
+            MutRefForm::Box => "box",
+            MutRefForm::GenericBox => "generic-box",
+            MutRefForm::Object => "object",
+            MutRefForm::Guard => "guard",
+            MutRefForm::GivenAsItIs => "given-as-it-is",
+            MutRefForm::Itself => "itself",
+        };
+        crate::decisions::record("mut-ref-form", answer);
+        form
+    }
+
+    fn mut_ref_form_of(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> MutRefForm {
         // Another function's type in its own terms: its projections
         // normalized there, as they can't be here, where its parameters
         // aren't (ADR 1086). And a type only it knows first.

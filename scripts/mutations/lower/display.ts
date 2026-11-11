@@ -236,8 +236,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's writer that takes no options is given a consumer's, where its dictionaries go",
     file: "src/lower/display.rs",
-    find: "            false => self.krate.foreign.writers_take_options(writer.krate),\n",
-    replace: "            false => self.writers_take_options(),\n",
+    find: "                let takes = self.krate.foreign.writers_take_options(writer.krate);\n",
+    replace: "                let takes = self.writers_take_options();\n",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },
   {
@@ -372,8 +372,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer of a type a library's function shows with options takes them only where the crate's own writers do, so `Plain`'s `{:#?}` through its library is on one line (#1331)",
     file: "src/lower/display.rs",
-    find: "        self.writers_take_options() || self.krate.shown.of_writer(self.tcx, writer).any()\n",
-    replace: "        self.writers_take_options()\n",
+    find: "            _ if self.krate.shown.of_writer(self.tcx, writer).any() => \"shown\",\n",
+    replace: "            _ if false => \"shown\",\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {

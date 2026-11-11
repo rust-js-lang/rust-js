@@ -40,9 +40,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`Some(None)` of a concrete `Option<Option<i32>>` is `undefined`, and reads as `None`",
     file: "src/lower/representation/options.rs",
-    find: "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
+    find: "        let boxed = (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty);\n",
     replace:
-      "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload))\n",
+      "        let boxed = (self.is_unknown(payload) && !self.defined_by_its_bounds(payload));\n",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Some` of a type parameter a binding of its bound reads is `$some(x)`, though it's never `undefined`",
     file: "src/lower/representation/options.rs",
-    find: "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
-    replace: "        self.is_unknown(payload) || self.can_be_nullish(ty)\n",
+    find: "        let boxed = (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty);\n",
+    replace: "        let boxed = self.is_unknown(payload) || self.can_be_nullish(ty);\n",
     tests: [
       "test/bindings.test.ts",
       "-t",

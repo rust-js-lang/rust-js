@@ -201,11 +201,19 @@ pub(crate) fn collects_in_place<'tcx>(
     iter: Ty<'tcx>,
     item: Ty<'tcx>,
 ) -> Option<bool> {
-    match in_place_source(tcx, typing_env, iter)? {
-        InPlaceSource::Never => Some(false),
-        InPlaceSource::Items(src) => fits_in_place(tcx, typing_env, src, item),
-        InPlaceSource::Of(_) => None,
-    }
+    let in_place = match in_place_source(tcx, typing_env, iter) {
+        None => None,
+        Some(InPlaceSource::Never) => Some(false),
+        Some(InPlaceSource::Items(src)) => fits_in_place(tcx, typing_env, src, item),
+        Some(InPlaceSource::Of(_)) => None,
+    };
+    let answer = match in_place {
+        Some(true) => "in-place",
+        Some(false) => "apart",
+        None => "callers",
+    };
+    crate::decisions::record("collect-in-place", answer);
+    in_place
 }
 
 /// How std's `SpecFromIter` collects an iterator into a `Vec`,
@@ -214,11 +222,13 @@ pub(crate) fn collects_in_place<'tcx>(
 /// gives, the runtime's `$vecCollectWay` answers it; test/vec-collect-ways.txt
 /// holds both to one table.
 pub(crate) fn vec_collect_way(in_place: bool, trusted: bool) -> &'static str {
-    match (in_place, trusted) {
+    let way = match (in_place, trusted) {
         (true, _) => "inPlace",
         (false, true) => "fold",
         (false, false) => "next",
-    }
+    };
+    crate::decisions::record("vec-collect-way", way);
+    way
 }
 
 /// The facts of what an iterator of `of`, built of type parameters, holds

@@ -75,10 +75,12 @@ impl<'tcx> StoredPlaces<'tcx> {
         // A tuple or an array, an object of no definition a record could
         // name, is recorded in any crate that records any: its fields'
         // addresses are its container's as a struct's are.
-        !self.recorded.is_empty()
+        let records = !self.recorded.is_empty()
             && (matches!(ty.kind(), ty::Tuple(parts) if !parts.is_empty())
                 || matches!(ty.kind(), ty::Array(..))
-                || holds(ty, &mut |id| self.recorded.contains(&id), true))
+                || holds(ty, &mut |id| self.recorded.contains(&id), true));
+        crate::decisions::record("stored-place", if records { "recorded" } else { "unrecorded" });
+        records
     }
 }
 

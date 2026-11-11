@@ -309,7 +309,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn takes_options(&self, writer: DefId) -> bool {
         match writer.is_local() || self.krate.foreign.is_instance(writer) {
             true => self.compiled_writer_takes_options(writer),
-            false => self.krate.foreign.writers_take_options(writer.krate),
+            false => {
+                let takes = self.krate.foreign.writers_take_options(writer.krate);
+                crate::decisions::record("library-writer-options", if takes { "takes" } else { "plain" });
+                takes
+            }
         }
     }
 
@@ -334,7 +338,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Formatter`'s options: the crate's writers do, or it's of a type a
     /// library's function shows with them (#1331)?
     pub(super) fn compiled_writer_takes_options(&self, writer: DefId) -> bool {
-        self.writers_take_options() || self.krate.shown.of_writer(self.tcx, writer).any()
+        let answer = match () {
+            _ if self.writers_take_options() => "crate",
+            _ if self.krate.shown.of_writer(self.tcx, writer).any() => "shown",
+            _ => "none",
+        };
+        crate::decisions::record("writer-options", answer);
+        answer != "none"
     }
 
     /// Does the writer being lowered apply a placeholder's options to what

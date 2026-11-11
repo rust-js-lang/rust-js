@@ -683,10 +683,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a `RefCell` no borrow of which can meet another, the cell
             // itself, unchecked and uncounted (ADR 0863).
             Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
+                crate::decisions::record("refcell-borrow", "unchecked");
                 let cell = arg();
                 self.uncounted(cell)
             }
             Std::Borrow { mutable, lock } => {
+                if !lock {
+                    crate::decisions::record("refcell-borrow", if call.momentary { "momentary" } else { "counted" });
+                }
                 let name = match (lock, mutable) {
                     (false, false) => "$borrow",
                     (false, true) => "$borrowMut",
@@ -708,14 +712,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a guard's is, so a whole write through it sets each key
             // (`read_handles`).
             Std::TryBorrow { lock: false, .. } if flattened => {
+                crate::decisions::record("refcell-try-borrow", "flattened");
                 let handle = arg();
                 result::ok(self.spill("state", handle, out))
             }
             Std::TryBorrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
+                crate::decisions::record("refcell-try-borrow", "unchecked");
                 let cell = arg();
                 result::ok(self.uncounted(cell))
             }
             Std::TryBorrow { mutable, lock } => {
+                if !lock {
+                    crate::decisions::record("refcell-try-borrow", "checked");
+                }
                 let mut given = vec![arg()];
                 if mutable {
                     given.push(Expr::bool(true));

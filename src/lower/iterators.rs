@@ -284,6 +284,12 @@ pub(in crate::lower) fn given_by_its_trait(tcx: ty::TyCtxt<'_>, callee: DefId, i
 /// only itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+    let as_it_is = given_as_it_is_of(tcx, id, param);
+    crate::decisions::record("iterator-given", if as_it_is { "as-it-is" } else { "js-iterator" });
+    as_it_is
+}
+
+fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
     // Bound by `Iterator` itself, or a trait that extends it, std's or the
     // crate's, whose `Iterator` `bounds` gives it (ADRs 0488, 0511), as
     // `bounds` reads its clauses, which make its evidence.

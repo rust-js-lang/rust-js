@@ -211,8 +211,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The dictionary for `tr` among those this function was given, or
     /// a supertrait's of one.
     pub(in crate::lower) fn evidence_for(&self, tr: ty::TraitRef<'tcx>) -> Option<Expr> {
-        let route = self.evidence_query().evidence_route(tr)?;
-        Some(self.route_expr(&route))
+        let route = self.evidence_query().evidence_route(tr);
+        let answer = match &route {
+            None => "none",
+            Some(Route {
+                root: Root::Item(..), ..
+            }) => "item",
+            Some(route) if route.supers.is_empty() => "given",
+            Some(_) => "given-supertrait",
+        };
+        crate::decisions::record("evidence-route", answer);
+        Some(self.route_expr(&route?))
     }
 
     fn route_expr(&self, route: &Route) -> Expr {

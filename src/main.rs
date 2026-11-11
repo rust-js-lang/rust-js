@@ -48,6 +48,7 @@ mod clippy;
 mod collections;
 mod command;
 mod comments;
+mod decisions;
 mod format;
 mod hooks;
 mod js;
@@ -75,6 +76,7 @@ mod to_oxc;
 mod typescript;
 
 use crate::collections::IndexSet;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::OnceLock;
@@ -405,7 +407,19 @@ fn main() -> ExitCode {
     if std::env::var_os("RUST_MIN_STACK").is_none() {
         let _ = rustc_interface::util::STACK_SIZE.set(STACK);
     }
-    on_its_thread()
+    let code = on_its_thread();
+    // What each decision answered, where asked (`decisions.rs`).
+    if let Some((path, lines)) = decisions::counts() {
+        let written = (std::fs::OpenOptions::new().create(true).append(true).open(path))
+            .and_then(|mut file| file.write_all(lines.as_bytes()));
+        if let Err(error) = written {
+            eprintln!(
+                "warning: rust-js: can't write the decisions' counts to {}: {error}",
+                path.to_string_lossy()
+            );
+        }
+    }
+    code
 }
 
 /// `run` where WASI starts it: it has no threads, and its stack is what
