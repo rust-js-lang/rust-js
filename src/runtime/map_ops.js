@@ -544,7 +544,8 @@ function $treeFrom(tree, items, set, cmp, drop, dropKey) {
   for (const item of Array.from(items).sort((a, b) => cmp(key(a), key(b)))) {
     if (tree.has(key(item))) {
       const old = set ? undefined : tree.get(item[0]);
-      dropKey?.($storedKey(tree, key(item)));
+      const stored = $storedKey(tree, key(item));
+      dropKey?.(stored);
       tree.delete(key(item));
       if (!set) drop?.(old);
     }

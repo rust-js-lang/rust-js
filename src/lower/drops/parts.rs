@@ -286,15 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std trait's associated type of one, `dropIIntoIter` (ADR 0421).
             _ if let Some(drop) = self.use_given_drop(ty) => {
                 let js_span = self.js_span(span);
-                out.push(
-                    StmtKind::Expr(Expr {
-                        facts: js::Facts::NONE,
-                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
-                        span: js_span,
-                        held_as: Default::default(),
-                    })
-                    .at(js_span),
-                );
+                out.push(StmtKind::Expr(Expr::optional_call(drop, vec![value]).or_at(js_span)).at(js_span));
             }
             // One its bounds say is another, `drops`' (#736): that one's.
             ty::Alias(..)
@@ -306,15 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `ZZone.$dropOffset?.(value)`: its impl's, if its type has one (ADR 0178).
             ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
-                out.push(
-                    StmtKind::Expr(Expr {
-                        facts: js::Facts::NONE,
-                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
-                        span: js_span,
-                        held_as: Default::default(),
-                    })
-                    .at(js_span),
-                );
+                out.push(StmtKind::Expr(Expr::optional_call(drop, vec![value]).or_at(js_span)).at(js_span));
             }
             ty::Array(item, _) | ty::Slice(item) => self.drop_items(value, *item, span, made, out)?,
             // A struct's, an enum's, a union's and a tuple's: rustc's drop

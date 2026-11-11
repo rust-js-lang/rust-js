@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     name: "tree-from-keeps-earlier-key",
     breaks: "a B-tree made of items drops none of the keys a later equal one replaces",
     file: "src/runtime/map_ops.js",
-    find: "      dropKey?.($storedKey(tree, key(item)));\n",
+    find: "      const stored = $storedKey(tree, key(item));\n      dropKey?.(stored);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
   },

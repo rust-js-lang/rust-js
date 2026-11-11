@@ -162,12 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_dyn_error(ty) {
             let error = std_item(self.tcx, StdItem::Error);
             let type_id = crate::lower::bindings::trait_method_name(self.tcx, error, "type_id");
-            return Ok(Expr {
-                facts: js::Facts::NONE,
-                kind: js::ExprKind::OptionalCall(Box::new(Expr::member(dictionary, type_id)), Vec::new()),
-                span: js::Span::NONE,
-                held_as: Default::default(),
-            });
+            return Ok(Expr::optional_call(Expr::member(dictionary, type_id), Vec::new()));
         }
         let any_id = any_trait(self.tcx);
         let any = match traits.principal_def_id() {

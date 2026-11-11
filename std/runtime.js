@@ -906,7 +906,10 @@ export function $took(step, it) {
 // `Vec`'s `IntoIter` the type parameter was given drops what its `nth`,
 // `nth_back` and `advance_by` pass over (#718).
 export function $givenDrop(drop) {
-  const dropped = (it) => drop?.(it.given === true ? it.of : it);
+  const dropped = (it) => {
+    const value = it.given === true ? it.of : it;
+    drop?.(value);
+  };
   dropped.each = drop?.each;
   return dropped;
 }
@@ -4365,10 +4368,17 @@ export function $lastDropping(it, drop, boxed) {
     );
     const bLast = $unwinds(
       () => $lastDropping(b, drop, true),
-      () => aLast !== undefined && drop?.($someValue(aLast)),
+      () => {
+        if (aLast === undefined) return;
+        const value = $someValue(aLast);
+        drop?.(value);
+      },
     );
     if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
-    if (aLast !== undefined) drop?.($someValue(aLast));
+    if (aLast !== undefined) {
+      const value = $someValue(aLast);
+      drop?.(value);
+    }
     return some($someValue(bLast));
   }
   // Std's `Flatten::last`: each inner iterator's own `last`, the one it's
@@ -4383,7 +4393,9 @@ export function $lastDropping(it, drop, boxed) {
     const unwind = () => {
       const dropped = kept;
       kept = undefined;
-      if (dropped !== undefined) drop?.($someValue(dropped));
+      if (dropped === undefined) return;
+      const value = $someValue(dropped);
+      drop?.(value);
     };
     const take = (make) => {
       const last = $unwinds(() => $lastDropping(make(), drop, true), unwind);
@@ -10012,7 +10024,8 @@ export function $treeFrom(tree, items, set, cmp, drop, dropKey) {
   for (const item of Array.from(items).sort((a, b) => cmp(key(a), key(b)))) {
     if (tree.has(key(item))) {
       const old = set ? undefined : tree.get(item[0]);
-      dropKey?.($storedKey(tree, key(item)));
+      const stored = $storedKey(tree, key(item));
+      dropKey?.(stored);
       tree.delete(key(item));
       if (!set) drop?.(old);
     }

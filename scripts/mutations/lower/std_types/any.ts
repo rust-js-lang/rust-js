@@ -202,8 +202,8 @@ export const mutations: Mutation[] = [
     name: "dyn-error-type-id-called",
     breaks: "a `dyn Error`'s `typeId` is called, not asked optionally, so a downcast of a generic impl's value throws, where Rust finds `None`",
     file: "src/lower/std_types/any.rs",
-    find: "                kind: js::ExprKind::OptionalCall(Box::new(Expr::member(dictionary, type_id)), Vec::new()),\n",
-    replace: "                kind: js::ExprKind::Call(Box::new(Expr::member(dictionary, type_id)), Vec::new()),\n",
+    find: "            return Ok(Expr::optional_call(Expr::member(dictionary, type_id), Vec::new()));\n",
+    replace: "            return Ok(Expr::call(Expr::member(dictionary, type_id), Vec::new()));\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
   },
 ];

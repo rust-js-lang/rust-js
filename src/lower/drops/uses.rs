@@ -254,11 +254,5 @@ pub(super) fn param_name(tcx: TyCtxt<'_>, callee: DefId, index: u32) -> String {
 /// if what it holds has a drop.
 pub(super) fn dyn_dropped(dictionary: Expr, value: Expr, js_span: js::Span) -> Stmt {
     let drop = Expr::member(dictionary, js::DICTIONARY_DROP);
-    StmtKind::Expr(Expr {
-        facts: js::Facts::NONE,
-        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
-        span: js_span,
-        held_as: Default::default(),
-    })
-    .at(js_span)
+    StmtKind::Expr(Expr::optional_call(drop, vec![value]).or_at(js_span)).at(js_span)
 }

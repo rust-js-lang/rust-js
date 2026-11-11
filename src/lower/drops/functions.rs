@@ -37,12 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         Ok(Some(match given {
-            true => Expr {
-                facts: js::Facts::NONE,
-                kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
-                span: js::Span::NONE,
-                held_as: Default::default(),
-            },
+            true => Expr::optional_call(drop, vec![value]),
             false => apply(drop, vec![value]),
         }))
     }

@@ -197,7 +197,10 @@ function $took(step, it) {
 // `Vec`'s `IntoIter` the type parameter was given drops what its `nth`,
 // `nth_back` and `advance_by` pass over (#718).
 function $givenDrop(drop) {
-  const dropped = (it) => drop?.(it.given === true ? it.of : it);
+  const dropped = (it) => {
+    const value = it.given === true ? it.of : it;
+    drop?.(value);
+  };
   dropped.each = drop?.each;
   return dropped;
 }

@@ -13,6 +13,7 @@ mod expr_walk;
 mod imports;
 mod known;
 mod make;
+mod optional_call;
 pub mod result;
 mod stmt_walk;
 mod storage;

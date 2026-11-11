@@ -27,10 +27,17 @@ function $lastDropping(it, drop, boxed) {
     );
     const bLast = $unwinds(
       () => $lastDropping(b, drop, true),
-      () => aLast !== undefined && drop?.($someValue(aLast)),
+      () => {
+        if (aLast === undefined) return;
+        const value = $someValue(aLast);
+        drop?.(value);
+      },
     );
     if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
-    if (aLast !== undefined) drop?.($someValue(aLast));
+    if (aLast !== undefined) {
+      const value = $someValue(aLast);
+      drop?.(value);
+    }
     return some($someValue(bLast));
   }
   // Std's `Flatten::last`: each inner iterator's own `last`, the one it's
@@ -45,7 +52,9 @@ function $lastDropping(it, drop, boxed) {
     const unwind = () => {
       const dropped = kept;
       kept = undefined;
-      if (dropped !== undefined) drop?.($someValue(dropped));
+      if (dropped === undefined) return;
+      const value = $someValue(dropped);
+      drop?.(value);
     };
     const take = (make) => {
       const last = $unwinds(() => $lastDropping(make(), drop, true), unwind);
