@@ -25,7 +25,7 @@ test("a copied default is put in its impl's terms by default_args alone", () => 
   expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits/given.rs"]);
   const asks = /\bdefault_(args|typing_env)\(/;
   expect(sources.filter(file => asks.test(read(file)))).toEqual([
-    "src/lower/analysis/type_facts.rs",
+    "src/lower/analysis/type_facts/collects.rs",
     "src/lower/traits/drop_params.rs",
     "src/lower/traits/impls.rs",
   ]);
