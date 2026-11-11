@@ -412,9 +412,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What THIR's facts refuse of the body being lowered from its MIR: a
     /// closure that holds a value with a destructor made where JS can't see
-    /// what it took, given away uncalled, or assigned, and a value whose drop
-    /// rust-js can't run, which MIR's lowering refuses too. A part moved,
-    /// they leave to MIR's lowering, which follows it (#1337).
+    /// what it took, given away uncalled, or assigned. A variable whose drop
+    /// rust-js can't run, MIR's lowering refuses (`check_held_drops`), and a
+    /// part moved, it follows (#1337).
     pub(in crate::lower) fn check_drop_facts(&self) -> R<()> {
         let facts = find_facts(
             &self.drop_query(),

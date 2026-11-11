@@ -12,7 +12,6 @@ use rustc_middle::thir::{
     AdtExprBase, Block, Expr as ThirExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtId, StmtKind as ThirStmt,
     Thir,
 };
-use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -881,47 +880,11 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
         self.statements.pop();
     }
 
-    fn visit_pat(&mut self, pat: &'a Pat<'tcx>) {
-        if let PatKind::Binding {
-            mode: BindingMode(ByRef::No, _),
-            ty,
-            ..
-        } = pat.kind
-            && let Drops::Unsupported(t, what) = self.drops_of(ty)
-        {
-            self.problem(pat.span, &describe(t, what));
-        }
-        visit::walk_pat(self, pat);
-    }
-
     fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
         let id = self.id(expr);
         self.stack.push(id);
-        match expr.kind {
-            _ if !is_place(&expr.kind) && self.holds_drops(expr) => self.value_made(id),
-            ExprKind::PointerCoercion {
-                cast: PointerCoercion::Unsize,
-                source,
-                ..
-            } if {
-                // To a `dyn`: an array unsized to a slice is the same array.
-                // What's unsized, and what to: `&D` or `Box<D>` to a `dyn`, and
-                // `Rc<D>` to `Rc<dyn Send>` too, whose destructor then runs
-                // through the `dyn`. Found by rustc's `issue-25515.rs`.
-                let target = expr.ty;
-                let from = self.thir[source].ty;
-                let (to, from) = match (target.builtin_deref(true), from.builtin_deref(true)) {
-                    (Some(to), Some(from)) => (to, from),
-                    _ => (target, from),
-                };
-                // What owns one drops it through its dictionary's `$drop`.
-                self.cx
-                    .dyn_drop_lost(self.cx.thir_ty(target), self.cx.thir_ty(from), self.cx.thir_ty(to))
-            } =>
-            {
-                self.problem(expr.span, "a `dyn` of a value with a destructor");
-            }
-            _ => {}
+        if !is_place(&expr.kind) && self.holds_drops(expr) {
+            self.value_made(id);
         }
         self.replaced_with(id);
         self.closure_checked(expr);

@@ -383,3 +383,28 @@ and `binding-at-whole-unfollowed`. The corpus cases that held them stay,
 as run cases against native Rust: `default_method_drops`,
 `match_moves_a_part_or_the_whole`, `array_parts_moved_in_a_copied_default`
 and `default_matches_its_tuple_whole`.
+
+## Amendment: a variable whose drop rust-js can't run is MIR's lowering's to refuse (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; the
+same programs are refused, with one error each where they had two. Once
+`check_drop_facts` refused all of what THIR's facts refuse, two places
+refused a binding whose drop rust-js can't run: the facts' `visit_pat`
+and MIR's lowering's `check_held_drops`, which it asks of every variable.
+That made `mir-variable-drops-unchecked` survive on main (run
+42998747283): without MIR's check, THIR's facts refused the `LazyCell` of
+`test/diagnostics.test.ts` with the same words.
+
+MIR's lowering owns the refusal, since it asks it of every variable, a
+temporary's too. The facts' copy is taken off.
+
+The same held for a `dyn` of a value with a destructor. The facts refused
+it before MIR's `dyn_drop_lost`, the same rule asked of the same
+coercion (`rvalues.rs`), was reached, so `mir-dyn-drops-lost` survived on
+main for the same reason. MIR's lowering owns that one too, and the facts'
+copy is taken off. rustc's `issue-25515.rs` program, an `Rc<D>` given as
+`Rc<dyn Send>`, still runs as native Rust does, and a `Box<dyn Debug>` of
+one is refused by MIR's check, as `test/lowering.test.ts` holds.
+
+The facts now refuse only what a walk of the THIR alone sees: where a
+closure that holds a value with a destructor is made, given and assigned.
