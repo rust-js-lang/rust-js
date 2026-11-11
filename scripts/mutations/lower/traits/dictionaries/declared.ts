@@ -1,0 +1,37 @@
+// Mutations of src/lower/traits/dictionaries/declared.rs (ADR 0093).
+import type { Mutation } from "../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "dictionary-declared-once-used",
+    breaks:
+      "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "            if count < 2 {\n",
+    replace: "            if count < 1 {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$",
+    ],
+    snapshots: true,
+  },
+  {
+    name: "dictionary-reading-a-global-unkept",
+    breaks: "a dictionary whose entry reads a JS global, `Array.from`, made twice in a body, is written out twice, not declared once at its top as one that reads only helpers is (#1239)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "                || crate::names::is_js_global(name)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_maps\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "helper-made-dictionary-unnamed",
+    breaks: "a dictionary a runtime helper makes of an impl's, `$readerDefaults(chainRead(..))`, is written again at each use, not declared once (ADR 0979, #1156)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "        return is_impl_call(made);\n",
+    replace: "        return false && is_impl_call(made);\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
+    snapshots: true,
+  },
+];

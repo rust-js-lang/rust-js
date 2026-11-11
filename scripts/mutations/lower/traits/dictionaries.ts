@@ -46,20 +46,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a generic impl's &mut T"],
   },
   {
-    name: "dictionary-declared-once-used",
-    breaks:
-      "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "            if count < 2 {\n",
-    replace: "            if count < 1 {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$",
-    ],
-    snapshots: true,
-  },
-  {
     name: "dictionary-repeats-unnamed",
     breaks:
       "a dictionary its body writes twice or more is written each time, not declared once at its top (ADR 0979)",
@@ -712,15 +698,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_into_a_type_parameter_is_stds\\.rs$"],
   },
   {
-    name: "dictionary-reading-a-global-unkept",
-    breaks: "a dictionary whose entry reads a JS global, `Array.from`, made twice in a body, is written out twice, not declared once at its top as one that reads only helpers is (#1239)",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "                || crate::names::is_js_global(name)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_collect\\.rs$"],
-    snapshots: true,
-  },
-  {
     name: "ref-into-iter-bound-taken-for-a-collections",
     breaks:
       "in the build of std's iterator structs, std's `zip` given a `&I` whose `IntoIterator` is a bound of its caller's asks a std collection's reference's dictionary of it, refused, where its caller's bound gives it (#1264)",
@@ -753,14 +730,5 @@ export const mutations: Mutation[] = [
     find: "                    true => Expr::call_helper(\"$readerDefaults\", vec![made]),\n",
     replace: "                    true => made,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
-  },
-  {
-    name: "helper-made-dictionary-unnamed",
-    breaks: "a dictionary a runtime helper makes of an impl's, `$readerDefaults(chainRead(..))`, is written again at each use, not declared once (ADR 0979, #1156)",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "        return is_impl_call(made);\n",
-    replace: "        return false && is_impl_call(made);\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
-    snapshots: true,
   },
 ];
