@@ -275,3 +275,24 @@ nothing, so #1368's guard was an answer no input could tell from its
 absence; `concrete-key-taken-apart` survived, and went with it. The
 #1368 test holds `array-key-an-item-a-part` too.
 
+
+## Amendment: a default's own where clause's slots are its callers' (2026-11-11, #1363)
+
+A trait default whose own where clause asks more of `Self::Item`,
+`fn counts(self) -> HashMap<Self::Item, usize> where Self::Item: Hash +
+Eq`, has that item's class as its own slot, `SelfItemMap`, which each of
+its callers gives. But where another default, `distinct`, calls it, its
+copy in a blanket impl asked the impl too, of `I::Item`, the slot the
+default's where clause gives the impl's bounds (ADR 0478's, for drops):
+the dictionary became `iTools(IIterator, IItemMap)`, and every caller of
+it gave that class, one calling only `ordered` on items with `Ord` and no
+`Hash` too, refused, "implementation evidence for `<Backwards as
+Hash>`". A copied default no longer asks its impl a fact of a slot its own
+where clause names (`type_fact_params`' copies): the dictionary is
+`iTools(IIterator)`, and each default reads its own `SelfItemMap`, which
+`given_fact_of` finds once the impl's isn't there.
+
+Held by `default_where_clause_facts_its_callers.rs` (`ordered` of items
+with no `Hash`, `counts` keyed by a tuple of `Self::Item`, `distinct`
+calling it, of words and of a mapped range) against native Rust in both
+builds and as a library, and the mutation `default-own-slot-asked-of-impl`.

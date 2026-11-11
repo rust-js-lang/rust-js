@@ -453,4 +453,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None).filter(|each| matches!(each, Asked::Slot(..))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
   },
+  {
+    name: "default-own-slot-asked-of-impl",
+    breaks: "a copied default asks its impl a fact of a slot its own where clause names, `Self::Item: Hash`'s map class, so every caller of the impl's dictionary gives it, one whose items have no `Hash` refused where it calls only `ordered` (#1363)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        .is_some_and(|index| index >= tcx.generics_of(caller).parent_count as u32)\n",
+    replace: "                        .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_where_clause_facts_its_callers.rs$"],
+  },
 ];

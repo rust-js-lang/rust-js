@@ -39,8 +39,8 @@ function distinct(items, THash, TPartialEq, TClone, TSet) {
 
 const $tCounting = new WeakMap();
 
-function tCounting(TIterator, TItemMap) {
-  return $traitImpl($tCounting, [TIterator, TItemMap], () => ({
+function tCounting(TIterator) {
+  return $traitImpl($tCounting, [TIterator], () => ({
     countsBy(self, f, KHash, KPartialEq, KMap) {
       const counts = new KMap();
       $given(self, TIterator, true)
@@ -52,16 +52,16 @@ function tCounting(TIterator, TItemMap) {
       return counts;
     },
     counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {
-      return tCounting(TIterator, TItemMap).countsBy(
+      return tCounting(TIterator).countsBy(
         self,
         (x) => x,
         SelfItemHash,
         SelfItemPartialEq,
-        TItemMap,
+        SelfItemMap,
       );
     },
     tallyBy(self, f, KHash, KPartialEq, KMap) {
-      return tCounting({ next: $nextSome, fold: $foldOf }, KMap).counts(
+      return tCounting({ next: $nextSome, fold: $foldOf }).counts(
         iterator_map(self, f, TIterator),
         KHash,
         KPartialEq,
@@ -85,8 +85,7 @@ function size(map) {
 }
 
 function main() {
-  const IntoIterCounting$1 = tCounting({ next: $next }, $KeyMap);
-  const IntoIterCounting = tCounting({ next: $next }, Map);
+  const IntoIterCounting = tCounting({ next: $next });
   const g = group(
     $iter([
       ["a", 1],
@@ -151,7 +150,7 @@ function main() {
   );
   const value$1 = c.get("x");
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const cp = IntoIterCounting$1.countsBy(
+  const cp = IntoIterCounting.countsBy(
     $iter([
       [0, 1],
       [0, 1],
@@ -170,7 +169,7 @@ function main() {
   );
   const value$2 = cp.get(0);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const cs = IntoIterCounting$1.counts(
+  const cs = IntoIterCounting.counts(
     $iter([
       [0, 1],
       [0, 1],

@@ -404,6 +404,20 @@ pub(super) fn type_fact_params<'tcx>(
                     {
                         continue;
                     }
+                    // Nor of what the default's own where clause names,
+                    // `Self::Item: Hash` of a `counts`, its own slot, which
+                    // each of its callers gives: asked of the impl, every
+                    // caller of the impl's dictionary would give it, of a
+                    // type its where clause may not hold for, a `Backwards`
+                    // with no `Hash` whose caller calls only `ordered` (#1363).
+                    let in_default = ty::EarlyBinder::bind(tcx, slot)
+                        .instantiate(tcx, relayed.2)
+                        .skip_normalization();
+                    if slot_of(tcx, foreign, caller, in_default)
+                        .is_some_and(|index| index >= tcx.generics_of(caller).parent_count as u32)
+                    {
+                        continue;
+                    }
                     // Its slots' facts alone, `T`'s of the trait's `Self`. A
                     // type built of them, asked of a copy, its caller asks of
                     // what it gives, and a default that calls the blanket
