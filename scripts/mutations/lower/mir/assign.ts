@@ -1001,4 +1001,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
   },
+  {
+    name: "writer-held-result-unchecked",
+    breaks: "a `Display` whose `fmt` gives back what it holds, `let r = Err(fmt::Error); r` or `FAILED`, gives `Ok`, its error never thrown (#1411)",
+    file: "src/lower/mir/assign.rs",
+    find: "                        if crate::lower::display::may_be_write_error(&value) && self.krate.failing.any {\n",
+    replace: "                        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
 ];

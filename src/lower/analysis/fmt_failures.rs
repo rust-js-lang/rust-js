@@ -274,10 +274,31 @@ fn output_of<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Option<ty::Ty<'tcx>> {
 /// rust-js lowers: optimized MIR makes it of a constant `fmt::Error`, which
 /// is refused.
 fn makes_err<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, of: impl Fn(ty::Ty<'tcx>) -> bool) -> bool {
-    (body.thir.exprs.iter()).any(|expr| {
-        matches!(expr.kind, ExprKind::Adt(ref adt) if of(expr.ty)
-            && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id))
+    (body.thir.exprs.iter()).any(|expr| match expr.kind {
+        ExprKind::Adt(ref adt) => of(expr.ty) && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id),
+        // A constant's, `const FAILED: fmt::Result = Err(fmt::Error)`, read
+        // where it's named (#1411).
+        ExprKind::NamedConst { def_id, args, .. } => of(expr.ty) && constant_may_be_err(tcx, def_id, args),
+        _ => false,
     })
+}
+
+/// Whether a `Result` constant `def_id` of `args` may be an `Err`: its
+/// variant's index, where rustc's value is a number, `Ok`'s 0; any one it
+/// can't say of, an associated constant of generic arguments or one held in
+/// memory, may be.
+fn constant_may_be_err<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    if !args.is_empty() {
+        return true;
+    }
+    match tcx
+        .const_eval_poly(def_id)
+        .ok()
+        .and_then(|value| value.try_to_scalar_int())
+    {
+        Some(index) => !index.is_null(),
+        None => true,
+    }
 }
 
 /// May a call in `caller` of `def_id` of `args`, as `typing_env` resolves

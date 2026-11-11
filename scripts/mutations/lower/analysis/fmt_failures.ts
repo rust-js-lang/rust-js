@@ -223,4 +223,20 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_question_converts_its_error.rs$"],
   },
+  {
+    name: "constant-err-unread",
+    breaks: "a `Display` that gives back `const FAILED: fmt::Result = Err(fmt::Error)` is taken never to fail, so its write gives `Ok(())` (#1411)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        ExprKind::NamedConst { def_id, args, .. } => of(expr.ty) && constant_may_be_err(tcx, def_id, args),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
+  {
+    name: "constant-ok-as-err",
+    breaks: "a constant's variant is taken for an `Err` where it's `Ok`, so `const DONE` given back makes its caller catch, a change of form the case's JS shows (#1411)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        Some(index) => !index.is_null(),\n",
+    replace: "        Some(index) => index.is_null(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
 ];

@@ -27,7 +27,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             if place.local == mir::RETURN_PLACE {
                 return match rvalue {
-                    Rvalue::Use(..) => Ok(()),
+                    // One held, which may be its error, a `const`'s
+                    // `FAILED` or a local's `let r = Err(fmt::Error); r`:
+                    // thrown on, as a function's is (`returned_write_result`,
+                    // #1011, #1411); an `Ok`'s, nothing.
+                    Rvalue::Use(operand, _) => {
+                        let value = self.mir_operand(state, operand, out)?;
+                        let value = self.value_expr(value, span)?;
+                        if crate::lower::display::may_be_write_error(&value) && self.krate.failing.any {
+                            self.flush(state, out)?;
+                            out.push(
+                                StmtKind::Expr(Expr::call_helper("$writeCheck", vec![value])).at(self.js_span(span)),
+                            );
+                        }
+                        Ok(())
+                    }
                     Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, VariantIdx::ZERO, ..)) => {
                         Ok(())
                     }
@@ -594,6 +608,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return self.mir_store(state, place, Value::Expr(Expr::undefined()), span, out);
         }
+
         // A union's field written: the one it holds now (ADR 0406).
         if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
             && self.is_union(base.ty(state.body, self.tcx).ty)

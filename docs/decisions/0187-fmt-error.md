@@ -242,3 +242,25 @@ audit of #1392's probes; `test/corpus/generic_write_tested_where_writes_fail.rs`
 (an `io::Write`'s and a `fmt::Write`'s, `is_ok()`, `let _ =` and `match`)
 runs as native Rust in both builds, and the mutation
 `dictionary-write-never-fails` puts the uncaught call back.
+
+## Amendment: a write's result rustc computed (#1411)
+
+A constant of a write's result, `const DONE: fmt::Result = Ok(())` or a
+promoted `&Ok(())` given to a `fn(&fmt::Result)`, was written as an
+enum's value, `{ TAG: "Ok" }`, by `const_js_by`, where a body writes the
+same `Ok(())` as `undefined`: two writers of one value, the constant's not
+asking `is_write_result`, so `r.is_ok()` read `false` and `{:?}` showed
+`Err(Error)`. **A constant's `Ok` is nothing and a `fmt::Result`'s `Err` its
+`$FmtError`, as `aggregates.rs` writes them; an `io::Error` is no
+constant's.** Two more of the same: the analysis of what fails took
+`Err(..)` made in the body alone, so a `Display` that gives back
+`const FAILED: fmt::Result = Err(fmt::Error)` was taken never to fail; it
+reads a named constant's variant now, rustc's value, any it can't say of
+one that may be an `Err`. And a writer's `_0 = r`, a `fmt::Result` it holds
+or a constant, was dropped, its `Ok(())` assumed, where a function's is
+`$writeCheck(r)` (#1011): a writer's is thrown on now, as a function's.
+Found by an audit of #1408's probes; `test/corpus/write_result_constant.rs`
+runs as native Rust in both builds and through `METAMORPHIC=all`, and the
+mutations `constant-write-result-tagged`, `constant-fmt-error-unmade`,
+`constant-err-unread`, `constant-ok-as-err` and
+`writer-held-result-unchecked` put each back.

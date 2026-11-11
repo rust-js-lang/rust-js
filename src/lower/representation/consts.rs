@@ -196,6 +196,16 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             let items = children()?;
             let (index, fields) = items.split_first()?;
             let variant = adt.variant(index.try_to_leaf()?.to_u32().into());
+            // A write's result's `Ok` is nothing and a `fmt::Result`'s `Err` its
+            // `$FmtError`, as a body writes them (`aggregates.rs`, ADRs 0187,
+            // 0462, #1411); an `io::Error` is no constant's.
+            if crate::lower::recognition::is_write_result_type(tcx, ty) {
+                return match tcx.is_lang_item(variant.def_id, LangItem::ResultOk) {
+                    true => Some(Expr::undefined()),
+                    false => crate::lower::recognition::is_fmt_result_type(tcx, ty)
+                        .then(|| Expr::new_(Expr::helper("$FmtError"), Vec::new())),
+                };
+            }
             if tcx.is_lang_item(adt.did(), LangItem::Option) {
                 return match fields.first() {
                     Some(&inner) => const_js_by(tcx, inner, unit).map(crate::lower::std_types::option::some_literal),

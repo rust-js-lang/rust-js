@@ -229,4 +229,20 @@ export const mutations: Mutation[] = [
     replace: "ty::Ref(_, inner, _) if false && inner.is_unit() => {",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "constant-write-result-tagged",
+    breaks: "a constant `Ok(())` of a `fmt::Result`, `const DONE` or a promoted `&Ok(())`, is `{ TAG: \"Ok\" }`, which a write's result's `is_ok()` reads as an `Err` (#1411)",
+    file: "src/lower/representation/consts.rs",
+    find: "            if crate::lower::recognition::is_write_result_type(tcx, ty) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
+  {
+    name: "constant-fmt-error-unmade",
+    breaks: "a constant `Err(fmt::Error)` is left to a body, whose `$fmtError()` throws as the module loads (#1411)",
+    file: "src/lower/representation/consts.rs",
+    find: "                        .then(|| Expr::new_(Expr::helper(\"$FmtError\"), Vec::new())),\n",
+    replace: "                        .then(|| None).flatten(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
+  },
 ];
