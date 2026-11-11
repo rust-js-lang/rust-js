@@ -30,6 +30,3 @@ plain std generic-instances capacity_of_chains_of_exact_size_adapters.rs
 plain std generic-instances capacity_of_text_patterns.rs
 plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances extend_asks_hint_capacity_grown.rs
-
-#1325 P0 (cells): a library's generic function its consumer compiles never counts its RefCell guards: a destructor the consumer gives it sees the cell free
-plain std library guard_held_while_a_type_parameters_value_drops.rs

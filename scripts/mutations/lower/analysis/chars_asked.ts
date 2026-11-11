@@ -19,4 +19,13 @@ export const mutations: Mutation[] = [
     replace: "                } => false && recognition.holds_str_chars(thir[source].ty),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
   },
+  {
+    name: "instance-chars-unasked",
+    breaks:
+      "a `Chars`' rest a library's generic function the consumer compiles itself asks, `chars.as_str()`, isn't seen, so it's JS's own string iterator, and `$restStr` of it throws (#1325)",
+    file: "src/lower/analysis/chars_asked.rs",
+    find: "            || mir_asks\n",
+    replace: "            || mir_asks && false\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
+  },
 ];

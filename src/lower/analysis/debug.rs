@@ -245,8 +245,16 @@ pub(in crate::lower) struct WriterFacts {
 }
 
 impl WriterFacts {
-    pub(super) fn of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], (library, std_bodies): (bool, bool)) -> Self {
-        let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
+    /// `instances`, whether the writers of a library a function of which
+    /// the crate compiles itself take a `Formatter`'s options, which its
+    /// body's MIR doesn't say (`library::instances_take_options`, #1325).
+    pub(super) fn of<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        all_bodies: &[&Body<'tcx>],
+        (library, std_bodies): (bool, bool),
+        instances: bool,
+    ) -> Self {
+        let pretty_debug = std_bodies || instances || uses_pretty_debug(tcx, all_bodies);
         WriterFacts {
             pretty_debug,
             // A library's writers that take a `Formatter`'s options, its

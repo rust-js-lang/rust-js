@@ -639,4 +639,13 @@ export const mutations: Mutation[] = [
     replace: "                _ = index;\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_held_while_a_type_parameters_value_drops.rs$"],
   },
+  {
+    name: "instance-borrows-uncounted",
+    breaks:
+      "a library's generic function the consumer compiles itself, from MIR with no THIR, counts none of its borrows, so a guard held while a value the consumer gives it drops isn't, and the destructor's `try_borrow()` is `Ok` (a wrong answer, #1325)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                founds.extend(instances::mir_borrows(&recognition, &mir.body));\n",
+    replace: "                _ = mir;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: guard_held_while_a_library_type_parameters_value_drops"],
+  },
 ];

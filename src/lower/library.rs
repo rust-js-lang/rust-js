@@ -35,6 +35,24 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
     }
 }
 
+/// Whether the writers of a library one of whose bodies, `ids`, the crate
+/// compiles itself (ADR 0914) take a `Formatter`'s options, as its
+/// manifest says: a body compiled from another crate's MIR has no THIR to
+/// say what it formats, `{:#?}` (#1325). Not `@rust-js/std`'s, which takes
+/// every program's.
+pub(super) fn instances_take_options(
+    tcx: TyCtxt<'_>,
+    dependencies: &Dependencies,
+    ids: impl IntoIterator<Item = DefId>,
+) -> bool {
+    (ids.into_iter().filter(|id| !id.is_local())).any(|id| {
+        dependencies
+            .libraries
+            .get(&library_key(tcx, id.krate))
+            .is_some_and(|library| !library.builtin && library.writers_take_options)
+    })
+}
+
 /// The key of the library `krate`'s items are of, by which `Dependencies`
 /// knows it: `@rust-js/std`'s name, which no crate has, of std's crates,
 /// not their names, which a program's crate may have, a workspace's `core`

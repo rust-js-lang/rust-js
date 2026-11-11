@@ -352,4 +352,13 @@ export const mutations: Mutation[] = [
       "two crates: rc_per_type|three crates: rc_generic",
     ],
   },
+  {
+    name: "instance-writers-take-nothing",
+    breaks:
+      "the `{:#?}` of a library's generic function the consumer compiles itself isn't seen, so its writers don't take whether to be pretty, and it shows `Loud { n: 2 }` on one line (#1325)",
+    file: "src/lower/library.rs",
+    find: "            .is_some_and(|library| !library.builtin && library.writers_take_options)\n",
+    replace: "            .is_some_and(|library| !library.builtin && library.writers_take_options && false)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
+  },
 ];

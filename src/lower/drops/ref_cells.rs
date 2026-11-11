@@ -11,6 +11,7 @@ use super::*;
 use crate::lower::analysis::{Borrow, Cell, CellClass};
 
 mod bound;
+mod instances;
 use bound::{BoundPlaces, bound_place, bound_ref_cells};
 
 /// What the crate's bodies do with its `RefCell`s: by type, each of its
@@ -492,7 +493,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     mapped_guards.extend(guards.map(|guard| tcx.erase_and_anonymize_regions(guard)));
                 }
             }
-            let founds = self.counted_in(&recognition, (thir, &places), &facts);
+            let mut founds = self.counted_in(&recognition, (thir, &places), &facts);
+            // Of another crate's body the crate compiles from its MIR, which
+            // has no THIR, each borrow it makes (#1325).
+            if !body.def_id.is_local()
+                && let Some(mir) = &body.mir
+            {
+                founds.extend(instances::mir_borrows(&recognition, &mir.body));
+            }
             // How many of a callee's borrows are written at each place: its
             // MIR's of as many there are its cells' classes (`CellFlow`).
             let mut written: IndexMap<(rustc_span::Span, DefId), usize> = IndexMap::default();

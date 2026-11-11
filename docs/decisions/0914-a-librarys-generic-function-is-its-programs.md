@@ -1394,3 +1394,55 @@ decision on #1180: loud where it had been wrong, and it still compiles.
 `test/crates/thrown/capacity_unknown_of_what_a_library_gives_back` (a
 struct's `Vec`, the state read through a private function) and
 `capacity_unknown_of_what_a_library_is_lent` hold it.
+
+## Amendment: what an instance's MIR asks is asked of its MIR (#1325)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds. A library's function the consumer compiles itself
+is lowered from its library's MIR, with no THIR beside it
+(`foreign_bodies`). The crate-wide facts the consumer finds by walking its
+bodies' THIR saw nothing of it. A `RefCell` guard it holds while a value
+the consumer gives it drops, `counts.borrow_mut().push({ let _it = it; 1
+})`, was never counted, so the consumer's destructor's `try_borrow()` read
+`Ok`, `free: true`, where native Rust prints `free: false`. Its
+`chars.as_str()` didn't make the crate's `Chars` the runtime's `$chars`, so
+`$restStr` of JS's string iterator threw. And its `format!("{:#?}",
+held)` didn't make the consumer's writers take whether to be pretty, so it
+printed `Loud { n: 2 }` on one line.
+
+**What an instance's MIR asks is asked of its MIR, and what only its
+library's build knows, of its library's manifest**:
+
+- Each `RefCell` borrow its MIR makes, a borrow's, a `try_borrow`'s, a
+  `replace_with`'s or a `swap`'s, is counted (`ref_cells/instances.rs`).
+  No THIR says its guard is held only while nothing can ask, so it's
+  checked; a `T` it drops is the consumer's to say.
+- A call its MIR makes that asks a `Chars` whole, or a `dyn` made of what
+  holds one, makes every `Chars` the runtime's, as the crate's own does
+  (`chars_asked::mir_asks`).
+- Its library's manifest says whether its writers take a `Formatter`'s
+  options, `writers_take_options`: where they do, so do the consumer's,
+  pretty or not (`library::instances_take_options`). Its format strings are
+  constants in its MIR, which this doesn't decode.
+
+The audit of every analysis that reads a body's THIR also found the
+following:
+
+- A `Vec`'s capacity, `foreign.keeps_capacity()`, already follows its
+  library. Copies, `Rc`s, a `dyn Fn` holding a drop, back steps, hints and
+  `retain` in place each agree with native Rust from an instance.
+- An `Rc<T>` of a value with a destructor that an instance makes is
+  refused, "a std type holding a value with a destructor", where the
+  crate's own compiles. That's a refusal, not a wrong answer, filed apart.
+- A library's own `format!("{:x?}", held)` or `{:#?}` of a consumer's
+  value, with no instance, shows it plainly: the consumer's writers don't
+  take the options its library gives them. That's a wrong answer of its
+  own, filed apart, which no instance causes.
+
+Held by `test/crates/pairs/guard_held_while_a_library_type_parameters_value_drops`
+(a generic function, a closure in one, and a trait's default the consumer
+compiles) and `library_instances_ask_what_the_crate_doesnt` (a `Chars`'
+rest and `{:#?}`), against native Rust. Mutations
+`instance-borrows-uncounted` (`lower/drops/ref_cells.ts`),
+`instance-chars-unasked` (`lower/analysis/chars_asked.ts`) and
+`instance-writers-take-nothing` (`lower/library.ts`).
