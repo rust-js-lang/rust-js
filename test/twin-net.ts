@@ -31,7 +31,10 @@ export function importedHelpers(js: string): string[] {
 const why = {
   glue: "rust-js's own: how JS holds a value, a reference, a panic, a drop or a trait's dictionary, no copy of a std body",
   consumers: "an `Iterator` method std provides, whose default body std's build lowers as the plain build does: it compiles std's adapter structs, not the consumers",
-  iterators: "a std iterator whose struct std's build doesn't compile, a slice's, a string's `Chars`, `Repeat`, `DecodeUtf16`, or one stepped as JS's own",
+  iterators: "a std iterator whose struct std's build doesn't compile, a slice's search",
+  "js-own": "a std iterator stepped as JS's own iteration by decision, an array's, a string's `Chars`, any JS iterator's step: its ADR beside it (#1458)",
+  "to-pit": "a plain std struct whose body std's build doesn't compile yet, each to be pitted in turn (#1458): `Repeat`, `RepeatN`, `Cycle`, `DecodeUtf16`",
+  memory: "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it",
   ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile",
   collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
   sort: "a sort, which rust-js writes as its own in both builds",
@@ -84,7 +87,7 @@ export const pitted: string[] = [
  * body. */
 export const shared: Record<string, keyof typeof why> = {
   "$add": "collections",
-  "$advanceSlice": "iterators",
+  "$advanceSlice": "js-own", // ADRs 0422, 0465: an array's iterator an adapter holds, advanced by index
   "$andModify": "collections",
   "$append": "collections",
   "$asChunksMut": "collections",
@@ -101,7 +104,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$capacity": "collections",
   "$catchable": "glue",
   "$catchUnwind": "glue",
-  "$chars": "iterators",
+  "$chars": "js-own", // ADR 1117: a string's `Chars`, the runtime's lazy one
   "$chunkBy": "collections",
   "$chunkByMut": "collections",
   "$chunksExactMut": "collections",
@@ -121,11 +124,11 @@ export const shared: Record<string, keyof typeof why> = {
   "$copyWithin": "collections",
   "$count": "consumers",
   "$clone": "glue",
-  "$cycleOf": "iterators",
+  "$cycleOf": "to-pit",
   "$debugDuration": "format",
   "$debugF64": "format",
   "$debugStr": "format",
-  "$decodeUtf16": "iterators",
+  "$decodeUtf16": "to-pit",
   "$dedupBy": "collections",
   "$dedupByCells": "collections",
   "$dequeInsert": "collections",
@@ -182,11 +185,11 @@ export const shared: Record<string, keyof typeof why> = {
   "$insertAt": "collections",
   "$insertMut": "collections",
   "$insertStr": "collections",
-  "$intoIter": "iterators",
+  "$intoIter": "js-own", // ADRs 0061, 0475: a generic `IntoIterator` of an array, its `$iter`
   "$intsOrdered": "glue",
   "$isSortedBy": "consumers",
   "$isSortedByKey": "consumers",
-  "$iter": "iterators",
+  "$iter": "js-own", // ADR 0071: an array's iterator, which knows where it is
   "$iterCmp": "consumers",
   "$iterEq": "consumers",
   "$iterEqGiven": "consumers",
@@ -217,8 +220,8 @@ export const shared: Record<string, keyof typeof why> = {
   "$mutGet": "collections",
   "$mutValues": "collections",
   "$newCyclic": "glue",
-  "$next": "iterators",
-  "$nextSome": "iterators",
+  "$next": "js-own", // ADR 0140: the step of any JS iterator, its item or `undefined`
+  "$nextSome": "js-own", // ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`
   "$nth": "consumers",
   "$nthBack": "consumers",
   "$nthDropping": "consumers",
@@ -236,7 +239,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$partition": "consumers",
   "$partitionPoint": "collections",
   "$pathJoin": "collections",
-  "$peek": "iterators",
+  "$peek": "memory", // ADR 0561: `Peekable::peek`, whose body reaches memory
   "$peekMut": "collections",
   "$peekMutDrop": "collections",
   "$peekMutTop": "collections",
@@ -262,9 +265,9 @@ export const shared: Record<string, keyof typeof why> = {
   "$removeEntry": "collections",
   "$removeItem": "collections",
   "$removeOpt": "collections",
-  "$repeat": "iterators",
-  "$repeating": "iterators",
-  "$repeatingN": "iterators",
+  "$repeat": "to-pit",
+  "$repeating": "to-pit",
+  "$repeatingN": "to-pit",
   "$replaceRange": "collections",
   "$replaceWith": "collections",
   "$reserveHint": "collections",

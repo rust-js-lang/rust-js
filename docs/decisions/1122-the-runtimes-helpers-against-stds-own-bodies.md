@@ -81,3 +81,23 @@ helper both builds import that neither list names. A whole run also
 fails on a list that says what it doesn't: a `shared` helper pitted now
 or imported by none, a `pitted` one no case pits, one pitted that
 `pitted` doesn't list.
+
+## Amendment (2026-11-13, #1458): each unpitted iterator says why, by its own kind
+
+`shared`'s `iterators` kind gave one reason to helpers of three different
+cases. It is now three kinds, so a reason never covers both what's decided
+and what's merely not done yet:
+
+- `js-own`, a std iterator stepped as JS's own iteration by decision,
+  each with its ADR beside it: `$iter` (ADR 0071), `$intoIter` (ADRs 0061,
+  0475), `$advanceSlice` (ADRs 0422, 0465), `$chars` (ADR 1117), `$next`
+  (ADR 0140) and `$nextSome` (ADRs 0140, 0051);
+- `memory`, a std method whose body reaches memory, which std's build
+  can't compile: `$peek`, `Peekable::peek` (ADR 0561);
+- `to-pit`, a plain std struct std's build doesn't compile yet, each to be
+  pitted in turn, its std body compiled in the std build: `$repeat`,
+  `$repeating`, `$repeatingN` (`Repeat`, `RepeatN`), `$cycleOf` (`Cycle`)
+  and `$decodeUtf16` (`DecodeUtf16`).
+
+`iterators` keeps a slice's lazy searches. The ranges' eight stay `ranges`
+until a probe of compiling `Step`'s bodies says which they are.
