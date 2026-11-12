@@ -6,8 +6,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { compileFailure, processTree, run, runSync, type Exit } from "./child";
+import { execute, nativeCommand, nativeShare } from "./programs";
 import { underLoad } from "../scripts/timing";
-import { fixture, run as setUp } from "./support";
+import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
 
 const exit = (code: number | null, stderr: string, more: Partial<Exit> = {}): Exit => ({
   code,
@@ -171,3 +172,28 @@ test("a run's command is stopped when the process that ran it is killed", async 
   expect(left()).toBe("");
 }, underLoad(30_000));
 
+
+// A native run on macOS, which keeps no memory limit an allocator heeds, is
+// killed by its watchdog past its share of the machine, what the system
+// compressed of it counted too, and said so (#1515): three runs that held
+// 9 GB each froze a 16 GB Mac. The program touches every page it takes, as
+// one that never ends does, and would print once it held twice its share.
+test.skipIf(process.platform !== "darwin")("a native run past its memory share is stopped and said so", () => {
+  const share = nativeShare();
+  const source = `fn main() {
+    let mut held: Vec<Vec<u8>> = Vec::new();
+    while held.len() * (64 << 20) < ${2 * share} {
+        held.push(vec![7; 64 << 20]);
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    println!("held {}", held.len());
+}
+`;
+  const built = nativeBinary(source, contentDirectory(source), ["--edition=2024", "-O"]);
+  if ("error" in built) throw new Error(built.error);
+  const outcome = join(fixture("native-memory-share"), "native.json");
+  const started = Date.now();
+  const ran = execute(nativeCommand(built.binary, outcome), outcome, 60_000);
+  expect([ran.stopped, String(ran.outcome).startsWith("stopped past its memory share"), ran.stdout]).toEqual([true, true, ""]);
+  expect(Date.now() - started).toBeLessThan(30_000);
+}, underLoad(90_000));

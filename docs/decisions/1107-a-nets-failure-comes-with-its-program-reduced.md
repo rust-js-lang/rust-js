@@ -152,3 +152,25 @@ process group stopped past it; with too little left, the failure says the
 command that reduces it. Seed 16 with #1356's bug put back, both builds
 failing: 307 s before, 158 s after, the same reduced program
 (docs/dev-loop.md).
+
+## Amendment (2026-11-12, #1515): every native run on macOS holds its share, by its footprint
+
+Three native test binaries held 9 GB each, 50 s after they started, and
+froze a 16 GB Mac until its watchdog reset it (WindowServer's
+`userspace_watchdog_timeout`, 17:10). macOS keeps no `RLIMIT_DATA` or
+`RLIMIT_AS` an allocator heeds, and #1306's cap reads `ps`'s resident
+size, which leaves out what the system compresses as memory runs short,
+so a run past it can look small. Now `nativeCommand` (test/programs.ts),
+the one way a native program is run, runs it on macOS beside
+`memory-watch` (test/memory-watch.rs, built and kept as a native program
+is). Every 50 ms the watchdog asks the run's physical footprint,
+compressed pages too (`proc_pid_rusage`). Past its share it writes what
+the run held to a mark beside its outcome and kills it, and `execute`
+says so: `stopped past its memory share, <held> MB of <share> MB`, a
+stopped run, never a program's answer. The share is `nativeShare()`, the
+memory budget (`memoryBudget()`, scripts/shard.ts, the one authority)
+over one run on each core, the most that run at once, at least 512 MB:
+853 MB on the 12-core, 16 GB Mac. Linux keeps its 4 GiB `RLIMIT_DATA`,
+which its kernel enforces. Test: "a native run past its memory share is
+stopped and said so" (test/child.test.ts), a program that touches twice
+its share 64 MB at a time, stopped within the share.

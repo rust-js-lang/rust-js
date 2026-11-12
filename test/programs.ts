@@ -5,6 +5,7 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+import { machine, memoryBudget } from "../scripts/shard";
 import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { compiler, contentDirectory, nativeBinary, root, run } from "./support";
@@ -55,6 +56,8 @@ const compileTimeout = Number(process.env.RUST_JS_COMPILE_TIMEOUT ?? 120_000);
  * the abort's line on stderr. Either is `{ exit: 134 }`. */
 export function execute(cmd: string[], outcomeFile: string, limit = timeout): Run {
   rmSync(outcomeFile, { force: true });
+  const overgrown = pastShareMark(outcomeFile);
+  rmSync(overgrown, { force: true });
   const started = performance.now();
   const p = runSync(cmd, root, limit);
   const { stdout } = p;
@@ -66,6 +69,11 @@ export function execute(cmd: string[], outcomeFile: string, limit = timeout): Ru
   const bytes = { ...p.bytes, stderr: Buffer.from(unnamed(p.bytes.stderr.toString("latin1")), "latin1") };
   const ms = performance.now() - started;
   const ran = (outcome: Outcome | string): Run => ({ stdout, stderr, bytes, outcome, ms });
+  // Killed by its watchdog, `nativeCommand`'s, past its memory share (#1515).
+  if (existsSync(overgrown)) {
+    const held = Number(readFileSync(overgrown, "utf8")) / 2 ** 20;
+    return { ...ran(`stopped past its memory share, ${Math.round(held)} MB of ${Math.round(nativeShare() / 2 ** 20)} MB`), stopped: true };
+  }
   if (p.signal === "SIGABRT" && !p.timedOut) return ran(aborted);
   const why = stopped(p, limit);
   if (why) return { ...ran(why), stopped: true };
@@ -148,11 +156,45 @@ fn main() {
 export const nativeDataKiB = 4 * 1024 * 1024;
 
 /** How a native program is run: of `binary`, its outcome to
- * `outcomeFile`, within `nativeDataKiB` on Linux. */
+ * `outcomeFile`, within `nativeDataKiB` on Linux; on macOS, which keeps
+ * no limit an allocator heeds, watched by `memory-watch`, which kills it
+ * past its share of the machine's memory (`nativeShare`), its footprint
+ * counted, what the system compressed too, and says so in the mark
+ * `execute` reads (#1515): three runs held 9 GB each on a 16 GB Mac and
+ * froze it. */
 export function nativeCommand(binary: string, outcomeFile: string): string[] {
-  if (process.platform !== "linux") return [binary, outcomeFile];
-  return ["sh", "-c", `ulimit -d ${nativeDataKiB} 2>/dev/null; exec "$0" "$@"`, binary, outcomeFile];
+  if (process.platform === "linux") {
+    return ["sh", "-c", `ulimit -d ${nativeDataKiB} 2>/dev/null; exec "$0" "$@"`, binary, outcomeFile];
+  }
+  if (process.platform !== "darwin") return [binary, outcomeFile];
+  const watch = `"$WATCH" "$$" ${nativeShare()} "$MARK" </dev/null >/dev/null 2>&1 & exec "$0" "$@"`;
+  return ["env", `WATCH=${memoryWatch()}`, `MARK=${pastShareMark(outcomeFile)}`, "sh", "-c", watch, binary, outcomeFile];
 }
+
+/** The bytes a native run may hold on macOS: the memory the machine's
+ * runs may hold together (`memoryBudget`, scripts/shard.ts, the one
+ * authority), shared by one run on each core, as the most that run at
+ * once, at least 512 MB; asked once, as a run starts. */
+export function nativeShare(): number {
+  nativeShareBytes ??= Math.max(512 * 2 ** 20, Math.floor((memoryBudget() * 2 ** 30) / machine().cores));
+  return nativeShareBytes;
+}
+let nativeShareBytes: number | undefined;
+
+/** Where `memory-watch` says a run of `outcomeFile` held past its share. */
+const pastShareMark = (outcomeFile: string) => `${outcomeFile}.past-share`;
+
+/** The watchdog `nativeCommand` runs beside a native program on macOS,
+ * test/memory-watch.rs, built once and kept as a native program is. */
+function memoryWatch(): string {
+  if (memoryWatchBinary !== undefined) return memoryWatchBinary;
+  const source = readFileSync(join(root, "test", "memory-watch.rs"), "utf8");
+  const built = nativeBinary(source, contentDirectory(source), ["--edition=2024", "-O"]);
+  if ("error" in built) throw new Error(`memory-watch doesn't build:\n${built.error}`);
+  memoryWatchBinary = built.binary;
+  return memoryWatchBinary;
+}
+let memoryWatchBinary: string | undefined;
 
 /** `run`, a native program's, its binary gone where it isn't kept, below
  * the disk's floor (`nativeBinary`, #1108). */
