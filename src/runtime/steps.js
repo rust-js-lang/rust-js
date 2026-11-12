@@ -225,8 +225,11 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
           }
           if (ended) return { done: true, value: undefined };
           const step = this.next();
+          // At its source's first end, its source dropped, as std's `Fuse`
+          // drops it there, held or not (#1507).
           if (step.done) {
             ended = true;
+            this.return();
             return step;
           }
           inner = Iterator.from(f(step.value, i++));
@@ -279,7 +282,12 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         broke,
         unwind,
       );
-      if (!broke(folded)) ended = true;
+      // Its source folded to its end, dropped, as std's `Fuse::try_fold`
+      // drops it (#1507).
+      if (!broke(folded)) {
+        ended = true;
+        this.return();
+      }
       return folded;
     };
     $forward(flat, this, { fold, tryFold });

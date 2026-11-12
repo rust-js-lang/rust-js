@@ -385,3 +385,19 @@ drop, a panic closes it as each of std's ways unwinds, by `$foldToArray`
 or `$collectDropping`. Held by
 `vec_collect_as_its_caller_knows.rs` and the `generic-instances` row of
 `fold_drops_moved_function_first.rs`, off the metamorphic net's list.
+
+## Amendment (2026-11-12, #1507): a flatten's source dropped at its end
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. Std's `Flatten` and `FlatMap` hold their source in a
+`Fuse`, which drops it (`self.iter = None`) at its first `None`, and at the
+end of a `try_fold` that runs it out, whether or not the flatten is held.
+`$Steps`' `flatMap` set `ended` there and kept its source, which a held
+flatten's source isn't closed by being done, so the crate's iterator was
+dropped only with the flatten: `drop Flaky 2` after `end h` where native
+Rust prints it before the `None`. Its `next` and `try_fold` now close their
+source there; a `$closing` drops once however it's closed, so the
+flatten's own close after drops nothing more, and a source a `by_ref()`
+lends, whose close drops nothing of its owner, keeps it. Corpus case
+`flatten_drops_its_source_at_its_end` against native Rust in both builds;
+mutations `flatten-keeps-ended-source` and `flatten-try-fold-keeps-source`.

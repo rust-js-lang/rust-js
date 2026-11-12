@@ -381,4 +381,20 @@ export const mutations: Mutation[] = [
     replace: "  const own = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_whose_rest_panics_as_dropped_leaks_its_result.rs$"],
   },
+  {
+    name: "flatten-keeps-ended-source",
+    breaks: "a flatten keeps its source past its first `None`, dropped only with the flatten, where std's `Fuse` drops it there (#1507)",
+    file: "src/runtime/steps.js",
+    find: "          if (step.done) {\n            ended = true;\n            this.return();\n",
+    replace: "          if (step.done) {\n            ended = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
+  },
+  {
+    name: "flatten-try-fold-keeps-source",
+    breaks: "a flatten's `try_fold` that runs its source out keeps it, where std's `Fuse::try_fold` drops it (#1507)",
+    file: "src/runtime/steps.js",
+    find: "      if (!broke(folded)) {\n        ended = true;\n        this.return();\n",
+    replace: "      if (!broke(folded)) {\n        ended = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
+  },
 ];
