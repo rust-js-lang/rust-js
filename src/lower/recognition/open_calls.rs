@@ -1,5 +1,5 @@
 //! Std's calls rust-js refuses that an open issue covers, so a refusal of
-//! one names it, `(#1284)`, as a refusal names what's left to do (guide
+//! one names it, `(#1452)`, as a refusal names what's left to do (guide
 //! limitations.md; `refusal::words`). Known here, as only recognition
 //! spells std's names; the issues are the refusal's.
 
@@ -11,7 +11,8 @@ use rustc_middle::ty::{self, TyCtxt};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum OpenCall {
     /// `Into::into`, `TryInto::try_into` or `From::from` in a form not
-    /// lowered yet, across crates, of a blanket impl or by its path (#1284).
+    /// lowered yet: to another crate's type through its `From` impl, or
+    /// std's `Pin::from` of a `Box` (#1452, after #1284).
     Conversion,
     /// Another thread's start, `thread::spawn`, a `Builder`'s or a scope's:
     /// a program has one thread, its realm's (ADR 1126).

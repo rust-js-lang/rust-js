@@ -100,10 +100,10 @@ pub(crate) fn evidence_words<'tcx>(tcx: TyCtxt<'tcx>, tr: rustc_middle::ty::Trai
     )
 }
 
-/// The issue or decision an open family of refusals names, ` (#1284)`.
+/// The issue or decision an open family of refusals names, ` (#1452)`.
 pub(crate) fn issue_of(open: OpenCall) -> &'static str {
     match open {
-        OpenCall::Conversion => " (#1284)",
+        OpenCall::Conversion => " (#1452)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
         OpenCall::PinRead => " (#1448)",
