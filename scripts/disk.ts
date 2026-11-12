@@ -17,7 +17,7 @@
 //                           `--measure`, as walking `target/` takes 3.5 s
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
@@ -55,9 +55,17 @@ export type Store = {
  * nothing kept below the disk's floor: a store with no bound of its own. */
 export function boundEntries(dir: string, cap: number, free: () => number) {
   if (!existsSync(dir)) return { removed: 0, size: 0 };
-  const kept: Kept[] = readdirSync(dir).map((name) => {
+  const kept: Kept[] = readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
-    return { path, bytes: bytesOf(path), used: statSync(path).mtimeMs };
+    // A link is its own, as `bytesOf` takes it. One gone since it was
+    // listed, another checkout's run's test removing its own directory
+    // from the temp root they share, is no longer kept (#1473).
+    try {
+      return [{ path, bytes: bytesOf(path), used: lstatSync(path).mtimeMs }];
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
   });
   return evict(kept, { cap, free, floor: floorBytes });
 }

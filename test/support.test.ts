@@ -4,7 +4,7 @@
 
 import { underLoad } from "../scripts/timing";
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, lutimesSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
@@ -489,6 +489,23 @@ test("a store's entries are held to its cap and the floor", () => {
   boundEntries(dir, 1.5 * each, () => floorBytes);
   expect(readdirSync(dir)).toEqual(["new"]);
   boundEntries(dir, Number.POSITIVE_INFINITY, () => floorBytes - 1);
+  expect(readdirSync(dir)).toEqual([]);
+});
+
+// An entry gone since it was listed is no longer kept: two checkouts' runs
+// share the temp root, and one removes a test's own directory there as the
+// other prunes it, which ended a `check:fast` before it checked anything
+// (#1473). A dangling link is listed and has nothing to `stat`, the same
+// failure, made here: it's its own, as `bytesOf` takes it, and goes first.
+test("a store's entry with nothing behind it is held as its own, not the end of the prune", () => {
+  const dir = fixture("entries-gone");
+  symlinkSync(join(dir, "removed-by-another-run"), join(dir, "left"));
+  writeFileSync(join(dir, "kept"), Buffer.alloc(64 * 1024));
+  expect(boundEntries(dir, Number.POSITIVE_INFINITY, () => floorBytes).removed).toBe(0);
+  expect(readdirSync(dir).sort()).toEqual(["kept", "left"]);
+  const when = Date.now() / 1000 - 300;
+  lutimesSync(join(dir, "left"), when, when);
+  expect(boundEntries(dir, 1, () => floorBytes).removed).toBe(2);
   expect(readdirSync(dir)).toEqual([]);
 });
 
