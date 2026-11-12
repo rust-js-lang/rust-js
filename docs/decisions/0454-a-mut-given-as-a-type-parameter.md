@@ -925,3 +925,22 @@ results change, so Rust's behaviour is kept. Corpus case
 mut_ref_fields_of_a_type_parameter covers a slot, a guard, a holder,
 regex-syntax's parser holder, an enum, and impls bound by `Iterator` and
 `FnMut`, against native Rust in both builds.
+
+## Amendment: a `&mut` to the code's own type parameter, through std's impls (found by #1293)
+
+#1414 gave std's impls that pass a trait on from `&mut T` to `T`
+(`AsRef`, `Display`, `Debug` and the rest) `T`'s dictionary through the
+box, `$throughBox`, but only for a `&mut` to a type the code knows. It
+asked whether that pointee is a function or an iterator, and a bare type
+parameter answers "may be an iterator". So generic code's own `held:
+&mut T` gave `T`'s dictionary the box itself. `held.as_ref().len()` was 0
+where Rust's is the text's length; the box's `value` was never read.
+
+A `&mut` to a type the code doesn't know is the box this code holds it
+as (`mut_ref_form`), unless that's a function or an iterator given as it
+is (ADR 0061), as `in_generic_box` now says. Case C of ADR 0262: results
+change, so Rust's behaviour is kept. Corpus case
+mut_ref_to_its_own_type_parameter_through_std_impls covers `as_ref()`
+through a `&mut T` the code was given and one a `Result`'s `as_mut()`
+lends, written back through, `{}` and `{:?}` of a `&mut T`, and an
+iterator's `&mut I` given as it is, against native Rust in both builds.

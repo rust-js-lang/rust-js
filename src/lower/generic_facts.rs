@@ -279,10 +279,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a type parameter given a `ty` holds it as generic code's box,
     /// whose `value` it's to: a `&mut`, but to a function or an iterator,
     /// which may be given as it is (`given_as_the_value`, ADR 0061), or to
-    /// a `dyn`, whose pair it is (ADR 0099).
+    /// a `dyn`, whose pair it is (ADR 0099). Of a `&mut` to a type this code
+    /// doesn't know, its own parameter's, the box it holds it as, unless
+    /// that's a function or an iterator given as it is (`mut_ref_form`):
+    /// `held.as_ref()` of a `held: &mut T` reads what it's to.
     pub(in crate::lower) fn in_generic_box(&self, ty: Ty<'tcx>) -> bool {
         matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
-            if !self.is_callable(pointee) && !self.implements_iterator(pointee) && !pointee.is_trait())
+        if match self.is_unknown(pointee) {
+            true => self.is_cell(ty),
+            false => !self.is_callable(pointee) && !self.implements_iterator(pointee) && !pointee.is_trait(),
+        })
     }
 
     /// The crossing of a field of the crate's own type `ty`, variant

@@ -178,8 +178,8 @@ export const mutations: Mutation[] = [
     name: "dyn-pair-boxed-again",
     breaks: "a `&mut dyn Hasher` given for a type parameter, which generic code holds as the pair, is read through a box too: a hash through it throws (#1414)",
     file: "src/lower/generic_facts.rs",
-    find: " && !pointee.is_trait())\n",
-    replace: ")\n",
+    find: " && !pointee.is_trait(),\n",
+    replace: ",\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },
   {
@@ -198,5 +198,13 @@ export const mutations: Mutation[] = [
     find: "        self.form_differs(Form::Box, crossing).then_some(crossing)\n",
     replace: "        None.filter(|_: &Crossing<'tcx>| self.form_differs(Form::Box, crossing))\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "own-parameter-mut-unboxed",
+    breaks: "generic code's own `&mut T` given to std's impl that passes `AsRef` on to `T` gives `T`'s dictionary the box, not what it holds, so `held.as_ref().len()` is 0",
+    file: "src/lower/generic_facts.rs",
+    find: "            true => self.is_cell(ty),\n",
+    replace: "            true => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_its_own_type_parameter_through_std_impls.rs$"],
   },
 ];
