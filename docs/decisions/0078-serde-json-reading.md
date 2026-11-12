@@ -80,6 +80,10 @@ function orderDeserialize_deserialize(json) {
   `default` and `default = "path"` on a field or the container, `skip` and
   `skip_deserializing`, `deny_unknown_fields`, `transparent`, `other` and
   `expecting`.
+- **The container's `default` gives a missing field the default's own,**
+  read as the representation reads that field: a struct's property,
+  `defaults.b`, a tuple struct's element of the array it is, `defaults[1]`
+  (amended, #1537: it was read as `defaults._1`, `undefined`).
 - **An enum is read externally tagged:** `"Dot"`, or `{"Circle": 1.5}`, by
   its variants' names, then as its variant holds: nothing, a value, a
   tuple or a struct. Its other representations are [ADR

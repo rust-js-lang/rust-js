@@ -389,7 +389,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let missing = match (default, &defaults) {
                 (Some(SerdeDefault::Default), _) => Some(self.default_value(field_ty, span)?),
                 (Some(SerdeDefault::Path), _) => Some(self.default_path(field.did, span)?),
-                (None, Some(defaults)) => Some(Expr::member(Expr::var(defaults), keys[i].clone())),
+                (None, Some(defaults)) => Some(self.default_field(Expr::var(defaults), adt, args, &keys[i], i)),
                 (None, None) => None,
             };
             if attrs.skip_deserializing {
@@ -458,6 +458,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             build,
             options,
         })
+    }
+
+    /// Field `i` of `defaults`, the container's default, as the value
+    /// holds it, what's given where the field is missing: of a tuple
+    /// struct, an array, its element, `defaults[1]`, as the representation
+    /// reads it (`project`); else its property, `key` (#1537).
+    fn default_field(
+        &self,
+        defaults: Expr,
+        adt: ty::AdtDef<'tcx>,
+        args: ty::GenericArgsRef<'tcx>,
+        key: &str,
+        i: usize,
+    ) -> Expr {
+        let ty = Ty::new_adt(self.tcx, adt, args);
+        match self.shape(ty) {
+            Shape::Array(_) => self.project(defaults, ty, i),
+            _ => Expr::member(defaults, key.to_owned()),
+        }
     }
 
     /// Each field's key in JS: its name, or `_0` of a variant.

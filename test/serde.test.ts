@@ -1108,3 +1108,50 @@ pub fn report() -> String {
     expect((await import(js)).report(), build).toBe(expected);
   }
 });
+
+// A tuple struct with the container's `#[serde(default)]`, read from an
+// array shorter than it: each missing element is the container default's,
+// read as the representation reads a tuple struct's field, `defaults[1]`
+// of the array it is, never `defaults._1`, which is `undefined` (#1537).
+test("serde: a tuple struct's container default gives each missing element", async () => {
+  const dir = fixture("serde-tuple-defaults");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct T(pub i32, pub String);
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(default)]
+pub struct Given(pub u8, pub Vec<u32>, pub Option<String>, pub String);
+impl Default for Given {
+    fn default() -> Self {
+        Given(7, vec![1, 2], Some("o".to_string()), "s".to_string())
+    }
+}
+#[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct Named { pub a: u32, pub b: String }
+macro_rules! read {
+    ($out:ident, $ty:ty, $text:expr) => {
+        match serde_json::from_str::<$ty>($text) {
+            Ok(v) => $out.push_str(&format!("ok {:?} {}\\n", v, serde_json::to_string(&v).unwrap())),
+            Err(e) => $out.push_str(&format!("err {}\\n", e)),
+        }
+    };
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    for text in ["[4]", "[]", "[4, \\"x\\"]"] {
+        read!(out, T, text);
+    }
+    for text in ["[]", "[1]", "[1, [5]]", "[1, [5], null]", "[1, [5], \\"p\\", \\"q\\"]"] {
+        read!(out, Given, text);
+    }
+    for text in ["{}", "{\\"b\\": \\"x\\"}"] {
+        read!(out, Named, text);
+    }
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

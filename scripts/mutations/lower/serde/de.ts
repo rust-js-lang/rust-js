@@ -42,4 +42,16 @@ export const mutations: Mutation[] = [
     replace: "        match None::<Expr> {\n",
     tests: ["test/serde.test.ts", "-t", "its own functions"],
   },
+  {
+    name: "tuple-struct-default-as-property",
+    breaks: "a tuple struct with the container's `#[serde(default)]`, read from a shorter array, gives `defaults._1` of the array its default is, `undefined`, for each missing element (#1537)",
+    file: "src/lower/serde/de.rs",
+    find: "            Shape::Array(_) => self.project(defaults, ty, i),\n",
+    replace: "            Shape::Array(_) => Expr::member(defaults, key.to_owned()),\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "container default gives each missing"
+    ]
+  },
 ];
