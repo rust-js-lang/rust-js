@@ -69,20 +69,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
                 Expr::arrow(vec!["value".into()], body)
-            } else if let Some(instance) = self.resolve_instance(from, from_args)?
-                && self.is_rust_fn(instance.def_id())
-                && self.tcx.trait_of_assoc(instance.def_id()).is_none()
-            {
-                let callee = self.fn_ref(instance.def_id());
-                let mut values = vec![Expr::var("value")];
-                values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-                match values.len() {
-                    1 => callee,
-                    _ => Expr::arrow(
-                        vec!["value".into()],
-                        vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
-                    ),
-                }
+            } else if let Some(value) = self.compiled_conversion(from, from_args, span)? {
+                value
             } else {
                 return Err(self.no_evidence(span, tr));
             };
@@ -90,5 +78,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Expr::object(vec![Prop::Field(name, value)])));
         }
         Ok(None)
+    }
+
+    /// The function a conversion, `method` (`From::from`, `TryFrom::try_from`)
+    /// of `args`, runs where its impl is one rust-js compiled, the crate's
+    /// own or a library's (`is_rust_fn`): the impl's method, given its
+    /// evidence after the value. The one answer the conversion's
+    /// dictionary and `?` (`error_from`) take, so `?` in a library's code
+    /// the crate compiles itself converts with the library's `From`,
+    /// rand_core's `OsRng::try_fill_bytes` (#1420).
+    pub(in crate::lower) fn compiled_conversion(
+        &mut self,
+        method: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let Some(instance) = self.resolve_instance(method, args)? else {
+            return Ok(None);
+        };
+        if !self.is_rust_fn(instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {
+            return Ok(None);
+        }
+        let callee = self.fn_ref(instance.def_id());
+        let mut values = vec![Expr::var("value")];
+        values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
+        Ok(Some(match values.len() {
+            1 => callee,
+            _ => Expr::arrow(
+                vec!["value".into()],
+                vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
+            ),
+        }))
     }
 }

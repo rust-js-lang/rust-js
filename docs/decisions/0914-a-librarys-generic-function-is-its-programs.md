@@ -1650,3 +1650,37 @@ default the crate's impls copy takes no fact of its own"; mutations
 duplicate is taken, not refused. itertools' test_core.rs: 35 of its 36
 tests as native, where all 29 the Crater asked were refused; the one
 left, `get_1_max`, is a wrong answer of its own, #1412.
+
+## Amendment: an instance's `?` and `transmute`, as its library's own compile has them (2026-11-12, #1420)
+
+rand 0.7.3 compiles rand_core's `OsRng` and ppv-lite86's lanes itself:
+its own library keeps capacities, theirs don't (#1180's (5)). Two forms
+their own compiles take were refused in the copy:
+
+- **`?` that converts its error with the library's `From`**, rand_core's
+  `getrandom(dest)?` into its `Error`. `error_from` took only the crate's
+  own impls, `krate.fns`. A conversion's function is now one answer,
+  `compiled_conversion`: the impl's method where rust-js compiled it, the
+  crate's own or a library's, exported or compiled here (`is_rust_fn`),
+  given its evidence after the value. A conversion's dictionary and `?`
+  both take it, so they can't disagree.
+- **`transmute`, which rustc's MIR makes a cast** (`CastKind::Transmute`).
+  An instance is lowered from its MIR, where ppv-lite86's
+  `transmute(ptr::read(input as *const _ as *const [u8; 16]))` into a
+  `u32x4_generic`, and back, was cast as a number and refused ("values of
+  type"). It's now the `transmute` a call is (`plain.rs`), plain data's
+  parts read from its bytes. A `NonZero<T>` and its pattern type, `(u32)
+  is 1..`, are their number to it, as they are to `Num::of` (ADR 0177):
+  std's MIR transmutes between them, `NonZero::get`'s, and a struct of one
+  matched against a constant, getrandom's `internal_desc`.
+
+Case C of ADR 0262: what was refused compiles, as Rust runs it. rand
+0.7.3 compiles now; quickcheck 0.9.2 is next. Tests: pair
+`instance_converts_and_transmutes` (a library function the crate
+compiles, given what it drops, that converts `?`'s error with its
+library's exported `From`, transmutes bytes to a struct and back through
+pointers, and matches a `NonZero` constant), against native Rust; corpus
+case `non_zero_constants_matched` against native Rust in both builds;
+mutations `library-conversion-uncompiled`, `question-from-unanswered`,
+`mir-transmute-cast-as-number`, `transmute-of-a-pattern-type-refused` and
+`transmute-of-a-non-zero-refused`, caught.

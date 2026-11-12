@@ -765,4 +765,12 @@ export const mutations: Mutation[] = [
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
   },
+  {
+    name: "mir-transmute-cast-as-number",
+    breaks: "a `transmute` rustc's MIR makes a cast, of a struct to its bytes, is cast as a number, and refused (#1420)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    self.transmute(v, (from, *to), span, out)?\n",
+    replace: "                    self.cast(v, from, *to, span)?\n",
+    tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
+  },
 ];

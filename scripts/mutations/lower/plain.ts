@@ -270,4 +270,20 @@ export const mutations: Mutation[] = [
     replace: "            && self.plain(ty).is_some()\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
   },
+  {
+    name: "transmute-of-a-pattern-type-refused",
+    breaks: "a `transmute` of `NonZero`'s pattern type `(u32) is 1..` to its number, which std's MIR makes where a struct of one is matched against a constant, is refused as addressable memory (#1420)",
+    file: "src/lower/plain.rs",
+    find: "            ty::Pat(base, _) => *base,\n            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero",
+    replace: "            ty::Pat(..) => ty,\n            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero",
+    tests: ["test/corpus.test.ts", "-t", "^non_zero_constants_matched.rs$"],
+  },
+  {
+    name: "transmute-of-a-non-zero-refused",
+    breaks: "a `transmute` of a `NonZero<usize>` to its number, std's `NonZero::get` as its MIR writes it, is refused as addressable memory, and @rust-js/std doesn't build (#1420)",
+    file: "src/lower/plain.rs",
+    find: "            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero(adt.did()) => args.type_at(0),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
 ];

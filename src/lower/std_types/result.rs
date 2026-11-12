@@ -2,7 +2,7 @@
 //! error (ADRs 0052, 0141). A `Result`'s JS itself is `js::result`'s.
 
 use crate::js::result::{err, held, is};
-use crate::js::{self, Expr, Prop, StmtKind};
+use crate::js::{self, Expr, Prop};
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
@@ -89,34 +89,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Conversion::Dyn(dictionary)));
         }
         let from = self
-            .error_from(to, from_ty)?
+            .error_from(to, from_ty, span)?
             .ok_or_else(|| self.unsupported(span, "`?` that converts the error with this `From`"))?;
         Ok(Some(Conversion::From(from)))
     }
 
     /// The function `?` converts an error with, `<to as From<from>>::from`,
-    /// if it's one of the crate's own (ADR 0052).
-    pub(in crate::lower) fn error_from(&mut self, to: Ty<'tcx>, from: Ty<'tcx>) -> R<Option<Expr>> {
+    /// if rust-js compiled its impl, the crate's own or a library's
+    /// (`compiled_conversion`, ADR 0052).
+    pub(in crate::lower) fn error_from(
+        &mut self,
+        to: Ty<'tcx>,
+        from: Ty<'tcx>,
+        span: rustc_span::Span,
+    ) -> R<Option<Expr>> {
         let from_trait = std_item(self.tcx, StdItem::From);
         let method = self.tcx.associated_item_def_ids(from_trait)[0];
         let args = self.tcx.mk_args(&[to.into(), from.into()]);
-        let Some(instance) = self.resolve_instance(method, args)? else {
-            return Ok(None);
-        };
-        if !self.krate.fns.contains_key(&instance.def_id()) {
-            return Ok(None);
-        }
-        let evidence = self.evidence_args(instance.def_id(), instance.args, self.tcx.def_span(instance.def_id()))?;
-        let callee = self.fn_ref(instance.def_id());
-        Ok(Some(if evidence.is_empty() {
-            callee
-        } else {
-            let mut values = vec![Expr::var("error")];
-            values.extend(evidence);
-            Expr::arrow(
-                vec!["error".into()],
-                vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
-            )
-        }))
+        self.compiled_conversion(method, args, span)
     }
 }

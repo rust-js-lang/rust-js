@@ -685,10 +685,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if from == *to {
                     v
-                } else if *kind == mir::CastKind::Transmute
-                    && let Some(made) = self.non_zero_transmute(v.clone(), (from, *to), span, out)?
-                {
-                    made
+                } else if *kind == mir::CastKind::Transmute {
+                    // `transmute`, which rustc's MIR makes a cast, as its
+                    // call is lowered (`transmute`): a library's code the
+                    // crate compiles from its MIR, ppv-lite86's bytes read
+                    // as a `u32x4_generic` (#1420).
+                    self.transmute(v, (from, *to), span, out)?
                 } else if to.is_char() {
                     Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v])
                 } else if self.kept_cast_at(span) {

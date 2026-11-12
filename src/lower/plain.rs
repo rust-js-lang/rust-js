@@ -112,7 +112,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, a `from`, as a `to` of the same bytes: itself, of a type
     /// that differs only in its lifetimes, else of plain data, its parts;
     /// bytes as text, `Box<[u8]>` as `Box<str>`, decoded (ADR 0562).
-    fn transmute(&mut self, value: Expr, (from, to): (Ty<'tcx>, Ty<'tcx>), span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub(in crate::lower) fn transmute(
+        &mut self,
+        value: Expr,
+        (from, to): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        // A `NonZero<T>` is its number, and so is the pattern type it keeps
+        // it in, `(u32) is 1..` (ADR 0177): std's MIR transmutes between
+        // them, `NonZero::get`'s.
+        let unpatterned = |ty: Ty<'tcx>| match ty.kind() {
+            ty::Pat(base, _) => *base,
+            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero(adt.did()) => args.type_at(0),
+            _ => ty,
+        };
+        let (from, to) = (unpatterned(from), unpatterned(to));
         let erased = |ty| self.tcx.erase_and_anonymize_regions(ty);
         if erased(from) == erased(to) {
             return Ok(value);
