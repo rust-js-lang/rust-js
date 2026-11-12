@@ -44,7 +44,7 @@ function collected(it, IVecCollect, IItemSize) {
 function reserved(it, IItemSize) {
   const v = $withCapacity(1);
   const n = (it.len() + 3) >>> 0;
-  $roomFor(v.length + n, 0);
+  $roomFor(v.length + n, IItemSize);
   $reserve(v, n, IItemSize);
   return $capacity(v, IItemSize);
 }

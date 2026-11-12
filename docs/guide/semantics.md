@@ -1019,10 +1019,14 @@ Differences:
 
 - **A `HashMap` or a `HashSet` iterates in insertion order,** where Rust's
   order is unspecified; serde_json writes one in that order too.
-- **Room for a type parameter's items is checked by their count alone,**
-  `Vec::<T>::with_capacity(n)` in generic code, as if they had no size:
-  their size isn't known where the call is
-  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
+- **Room for a type parameter's items is checked by the size its caller
+  gives,** `TSize`: generic code's `Vec::<T>::with_capacity(n)`,
+  `reserve(n)`, `vec![x; n]`, `resize`, `resize_with` and a slice's
+  `repeat`, `$roomFor(n, TSize)` (#1432). By their count alone, as if they
+  had no size, only where no caller can give it: an impl's associated
+  type its dictionary doesn't carry, `I::Item` in an `impl<I: Iterator>`'s
+  method (#934); a collect's (#1436); and a hash table's entries (#1437)
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
 - **Room std's own growth asks isn't checked,** a `push` past the
   capacity its doubling picks, nor a `collect()` whose length is a
   collection's of smaller items, `ids.iter().map(|x| x.to_string())`:
@@ -1950,10 +1954,11 @@ React and JSX are [their own pages](README.md#react).
     method that's a getter, or one an argument replaces, is told apart
     from Rust's only there. Of a `js::Unknown`, any value, the arguments
     run first, as Rust runs them (ADR 0750).
-23. Room asked for items whose size a type parameter gives, a generic
-    function's `Vec::<T>::with_capacity(n)`, is checked by their count
-    alone, as if they had none, where std checks their bytes against
-    `isize::MAX` (ADR 0774).
+23. Room asked for items whose size no caller can give, an impl's
+    associated type its dictionary doesn't carry (#934), and, till they're
+    fixed, a generic collect's (#1436) and a generic hash table's entries
+    (#1437), is checked by their count alone, as if they had none, where
+    std checks their bytes against `isize::MAX` (ADR 0774, amended).
 24. A string's `repeat(n)` past `isize::MAX` bytes, a negative signed
     count's `as usize` too, throws the engine's `RangeError` where std
     panics `capacity overflow`; in Safari and Bun, of text not all ASCII

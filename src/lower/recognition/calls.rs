@@ -1239,6 +1239,28 @@ pub(in crate::lower) fn is_unreachable_hint(tcx: TyCtxt<'_>, def_id: DefId) -> b
 
 /// Is `def_id` `vec!`'s of an item and a count, `vec![0.0; n]`, a `Vec` of
 /// `n` items?
+/// Whether a call of `def_id` checks std's room for items of its first
+/// type argument, `T`, by their bytes (ADR 0774): a `Vec`'s, a `VecDeque`'s
+/// or a `BinaryHeap`'s `with_capacity`, `reserve` and `reserve_exact`,
+/// `vec![x; n]`, a `Vec`'s `resize` and `resize_with`, and a slice's
+/// `repeat`, whose caller gives that size where it's a type parameter's
+/// (`TypeFact::Room`, #1432).
+pub(crate) fn checks_room_of_first(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(
+        capacity_op(tcx, def_id),
+        Some(CapacityOp::WithCapacity | CapacityOp::Reserve { .. })
+    ) || is_vec_from_elem(tcx, def_id)
+        || matches!(
+            array_collection_method(std_path(tcx, def_id)),
+            Some("resize" | "resize_with")
+        )
+        || is_std_crate(tcx, def_id)
+            && tcx.item_name(def_id).as_str() == "repeat"
+            && tcx
+                .impl_of_assoc(def_id)
+                .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_slice())
+}
+
 pub(in crate::lower) fn is_vec_from_elem(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("vec_from_elem"), def_id)
 }

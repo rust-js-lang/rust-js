@@ -363,4 +363,12 @@ export const mutations: Mutation[] = [
     replace: "            None\n",
     tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
   },
+  {
+    name: "room-item-of-no-size",
+    breaks: "each item's size is taken as none, `Vec::<u8>::with_capacity(n)` checked by its count alone",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            return Some(Expr::int(i128::from(layout.size.bytes())));\n",
+    replace: "            return Some(Expr::int(0));\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
 ];

@@ -61,6 +61,7 @@ pub(super) fn collect_asks<'tcx>(
             (callee, args),
             keeps_capacity,
         ));
+        asked.extend(room_asked(recognition, typing_env, owner, (callee, args)));
         asked
     };
     // A library's default the crate compiles itself as a function over
@@ -207,6 +208,27 @@ fn grown_asked<'tcx>(
     }
     let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
     size.into_iter().collect()
+}
+
+/// In any crate, of a call that checks std's room for items by their bytes
+/// (ADR 0774), a `with_capacity`, a `reserve`, a `vec![x; n]`, a `resize`
+/// or a slice's `repeat` (`checks_room_of_first`): their size, `Room`,
+/// which its caller gives where rustc can't lay them out here, `T`'s
+/// (#1432). Not of a collect, whose room std asks only as its hint says,
+/// which the lowering decides as it collects (#1436).
+fn room_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Asked<'tcx>> {
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    (crate::lower::recognition::checks_room_of_first(tcx, callee)
+        .then(|| args.types().next())
+        .flatten())
+    .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None))
+    .into_iter()
+    .collect()
 }
 
 /// Of `default`, a trait's default, what its body names, `args`, in the

@@ -770,6 +770,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn room_value(&self, item: Ty<'tcx>) -> Option<Expr> {
+        // As the bounds here normalize it, a caller's `Option<<Wrapper<C> as
+        // Iterator>::Item>` its callee's slot names.
+        let item = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(item))
+            .unwrap_or(item);
         if let Ok(layout) = self.tcx.layout_of(self.typing_env.as_query_input(item)) {
             return Some(Expr::int(i128::from(layout.size.bytes())));
         }

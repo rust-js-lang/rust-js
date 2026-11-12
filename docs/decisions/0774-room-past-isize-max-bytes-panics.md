@@ -371,3 +371,40 @@ a range from a function, a `RangeFrom`'s, a `u64` range's reversed, asks
   `step-by-of-unbounded-as-filter` (`combinators/adapters.ts`),
   `lazy-range-back-unhinted` and `lazy-range-back-hint-counted-apart`
   (`runtime/lazy_range.ts`).
+
+## Amendment: a type parameter's items' room is checked by its caller's size (2026-11-12, #1432)
+
+Case B for items whose size a type parameter gives is reopened by the
+user: results change, a `capacity overflow` panic std makes and JS didn't,
+so Rust's behaviour is kept (ADR 0262's third case). The reason it was B
+is mostly gone: a library's function is given facts by its consumers, and
+a trait's associated type's by its dictionaries (ADR 0145, #990, #1312).
+
+- **Each call that checks room by the bytes of its first type argument's
+  items** (`recognition::checks_room_of_first`: a `Vec`'s, a `VecDeque`'s
+  or a `BinaryHeap`'s `with_capacity`, `reserve` and `reserve_exact`,
+  `vec![x; n]`, a `Vec`'s `resize` and `resize_with`, a slice's `repeat`)
+  asks its caller their size in any crate, `TypeFact::Room` (ADR 0419's
+  #1260 amendment), named `TSize`, and `room_item_size` reads it
+  (`room_value`): `fn f<T>(n: usize) { Vec::<T>::with_capacity(n); }` is
+  `$roomFor(n, TSize)`. Room for one item fits whatever its size, as no
+  type is more than `isize::MAX` bytes, so it isn't checked.
+- **Left by their count alone**, the guide's difference 23: an impl's
+  associated type its dictionary doesn't carry (#934), `I::Item` in an
+  impl's method, `$roomFor(n)`, as `Room` is given `undefined` there (a
+  built type of it, `Option<I::Item>`, is given by the impl's dictionary's
+  maker, `wrapperRoom(16)`); a collect's, whose room
+  std asks as its hint says, which the lowering decides as it collects,
+  so asking `Room` of each gave generic functions a `TSize` they never
+  read (#1436); and a hash table's entries, which need their alignment
+  too (#1437). Each is filed.
+
+Tests: corpus case `capacity_overflow_of_generic_items` (each of those
+calls in generic code of `[u64; 4]`s, past `isize::MAX` bytes on wasm32 and
+native both, and within it, and of no size), against native Rust in each
+build; corpus case `room_of_an_impls_associated_items`, an impl's method's
+and a copied default's room of `I::Item` and `Option<I::Item>`; 2 corpus
+snapshots changed, a generic function given its `TSize`; and a copied
+default's `reserve` of `Vec<Option<Self::Item>>`, std's capacity 4. A
+`reserve` of items whose size isn't given grows to a capacity not known,
+never as if they had none.

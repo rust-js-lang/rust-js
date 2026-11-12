@@ -128,15 +128,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
-    name: "room-item-of-no-size",
-    breaks:
-      "each item's size is taken as none, `Vec::<u8>::with_capacity(n)` checked by its count alone",
-    file: "src/lower/std_types/vec.rs",
-    find: "        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))\n",
-    replace: "        Expr::int(0)\n",
-    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
-  },
-  {
     name: "with-capacity-room-unchecked",
     breaks: "`Vec::with_capacity(n)` past `isize::MAX` bytes is no panic",
     file: "src/lower/std_types/vec.rs",
@@ -231,5 +222,13 @@ export const mutations: Mutation[] = [
     find: "                        helper(\"$capacity\", vec![helper(\"$untracked\", vec![arg()])])\n",
     replace: "                        helper(\"$capacity\", vec![arg()])\n",
     tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
+  },
+  {
+    name: "room-item-size-of-a-param-none",
+    breaks: "room for a type parameter's items is checked by their count alone, as if they had no size, though its caller gives their size, so no `capacity overflow` panics where std's does (#1432)",
+    file: "src/lower/std_types/vec.rs",
+    find: "        self.room_value(item).unwrap_or_else(|| Expr::int(0))\n",
+    replace: "        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
   },
 ];

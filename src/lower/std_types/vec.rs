@@ -102,9 +102,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (#1180).
                 // Of one whose size no caller gives, kept as it was (#1180).
                 let grown_size = self.capacity_item_size(generic_args.type_at(0));
-                let reserved_size = grown_size
-                    .clone()
-                    .unwrap_or_else(|| self.room_item_size(generic_args.type_at(0)));
+                // Of none given, unknown: never `0`, which is items of no
+                // size, whose capacity `$reserve` makes as many as asked.
+                let reserved_size = grown_size.clone().unwrap_or_else(Expr::undefined);
                 match (op, self.krate.keeps_capacity) {
                     // Of items whose size isn't given, #934's (`room_value`),
                     // which may be of no size: not known, refused.
@@ -269,9 +269,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The size of each of `item`s, by which std checks the room asked for
     /// them (ADR 0774): rustc's for wasm32, or, of one a type parameter's
-    /// size makes, `0`, checked by its count alone.
+    /// size makes, its caller's, `TSize` (`room_value`, #1432); `undefined`
+    /// of #934's case, and `0` where none is given, a hash table's entries,
+    /// checked by their count alone.
     pub(in crate::lower) fn room_item_size(&self, item: ty::Ty<'tcx>) -> Expr {
-        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))
+        self.room_value(item).unwrap_or_else(|| Expr::int(0))
     }
 
     /// std's check of room for `len + count` items, or `count`, of `size`
@@ -378,6 +380,9 @@ fn room_fits(len: Option<&Expr>, count: &Expr, size: &Expr) -> bool {
     match (count.as_int(), size.as_int()) {
         // No more than it has, which fit.
         (Some(0), _) => true,
+        // One, of any size: no type is more than `isize::MAX` bytes, so one
+        // fits whatever a caller's `TSize` is (#1432).
+        (Some(1), _) => len.is_none(),
         (_, Some(0)) => len.is_none(),
         (Some(n), Some(size)) => len.is_none() && n * size <= BYTES,
         _ => false,

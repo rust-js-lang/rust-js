@@ -463,3 +463,37 @@ pub fn lengths() -> Vec<usize> {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.lengths()).toEqual([2, 4, 6]);
 });
+
+// A \`reserve\` of a trait's default's \`Vec<Option<Self::Item>>\` an impl
+// copies, a built type of its associated type: its size given by the
+// impl's dictionary's maker, its capacity std's 4, never 3 as if its items
+// had no size (#1432).
+test("a copied default's reserve of a built type of its item has std's capacity", async () => {
+  const dir = fixture("capacity-reserve-unsized");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Wrapper<I>(I);
+
+impl<I: Iterator> Iterator for Wrapper<I> {
+    type Item = I::Item;
+    fn next(&mut self) -> Option<I::Item> {
+        self.0.next()
+    }
+}
+
+pub trait Room: Iterator {
+    fn reserved(&self, n: usize) -> usize {
+        let mut v: Vec<Option<Self::Item>> = Vec::new();
+        v.reserve(n);
+        v.capacity()
+    }
+}
+
+impl<I: Iterator> Room for Wrapper<I> {}
+
+pub fn reserved() -> usize {
+    Wrapper([1u64].into_iter()).reserved(3)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.reserved()).toBe(4);
+});

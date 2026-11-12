@@ -23,9 +23,9 @@ function one(TFromU8) {
   return TFromU8.from(1);
 }
 
-function identity(n, TElement) {
+function identity(n, TElement, TSize) {
   const From = TElement.From();
-  const items = $repeat(From.from(0), n * n, 0, (item) => item);
+  const items = $repeat(From.from(0), n * n, TSize, (item) => item);
   for (let i = 0; i < n; i++) {
     const value = From.from(1);
     const index = i * n + i;
@@ -49,9 +49,9 @@ function main() {
   const b = one({ from: (n) => n });
   console.log(`${$debugF64(a)} ${b}`);
   console.log(
-    `[${identity(2, f64Element)
+    `[${identity(2, f64Element, 8)
       .map((item) => $debugF64(item))
-      .join(", ")}] [${identity(3, i64Element).join(", ")}]`,
+      .join(", ")}] [${identity(3, i64Element, 8).join(", ")}]`,
   );
   console.log(`${$debugF64(twice(4, f64Element))} ${twice(5, i64Element)}`);
   const wide = converted(7, { into: (n) => BigInt(n) });
