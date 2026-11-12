@@ -57,3 +57,6 @@ plain std loud-drop drop_guard_restores_nullable_fields.rs
 plain std loud drop_guard_restores_taken_fields.rs
 plain std loud-call drop_guard_restores_taken_fields.rs
 plain std loud-drop drop_guard_restores_taken_fields.rs
+
+#difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
+plain std loud-call dyn_fn_handed_only.rs
