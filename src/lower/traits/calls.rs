@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(crate::lower::refusal::refuse(
                 self.tcx,
                 span,
-                crate::lower::refusal::Refused::Call(id, tr.args),
+                crate::lower::refusal::Refused::Call(id),
             ));
         }
         if operational(self.tcx, self.krate.foreign, trait_id) {

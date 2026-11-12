@@ -315,8 +315,8 @@ export const mutations: Mutation[] = [
     name: "mir-wrapping-op-refused",
     breaks: "`a * Wrapping(2)` from MIR is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "            Std::WrappingOp(op, assign) => lower(",
-    replace: "            Std::WrappingOp(op, assign) if false => lower(",
+    find: "            Std::IntNewtypeOp(op, assign) => lower(",
+    replace: "            Std::IntNewtypeOp(op, assign) if false => lower(",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {

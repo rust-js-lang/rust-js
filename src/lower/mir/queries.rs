@@ -207,7 +207,8 @@ pub(super) fn lowered_from_values(known: Std) -> bool {
             | Std::Heap(_)
             | Std::ExactLen
             | Std::SizeHint(_)
-            | Std::WrappingOp(..)
+            | Std::IntNewtypeOp(..)
+            | Std::IntNewtypeMethod(_)
             | Std::IterByRef
             | Std::NonZeroNew
             | Std::UserWrite

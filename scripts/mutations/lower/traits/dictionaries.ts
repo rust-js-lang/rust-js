@@ -153,9 +153,9 @@ export const mutations: Mutation[] = [
     name: "wrapping-dictionary-unknown",
     breaks: "a `T: Mul` given a `Wrapping<u8>` has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())\n",
+    find: "            && let Some(newtype) = self.recognition().int_newtype(ty.peel_refs())\n",
     replace:
-      "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs()).filter(|_| false)\n",
+      "            && let Some(newtype) = self.recognition().int_newtype(ty.peel_refs()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {

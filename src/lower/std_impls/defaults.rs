@@ -197,8 +197,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A range is a struct as any is (ADR 0129), and std's `Default`
             // of one, `Range`'s and `RangeFull`'s, is derived: its fields'
             // defaults, `{ start: 0, end: 0 }`, and `..`'s `undefined`, as
-            // below (#639).
-            ty::Adt(adt, _) if self.is_std(adt.did()) && self.range_kind(ty).is_none() => {
+            // below (#639). So is one of std's that's its fields in JS,
+            // `Wrapping(x)`, `Saturating(x)` and `Reverse(x)`, whose derived
+            // `Default` is `[0]` (#1434).
+            ty::Adt(adt, _)
+                if self.is_std(adt.did())
+                    && self.range_kind(ty).is_none()
+                    && !(recognition::struct_is_its_fields(self.tcx, adt.did())
+                        && self.recognition().derives(default, ty)) =>
+            {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
             }
             ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::undefined(),

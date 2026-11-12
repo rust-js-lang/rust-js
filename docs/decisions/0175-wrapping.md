@@ -116,3 +116,53 @@ width from `u8` to `i128`, past each bound, by zero, `MIN / -1` and `MIN %
 `wrapping-signed-div-plain`, `wrapping-signed-rem-plain`,
 `wrapping-unsigned-div-a-helper`, `wrapping-rhs-always-indexed`,
 `wrapping-dictionary-rhs-unread`.
+
+## Amendment (2026-11-12, #1434): `Saturating` is a `Wrapping` whose methods saturate
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted.
+`std::num::Saturating<T>` was refused wherever it was used: `Saturating(250u8)
++ Saturating(10)` as "calling `std::ops::Add::add`", and as a hash set's key.
+It's a transparent tuple struct with derived `PartialEq`, `Ord`, `Hash` and
+`Default` and the same operator impls as a `Wrapping`, so it takes the same
+form: **`[x]`, each operator the method of its number std's impl calls.**
+One recognizer, `int_newtype` (recognition/wrappers.rs), answers both,
+`Wrapping` or `Saturating`, for operators, `op=`, `{}`, `{:?}`, order, `==`
+and dictionaries, in place of `wrapping_of`; one table, `newtype_method`,
+gives each kind's method:
+
+| | `Wrapping` | `Saturating` |
+|---|---|---|
+| `+` `-` `*` | `wrapping_*` | `saturating_*` |
+| `/` of a signed one | `wrapping_div` | `saturating_div`, `MIN / -1` its `MAX` |
+| `%` of a signed one | `wrapping_rem` | the number's, which panics at `MIN % -1` as std's |
+| unary `-` | `wrapping_neg` | `saturating_neg` |
+| `<<` `>>` | `wrapping_shl`, `_shr` | none in std |
+| an unsigned one's `/` and `%`, bit operations, `!` | the number's | the number's |
+
+A `Saturating`'s own methods, stable where a `Wrapping`'s aren't, are its
+number's, `newtype_inherent`: `pow`'s `saturating_pow`, `abs`'s
+`saturating_abs`, and `count_ones`, `rotate_left`, `to_be` and the rest of
+the same name, a result of its type its `[x]`. Its `MIN`, `MAX` and `BITS`
+are constants rustc evaluates.
+
+With it, for both: `{:x}`, `{:o}` and `{:b}` are the number's (they were
+refused); and the derived `Default` of a std struct that's its fields in
+JS, `Wrapping`, `Saturating` and `Reverse`, is its fields', `[0]` (it was
+refused). `sum()` and `product()` of either stay refused, a guide
+limitation.
+
+Held by corpus case `saturating_ops_at_every_width.rs` against native
+wasm32 (`//@ native: wasm32`), so `usize` and `isize` are compared as
+rust-js's are: every operator and `op=`, by a `Saturating` and by its
+number, at each width, past each bound, its methods, its constants, `{}`,
+`{:?}`, hex, order, `Hash` as a set's key, `Default`, generic code's `+` and
+`*`, and a `Wrapping` of a `usize` and an `isize`. And `saturating_ops_that_panic.rs`,
+on the host, whose panics unwind: `/` and `%` by zero and a signed `MIN % -1`.
+Both builds. Mutations `saturating-unrecognized`,
+`saturating-arithmetic-plain`, `saturating-signed-div-plain`,
+`saturating-neg-plain`, `saturating-pow-plain`, `saturating-abs-plain`,
+`saturating-methods-unrecognized`, `newtype-method-result-always-wrapped`,
+`saturating-not-its-fields`, `newtype-radix-refused`,
+`std-fields-struct-default-refused`. #1289's refusals that named #1434 are
+gone: `open_call` no longer needs a call's generic arguments, and the map's
+refusal is a `Pin`'s (#1435) alone.

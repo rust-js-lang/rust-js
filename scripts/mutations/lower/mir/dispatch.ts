@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's refusal of a call it can't lower says so in its own words, not the one a `compile-fail` case expects of rust-js",
     file: "src/lower/mir/dispatch.rs",
-    find: "        Err(refuse(self.tcx, span, Refused::Call(def_id, generic_args)))\n",
+    find: "        Err(refuse(self.tcx, span, Refused::Call(def_id)))\n",
     replace: '        Err(self.unsupported(span, "this call, from its MIR"))\n',
     tests: ["test/corpus.test.ts", "-t", "str_circumfix_closure"],
   },

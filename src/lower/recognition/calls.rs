@@ -641,14 +641,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(known);
         }
-        // `std::num::Wrapping`'s: its number's, wrapped as release Rust wraps
-        // them (ADR 0175).
-        if self.wrapping_of(ty.peel_refs()).is_some() {
+        // `std::num::Wrapping`'s and `Saturating`'s: its number's methods, as
+        // std's impls write them (ADR 0175, #1434).
+        if self.int_newtype(ty.peel_refs()).is_some() {
             if let Some(op) = value_operator(tcx, trait_) {
-                return Some(Std::WrappingOp(op, false));
+                return Some(Std::IntNewtypeOp(op, false));
             }
             if let Some(op) = assign_operator(tcx, trait_) {
-                return Some(Std::WrappingOp(Ok(op), true));
+                return Some(Std::IntNewtypeOp(Ok(op), true));
             }
         }
         if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {

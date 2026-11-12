@@ -48,6 +48,7 @@ table](../../ROADMAP.md) lists the larger missing pieces.
 | `NonZero<T>` | its number; `new` of `0` is `None` | ([0177](../decisions/0177-nonzero.md)) |
 | `Duration` | its nanoseconds, a BigInt; `{:?}` is std's, `1.5s` | ([0188](../decisions/0188-duration.md)) |
 | `Wrapping<T>` | `[x]`, its number's arithmetic wrapped as std's impls write it, `w += 1` by its number too, a signed one's `/` and `%` `wrapping_div` and `wrapping_rem`, shown as its number | ([0175](../decisions/0175-wrapping.md)) |
+| `Saturating<T>` | `[x]` as a `Wrapping` is, `+`, `-`, `*`, `pow` saturating, a signed one's `/` `saturating_div`, `-` and `abs` `saturating_neg` and `saturating_abs`, `%` and the bit operations its number's, shown, compared and hashed as its number | ([0175](../decisions/0175-wrapping.md), amended) |
 | `f64` | number | |
 | `f32` | number, each result rounded by `Math.fround` | printed with its own shortest digits ([0122](../decisions/0122-f32.md)) |
 | `bool` | boolean | |

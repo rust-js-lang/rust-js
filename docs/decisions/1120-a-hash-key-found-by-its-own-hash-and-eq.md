@@ -140,7 +140,7 @@ that never grows, printed and panicking at its 2nd (ADR 1090, amended,
   whose `Hash` rust-js doesn't write (#1289)". It was a `$KeySet` that
   never called `hash`, a wrong answer where it panics or prints (#1287).
   Since #1289 std's wrappers and enums are hashed as std's impls write
-  them (ADR 0463, amended); what's left names #1434 or #1435.
+  them (ADR 0463, amended); what's left names #1435.
 - Mutations: `hashed-key-by-identity`, `hashed-key-own-hash-unseen`,
   `hashed-key-given-back`, `hash-runs-code-of-derived-unwalked`,
   `hash-runs-code-of-any-bound`, `hashed-key-refused`,

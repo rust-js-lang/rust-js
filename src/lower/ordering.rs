@@ -526,7 +526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.cmp_value(inside(b), inside(a), args.type_at(0), partial, span, out)
             }
             // `Wrapping(x)`: its number's, as its derive has it (ADR 0175).
-            ty::Adt(_, args) if self.recognition().wrapping_of(ty).is_some() => {
+            ty::Adt(_, args) if self.recognition().int_newtype(ty).is_some() => {
                 let inside = |x: Expr| Expr::index(x, Expr::int(0));
                 self.cmp_value(inside(a), inside(b), args.type_at(0), partial, span, out)
             }

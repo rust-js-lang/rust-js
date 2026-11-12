@@ -21,6 +21,7 @@ mod lengths;
 mod methods;
 mod open_calls;
 pub(in crate::lower) use methods::keeps_each;
+pub(in crate::lower) use wrappers::IntNewtype;
 mod own_steps;
 pub(in crate::lower) use chars::reaches_str_chars;
 pub(in crate::lower) use lengths::EqSide;
@@ -331,9 +332,10 @@ pub(super) enum Std {
     /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
     /// (ADR 0170).
     SizeHint(bool),
-    /// An operator of `std::num::Wrapping`, its number's in its `[x]`
-    /// (ADR 0175): `a * b`, `-a`, or, `true`, `a += b`.
-    WrappingOp(Result<BinOp, UnOp>, bool),
+    /// An operator of `std::num::Wrapping` or `Saturating`, its number's
+    /// method in its `[x]` (ADR 0175, #1434): `a * b`, `-a`, or, `true`,
+    /// `a += b`.
+    IntNewtypeOp(Result<BinOp, UnOp>, bool),
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
     /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
     UserWrite,
@@ -446,6 +448,9 @@ pub(super) enum Std {
     /// `unwrap()`, as a write's is always `Ok`.
     Stream(StreamOp),
     Number(NumOp),
+    /// A `Saturating`'s own method, its number's in its `[x]`
+    /// (`newtype_inherent`, #1434): `s.pow(2)`, `s.count_ones()`.
+    IntNewtypeMethod(NumOp),
     /// A `BinaryHeap`'s own methods (ADR 0068).
     Heap(HeapOp),
     /// A `OnceCell`'s or `OnceLock`'s (ADR 0317).

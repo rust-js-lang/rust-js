@@ -163,7 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(crate::lower::refusal::refuse(
                     self.tcx,
                     span,
-                    crate::lower::refusal::Refused::Call(def_id, generic_args),
+                    crate::lower::refusal::Refused::Call(def_id),
                 ));
             }
         })
@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `Wrapping` shows its number, as both its `Display` and its
         // `Debug` do (ADR 0175).
-        if let Some(inner) = self.recognition().wrapping_of(ty) {
+        if let Some((inner, _)) = self.recognition().int_newtype(ty) {
             return self.display_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
         }
         if self.is_string_like(ty) || self.is_parse_error(ty) {

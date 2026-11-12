@@ -158,10 +158,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = methods::text(name.as_str(), owner.is_char(), owner.is_str()) {
             return Some(Std::Text(op));
         }
-        if let Some(num) = Num::of(owner)
-            && let Some(op) = methods::number(name.as_str(), num)
-        {
-            return Some(Std::Number(op));
+        if let Some(number) = self.number_method(owner, name.as_str()) {
+            return Some(number);
         }
         if let Some(comb) = methods::combinator(
             name.as_str(),
@@ -757,6 +755,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// Which of a `RefCell` guard's own functions, by its `name`, maps it, of
 /// a `Ref` or a `RefMut` (#1275).
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// A number's own method `name`, or a `Saturating`'s, its number's in
+    /// its `[x]` (`newtype_inherent`, #1434).
+    fn number_method(&self, owner: Ty<'tcx>, name: &str) -> Option<Std> {
+        if let Some(num) = Num::of(owner) {
+            return methods::number(name, num).map(Std::Number);
+        }
+        let (inner, kind) = self.int_newtype(owner)?;
+        self.newtype_inherent(kind, name, Num::of(inner)?)
+            .map(Std::IntNewtypeMethod)
+    }
+
     /// Whether what `as_deref` (or, `mutable`, `as_deref_mut`) of a `t`
     /// gives is `t`'s own JS value: a `String`'s `&str` is the string, a
     /// `Vec`'s slice the array, a box's or a reference's what it points at

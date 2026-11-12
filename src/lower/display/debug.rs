@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::helper("$debugUtf8Error"), list));
         }
-        if let Some(inner) = self.recognition().wrapping_of(ty) {
+        if let Some((inner, _)) = self.recognition().int_newtype(ty) {
             return self.debug_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
         }
         // A slice's iterator, `Iter([2, 3])`: what's left of it, as its

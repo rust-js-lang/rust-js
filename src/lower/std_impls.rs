@@ -107,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (`cmp_value`).
             || self.is_reverse(ty)
             // Its `PartialEq`, `Clone` and order are its number's (ADR 0175).
-            || self.recognition().wrapping_of(ty).is_some()
+            || self.recognition().int_newtype(ty).is_some()
             // Each is made in its fields' shape, `NulError(position,
             // bytes)`'s array, `IntoStringError { inner, error }`'s object.
             || super::recognition::is_c_str_error_part(self.tcx, ty)

@@ -4,26 +4,66 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    /// `std::num::Wrapping<T>`'s `T`: a number in a `[x]` (ADR 0175).
-    pub(in crate::lower) fn wrapping_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        match ty.kind() {
-            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Wrapping) => Some(args.type_at(0)),
+    /// One of std's integers in a `[x]`, `Wrapping<T>` or `Saturating<T>`
+    /// (ADR 0175, #1434): its `T`, and which, whose operators are its
+    /// number's methods (`newtype_method`), and whose `==`, order, `Hash`
+    /// and `{}` are its number's.
+    pub(in crate::lower) fn int_newtype(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, IntNewtype)> {
+        let ty::Adt(_, args) = ty.kind() else { return None };
+        let kind = match () {
+            _ if self.is_std_type(ty, StdItem::Wrapping) => IntNewtype::Wrapping,
+            _ if self.is_std_type(ty, StdItem::Saturating) => IntNewtype::Saturating,
+            _ => return None,
+        };
+        Some((args.type_at(0), kind))
+    }
+
+    /// The method of its number std's impl of an `IntNewtype`'s operator
+    /// `op` calls, of a number `signed` or not, `None` where it's the
+    /// number's own operator: a bit operation's, `!`'s, a `Saturating`'s
+    /// `%`, or an unsigned one's `/` and `%`, which `wrapping_div`,
+    /// `saturating_div` and `wrapping_rem` are (ADR 0175, #1440, #1434).
+    /// - A `Wrapping`'s `wrapping_add`, `_sub`, `_mul`, `_shl`, `_shr`, a
+    ///   signed one's `wrapping_div` and `wrapping_rem`, `MIN / -1` its
+    ///   `MIN`; `wrapping_neg`.
+    /// - A `Saturating`'s `saturating_add`, `_sub`, `_mul`, a signed one's
+    ///   `saturating_div`, `MIN / -1` its `MAX`; `saturating_neg`. It has no
+    ///   shift.
+    pub(in crate::lower) fn newtype_method(
+        &self,
+        kind: IntNewtype,
+        op: Result<BinOp, UnOp>,
+        signed: bool,
+    ) -> Option<NumOp> {
+        match (kind, op) {
+            (IntNewtype::Wrapping, Ok(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl | BinOp::Shr))) => {
+                Some(NumOp::Wrapping(op))
+            }
+            (IntNewtype::Wrapping, Ok(BinOp::Div)) if signed => Some(NumOp::WrappingDiv),
+            (IntNewtype::Wrapping, Ok(BinOp::Rem)) if signed => Some(NumOp::WrappingRem),
+            (IntNewtype::Wrapping, Err(UnOp::Neg)) => Some(NumOp::WrappingNeg),
+            (IntNewtype::Saturating, Ok(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul))) => Some(NumOp::Saturating(op)),
+            (IntNewtype::Saturating, Ok(BinOp::Div)) if signed => Some(NumOp::SaturatingDiv),
+            (IntNewtype::Saturating, Err(UnOp::Neg)) => Some(NumOp::SaturatingNeg { abs: false }),
             _ => None,
         }
     }
 
-    /// The method of its number std's impl of a `Wrapping`'s operator `op`
-    /// calls, of a number `signed` or not: `wrapping_div` of `/`,
-    /// `wrapping_rem` of `%` of a signed one, `MIN / -1` its `MIN`;
-    /// `wrapping_neg` of `-`. `None` where it's the number's own operator, a
-    /// bit operation's, `!`'s, or an unsigned one's `/` and `%`, which
-    /// `wrapping_div` and `wrapping_rem` are (ADR 0175, #1440).
-    pub(in crate::lower) fn wrapping_method(&self, op: Result<BinOp, UnOp>, signed: bool) -> Option<NumOp> {
-        match op {
-            Ok(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl | BinOp::Shr)) => Some(NumOp::Wrapping(op)),
-            Ok(BinOp::Div) if signed => Some(NumOp::WrappingDiv),
-            Ok(BinOp::Rem) if signed => Some(NumOp::WrappingRem),
-            Err(UnOp::Neg) => Some(NumOp::WrappingNeg),
+    /// A `Saturating`'s own method `name`, as std's body writes it, the
+    /// method of its number of `num` it calls: `pow`'s `saturating_pow`,
+    /// `abs`'s `saturating_abs`, and its others' of the same name,
+    /// `count_ones`, `rotate_left`, `to_be` (#1434). A `Wrapping`'s are
+    /// unstable, none.
+    pub(in crate::lower) fn newtype_inherent(&self, kind: IntNewtype, name: &str, num: Num) -> Option<NumOp> {
+        if kind != IntNewtype::Saturating {
+            return None;
+        }
+        match name {
+            "pow" => Some(NumOp::SaturatingPow),
+            "abs" => Some(NumOp::SaturatingNeg { abs: true }),
+            "count_ones" | "count_zeros" | "trailing_zeros" | "leading_zeros" | "rotate_left" | "rotate_right"
+            | "swap_bytes" | "reverse_bits" | "from_be" | "from_le" | "to_be" | "to_le" | "signum" | "is_positive"
+            | "is_negative" | "is_power_of_two" => super::methods::number(name, num),
             _ => None,
         }
     }
@@ -958,4 +998,13 @@ pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericA
         }
         _ => None,
     }
+}
+
+/// Which of std's integers in a `[x]` a type is (`int_newtype`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum IntNewtype {
+    /// `std::num::Wrapping`, whose arithmetic wraps (ADR 0175).
+    Wrapping,
+    /// `std::num::Saturating`, whose arithmetic keeps to its range (#1434).
+    Saturating,
 }

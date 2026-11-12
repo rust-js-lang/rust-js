@@ -220,10 +220,10 @@ the hash comes to differs from a 64-bit target's wherever the discriminant,
 an `isize`, is written, as this ADR's Consequences say of every `usize`.
 
 Still refused, each naming its issue: a `Saturating` (#1434), which rust-js
-doesn't represent, its arithmetic refused as "calling `std::ops::Add::add`
-(#1434)" (a refused call is given its generic arguments, `Refused::Call`,
-so `open_call` can tell); and a `Pin` of the crate's own pointer (#1435),
-whose `Hash` is its target's, not the pointer's own.
+didn't represent, its arithmetic refused as "calling `std::ops::Add::add`
+(#1434)"; and a `Pin` of the crate's own pointer (#1435), whose `Hash` is
+its target's, not the pointer's own. (Since #1434 a `Saturating` is `[x]`,
+hashed as its derived `Hash` writes, as a `Wrapping` is: ADR 0175, amended.)
 
 Held by corpus case `std_keys_around_their_own_hash.rs` against native Rust
 in both builds: each wrapper and enum as a key, its key's `hash` calls
@@ -233,5 +233,4 @@ rows of the three refusals. Mutations `std-struct-hash-unwritten`,
 `pin-hash-unwritten`, `pin-of-any-pointer-hashed-as-it`,
 `cow-hash-unwritten`, `std-enum-discriminant-unwritten`,
 `std-enum-discriminant-zero`, `std-enum-hash-runs-no-code`,
-`saturating-call-unnamed`, `unhashed-key-issue-always-1434`,
 `hashed-made-array-parts-with-effects`, `hashed-made-array-held`.

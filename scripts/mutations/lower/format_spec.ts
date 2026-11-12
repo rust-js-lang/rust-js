@@ -298,4 +298,12 @@ export const mutations: Mutation[] = [
     replace: "                {\n                    let _ = digits;\n                    text\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^format_precision_of_bool_and_unit.rs$"],
   },
+  {
+    name: "newtype-radix-refused",
+    breaks: "`{:x}` of a `Wrapping` or a `Saturating` is refused, where std's is its number's (#1434)",
+    file: "src/lower/format_spec.rs",
+    find: "        if let Std::FmtRadix(_) = kind\n            && let Some((inner, _)) = self.recognition().int_newtype(ty)\n",
+    replace: "        if let Std::FmtRadix(_) = kind\n            && let Some((inner, _)) = self.recognition().int_newtype(ty).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
+  },
 ];

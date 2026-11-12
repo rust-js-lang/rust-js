@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.displays_itself(ty) {
             return (super::display::shown_text(value), text);
         }
-        if let Some(inner) = self.recognition().wrapping_of(ty) {
+        if let Some((inner, _)) = self.recognition().int_newtype(ty) {
             return (Expr::index(value, Expr::int(0)), inner);
         }
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
@@ -162,6 +162,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.displays_its_value(ty)
         {
             return Ok(super::display::shown_text(value));
+        }
+        // `{:x}`, `{:o}` and `{:b}` of a `Wrapping` or a `Saturating`: its
+        // number's, as std's impls hand it on (ADR 0175, #1434).
+        if let Std::FmtRadix(_) = kind
+            && let Some((inner, _)) = self.recognition().int_newtype(ty)
+        {
+            let number = Expr::index(value, Expr::int(0));
+            return self.format_value(number, (kind, inner), spec, (width, precision), span);
         }
         let num = super::display::shown_num(ty);
         // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559). Of

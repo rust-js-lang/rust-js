@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "wrapping-eq-refused",
     breaks: "`==` of `std::num::Wrapping`s is an error",
     file: "src/lower/std_impls.rs",
-    find: "            || self.recognition().wrapping_of(ty).is_some()\n",
+    find: "            || self.recognition().int_newtype(ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },

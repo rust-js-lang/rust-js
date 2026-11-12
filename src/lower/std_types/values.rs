@@ -664,7 +664,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Heap(_)
             | Std::ExactLen
             | Std::SizeHint(_)
-            | Std::WrappingOp(..)
+            | Std::IntNewtypeOp(..)
+            | Std::IntNewtypeMethod(_)
             | Std::IterByRef
             | Std::NonZeroNew
             | Std::UserWrite

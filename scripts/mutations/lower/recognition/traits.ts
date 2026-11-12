@@ -661,4 +661,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
+  {
+    name: "saturating-not-its-fields",
+    breaks: "a `Saturating` isn't its fields, `[x]`, in JS (#1434)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"Saturating\"), id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
+  },
 ];

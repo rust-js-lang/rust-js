@@ -1128,7 +1128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // to the place itself, or through a `&mut` to it a variable holds,
             // a parameter's or MIR's borrow taken before an operand that's a
             // call, `w += x << 4`'s, as any `*r = v` is written (`assign`).
-            Std::WrappingOp(op, assign) => lower(move |this, state, values, out| {
+            Std::IntNewtypeOp(op, assign) => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let (target, through) = match (assign, values.next().expect("the `Wrapping`")) {
                         // Through a variable the program wrote that holds a
@@ -1167,7 +1167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let rhs = values.next().map(|v| this.value_expr(v, span)).transpose()?;
                     this.flush(state, out)?;
                     let rhs = rhs.map(|rhs| (rhs, arg_tys[1]));
-                    let value = this.wrapping_value(op, arg_tys[0].peel_refs(), target.clone(), rhs, span, out)?;
+                    let value = this.newtype_value(op, arg_tys[0].peel_refs(), target.clone(), rhs, span, out)?;
                     if !assign {
                         value
                     } else {
@@ -1219,6 +1219,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         _ => Expr::bin(Op::Eq, a, b),
                     }
+                }))
+            }),
+            Std::IntNewtypeMethod(op) => lower(move |this, _, values, out| {
+                Ok(Value::Expr({
+                    let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                    let typed = exprs.into_iter().zip(arg_tys.iter().copied()).collect();
+                    this.newtype_method_call(op, typed, output, span, out)?
                 }))
             }),
             Std::Number(op) => lower(move |this, _, values, out| {

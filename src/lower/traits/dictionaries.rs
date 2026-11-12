@@ -818,9 +818,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 from_str,
             )]));
         }
-        // `std::num::Wrapping`'s, its number's in its `[x]` (ADR 0175).
+        // `std::num::Wrapping`'s and `Saturating`'s, its number's in its `[x]`
+        // (ADR 0175, #1434).
         if let Some(op) = crate::lower::recognition::value_operator(self.tcx, tr.def_id)
-            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())
+            && let Some(newtype) = self.recognition().int_newtype(ty.peel_refs())
         {
             let a = Expr::index(Expr::var("a"), Expr::int(0));
             let mut body = Vec::new();
@@ -828,7 +829,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(_) => (vec!["a".into(), "b".into()], Some((Expr::var("b"), tr.args.type_at(1)))),
                 Err(_) => (vec!["a".into()], None),
             };
-            let value = self.wrapping_result(op, a, rhs, inner, span, &mut body)?;
+            let value = self.newtype_result(op, a, rhs, newtype, span, &mut body)?;
             body.push(StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE));
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),

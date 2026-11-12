@@ -803,8 +803,9 @@ pub(in crate::lower) fn struct_is_its_fields(tcx: TyCtxt<'_>, id: DefId) -> bool
     !is_std_crate(tcx, id)
         || tcx.is_lang_item(id, LangItem::PhantomData)
         || tcx.item_name(id).as_str() == "Reverse"
-        // `Wrapping(x)`, `[x]` (ADR 0175).
+        // `Wrapping(x)` and `Saturating(x)`, `[x]` (ADR 0175, #1434).
         || tcx.is_diagnostic_item(Symbol::intern("Wrapping"), id)
+        || tcx.is_diagnostic_item(Symbol::intern("Saturating"), id)
 }
 
 pub(in crate::lower) fn ordering_value(tcx: TyCtxt<'_>, enum_def: DefId, variant: Symbol) -> Option<i128> {

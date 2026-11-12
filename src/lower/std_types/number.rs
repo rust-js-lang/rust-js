@@ -17,6 +17,7 @@ use crate::js::result;
 use crate::js::{self, Expr, Op, Stmt, UnaryOp};
 use crate::lower::calls::Call;
 use crate::lower::discriminants;
+use crate::lower::recognition::IntNewtype;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::{FnCx, R};
@@ -342,47 +343,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// A `Wrapping`'s operator's value, `[a[0] op rhs]`, of its type, read
-    /// the same each time, and the operand, of its type.
-    pub(in crate::lower) fn wrapping_value(
+    /// A `Wrapping`'s or a `Saturating`'s operator's value, `[a[0] op
+    /// rhs]`, of its type, read the same each time, and the operand, of its
+    /// type.
+    pub(in crate::lower) fn newtype_value(
         &mut self,
         op: Result<BinOp, UnOp>,
-        wrapping: Ty<'tcx>,
+        newtype: Ty<'tcx>,
         target: Expr,
         rhs: Option<(Expr, Ty<'tcx>)>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
-        let result = self.wrapping_result(op, Expr::index(target, Expr::int(0)), rhs, inner, span, out)?;
+        let (inner, kind) = self
+            .recognition()
+            .int_newtype(newtype)
+            .expect("a `Wrapping` or a `Saturating`");
+        let a = Expr::index(target, Expr::int(0));
+        let result = self.newtype_result(op, a, rhs, (inner, kind), span, out)?;
         Ok(Expr::array(vec![result]))
     }
 
-    /// `a op rhs` of a `Wrapping`'s number `a`, its `inner`: the result's
-    /// number, as std's impl writes it, the method of its number it calls
-    /// (`wrapping_method`), `wrapping_div` of `/`, or the number's own
-    /// operator. `rhs` is another `Wrapping`, its number read, or what an
+    /// `a op rhs` of an `IntNewtype`'s number `a`, of its `inner` type: the
+    /// result's number, as std's impl writes it, the method of its number
+    /// it calls (`newtype_method`), `wrapping_div` of a signed `Wrapping`'s
+    /// `/`, `saturating_add` of a `Saturating`'s `+`, or the number's own
+    /// operator. `rhs` is another of its type, its number read, or what an
     /// `op=` or a shift takes as it is, a `T` or a `usize` (#1439).
-    pub(in crate::lower) fn wrapping_result(
+    pub(in crate::lower) fn newtype_result(
         &mut self,
         op: Result<BinOp, UnOp>,
         a: Expr,
         rhs: Option<(Expr, Ty<'tcx>)>,
-        inner: Ty<'tcx>,
+        (inner, kind): (Ty<'tcx>, IntNewtype),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         self.num(inner, span)?;
-        let rhs = rhs.map(|(rhs, ty)| match self.recognition().wrapping_of(ty.peel_refs()) {
+        let rhs = rhs.map(|(rhs, ty)| match self.recognition().int_newtype(ty.peel_refs()) {
             Some(_) => Expr::index(rhs, Expr::int(0)),
             None => rhs,
         });
         let values: Vec<Expr> = std::iter::once(a).chain(rhs).collect();
-        if let Some(method) = self.recognition().wrapping_method(op, inner.is_signed()) {
+        if let Some(method) = self.recognition().newtype_method(kind, op, inner.is_signed()) {
             return self.number_call(method, values, inner, span, out);
         }
         let mut values = values.into_iter();
-        let a = values.next().expect("the `Wrapping`'s number");
+        let a = values.next().expect("its number");
         match op {
             Ok(op) => self.binary(
                 op,
@@ -394,6 +401,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             Err(op) => self.unary(op, a, inner, span),
         }
+    }
+
+    /// A `Saturating`'s own method `op` of its arguments' `values`, of their
+    /// types, its number's (`newtype_inherent`): each of its type read,
+    /// `s[0]`, and a result of its type, `output`, its `[x]` (#1434).
+    pub(in crate::lower) fn newtype_method_call(
+        &mut self,
+        op: NumOp,
+        values: Vec<(Expr, Ty<'tcx>)>,
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut inner = None;
+        let values = (values.into_iter())
+            .map(|(value, ty)| match self.recognition().int_newtype(ty.peel_refs()) {
+                Some((of, _)) => {
+                    inner = Some(of);
+                    Expr::index(value, Expr::int(0))
+                }
+                None => value,
+            })
+            .collect();
+        let inner = inner.expect("a `Saturating` among its arguments");
+        let result = self.number_call(op, values, inner, span, out)?;
+        Ok(match self.recognition().int_newtype(output) {
+            Some(_) => Expr::array(vec![result]),
+            None => result,
+        })
     }
 
     /// A number's method written the same of a number and of a BigInt: a

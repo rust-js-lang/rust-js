@@ -40,9 +40,6 @@ for (const [name, source, message, crate] of [
   // limitations.md): another thread's start, of the one thread a program
   // has (ADR 1126).
   ["a thread's spawn", "pub fn f() -> u32 { std::thread::spawn(|| 5).join().unwrap() }", "does not support calling `std::thread::spawn` (ADR 1126) yet"],
-  // A `Saturating`, which rust-js doesn't represent, names #1434 wherever it's called.
-  ["a Saturating's arithmetic", "pub fn f(a: std::num::Saturating<u8>) -> u8 { (a + a).0 }", "does not support calling `std::ops::Add::add` (#1434) yet"],
-  ["a set of Saturating keys", "pub fn f(a: std::num::Saturating<u8>) -> usize { std::collections::HashSet::from([a]).len() }", "as a hash map's keys, whose `Hash` rust-js doesn't write (#1434) yet"],
   ["a set of a Pin of the crate's own pointer", "#[derive(PartialEq, Eq)] pub struct K(u32);\nimpl std::hash::Hash for K { fn hash<H: std::hash::Hasher>(&self, h: &mut H) { println!(\"hash\"); self.0.hash(h) } }\n#[derive(PartialEq, Eq, Hash)] pub struct Mine(Box<K>);\nimpl std::ops::Deref for Mine { type Target = K; fn deref(&self) -> &K { &self.0 } }\npub fn f(p: std::pin::Pin<Mine>) -> usize { std::collections::HashSet::from([p]).len() }", "as a hash map's keys, whose `Hash` rust-js doesn't write (#1435) yet"],
   ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
   // A `pub use` of what has JS but no module of rust-js's to be re-exported

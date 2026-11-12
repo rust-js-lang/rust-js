@@ -459,8 +459,16 @@ export const mutations: Mutation[] = [
     name: "wrapping-rhs-always-indexed",
     breaks: "an `op=` of a `Wrapping` by its number reads `1[0]`, `undefined`, as if it were a `Wrapping` (#1439)",
     file: "src/lower/std_types/number.rs",
-    find: "        let rhs = rhs.map(|(rhs, ty)| match self.recognition().wrapping_of(ty.peel_refs()) {\n",
+    find: "        let rhs = rhs.map(|(rhs, ty)| match self.recognition().int_newtype(ty.peel_refs()) {\n",
     replace: "        let rhs = rhs.map(|(rhs, ty)| match Some(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_ops_by_its_number_and_past_its_range.rs$"],
+  },
+  {
+    name: "newtype-method-result-always-wrapped",
+    breaks: "a `Saturating`'s method that gives a number, `count_ones()`, gives a `[x]`, so `+ 1` joins text (#1434)",
+    file: "src/lower/std_types/number.rs",
+    find: "        Ok(match self.recognition().int_newtype(output) {\n",
+    replace: "        Ok(match Some(output) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
   },
 ];

@@ -1220,7 +1220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let call = (known, def_id, generic_args);
             return self.mir_std_value(state, call, ((&arg_tys, nulled), values, output), span, out);
         }
-        Err(refuse(self.tcx, span, Refused::Call(def_id, generic_args)))
+        Err(refuse(self.tcx, span, Refused::Call(def_id)))
     }
 
     /// `values[at]` held in a variable, which it's left as.

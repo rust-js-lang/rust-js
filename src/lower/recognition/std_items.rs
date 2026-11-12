@@ -641,6 +641,7 @@ pub(crate) enum StdItem {
     ToString,
     TryFrom,
     TryInto,
+    Saturating,
     Vec,
     VecDeque,
     Wrapping,
@@ -714,6 +715,7 @@ impl StdItem {
             StdItem::Vec => sym::Vec,
             StdItem::VecDeque => Symbol::intern("VecDeque"),
             StdItem::Wrapping => Symbol::intern("Wrapping"),
+            StdItem::Saturating => Symbol::intern("Saturating"),
         }
     }
 }

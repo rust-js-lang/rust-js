@@ -180,8 +180,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Default` of a `Range` or a `RangeFull`, a struct as any is, is refused as another std type's, \"`Default` of `std::ops::Range<i32>`\": `mem::take(&mut range)`, a derived `Default` holding one, one given where `T: Default` goes (#639)",
     file: "src/lower/std_impls/defaults.rs",
-    find: "            ty::Adt(adt, _) if self.is_std(adt.did()) && self.range_kind(ty).is_none() => {\n",
-    replace: "            ty::Adt(adt, _) if self.is_std(adt.did()) => {\n",
+    find: "                if self.is_std(adt.did())\n                    && self.range_kind(ty).is_none()\n",
+    replace: "                if self.is_std(adt.did())\n",
     tests: ["test/corpus.test.ts", "-t", "^range_defaults.rs$"],
   },
   {
@@ -199,5 +199,13 @@ export const mutations: Mutation[] = [
     find: "                if std(StdItem::Cell) || std(StdItem::UnsafeCell) || std(StdItem::RefCell) || std(StdItem::Atomic) =>\n",
     replace: "                if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
+  },
+  {
+    name: "std-fields-struct-default-refused",
+    breaks: "the derived `Default` of a `Saturating`, a `Wrapping` or a `Reverse` is refused, where it's `[0]` (#1434)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                    && !(recognition::struct_is_its_fields(self.tcx, adt.did())\n",
+    replace: "                    && !(false && recognition::struct_is_its_fields(self.tcx, adt.did())\n",
+    tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
   },
 ];
