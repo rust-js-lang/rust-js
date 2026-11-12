@@ -792,4 +792,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^(lock_poisoning|locks|lock_destructors)\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "refcell-replace-given-undropped",
+    breaks: "a `RefCell`'s `take` or `replace` while it's borrowed panics without dropping what it was given, `take`'s default or `replace`'s value (#1587)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    if !cx.has_drops(item) {\n",
+    replace: "                    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
+  },
 ];

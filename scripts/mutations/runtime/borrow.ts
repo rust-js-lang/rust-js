@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "borrow-mut-beside-shared",
     breaks: "a `borrow_mut()` while a `borrow()` lives runs on",
     file: "src/runtime/borrow.js",
-    find: "  if (cell.borrows) throw new Error(\"RefCell already borrowed\");",
-    replace: "  if (cell.borrows < 0) throw new Error(\"RefCell already borrowed\");",
+    find: "  if (cell.borrows) {\n    // What the call",
+    replace: "  if (cell.borrows < 0) {\n    // What the call",
     tests: ["test/corpus.test.ts", "-t", "refcell_double_borrow"],
   },
   {
@@ -338,5 +338,21 @@ export const mutations: Mutation[] = [
     find: "    } else {\n      $lockedUnwinding.delete(cell);\n    }\n",
     replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
+  },
+  {
+    name: "borrow-mut-given-undropped",
+    breaks: "`$borrowMut` of a borrowed cell throws without dropping what its call was given (#1587)",
+    file: "src/runtime/borrow.js",
+    find: "    if (dropGiven !== undefined) $cleanup(dropGiven, error);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
+  },
+  {
+    name: "borrow-mut-given-dropped-before-the-panic",
+    breaks: "what a borrowed `RefCell`'s `replace` was given is dropped before its panic, `thread::panicking()` false in its `drop`, not as the panic unwinds (#1587)",
+    file: "src/runtime/borrow.js",
+    find: "    if (dropGiven !== undefined) $cleanup(dropGiven, error);\n",
+    replace: "    if (dropGiven !== undefined) dropGiven();\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
   },
 ];

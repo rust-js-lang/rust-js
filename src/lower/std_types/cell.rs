@@ -475,15 +475,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // the cell is the field's place, `c.current`; through a
                 // reference to it, a variable, in place.
                 let a_place = matches!(cell.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..));
+                // A `RefCell`'s borrow that panics drops what it was given,
+                // `replace`'s parameter, `take`'s default made first, as the
+                // panic unwinds (#1587): `$borrowMut` is given its drop.
+                let borrowed = |cx: &mut Self, cell: Expr, next: Expr, out: &mut Vec<Stmt>| -> R<(Expr, Expr)> {
+                    if !cx.has_drops(item) {
+                        return Ok((Expr::call(Expr::helper("$borrowMut"), vec![cell]), next));
+                    }
+                    let next = match next.reads_same() && !next.has_effects() {
+                        true => next,
+                        false => cx.spill(Role::Next, next, out),
+                    };
+                    let mut dropped = Vec::new();
+                    cx.drop_value(next.clone(), item, span, &mut dropped)?;
+                    let drop = Expr::arrow(Vec::new(), dropped);
+                    let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell, Expr::undefined(), drop]);
+                    Ok((cell, next))
+                };
                 if self.is_value_cell(held) && !(call.quiet && a_place) {
-                    let cell = match self.quiet_ref_cell(held, of_key) {
-                        true => cell,
-                        false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
+                    let (cell, next) = match self.quiet_ref_cell(held, of_key) {
+                        true => (cell, next),
+                        false => borrowed(self, cell, next, out)?,
                     };
                     return Ok(Some(taken(cell, next)));
                 }
                 if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held, of_key) {
-                    let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
+                    let (cell, next) = borrowed(self, cell, next, out)?;
                     return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
                 }
                 // Read and written, made once: `get(c).value`'s `get(c)`

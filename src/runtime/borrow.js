@@ -9,8 +9,15 @@ function $borrow(cell, hold) {
   return cell;
 }
 
-function $borrowMut(cell, hold) {
-  if (cell.borrows) throw new Error("RefCell already borrowed");
+function $borrowMut(cell, hold, dropGiven) {
+  if (cell.borrows) {
+    // What the call was given, a `replace`'s value, dropped as its panic
+    // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
+    // `thread::panicking()` holds in its drop, and a panic there aborts.
+    const error = new Error("RefCell already borrowed");
+    if (dropGiven !== undefined) $cleanup(dropGiven, error);
+    throw error;
+  }
   if (hold) $setBorrows(cell, -1);
   return cell;
 }
