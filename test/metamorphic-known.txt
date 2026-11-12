@@ -40,3 +40,20 @@ plain std library write_result_kept_by_a_writer.rs
 
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
+
+#difference 58 a value a thread-local of the main thread holds is never dropped as the program ends, as on wasm32, where natively it may be (ADR 0262's first row, #1453)
+plain std loud as_deref_rc_in_place.rs
+plain std loud-call as_deref_rc_in_place.rs
+plain std loud-drop as_deref_rc_in_place.rs
+plain std loud assignments_chained.rs
+plain std loud-call assignments_chained.rs
+plain std loud-drop assignments_chained.rs
+plain std loud cell_taken_default_first.rs
+plain std loud-call cell_taken_default_first.rs
+plain std loud-drop cell_taken_default_first.rs
+plain std loud drop_guard_restores_nullable_fields.rs
+plain std loud-call drop_guard_restores_nullable_fields.rs
+plain std loud-drop drop_guard_restores_nullable_fields.rs
+plain std loud drop_guard_restores_taken_fields.rs
+plain std loud-call drop_guard_restores_taken_fields.rs
+plain std loud-drop drop_guard_restores_taken_fields.rs

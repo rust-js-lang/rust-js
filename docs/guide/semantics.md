@@ -1742,10 +1742,12 @@ block or an `async` closure is an async arrow
   is poisoned for good ([0144](../decisions/0144-locks.md)). A
   thread-local's `try_with` is `Ok`, `thread::panicking()` is whether this
   thread unwinds, and `hint::spin_loop()` does nothing. The main thread's
-  thread-locals are never dropped, as on wasm32 and Linux: Rust's docs
-  leave unspecified whether they are, so following the target changes
-  nothing Rust promises ([0262](../decisions/0262-when-rust-and-js-disagree.md)'s
-  first row).
+  thread-locals are never dropped, as on wasm32: std's `LocalKey` makes
+  only a best effort to run them, and whether they run for the main thread
+  depends on the platform (Linux's glibc runs them, pthread-based TLS
+  doesn't), so following the target changes nothing Rust promises
+  ([0262](../decisions/0262-when-rust-and-js-disagree.md)'s first row;
+  difference 58).
   Starting a thread, `std::thread::spawn` or a scope's, is refused. A
   channel is a queue its ends share ([0142](../decisions/0142-channels.md)):
   its `iter()` ends once every sender is gone, and its `recv()` or
@@ -2301,3 +2303,9 @@ React and JSX are [their own pages](README.md#react).
     with a `catch_unwind`, which may print after it, it's kept and written
     as Rust writes it (ADR 0262, the user's decision, 2026-11-12, #1496;
     [ADR 1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).
+58. A value a thread-local of the main thread holds is never dropped as
+    the program ends, as on wasm32, where natively on Linux's glibc and on
+    macOS its `drop` runs then. std's `LocalKey` makes only a best effort
+    to run thread-locals' destructors and leaves whether the main thread's
+    run to the platform, so no program can rely on them (ADR 0262's first
+    row, #1453).
