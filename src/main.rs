@@ -264,6 +264,14 @@ impl Callbacks for RustJs {
         if self.export_library {
             config.opts.unstable_opts.always_encode_mir = true;
         }
+        // A type's name too long for its error's line is printed in the
+        // error whole: rustc writes it to a file beside what it compiles
+        // to, and a file compiled alone has no such place, so it was
+        // written wherever the compiler ran. Cargo's crates keep rustc's
+        // way, the file in their target (ADR 1118, amended, #1466).
+        if !self.cargo {
+            config.opts.unstable_opts.write_long_types_to_disk = false;
+        }
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {

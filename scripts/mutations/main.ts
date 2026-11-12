@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: ".is_some_and(|_| true);\n",
     tests: ["test/decisions.test.ts", "-t", "counts every answer"],
   },
+  {
+    name: "long-types-written-where-it-runs",
+    breaks: "a file compiled alone writes a long type's name to `lib.long-type-<hash>.txt` wherever the compiler ran, a checkout's root, and its error names that file in place of the type (#1466, ADR 1118, amended)",
+    file: "src/main.rs",
+    find: "            config.opts.unstable_opts.write_long_types_to_disk = false;\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a long type's name is printed in its error"],
+  },
 ];

@@ -129,7 +129,9 @@ export function stores(): Store[] {
     { name: "the temp root", dir: tempRoot, cap: tempCap, bound: (free) => void boundEntries(tempRoot, tempCap, free) },
   ];
   // What rustc writes of a long type's name, or of its own crash, where it
-  // runs, the checkout's root: kept a day, for a crash's reader.
+  // runs, the checkout's root: kept a day, for a crash's reader. The loop
+  // writes neither there now (ADR 1118, amended, #1466); these are an
+  // older commit's runs', or a `rustc` run by hand's.
   const rustcNotes = (name: string) => /\.long-type-\d+\.txt$|^rustc-ice-.*\.txt$/.test(name);
   inChecks.push({
     name: "rustc's notes at the root",

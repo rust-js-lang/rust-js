@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildCompiler, buildSerde, buildReact, compiler, fixture, root, run, target } from "./support";
@@ -646,4 +646,22 @@ test("custom MIR's copy of a Copy enum it changes after is apart", () => {
   run([compiler, input, "-o", join(dir, "lib.js")], 120_000, { RUSTC_BOOTSTRAP: "1" });
   const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
   expect(ran.stdout.toString()).toBe("A { x: 1, y: 2 }\n");
+});
+
+// A type's name too long for its error's line is printed in the error
+// whole, as rustc's `--verbose` has it: rustc writes it to a file beside
+// what it compiles to, `lib.long-type-<hash>.txt`, and a file compiled by
+// rust-js alone has no such place, so it was written wherever the compiler
+// ran, a checkout's root (#1466, ADR 1118, amended). A closure's name holds
+// its file's whole path, long in any fixture.
+test("a long type's name is printed in its error, and no file of it is written where the compiler runs", () => {
+  const dir = fixture("a-long-type-name-is-printed-in-its-error-and-written-to-no-file");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, "pub fn f() -> u32 { let g = || 1u32; g }\n");
+  const rejected = Bun.spawnSync([compiler, input, "-o", join(dir, "lib.js")], { cwd: dir, timeout: 45_000 });
+  expect(rejected.exitCode).not.toBe(0);
+  const stderr = rejected.stderr.toString();
+  expect(stderr).toContain(`found closure \`{closure@${input}:1:29: 1:31}\``);
+  expect(stderr).not.toContain("has been written to");
+  expect(readdirSync(dir).sort()).toEqual(["lib.rs"]);
 });

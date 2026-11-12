@@ -86,3 +86,32 @@ the next run, as walking `target/` takes 3.5 s.
   `SCCACHE_DIR` and `SCCACHE_CACHE_SIZE` are its own, reported by `bun run
   disk` once a machine has one. rustc's `*.long-type-*.txt` are removed,
   not yet kept from being written.
+
+## Amendment: rustc's notes aren't written at the root (2026-11-12, #1466)
+
+The root kept filling: 657 files in one checkout, 491 `lib.long-type-*.txt`
+and 178 `rustc-ice-*.txt`, removed a day later by the store above but
+written again by every run.
+
+- **A long type's name.** rustc writes a name too long for its error's
+  line to a file beside what it compiles to, and names the file in the
+  error. A file compiled by rust-js alone, every test's, has no such
+  place: rustc's output directory is where the compiler runs. A closure's
+  name holds its file's whole path, so any error naming a fixture's
+  closure wrote one. `RustJs::config` turns it off for a file compiled
+  alone (`write_long_types_to_disk`), and the error prints the name whole,
+  as rustc's `--verbose` does. A Cargo crate keeps rustc's way: the file
+  is in its target, where rustc's other outputs are. No JS changes; the
+  error's text does, to what a reader can use without the file.
+- **rustc's crash reports.** All 178 were one crash, rustc's MIR validator
+  on a Rustlantis program's `fn0` (`validate.rs:356`), of the native
+  reference build the net makes, run from the root so rustup finds the
+  pinned toolchain. It runs in its fixture's directory now, inside the
+  checkout too, so the report is removed with the fixture, and kept with
+  it by `RUST_JS_KEEP_FIXTURES=1`. The build's stderr, which the net
+  reports, has the crash already.
+
+The store "rustc's notes at the root" stays, for what older commits'
+runs and a plain `rustc` run by hand leave. `test/diagnostics.test.ts`'s
+"a long type's name is printed in its error" holds the first; mutation
+`long-types-written-where-it-runs`.

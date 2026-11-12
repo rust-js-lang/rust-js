@@ -64,7 +64,11 @@ function judge(seed: number): { held: string } | { failed: string } {
   writeFileSync(file, source);
   const wasm = join(dir, "native.wasm");
   const built = Bun.spawnSync(["rustc", file, "--target=wasm32-wasip1", "--edition=2021", "-Coverflow-checks=off", "-Awarnings", "-o", wasm], {
-    cwd: root,
+    // Where its program is, in the checkout, whose toolchain rustup finds
+    // from there: a crash of rustc's writes its report, `rustc-ice-*.txt`,
+    // where it runs, the fixture's directory, removed with it, not the
+    // checkout's root (#1466).
+    cwd: dir,
     env: { ...process.env, ...bootstrap },
     stdout: "pipe",
     stderr: "pipe",
