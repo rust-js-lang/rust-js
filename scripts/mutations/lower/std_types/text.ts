@@ -518,4 +518,21 @@ export const mutations: Mutation[] = [
     replace: "if runs_code { eager } else { eager }",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
   },
+  {
+    name: "array-map-drops-unasked",
+    breaks: "an array's `map` of what has a destructor is JS's own `map`, which drops neither what was made nor what's left where its closure panics (#1586)",
+    file: "src/lower/std_types/text.rs",
+    find: "                    && (self.has_drops(*item) || self.has_drops(output))\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts","-t","^array_map_panicking_part_way_drops_both_sides.rs$"],
+  },
+  {
+    name: "array-map-helper-where-nothing-panics",
+    breaks: "an array's `map` whose closure can't panic, `(value) => [value]`, is `$arrayMap` with its drops, where JS's own `map` reads as the source does (#1586)",
+    file: "src/lower/std_types/text.rs",
+    find: "                    && can_panic\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+    snapshots: true,
+  },
 ];

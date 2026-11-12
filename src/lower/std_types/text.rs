@@ -962,6 +962,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Method(name) => {
                 let this = arg();
                 let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();
+                // An array's `map` of what has a destructor, an item or what
+                // it's mapped to: `$arrayMap`, which drops what was made and
+                // what's left where the closure panics part-way, as std's
+                // guard and `IntoIter` do (#1586). JS's own `map` drops
+                // neither: kept where the closure can't panic, an arrow that
+                // gives what can't throw, `(value) => [value]`.
+                let can_panic = match &rest.first().map(|f| &f.kind) {
+                    Some(js::ExprKind::Arrow(_, body)) => !matches!(body.as_slice(),
+                        [stmt] if matches!(&stmt.kind, StmtKind::Return(Some(e)) if !e.may_throw())),
+                    _ => true,
+                };
+                if name == "map"
+                    && can_panic
+                    && let ty::Array(item, _) = tys[0].kind()
+                    && let Some(output) = generic_args.types().last()
+                    && (self.has_drops(*item) || self.has_drops(output))
+                {
+                    let mut dropper = |ty: Ty<'tcx>| -> R<Expr> {
+                        if !self.has_drops(ty) {
+                            return Ok(Expr::undefined());
+                        }
+                        let mut dropped = Vec::new();
+                        self.drop_value(Expr::var("item"), ty, span, &mut dropped)?;
+                        Ok(Expr::arrow(vec!["item".into()], dropped))
+                    };
+                    let (made, left) = (dropper(output)?, dropper(*item)?);
+                    return Ok(Some(Expr::call_helper(
+                        "$arrayMap",
+                        vec![this, rest.remove(0), made, left],
+                    )));
+                }
                 // `replacen`'s count: of one, the first, JS's `replace`; of
                 // another, `$replacen`'s first that many.
                 if name == "replace" {
