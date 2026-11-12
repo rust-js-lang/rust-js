@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `collect()` into a `String`, a `HashSet` or a `HashMap` steps its iterator by `next`, never asking the type's own `fold` (#521)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());\n",
-    replace: "            return matches!(ty.kind(), ty::Param(_)) && step.asked_at_run_time();\n",
+    find: "            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());\n",
+    replace: "            return self.is_unknown(ty) && step.asked_at_run_time();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_own_fold.rs$"],
   },
   {
@@ -367,5 +367,14 @@ export const mutations: Mutation[] = [
     find: "            || step == OwnStep::Last\n                && self.search_runs_code(ty)\n",
     replace: "            || false\n                && self.search_runs_code(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
+  },
+  {
+    name: "into-iter-fold-unreached",
+    breaks:
+      "generic code's `fuse()` of a `T::IntoIter` is given a dictionary with no `fold`, so std's compiled `Fuse` folds by the crate's own, which drops it, and then drops it again: `drop Up 1` twice (#1595)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());\n",
+    replace: "            return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
 ];

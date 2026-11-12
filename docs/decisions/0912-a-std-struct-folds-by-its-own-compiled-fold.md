@@ -145,3 +145,42 @@ compiled body closes its own struct as it unwinds, `Zip`'s spec fold's
 `adapters_over_own_next_that_panics.rs` and the mutation
 `std-iterator-taken-after-its-fold`; ADR 0465's amendment of the same date
 has the rest.
+
+## Amendment: generic code's `T::IntoIter` asks too (2026-11-13, #1590, #1595)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+#522's rule, that generic code given no dictionary drops what a consumer
+consumed only where its JS iterator says the crate's own steps didn't take
+it (`if (!iter.ownFold)`), asked it of a type parameter alone,
+`ty::Param`. Of `iter.into_iter().for_each(..)`, generic code's iterator
+is an associated type, `<T as IntoIterator>::IntoIter`, so the body
+dropped it after `for_each`, `sum()`, `count()`, `last()`, `max()` and
+`fold`, where the crate's own `fold` had taken it and dropped it: `drop Up
+0` twice (P0, both builds). It now asks of any type generic code doesn't
+know, recognition's `is_unknown`, the one owner of that question: a type
+parameter or an associated type no impl settles. Four snapshots change,
+each such a consumer's drop now guarded (`extreme_drops`,
+`nested_item_drops`, `default_own_param_drops`,
+`default_where_clause_item_drops`).
+
+The same question had the same gap in `Recognition::reaches_its_own`,
+the one answer to whether std's step of an iterator reaches the crate's
+own (ADR 1089): a type parameter's may (`$foldOf`, `$nth`, `$last` and
+`$count`, which ask the value at run time), an associated type's never.
+So generic code's `fuse()` of a `T::IntoIter` was given `{ next: $next
+}`, and std's compiled `Fuse::fold` folded by the crate's own `fold`,
+which dropped it, and then dropped its source again (#1595, P0, found by
+the metamorphic net's `generic-instances` rewrite of #1590's case). It
+asks `is_unknown` too: an associated type's dictionary is a type
+parameter's, `{ next: $next, fold: $foldOf, nth: $nth, last: $last,
+count: $count }`. Eleven snapshots change, each such a dictionary.
+
+`generic_consumer_of_an_into_iter_takes_it.rs` holds the six consumers of
+an iterator with its own `fold` and of one without, and a `fuse()` and a
+`map()` of one summed in place and by generic code it's given to,
+against native Rust in both builds. Mutations
+`generic-into-iter-own-steps-unasked` (`lower/mir/iter.ts`) and
+`into-iter-fold-unreached` (`lower/recognition/own_steps.ts`), caught;
+`generic-own-steps-unasked` and `may-fold-its-own-not-generic` refitted.

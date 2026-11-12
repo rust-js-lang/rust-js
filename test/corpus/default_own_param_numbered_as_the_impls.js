@@ -55,11 +55,15 @@ function pairedCounting(dropI, dropU, dropIItem) {
         }, 0);
       } catch (error) {
         $cleanup(() => {
-          dropUIntoIter?.(iter);
+          if (!iter.ownFold && !iter.ownCount) {
+            dropUIntoIter?.(iter);
+          }
         }, error);
         throw error;
       }
-      dropUIntoIter?.(iter);
+      if (!iter.ownFold && !iter.ownCount) {
+        dropUIntoIter?.(iter);
+      }
       return result;
     },
     droppedWith(paired, extra, dropU$1) {

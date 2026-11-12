@@ -248,11 +248,15 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             }, 0);
           } catch (error) {
             $cleanup(() => {
-              dropUIntoIter?.(iter$1);
+              if (!iter$1.ownFold && !iter$1.ownCount) {
+                dropUIntoIter?.(iter$1);
+              }
             }, error);
             throw error;
           }
-          dropUIntoIter?.(iter$1);
+          if (!iter$1.ownFold && !iter$1.ownCount) {
+            dropUIntoIter?.(iter$1);
+          }
         } catch (error) {
           $cleanup(() => {
             $dropItems(all, (item) => {

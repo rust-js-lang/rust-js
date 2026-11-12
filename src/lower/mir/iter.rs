@@ -670,10 +670,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => unowned(fold),
                     })
                 }
-                // Of a type parameter given no dictionary, generic code's,
-                // what its JS iterator says the crate's own steps took,
-                // `$iterator`'s `ownFold`, `ownLast` and `ownCount` (#522).
-                None if matches!(receiver.kind(), ty::Param(_)) => {
+                // Of a type generic code doesn't know, given no dictionary,
+                // a type parameter's or an associated type's, `T::IntoIter`
+                // of `iter.into_iter().for_each(..)` (#1590): what its JS
+                // iterator says the crate's own steps took, `$iterator`'s
+                // `ownFold`, `ownLast` and `ownCount` (#522).
+                None if self.is_unknown(receiver) => {
                     let unowned = |name: &str| {
                         let flag = format!("own{}{}", name[..1].to_uppercase(), &name[1..]);
                         Expr::unary(js::UnaryOp::Not, Expr::member(held.clone(), &flag))

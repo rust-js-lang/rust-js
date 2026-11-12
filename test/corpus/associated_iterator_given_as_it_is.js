@@ -4,14 +4,18 @@ import {
   $assign,
   $cleanup,
   $collectDropping,
+  $count,
+  $foldOf,
   $given,
   $givenDrop,
   $held,
   $iter,
   $iterator,
+  $last,
   $live,
   $next,
   $nextBack,
+  $nth,
   $roomForHint,
   $some,
   $someValue,
@@ -192,7 +196,12 @@ function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
 function second(source, SSource) {
   const items = $held(SSource.items(source));
   try {
-    advance(items, undefined, { next: $next }, SSource.$dropIter);
+    advance(
+      items,
+      undefined,
+      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      SSource.$dropIter,
+    );
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -224,7 +233,12 @@ function swapped(source, other, SSource) {
     throw error;
   }
   try {
-    advance(items, tmp, { next: $next }, SSource.$dropIter);
+    advance(
+      items,
+      tmp,
+      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      SSource.$dropIter,
+    );
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);

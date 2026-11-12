@@ -182,11 +182,15 @@ function concat(
     );
   } catch (error) {
     $cleanup(() => {
-      dropIIntoIter?.(iter$1);
+      if (!iter$1.ownFold) {
+        dropIIntoIter?.(iter$1);
+      }
     }, error);
     throw error;
   }
-  dropIIntoIter?.(iter$1);
+  if (!iter$1.ownFold) {
+    dropIIntoIter?.(iter$1);
+  }
   return result;
 }
 

@@ -92,11 +92,15 @@ function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
     result = $maxBy(iter, IItemOrd.cmp, true, dropIItem);
   } catch (error) {
     $cleanup(() => {
-      dropIIntoIter?.(iter);
+      if (!iter.ownFold) {
+        dropIIntoIter?.(iter);
+      }
     }, error);
     throw error;
   }
-  dropIIntoIter?.(iter);
+  if (!iter.ownFold) {
+    dropIIntoIter?.(iter);
+  }
   return result;
 }
 
@@ -107,11 +111,15 @@ function finalOne(items, dropIItem, dropIIntoIter) {
     result = $lastDropping(iter, dropIItem, true);
   } catch (error) {
     $cleanup(() => {
-      dropIIntoIter?.(iter);
+      if (!iter.ownFold && !iter.ownLast) {
+        dropIIntoIter?.(iter);
+      }
     }, error);
     throw error;
   }
-  dropIIntoIter?.(iter);
+  if (!iter.ownFold && !iter.ownLast) {
+    dropIIntoIter?.(iter);
+  }
   return result;
 }
 

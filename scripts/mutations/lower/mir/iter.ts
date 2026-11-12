@@ -517,9 +517,18 @@ export const mutations: Mutation[] = [
     name: "generic-own-steps-unasked",
     breaks: "generic code's `last()`, `sum()` and `for_each` of a value given no dictionary drop it after, though the crate's own `fold` or `last` took it and dropped it (#522)",
     file: "src/lower/mir/iter.rs",
-    find: "                None if matches!(receiver.kind(), ty::Param(_)) => {\n",
-    replace: "                None if false && matches!(receiver.kind(), ty::Param(_)) => {\n",
+    find: "                None if self.is_unknown(receiver) => {\n",
+    replace: "                None if false && self.is_unknown(receiver) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
+  },
+  {
+    name: "generic-into-iter-own-steps-unasked",
+    breaks:
+      "generic code's `for_each`, `sum()`, `count()`, `last()`, `max()` and `fold` of a `T::IntoIter`, its `into_iter()`'s, drop it after, though the crate's own `fold` took it and dropped it: `drop Up 0` twice (#1590)",
+    file: "src/lower/mir/iter.rs",
+    find: "                None if self.is_unknown(receiver) => {\n",
+    replace: "                None if matches!(receiver.kind(), ty::Param(_)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
   {
     name: "consumed-closed-dropped-again",

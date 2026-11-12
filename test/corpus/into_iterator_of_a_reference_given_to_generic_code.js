@@ -7,6 +7,7 @@ import {
   $debugStr,
   $extend,
   $extendMap,
+  $folded,
   $grownBy,
   $grownVec,
   $iter,
@@ -41,7 +42,7 @@ function all(word, IRefIntoIterator) {
     (grown) => Array.from(grown),
   );
   const c = Array.from(
-    $reserveHint($lazyChain("x"[Symbol.iterator](), IRefIntoIterator.intoIter(word)), 1),
+    $reserveHint($folded($lazyChain("x"[Symbol.iterator](), IRefIntoIterator.intoIter(word))), 1),
   ).join("");
   console.log(`${c}`);
   console.log(`${$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}`);
@@ -84,7 +85,7 @@ function more(word, IRefIntoIterator) {
     (grown) => Array.from(grown),
   );
   console.log(`[${z.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
-  const s = Array.from($reserveHint(IRefIntoIterator.intoIter(word), 1)).join("");
+  const s = Array.from($reserveHint($folded(IRefIntoIterator.intoIter(word)), 1)).join("");
   console.log(`${s}`);
   const w = ["x", "y", "z"];
   $keepCapacity(w);

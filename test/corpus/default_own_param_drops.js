@@ -82,11 +82,15 @@ function tJoining(TIterator, dropT, dropTItem) {
         }, 0);
       } catch (error) {
         $cleanup(() => {
-          dropUIntoIter?.(iter$1);
+          if (!iter$1.ownFold && !iter$1.ownCount) {
+            dropUIntoIter?.(iter$1);
+          }
         }, error);
         throw error;
       }
-      dropUIntoIter?.(iter$1);
+      if (!iter$1.ownFold && !iter$1.ownCount) {
+        dropUIntoIter?.(iter$1);
+      }
       return (result + result$1) >>> 0;
     },
     heldWith(self, extra, dropU, dropUItem, dropUIntoIter) {

@@ -148,8 +148,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// of a crate's iterator writes: of that iterator, and through a `&mut`
     /// of it where std's impl for it passes the step on; of each std
     /// adapter, through what it asks of what it holds (`OwnStep::asked_of`);
-    /// of a type parameter, as `reach` says. The one
-    /// answer, each step's (ADR 1089).
+    /// of a type generic code doesn't know, a type parameter or an
+    /// associated type, `T::IntoIter` (`is_unknown`, #1595), as `reach`
+    /// says. The one answer, each step's (ADR 1089).
     pub(in crate::lower) fn reaches_its_own(&self, ty: Ty<'tcx>, step: OwnStep, reach: Reach) -> bool {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
@@ -163,7 +164,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return own.is_some();
         }
         let ty::Adt(adt, args) = ty.kind() else {
-            return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());
+            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());
         };
         if self.source_writes(ty, step) {
             return true;
