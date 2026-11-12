@@ -39,18 +39,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = match kept.is_empty() {
                     true => value,
                     false => {
-                        let name = self.fresh("value");
-                        out.push(StmtKind::Const(name.clone(), value).at(js_span));
+                        // Held as any value read more than once is, which
+                        // #890's namer names.
+                        let held = self.spill("value", value, out);
                         for inner in kept {
                             let inner_js = self.mir_place(state, inner, span, out)?;
                             let steps = inner.projection.len() - place.projection.len();
                             let indexed = !(place.projection.iter()).all(|elem| matches!(elem, PlaceElem::Field(..)));
-                            let Some(of_value) = path_from(&target, &inner_js, steps, indexed, Expr::var(&name)) else {
+                            let Some(of_value) = path_from(&target, &inner_js, steps, indexed, held.clone()) else {
                                 return Err(refuse(
                                     self.tcx,
                                     span,
                                     Refused::Memory(
-                                        "a place whose address is taken inside what's assigned whole, reached by no field JS names (#1484)",
+                                        "a place whose address is taken inside what's assigned whole, reached by no field JS names (#1504)",
                                     ),
                                 ));
                             };
@@ -60,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             );
                             out.push(StmtKind::Assign(of_value, inner_js).at(js_span));
                         }
-                        Expr::var(&name)
+                        held
                     }
                 };
                 out.push(StmtKind::Expr(Expr::call_helper("$assign", vec![target, value])).at(js_span));
