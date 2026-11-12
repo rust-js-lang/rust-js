@@ -1,0 +1,45 @@
+name: Issue labels
+
+# Every issue carries the labels docs/bug-kinds.md asks for: a priority (or
+# `tracking`), a kind and an area. An issue opened, edited or relabelled
+# without them is labelled `needs-labels`, with one comment saying what it
+# misses; the label comes off when they're there. Daily, every open issue is
+# checked the same way, so one filed while this was off is caught too.
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened]
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: issue-labels-${{ github.event.issue.number || 'all' }}
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts/issue-labels.ts
+            package.json
+          sparse-checkout-cone-mode: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ -n "${{ github.event.issue.number }}" ]; then
+            bun scripts/issue-labels.ts --mark --issue ${{ github.event.issue.number }}
+          else
+            bun scripts/issue-labels.ts --mark
+          fi

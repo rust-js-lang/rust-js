@@ -8,7 +8,7 @@ Every issue carries one priority label ([CONTRIBUTING.md](../CONTRIBUTING.md#iss
 one `kind: …`, one `area: …`, and `regression` where it applies. This page
 is the one authority on kinds, areas and what a filer records. A
 `Nightly red: <date>` report lists failures rather than one bug: it carries
-none of these, and each bug it finds is filed as an issue of its own.
+none of these, and each bug it finds is filed as an issue of its own. A tracker, labelled `tracking`, needs neither a priority nor a kind and area; a `dev-loop` issue needs a priority and no area; a performance issue, which changes no output, ranks by its `perf: runtime` or `perf: compile` label in place of a priority. The `Issue labels` workflow (`scripts/issue-labels.ts`) checks each issue as it's opened, edited or relabelled, and every open issue daily, and labels one that misses any `needs-labels`. Run `bun scripts/issue-labels.ts` before filing a batch.
 
 ## Kinds
 
