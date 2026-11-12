@@ -159,8 +159,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic method called through a dictionary is given no drop for its own type parameters",
     file: "src/lower/traits/calls.rs",
-    find: "                        false => self.drop_function(ty, span)?,\n",
-    replace: "                        false => None,\n",
+    find: "                            self.held_drop_function(ty, iterated, span)?\n",
+    replace: "                            None\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
@@ -596,5 +596,13 @@ export const mutations: Mutation[] = [
     find: "            .find(|&(key, by)| self.found_by_hash(key) && !self.borrowed_is_the_key(key, by))\n",
     replace: "            .find(|&(key, by)| self.found_by_hash(key) && key.peel_refs() != by.peel_refs())\n",
     tests: ["test/corpus.test.ts", "-t", "^hashed_keys_looked_up_by_their_borrow.rs$"],
+  },
+  {
+    name: "dictionary-call-drop-of-what-iterated-made",
+    breaks: "a trait's generic method called through a dictionary, given the JS iterator its caller made of the crate's own, is given the iterator type's drop of that JS iterator, `drop Up undefined` (#1511)",
+    file: "src/lower/traits/calls.rs",
+    find: "                            let iterated = self.iterated_slot(id, index, generic_args, ty);\n",
+    replace: "                            let iterated = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
   },
 ];

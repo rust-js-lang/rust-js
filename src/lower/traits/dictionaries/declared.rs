@@ -131,9 +131,15 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
     let mut bound: Vec<String> = Vec::new();
     let mut each = e.clone();
     each.each_mut(&mut |part| {
-        if let js::ExprKind::Arrow(params, _) = &mut part.kind {
+        if let js::ExprKind::Arrow(params, body) = &mut part.kind {
             for param in params {
                 param.each_name_mut(&mut |name| bound.push(name.clone()));
+            }
+            // And what its body declares, a std `Extend`'s `const it` (#1511).
+            for stmt in body.iter() {
+                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
+                    bound.push(name.clone());
+                }
             }
         }
     });

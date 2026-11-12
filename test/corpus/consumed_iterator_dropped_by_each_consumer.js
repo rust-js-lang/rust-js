@@ -30,10 +30,6 @@ function loudIterator_next(loud, IIterator, dropI, dropIItem) {
   return IIterator.next(loud[0]);
 }
 
-function loudDrop_drop(loud, dropI) {
-  console.log(`drop ${loud[1]}`);
-}
-
 function loud(v, name) {
   return [$iter(v), name];
 }
@@ -45,14 +41,18 @@ function built(it, CFromIteratorU32) {
       $iterator(iter, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       false,
       undefined,
-      loudDrop_drop,
-      loudDrop_drop,
+      (it) => {
+        console.log(`drop ${it.of[1]}`);
+      },
+      (it) => {
+        console.log(`drop ${it.of[1]}`);
+      },
     );
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter);
+      console.log(`drop ${iter[1]}`);
     }
   }
 }
@@ -70,7 +70,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter);
+      console.log(`drop ${iter[1]}`);
     }
   }
   const m = result;
@@ -87,7 +87,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$1);
+      console.log(`drop ${iter$1[1]}`);
     }
   }
   const b = result$1;
@@ -108,7 +108,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$2);
+      console.log(`drop ${iter$2[1]}`);
     }
   }
   const s = result$2;
@@ -125,7 +125,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$3);
+      console.log(`drop ${iter$3[1]}`);
     }
   }
   const t = result$3;
@@ -140,7 +140,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$4);
+      console.log(`drop ${iter$4[1]}`);
     }
   }
   const text = result$4;
@@ -155,7 +155,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$5);
+      console.log(`drop ${iter$5[1]}`);
     }
   }
   const d = result$5;
@@ -170,7 +170,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$6);
+      console.log(`drop ${iter$6[1]}`);
     }
   }
   const bx = result$6;
@@ -187,7 +187,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$7);
+      console.log(`drop ${iter$7[1]}`);
     }
   }
   const c = result$7;
@@ -230,7 +230,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$8);
+      console.log(`drop ${iter$8[1]}`);
     }
   }
   console.log(`${result$8}`);
@@ -246,7 +246,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$9);
+      console.log(`drop ${iter$9[1]}`);
     }
   }
   console.log(`${result$9}`);
@@ -260,7 +260,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$10);
+      console.log(`drop ${iter$10[1]}`);
     }
   }
   console.log(`${result$10 == null ? "None" : `Some(${result$10})`}`);
@@ -276,7 +276,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$11);
+      console.log(`drop ${iter$11[1]}`);
     }
   }
   console.log(`${result$11}`);
@@ -290,7 +290,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      loudDrop_drop(iter$12);
+      console.log(`drop ${iter$12[1]}`);
     }
   }
   console.log(`${result$12 == null ? "None" : `Some(${result$12})`}`);

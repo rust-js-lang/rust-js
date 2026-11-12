@@ -778,7 +778,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 vec![StmtKind::Expr(close).at(js::Span::NONE)],
                             ))
                         }
-                        false => self.drop_function(ty, span)?,
+                        // Of a value its caller made a JS iterator of, one
+                        // that drops what it was made of, its `of` (#1511).
+                        false => {
+                            let iterated = self.iterated_slot(id, index, generic_args, ty);
+                            self.held_drop_function(ty, iterated, span)?
+                        }
                     });
                 }
             }

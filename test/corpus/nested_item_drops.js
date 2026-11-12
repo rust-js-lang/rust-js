@@ -17,6 +17,7 @@ import {
   $reduce,
   $someValue,
   $traitImpl,
+  $unwinds,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -299,8 +300,13 @@ function main() {
   const all = concat(
     [[[10]], [[11], [12]]],
     {
-      extend(collection, items) {
-        $extend(collection.value, items);
+      extend(collection, items, inPlace, dropItems, dropIter) {
+        const it = $intoIter(items);
+        $unwinds(
+          () => $extend(collection.value, it),
+          () => dropIter?.(it),
+        );
+        dropIter?.(it);
       },
     },
     intoIterator,

@@ -7,10 +7,13 @@ import {
   $extend,
   $extendMap,
   $extendText,
+  $folded,
+  $intoIter,
   $lazyRange,
   $live,
   $reserveHint,
   $sortedKeys,
+  $unwinds,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -54,13 +57,24 @@ function shout(c, CExtendChar) {
 
 function main() {
   const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, items);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, it),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   };
   const bTreeSetExtend = {
-    extend(collection, items) {
-      $extendMap(collection.value, $sortedKeys(items, $cmp), true);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      const dropIt = it.ownFold ? undefined : dropIter;
+      $unwinds(
+        () => $extendMap(collection.value, $sortedKeys($folded(it), $cmp), true),
+        () => dropIt?.(it),
+      );
+      dropIt?.(it);
     },
   };
   const a = { TAG: "Left", _0: [9] };

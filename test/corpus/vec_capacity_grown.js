@@ -14,6 +14,7 @@ import {
   $heapAppend,
   $heapFrom,
   $heapPush,
+  $intoIter,
   $iter,
   $iterator,
   $keepCapacity,
@@ -26,6 +27,7 @@ import {
   $resize,
   $roomForHint,
   $strictlyEqual,
+  $unwinds,
   $unwrap,
   $unwrapOk,
   $withCapacity,
@@ -94,8 +96,13 @@ function somes(xs, TSize) {
 function main() {
   const clone = { clone: (value) => value };
   const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, $grownBy(collection.value, it, 4, false, undefined, true)),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   };
   console.log(`[${pushes(1, 10, clone, 1).join(", ")}]`);

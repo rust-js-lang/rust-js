@@ -68,4 +68,13 @@ export const mutations: Mutation[] = [
     replace: "            true => \"\",\n",
     tests: ["test/lowering.test.ts", "-t", "a &mut.s dictionary is named apart from its value.s"],
   },
+  {
+    name: "arrow-body-declarations-unbound",
+    breaks: "a dictionary whose function declares a `const` of its own reads as a local the body's top can't, so one written twice isn't declared once (#1511)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {\n",
+    replace: "                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend\\.rs$"],
+    snapshots: true,
+  },
 ];

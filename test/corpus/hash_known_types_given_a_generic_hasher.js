@@ -7,9 +7,12 @@ import {
   $cmp,
   $extend,
   $extendMap,
+  $folded,
+  $intoIter,
   $sipHasher,
   $sortedKeys,
   $toBytes,
+  $unwinds,
 } from "@rust-js/std";
 
 export function entry() {
@@ -51,15 +54,26 @@ function fill(into, EExtendU8) {
 
 function grown(v, d, s, m) {
   const extend = {
-    extend(collection, items) {
-      $extend(collection.value, items);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, it),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   };
   fill($cellOf(v), extend);
   fill($cellOf(d), extend);
   fill($cellOf(s), {
-    extend(collection, items) {
-      $extendMap(collection.value, $sortedKeys(items, $cmp), true);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      const dropIt = it.ownFold ? undefined : dropIter;
+      $unwinds(
+        () => $extendMap(collection.value, $sortedKeys($folded(it), $cmp), true),
+        () => dropIt?.(it),
+      );
+      dropIt?.(it);
     },
   });
   v.push(4, 5);

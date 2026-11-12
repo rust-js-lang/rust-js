@@ -894,4 +894,28 @@ export const mutations: Mutation[] = [
       "^readers_of_the_crates_own_and_boxed.rs$"
     ]
   },
+  {
+    name: "extend-dictionary-iterator-undropped",
+    breaks: "a std collection's `Extend` dictionary never drops the iterator it was given at its end, `drop Up 3` lost (#1511)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                body.push(StmtKind::Expr(dropped()).at(js::Span::NONE));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
+  },
+  {
+    name: "extend-dictionary-not-by-fold",
+    breaks: "a list's `Extend` dictionary steps what it's given by `next`, never reaching the crate's own `fold` std's `for_each` calls (#1511)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        let by_fold = self.extends_by_fold(ty);\n",
+    replace: "        let by_fold = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
+  },
+  {
+    name: "extend-dictionary-own-fold-dropped-again",
+    breaks: "a list's `Extend` dictionary drops the iterator its own `fold` took and dropped, twice (#1511)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::undefined(),\n",
+    replace: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::var(\"dropIter\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
+  },
 ];

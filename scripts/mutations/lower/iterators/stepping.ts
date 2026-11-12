@@ -478,4 +478,5 @@ export const mutations: Mutation[] = [
     replace: "                true => crate::lower::combinators::Comb::ResultIter,\n",
     tests: ["test/tidy-stages.test.ts","-t","adapted by its type, without into_iter's recogniser"],
   },
+
 ];

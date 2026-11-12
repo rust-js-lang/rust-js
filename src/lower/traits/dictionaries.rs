@@ -25,9 +25,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// another type, the crate's, whose impl's dictionary is its own.
     fn extend_dictionary(&mut self, ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let collection = Expr::member(Expr::var("collection"), js::HELD);
+        let known = self.recognition().std_extend(ty);
+        // What's stepped of what it's given: a collection's or a table's
+        // iterator held, `it`, as std's `extend` holds it, stepped by
+        // `next`, or of a list, a hash table or a B-tree by its `fold`,
+        // `$folded(it)` (#1511); a string's, the items as they are.
+        let by_fold = self.extends_by_fold(ty);
+        let stepped = match known {
+            Some(Std::Comb(_) | Std::Map(_)) if by_fold => Expr::call_helper("$folded", vec![Expr::var("it")]),
+            Some(Std::Comb(_) | Std::Map(_)) => Expr::var("it"),
+            _ => Expr::var("items"),
+        };
         // Its hint asked first where the collection reserves by it, a
         // `String`'s by `char`s and a hash table's (#849).
-        let items = self.dictionary_reserved(Expr::var("items"), ty, item, collection.clone());
+        let items = self.dictionary_reserved(stepped, ty, item, collection.clone());
         let mut body = Vec::new();
         // Grown as std's grows it, where capacities are kept (#1180).
         let items = self.dictionary_grown(collection.clone(), items, (ty, item), span, &mut body)?;
@@ -35,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what's given is iterated as it is.
         let given = [ty, ty];
         let none = ty::List::empty();
-        let value = match self.recognition().std_extend(ty) {
+        let value = match known {
             // Each piece appended as it's stepped, as std's `for_each`
             // pushes each, so a panic part-way leaves what came before (#1127).
             Some(Std::PushStr) => {
@@ -46,21 +57,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Expr(stepped).at(js::Span::NONE));
                 None
             }
-            Some(Std::Comb(comb)) => Some(self.comb_values(
-                comb,
-                (vec![collection.clone(), items.clone()], &given),
-                false,
-                none,
-                span,
-                &mut body,
-            )?),
-            Some(Std::Map(op)) => Some(self.map_values(
-                op,
-                (vec![collection.clone(), items.clone()], &given),
-                none,
-                span,
-                &mut body,
-            )?),
+            // Stepped as std's `extend` of it steps it, by `next`, or of a
+            // list, a hash table or a B-tree by its `fold`, `$folded`'s; then
+            // the iterator it was given dropped, `dropIter`, as std drops it
+            // at its end and as a step's panic unwinds, but where its own
+            // `fold` took it, which drops it itself (#1511).
+            Some(known @ (Std::Comb(_) | Std::Map(_))) => {
+                let it = Expr::var("it");
+                let extended = match known {
+                    Std::Comb(comb) => self.comb_values(
+                        comb,
+                        (vec![collection.clone(), items], &given),
+                        false,
+                        none,
+                        span,
+                        &mut body,
+                    )?,
+                    Std::Map(op) => {
+                        self.map_values(op, (vec![collection.clone(), items], &given), none, span, &mut body)?
+                    }
+                    _ => unreachable!("matched above"),
+                };
+                // `dropIter`, or of a list's or a table's, taken by its fold,
+                // none where that's its own, which drops it.
+                let drop_it = match by_fold {
+                    true => Expr::var("dropIt"),
+                    false => Expr::var("dropIter"),
+                };
+                let made = Expr::call_helper("$intoIter", vec![Expr::var("items")]);
+                body.insert(0, StmtKind::Const("it".into(), made).at(js::Span::NONE));
+                if by_fold {
+                    let own = Expr::cond(
+                        Expr::member(it.clone(), "ownFold"),
+                        Expr::undefined(),
+                        Expr::var("dropIter"),
+                    );
+                    body.insert(1, StmtKind::Const("dropIt".into(), own).at(js::Span::NONE));
+                }
+                let dropped = || Expr::optional_call(drop_it.clone(), vec![it.clone()]);
+                let run = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(extended)).at(js::Span::NONE)]);
+                let unwound = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dropped())).at(js::Span::NONE)]);
+                body.push(StmtKind::Expr(Expr::call_helper("$unwinds", vec![run, unwound])).at(js::Span::NONE));
+                body.push(StmtKind::Expr(dropped()).at(js::Span::NONE));
+                let params = ["collection", "items", "inPlace", "dropItems", "dropIter"];
+                let extend = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
+                return Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])));
+            }
             _ => return Ok(None),
         };
         body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));

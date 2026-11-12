@@ -85,7 +85,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
       );
     },
     nextTuple(self, SelfIterator, TTuple) {
-      return TTuple.taken($given(self, SelfIterator, true), dropI);
+      return TTuple.taken($given(self, SelfIterator, true), $givenDrop(dropI));
     },
     collectTuple(self, SelfIterator, TTuple, dropT) {
       $held(self);

@@ -14,6 +14,7 @@ import {
   $given,
   $givenDrop,
   $held,
+  $intoIter,
   $iter,
   $iterEqGiven,
   $lent,
@@ -22,6 +23,7 @@ import {
   $nthDropping,
   $partialEq,
   $traitImpl,
+  $unwinds,
   iterator_skip,
   skipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -242,11 +244,6 @@ function main() {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: quietIterator_next }),
   };
-  const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, items);
-    },
-  };
   const intoIterator$1 = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
@@ -257,6 +254,16 @@ function main() {
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
     $dropItem: loudDrop_drop,
     $dropIntoIter: $dropEach(loudDrop_drop),
+  };
+  const vecExtend = {
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, it),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
+    },
   };
   const v = [1, 2, 3];
   console.log(

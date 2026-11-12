@@ -11,9 +11,11 @@ import {
   $extend,
   $extendMap,
   $foldOf,
+  $folded,
   $given,
   $givenClone,
   $grownBy,
+  $intoIter,
   $iter,
   $iterator,
   $lazyRange,
@@ -21,6 +23,7 @@ import {
   $rangeNext,
   $sortedKeys,
   $splitAtMut,
+  $unwinds,
   iterator_skip,
   skipClone,
   skipIterator___iteratorGetUnchecked,
@@ -89,8 +92,13 @@ function swapIn(a, b) {
 function main() {
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, $grownBy(collection.value, it, 4, false, undefined, true)),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   };
   const v = [1, 2, 3];
@@ -153,15 +161,26 @@ function main() {
   console.log(`${w.length} ${$capacity(w, 4)}`);
   const q = [];
   fill($cellOf(q), $iter([7, 8]), {
-    extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4, true, undefined, true));
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, $grownBy(collection.value, it, 4, true, undefined, true)),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   });
   console.log(`${q.length} ${$capacity(q, 4) >= 2}`);
   const s = new $BTreeSet();
   fill($cellOf(s), $lazyRange(3, 6), {
-    extend(collection, items) {
-      $extendMap(collection.value, $sortedKeys(items, $cmp), true);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      const dropIt = it.ownFold ? undefined : dropIter;
+      $unwinds(
+        () => $extendMap(collection.value, $sortedKeys($folded(it), $cmp), true),
+        () => dropIt?.(it),
+      );
+      dropIt?.(it);
     },
   });
   console.log(`{${Array.from($sortedKeys(s, $cmp)).join(", ")}}`);

@@ -144,3 +144,41 @@ filter's, a `VecDeque`, a `String`, a `HashSet`),
 `from-iter-entry-folds-to-an-array`, `collecting-left-unclosed` and
 `from-iter-dictionary-unclosed`, refitted; 39 of #1239's 52 cases' rows run as
 Rust does.
+
+## Amendment: a std collection's `extend` drops the iterator it's given (2026-11-13, #1511)
+
+Generic code's `c.extend(it)` of a `C: Extend<A>` calls its dictionary's
+`extend(collection, items, ..)`, given after its items the drops of `T`
+and of `T::IntoIter` the trait's method declares. std's dictionary was
+`{ extend(collection, items) { $extend(collection.value, items); } }`. It
+ignored those drops, so the crate's iterator with a `Drop` was never
+dropped, where std's `extend` drops it at its end (`drop Up 3`). A list
+took the `Vec`'s dictionary and stepped what it was given by `next`, never
+reaching the crate's own `fold` that std's `for_each` calls, and a
+B-tree's, likewise. And a crate's own `Extend`, given the JS iterator its
+caller made of the crate's, was given the iterator type's drop of that JS
+iterator, `drop Up undefined`. Results change, so Rust's behavior is kept
+(ADR 0262).
+
+**std's dictionary steps what it's given as std's `extend` steps it, then
+drops it.** It holds the iterator, `const it = $intoIter(items)`. A `Vec`'s
+and a deque's step it by `next`. A list's, a hash table's and a B-tree's
+step it by `fold`, `$folded(it)`, as `extends_by_fold` says. Then it drops it,
+`dropIter?.(it)`, at its end and as a step's panic unwinds (`$unwinds`),
+except where the crate's own `fold` took it (`it.ownFold`), which drops it
+itself. A trait's generic method called through a dictionary is given, for
+a value its caller made a JS iterator of, the drop of what that was made of,
+its `of` (`held_drop_function` of `iterated_slot`, as a direct call is).
+A dictionary's function that declares a `const` of its own is still
+declared once at the top where it's written twice (`reads_only_at_top`).
+
+Corpus case `extend_through_a_dictionary_drops_its_iterator` runs against
+native Rust in both builds. It covers a `Vec`, a `VecDeque`, a
+`LinkedList`, a `HashSet`, a `BTreeSet` and a crate's own `Extend`, each
+given an iterator with its own `fold` and one without, and a step that
+panics, caught. Eleven snapshots change, each a std `Extend` dictionary.
+Mutations `extend-dictionary-iterator-undropped`,
+`extend-dictionary-not-by-fold`, `extend-dictionary-own-fold-dropped-again`,
+`dictionary-call-drop-of-what-iterated-made` and
+`arrow-body-declarations-unbound` are new;
+`dictionary-call-own-drops-missing` is refitted.

@@ -9,10 +9,12 @@ import {
   $heapFrom,
   $heapPop,
   $heapSorted,
+  $intoIter,
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $sortedKeys,
+  $unwinds,
 } from "@rust-js/std";
 
 const reversePartialOrd = $partialOrd({
@@ -36,8 +38,13 @@ function main() {
   $heapExtend(heap, $heapFrom([50, 3], $partiallyOrdered), $partiallyOrdered);
   $heapExtend(heap, $sortedKeys(new $BTreeSet([60]), $cmp), $partiallyOrdered);
   add($cellOf(heap), {
-    extend(collection, items) {
-      $heapExtend(collection.value, items, $partiallyOrdered);
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $heapExtend(collection.value, it, $partiallyOrdered),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   });
   console.log(`[${$heapSorted(heap.slice(), $partiallyOrdered).join(", ")}]`);

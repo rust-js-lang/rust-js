@@ -5,11 +5,14 @@ import {
   $extend,
   $extendMap,
   $extendText,
+  $folded,
   $grownBy,
+  $intoIter,
   $iterator,
   $lazyRange,
   $print,
   $reserveHint,
+  $unwinds,
 } from "@rust-js/std";
 
 export function entry() {
@@ -64,14 +67,25 @@ function letters(c, n, CExtendChar) {
 }
 
 function main() {
-  const hashSetExtend = {
-    extend(collection, items) {
-      $extendMap(collection.value, $reserveHint(items, 4, 4, collection.value), true);
+  const vecExtend = {
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, $grownBy(collection.value, it, 4, false, undefined, true)),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
     },
   };
-  const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
+  const hashSetExtend = {
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      const dropIt = it.ownFold ? undefined : dropIter;
+      $unwinds(
+        () => $extendMap(collection.value, $reserveHint($folded(it), 4, 4, collection.value), true),
+        () => dropIt?.(it),
+      );
+      dropIt?.(it);
     },
   };
   const v = [];
