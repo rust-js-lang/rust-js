@@ -1,7 +1,8 @@
 // `heap.into_sorted_vec()`: the top swapped to the end, the rest sifted, as
 // std does. Of items with a destructor whose comparison may panic, `drop`:
 // where a comparison throws, each item the heap holds dropped, in order, as
-// std's `into_sorted_vec` drops its `self` as it unwinds (#901).
+// std's `into_sorted_vec` drops its `self` as it unwinds (#901). Its
+// capacity the heap's, whose buffer std sorts in place (#1531).
 function $heapSorted(items, ord, drop) {
   const heap = items.slice();
   let end = heap.length;
@@ -15,5 +16,5 @@ function $heapSorted(items, ord, drop) {
     },
     drop && (() => $dropItems(heap, drop)),
   );
-  return heap;
+  return $inPlaceCapacity(heap, items, 1, 1);
 }

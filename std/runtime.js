@@ -17297,7 +17297,8 @@ export function $heapPop(heap, ord, boxed, drop) {
 // `heap.into_sorted_vec()`: the top swapped to the end, the rest sifted, as
 // std does. Of items with a destructor whose comparison may panic, `drop`:
 // where a comparison throws, each item the heap holds dropped, in order, as
-// std's `into_sorted_vec` drops its `self` as it unwinds (#901).
+// std's `into_sorted_vec` drops its `self` as it unwinds (#901). Its
+// capacity the heap's, whose buffer std sorts in place (#1531).
 export function $heapSorted(items, ord, drop) {
   const heap = items.slice();
   let end = heap.length;
@@ -17311,14 +17312,15 @@ export function $heapSorted(items, ord, drop) {
     },
     drop && (() => $dropItems(heap, drop)),
   );
-  return heap;
+  return $inPlaceCapacity(heap, items, 1, 1);
 }
 
 // `BinaryHeap::from(v)`: `v` rebuilt, each parent from the last sifted
 // down, as std's `rebuild` does. Of items with a destructor whose
 // comparison may panic, `drop`: where a comparison throws, each item the
 // heap holds dropped, in order, as std's drops the heap it was making as it
-// unwinds (#901).
+// unwinds (#901). Its capacity `v`'s, whose buffer std's heap keeps, a
+// collect's grown as a `Vec`'s, not its length (#1531).
 export function $heapFrom(items, ord, drop) {
   const heap = items.slice();
   let n = heap.length >>> 1;
@@ -17331,7 +17333,7 @@ export function $heapFrom(items, ord, drop) {
     },
     drop && (() => $dropItems(heap, drop)),
   );
-  return heap;
+  return $inPlaceCapacity(heap, items, 1, 1);
 }
 
 // A `BinaryHeap`'s `append` and `retain` (ADR 0333), by std's own steps,

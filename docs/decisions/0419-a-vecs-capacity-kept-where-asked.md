@@ -704,3 +704,31 @@ won't-fix (ADR 0262's fourth case). Its bytes' `Vec` stays not known,
 `$untracked`, and `capacity()` of it refuses, naming #1261, the issue
 that explains it, since #1180 closed; never another number. The guide's
 limitations list it.
+
+## Amendment (2026-11-12, #1531): a `BinaryHeap` keeps its `Vec`'s
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept (P0).
+
+std's `BinaryHeap` is a `Vec` it keeps in heap order. `BinaryHeap::from(v)`
+rebuilds `v` in its own buffer; a collect is `Vec::from_iter`, grown by its
+iterator's hint as a `Vec`'s collect is, then `from`; and
+`into_sorted_vec()` sorts that buffer in place. The runtime's
+`$heapFrom` and `$heapSorted` rebuild a copy, `items.slice()`, which
+carried no capacity, so `capacity()` read its length:
+`(0..100u32).filter(|x| x % 3 == 0).collect::<BinaryHeap<u32>>()` gave 34
+where native Rust gives 64, and `BinaryHeap::from(v)` of a `Vec::with_capacity(10)`
+holding two gave 2 for 10, in both builds, as std's heap is the runtime's
+in each. Each now gives its copy the capacity of what it's made of,
+`$inPlaceCapacity(heap, items, 1, 1)`, the one carrying of a buffer's
+capacity to the array made of it, which is not known where the source's
+isn't. `$heapAppend` kept both heaps' already.
+
+`test/corpus/binary_heap_keeps_its_vecs_capacity.rs` holds a collect of a
+`filter`, a stepped `flat_map`, a `chain` and a range, `from(v)` and
+`into_vec()` of a `Vec` with room to spare, `into_sorted_vec()`, an
+array's `from`, and a heap grown after, against native Rust in both
+builds; the compiler before gives 34, 35, 18, 2, 2 and 3 for 64, 46, 20,
+10, 10 and 12. Mutations `heap-from-capacity-its-length`
+(`runtime/heap_from.ts`) and `heap-sorted-capacity-its-length`
+(`runtime/heap_sorted.ts`).
