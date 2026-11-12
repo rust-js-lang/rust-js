@@ -26,4 +26,11 @@ pub fn main() {
     *c += 4;
     *std::ops::DerefMut::deref_mut(&mut c) *= 2;
     println!("{}", *c);
+    let mut t = Twice(Box::new(1), Box::new([5, 6]));
+    *AsMut::<u32>::as_mut(&mut t) += 100;
+    AsMut::<[u32]>::as_mut(&mut t)[1] += 1000;
+    println!("{} {:?}", *t.0, *t.1);
+    let mut w = Worked(Box::new(1), true);
+    *BorrowMut::<u32>::borrow_mut(&mut w) += 1000;
+    println!("{}", *w.0);
 }

@@ -131,8 +131,16 @@ export const mutations: Mutation[] = [
     name: "box-copied-from-a-place-read-as-the-copy",
     breaks: "a library's impl the consumer compiles, of optimized MIR that reads a box through a copy of it, `_b = copy (*_r)`, gives a `&mut` to that copy, so a write through it is lost (#1455)",
     file: "src/lower/mir/prepared.rs",
-    find: "                    copied == boxed\n                        && from.local != boxed\n",
-    replace: "                    false && copied == boxed\n                        && from.local != boxed\n",
+    find: "                Some((_, from)) => from,\n",
+    replace: "                Some(_) => Place::from(boxed),\n",
+    tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
+  },
+  {
+    name: "box-copy-only-just-before",
+    breaks: "a box copied out of a place earlier in the block than just before its pointer, `**b += 1`'s two copies, isn't read through that place, the write lost (#1455)",
+    file: "src/lower/mir/prepared.rs",
+    find: "                [copy_at] if copy_at.statement_index < at => {\n",
+    replace: "                [copy_at] if copy_at.statement_index + 1 == at => {\n",
     tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
   },
 ];

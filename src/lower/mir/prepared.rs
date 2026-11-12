@@ -319,27 +319,47 @@ fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>)
             }
             // Of a box copied out of a place just before, read nowhere else
             // and that place not of the box itself: that place's.
-            let copied = at
-                .checked_sub(1)
-                .and_then(|before| box_copy(&body.basic_blocks[block].statements[before]).map(|c| (before, c)))
-                .filter(|&(before, (copied, from))| {
-                    let mut box_uses = Uses(boxed, Vec::new());
-                    box_uses.visit_body(body);
-                    let copy_at = mir::Location {
-                        block,
-                        statement_index: before,
-                    };
-                    copied == boxed
-                        && from.local != boxed
-                        && from.ty(&body.local_decls, tcx).ty.is_box()
-                        && box_uses
-                            .1
-                            .iter()
-                            .all(|&(location, _)| location == copy_at || location == made)
+            // A box copied out of a place, `_b = copy (*_r)`, is read through
+            // that place, never as the copy, which of a number is the number
+            // in JS (#1455): its copy found earlier in the block, where
+            // rustc's box elaboration makes each; safe Rust can't replace the
+            // box between, its copy borrowed. One whose copy is elsewhere is
+            // left as its pointer, which rust-js refuses.
+            let defined: Vec<mir::Location> = {
+                let mut box_uses = Uses(boxed, Vec::new());
+                box_uses.visit_body(body);
+                let data = &body.basic_blocks[block];
+                (box_uses.1.into_iter())
+                    .map(|(location, _)| location)
+                    .filter(|location| {
+                        location.block == block
+                            && (data.statements.get(location.statement_index))
+                                .and_then(|statement| statement.kind.as_assign())
+                                .is_some_and(|assign| assign.0.as_local() == Some(boxed))
+                    })
+                    .collect()
+            };
+            let copied = match defined[..] {
+                [copy_at] if copy_at.statement_index < at => {
+                    box_copy(&body.basic_blocks[block].statements[copy_at.statement_index])
+                        .map(|(_, from)| (copy_at.statement_index, from))
+                        .filter(|&(_, from)| from.local != boxed && from.ty(&body.local_decls, tcx).ty.is_box())
+                }
+                _ => None,
+            };
+            let copy_of_a_place = copied.is_some()
+                || (body.basic_blocks.iter()).any(|data| {
+                    (data.statements.iter())
+                        .filter_map(&box_copy)
+                        .any(|(copied, from)| copied == boxed && from.local != boxed)
                 });
             let base = match copied {
-                Some((_, (_, from))) => from,
-                None => Place::from(boxed),
+                Some((_, from)) => from,
+                _ if copy_of_a_place => {
+                    at += 1;
+                    continue;
+                }
+                _ => Place::from(boxed),
             };
             let mut through = Through(pointer, base, tcx);
             let data = &mut body.basic_blocks.as_mut_preserves_cfg()[block];
@@ -348,9 +368,6 @@ fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>)
                 None => through.visit_terminator(data.terminator_mut(), read_at),
             }
             data.statements[at].make_nop(true);
-            if let Some((before, _)) = copied {
-                data.statements[before].make_nop(true);
-            }
             at += 1;
         }
     }

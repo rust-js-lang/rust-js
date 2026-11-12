@@ -1707,3 +1707,16 @@ Held by the crate pair `boxed_places_a_consumer_writes_through` (`AsMut`,
 struct, an `Iterator` of a box local, a `Counter`) against native Rust; the
 metamorphic net's `library` rewrite of each of the corpus's 47 cases that
 return a `&mut` agrees; mutation `box-copied-from-a-place-read-as-the-copy`.
+
+Follow-up (same day): a box's copy is found wherever it is in the block,
+not only just before its pointer. `let b = &mut self.0; **b += 1; &mut **b`
+is `_3 = copy (*_2); _4 = copy (*_2); _6 = .. _3 ..; _7 = .. _4 ..; (*_6) =
+Add(copy (*_7), 1)`, `_6`'s copy two statements before it, and the `+= 1`
+was written to the copy and lost even after the fix above. rustc's box
+elaboration makes each copy in the block of its use, and safe Rust can't
+replace the box while its copy is borrowed, so the place reads what the
+copy would. A box that's a copy of a place whose copy isn't found so is
+never read as the copy: its pointer is left, which rust-js refuses. The
+crate pair holds `**b += 1` and a box written across a call, a branch and a
+loop; mutations `box-copy-only-just-before` and
+`box-copied-from-a-place-read-as-the-copy`, refitted.

@@ -3,7 +3,8 @@
 //! which that MIR reads through a copy of the box, `_b = copy (*_r)`, is the
 //! box's own place, as the crate's own MIR has it: a box's number, a box of
 //! a box's, an enum variant's box's, a boxed struct's fields, a `Vec` of
-//! boxes'. A write through one was lost (#1455).
+//! boxes'; a box read through two copies of it, each its place. A write
+//! through one was lost (#1455).
 use std::borrow::{Borrow, BorrowMut};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 pub struct Nested(pub Box<Box<u32>>);
@@ -89,5 +90,50 @@ impl Deref for Counter {
 impl DerefMut for Counter {
     fn deref_mut(&mut self) -> &mut u32 {
         &mut self.0
+    }
+}
+
+/// A box written through, then given out, its MIR two copies of the box.
+pub struct Twice(pub Box<u32>, pub Box<[u32; 2]>);
+impl AsMut<u32> for Twice {
+    fn as_mut(&mut self) -> &mut u32 {
+        let b: &mut Box<u32> = &mut self.0;
+        **b += 1;
+        &mut **b
+    }
+}
+impl AsMut<[u32]> for Twice {
+    fn as_mut(&mut self) -> &mut [u32] {
+        let [first, _] = &mut *self.1;
+        *first += 10;
+        &mut *self.1
+    }
+}
+
+#[inline(never)]
+pub fn step(n: u32) -> u32 {
+    n + 1
+}
+
+/// A box written through across a call, a branch and a loop, then given
+/// out: each read its own copy of the box.
+pub struct Worked(pub Box<u32>, pub bool);
+impl BorrowMut<u32> for Worked {
+    fn borrow_mut(&mut self) -> &mut u32 {
+        let b: &mut Box<u32> = &mut self.0;
+        let n = step(**b);
+        **b += n;
+        if self.1 {
+            **b += 1;
+        }
+        for _ in 0..2 {
+            **b *= 2;
+        }
+        &mut **b
+    }
+}
+impl Borrow<u32> for Worked {
+    fn borrow(&self) -> &u32 {
+        &self.0
     }
 }
