@@ -70,4 +70,24 @@ fn main() {
     let raw = &raw const outer.inner.b as usize - base;
     let cast = &outer.inner.b as *const u32 as usize - base;
     println!("{raw} {cast} {}", outer.x + outer.inner.a as u16);
+
+    // A `&mut dyn` of what a call lends, `get_mut()`'s, a place JS names
+    // none of: the pair as it is, written through (#1453's neighbour).
+    let mut cell = std::cell::RefCell::new(4u32);
+    set_through_dyn(cell.get_mut(), 9);
+    println!("{}", cell.into_inner());
+}
+
+trait Set<T> {
+    fn set(&mut self, value: T);
+}
+
+impl<T> Set<T> for T {
+    fn set(&mut self, value: T) {
+        *self = value;
+    }
+}
+
+fn set_through_dyn(slot: &mut dyn Set<u32>, value: u32) {
+    slot.set(value);
 }

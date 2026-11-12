@@ -592,6 +592,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             place = of;
         }
+        // A place reached through a reference no borrow here made, what
+        // `get_mut()` gave: no place JS names, so the pair as it is, whose
+        // `value` a pointer through is refused where it runs (#1527).
+        if !crate::lower::pointers::within_items(self.tcx, state.body, &place) {
+            return Ok(made);
+        }
         let target = self.mir_place(state, place, span, out)?;
         let offset = self.field_offset(place, &state.body.local_decls);
         let handle = self.pointer_to(target, pointee, offset, span)?;

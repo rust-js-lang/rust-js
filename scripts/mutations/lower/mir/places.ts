@@ -246,4 +246,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
   },
+  {
+    name: "dyn-place-through-a-call-named",
+    breaks: "a `&mut dyn` of what a call lends, `get_mut()`'s, is given a handle on a MIR temporary JS never names, `$ptr(_31, ..)`, and throws a ReferenceError (#1453)",
+    file: "src/lower/mir/places.rs",
+    find: "        if !crate::lower::pointers::within_items(self.tcx, state.body, &place) {\n            return Ok(made);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_given_to_generic_code.rs$"],
+  },
 ];
