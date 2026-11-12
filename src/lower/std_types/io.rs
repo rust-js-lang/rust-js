@@ -97,6 +97,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let mut given = vec![receiver];
                 given.extend(values.by_ref());
+                // A `read_to_string` of a `String` proved fresh-empty is told
+                // so; else one a reader of the crate's own would see the reads
+                // of is refused: they're of the `String`'s capacity, which a JS
+                // string doesn't carry (#1261, #1297).
+                if crate::lower::recognition::reads_to_string(tcx, call.def_id) {
+                    if call.fresh_string {
+                        given.push(Expr::bool(true));
+                    } else if crate::lower::recognition::reads_through_own_reader(tcx, tr.self_ty()) {
+                        return Err(self.unsupported(
+                            call.span,
+                            &format!(
+                                "`read_to_string` of a `{}` into a `String` not provably fresh-empty, `String::new()` with nothing done to it before: what a reader of the crate's own sees of its reads is of the `String`'s capacity, which a JS string doesn't carry (#1261); read into `String::new()`, or `read_to_end` into a `Vec` and `String::from_utf8`",
+                                tr.self_ty()
+                            ),
+                        ));
+                    }
+                }
                 let name = bindings::fn_name(tcx, call.def_id);
                 let called = Expr::call(Expr::member(dictionary, name), given);
                 // `read_exact`'s, thrown, caught where it's a value (ADR 0462).

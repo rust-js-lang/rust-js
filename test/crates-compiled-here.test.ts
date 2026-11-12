@@ -311,3 +311,12 @@ test("a library that keeps no capacity has its functions compiled by a consumer 
   expect(chain(thrown, "capacity_unknown_of_what_a_library_gives_back", ["dep", "app"], undefined, "(#1180)")).toBe("5\n8\n");
   expect(chain(thrown, "capacity_unknown_of_what_a_library_is_lent", ["dep", "app"], undefined, "(#1180)")).toBe("6\n8\n");
 }, 300_000);
+
+// A reader of the consumer's own given to its library's generic code, which
+// reads it into a `String` it can't prove fresh-empty: std's reads of it
+// would be of its capacity, which no JS string carries, so it's refused as
+// the program meets it, naming #1261; a std reader is read (#1297).
+test("a consumer's reader read by its library into a String not fresh is refused as it runs", () => {
+  const thrown = join(root, "test", "crates", "thrown");
+  expect(chain(thrown, "crate_reader_read_by_a_library_into_room_not_known", ["dep", "app"], undefined, "(#1261)")).toBe("3\n3\n");
+}, 300_000);

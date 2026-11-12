@@ -108,6 +108,7 @@ function main() {
             rest = value;
           },
         },
+        true,
       ),
       undefined,
       $ioErrorDebug,
@@ -130,6 +131,7 @@ function main() {
           s = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,
@@ -222,6 +224,7 @@ function main() {
             t = value;
           },
         },
+        true,
       ),
       undefined,
       $ioErrorDebug,
@@ -241,6 +244,7 @@ function main() {
             t$1 = value;
           },
         },
+        true,
       ),
       undefined,
       $ioErrorDebug,
@@ -301,6 +305,7 @@ function main() {
           t$2 = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,

@@ -248,6 +248,7 @@ function exactAndAll() {
             s = value;
           },
         },
+        true,
       ),
       undefined,
       $ioErrorDebug,
@@ -304,6 +305,7 @@ function exactAndAll() {
           s$2 = value;
         },
       },
+      true,
     ),
   );
   const arg$5 = pos(r$1);
@@ -539,6 +541,7 @@ function throughOthers() {
           s = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,
@@ -596,6 +599,7 @@ function throughOthers() {
           s$1 = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,
@@ -759,6 +763,7 @@ function twice(a, b) {
           one = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,
@@ -775,6 +780,7 @@ function twice(a, b) {
           two = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,

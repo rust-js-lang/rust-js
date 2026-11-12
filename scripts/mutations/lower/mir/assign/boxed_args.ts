@@ -133,4 +133,16 @@ export const mutations: Mutation[] = [
     replace: "                                    called\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^write_result_items with"],
   },
+  {
+    name: "generic-read-to-string-fresh-untold",
+    breaks: "generic code's `read_to_string` of a `String` proved fresh-empty isn't told so, and a crate's reader it's given is refused as it runs (#1297)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "            exprs.push(Expr::bool(true));\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
 ];

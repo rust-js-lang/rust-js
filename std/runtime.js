@@ -1437,6 +1437,8 @@ export function $bufReader(R) {
   };
   const reader = {
     Read: () => reader,
+    // Its inner's reads are a crate reader's to see where they are (#1297).
+    readsSeen: R.readsSeen === true,
     // Past its buffer, a read as large goes to its inner at once.
     read(r, buf) {
       const b = r.value;
@@ -1486,10 +1488,11 @@ export function $bufReader(R) {
       const read = R.readToEnd(inner(b), v);
       return read.TAG === "Err" ? read : { TAG: "Ok", _0: (held.length + read._0) >>> 0 };
     },
-    // Into an empty `String` it's `read_to_end`'s, kept where it's UTF-8; into
-    // another, all of it is read first, and checked.
-    readToString(r, s) {
-      if (s.value === "") return $appendToString(s, (v) => reader.readToEnd(r, v));
+    // Into an empty `String` it's `read_to_end`'s, into the `String`'s own
+    // bytes, kept where it's UTF-8; into another, all of it is read first,
+    // into a new `Vec`, and checked.
+    readToString(r, s, fresh) {
+      if (s.value === "") return $appendToString(s, (v) => reader.readToEnd(r, v), fresh);
       const bytes = [];
       const read = reader.readToEnd(r, bytes);
       if (read.TAG === "Err") return read;
@@ -1577,11 +1580,12 @@ export function $bufReader(R) {
 export function $mutReader(reader) {
   const through = {
     Read: () => through,
+    readsSeen: reader.readsSeen === true,
     read: (r, buf) => reader.read(r.value, buf),
     readBuf: (r, cursor) => $readBufOf(reader)(r.value, cursor),
     readExact: (r, buf) => reader.readExact(r.value, buf),
     readToEnd: (r, v) => reader.readToEnd(r.value, v),
-    readToString: (r, s) => reader.readToString(r.value, s),
+    readToString: (r, s, fresh) => reader.readToString(r.value, s, fresh),
     fillBuf: (r) => reader.fillBuf(r.value),
     consume: (r, amt) => reader.consume(r.value, amt),
     seek: (r, style) => reader.seek(r.value, style),
@@ -1597,11 +1601,14 @@ export function $mutReader(reader) {
 // of a `dyn BufRead` asks it (#1156).
 export const $dynReader = {
   Read: () => $dynReader,
+  // Its value's reader may be the crate's own, whose reads a `Take` or a
+  // `Chain` of it, which asks this of its dictionary, can't know (#1297).
+  readsSeen: true,
   read: (r, buf) => r.value.impl.read(r.value, buf),
   readBuf: (r, cursor) => $readBufOf(r.value.impl)(r.value, cursor),
   readExact: (r, buf) => r.value.impl.readExact(r.value, buf),
   readToEnd: (r, v) => r.value.impl.readToEnd(r.value, v),
-  readToString: (r, s) => r.value.impl.readToString(r.value, s),
+  readToString: (r, s, fresh) => r.value.impl.readToString(r.value, s, fresh),
   fillBuf: (r) => r.value.impl.fillBuf(r.value),
   consume: (r, amt) => r.value.impl.consume(r.value, amt),
   seek: (r, style) => r.value.impl.seek(r.value, style),
@@ -1612,8 +1619,11 @@ export const $dynReader = {
 // alloc's `append_to_string(buf, f)`, what `read_line` adds to a `String`
 // by: `f` given an array to add bytes to, and what it added kept where
 // it's UTF-8; else nothing is, and `Err(INVALID_UTF8)` where `f` gave `Ok`.
-export function $appendToString(buf, f) {
-  const bytes = [];
+// The array is the `String`'s bytes, whose capacity a JS string doesn't
+// carry (#1261), so not known; but of one `fresh`, `String::new()` the
+// analysis proved nothing was done to, none, as a `Vec::new()`'s (#1297).
+export function $appendToString(buf, f, fresh) {
+  const bytes = fresh ? [] : $untracked([]);
   const read = f(bytes);
   if ($utf8Check(bytes) !== undefined) {
     return read.TAG === "Err" ? read : { TAG: "Err", _0: $invalidUtf8() };
@@ -1657,7 +1667,7 @@ export function $fieldBox(of, field) {
 // being initialized after makes the whole so; else its inner's of the whole.
 export function $takeReadBuf(TRead) {
   const innerReadBuf = $readBufOf(TRead);
-  return (r, buf) => {
+  return $readsSeenOf([TRead], (r, buf) => {
     const take = r.value;
     if (take.limit === 0n) return $readBufDone;
     if (take.limit < BigInt($unfilled(buf))) {
@@ -1682,7 +1692,7 @@ export function $takeReadBuf(TRead) {
     const result = innerReadBuf($fieldBox(take, "inner"), buf);
     take.limit -= BigInt(buf.filled - written);
     return result;
-  };
+  });
 }
 
 // `impl Read for Chain<T, U>`'s `read_buf`, over `{ first, second,
@@ -1690,7 +1700,7 @@ export function $takeReadBuf(TRead) {
 export function $followedReadBuf(TRead, URead) {
   const firstReadBuf = $readBufOf(TRead);
   const secondReadBuf = $readBufOf(URead);
-  return (r, buf) => {
+  return $readsSeenOf([TRead, URead], (r, buf) => {
     const chain = r.value;
     if ($unfilled(buf) === 0) return $readBufDone;
     if (!chain.doneFirst) {
@@ -1702,7 +1712,14 @@ export function $followedReadBuf(TRead, URead) {
       chain.doneFirst = true;
     }
     return secondReadBuf($fieldBox(chain, "second"), buf);
-  };
+  });
+}
+
+// `readBuf`, a `Take`'s or a `Chain`'s of `sources`' dictionaries, which
+// reads them: whether a reader of the crate's own is among them, whose
+// reads it then sees (#1297).
+export function $readsSeenOf(sources, readBuf) {
+  return Object.assign(readBuf, { readsSeen: sources.some((source) => source.readsSeen === true) });
 }
 
 export const $DEFAULT_BUF_SIZE = 8 * 1024;
@@ -1718,7 +1735,16 @@ export const $PROBE_SIZE = 32;
 // `buf` whose capacity isn't known, its reads, and its growth not kept.
 // Its proof: corpus case read_to_end_capacity_of_std_readers.
 export function $defaultReadToEnd(reader, r, buf, sizeHint) {
-  if ($capacityUnknown(buf)) return $readToEndUnkept(reader, r, buf);
+  if ($capacityUnknown(buf)) {
+    // Its reads, of a capacity not known, a reader of the crate's own would
+    // see unlike std's (#1297).
+    if (reader.readsSeen) {
+      throw $unsupported(
+        "rust-js does not support reading a reader of the crate's own to its end into a `Vec` whose capacity it didn't keep, or a `String` not provably fresh-empty, whose capacity a JS string doesn't carry: the reader would see reads of that capacity (#1261)",
+      );
+    }
+    return $readToEndUnkept(reader, r, buf);
+  }
   const readBuf = $readBufOf(reader);
   const startLen = buf.length;
   const startCap = $capacity(buf);
@@ -1845,14 +1871,17 @@ export function $defaultReadExact(reader, r, buf) {
 export function $readerDefaults(reader, readBuf) {
   let made = $readerDefaulted.get(reader);
   if (made !== undefined) return made;
-  const withReadBuf = { ...reader, readBuf };
+  // A reader of the crate's own has no `read_buf` but the default, and sees
+  // each read; a `Take` or a `Chain` sees what its sources do (#1297).
+  const readsSeen = readBuf === undefined || readBuf.readsSeen === true;
+  const withReadBuf = { ...reader, readBuf, readsSeen };
   const readToEnd = (r, v) => $defaultReadToEnd(withReadBuf, r, v, undefined);
   made = {
     readExact: (r, buf) => $defaultReadExact(reader, r, buf),
     readToEnd,
     // All of it read by `default_read_to_end`, not the reader's own, then
     // kept where it's UTF-8.
-    readToString: (r, s) => $appendToString(s, (b) => readToEnd(r, b)),
+    readToString: (r, s, fresh) => $appendToString(s, (b) => readToEnd(r, b), fresh),
     ...withReadBuf,
   };
   $readerDefaulted.set(reader, made);

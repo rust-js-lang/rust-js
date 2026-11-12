@@ -19,8 +19,10 @@ pub(crate) enum OpenCall {
     /// Another thread's start, `thread::spawn`, a `Builder`'s or a scope's:
     /// a program has one thread, its realm's (ADR 1126).
     Thread,
-    /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
-    /// answer: a reader's of the crate's own (#1297, ADR 0425).
+    /// A method of `io::Read`, `BufRead` or `Seek` neither std's byte
+    /// sources nor a reader of the crate's own answer: a crate's own
+    /// `BufRead` or `Seek`, a `Box<dyn Read>`'s, a `dyn Read`'s
+    /// `read_to_string` (#1489, ADR 0425).
     OwnReader,
     /// A `BuildHasher` method not of std's `BuildHasherDefault` or
     /// `RandomState`, which are recognised: a type parameter's, generic

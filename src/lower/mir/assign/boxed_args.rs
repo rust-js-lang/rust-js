@@ -360,6 +360,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             exprs.push(Expr::var(&name));
         }
+        // A `read_to_string` of a `String` proved fresh-empty is told so,
+        // whatever reader generic code is given (#1297).
+        if self.fresh_string_read_into(state) {
+            exprs.push(Expr::bool(true));
+        }
         Ok(exprs)
     }
 }

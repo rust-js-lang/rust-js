@@ -69,7 +69,7 @@ function textOf(r, RRead) {
   let s = "";
   const self = { value: r };
   const buf = { value: s };
-  const readToString = RRead.readToString(self, buf);
+  const readToString = RRead.readToString(self, buf, true);
   r = self.value;
   s = buf.value;
   $unwrapOk(readToString, undefined, $ioErrorDebug);

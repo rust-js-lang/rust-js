@@ -56,13 +56,16 @@ pub(super) struct Call<'c, 'tcx> {
     /// Of `MaybeUninit::uninit()` of an array, whether what it makes is only
     /// written whole and read whole (`uninit_written_whole`, #1258).
     pub(super) written_whole: bool,
+    /// Of `io::Read::read_to_string`, whether the `String` it's given is
+    /// provably fresh-empty (`fresh_string_given`, #1297).
+    pub(super) fresh_string: bool,
     pub(super) span: Span,
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
 /// carries it: `nulled`, `quiet`, `momentary`, `none_form`,
-/// `read_alike`, `flattened` and `lent`; and of what it gives, `unread`
-/// and `written_whole`.
+/// `read_alike`, `flattened`, `lent` and `fresh_string`; and of what it
+/// gives, `unread` and `written_whole`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
@@ -74,6 +77,7 @@ pub(super) struct Given<'c> {
     pub(super) flattened: [bool; 2],
     pub(super) lent: bool,
     pub(super) written_whole: bool,
+    pub(super) fresh_string: bool,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -95,6 +99,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             flattened,
             lent,
             written_whole,
+            fresh_string,
         } = given;
         Call {
             def_id,
@@ -109,6 +114,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             flattened,
             lent,
             written_whole,
+            fresh_string,
             span,
         }
     }

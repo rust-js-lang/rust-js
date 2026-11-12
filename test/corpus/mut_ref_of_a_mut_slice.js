@@ -223,6 +223,7 @@ export function main() {
           rest = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,

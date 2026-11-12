@@ -52,18 +52,16 @@ test("a drop slot is numbered by drop_params.rs alone", () => {
   expect(lowering.filter(file => /u32::MAX/.test(read(file)))).toEqual([]);
 });
 
-// std's defaults over a reader's `read`, `$readerDefaults`, read in sizes
-// of their own, not std's 32-byte probe and spare capacity, which only a
-// reader whose sources are std's can't see (ADR 0425, amended, #1156). So
-// it's given std's readers alone, a `Chain`'s or a `Take`'s dictionary:
-// written once, in `byte_source_dictionary`'s branch of `is_std_reader`,
-// and every call of it the compiler writes, in `@rust-js/std` and the
-// corpus, of `chainRead(..)` or `takeRead(..)`. A reader of the crate's own
-// (#1297) would see each `read`'s size; it's never given one unless its
-// sizes are std's.
-test("$readerDefaults is given std's own readers alone", () => {
+// std's defaults over a reader's `read`, `$readerDefaults`, are alloc's
+// `default_read_to_end` ported, whose reads a reader of the crate's own sees
+// (ADR 0425, amended, #1340, #1297). It's given std's `Chain` and `Take`,
+// in `byte_source_dictionary`'s branch of `is_std_reader`, and a reader of
+// the crate's own, its impl's dictionary, `own_reader_impl`'s: written once
+// in each, and every call of it the compiler writes, in `@rust-js/std` and
+// the corpus, of `chainRead(..)`, `takeRead(..)` or an impl's object.
+test("$readerDefaults is given std's own readers and the crate's alone", () => {
   const writes = sources.filter(file => read(file).includes('"$readerDefaults"'));
-  expect(writes).toEqual(["src/lower/traits/dictionaries.rs"]);
+  expect(writes).toEqual(["src/lower/traits/dictionaries.rs", "src/lower/traits/impls.rs"]);
   const text = read("src/lower/traits/dictionaries.rs");
   expect(text.split('"$readerDefaults"').length).toBe(2);
   const at = text.indexOf('"$readerDefaults"');
@@ -72,11 +70,15 @@ test("$readerDefaults is given std's own readers alone", () => {
     "None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) ",
   );
   expect(text.slice(arm, at)).not.toMatch(/\n {12}(None|Some)\b/);
+  const impls = read("src/lower/traits/impls.rs");
+  expect(impls.split('"$readerDefaults"').length).toBe(2);
+  const own = impls.lastIndexOf("\n", impls.indexOf('"$readerDefaults"'));
+  expect(impls.slice(own, impls.indexOf('"$readerDefaults"')).trim()).toMatch(/^false if self\.own_reader_impl\(tr\) =>/);
   const io = readFileSync(join(stdDir, "io.js"), "utf8");
   const written = [["io.js", io], ...files("test/corpus").filter(file => file.endsWith(".js")).map(file => [file, read(file)])]
-    .flatMap(([file, text]) => [...text.matchAll(/\$readerDefaults\(\s*([\w$]+)\(/g)].map(m => `${file}: ${m[1]}`));
+    .flatMap(([file, text]) => [...text.matchAll(/\$readerDefaults\(\s*([\w$]+\(|\{)/g)].map(m => `${file}: ${m[1]}`));
   expect(written.length).toBeGreaterThan(0);
-  expect(written.filter(call => !/: (chainRead|takeRead)$/.test(call))).toEqual([]);
+  expect(written.filter(call => !/: (chainRead\(|takeRead\(|\{)$/.test(call))).toEqual([]);
   // And the runtime calls it nowhere but where it's made.
   const runtime = files("src/runtime").filter(file => file.endsWith(".js"));
   expect(runtime.filter(file => /\$readerDefaults\(/.test(read(file)))).toEqual(["src/runtime/readers.js"]);

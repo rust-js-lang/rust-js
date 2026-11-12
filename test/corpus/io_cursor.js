@@ -88,6 +88,7 @@ function main() {
             s = value;
           },
         },
+        true,
       ),
       undefined,
       $ioErrorDebug,
@@ -125,6 +126,7 @@ function main() {
           word = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,

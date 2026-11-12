@@ -3,7 +3,7 @@
 // The library ABI a contract is of: `src/library.rs`' `VERSION`, its
 // authority, mirrored here across the compiler's boundary; every library
 // a test builds and reads holds the two equal.
-export const LIBRARY_ABI = 29;
+export const LIBRARY_ABI = 30;
 
 function validCompiler(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)

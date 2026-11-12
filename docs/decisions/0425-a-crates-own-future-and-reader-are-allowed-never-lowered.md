@@ -579,3 +579,61 @@ none is listed till #1297 gives a crate's reader a dictionary. Mutations
 `std-reader-read-no-defaults` and
 `reader-defaults-over-its-own-read-to-end` refitted, and
 `reader-defaults-capacity-kept`, whose refusal is gone, removed.
+
+## Amendment: a crate's own reader is read (2026-11-12, #1297)
+
+A type of the crate's own that implements `io::Read` is lowered as any
+trait impl is, `Read` taken off `recognition::unlowered_trait`'s list
+(`Future`, `BufRead` and `Seek` stay, #1489). Its dictionary is its impl's
+object, wrapped in `$readerDefaults`, which `#1340` ported from alloc:
+`read_exact` is `default_read_exact`, `read_to_end` and `read_to_string`
+`default_read_to_end`, and what the impl writes itself is kept. `bytes()`,
+`take` and `chain` are std's, compiled. Generic code, a `dyn Read` and a
+library's generic code are given that dictionary.
+
+The crate's `read` sees each read std makes, so they must be std's (ADR
+0262's "results change"): the 32-byte probe, then the spare capacity,
+capped by a `max_read_size` that doubles after a read that fills it, which
+a default `read_buf` gives (it initializes its cursor). Those sizes are of
+the capacity read into, so a crate that has a reader of its own keeps
+every `Vec`'s capacity (`vec_uses::reads_show_capacity`). Its consumers
+keep theirs too (`Library.keeps_capacity`), and a library it uses that
+keeps none has the functions the crate reaches compiled here (#1180), so
+whatever code reads the reader, each `Vec` it reads into has its capacity
+kept; one given back by a library's own body has none known, refused below.
+Counting a call of `read_to_end` of generic code's reader too was a
+second rule for the same job, which the first covers: its mutation
+survived, so it's gone. The library ABI is 30.
+
+A `String` read into has no capacity in JS (#1261). Where the analysis
+proves it fresh-empty at the call, `String::new()` or `String::default()`
+made in its place, a local or a field of one, or in a temporary moved into
+it (`let mut held = (String::new(), 7)`, which the metamorphic net's
+rewrites write), with nothing done to that local on any path before the
+borrow
+(`analysis::fresh_strings`, of MIR, the one owner; never an answer of a
+`String`'s `capacity()`, which stays refused), its capacity is 0, and the
+call is told so, `readToString(r, s, true)`: `$appendToString` reads it
+as into a `Vec::new()`. Else its bytes are a `Vec` of capacity not known,
+which std's sources read as before, their reads unseen, and a reader of
+the crate's own can't (ADR 0262's "cannot be preserved"): refused at
+compile time where the reader is known to be one, or a `Take`, `Chain`,
+`BufReader` or `Box` of one (`recognition::reads_through_own_reader`),
+and by `$unsupported` as the program meets it where generic code or a
+`dyn` is given one (a dictionary's `readsSeen`, of a crate's reader and
+of a `Take`, `Chain`, `BufReader` or `&mut` of one; a `dyn`'s is assumed),
+as reading into a `Vec` whose capacity rust-js didn't keep is.
+
+Proof against native Rust: corpus cases read_of_a_crates_own_reader (each
+read's size logged: probe and growth edges, short reads through
+`max_read_size`'s doubling, spare room, errors, `Interrupted`, `bytes`,
+`take`, `chain`, generic, `dyn`, an impl's own `read_to_end`) and
+reads_of_a_crates_reader_into_room (a crate that never asks a capacity);
+crate pair crate_readers_across_crates; the refusals in
+test/diagnostics.test.ts, test/lowering-readers.test.ts and the thrown
+pair crate_reader_read_by_a_library_into_room_not_known. The read-size
+branches #1340 left unmutated now have mutations, but two: the first
+probe, of no size hint, is the loop's exact-fit probe in JS, whose only
+difference in alloc is which bytes it counts initialized; and the uncapped
+`max_read_size` follows a `read_buf` that leaves its cursor uninitialized,
+which only std's sources' do, whose reads no program sees.

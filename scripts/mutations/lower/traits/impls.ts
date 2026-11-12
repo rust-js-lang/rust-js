@@ -784,4 +784,16 @@ export const mutations: Mutation[] = [
     replace: "                if (self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {\n                    return Err(self.unsupported(span, \"a trait method's type parameter's fact here\"));\n                }\n                {\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
+  {
+    name: "own-reader-impl-no-defaults",
+    breaks: "a crate's reader's dictionary is its impl's alone, without std's provided methods over its `read` (#1297)",
+    file: "src/lower/traits/impls.rs",
+    find: "            false if self.own_reader_impl(tr) => Expr::call(Expr::helper(\"$readerDefaults\"), vec![Expr::object(props)]),\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
 ];

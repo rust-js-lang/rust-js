@@ -843,4 +843,16 @@ export const mutations: Mutation[] = [
     replace: "            if js::same_path(&copy, &value) {\n",
     tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
+  {
+    name: "own-reader-no-dictionary",
+    breaks: "a crate's reader given to generic code is refused, its impl's dictionary not made (#1297)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            None if is_std_def(self.tcx, tr.def_id, StdItem::IoRead) => {\n",
+    replace: "            None if false => {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
 ];

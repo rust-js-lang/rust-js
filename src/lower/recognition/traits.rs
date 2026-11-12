@@ -486,11 +486,7 @@ pub(in crate::lower) fn implementable(
 /// `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead` and
 /// `Seek`, which JS has no stream of (ADR 0425). The one list.
 pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.is_lang_item(id, LangItem::Future)
-        || matches!(
-            std_path(tcx, id),
-            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"
-        )
+    tcx.is_lang_item(id, LangItem::Future) || matches!(std_path(tcx, id), "std::io::BufRead" | "std::io::Seek")
 }
 
 /// `io::Read`, `io::BufRead` or `io::Seek`, which std's byte sources

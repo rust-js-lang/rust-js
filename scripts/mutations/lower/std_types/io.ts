@@ -115,4 +115,28 @@ export const mutations: Mutation[] = [
     replace: "                        if false\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
   },
+  {
+    name: "read-to-string-fresh-untold",
+    breaks: "a `read_to_string` of a `String` proved fresh-empty isn't told so, and a crate's reader read into it is refused as it runs (#1297)",
+    file: "src/lower/std_types/io.rs",
+    find: "                        given.push(Expr::bool(true));\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "read-to-string-not-fresh-compiles",
+    breaks: "a crate's reader's `read_to_string` into a `String` not fresh compiles, refused only as it runs (#1297)",
+    file: "src/lower/std_types/io.rs",
+    find: "                    } else if crate::lower::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
+    replace: "                    } else if false && crate::lower::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "String with text"
+    ]
+  },
 ];

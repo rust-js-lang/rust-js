@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "std-reader-own-methods-compiled",
     breaks: "a known `Chain`'s or `Take`'s `read_exact`, which its impl doesn't write, is called as std's provided body, not its dictionary's `$readerDefaults` (#1156)",
     file: "src/lower/recognition/io.rs",
-    find: "                    && DICTIONARY_METHODS.contains(&name.as_str()))))\n",
-    replace: "                    && false)))\n",
+    find: "                    && DICTIONARY_METHODS.contains(&name.as_str()))\n                || own_reader))",
+    replace: "                    && false)\n                || own_reader))",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
   {
@@ -202,5 +202,65 @@ export const mutations: Mutation[] = [
     find: "        if is_file_handle(self.tcx, ty) {\n            return Some(ByteSource::File);\n",
     replace: "        if is_file(self.tcx, ty) {\n            return Some(ByteSource::File);\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
+  },
+  {
+    name: "reads-seen-own-maybe",
+    breaks: "a crate's own reader is said to show its reads to no one, so its `read_to_string` into a `String` not fresh compiles, refused as it runs (#1297)",
+    file: "src/lower/recognition/io.rs",
+    find: "        return true;\n    }\n    let sources",
+    replace: "        return false;\n    }\n    let sources",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "String with capacity"
+    ]
+  },
+  {
+    name: "reads-seen-sources-unread",
+    breaks: "a `Take` of a crate's reader is said to show its reads to no one, so its `read_to_string` into a `String` not fresh compiles (#1297)",
+    file: "src/lower/recognition/io.rs",
+    find: "        Some((_, sources)) => sources,\n",
+    replace: "        Some(_) => return false,\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "Take of a crate reader"
+    ]
+  },
+  {
+    name: "reads-to-string-never",
+    breaks: "no call is `read_to_string`, so none is told its `String` is fresh-empty and a crate's reader read into one is refused (#1297)",
+    file: "src/lower/recognition/io.rs",
+    find: "        && tcx.item_name(id).as_str() == \"read_to_string\"\n",
+    replace: "        && false\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "own-reader-provided-not-dictionary",
+    breaks: "a crate's reader's `read_to_string`, `read_to_end` and `read_exact` aren't its dictionary's, and are refused (#1297)",
+    file: "src/lower/recognition/io.rs",
+    find: "                || own_reader))\n",
+    replace: "))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "empty-string-default-unmade",
+    breaks: "`String::default()` isn't taken as making an empty `String`, so a crate's reader read into one is refused (#1297)",
+    file: "src/lower/recognition/io.rs",
+    find: "            .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Default))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
   },
 ];

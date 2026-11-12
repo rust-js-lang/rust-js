@@ -351,32 +351,25 @@ export const mutations: Mutation[] = [
     name: "user-future-refused",
     breaks: "a type's own `impl Future`, either's, is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "    tcx.is_lang_item(id, LangItem::Future)\n        || matches!(\n",
-    replace: "    false\n        || matches!(\n",
-    tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
-  },
-  {
-    name: "user-read-refused",
-    breaks: "a type's own `impl io::Read` is an error",
-    file: "src/lower/recognition/traits.rs",
-    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
-    replace: '            "std::io::BufRead" | "std::io::Seek"\n',
+    find: "    tcx.is_lang_item(id, LangItem::Future) || matches!(",
+    replace: "    false || matches!(",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
     name: "user-buf-read-refused",
-    breaks: "a type's own `impl BufRead` is an error",
+    breaks: "a type's own `impl BufRead` is lowered, JS nothing calls, which its case's snapshot holds out (ADR 0425; #1489)",
     file: "src/lower/recognition/traits.rs",
-    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
-    replace: '            "std::io::Read" | "std::io::Seek"\n',
+    find: '"std::io::BufRead" | "std::io::Seek")',
+    replace: '"std::io::Seek")',
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
+    snapshots: true,
   },
   {
     name: "user-seek-refused",
     breaks: "a type's own `impl Seek` is an error",
     file: "src/lower/recognition/traits.rs",
-    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
-    replace: '            "std::io::Read" | "std::io::BufRead"\n',
+    find: '"std::io::BufRead" | "std::io::Seek")',
+    replace: '"std::io::BufRead")',
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
@@ -668,5 +661,17 @@ export const mutations: Mutation[] = [
     find: "        || tcx.is_diagnostic_item(Symbol::intern(\"Saturating\"), id)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
+  },
+  {
+    name: "own-read-unlowered",
+    breaks: "a crate's own `io::Read` is never lowered again, and each use of it is refused (#1297)",
+    file: "src/lower/recognition/traits.rs",
+    find: "\"std::io::BufRead\" | \"std::io::Seek\")",
+    replace: "\"std::io::Read\" | \"std::io::BufRead\" | \"std::io::Seek\")",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
   },
 ];

@@ -205,6 +205,8 @@ impls write them, a crate's own `Hash` inside called as std calls it (ADR
 - `{:?}` of a `Metadata` (#1418): `let m = std::fs::metadata("x").unwrap(); println!("{m:?}");`
 - A `VecDeque<u8>`'s `read` and `fill_buf`, which read its front slice alone (#1302): `use std::io::Read; let mut d = std::collections::VecDeque::from(vec![1u8]); let _ = d.read(&mut [0u8; 1]);`
 - A `VecDeque<u8>` as generic code's reader (#1302): `fn first<R: std::io::Read>(mut r: R) -> u8 { let mut b = [0u8]; r.read_exact(&mut b).unwrap(); b[0] } let _ = first(std::collections::VecDeque::from(vec![1u8]));`
+- A crate reader's `read_to_string` into a `String` not provably `String::new()` with nothing done to it, whose capacity a JS string doesn't carry (#1261): `use std::io::Read; struct R; impl Read for R { fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> { Ok(0) } } let mut s = String::from("x"); let _ = R.read_to_string(&mut s);`
+- A `Box<dyn Read>`'s calls (#1489): `use std::io::Read; let mut r: Box<dyn Read> = Box::new(&b"x"[..]); let _ = r.read(&mut [0u8; 1]);`
 - `{:?}` of a `BufReader` (#1418): `let r = std::io::BufReader::new(&b"x"[..]); println!("{r:?}");`
 - `get_mut` of a `BufReader` of a `&mut` to an object, a reader: `let mut c = std::io::Cursor::new(vec![1u8]); let mut r = std::io::BufReader::new(&mut c); r.get_mut().set_position(0);`
 - `panic::take_hook`: `let h = std::panic::take_hook(); drop(h);`

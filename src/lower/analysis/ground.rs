@@ -124,7 +124,9 @@ pub(in crate::lower) fn of<'a, 'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
-    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies) || recognition.extends_as_it_fills(&all_bodies);
+    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies)
+        || recognition.extends_as_it_fills(&all_bodies)
+        || vec_uses::reads_show_capacity(tcx, &all_bodies);
     Ground {
         harness,
         writer_facts,

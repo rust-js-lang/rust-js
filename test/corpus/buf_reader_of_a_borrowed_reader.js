@@ -62,6 +62,7 @@ function main() {
           tail = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,
@@ -92,6 +93,7 @@ function main() {
           after = value;
         },
       },
+      true,
     ),
     undefined,
     $ioErrorDebug,

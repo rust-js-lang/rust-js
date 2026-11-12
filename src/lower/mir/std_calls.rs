@@ -88,7 +88,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             flattened: cells.flattened.get(&state.at).copied().unwrap_or_default(),
             lent: state.facts.pointed().lent_calls.contains(&state.at),
             written_whole: self.uninit_written_whole(state.body, state.at),
+            fresh_string: self.fresh_string_read_into(state),
         }
+    }
+
+    /// Whether the call being lowered is `io::Read::read_to_string` of a
+    /// `String` the analysis proves fresh-empty, which it's then told,
+    /// `readToString(r, s, true)` (`fresh_string_given`, #1297).
+    pub(super) fn fresh_string_read_into(&self, state: &State<'_, 'tcx>) -> bool {
+        let mir::TerminatorKind::Call { func, .. } = &state.body[state.at].terminator().kind else {
+            return false;
+        };
+        func.const_fn_def()
+            .is_some_and(|(callee, _)| crate::lower::recognition::reads_to_string(self.tcx, callee))
+            && crate::lower::analysis::fresh_string_given(self.tcx, state.body, state.at, 1)
     }
 }
 

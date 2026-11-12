@@ -1101,6 +1101,25 @@ Differences:
   does, by its sources' `read_buf`, so the capacity of the `Vec` it grows
   is std's (#1340)
   ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-chain-take-and-bytes-are-read-1156)).
+- **A reader of the crate's own is its `impl Read`,** its `read` and
+  whatever else it writes, and std's provided methods over its `read`,
+  `$readerDefaults({ read })`: `read_exact`, std's loop, an interrupted
+  read tried again; `read_to_end` and `read_to_string`, alloc's
+  `default_read_to_end`, whose every read the crate's `read` sees as it
+  sees std's, a 32-byte probe, then the spare capacity, capped by a
+  `max_read_size` that doubles; `bytes()`, `take` and `chain`. Generic
+  code, a `dyn Read` and a library's generic code read it too. The reads
+  are of the capacity read into, so a crate that has its own reader keeps
+  every `Vec`'s capacity, and so do its consumers. A `String` read
+  into is `String::new()` or `String::default()` with nothing done to it
+  before, a local or a field of one, which the call is told, `readToString(r, s, true)`: another
+  `String`'s capacity is none a JS string carries, so reading one into it
+  is refused where the reader is known to be the crate's, and throws as
+  it runs where generic code is given it, as reading into a `Vec` whose
+  capacity rust-js didn't keep does (#1297, #1261). A crate's own
+  `BufRead` and `Seek`, a `Box<dyn Read>`'s calls and a `dyn Read`'s
+  `read_to_string` are refused (#1489)
+  ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-a-crates-own-reader-is-read-1297)).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
   read in place, and its `Clone`, `Debug`, `PartialEq` and `Default` are

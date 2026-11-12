@@ -163,9 +163,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )),
             // A `Chain`'s or a `Take`'s, its impl's in `@rust-js/std`, and of
             // its `Read`, what that doesn't write std's defaults over its
-            // `read`, `$readerDefaults`: given std's readers alone, whose
-            // sources are std's, which see none of how much each `read` asks
-            // for (ADR 0425, amended; never a reader of the crate's own, #1297).
+            // `read`, `$readerDefaults`, alloc's `default_read_to_end` ported,
+            // which a reader of the crate's own among its sources sees as
+            // std's (ADR 0425, amended, #1340, #1297).
             None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) => {
                 let made = (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr))?;
                 if !is_std_def(self.tcx, tr.def_id, StdItem::IoRead) {
@@ -182,10 +182,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let read_buf = Expr::call_helper(if chain { "$followedReadBuf" } else { "$takeReadBuf" }, read_bufs);
                 Ok(Expr::call_helper("$readerDefaults", vec![made, read_buf]))
             }
+            // A reader of the crate's own, its `Read` impl's dictionary, what
+            // that doesn't write std's defaults over its `read`,
+            // `$readerDefaults` its impl wraps it in (#1297).
+            None if is_std_def(self.tcx, tr.def_id, StdItem::IoRead) => {
+                (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr))
+            }
             None => Err(self.unsupported(
                 span,
                 &format!(
-                    "`{}` as an `io::{}`, a reader of the crate's own (#1297)",
+                    "`{}` as an `io::{}`, a reader of the crate's own (#1489)",
                     tr.self_ty(),
                     self.tcx.item_name(tr.def_id)
                 ),
@@ -212,8 +218,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // std's byte sources' `io::Read`, `BufRead` and `Seek` (#1156): the
         // runtime's dictionary of each, a `Cursor<T>`'s made of `T`'s
-        // `AsRef<[u8]>`. A reader of the crate's own is never lowered (ADR
-        // 0425, #1297).
+        // `AsRef<[u8]>`. A reader of the crate's own is its impl's, wrapped in
+        // `$readerDefaults` (#1297); its `BufRead` and `Seek` are never
+        // lowered (ADR 0425, #1489).
         if crate::lower::recognition::is_io_reading(self.tcx, tr.def_id) {
             return self.byte_source_dictionary(tr, span);
         }

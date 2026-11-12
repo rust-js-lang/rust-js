@@ -43,7 +43,7 @@ function readAll(from, RRead) {
   let text = "";
   const self = { value: from };
   const buf = { value: text };
-  const readToString = RRead.readToString(self, buf);
+  const readToString = RRead.readToString(self, buf, true);
   from = self.value;
   text = buf.value;
   if (readToString.TAG === "Err") {

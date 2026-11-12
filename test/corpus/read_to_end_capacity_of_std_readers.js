@@ -105,6 +105,7 @@ function main() {
           s = value;
         },
       },
+      true,
     );
     const mapErr = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
     console.log(
@@ -129,6 +130,7 @@ function main() {
           s$1 = value;
         },
       },
+      true,
     );
     const value$3 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
     console.log(

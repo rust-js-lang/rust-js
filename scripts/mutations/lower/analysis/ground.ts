@@ -15,8 +15,20 @@ export const mutations: Mutation[] = [
     name: "growing-extend-capacity-unkept",
     breaks: "a crate whose `extend` asks the crate's own hint as a `Vec` fills keeps no capacity, so `with_capacity(n)` is an empty array of none (a wrong answer, #849)",
     file: "src/lower/analysis/ground.rs",
-    find: "    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies) || recognition.extends_as_it_fills(&all_bodies);\n",
-    replace: "    let asks_capacity = vec_uses::asks_capacity(tcx, &all_bodies);\n",
+    find: "        || recognition.extends_as_it_fills(&all_bodies)\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_unasked.rs$"],
+  },
+  {
+    name: "reads-show-capacity-unasked",
+    breaks: "a crate that never asks a capacity keeps none though its reader sees reads of it, so a `Vec::with_capacity` read by it is read as one of none (#1297)",
+    file: "src/lower/analysis/ground.rs",
+    find: "        || vec_uses::reads_show_capacity(tcx, &all_bodies);\n",
+    replace: ";\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^reads_of_a_crates_reader_into_room.rs$"
+    ]
   },
 ];

@@ -19,6 +19,13 @@ struct EntryForms<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `tr` is the crate's own type's `io::Read`, not one of std's
+    /// readers `@rust-js/std` compiles (#1297).
+    fn own_reader_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        crate::lower::recognition::is_std_def(self.tcx, tr.def_id, crate::lower::recognition::StdItem::IoRead)
+            && !crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty())
+    }
+
     /// A dictionary's `method`, which a std default given as another entry
     /// is, a writer's `write_char` its `write_str` or an error's `cause` its
     /// `source`, named once where it's more than a name: `{ write_str,
@@ -425,7 +432,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's own `read_exact`, `read_to_end` and `read_to_string` of
             // a `Chain` or a `Take` that doesn't write them: `$readerDefaults`
             // of its dictionary, where it's given (#1156).
-            if crate::lower::recognition::is_std_reader_impl(self.tcx, id)
+            // And of a reader of the crate's own, its `$readerDefaults`' (#1297).
+            if (crate::lower::recognition::is_std_reader_impl(self.tcx, id) || self.own_reader_impl(tr))
                 && crate::lower::recognition::in_io_dictionary(self.tcx, item.def_id)
                 && !self.krate.fns.contains_key(&method)
             {
@@ -736,6 +744,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props.extend(self.item_facts(tr, span)?);
         let object = match is_hasher(self.tcx, tr.def_id) {
             true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),
+            // A reader of the crate's own: std's provided `read_exact`,
+            // `read_to_end` and `read_to_string` over its `read`, its
+            // `read_buf` the default, as std's are of it (#1297).
+            false if self.own_reader_impl(tr) => Expr::call(Expr::helper("$readerDefaults"), vec![Expr::object(props)]),
             false => match crate::lower::ordering::comparison_maker(self.tcx, tr.def_id) {
                 Some(maker) => Expr::call(Expr::helper(maker), vec![Expr::object(props)]),
                 None => Expr::object(props),

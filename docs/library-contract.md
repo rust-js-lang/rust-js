@@ -75,7 +75,7 @@ m6-react's to see first (#1462).
 | `Library.associated` | summary | each of its traits' associated types whose facts its dictionaries carry, `Size` and `Align` among them (ADR 0145, #1420) | |
 | `ParamFact::Unboxed` | closed-world | none of its crate's calls gives it what may look like `None`, so a `Some` of it is the value | compiles its own of the function (ADR 0051) |
 | `Calling.nulled_params` | closed-world | each of its crate's calls gives these nullable parameters `null` or a value | gives `?? null` of what may be `undefined`; its use as a value is refused (ADR 0861) |
-| `Library.keeps_capacity` | closed-world | whether anything it compiles reads a `Vec`'s capacity | keeps its own; compiles its own of a function of a library that keeps none (#1180) |
+| `Library.keeps_capacity` | closed-world | whether anything it compiles reads a `Vec`'s capacity, or has a reader of its own, which std's `read_to_end` shows it to (#1297) | keeps its own; compiles its own of a function of a library that keeps none (#1180) |
 | `Library.writers_take_options` | closed-world | whether any of its placeholders gives a `Formatter`'s options | compiles its own of each writer that takes fewer (#1026) |
 | `Library.debug_hex` | closed-world | whether an integer's `{:?}` its writers write may be hex | compiles its own of each writer (#1026) |
 | `Library.dyn_debug_pretty` | closed-world | whether it shows a `dyn Debug` it's given pretty | its writers of a type it makes a `dyn Debug` take that option (#1335) |

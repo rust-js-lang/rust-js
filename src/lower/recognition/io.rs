@@ -167,8 +167,9 @@ pub(crate) fn std_reader_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
 }
 
 /// Whether `id` is std's impl of `io::Read` or `BufRead` for one of
-/// `is_std_reader`'s: one that has a dictionary, as a reader of the
-/// crate's own doesn't (#1297). Not a `Take`'s `Seek`, not compiled.
+/// `is_std_reader`'s: one compiled into `@rust-js/std` that has a
+/// dictionary, as a crate's own `BufRead` doesn't (#1489). Not a `Take`'s
+/// `Seek`, not compiled.
 pub(crate) fn is_std_reader_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true }) && {
         let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
@@ -309,13 +310,61 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if is_std_def(tcx, trait_id, StdItem::IoWrite) {
             return (is_file_handle(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);
         }
+        // And a reader of the crate's own's `Read`, its dictionary's,
+        // `$readerDefaults`' of its impl: its own where it writes one, else
+        // std's defaults over its `read` (#1297).
+        let own_reader = is_std_def(tcx, trait_id, StdItem::IoRead)
+            && matches!(self_ty.peel_refs().kind(), ty::Adt(adt, _) if !is_std_crate(tcx, adt.did()))
+            && matches!(name.as_str(), "read_exact" | "read_to_end" | "read_to_string");
         (is_io_reading(tcx, trait_id)
             && (self
                 .byte_source(self_ty)
                 .is_some_and(|source| source.writes(name.as_str()))
                 || (is_std_reader(tcx, self_ty)
                     && !is_std_def(tcx, trait_id, StdItem::IoSeek)
-                    && DICTIONARY_METHODS.contains(&name.as_str()))))
-        .then_some(IoOp::Dictionary)
+                    && DICTIONARY_METHODS.contains(&name.as_str()))
+                || own_reader))
+            .then_some(IoOp::Dictionary)
     }
+}
+
+/// Whether `callee` of `args` makes an empty `String` of no capacity:
+/// `String::new()`, or `Default::default()` of a `String` (#1297).
+pub(crate) fn makes_empty_string<'tcx>(tcx: TyCtxt<'tcx>, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    std_path(tcx, callee) == "std::string::String::new"
+        || (tcx
+            .trait_of_assoc(callee)
+            .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Default))
+            && args.types().next().is_some_and(
+                |ty| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String)),
+            ))
+}
+
+/// Whether `id` is `io::Read::read_to_string`, whose `String` the analysis
+/// may prove fresh-empty, its argument 1 (#1297).
+pub(crate) fn reads_to_string(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id)
+        .is_some_and(|tr| is_std_def(tcx, tr, StdItem::IoRead))
+        && tcx.item_name(id).as_str() == "read_to_string"
+}
+
+/// Whether a reader of the crate's own sees the reads std's provided
+/// methods make of `ty`, a reader, whose sizes are of the capacity they read
+/// into: it is one, or std's `Take`, `Chain`, `BufReader` or `Box` of one,
+/// through references (#1297). Generic code's and a `dyn`'s may be one,
+/// which the runtime asks of its dictionary (`readsSeen`).
+pub(crate) fn reads_through_own_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty = ty.peel_refs();
+    let ty::Adt(adt, args) = ty.kind() else { return false };
+    if !is_std_crate(tcx, adt.did()) {
+        return true;
+    }
+    let sources: Vec<Ty<'tcx>> = match std_reader_sources(tcx, ty) {
+        Some((_, sources)) => sources,
+        None if is_buf_reader(tcx, adt.did()) || tcx.is_lang_item(adt.did(), LangItem::OwnedBox) => {
+            args.types().take(1).collect()
+        }
+        None => return false,
+    };
+    sources.into_iter().any(|source| reads_through_own_reader(tcx, source))
 }

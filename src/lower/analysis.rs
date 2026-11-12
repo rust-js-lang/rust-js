@@ -29,7 +29,9 @@ pub(in crate::lower) use collected::{exported_value_const, impl_const, is_type_s
 mod debug;
 mod drops;
 mod fmt_failures;
+mod fresh_strings;
 pub(in crate::lower) use fmt_failures::{Failing, call_may_fail};
+pub(in crate::lower) use fresh_strings::fresh_string_given;
 pub(super) mod fn_pointers;
 mod generic_consts;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
@@ -366,8 +368,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .filter(|&id| serde_impl(tcx, id).is_none())
         .filter(|&id| !is_js_object_deref(tcx, id))
-        // Nor a reader of the crate's own, never lowered (ADR 0425, #1297);
-        // std's `Chain`'s and `Take`'s are (#1156).
+        // Nor a crate's own `BufRead` or `Seek`, never lowered (ADR 0425,
+        // #1489); std's `Chain`'s and `Take`'s are (#1156), and a crate's
+        // own `Read`, no longer `unlowered_trait`'s (#1297).
         .filter(|&id| !is_unlowered_impl(tcx, id) || is_std_reader_impl(tcx, id))
         // A class's `Display`, its prototype's `toString` (#358).
         .filter(|&id| super::classes::displayed_class(tcx, id).is_none())

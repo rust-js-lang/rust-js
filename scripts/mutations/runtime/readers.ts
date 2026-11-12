@@ -365,4 +365,80 @@ export const mutations: Mutation[] = [
     replace: "    if (false) {\n      const oldLen = buf.filled;\n",
     tests: ["test/corpus.test.ts", "-t", "^read_to_end_capacity_of_std_readers.rs$"],
   },
+  {
+    name: "read-to-end-exact-fit-unprobed",
+    breaks: "a `Vec` whose room a crate's reader filled exactly isn't probed again before it's grown, so the reader sees a read native Rust doesn't make (#1297)",
+    file: "src/runtime/readers.js",
+    find: "    if (spare() < $PROBE_SIZE && $capacity(buf) === startCap) {\n",
+    replace: "    if (false) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "read-to-end-max-read-size-undoubled",
+    breaks: "a crate's reader that fills each read of `read_to_end` is asked no more than 8192 bytes a read, where std's `max_read_size` doubles (#1297)",
+    file: "src/runtime/readers.js",
+    find: "      else if (bytesRead === maxReadSize) maxReadSize *= 2;\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "read-to-end-reads-unseen",
+    breaks: "a crate's reader read into a `Vec` whose capacity rust-js didn't keep is read in 8192-byte reads, unlike std's, where it's refused (#1297)",
+    file: "src/runtime/readers.js",
+    find: "    if (reader.readsSeen) {\n",
+    replace: "    if (false) {\n",
+    tests: [
+      "test/lowering-readers.test.ts"
+    ]
+  },
+  {
+    name: "append-to-string-fresh-ignored",
+    breaks: "a `String` proved fresh-empty is read into as one of a capacity not known, so a crate's reader read into it is refused (#1297)",
+    file: "src/runtime/readers.js",
+    find: "  const bytes = fresh ? [] : $untracked([]);\n",
+    replace: "  const bytes = $untracked([]);\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "append-to-string-fresh-assumed",
+    breaks: "a `String` of a capacity no JS string carries is read into as one of none, so a crate's reader sees reads unlike std's, where it's refused (#1261, #1297)",
+    file: "src/runtime/readers.js",
+    find: "  const bytes = fresh ? [] : $untracked([]);\n",
+    replace: "  const bytes = [];\n",
+    tests: [
+      "test/lowering-readers.test.ts"
+    ]
+  },
+  {
+    name: "reads-seen-of-sources-none",
+    breaks: "a `Take` of a crate's reader read into a `Vec` whose capacity rust-js didn't keep reads it in 8192-byte reads, where it's refused (#1297)",
+    file: "src/runtime/readers.js",
+    find: "  return Object.assign(readBuf, { readsSeen: sources.some((source) => source.readsSeen === true) });\n",
+    replace: "  return readBuf;\n",
+    tests: [
+      "test/lowering-readers.test.ts"
+    ]
+  },
+  {
+    name: "reader-defaults-reads-unseen",
+    breaks: "a crate's reader's dictionary says its reads are no one's, so read into a capacity not known it's read in 8192-byte reads, where it's refused (#1297)",
+    file: "src/runtime/readers.js",
+    find: "  const readsSeen = readBuf === undefined || readBuf.readsSeen === true;\n",
+    replace: "  const readsSeen = readBuf !== undefined && readBuf.readsSeen === true;\n",
+    tests: [
+      "test/lowering-readers.test.ts"
+    ]
+  },
 ];

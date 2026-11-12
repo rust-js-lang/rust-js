@@ -76,8 +76,11 @@ use std::path::Path;
 /// its reachable traits' sized associated types whose every impl of its own
 /// can give its layout has its `Size` and `Align` carried by every impl's
 /// dictionary, an `associated` entry's, which a consumer's generic
-/// `size_of::<Self::Item>()` reads (#1420).
-pub const VERSION: u32 = 29;
+/// `size_of::<Self::Item>()` reads (#1420). 30: a reader's dictionary's
+/// `readToString` is told a `String` proved fresh-empty, and
+/// `keeps_capacity` is also of a crate with a reader of its own, whose reads
+/// std's `read_to_end` makes of the capacity it reads into (#1297).
+pub const VERSION: u32 = 30;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
