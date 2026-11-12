@@ -1171,7 +1171,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Ref(_, pointee, _) => pointee,
             _ => item,
         };
-        let copy = self.clone_value(Expr::var(&x), pointee, span, &mut body)?;
+        // A `copied()`'s item is its bits, `Copy`'s, never a hand-written
+        // `Clone` of a `Copy` type, which std's `Copied` doesn't call; a
+        // `cloned()`'s is its `Clone`.
+        let copy = match crate::lower::recognition::copied_source(self.tcx, output) {
+            Some(_) => self.copy_if_needed(Expr::var(&x), pointee),
+            None => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,
+        };
         if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) {
             return Ok(it);
         }

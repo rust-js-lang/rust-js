@@ -285,6 +285,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A function of a `Copy` item's copy as std makes one where it copies
+    /// its bits, `copied()`'s, `copy_from_slice`'s, `partition`'s push of a
+    /// `&T` and an array made of a slice: `(item) => <copy>` where
+    /// something changes one in place (`copy_if_needed`), never a call of a
+    /// hand-written `Clone`, which std doesn't make there (ADR 0623,
+    /// amended); `None` where the copy is the item itself.
+    pub(super) fn bits_copy_fn(&self, item: Ty<'tcx>) -> Option<Expr> {
+        let copied = self.copy_if_needed(Expr::var("item"), item);
+        match &copied.kind {
+            js::ExprKind::Var(name) if name == "item" => None,
+            _ => Some(Expr::arrow(
+                vec!["item".into()],
+                vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
+            )),
+        }
+    }
+
     /// A value read out of `place` as `ptr::read` reads it, its bits apart
     /// from the place, which a write after may change in place: a `Copy`
     /// value's copy, `copy_if_needed`'s; another's, of a type a `&mut`

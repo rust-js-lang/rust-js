@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`partition` of `&T`s into collections of `T` holds the same `Copy` structs, so changing one changes the original",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    Some(from) => self.copied_into(items, from, into, span)?,",
+    find: "                    Some(copy) => method(items, \"map\", vec![copy]),",
     replace: "                    Some(_) => items,",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
@@ -488,5 +488,13 @@ export const mutations: Mutation[] = [
     find: "        let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);\n",
     replace: "        let ok = crate::js::result::is(result.clone(), true);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^write_result_items.rs$|^write_result_items with"],
+  },
+  {
+    name: "partition-copies-by-clone",
+    breaks: "`partition` of `&T`s into a collection of `T`s calls a hand-written `Clone` of a `Copy` `T` before its predicate, which std's `extend_one` never does",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => self.bits_copy_fn(item),\n",
+    replace: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => Some(self.clone_fn(\"item\", item, span)?),\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
 ];

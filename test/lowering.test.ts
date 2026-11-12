@@ -576,6 +576,38 @@ pub fn legacy_len(legacy: &mut Legacy) -> usize {
   expect([shadowed.exitCode === 0, shadowed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, whose `prefix` is the parent's yet")]);
 });
 
+// A parameter of a type JS can't hold, a pointer to text (ADR 0390), is
+// refused where MIR declares it.
+test("a parameter of a type JS can't hold is refused from MIR", () => {
+  const dir = fixture("mir-unheld-param");
+  writeFileSync(join(dir, "lib.rs"), `pub fn len(p: *const str) -> usize {
+    unsafe { (&*p).len() }
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support addressable memory yet: values of type `*const str`")]);
+});
+
+// A variable of a type JS can't hold, a struct of pointers to text, is
+// refused, and one assigned again, which MIR declares first.
+test("a variable of a type JS can't hold is refused from MIR", () => {
+  const dir = fixture("mir-unheld-variable");
+  const refusal = (body: string) => {
+    writeFileSync(join(dir, "lib.rs"), `struct Holder {
+    ps: Vec<*const str>,
+}
+pub fn run(again: bool) -> usize {
+${body}
+}
+`);
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+    return [failed.exitCode === 0, failed.stderr.toString()];
+  };
+  const refused = expect.stringContaining("rust-js does not support addressable memory yet: values of type `*const str`");
+  expect(refusal("    let h = Holder { ps: Vec::new() };\n    usize::from(again) + h.ps.len()")).toEqual([false, refused]);
+  expect(refusal("    let mut h = Holder { ps: Vec::new() };\n    if again {\n        h = Holder { ps: h.ps };\n    }\n    h.ps.len()")).toEqual([false, refused]);
+});
+
 // What JS can't do soundly is refused: each compiled to output that ran
 // unlike Rust, found running them both.
 for (const [name, source, message] of [

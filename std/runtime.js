@@ -9574,11 +9574,16 @@ export function $sliceStripCircumfix(v, prefix, suffix, eq) {
 }
 
 // `v.repeat(n)`: its items `n` times over, of `Copy` items, room for them
-// of `size` bytes each asked first (ADR 0774).
-export function $repeatItems(v, n, size, copy) {
+// of `size` bytes each asked first (ADR 0774): its first copy each item's
+// `clone`, as std's `extend(self)` makes it, the rest that copy's bits,
+// `copy`'s, as std's `copy_nonoverlapping` doubles it (ADR 0623); its
+// clone its copy unless a hand-written `clone` is given.
+export function $repeatItems(v, n, size, copy, clone = copy) {
   $roomFor(v.length * n, size);
+  if (n === 0) return [];
+  const first = clone === undefined ? v : v.map(clone);
   const out = [];
-  for (let i = 0; i < n; i++) $extend(out, copy === undefined ? v : v.map(copy));
+  for (let i = 0; i < n; i++) $extend(out, i === 0 || copy === undefined ? first : first.map(copy));
   return out;
 }
 

@@ -67,8 +67,28 @@ fn main() {
     let whole = unsafe { Box::from_raw(number.cast::<Impl<u32>>().as_ptr()) };
     println!("{count} {} {}", whole.object, whole.vtable.name);
     drop(unsafe { Box::from_raw(text.cast::<Impl<&'static str>>().as_ptr()) });
+
+    let mut maybe = Maybe {
+        vtable: Some(&TEXT),
+        count: 3,
+    };
+    let name = maybe_vtable_of(NonNull::from(&mut maybe)).map(|v| v.name);
+    println!("{name:?} {}", maybe.count);
 }
 
 unsafe fn p_count(p: NonNull<Erased>) -> u32 {
     unsafe { p.as_ref() }.count
+}
+
+// A first field whose `'static` is inside it, an `Option<&'static VTable>`,
+// read through a pointer to the `Option<&VTable>` whose lifetime is
+// inferred: one type of two lifetimes, the same field.
+#[repr(C)]
+struct Maybe {
+    vtable: Option<&'static VTable>,
+    count: u32,
+}
+
+fn maybe_vtable_of(p: NonNull<Maybe>) -> Option<&'static VTable> {
+    unsafe { *(p.as_ptr() as *const Option<&VTable>) }
 }

@@ -333,14 +333,14 @@ export const mutations: Mutation[] = [
   {
     name: "mir-variable-type-unchecked",
     breaks:
-      "MIR's variable of a struct of a `&mut &mut [i32]` compiles, `*h.s = ..` changing a copy",
+      "MIR's variable of a struct of `Vec<*const str>`, pointers to text JS has no address of, compiles",
     file: "src/lower/mir/assign.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_held_drops(ty, span)\n",
     tests: [
       "test/lowering.test.ts",
       "-t",
-      "type JS can't hold is refused from MIR",
+      "a variable of a type JS can't hold is refused from MIR",
     ],
   },
   {

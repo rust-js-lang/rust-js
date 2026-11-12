@@ -755,6 +755,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// Which of a `RefCell` guard's own functions, by its `name`, maps it, of
 /// a `Ref` or a `RefMut` (#1275).
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Of an `Option`'s `Std::OptionCloned`, `def_id`, whether it's
+    /// `copied()`, its value's bits, not `cloned()`, its `Clone`, which may
+    /// be hand-written of a `Copy` type (ADR 0623, amended).
+    pub(in crate::lower) fn option_copied(&self, def_id: rustc_span::def_id::DefId) -> bool {
+        self.tcx.item_name(def_id).as_str() == "copied"
+    }
+
     /// A number's own method `name`, or a `Saturating`'s, its number's in
     /// its `[x]` (`newtype_inherent`, #1434).
     fn number_method(&self, owner: Ty<'tcx>, name: &str) -> Option<Std> {

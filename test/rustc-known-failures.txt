@@ -30,7 +30,6 @@ consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable 
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 consts/load-preserves-partial-init.rs	node: ended {"error":"Error: rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
-consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std::cell::UnsafeCell::<T>::new` yet
 consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone

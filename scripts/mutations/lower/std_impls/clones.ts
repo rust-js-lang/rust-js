@@ -482,4 +482,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
   },
+  {
+    name: "copy-clone-runs-no-code",
+    breaks: "a clone of a `Copy` tuple, array or `Option` of a type with a hand-written `Clone` is its bits, where std's calls that `clone` for each part",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        if self.is_copy(ty) && !self.copy_clone_runs_code(ty) {\n",
+    replace: "        if self.is_copy(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "copy-clone-derive-not-bits",
+    breaks: "a clone of a `#[derive(Clone, Copy)]` type of no type parameters calls its fields' hand-written `clone`, where std's derive copies its bits",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        if trivial.is_some_and(|trivial| self.recognition().implements_trait(ty, trivial)) {\n",
+    replace: "        if trivial.is_some_and(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
 ];

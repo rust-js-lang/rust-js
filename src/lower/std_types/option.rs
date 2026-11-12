@@ -188,6 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Call {
+            def_id,
             generic_args,
             tys,
             span,
@@ -486,7 +487,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => self.spill_subject("option", option, (true, false), out),
                 };
                 let present = Expr::presence(option.clone(), true);
-                let value = self.clone_value(Expr::held(option), item, span, out)?;
+                let value = match self.recognition().option_copied(def_id) {
+                    true => self.copy_if_needed(Expr::held(option), item),
+                    false => self.clone_value(Expr::held(option), item, span, out)?,
+                };
                 self.some_where(present, value, item)
             }
             Std::OptionCloned => {
@@ -497,7 +501,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.tcx.adt_def(self.tcx.require_lang_item(LangItem::Option, span)),
                     self.tcx.mk_args(&[item.into()]),
                 );
-                self.clone_value(value, ty, span, out)?
+                // `copied()`'s, its bits (ADR 0623).
+                match self.recognition().option_copied(def_id) {
+                    true => self.copy_if_needed(value, ty),
+                    false => self.clone_value(value, ty, span, out)?,
+                }
             }
             _ => return Ok(None),
         }))

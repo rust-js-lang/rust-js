@@ -357,10 +357,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
     file: "src/lower/std_types/slice.rs",
-    find: '                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy]))',
-    replace:
-      '                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy.filter(|_| false)]))',
-    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
+    find: "                let copy = self.bits_copy_fn(item());\n                // Room",
+    replace: "                let copy = None::<Expr>;\n                // Room",
+    tests: ["test/corpus.test.ts", "-t", "^(copied_structs_apart|copied_of_a_copy_with_its_own_clone).rs$"],
   },
   {
     name: "deque-slices-swapped",
@@ -614,5 +613,21 @@ export const mutations: Mutation[] = [
     find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
     replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
+  },
+  {
+    name: "copy-from-slice-clones",
+    breaks: "`copy_from_slice` of a `Copy` type with a hand-written `Clone` calls that `clone` for each item, which std's `memcpy` never does",
+    file: "src/lower/std_types/slice.rs",
+    find: "                let copy = self.bits_copy_fn(item());\n                helper(\"$copyFromSlice\"",
+    replace: "                let copy = Some(self.clone_fn(\"item\", item(), span)?);\n                helper(\"$copyFromSlice\"",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "repeat-clone-dropped",
+    breaks: "`repeat` of a `Copy` type with a hand-written `Clone` never calls it, where std's first copy is each item's clone",
+    file: "src/lower/std_types/slice.rs",
+    find: "                let clone = clone.filter(|clone| copy.as_ref() != Some(clone));\n",
+    replace: "                let clone = None::<Expr>;\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
 ];

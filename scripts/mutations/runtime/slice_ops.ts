@@ -286,8 +286,8 @@ export const mutations: Mutation[] = [
     name: "repeat-items-spread-arguments",
     breaks: "`v.repeat(n)` spreads its items into one `push`, more than a JS call takes as arguments: `RangeError` (ADR 0919)",
     file: "src/runtime/slice_ops.js",
-    find: "$extend(out, copy === undefined ? v : v.map(copy));",
-    replace: "out.push(...(copy === undefined ? v : v.map(copy)));",
+    find: "$extend(out, i === 0 || copy === undefined ? first : first.map(copy));",
+    replace: "out.push(...(i === 0 || copy === undefined ? first : first.map(copy)));",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
   },
   {
@@ -434,5 +434,13 @@ export const mutations: Mutation[] = [
     find: "  if (outer?.first !== undefined) part[$placeOfPart] = { first: $ptrAdd(outer.first, start) };\n  else part",
     replace: "  part",
     tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
+  },
+  {
+    name: "repeat-clones-each-copy",
+    breaks: "`repeat` clones each copy of its items, not only its first, where std copies the rest's bits",
+    file: "src/runtime/slice_ops.js",
+    find: "  for (let i = 0; i < n; i++) $extend(out, i === 0 || copy === undefined ? first : first.map(copy));\n",
+    replace: "  for (let i = 0; i < n; i++) $extend(out, clone === undefined ? v : v.map(clone));\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
 ];

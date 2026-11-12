@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(clone) = self.json_value_clone(place.clone(), ty) {
             return Ok(clone);
         }
-        if self.is_copy(ty) {
+        if self.is_copy(ty) && !self.copy_clone_runs_code(ty) {
             return Ok(self.copy(place, ty));
         }
         // A type inside itself, `Value` in `Obj(BTreeMap<String, Value>)`: its
@@ -280,6 +280,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let f = Expr::arrow(params, vec![StmtKind::Return(Some(item)).at(js::Span::NONE)]);
         Ok(Some((f, entry, may_panic(self, key) || may_panic(self, value))))
+    }
+
+    /// Whether `Clone::clone` of a `Copy` `ty` runs code, so isn't its bits:
+    /// a hand-written `clone` of it, or one a part's clone calls, as std's
+    /// clone of a tuple, an array, an `Option` or a derived one of a generic
+    /// type clones each part (ADR 0623, amended). Not one std's own impls
+    /// say is its bits, `TrivialClone`, rustc's answer of this toolchain's
+    /// std: `#[derive(Clone, Copy)]`'s, a reference's, an array of such.
+    fn copy_clone_runs_code(&self, ty: Ty<'tcx>) -> bool {
+        let trivial = self.tcx.lang_items().get(LangItem::TrivialClone);
+        if trivial.is_some_and(|trivial| self.recognition().implements_trait(ty, trivial)) {
+            return false;
+        }
+        match ty.kind() {
+            ty::Tuple(tys) => tys.iter().any(|t| self.copy_clone_runs_code(t)),
+            ty::Array(item, _) => self.copy_clone_runs_code(*item),
+            ty::Adt(adt, args) => {
+                self.has_user_impl(self.clone_trait(), ty)
+                    || adt
+                        .all_fields()
+                        .any(|f| self.copy_clone_runs_code(self.field_ty(f, args)))
+            }
+            _ => false,
+        }
     }
 
     /// Is `ty`, one of the crate's own or a library's (ADR 0100), inside

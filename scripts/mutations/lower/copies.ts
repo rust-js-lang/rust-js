@@ -449,4 +449,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
     snapshots: true,
   },
+  {
+    name: "bits-copy-shares",
+    breaks: "a `Copy` item's copy std makes of its bits, `copy_from_slice`'s, `partition`'s and the rest, shares an item something changes in place, so a change of a copy changes its source",
+    file: "src/lower/copies.rs",
+    find: "        let copied = self.copy_if_needed(Expr::var(\"item\"), item);\n",
+    replace: "        let copied = Expr::var(\"item\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
 ];

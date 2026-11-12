@@ -910,13 +910,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let drop = self.std_drop_function(item(), span)?;
                 helper("$fillWith", Expr::optional_args(vec![items, f], vec![drop]))
             }
-            // Each a copy where something changes one in place.
+            // Each a copy where something changes one in place: its bits,
+            // `Copy`'s, as std's `memcpy` copies them, never a hand-written
+            // `Clone` of a `Copy` type.
             SliceOp::CopyFromSlice => {
                 let (items, source) = (arg(), arg());
-                let copy = match self.needs_clone(item()) {
-                    true => Some(self.clone_fn("item", item(), span)?),
-                    false => None,
-                };
+                let copy = self.bits_copy_fn(item());
                 helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy]))
             }
             // Each by its type's `clone_from` where it may have one, as std's
@@ -1152,15 +1151,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.extend(self.item_eq((item(), item()), true, span)?);
                 helper(name, list)
             }
+            // Its first copy each item's clone, as std's `extend(self)` makes
+            // it, the rest its bits' copies, `copy_nonoverlapping`'s (ADR
+            // 0623, amended).
             SliceOp::Repeat => {
                 let (items, n) = (arg(), arg());
-                let copy = match self.needs_clone(item()) {
+                let clone = match self.needs_clone(item()) {
                     true => Some(self.clone_fn("item", item(), span)?),
                     false => None,
                 };
+                let copy = self.bits_copy_fn(item());
                 // Room for them, which std checks first (ADR 0774).
                 let size = self.room_item_size(item());
-                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy]))
+                // Its clone given only where it isn't its copy, a hand-written
+                // `clone`'s.
+                let clone = clone.filter(|clone| copy.as_ref() != Some(clone));
+                let copy = copy.or_else(|| clone.is_some().then(Expr::undefined));
+                helper(
+                    "$repeatItems",
+                    Expr::optional_args(vec![items, n, size], vec![copy, clone]),
+                )
             }
             SliceOp::FromRef => Expr::array(vec![arg()]),
             // A view over the handle JS holds a `&mut` to a number or text as:

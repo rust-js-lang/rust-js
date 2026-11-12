@@ -90,10 +90,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
                 // A `Vec`'s, moved, is itself, and given back as it's refused.
-                // Its items copies too, where something changes one in place.
-                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {
-                    true => slice.clone(),
-                    false => self.clone_items(slice.clone(), item, span)?,
+                // Its items copies too, where something changes one in place:
+                // their bits, as std's `T: Copy` copies them (ADR 0623).
+                let value = match (target.is_ref() || owned, self.bits_copy_fn(item)) {
+                    (true, _) => slice.clone(),
+                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), "map"), vec![copy]),
+                    (false, None) if fresh => slice.clone(),
+                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),
                 };
                 let refused = match owned {
                     true => slice.clone(),

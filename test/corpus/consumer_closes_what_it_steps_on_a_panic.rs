@@ -5,9 +5,9 @@
 // builder's `entries` and `is_sorted_by`, each of which the runtime stepped
 // by JS's own `for..of` or `Array.from`, which close nothing where the
 // step itself throws (#1141).
-use std::collections::{BTreeSet, BinaryHeap};
+use std::collections::{BTreeSet, BinaryHeap, HashSet};
 use std::panic::{catch_unwind, AssertUnwindSafe};
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct D(u32);
 impl Drop for D {
     fn drop(&mut self) {
@@ -26,6 +26,13 @@ fn key(d: D) -> u32 {
 
 fn collected<C: FromIterator<u32>>(v: Vec<D>) -> C {
     v.into_iter().map(key).collect()
+}
+
+// Collected by a collection that reserves room for its hint first, which
+// panics with `capacity overflow` before any step: what it was given, of
+// a `D`, dropped as it unwinds.
+fn repeated<C: FromIterator<u32>>(d: D, n: usize) -> C {
+    std::iter::repeat_n(d, n).map(|d| d.0).collect()
 }
 
 struct Listed;
@@ -48,6 +55,8 @@ fn main() {
     println!("{w:?}");
     let r = catch_unwind(|| collected::<BTreeSet<u32>>(ds()).len());
     println!("collect {}", r.is_err());
+    let r = catch_unwind(|| repeated::<HashSet<u32>>(D(4), usize::MAX).len());
+    println!("reserved {}", r.is_err());
     let r = catch_unwind(|| format!("{:?}", Listed).len());
     println!("debug {}", r.is_err());
     let r = catch_unwind(|| ds().into_iter().map(key).is_sorted_by(|a, b| a <= b));

@@ -205,14 +205,14 @@ export const mutations: Mutation[] = [
   {
     name: "mir-param-type-unchecked",
     breaks:
-      "MIR's parameter of a `&mut &mut [i32]` compiles, given a copy its `*s = ..` never reaches the caller",
+      "MIR's parameter of a `*const str`, a pointer to text JS has no address of, compiles",
     file: "src/lower/mir.rs",
     find: "            self.check_value_ty(ty, def_span)?;\n",
     replace: "",
     tests: [
       "test/lowering.test.ts",
       "-t",
-      "slice reference is refused from MIR",
+      "a parameter of a type JS can't hold is refused from MIR",
     ],
   },
   {

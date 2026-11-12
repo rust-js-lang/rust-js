@@ -11,6 +11,7 @@ import {
   $collectsInPlace,
   $dropEach,
   $entriesShown,
+  $folded,
   $heapExtend,
   $heapFrom,
   $heapSorted,
@@ -18,6 +19,8 @@ import {
   $iter,
   $live,
   $partiallyOrdered,
+  $repeatingN,
+  $reserveHint,
   $sortedKeys,
   $splicing,
   $unwindsOn,
@@ -54,6 +57,27 @@ function collected(v, CFromIteratorU32) {
     $closing($iter(v), $dropEach(dDrop_drop)).map(key),
     true,
     [4, 4],
+    (map) => {
+      map.return();
+    },
+    (map) => {
+      map.return();
+    },
+  );
+}
+
+// Collected by a collection that reserves room for its hint first, which
+// panics with `capacity overflow` before any step: what it was given, of
+// a `D`, dropped as it unwinds.
+function repeated(d, n, CFromIteratorU32) {
+  return CFromIteratorU32.fromIter(
+    $repeatingN(d, n, undefined, dDrop_drop).map((d) => {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }),
+    true,
+    undefined,
     (map) => {
       map.return();
     },
@@ -107,6 +131,14 @@ function main() {
       }).size,
   );
   console.log(`collect ${r.TAG === "Err"}`);
+  r = $catchUnwind(
+    () =>
+      repeated([4], 4294967295, {
+        fromIter: (items, ITrustedLen, IInPlace) =>
+          $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
+      }).size,
+  );
+  console.log(`reserved ${r.TAG === "Err"}`);
   r = $catchUnwind(() => $byteLen(listedDebug_fmt(undefined)));
   console.log(`debug ${r.TAG === "Err"}`);
   r = $catchUnwind(() =>

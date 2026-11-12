@@ -28,8 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {",
-    replace: "                let value = match true {",
+    find: "                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),",
+    replace: "                    (false, None) => slice.clone(),",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "array-of-part-copied-twice",
     breaks: "`<[T; N]>::try_from(&v[1..3])` copies `$slice`'s copy again",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {",
-    replace: "                let value = match target.is_ref() || owned {",
+    find: "                    (false, None) if fresh => slice.clone(),",
+    replace: "                    (false, None) if false => slice.clone(),",
     tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
     snapshots: true,
   },
@@ -171,9 +171,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec` moved into an array is copied first, `v.slice()`, as nothing else has it",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {",
-    replace:
-      "                let value = match target.is_ref() || (fresh && !self.needs_clone(item)) {",
+    find: "                let value = match (target.is_ref() || owned, self.bits_copy_fn(item)) {",
+    replace: "                let value = match (target.is_ref(), self.bits_copy_fn(item)) {",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
     snapshots: true,
   },
@@ -182,9 +181,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an array made of a slice of `Copy` structs, `try_into()`, holds the slice's objects, so changing one changes the slice",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                    false => self.clone_items(slice.clone(), item, span)?,",
-    replace:
-      '                    false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),',
+    find: '                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), "map"), vec![copy]),',
+    replace: '                    (false, Some(_)) => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),',
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
@@ -325,5 +323,13 @@ export const mutations: Mutation[] = [
     find: "            .then(|| self.tcx.layout_of(self.typing_env.as_query_input(of)).ok())\n",
     replace: "            .then(|| None::<rustc_middle::ty::layout::TyAndLayout<'tcx>>)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_of_what_rustc_knows_of_any_parameter.rs$"],
+  },
+  {
+    name: "array-of-a-slice-cloned",
+    breaks: "an array made of a slice of a `Copy` type with a hand-written `Clone` calls that `clone`, where std's copies its bits",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), \"map\"), vec![copy]),\n                    (false, None) if fresh => slice.clone(),\n                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),\n",
+    replace: "                    (false, _) => self.clone_items(slice.clone(), item, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
 ];

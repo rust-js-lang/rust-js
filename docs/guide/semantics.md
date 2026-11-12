@@ -318,7 +318,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   so does a closure's write of what it took by reference, `|x| p = Point {
   x }`: `let q = p;` before it is `const q = { ...p };`. A derived
   `clone()` copies what needs copying, and `vec![x; n]` makes `n` separate
-  values ([0052](../decisions/0052-std-trait-impls.md),
+  values. A hand-written `Clone` of a `Copy` type runs where std's code
+  calls it, `cloned()`, `to_vec()` or a clone of an `Option` or a tuple of
+  it, and never where std copies the bits, `copied()`, `copy_from_slice`
+  or `partition`
+  ([0623](../decisions/0623-a-copy-std-makes-is-a-copy.md), amended;
+  [0052](../decisions/0052-std-trait-impls.md),
   [0147](../decisions/0147-replacing-through-mut.md),
   [`copy_mutation`](../../test/corpus/copy_mutation.rs)). A `Vec<T>`, a
   `Box<[T]>` and a `CString`'s bytes are one array, which `into_vec()`,

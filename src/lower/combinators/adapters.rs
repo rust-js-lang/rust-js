@@ -614,14 +614,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let each = Expr::arrow(vec!["item".into()], inspected);
                 method(items, "map", vec![each])
             }
-            // Of `&T`s, each a copy where it needs one (`copied_into`), into
-            // `partition::<B, F>`'s `B`, after `Self`; of items with a
-            // destructor, given their drop, which a panic in `keep` drops
-            // them by (#423).
+            // Of `&T`s into `partition::<B, F>`'s `B` of `T`s, after `Self`,
+            // each its bits' copy where it needs one, as std's
+            // `extend_one` pushes `*item` (`bits_copy_fn`, ADR 0623); of
+            // items with a destructor, given their drop, which a panic in
+            // `keep` drops them by (#423).
             IterComb::Partition => {
                 let into = generic_args.types().nth(1).and_then(|into| self.slice_item(into));
-                let items = match self.iterator_item(receiver_ty.peel_refs()) {
-                    Some(from) => self.copied_into(items, from, into, span)?,
+                let copy = match self.iterator_item(receiver_ty.peel_refs()).map(|from| *from.kind()) {
+                    Some(ty::Ref(_, item, _)) if into == Some(item) => self.bits_copy_fn(item),
+                    _ => None,
+                };
+                let items = match copy {
+                    Some(copy) => method(items, "map", vec![copy]),
                     None => items,
                 };
                 let mut args = vec![items, next()];

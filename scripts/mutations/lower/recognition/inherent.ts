@@ -441,4 +441,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
   },
+  {
+    name: "option-copied-is-cloned",
+    breaks: "an `Option`'s `copied()` of a `Copy` type with a hand-written `Clone` calls that `clone`, which std's never does",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        self.tcx.item_name(def_id).as_str() == \"copied\"\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "option-cloned-is-copied",
+    breaks: "an `Option`'s `cloned()` of a `Copy` type with a hand-written `Clone` copies its bits, never calling that `clone`, which std's does",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        self.tcx.item_name(def_id).as_str() == \"copied\"\n",
+    replace: "        true\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
 ];

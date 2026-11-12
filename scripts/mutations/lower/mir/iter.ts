@@ -882,4 +882,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return self.copied_items(it, item, output, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_copied_cloned.rs$"],
   },
+  {
+    name: "copied-calls-its-clone",
+    breaks: "`copied()` of a `Copy` type with a hand-written `Clone` calls that `clone` for each item, which std's `Copied` never does",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(_) => self.copy_if_needed(Expr::var(&x), pointee),\n",
+    replace: "            Some(_) => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
 ];
