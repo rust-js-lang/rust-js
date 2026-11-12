@@ -232,8 +232,9 @@ serde_json's common attributes work ([the semantics](semantics.md#the-javascript
 Refused, each held by `test/diagnostics.test.ts`, which compiles them with
 serde: a `u128` in JSON; reading a `BinaryHeap` or a `Box<str>`; writing a
 `Cow<str>` or a `Duration`; a map keyed by a struct or an enum; an
-internally tagged newtype variant of a map, or one whose field has its own
-writer (`serialize_with`, #1540); `with`, `serialize_with` or
+internally tagged newtype variant of a map, of a payload whose `Serialize`
+is hand-written or goes through `#[serde(into)]`, or whose field has its
+own writer (`serialize_with`), each #1540; `with`, `serialize_with` or
 `deserialize_with` on a variant of no field or of more (#1556); a width
 for a `Value`;
 `Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,

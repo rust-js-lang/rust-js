@@ -247,4 +247,28 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true
   },
+  {
+    name: "internal-payload-by-hand-walked",
+    breaks: "an internally tagged newtype variant's payload with a hand-written `Serialize` is written as its Rust fields, `source` for `wire`, not refused (#1548)",
+    file: "src/lower/serde.rs",
+    find: "        if hand_written || attrs.into {\n",
+    replace: "        if attrs.into {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged payload written by hand"
+    ]
+  },
+  {
+    name: "internal-payload-into-walked",
+    breaks: "an internally tagged newtype variant's payload with `#[serde(into)]` is written as its own fields, not as what it converts into, not refused (#1548)",
+    file: "src/lower/serde.rs",
+    find: "        if hand_written || attrs.into {\n",
+    replace: "        if hand_written {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged payload written through into"
+    ]
+  },
 ];

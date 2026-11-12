@@ -874,6 +874,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let variant = adt.non_enum_variant();
         let attrs = self.serde_attrs(adt.did())?;
+        // Its fields are walked only where serde's derive writes them: a
+        // hand-written `Serialize`, or one through `#[serde(into)]`, is given
+        // serde's tagged serializer, which this doesn't make (#1548, #1540).
+        let hand_written =
+            (self.serialize_fn(ty)).is_some_and(|f| !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)));
+        if hand_written || attrs.into {
+            return Err(self.unsupported(
+                span,
+                "an internally tagged newtype variant whose payload isn't written by serde's derive of its fields (#1540)",
+            ));
+        }
         let fields: Vec<_> = variant
             .fields
             .iter()

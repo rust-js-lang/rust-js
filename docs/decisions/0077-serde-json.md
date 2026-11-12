@@ -96,6 +96,12 @@ $toJson(order, orderSerialize_serialize, false);
 - A variant's `untagged` overrides its container's tagging. Named structs
   include their own `tag` and serialized type name. Internally tagged
   newtype variants unwrap transparent/newtype payloads before writing fields.
+  Only where serde's derive writes the payload's fields (amended, #1548):
+  a payload whose `Serialize` is written by hand, or goes through
+  `#[serde(into)]`, is given serde's tagged serializer, which isn't made,
+  so it's refused (#1540); its fields were written instead, `source`
+  where its own impl writes `wire`. Results change, so the program is
+  refused (ADR 0262).
 
 **Each type is written as serde writes it:**
 
