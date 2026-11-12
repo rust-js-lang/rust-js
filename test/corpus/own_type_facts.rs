@@ -1,7 +1,8 @@
 //@ library-differs
 // What a trait's generic method asks of its own type parameter, its
 // `type_name`, is given by its caller, through the trait's dictionary too
-// (ADR 0466).
+// (ADR 0466), beside a `Clone` dictionary one of its callers' types needs
+// (#1233).
 
 trait Named {
     fn name_of<U>() -> &'static str;
@@ -21,8 +22,8 @@ impl Named for Plain {
     }
 }
 
-fn through<X: Named>() -> (&'static str, usize) {
-    (X::name_of::<u8>(), X::size_of::<u64>())
+fn through<X: Named>() -> (&'static str, usize, usize) {
+    (X::name_of::<u8>(), X::size_of::<u64>(), X::size_of::<[u8; 3]>())
 }
 
 fn main() {

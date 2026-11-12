@@ -11,17 +11,21 @@ function plainNamed_nameOf(UName) {
   return UName;
 }
 
-function plainNamed_sizeOf(USize) {
+function plainNamed_sizeOf(UClone, USize) {
   return USize;
 }
 
 function through(XNamed) {
-  return [XNamed.nameOf("u8"), XNamed.sizeOf(8)];
+  return [
+    XNamed.nameOf("u8"),
+    XNamed.sizeOf({ clone: (value) => value }, 8),
+    XNamed.sizeOf({ clone: (value) => value.slice() }, 3),
+  ];
 }
 
 function main() {
   const value = through(plainNamed);
-  console.log(`(${$debugStr(value[0])}, ${value[1]})`);
+  console.log(`(${$debugStr(value[0])}, ${value[1]}, ${value[2]})`);
   console.log(`${plainNamed_nameOf("alloc::vec::Vec<u16>")}`);
 }
 //# sourceMappingURL=case.js.map
