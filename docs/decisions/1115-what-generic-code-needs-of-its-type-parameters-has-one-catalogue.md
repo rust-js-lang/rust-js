@@ -130,7 +130,27 @@ Migrations, each its own step with its tests, listed on #1170:
    own for, #1112).
 5. The **Alone** sites that pick a form, each checked against every
    instance or moved to a route: `mir/entries.rs`' `moved_apart`,
-   `iterators/hint_asks.rs`, `iterators/clones.rs`' `dropped`.
+   `iterators/hint_asks.rs`, `iterators/clones.rs`' `dropped`. Done
+   (2026-11-13), each checked: none picks a form one instance would
+   disagree with, so none moves, and the audit's counts stay as they are.
+   `moved_apart` copies apart what's moved out of a type parameter's place
+   through a reference, which generic code holds as its box, a caller's
+   in-place cell (`Form::Box`); a copy apart is the value of every
+   instance. `clones.rs`' clone of a `copied()` of what generic code is
+   given is `$given`'s form (`stepping.rs`' `given_iterators`) cloned by
+   its `Clone` dictionary (**Given**), and refused where a caller gives a
+   source that drops (`given_drop`, **Instances**), or where an associated
+   type's source may (`drops`, of every instance). `hint_asks.rs`' reads
+   are routes already: a size given (`given_type_fact`, **Given**), the
+   extends of a collection generic code doesn't know, which its callers
+   decide (`refuse_unknown_capacity_extends`, **Instances**), and the
+   refusal of a bound's `extend` of items whose size is a caller's.
+   `test/corpus/generic_code_right_for_every_instance.rs` holds each with
+   instances that differ, against native Rust in both builds: a `copied()`
+   cloned of a std iterator, the crate's own and an adapter; a `Vec`
+   collected and extended, its capacity read, of items and iterators of
+   each kind; an unknown collection extended; a `swap` through a type
+   parameter's `&mut` of a `Vec`, a number and a tuple.
 
 ## What holds it
 

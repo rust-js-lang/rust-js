@@ -311,4 +311,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => error,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_question_converts_its_error.rs$"],
   },
+  {
+    name: "moved-apart-of-a-type-parameter-not",
+    breaks:
+      "a value moved out of a type parameter's place through a `&mut`, generic code's box, isn't copied apart from what's written next, so `mem::swap` of an object's in-place cells writes one over the other before it's read (#1170)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let moved_apart = self.is_unknown(pointee) || self.is_flattened_state(pointee);\n",
+    replace: "        let moved_apart = self.is_flattened_state(pointee);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_code_right_for_every_instance.rs$"],
+  },
 ];
