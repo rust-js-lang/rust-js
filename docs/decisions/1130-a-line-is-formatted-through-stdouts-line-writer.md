@@ -194,3 +194,25 @@ writer that prints and succeeds, its `Ok`; and a writer that writes both
 into a `String` of its own as it's shown in a line) against native Rust
 in both builds. Mutations `printing-text-of-a-write-unseen` and
 `printing-text-made-apart-whole`.
+
+## Amendment: a writer's kept write result (2026-11-12, #1524)
+
+A writer's `write!` into its own `Formatter` gave `undefined`, `Ok`, and
+its error was thrown, which is right for `?`: the writer's own error
+carries it out, and what the writer wrote before it is added by
+`$fmtWritten`. But a result kept, `let r = write!(f, "{:?}", inner)`,
+dropped, `let _ = ..`, or asked, `.is_err()`, was `Ok`, and the inner
+error was thrown out of the writer where Rust gives `r = Err(fmt::Error)`
+and writes on. Now a write of what may fail whose result is read other
+than as the writer's own (`given_on`: the writer's result itself, or
+read only by `Try::branch`, `?`'s) is the
+write's result as a value, as a `String`'s is (ADR 0187): `$writeTry(() =>
+{ try { f += inner } catch (error) { f += $fmtPartial(error); throw error;
+} })`, what the inner writer wrote before its error kept in the writer's
+text. `write!(f, ..)?`, and a writer's last `write!`, are as they were. This isn't about printing; the
+amendment is here beside #1520's, the same writer-result area.
+
+Corpus case write_result_kept_by_a_writer (a result kept, dropped and
+asked; `?`; and a writer that prints, kept) against native Rust in both
+builds. Mutations `kept-write-result-taken-ok`, `tried-write-result-held`
+(held by the snapshot) and `kept-write-result-partial-lost`.

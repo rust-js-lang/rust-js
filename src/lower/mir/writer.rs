@@ -328,13 +328,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `write!` of what may fail: piece by piece, what came before
             // written (ADR 0187).
             let pieces = (values.iter()).any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..) | Value::Printing(..)));
+            let fails = (values.iter()).any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..) | Value::Printing(_, true)));
             let values = (values.into_iter())
                 .map(|v| self.shown_in_place(v, span))
                 .collect::<R<Vec<_>>>()?;
             let pretty = self.writer_pretty();
             let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
             self.flush(state, out)?;
-            self.append_to_writer(state, &name, written, pieces, self.js_span(span), out);
+            let js_span = self.js_span(span);
+            // Of what may fail whose result is kept, not given on as the
+            // writer's, `let r = write!(f, "{:?}", inner)`: the write's result as a
+            // value, `$writeTry(..)`, what was written before its error
+            // added to the writer's text, as a `String`'s is (ADR 0187,
+            // #1524). Given on, its error is the writer's own, thrown on.
+            if fails && !given_on(self.tcx, state.body, destination) {
+                let mut written_out = Vec::new();
+                self.append_to_writer(state, &name, written, pieces, js_span, &mut written_out);
+                let caught = self.fresh("error");
+                let partial = Expr::call_helper("$fmtPartial", vec![Expr::var(&caught)]);
+                let mut handler = Vec::new();
+                self.append_to_writer(state, &name, partial, false, js_span, &mut handler);
+                handler.push(StmtKind::Throw(Expr::var(&caught)).at(js_span));
+                let tried = vec![StmtKind::TryCatch(written_out, Some(caught), handler).at(js_span)];
+                return Ok(Some(Value::Expr(self.fmt_try(tried))));
+            }
+            self.append_to_writer(state, &name, written, pieces, js_span, out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         Ok(None)
@@ -831,4 +849,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => Expr::str(""),
         }
     }
+}
+
+/// Whether a write's `fmt::Result`, stored to `result`, is given on as
+/// the writer's own, whose `Err` it throws: the writer's result itself, or
+/// read only by `?`, `Try::branch`'s.
+fn given_on<'tcx>(tcx: rustc_middle::ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>, result: Place<'tcx>) -> bool {
+    struct Uses {
+        local: Local,
+        count: usize,
+    }
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            if local == self.local && context.is_use() && !context.is_place_assignment() {
+                self.count += 1;
+            }
+        }
+    }
+    if !result.projection.is_empty() {
+        return false;
+    }
+    if result.local == mir::RETURN_PLACE {
+        return true;
+    }
+    let mut uses = Uses {
+        local: result.local,
+        count: 0,
+    };
+    uses.visit_body(body);
+    let tried = (body.basic_blocks.iter()).filter(|block| {
+        matches!(&block.terminator().kind, TerminatorKind::Call { func, args, .. }
+            if func.const_fn_def().is_some_and(|(id, _)| tcx.is_lang_item(id, LangItem::TryTraitBranch))
+                && args.iter().any(|arg| arg.node.place().is_some_and(|p| p.local == result.local && p.projection.is_empty())))
+    });
+    uses.count == 1 && tried.count() == 1
 }

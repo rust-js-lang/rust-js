@@ -31,6 +31,7 @@ plain std library printed_while_a_line_is_formatted.rs
 plain std library printing_writer_refused_into_a_string.rs
 plain std library printing_writer_shown_in_std_values.rs
 plain std library printing_writer_stopped_part_way_where_caught.rs
+plain std library write_result_kept_by_a_writer.rs
 
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
