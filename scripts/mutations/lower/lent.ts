@@ -149,11 +149,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lend-refusal-names-one-issue",
-    breaks: "a lent object's refusal names #1474, a `&mut` to a number's, where it's #1475's, a record of where its receiver keeps it",
+    breaks: "generic code's lent object's refusal names #1478, the offsets of a `&mut` the lowering makes a handle on, where it's #1513's",
     file: "src/lower/lent.rs",
     find: "        let issue = match !shared && self.mut_ref_form(lent).is_cell() {\n",
     replace: "        let issue = match true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_lent_by_a_once_cell_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(address_lent_by_a_once_cell_refused|generic_lend_of_an_object_refused).rs$"],
   },
   {
     name: "lend-never-placed",
