@@ -23,7 +23,15 @@ function $folded(it, firstByNext = false) {
       list.push(item);
       return list;
     }).values());
-  const folded = Iterator.from({ next: () => listed().next() });
+  // Closed, as a panic in a step unwinds, its source closed too, as std
+  // drops the adapter with it (#1610).
+  const folded = Iterator.from({
+    next: () => listed().next(),
+    return: () => {
+      it.return?.();
+      return { done: true, value: undefined };
+    },
+  });
   // Its hint, before it's folded, what it folds' (#733).
   folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);
   const made = $forward(folded, it, {

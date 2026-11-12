@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
+  {
+    name: "folded-closes-nothing",
+    breaks: "a chain a `String`'s collect folds isn't closed as a panic in its step unwinds, so its source and what it holds are never dropped (#1610)",
+    file: "src/runtime/folded.js",
+    find: "      it.return?.();\n      return { done: true, value: undefined };\n",
+    replace: "      return { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_string_of_a_panicking_chain_drops_its_source.rs$"],
+  },
 ];
