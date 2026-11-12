@@ -281,8 +281,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut props = Vec::new();
         for (method, def_id) in visitor_methods(self.tcx, imp) {
             let key = match (method, hint) {
+                // Called only where an error's message needs it (#1544).
                 (VisitorMethod::Expecting, _) => {
-                    expected = Some(Expr::call(self.fn_ref(def_id), vec![visitor.clone()]));
+                    let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone()]);
+                    expected = Some(Expr::arrow(
+                        Vec::new(),
+                        vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)],
+                    ));
                     continue;
                 }
                 (VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit) => "unit",

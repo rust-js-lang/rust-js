@@ -153,4 +153,13 @@ export const mutations: Mutation[] = [
     replace: "Expr::arrow(Vec::new(), steps)]",
     tests: ["test/serde-protocol.test.ts"],
   },
+  {
+    name: "serde-expecting-asked-eagerly",
+    breaks:
+      "a hand-written visitor's `expecting` is called as its read starts, so a read that succeeds runs its side effects and its panic, which serde never asks it for (#1544)",
+    file: "src/lower/serde/protocol.rs",
+    find: "                    let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone()]);\n                    expected = Some(Expr::arrow(\n                        Vec::new(),\n                        vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)],\n                    ));\n",
+    replace: "                    let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone()]);\n                    expected = Some(Expr::arrow(\n                        Vec::new(),\n                        vec![StmtKind::Return(Some(call.clone())).at(crate::js::Span::NONE)],\n                    ));\n                    expected = Some(Expr::sequence(vec![call, expected.take().expect(\"made\")]));\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "expecting is asked only where an error says it"],
+  },
 ];

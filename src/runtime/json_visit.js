@@ -2,16 +2,26 @@
 // `Visitor` (ADR 0459): what's there given to its `visit_*` of that kind,
 // whose `Result` is what this gives; a number to its `u64`, `i64` or `f64` by
 // its kind, as serde_json gives one; of a kind it has none for, serde's
-// "invalid type", expecting what its `expecting` says.
-function $jsonVisit(json, expected, methods) {
+// "invalid type", expecting what its `expecting` says. `expecting` is the
+// visitor's, run only where an error's message is made, each time one is,
+// as serde formats a `&dyn Expected` (#1544): what's expected is text made
+// of it as it's written into the message.
+function $jsonVisit(json, expecting, methods) {
+  const expected = $jsonExpected(expecting);
   return $jsonRead(json, (reader) => reader.deserializeAny(expected, $jsonVisitor(expected, methods)));
+}
+
+// What a visitor expects, `expecting()`'s text made each time it's written.
+function $jsonExpected(expecting) {
+  return { toString: expecting };
 }
 
 // `deserialize_str(visitor)` and the other hints but `deserialize_any`: of a
 // kind it has no method for, the reader's error, `deserializeHinted`'s: the
 // text's of what it peeks at, before it's read, a sequence's or a map's
 // where it starts; a value already read, the type it is (#236).
-function $jsonVisitHint(json, expected, methods) {
+function $jsonVisitHint(json, expecting, methods) {
+  const expected = $jsonExpected(expecting);
   const visitor = $jsonVisitor(expected, methods);
   return $jsonRead(json, (reader) => reader.deserializeHinted(expected, visitor));
 }
@@ -19,7 +29,8 @@ function $jsonVisitHint(json, expected, methods) {
 // `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
 // else to its `visit_some`, the reader to read it; of one it has none for,
 // serde's "invalid type: Option value", as serde_json gives it.
-function $jsonVisitOption(json, expected, { none, some }) {
+function $jsonVisitOption(json, expecting, { none, some }) {
+  const expected = $jsonExpected(expecting);
   const invalid = () => $jsonError(`invalid type: Option value, expected ${expected}`);
   return $jsonRead(json, (reader) => {
     if (reader.parseWhitespace() === 110) {

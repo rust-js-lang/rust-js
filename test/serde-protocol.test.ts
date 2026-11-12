@@ -170,3 +170,176 @@ pub fn report() -> String {
   const js = readFileSync(join(dir, "cases.js"), "utf8");
   expect(js).toContain("function halfSerialize_serialize(half, s) {\n  s.beginArray();\n  const seq = s;\n  seq.element();\n  seq.int(1);\n");
 });
+
+// A hand-written visitor's `expecting` is asked only where an error's
+// message is made, each time one is, as serde formats a `&dyn Expected`
+// (#1544): a read that succeeds never asks it, so its side effects, a
+// count here, and its panic don't happen; its text is made as it's written
+// into the message. Of `deserialize_bool`, `_any` and `_option`, from text
+// and from a `Value`, a field's too.
+test("serde: a visitor's expecting is asked only where an error says it", async () => {
+  const dir = fixture("serde-protocol-expecting-lazy");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static EXPECTING: AtomicUsize = AtomicUsize::new(0);
+
+fn asked() -> usize {
+    EXPECTING.swap(0, Ordering::SeqCst)
+}
+
+#[derive(Debug)]
+pub struct Flag(bool);
+
+struct FlagVisitor;
+
+impl<'de> Visitor<'de> for FlagVisitor {
+    type Value = Flag;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        EXPECTING.fetch_add(1, Ordering::SeqCst);
+        f.write_str("a flag")
+    }
+
+    fn visit_bool<E: Error>(self, b: bool) -> Result<Flag, E> {
+        Ok(Flag(b))
+    }
+}
+
+impl<'de> Deserialize<'de> for Flag {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_bool(FlagVisitor)
+    }
+}
+
+#[derive(Debug)]
+pub struct Anything(String);
+
+struct AnyVisitor;
+
+impl<'de> Visitor<'de> for AnyVisitor {
+    type Value = Anything;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        EXPECTING.fetch_add(1, Ordering::SeqCst);
+        f.write_str("anything but a map")
+    }
+
+    fn visit_bool<E: Error>(self, b: bool) -> Result<Anything, E> {
+        Ok(Anything(format!("bool {b}")))
+    }
+
+    fn visit_u64<E: Error>(self, n: u64) -> Result<Anything, E> {
+        Ok(Anything(format!("u64 {n}")))
+    }
+
+    fn visit_str<E: Error>(self, s: &str) -> Result<Anything, E> {
+        Ok(Anything(format!("str {s}")))
+    }
+}
+
+impl<'de> Deserialize<'de> for Anything {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_any(AnyVisitor)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Holder {
+    flag: Flag,
+    any: Anything,
+}
+
+#[derive(Debug)]
+pub struct Maybe(Option<u8>);
+
+struct MaybeVisitor;
+
+impl<'de> Visitor<'de> for MaybeVisitor {
+    type Value = Maybe;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        EXPECTING.fetch_add(1, Ordering::SeqCst);
+        f.write_str("maybe a byte")
+    }
+
+    fn visit_none<E: Error>(self) -> Result<Maybe, E> {
+        Ok(Maybe(None))
+    }
+
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Maybe, D::Error> {
+        u8::deserialize(d).map(|b| Maybe(Some(b)))
+    }
+}
+
+impl<'de> Deserialize<'de> for Maybe {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(MaybeVisitor)
+    }
+}
+
+#[derive(Debug)]
+pub struct Strict(bool);
+
+struct StrictVisitor;
+
+impl<'de> Visitor<'de> for StrictVisitor {
+    type Value = Strict;
+
+    fn expecting(&self, _f: &mut fmt::Formatter) -> fmt::Result {
+        panic!("expecting asked of a read that succeeds")
+    }
+
+    fn visit_bool<E: Error>(self, b: bool) -> Result<Strict, E> {
+        Ok(Strict(b))
+    }
+}
+
+impl<'de> Deserialize<'de> for Strict {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_bool(StrictVisitor)
+    }
+}
+
+fn read<T: for<'de> Deserialize<'de> + fmt::Debug>(text: &str) -> String {
+    let from_text = serde_json::from_str::<T>(text);
+    let after_text = asked();
+    let value: serde_json::Value = serde_json::from_str(text).unwrap();
+    let from_value = serde_json::from_value::<T>(value);
+    let after_value = asked();
+    format!("{from_text:?} asked {after_text}; {from_value:?} asked {after_value}")
+}
+
+// From text alone: a \`Value\`'s reader has no \`deserialize_option\` of a
+// hand-written visitor yet (#1597).
+fn read_text<T: for<'de> Deserialize<'de> + fmt::Debug>(text: &str) -> String {
+    let from_text = serde_json::from_str::<T>(text);
+    format!("{from_text:?} asked {}", asked())
+}
+
+pub fn report() -> String {
+    [
+        read::<Flag>("true"),
+        read::<Flag>("1"),
+        read::<Flag>("\"yes\""),
+        read::<Anything>("7"),
+        read::<Anything>("\"s\""),
+        read::<Anything>("{}"),
+        read::<Anything>("[1]"),
+        read::<Holder>(r#"{"flag": false, "any": true}"#),
+        read::<Holder>(r#"{"flag": 3, "any": true}"#),
+        read::<Holder>(r#"{"flag": true, "any": {}}"#),
+        read_text::<Maybe>("null"),
+        read_text::<Maybe>("5"),
+        read_text::<Maybe>("true"),
+        read::<Strict>("false"),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

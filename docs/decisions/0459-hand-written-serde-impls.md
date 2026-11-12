@@ -107,7 +107,7 @@ was refused. Its visitor is given what's there, as serde_json gives it:
 
 ```js
 function levelDeserialize_deserialize(d) {
-  return $jsonVisit(d, levelVisitorVisitor_expecting(undefined), {
+  return $jsonVisit(d, () => levelVisitorVisitor_expecting(undefined), {
     u64: (v) => levelVisitorVisitor_visit_u64(undefined, v),
     str: (v) => levelVisitorVisitor_visit_str(undefined, v),
   });
@@ -276,3 +276,34 @@ a panic under an inspected call, still a panic. Mutations
 `result-use-always-propagated`, `result-use-conversion-unasked`,
 `result-use-drop-taken-for-a-use`; `tried-write-result-held` and
 `last-write-result-held` moved to `result_use.rs`.
+
+## Amendment: a visitor's `expecting` is asked where an error says it (2026-11-13, #1544)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`$jsonVisit`, `$jsonVisitHint` and `$jsonVisitOption` were given the
+visitor's `expecting` called as the read started,
+`levelVisitorVisitor_expecting(undefined)`, its text. serde never asks it
+of a read that succeeds: it's a `&dyn Expected`, formatted only where an
+error's message is made, each time one is. So a successful read ran
+`expecting`'s side effects, a `println!`, a count, and its panic, where
+native ran none (P0, both builds, both engines).
+
+Now the visitor's `expecting` is given as a function, `() =>
+levelVisitorVisitor_expecting(undefined)`, and what's expected is
+`$jsonExpected(expecting)`, `{ toString: expecting }`: text made of it each
+time it's written into a message, the readers' `${expected}`, as serde
+formats a `&dyn Expected`. A `&dyn Expected` the impl makes itself, its
+`invalid_type(.., &self)`'s, is still its text, made as the impl's error
+is, once, as serde's `Error::invalid_type` formats it.
+
+The serde-protocol test `a visitor's expecting is asked only where an
+error says it` counts each call of `expecting` of `deserialize_bool`,
+`_any` and `_option`, from text and from a `Value`, a field's too, and
+reads a visitor whose `expecting` panics, against native serde_json; a
+`Value`'s `deserialize_option` of a hand-written visitor throws, #1597,
+so that one reads text alone. Mutations `serde-expecting-asked-eagerly`
+(`lower/serde/protocol.ts`) and `json-expected-made-once-up-front`
+(`runtime/json_visit.ts`), caught.
+

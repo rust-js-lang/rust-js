@@ -26,4 +26,13 @@ export const mutations: Mutation[] = [
     replace: "      const visit = borrowedStr ?? str;\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
+  {
+    name: "json-expected-made-once-up-front",
+    breaks:
+      "what a visitor expects is its `expecting()` called once as the read starts, so a read that succeeds runs it, a panic among what it does (#1544)",
+    file: "src/runtime/json_visit.js",
+    find: "  return { toString: expecting };\n",
+    replace: "  return expecting();\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "expecting is asked only where an error says it"],
+  },
 ];

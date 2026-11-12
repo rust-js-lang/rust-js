@@ -913,7 +913,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](0457-an-into-iterator-bound-on-a-reference.md)
 - [0458 `try_fold` stops at the first `None` or `Err`, leaving the rest to step](0458-try-fold.md)
-- [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](0459-hand-written-serde-impls.md)
+- [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](0459-hand-written-serde-impls.md) *(amended: a visitor's `expecting` asked only where an error says it, #1544)*
 - [0460 A callable that writes to a `Formatter` is a writer, and a writer's options are its crate's](0460-writer-callables.md)
 - [0461 A `Formatter` held is a handle on its writer's text, and a `fmt::Result` meets generic code as a `Result`](0461-a-formatter-held.md)
 - [0462 An `io::Error` is a value: its kind, and the error it holds](0462-io-error-values.md)
