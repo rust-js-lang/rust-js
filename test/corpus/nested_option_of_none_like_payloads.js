@@ -122,184 +122,116 @@ function main() {
       throw error;
     }
   }
-  const value = [
-    [$some($weakNone), $some($some(undefined))],
-    [$some(undefined), $some(undefined)],
-    [undefined, undefined],
-  ];
-  let iter;
   try {
-    iter = $iter(value);
-  } catch (error) {
-    $rcDrop(n);
-    throw error;
-  }
-  let tmp;
-  while (true) {
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
-          }
-        }
-        $rcDrop(n);
-      }, error);
-      throw error;
-    }
-    if (tmp == null) {
+    const iter = $iter([
+      [$some($weakNone), $some($some(undefined))],
+      [$some(undefined), $some(undefined)],
+      [undefined, undefined],
+    ]);
+    let tmp;
+    while (true) {
       try {
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
-          }
-        }
+        tmp = $next(iter);
       } catch (error) {
-        $rcDrop(n);
+        $cleanup(() => {
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
+          }
+        }, error);
         throw error;
       }
-      break;
-    }
-    let w = tmp[0];
-    let u = tmp[1];
-    const h = given(w, u);
-    try {
-      show(h);
-    } catch (error) {
-      $cleanup(() => {
-        if (h.weak != null && $someValue(h.weak) != null) {
-          $weakDrop($someValue(h.weak));
-        }
+      if (tmp == null) {
         for (const item of iter) {
           if (item[0] != null && $someValue(item[0]) != null) {
             $weakDrop($someValue(item[0]));
           }
         }
-        $rcDrop(n);
-      }, error);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = taken(h);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
+        break;
+      }
+      let w = tmp[0];
+      let u = tmp[1];
+      const h = given(w, u);
+      try {
+        show(h);
+      } catch (error) {
+        $cleanup(() => {
+          if (h.weak != null && $someValue(h.weak) != null) {
+            $weakDrop($someValue(h.weak));
           }
-        }
-        $rcDrop(n);
-      }, error);
-      throw error;
-    }
-    w = tmp$1[0];
-    u = tmp$1[1];
-    let tmp$2;
-    try {
-      tmp$2 = state(w);
-    } catch (error) {
-      $cleanup(() => {
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
+          }
+        }, error);
+        throw error;
+      }
+      let tmp$1;
+      try {
+        tmp$1 = taken(h);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
+          }
+        }, error);
+        throw error;
+      }
+      w = tmp$1[0];
+      u = tmp$1[1];
+      let tmp$2;
+      try {
+        tmp$2 = state(w);
+      } catch (error) {
+        $cleanup(() => {
+          if (w != null && $someValue(w) != null) {
+            $weakDrop($someValue(w));
+          }
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
+          }
+        }, error);
+        throw error;
+      }
+      try {
+        console.log(`${tmp$2} ${state(u)}`);
+      } catch (error) {
+        $cleanup(() => {
+          if (w != null && $someValue(w) != null) {
+            $weakDrop($someValue(w));
+          }
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
+          }
+        }, error);
+        throw error;
+      }
+      try {
         if (w != null && $someValue(w) != null) {
           $weakDrop($someValue(w));
         }
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of iter) {
+            if (item[0] != null && $someValue(item[0]) != null) {
+              $weakDrop($someValue(item[0]));
+            }
           }
-        }
-        $rcDrop(n);
-      }, error);
-      throw error;
+        }, error);
+        throw error;
+      }
     }
+    const h = make(2, n);
     try {
-      console.log(`${tmp$2} ${state(u)}`);
-    } catch (error) {
-      $cleanup(() => {
-        if (w != null && $someValue(w) != null) {
-          $weakDrop($someValue(w));
-        }
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
-          }
-        }
-        $rcDrop(n);
-      }, error);
-      throw error;
-    }
-    try {
-      if (w != null && $someValue(w) != null) {
-        $weakDrop($someValue(w));
-      }
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of iter) {
-          if (item[0] != null && $someValue(item[0]) != null) {
-            $weakDrop($someValue(item[0]));
-          }
-        }
-        $rcDrop(n);
-      }, error);
-      throw error;
-    }
-  }
-  let h;
-  try {
-    h = make(2, n);
-  } catch (error) {
-    $rcDrop(n);
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $downgrade(n);
-  } catch (error) {
-    if (h.weak != null) {
-      if ($someValue(h.weak) != null) {
-        $weakDrop($someValue(h.weak));
-      }
-    }
-    $rcDrop(n);
-    throw error;
-  }
-  const value$1 = $some(tmp$1);
-  try {
-    if (h.weak != null) {
-      if ($someValue(h.weak) != null) {
-        $weakDrop($someValue(h.weak));
-      }
-    }
-  } catch (error) {
-    $cleanup(() => {
-      h.weak = value$1 == null ? undefined : ($someValue(value$1) ?? null);
-      if (h.weak != null) {
-        if ($someValue(h.weak) != null) {
-          $weakDrop($someValue(h.weak));
-        }
-      }
-      $rcDrop(n);
-    }, error);
-    throw error;
-  }
-  h.weak = value$1 == null ? undefined : ($someValue(value$1) ?? null);
-  h.unit = $some(undefined);
-  try {
-    show(h);
-  } catch (error) {
-    if (h.weak != null) {
-      if ($someValue(h.weak) != null) {
-        $weakDrop($someValue(h.weak));
-      }
-    }
-    $rcDrop(n);
-    throw error;
-  }
-  const value$2 = $some(undefined);
-  try {
-    try {
+      const value = $some($downgrade(n));
       try {
         if (h.weak != null) {
           if ($someValue(h.weak) != null) {
@@ -310,7 +242,23 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          h.weak = value$2 == null ? undefined : ($someValue(value$2) ?? null);
+          h.weak = value == null ? undefined : ($someValue(value) ?? null);
+        }
+      }
+      h.unit = $some(undefined);
+      show(h);
+      const value$1 = $some(undefined);
+      try {
+        if (h.weak != null) {
+          if ($someValue(h.weak) != null) {
+            $weakDrop($someValue(h.weak));
+          }
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          h.weak = value$1 == null ? undefined : ($someValue(value$1) ?? null);
         }
       }
       h.unit = undefined;
@@ -349,9 +297,8 @@ export function generics() {
   }
   const g = genericMade($some($some(undefined)));
   const arg = genericState(g);
-  const arg$1 = g.held === undefined ? undefined : $some(g.held);
   console.log(
-    `${arg} ${arg$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(arg$1))})`}`,
+    `${arg} ${(g.held === undefined ? undefined : $some(g.held)) == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(g.held === undefined ? undefined : $some(g.held)))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

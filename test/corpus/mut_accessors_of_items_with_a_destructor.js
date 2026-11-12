@@ -56,14 +56,13 @@ function dDrop_drop(d) {
 }
 
 function quiet(f) {
-  let result;
   try {
-    result = f();
+    const result = f();
+    return $some(result);
   } catch (error) {
     $catchable(error);
     return;
   }
-  return $some(result);
 }
 
 function main() {

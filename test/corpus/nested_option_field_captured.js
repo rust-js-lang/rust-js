@@ -121,9 +121,8 @@ function main() {
     console.log(`${once(made(at))}`);
     const entry = made(at);
     const arg = counted(entry);
-    const arg$1 = entry.value === undefined ? undefined : $some(entry.value);
     console.log(
-      `${arg} ${arg$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(arg$1))})`}`,
+      `${arg} ${(entry.value === undefined ? undefined : $some(entry.value)) == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(entry.value === undefined ? undefined : $some(entry.value)))})`}`,
     );
     console.log(`${boxedFirst(made(at))}`);
     console.log(`${rewritten(made(at))}`);

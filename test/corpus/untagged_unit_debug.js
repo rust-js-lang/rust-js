@@ -30,7 +30,6 @@ function pick(at) {
 function main() {
   for (let at = 0; at < 4; at++) {
     const mode = pick(at);
-    const arg = $some(mode);
     console.log(
       `${
         mode === undefined
@@ -39,14 +38,14 @@ function main() {
             ? "Cleared"
             : { Fast: "Fast", blocking: "Blocking" }[mode]
       } ${
-        arg == null
+        $some(mode) == null
           ? "None"
           : `Some(${((value) =>
               value === undefined
                 ? "Default"
                 : value === null
                   ? "Cleared"
-                  : { Fast: "Fast", blocking: "Blocking" }[value])($someValue(arg))})`
+                  : { Fast: "Fast", blocking: "Blocking" }[value])($someValue($some(mode)))})`
       } ${
         mode === undefined
           ? "Default"

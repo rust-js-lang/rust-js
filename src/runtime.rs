@@ -405,6 +405,9 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    // An `Option`'s `Some` of what looks like `None`, a box made of it
+    // (ADR 0051), which reads nothing else and does nothing (#841).
+    "$some",
     // Whether std collects in place, of a source's layout given (#672).
     "$collectsInPlace",
     // A struct's `RefCell` field's one cell, made where it's first asked

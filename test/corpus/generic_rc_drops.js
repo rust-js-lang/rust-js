@@ -65,62 +65,32 @@ function tee(iter, dropI, dropIItem) {
 }
 
 function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
-  let popFront$0$live = false;
   const buffer = $borrowMut(tee.rcbuffer.value, true);
-  let result;
-  if (buffer.owner === tee.id) {
-    let popFront;
-    try {
-      popFront = $shift(buffer.backlog);
-    } catch (error) {
-      $unborrow(buffer);
-      throw error;
-    }
-    popFront$0$live = true;
-    if (popFront != null) {
-      popFront$0$live = false;
-      const elt = $someValue(popFront);
-      result = $some(elt);
-      $unborrow(buffer);
-      return result;
-    }
-    try {
-      if (popFront != null) {
-        if (popFront$0$live) {
-          dropIItem?.($someValue(popFront));
-        }
-      }
-    } catch (error) {
-      $unborrow(buffer);
-      throw error;
-    }
-    popFront$0$live = false;
-  }
-  let next;
   try {
-    next = IIterator.next(buffer.iter);
-  } catch (error) {
-    $unborrow(buffer);
-    throw error;
-  }
-  if (next == null) {
-    result = undefined;
-  } else {
-    const elt = $someValue(next);
-    try {
-      buffer.backlog.push(IItemClone.clone(elt));
-    } catch (error) {
-      $cleanup(() => {
-        dropIItem?.(elt);
-        $unborrow(buffer);
-      }, error);
-      throw error;
+    if (buffer.owner === tee.id) {
+      const popFront = $shift(buffer.backlog);
+      if (popFront != null) {
+        const elt = $someValue(popFront);
+        return $some(elt);
+      }
     }
-    buffer.owner = !tee.id;
-    result = $some(elt);
+    const next = IIterator.next(buffer.iter);
+    if (next != null) {
+      const elt = $someValue(next);
+      try {
+        buffer.backlog.push(IItemClone.clone(elt));
+      } catch (error) {
+        $cleanup(() => {
+          dropIItem?.(elt);
+        }, error);
+        throw error;
+      }
+      buffer.owner = !tee.id;
+      return $some(elt);
+    }
+  } finally {
+    $unborrow(buffer);
   }
-  $unborrow(buffer);
-  return result;
 }
 
 function main() {

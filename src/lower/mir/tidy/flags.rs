@@ -19,6 +19,11 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSe
         return;
     }
     settle(body, &mut Known::default(), flags);
+    unread_gone(body, flags);
+}
+
+/// Each of `flags` nothing reads, only written, gone with its writes.
+fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
     for flag in flags {
         if !read(body, flag) {
             js::statement_lists(body, &mut |list| {
@@ -33,8 +38,12 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSe
 }
 
 /// Each flag a temporary's, `_14$live`, named for the variable the drop it
-/// guards is of, `value$live`: after the temporaries are named.
+/// guards is of, `value$live`: after the temporaries are named. One whose
+/// drop a later pass took away, where its value was read in place, is read
+/// by nothing now: gone, as `settled_flags` takes one, not left named after
+/// MIR's local, `_12$0$live` (#841).
 pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
+    unread_gone(body, flags);
     let mut taken = IndexSet::default();
     js::names_in(body, &mut taken);
     // In the order they're declared, so each build names them alike.

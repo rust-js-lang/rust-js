@@ -15,8 +15,9 @@ function show(h) {
   } else {
     link = `some some ${h.link}`;
   }
-  const arg = h.seen === null ? undefined : $some(h.seen);
-  console.log(`${link} ${arg == null ? "None" : "Some(())"}`);
+  console.log(
+    `${link} ${(h.seen === null ? undefined : $some(h.seen)) == null ? "None" : "Some(())"}`,
+  );
 }
 
 function main() {

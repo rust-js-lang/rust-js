@@ -64,4 +64,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
     snapshots: true,
   },
+  {
+    name: "some-not-pure",
+    breaks:
+      "`$some(x)`, which does nothing but box, is held in a variable of its own, `const value = $some($weakNone);`, not read where it's made (#841)",
+    file: "src/runtime.rs",
+    find: "    \"$some\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_of_none_like_payloads.rs$"],
+    snapshots: true,
+  },
 ];

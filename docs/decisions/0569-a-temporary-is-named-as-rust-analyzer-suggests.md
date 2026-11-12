@@ -417,3 +417,11 @@ name; so a temporary named by a call to a private function that
 shares an exported cell's name would refuse it. Held arguments keep `arg`
 for that reason here; that hazard, MIR's temporaries' as well, is
 reported as its own issue.
+
+## Amendment (2026-11-13, #890 step 4): derived names
+
+A drop flag's name, `x$live`, is derived from its value's after the
+temporaries are named (`named_flags`). The one left named after MIR's
+local, `_12$0$live`, was a flag read by nothing, which now goes (ADR
+0372, amended, #841); with `$some` pure, no snapshot has a name derived
+from a positional temporary.

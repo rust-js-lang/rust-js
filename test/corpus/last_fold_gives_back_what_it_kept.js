@@ -52,9 +52,8 @@ function run(name, f) {
   console.log(`${name}`);
   BOOM = 3;
   const r = $catchUnwind(f);
-  const arg = r.TAG === "Ok" ? $some(r._0) : undefined;
   console.log(
-    `${name} ${arg == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(arg))})`}`,
+    `${name} ${(r.TAG === "Ok" ? $some(r._0) : undefined) == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(r.TAG === "Ok" ? $some(r._0) : undefined))})`}`,
   );
 }
 

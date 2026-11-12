@@ -20,17 +20,16 @@ export function entry() {
 function main() {
   const unit = { TAG: "Err" };
   const none = { TAG: "Err" };
-  const value = unit.TAG === "Err" ? $some(unit._0) : undefined;
-  const value$1 = none.TAG === "Err" ? $some(none._0) : undefined;
-  const value$2 = none.TAG === "Err" ? none._0 : undefined;
+  const value = none.TAG === "Err" ? $some(none._0) : undefined;
+  const value$1 = none.TAG === "Err" ? none._0 : undefined;
   console.log(
-    `${value == null ? "None" : "Some(())"} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${(unit.TAG === "Err" ? $some(unit._0) : undefined) == null ? "None" : "Some(())"} ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
 
   const u = $some(undefined);
-  const value$3 = u != null ? u : undefined;
-  const value$4 = u != null ? (u == null ? u : undefined) : u;
-  console.log(`${value$3 == null ? "None" : "Some(())"} ${value$4 == null ? "None" : "Some(())"}`);
+  const value$2 = u != null ? u : undefined;
+  const value$3 = u != null ? (u == null ? u : undefined) : u;
+  console.log(`${value$2 == null ? "None" : "Some(())"} ${value$3 == null ? "None" : "Some(())"}`);
 
   const slot = { held: $some(undefined) };
   const old = slot.held;
@@ -49,9 +48,9 @@ function main() {
 
   const items = [undefined, 2, undefined, 4];
   const nth = items.slice(2).slice(0, 1).map($some)[0];
-  const value$5 = items.slice(9).slice(0, 1).map($some)[0];
+  const value$4 = items.slice(9).slice(0, 1).map($some)[0];
   console.log(
-    `${nth == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nth))})`} ${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
+    `${nth == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nth))})`} ${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
   const it = iterator_peekable($iter(items), { next: $nextSome });
   const first = $nextIfSome(it, (x) => x == null);
@@ -65,7 +64,7 @@ function main() {
     (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
     $KeySet,
   ))([2, undefined]);
-  const value$6 = $treeEnd(
+  const value$5 = $treeEnd(
     set,
     (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
     false,
@@ -82,7 +81,7 @@ function main() {
     true,
   );
   console.log(
-    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`} ${last == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(last))})`}`,
+    `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`} ${last == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(last))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

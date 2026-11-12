@@ -91,3 +91,26 @@ and no write through a pointer between (`checked_by_division`); else
 it's the `if`, where the `Assert` is. Case C: what `f` prints is
 observable. `division_check_order` holds both; no other corpus program,
 snapshot or test's output changed.
+
+## Amendment (2026-11-13, #841, #890 step 4): a flag nothing reads goes, after naming too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a flag nothing
+reads is written for nothing, and every corpus case runs as native Rust
+does in both builds.
+
+`$some(x)`, the box of an `Option`'s `Some` of what looks like `None`
+(ADR 0051), does nothing but make it, so it's in the runtime's `PURE`:
+a temporary that holds one is read where it's made,
+`weak: $some($weakNone)`, not `const value = $some($weakNone)`. That
+reshaped 14 corpus cases' JS, 617 lines out and 296 in, with no change
+in what they print. In `generic_rc_drops`, it also left a drop flag
+whose drop a later pass took away: written, read by nothing, and named
+after MIR's local, `let _12$0$live = false;`, as `named_flags` names a
+flag for the variable its drop reads and there was none. `settled_flags`
+already takes a flag nothing reads; `named_flags`, which runs after the
+temporaries are named, now does too (`unread_gone`, the one rule of
+both). No name derived from a positional temporary is left in any
+snapshot, so #890's `Derived(temp, suffix)` isn't needed for it.
+
+Mutations `unread-flag-named-after-mir` (`lower/mir/tidy/flags.ts`)
+and `some-not-pure` (`runtime.ts`).

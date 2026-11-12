@@ -123,73 +123,50 @@ function main() {
   const dest = { value: w };
   try {
     try {
-      assign(
-        dest,
-        counted,
-        {
-          clone(value) {
-            return value == null ? value : countedClone_clone(value);
-          },
-          cloneFrom(to, from) {
-            if (to.value != null && from != null) {
-              countedClone_cloneFrom(to.value, from);
-            } else {
-              const old = to.value;
-              to.value = from == null ? from : countedClone_clone(from);
-              if (old != null) {
-                countedDrop_drop(old);
+      try {
+        assign(
+          dest,
+          counted,
+          {
+            clone(value) {
+              return value == null ? value : countedClone_clone(value);
+            },
+            cloneFrom(to, from) {
+              if (to.value != null && from != null) {
+                countedClone_cloneFrom(to.value, from);
+              } else {
+                const old = to.value;
+                to.value = from == null ? from : countedClone_clone(from);
+                if (old != null) {
+                  countedDrop_drop(old);
+                }
               }
+            },
+          },
+          (option) => {
+            if (option != null) {
+              countedDrop_drop(option);
             }
           },
-        },
-        (option) => {
-          if (option != null) {
-            countedDrop_drop(option);
-          }
-        },
-      );
+        );
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          w = dest.value;
+        }
+      }
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        w = dest.value;
+        if (counted != null) {
+          countedDrop_drop(counted);
+        }
       }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (counted != null) {
-        countedDrop_drop(counted);
-      }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (counted != null) {
-      countedDrop_drop(counted);
-    }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
     console.log(`${w == null ? "None" : `Some(${countedDebug_fmt(w)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  const dest$1 = { value: w };
-  try {
+    const dest$1 = { value: w };
     try {
       assign(
         dest$1,
@@ -223,168 +200,78 @@ function main() {
         w = dest$1.value;
       }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
     console.log(`${w == null ? "None" : `Some(${countedDebug_fmt(w)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  const value = [3];
-  const dest$2 = { value: w };
-  try {
+    const value = [3];
+    const dest$2 = { value: w };
     try {
-      assign(
-        dest$2,
-        value,
-        {
-          clone(value) {
-            return value == null ? value : countedClone_clone(value);
-          },
-          cloneFrom(to, from) {
-            if (to.value != null && from != null) {
-              countedClone_cloneFrom(to.value, from);
-            } else {
-              const old = to.value;
-              to.value = from == null ? from : countedClone_clone(from);
-              if (old != null) {
-                countedDrop_drop(old);
+      try {
+        assign(
+          dest$2,
+          value,
+          {
+            clone(value) {
+              return value == null ? value : countedClone_clone(value);
+            },
+            cloneFrom(to, from) {
+              if (to.value != null && from != null) {
+                countedClone_cloneFrom(to.value, from);
+              } else {
+                const old = to.value;
+                to.value = from == null ? from : countedClone_clone(from);
+                if (old != null) {
+                  countedDrop_drop(old);
+                }
               }
+            },
+          },
+          (option) => {
+            if (option != null) {
+              countedDrop_drop(option);
             }
           },
-        },
-        (option) => {
-          if (option != null) {
-            countedDrop_drop(option);
-          }
-        },
-      );
+        );
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          w = dest$2.value;
+        }
+      }
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        w = dest$2.value;
+        if (value != null) {
+          countedDrop_drop(value);
+        }
       }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (value != null) {
-        countedDrop_drop(value);
-      }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (value != null) {
-      countedDrop_drop(value);
-    }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
     console.log(`${w == null ? "None" : `Some(${countedDebug_fmt(w)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
+    const value$1 = generic([4], [5], countedClone, countedDebug, countedDrop_drop);
+    try {
+      console.log(`${value$1 == null ? "None" : `Some(${countedDebug_fmt(value$1)})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$1 != null) {
+          countedDrop_drop(value$1);
+        }
       }
-    }, error);
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = generic([4], [5], countedClone, countedDebug, countedDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(`${tmp == null ? "None" : `Some(${countedDebug_fmt(tmp)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp != null) {
-        countedDrop_drop(tmp);
-      }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp != null) {
-      countedDrop_drop(tmp);
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
+    const value$2 = generic(undefined, [6], countedClone, countedDebug, countedDrop_drop);
+    try {
+      console.log(`${value$2 == null ? "None" : `Some(${countedDebug_fmt(value$2)})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$2 != null) {
+          countedDrop_drop(value$2);
+        }
       }
-    }, error);
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = generic(undefined, [6], countedClone, countedDebug, countedDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$1 == null ? "None" : `Some(${countedDebug_fmt(tmp$1)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp$1 != null) {
-        countedDrop_drop(tmp$1);
-      }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp$1 != null) {
-      countedDrop_drop(tmp$1);
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = generic(
+    const value$3 = generic(
       [7],
       [8],
       {
@@ -410,52 +297,24 @@ function main() {
         }
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `${tmp$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(tmp$2))})`}`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp$2 != null) {
-        if ($someValue(tmp$2) != null) {
-          countedDrop_drop($someValue(tmp$2));
+    try {
+      console.log(
+        `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(value$3))})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$3 != null) {
+          if ($someValue(value$3) != null) {
+            countedDrop_drop($someValue(value$3));
+          }
         }
       }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp$2 != null) {
-      if ($someValue(tmp$2) != null) {
-        countedDrop_drop($someValue(tmp$2));
-      }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  const value$1 = $some(undefined);
-  const value$2 = [9];
-  let tmp$3;
-  try {
-    tmp$3 = generic(
-      value$1,
-      value$2,
+    const value$4 = generic(
+      $some(undefined),
+      [9],
       {
         clone(value) {
           return value == null ? value : countedClone_clone(value);
@@ -479,52 +338,24 @@ function main() {
         }
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `${tmp$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(tmp$3))})`}`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp$3 != null) {
-        if ($someValue(tmp$3) != null) {
-          countedDrop_drop($someValue(tmp$3));
+    try {
+      console.log(
+        `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(value$4))})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$4 != null) {
+          if ($someValue(value$4) != null) {
+            countedDrop_drop($someValue(value$4));
+          }
         }
       }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp$3 != null) {
-      if ($someValue(tmp$3) != null) {
-        countedDrop_drop($someValue(tmp$3));
-      }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  const value$3 = [10];
-  const value$4 = $some(undefined);
-  let tmp$4;
-  try {
-    tmp$4 = generic(
-      value$3,
-      value$4,
+    const value$5 = generic(
+      [10],
+      $some(undefined),
       {
         clone(value) {
           return value == null ? value : countedClone_clone(value);
@@ -548,97 +379,37 @@ function main() {
         }
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `${tmp$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(tmp$4))})`}`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp$4 != null) {
-        if ($someValue(tmp$4) != null) {
-          countedDrop_drop($someValue(tmp$4));
+    try {
+      console.log(
+        `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`))($someValue(value$5))})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$5 != null) {
+          if ($someValue(value$5) != null) {
+            countedDrop_drop($someValue(value$5));
+          }
         }
       }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp$4 != null) {
-      if ($someValue(tmp$4) != null) {
-        countedDrop_drop($someValue(tmp$4));
+    }
+    const value$6 = generic(1, 2, clone, { fmt: (value) => String(value) });
+    console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
+    const loud = generic([1], [2], clone, loudDebug, loudDrop_drop);
+    try {
+      console.log(`${loud == null ? "None" : `Some(${loudDebug_fmt(loud)})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (loud != null) {
+          loudDrop_drop(loud);
+        }
       }
     }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    const value = generic(1, 2, clone, { fmt: (value) => String(value) });
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  let loud;
-  try {
-    loud = generic([1], [2], clone, loudDebug, loudDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(`${loud == null ? "None" : `Some(${loudDebug_fmt(loud)})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      if (loud != null) {
-        loudDrop_drop(loud);
-      }
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (loud != null) {
-      loudDrop_drop(loud);
-    }
-  } catch (error) {
-    $cleanup(() => {
-      if (w != null) {
-        countedDrop_drop(w);
-      }
-    }, error);
-    throw error;
-  }
-  const value$5 = $some(undefined);
-  const value$6 = $some(undefined);
-  try {
     console.log(
-      `${generic(value$5, value$6, clone, { fmt: (value) => "()" }) == null ? "None" : "Some(())"}`,
+      `${generic($some(undefined), $some(undefined), clone, { fmt: (value) => "()" }) == null ? "None" : "Some(())"}`,
     );
   } catch (error) {
     throw $unwindsOn(error);

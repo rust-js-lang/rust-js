@@ -48,15 +48,14 @@ function unwraps(a, r) {
     $unwrap(a == null ? a : $some(value == null ? value : $some($someValue(value)))),
   );
   const value$2 = $someValue(a);
-  const value$4 = $someValue(
-    (a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)))) ??
-      $some(undefined),
-  );
   const option = a == null ? a : $some(value$2 == null ? value$2 : $some($someValue(value$2)));
   const result = r.TAG === "Ok" ? { ...r, _0: r._0 == null ? r._0 : $some($someValue(r._0)) } : r;
   return [
     value$3,
-    value$4,
+    $someValue(
+      (a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)))) ??
+        $some(undefined),
+    ),
     option != null ? $someValue(option) : undefined,
     result.TAG === "Ok" ? result._0 : undefined,
     r.TAG === "Ok" ? r._0 : undefined,
