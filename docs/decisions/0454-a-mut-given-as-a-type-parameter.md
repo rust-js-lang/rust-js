@@ -944,3 +944,27 @@ mut_ref_to_its_own_type_parameter_through_std_impls covers `as_ref()`
 through a `&mut T` the code was given and one a `Result`'s `as_mut()`
 lends, written back through, `{}` and `{:?}` of a `&mut T`, and an
 iterator's `&mut I` given as it is, against native Rust in both builds.
+
+## Amendment (2026-11-13, #1571): a `dyn` pair of a `&mut` to an iterator holds it as it is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. A `&mut` to
+`by_ref()`'s lender made a `&mut dyn` of a blanket impl's trait,
+`&mut items.by_ref() as &mut dyn GetMut<I>` of `impl<T: ?Sized> GetMut<T>
+for T`, was the pair of the lender's in-place cell, `{ value:
+$cellOf($lent(items)), impl }`: the pair took #1414's rule for an object,
+generic code's box of its `Self`, by the trait's `Self`, which no bound
+says is stepped. But generic code that steps it, `back_of<I:
+DoubleEndedIterator>`, reads the `&mut I` the trait gives back as the
+iterator itself (ADR 0061), so it read the cell as the iterator and threw
+`it.back is not a function` where native Rust gives `Some(3)`.
+
+The pair's value is generic code's box only where a type parameter given
+its `Self` holds it so, `in_generic_box`'s answer, the one the impl's
+dictionary reads its `Self` by (`held_in_generic_box`): a `&mut` to an
+object, #1414's, and not a `&mut` to an iterator or a function, which is
+the pair of the lender or the closure itself, `{ value: $lent(items),
+impl }`. Held by `test/corpus/dyn_of_a_lent_iterator_steps_it.rs` against
+native Rust in both builds: a lender stepped from its back and its front,
+a lender bound to a local, a closure and a `&mut` to one called through
+the pair, and a `Vec`'s box as before; #1414's cases unchanged. Mutation
+`dyn-pair-of-a-lent-iterator-boxed` (`lower/traits/dyns.ts`).

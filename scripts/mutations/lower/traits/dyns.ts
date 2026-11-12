@@ -644,4 +644,12 @@ export const mutations: Mutation[] = [
     replace: "                value\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
   },
+  {
+    name: "dyn-pair-of-a-lent-iterator-boxed",
+    breaks: "a `&mut` to `by_ref()`'s lender made a `&mut dyn` of a blanket impl's trait is its in-place cell's pair, a box of the box, so generic code that steps it through the `&mut T` the trait gives back throws `it.back is not a function` (#1571)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            Some(tr) if self.in_generic_box(pointee) => {\n",
+    replace: "            Some(tr) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_lent_iterator_steps_it.rs$"],
+  },
 ];

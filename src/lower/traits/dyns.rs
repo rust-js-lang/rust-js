@@ -805,13 +805,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of a `&mut` to an object, the `Self` its impl takes as generic
         // code's box, a `impl<T: Trait> Trait for &mut T`'s or std's that
         // passes it on (ADR 0454): the box, its in-place cell, as a type
-        // parameter given it is (#1414).
+        // parameter given it is (#1414). Not of a `&mut` to an iterator or
+        // a function, which a type parameter given it holds as it is, as
+        // the impl's dictionary and generic code that steps or calls it
+        // read it (`in_generic_box`, ADR 0061): `by_ref()`'s lender (#1571).
         let value = match self.dyn_trait_ref(target, pointee) {
-            Some(tr) => {
+            Some(tr) if self.in_generic_box(pointee) => {
                 let declared = ty::GenericArgs::identity_for_item(self.tcx, tr.def_id).type_at(0);
                 self.form_given(Form::Box, (tr.def_id, declared, pointee), value)
             }
-            None => value,
+            _ => value,
         };
         Ok(Expr::object(vec![
             Prop::Field(js::HELD.into(), value),
