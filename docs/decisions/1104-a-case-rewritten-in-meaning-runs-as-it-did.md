@@ -457,3 +457,17 @@ still runs. Held by the harness test "generic-instances keeps each place's
 cost of a case that says its point is what it skips at once", and by the
 range case, which no longer pads its comment to pick its instances. ADR
 0262's case: none, the compiler's JS is unchanged.
+
+## Amendment (2026-11-12): a program std leaves to a seed has more than one right answer
+
+The `loud` rewrite of `std_keys_around_their_own_hash.rs` failed main's
+check about half the time, and the nightly's loud triage's class (b)
+with it. Its native run drops a hash map's values in the order of std's
+`RandomState` seed: run ten times, it printed `drop Version(2)`, `drop
+Version(1)` five times and the reverse five times, where the JS drops
+them in insertion order (the guide's difference 5). Both are Rust's
+answers. Now, where the JS's run disagrees with native Rust's, native
+Rust is run again, up to eight times (`nativeTries`). The rewrite runs
+as Rust does if one run agrees (`againAgrees`). Native output that
+doesn't vary still disagrees every time, so a wrong answer is found as
+before; of two orders a seed picks, one is missed 1 time in 256.

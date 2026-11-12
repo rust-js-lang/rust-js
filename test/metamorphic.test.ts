@@ -74,6 +74,7 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
   const variant = join(dir, "variant.rs");
   const library = join(dir, "lib.rs");
   let native: Run | undefined;
+  let again: (() => Run | string) | undefined;
   let made: ReturnType<typeof rewritten>;
   // Of every place, then of its first alone.
   for (const limit of [undefined, 1]) {
@@ -101,6 +102,7 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
     const unjudged = typeof ran !== "string" && ((target === "wasm32" && typeof ran.outcome === "string") || ran.stopped === true);
     if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran.outcome)) {
       native = ran;
+      again = () => runNative(variant, dir, edition, target, rustc);
       tally(rewrite, name, "variant");
       break;
     }
@@ -145,6 +147,12 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
       record(key, `${rewrite} ${name} ${build}`);
       continue;
     }
+    // Where native Rust's own runs differ, a hash table's drop order by its
+    // random seed (std's `RandomState`), which a loud rewrite shows, the
+    // JS's is right where it's one of them: native run again, up to
+    // `nativeTries` times, till one agrees with it (the loud triage's class
+    // (b), ADR 0939, amended).
+    if (againAgrees(again, ran)) continue;
     const [a, b] = [native.stdout.split("\n"), ran.stdout.split("\n")];
     const at = a.findIndex((line, i) => line !== b[i]);
     problems.set(
@@ -155,6 +163,23 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
   // The program that goes wrong, which a failure's reduced from (#1088):
   // not a `library` variant's, two crates.
   return { problems, program: made.library === undefined ? variant : undefined };
+}
+
+/** How often a native run is run again, where the JS's disagrees with it,
+ * for one that agrees (`againAgrees`): of two orders a seed picks, one
+ * missed 1 time in 256. */
+const nativeTries = 8;
+
+/** Whether one of native Rust's runs again, `again`, up to `nativeTries`,
+ * agrees with the JS's, `ran`: a program whose output std leaves to a
+ * random seed, a `HashMap`'s order, has more than one right answer. */
+function againAgrees(again: (() => Run | string) | undefined, ran: Run): boolean {
+  if (again === undefined) return false;
+  for (let i = 0; i < nativeTries; i++) {
+    const native = again();
+    if (typeof native !== "string" && agree(ran, native)) return true;
+  }
+  return false;
 }
 
 const caseTimeout = 900_000;
