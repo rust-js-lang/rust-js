@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "    if (tag === \"Bool\") return \"a boolean\";\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
+  {
+    name: "json-value-string-by-reference",
+    breaks: "a `Value`'s string is given by reference, `visit_str`, where serde_json gives it whole, `visit_string` (#1546)",
+    file: "src/runtime/json_value_reader.js",
+    find: "    if (visit) return visit(inner, \"owned\");\n",
+    replace: "    if (visit) return visit(inner, \"transient\");\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
 ];

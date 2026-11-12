@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "      if (c !== rest.charCodeAt(i)) throw this.error(\"expected ident\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
+  {
+    name: "json-reader-escaped-borrowed",
+    breaks: "a string of the text with an escape is said to borrow from it, so it goes to `visit_borrowed_str` (#1546)",
+    file: "src/runtime/json_reader.js",
+    find: "    return this.escaped ? \"transient\" : \"borrowed\";\n",
+    replace: "    return \"borrowed\";\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
 ];

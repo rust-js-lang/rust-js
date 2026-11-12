@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "                    let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone()]);\n                    expected = Some(Expr::arrow(\n                        Vec::new(),\n                        vec![StmtKind::Return(Some(call.clone())).at(crate::js::Span::NONE)],\n                    ));\n                    expected = Some(Expr::sequence(vec![call, expected.take().expect(\"made\")]));\n",
     tests: ["test/serde-protocol.test.ts", "-t", "expecting is asked only where an error says it"],
   },
+  {
+    name: "serde-visit-string-unwritten",
+    breaks: "a hand-written visitor's `visit_string` isn't among its methods, so a string given whole goes to its `visit_str`, or is refused where it writes no other (#1546)",
+    file: "src/lower/serde/protocol.rs",
+    find: "                (VisitorMethod::String, SerdeHint::Any | SerdeHint::Str) => \"string\",\n",
+    replace: "",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
 ];

@@ -11663,7 +11663,7 @@ export function $jsonVisitOption(json, expecting, { none, some }) {
 }
 
 // The reader's visitor of a hand-written one's methods.
-export function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, seq, map }) {
+export function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, string, seq, map }) {
   const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);
   const visitor = {};
   if (unit) visitor.unit = $jsonCodec(unit);
@@ -11676,9 +11676,12 @@ export function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowe
       return $jsonCodec(visit)(n.kind === "f" ? Number(n.value) : BigInt(n.value));
     };
   }
-  if (str || borrowedStr) {
-    visitor.string = (s, borrowed) => {
-      const visit = borrowed ? (borrowedStr ?? str) : str;
+  // A string by the kind its reader gives (#1546): borrowed from the text
+  // to `visit_borrowed_str`, owned to `visit_string`, each of whose serde
+  // defaults is `visit_str`; one that's neither to `visit_str`.
+  if (str || borrowedStr || string) {
+    visitor.string = (s, kind) => {
+      const visit = kind === "borrowed" ? (borrowedStr ?? str) : kind === "owned" ? (string ?? str) : str;
       if (!visit) throw invalid(`string ${$debugStr(s)}`);
       return $jsonCodec(visit)(s);
     };
@@ -14909,8 +14912,8 @@ export class $JsonDecoder {
 
   // A `&str`, which borrows from the text, so it can't have had an escape.
   borrowedStr() {
-    return this.deserializeStr("a borrowed string", (s, borrowed) => {
-      if (borrowed) return s;
+    return this.deserializeStr("a borrowed string", (s, kind) => {
+      if (kind === "borrowed") return s;
       throw $jsonError(`invalid type: string ${$debugStr(s)}, expected a borrowed string`);
     });
   }
@@ -15709,6 +15712,13 @@ export class $JsonReader extends $JsonDecoder {
     }
   }
 
+  // The kind of the string just read, as serde_json gives it to a visitor
+  // (#1546): one with no escape borrows from the text, `visit_borrowed_str`;
+  // one unescaped into a buffer is a `&str` that doesn't, `visit_str`.
+  stringKind() {
+    return this.escaped ? "transient" : "borrowed";
+  }
+
   deserializeStr(expected, visit) {
     const peek = this.parseWhitespace();
     if (peek === -1) throw this.peekError("EOF while parsing a value");
@@ -15716,7 +15726,7 @@ export class $JsonReader extends $JsonDecoder {
       if (peek !== 34) throw this.peekInvalidType(expected);
       this.index++;
       const s = this.parseStr();
-      return visit(s, !this.escaped);
+      return visit(s, this.stringKind());
     } catch (e) {
       throw this.fixPosition(e);
     }
@@ -15819,7 +15829,7 @@ export class $JsonReader extends $JsonDecoder {
       if (peek === 34) {
         this.index++;
         const s = this.parseStr();
-        if (visitor.string) return visitor.string(s, !this.escaped);
+        if (visitor.string) return visitor.string(s, this.stringKind());
         throw invalid(`string ${$debugStr(s)}`);
       }
       if (peek === 91) {
@@ -15846,7 +15856,7 @@ export class $JsonReader extends $JsonDecoder {
       unit: () => ({ type: "unit" }),
       bool: (value) => ({ type: "bool", value }),
       number: (value) => ({ type: "num", value }),
-      string: (value, borrowed) => ({ type: "str", value, borrowed }),
+      string: (value, kind) => ({ type: "str", value, borrowed: kind === "borrowed" }),
       seq: (seq) => {
         const items = [];
         while (seq.next()) items.push(seq.value((json) => json.content()));
@@ -15920,8 +15930,16 @@ export class $JsonContent extends $JsonDecoder {
   }
 
   deserializeStr(expected, visit) {
-    if (this.data.type === "str") return visit(this.data.value, this.data.borrowed);
+    if (this.data.type === "str") return visit(this.data.value, this.stringKind());
     throw this.invalid(expected);
+  }
+
+  // The kind its string is given as (#1546): one borrowed from the text,
+  // `visit_borrowed_str`; one it holds, given whole where it's owned,
+  // serde's `ContentDeserializer`'s `visit_string`, and by reference
+  // where it isn't, its `ContentRefDeserializer`'s `visit_str`.
+  stringKind() {
+    return this.data.borrowed ? "borrowed" : this.owned ? "owned" : "transient";
   }
 
   visitSeq(visit) {
@@ -15954,7 +15972,7 @@ export class $JsonContent extends $JsonDecoder {
     if (type === "seq" && visitor.seq) return this.visitSeq(visitor.seq);
     if (type === "map" && visitor.map) return this.visitMap(visitor.map);
     const visit = { unit: visitor.unit, bool: visitor.bool, num: visitor.number, str: visitor.string }[type];
-    if (visit) return visit(value);
+    if (visit) return visit(value, type === "str" ? this.stringKind() : undefined);
     throw this.invalid(expected);
   }
 
@@ -16465,9 +16483,10 @@ export class $JsonValueReader extends $JsonDecoder {
     throw this.invalid(expected);
   }
 
-  // A string of a `Value` is its own, so a `&str` can't borrow it.
+  // A string of a `Value` is its own, so a `&str` can't borrow it: it's
+  // given whole, `visit_string` (#1546).
   deserializeStr(expected, visit) {
-    if (this.value.TAG === "String") return visit(this.value._0, false);
+    if (this.value.TAG === "String") return visit(this.value._0, "owned");
     throw this.invalid(expected);
   }
 
@@ -16518,7 +16537,7 @@ export class $JsonValueReader extends $JsonDecoder {
       });
     }
     const visit = { Bool: visitor.bool, Number: visitor.number, String: visitor.string }[tag];
-    if (visit) return visit(inner, false);
+    if (visit) return visit(inner, "owned");
     throw this.invalid(expected);
   }
 

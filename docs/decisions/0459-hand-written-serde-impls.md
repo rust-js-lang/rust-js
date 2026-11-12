@@ -307,3 +307,47 @@ so that one reads text alone. Mutations `serde-expecting-asked-eagerly`
 (`lower/serde/protocol.ts`) and `json-expected-made-once-up-front`
 (`runtime/json_visit.ts`), caught.
 
+## Amendment: a string is given by the kind serde_json gives it (2026-11-13, #1546)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+A visitor's `visit_string` wasn't one of the methods `visitor_methods`
+read, and the readers said of a string only whether it borrowed from the
+text. So `from_value` of a visitor that writes `visit_str` and
+`visit_string` called `visit_str`, where serde_json gives a `Value`'s
+string whole, `visit_string`; an internally tagged enum's content, which
+serde gives whole too, likewise; and `deserialize_any` of an untagged
+enum's content gave no string borrowed, `visit_str` for one serde gives
+`visit_borrowed_str` (P0, both builds).
+
+Now a reader gives a string with one kind, never a bool:
+
+| Read from | Kind | The visitor's method |
+|---|---|---|
+| the text, no escape | `borrowed` | `visit_borrowed_str`, else `visit_str` |
+| the text, an escape | `transient` | `visit_str` |
+| a `Value` | `owned` | `visit_string`, else `visit_str` |
+| content by reference, an untagged enum's | `borrowed` where it borrowed the text, else `transient` | as above |
+| content whole, an internally tagged enum's | `borrowed` where it borrowed the text, else `owned` | as above |
+
+The fallbacks are serde's defaults, `visit_borrowed_str` and
+`visit_string` forwarding to `visit_str`, whose default is "invalid type".
+`visitor_methods` reads `visit_string` (`VisitorMethod::String`); a
+derived impl's output, which takes no kind, is as it was, and so is the
+std `&str`'s borrowed check (`borrowedStr`, `kind === "borrowed"`).
+
+The serde-protocol test `a string is given to a visitor as serde_json
+gives it` holds the native table of `deserialize_string`, `_any` and
+`_str`, a visitor of `visit_string` alone, fields, an untagged and an
+internally tagged enum, each from text and from a `Value`, against native
+serde_json. (serde cases live in the serde tests, which build serde and
+serde_json natively, not in the corpus.) Mutations, one of each kind's
+mapping: `json-visit-owned-as-str`, `json-visit-borrowed-as-str`,
+`json-visit-transient-as-owned` (`json_visit.ts`),
+`json-reader-escaped-borrowed`, `json-value-string-by-reference`,
+`json-content-owned-by-reference`, `json-content-reference-owned`,
+`json-content-any-kind-lost` and `serde-visit-string-unwritten`, caught;
+`json-borrowed-str-of-escape` and `json-visit-copied-as-borrowed`
+refitted.
+

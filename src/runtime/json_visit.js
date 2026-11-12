@@ -45,7 +45,7 @@ function $jsonVisitOption(json, expecting, { none, some }) {
 }
 
 // The reader's visitor of a hand-written one's methods.
-function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, seq, map }) {
+function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, string, seq, map }) {
   const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);
   const visitor = {};
   if (unit) visitor.unit = $jsonCodec(unit);
@@ -58,9 +58,12 @@ function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, s
       return $jsonCodec(visit)(n.kind === "f" ? Number(n.value) : BigInt(n.value));
     };
   }
-  if (str || borrowedStr) {
-    visitor.string = (s, borrowed) => {
-      const visit = borrowed ? (borrowedStr ?? str) : str;
+  // A string by the kind its reader gives (#1546): borrowed from the text
+  // to `visit_borrowed_str`, owned to `visit_string`, each of whose serde
+  // defaults is `visit_str`; one that's neither to `visit_str`.
+  if (str || borrowedStr || string) {
+    visitor.string = (s, kind) => {
+      const visit = kind === "borrowed" ? (borrowedStr ?? str) : kind === "owned" ? (string ?? str) : str;
       if (!visit) throw invalid(`string ${$debugStr(s)}`);
       return $jsonCodec(visit)(s);
     };

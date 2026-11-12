@@ -138,4 +138,28 @@ export const mutations: Mutation[] = [
     replace: "    if (false) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
+  {
+    name: "json-content-owned-by-reference",
+    breaks: "an internally tagged enum's string, its content's whole, is given by reference, `visit_str`, where serde gives it whole, `visit_string` (#1546)",
+    file: "src/runtime/json_content.js",
+    find: "    return this.data.borrowed ? \"borrowed\" : this.owned ? \"owned\" : \"transient\";\n",
+    replace: "    return this.data.borrowed ? \"borrowed\" : \"transient\";\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
+  {
+    name: "json-content-reference-owned",
+    breaks: "an untagged enum's string, read by reference, is given whole, `visit_string`, where serde gives it by reference, `visit_str` (#1546)",
+    file: "src/runtime/json_content.js",
+    find: "    return this.data.borrowed ? \"borrowed\" : this.owned ? \"owned\" : \"transient\";\n",
+    replace: "    return this.data.borrowed ? \"borrowed\" : \"owned\";\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
+  {
+    name: "json-content-any-kind-lost",
+    breaks: "`deserialize_any` of content gives a string no kind, so one borrowed from the text goes to `visit_str` (#1546)",
+    file: "src/runtime/json_content.js",
+    find: "    if (visit) return visit(value, type === \"str\" ? this.stringKind() : undefined);\n",
+    replace: "    if (visit) return visit(value);\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
 ];

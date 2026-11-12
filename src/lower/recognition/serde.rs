@@ -168,6 +168,8 @@ pub(in crate::lower) enum VisitorMethod {
     F64,
     Str,
     BorrowedStr,
+    /// `visit_string`, of a string given whole (#1546).
+    String,
     Seq,
     Map,
     /// `visit_none` and `visit_some`, of `deserialize_option`.
@@ -189,6 +191,7 @@ pub(in crate::lower) fn visitor_methods(tcx: TyCtxt<'_>, imp: DefId) -> Vec<(Vis
                 "visit_f64" => VisitorMethod::F64,
                 "visit_str" => VisitorMethod::Str,
                 "visit_borrowed_str" => VisitorMethod::BorrowedStr,
+                "visit_string" => VisitorMethod::String,
                 "visit_seq" => VisitorMethod::Seq,
                 "visit_map" => VisitorMethod::Map,
                 "visit_none" => VisitorMethod::None,

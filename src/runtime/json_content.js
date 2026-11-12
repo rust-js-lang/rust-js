@@ -19,8 +19,16 @@ class $JsonContent extends $JsonDecoder {
   }
 
   deserializeStr(expected, visit) {
-    if (this.data.type === "str") return visit(this.data.value, this.data.borrowed);
+    if (this.data.type === "str") return visit(this.data.value, this.stringKind());
     throw this.invalid(expected);
+  }
+
+  // The kind its string is given as (#1546): one borrowed from the text,
+  // `visit_borrowed_str`; one it holds, given whole where it's owned,
+  // serde's `ContentDeserializer`'s `visit_string`, and by reference
+  // where it isn't, its `ContentRefDeserializer`'s `visit_str`.
+  stringKind() {
+    return this.data.borrowed ? "borrowed" : this.owned ? "owned" : "transient";
   }
 
   visitSeq(visit) {
@@ -53,7 +61,7 @@ class $JsonContent extends $JsonDecoder {
     if (type === "seq" && visitor.seq) return this.visitSeq(visitor.seq);
     if (type === "map" && visitor.map) return this.visitMap(visitor.map);
     const visit = { unit: visitor.unit, bool: visitor.bool, num: visitor.number, str: visitor.string }[type];
-    if (visit) return visit(value);
+    if (visit) return visit(value, type === "str" ? this.stringKind() : undefined);
     throw this.invalid(expected);
   }
 

@@ -552,6 +552,13 @@ class $JsonReader extends $JsonDecoder {
     }
   }
 
+  // The kind of the string just read, as serde_json gives it to a visitor
+  // (#1546): one with no escape borrows from the text, `visit_borrowed_str`;
+  // one unescaped into a buffer is a `&str` that doesn't, `visit_str`.
+  stringKind() {
+    return this.escaped ? "transient" : "borrowed";
+  }
+
   deserializeStr(expected, visit) {
     const peek = this.parseWhitespace();
     if (peek === -1) throw this.peekError("EOF while parsing a value");
@@ -559,7 +566,7 @@ class $JsonReader extends $JsonDecoder {
       if (peek !== 34) throw this.peekInvalidType(expected);
       this.index++;
       const s = this.parseStr();
-      return visit(s, !this.escaped);
+      return visit(s, this.stringKind());
     } catch (e) {
       throw this.fixPosition(e);
     }
@@ -662,7 +669,7 @@ class $JsonReader extends $JsonDecoder {
       if (peek === 34) {
         this.index++;
         const s = this.parseStr();
-        if (visitor.string) return visitor.string(s, !this.escaped);
+        if (visitor.string) return visitor.string(s, this.stringKind());
         throw invalid(`string ${$debugStr(s)}`);
       }
       if (peek === 91) {
@@ -689,7 +696,7 @@ class $JsonReader extends $JsonDecoder {
       unit: () => ({ type: "unit" }),
       bool: (value) => ({ type: "bool", value }),
       number: (value) => ({ type: "num", value }),
-      string: (value, borrowed) => ({ type: "str", value, borrowed }),
+      string: (value, kind) => ({ type: "str", value, borrowed: kind === "borrowed" }),
       seq: (seq) => {
         const items = [];
         while (seq.next()) items.push(seq.value((json) => json.content()));

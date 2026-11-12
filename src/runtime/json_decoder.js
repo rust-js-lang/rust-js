@@ -43,8 +43,8 @@ class $JsonDecoder {
 
   // A `&str`, which borrows from the text, so it can't have had an escape.
   borrowedStr() {
-    return this.deserializeStr("a borrowed string", (s, borrowed) => {
-      if (borrowed) return s;
+    return this.deserializeStr("a borrowed string", (s, kind) => {
+      if (kind === "borrowed") return s;
       throw $jsonError(`invalid type: string ${$debugStr(s)}, expected a borrowed string`);
     });
   }

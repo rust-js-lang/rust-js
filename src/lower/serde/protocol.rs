@@ -297,6 +297,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (VisitorMethod::F64, SerdeHint::Any | SerdeHint::Number) => "f64",
                 (VisitorMethod::Str, SerdeHint::Any | SerdeHint::Str) => "str",
                 (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => "borrowedStr",
+                (VisitorMethod::String, SerdeHint::Any | SerdeHint::Str) => "string",
                 (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => "seq",
                 (VisitorMethod::Map, SerdeHint::Any | SerdeHint::Map | SerdeHint::Struct) => "map",
                 (VisitorMethod::None, SerdeHint::Option) => "none",

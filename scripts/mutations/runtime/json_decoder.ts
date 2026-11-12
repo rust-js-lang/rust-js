@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "json-borrowed-str-of-escape",
     breaks: "a `&str` of a string with an escape is read, where serde_json can't borrow it",
     file: "src/runtime/json_decoder.js",
-    find: "      if (borrowed) return s;\n",
+    find: "      if (kind === \"borrowed\") return s;\n",
     replace: "      return s;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },

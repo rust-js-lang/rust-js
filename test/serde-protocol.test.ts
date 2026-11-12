@@ -343,3 +343,142 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A string is given to a hand-written visitor by the kind serde_json gives
+// it (#1546): from the text, one with no escape borrowed,
+// `visit_borrowed_str`, one with one by reference, `visit_str`; from a
+// `Value` whole, `visit_string`; of an untagged enum's content by
+// reference, `visit_str` but where it borrowed the text; of an internally
+// tagged one's whole, `visit_string` but where it borrowed. Each falls back
+// as serde's defaults do, to `visit_str`, and `visit_str`'s default is an
+// error. By `deserialize_string`, `_any` and `_str`, and as fields.
+test("serde: a string is given to a visitor as serde_json gives it, borrowed, by reference or whole", async () => {
+  const dir = fixture("serde-protocol-string-kinds");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+
+/// Says which of its visitor's string methods read it.
+#[derive(Debug)]
+pub struct Said(String);
+
+struct SaidVisitor;
+
+impl<'de> Visitor<'de> for SaidVisitor {
+    type Value = Said;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a string")
+    }
+
+    fn visit_str<E: Error>(self, s: &str) -> Result<Said, E> {
+        Ok(Said(format!("str:{s}")))
+    }
+
+    fn visit_string<E: Error>(self, s: String) -> Result<Said, E> {
+        Ok(Said(format!("owned:{s}")))
+    }
+
+    fn visit_borrowed_str<E: Error>(self, s: &'de str) -> Result<Said, E> {
+        Ok(Said(format!("borrowed:{s}")))
+    }
+}
+
+impl<'de> Deserialize<'de> for Said {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_string(SaidVisitor)
+    }
+}
+
+/// The same, read by 'deserialize_any'.
+#[derive(Debug)]
+pub struct AnySaid(Said);
+
+impl<'de> Deserialize<'de> for AnySaid {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_any(SaidVisitor).map(AnySaid)
+    }
+}
+
+/// The same, read by 'deserialize_str', whose visitor has 'visit_string' alone
+/// of the owned kind: serde's 'visit_str' forwards nothing to it.
+#[derive(Debug)]
+pub struct StrSaid(Said);
+
+impl<'de> Deserialize<'de> for StrSaid {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_str(SaidVisitor).map(StrSaid)
+    }
+}
+
+/// Of 'visit_string' alone: 'visit_str''s default is an error.
+#[derive(Debug)]
+pub struct Owned(String);
+
+struct OwnedVisitor;
+
+impl<'de> Visitor<'de> for OwnedVisitor {
+    type Value = Owned;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an owned string")
+    }
+
+    fn visit_string<E: Error>(self, s: String) -> Result<Owned, E> {
+        Ok(Owned(s))
+    }
+}
+
+impl<'de> Deserialize<'de> for Owned {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_string(OwnedVisitor)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Fields {
+    a: Said,
+    b: AnySaid,
+    c: StrSaid,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum Untagged {
+    One(Said),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "t")]
+pub enum Tagged {
+    V { s: Said, any: AnySaid },
+}
+
+fn read<T: for<'de> Deserialize<'de> + fmt::Debug>(text: &str) -> String {
+    let from_text = serde_json::from_str::<T>(text);
+    let value: serde_json::Value = serde_json::from_str(text).unwrap();
+    let from_value = serde_json::from_value::<T>(value);
+    format!("{from_text:?}; {from_value:?}")
+}
+
+pub fn report() -> String {
+    [
+        read::<Said>(r#""hi""#),
+        read::<Said>(r#""h\ni""#),
+        read::<AnySaid>(r#""hi""#),
+        read::<AnySaid>(r#""h\ni""#),
+        read::<StrSaid>(r#""hi""#),
+        read::<StrSaid>(r#""h\ni""#),
+        read::<Owned>(r#""hi""#),
+        read::<Fields>(r#"{"a": "x", "b": "y\n", "c": "z"}"#),
+        read::<Untagged>(r#""u""#),
+        read::<Untagged>(r#""u\n""#),
+        read::<Tagged>(r#"{"t": "V", "s": "p", "any": "q\n"}"#),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

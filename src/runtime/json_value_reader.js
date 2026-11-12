@@ -27,9 +27,10 @@ class $JsonValueReader extends $JsonDecoder {
     throw this.invalid(expected);
   }
 
-  // A string of a `Value` is its own, so a `&str` can't borrow it.
+  // A string of a `Value` is its own, so a `&str` can't borrow it: it's
+  // given whole, `visit_string` (#1546).
   deserializeStr(expected, visit) {
-    if (this.value.TAG === "String") return visit(this.value._0, false);
+    if (this.value.TAG === "String") return visit(this.value._0, "owned");
     throw this.invalid(expected);
   }
 
@@ -80,7 +81,7 @@ class $JsonValueReader extends $JsonDecoder {
       });
     }
     const visit = { Bool: visitor.bool, Number: visitor.number, String: visitor.string }[tag];
-    if (visit) return visit(inner, false);
+    if (visit) return visit(inner, "owned");
     throw this.invalid(expected);
   }
 
