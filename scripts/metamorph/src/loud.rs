@@ -288,6 +288,21 @@ impl Ticks<'_> {
 }
 
 impl VisitMut for Ticks<'_> {
+    // A binding's body, `#[rust_js::link_name = "JSON.parse"]`'s, is the
+    // native stand-in for JS it calls, which runs none of it: no tick in it,
+    // which native Rust would say and JS never could (#1453).
+    fn visit_item_fn_mut(&mut self, f: &mut syn::ItemFn) {
+        if !linked(&f.attrs) {
+            visit_mut::visit_item_fn_mut(self, f);
+        }
+    }
+
+    fn visit_impl_item_fn_mut(&mut self, f: &mut syn::ImplItemFn) {
+        if !linked(&f.attrs) {
+            visit_mut::visit_impl_item_fn_mut(self, f);
+        }
+    }
+
     fn visit_expr_closure_mut(&mut self, c: &mut syn::ExprClosure) {
         visit_mut::visit_expr_closure_mut(self, c);
         self.closures += 1;
@@ -483,4 +498,11 @@ pub fn loud(ast: &mut syn::File, budget: &mut usize) -> bool {
     *budget = loud.budget;
     *ast = program;
     loud.events > 0
+}
+
+/// Whether a function is a binding, `#[cfg_attr(rust_js, rust_js::link_name
+/// = "JSON.parse")]`'s, whose JS is another's: not one only marked, a
+/// `nullable` or a `class`'s, whose body JS runs.
+fn linked(attrs: &[syn::Attribute]) -> bool {
+    (attrs.iter()).any(|attr| attr.to_token_stream().to_string().contains("link_name"))
 }
