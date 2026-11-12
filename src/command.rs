@@ -20,8 +20,8 @@ pub(crate) enum Command {
     /// checks of its JS as a host has it, which Cargo's build runs none of
     /// (ADR 0117).
     Checks(Checks),
-    /// A crate, compiled.
-    Build(Build),
+    /// A crate, compiled: boxed, as it's many times any other's size.
+    Build(Box<Build>),
     /// `--layout-identity`: which Prettier lays out the JS of the crates
     /// the tooling lists, `RUST_JS_CRATES` and `RUST_JS_DEPENDENCIES`, a
     /// hash, or an empty line where none has one: what the tooling gives
@@ -33,6 +33,9 @@ pub(crate) enum Command {
     /// `--prepare-passes`: each of preparation's rewrites, a line each, what
     /// `--prepare-without` may name (ADR 1087).
     PreparePasses,
+    /// `--knowns`: each fact an expression may carry and its role, a line
+    /// each, what `--without-known` may name (ADR 1127).
+    Knowns,
 }
 
 /// A crate's checks: its root, whose `Cargo.toml` names them, and the JS
@@ -80,6 +83,13 @@ pub(crate) struct Build {
     /// `--prepare-fired <file>`: where to write which of preparation's
     /// rewrites changed something, a line each (ADR 1087).
     pub prepare_fired: Option<PathBuf>,
+    /// `--without-known <fact>`, any number: the crate compiled with these
+    /// facts forgotten, no reader finding one, to see that the JS is right
+    /// without each that only permits (ADR 1127).
+    pub without_known: Vec<crate::js::Known>,
+    /// `--knowns-found <file>`: where to write which facts a reader found,
+    /// a line each (ADR 1127).
+    pub knowns_found: Option<PathBuf>,
     /// `--std-iterators`: every iterator adapter std compiles is its struct,
     /// none rewritten to the JS chain the recognizers make in place. A test
     /// hook, not a way to build: the differential job compares it with the
@@ -105,6 +115,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--layout-identity") if args.len() == 1 => return Ok(Command::LayoutIdentity),
         Some("--tidy-passes") if args.len() == 1 => return Ok(Command::TidyPasses),
         Some("--prepare-passes") if args.len() == 1 => return Ok(Command::PreparePasses),
+        Some("--knowns") if args.len() == 1 => return Ok(Command::Knowns),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
         Some("--checks") => {
             let [input, files @ ..] = &args[1..] else {
@@ -160,6 +171,16 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         prepare_without.push(pass);
     }
     let prepare_fired = valued(&mut ours, "--prepare-fired", "a path")?.map(PathBuf::from);
+    let mut without_known = Vec::new();
+    while let Some(name) = valued(&mut ours, "--without-known", "a fact an expression may carry")? {
+        let Some(known) = crate::js::Known::named(&name) else {
+            return Err(format!(
+                "--without-known: no fact `{name}`; `rust-js --knowns` lists them"
+            ));
+        };
+        without_known.push(known);
+    }
+    let knowns_found = valued(&mut ours, "--knowns-found", "a path")?.map(PathBuf::from);
     let test = ours.first().is_some_and(|a| a == "--test");
     let (input, output) = match &ours[usize::from(test)..] {
         [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
@@ -175,7 +196,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     if std_bodies && !library {
         return Err("--std-bodies requires --library".into());
     }
-    Ok(Command::Build(Build {
+    Ok(Command::Build(Box::new(Build {
         input,
         output,
         test,
@@ -190,10 +211,12 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         tidy_until,
         prepare_without,
         prepare_fired,
+        without_known,
+        knowns_found,
         std_iterators,
         js_made_all,
         rustc: rustc.to_vec(),
-    }))
+    })))
 }
 
 /// Whether `name` is among `args`, taken out of them.
@@ -381,7 +404,7 @@ mod tests {
 
     fn build(args: &[&str]) -> Result<Build, String> {
         match parse(args.iter().map(|arg| arg.to_string()).collect())? {
-            Command::Build(build) => Ok(build),
+            Command::Build(build) => Ok(*build),
             _ => Err("not a build".into()),
         }
     }

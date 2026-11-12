@@ -257,7 +257,10 @@ only on the completed JS tree, its rewrites each named in
 and `--prepare-fired <file>` reports; `test/tidy-stages.test.ts` runs every
 variant of tidy's stages and preparation's rewrites against native Rust,
 and `test/getter-reads.test.ts` compares what each reads of JS-made values
-([ADR 1087](decisions/1087-each-readability-rewrite-is-checked-on-and-off.md)). The printer owns spelling and layout, including
+([ADR 1087](decisions/1087-each-readability-rewrite-is-checked-on-and-off.md));
+and of the facts those rewrites read, `js::Known`'s, each that only
+permits a plainer form is forgotten in turn, `--without-known <fact>`, the
+program running the same ([ADR 1127](decisions/1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md)). The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
 
 ### Semantic owners
@@ -367,6 +370,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
 | A shadow that is the binding it shadows | `mir/tidy/shadows.rs` | `shadowed` |
 | What a JS tree writes of its variables, a binding replaced, an object changed, a handle made, each in a closure too (ADR 0670); and whether, and how often, it sets one, `x++` and a handle among the ways (ADR 1088, #523), which no other module searches a tree for (`test/architecture.test.ts`) | `js/writes.rs` | `Writes`, `sets`, `count`, `may_replace`, `by_closures` |
+| What each fact an expression carries is to its readers, a permission, how the program wrote it, a warning or a form the lowering chose; and the facts a compile forgets, `--without-known`'s, every read of a `Facts` of what isn't forgotten, a contract's check of all (ADR 1127) | `js/known.rs`; `js.rs` | `Known`, `Role`, `role`, `forget`, `remembering`, `found_names`; `Facts`, `only_none` |
 | What a body's `let`s and patterns bind, by name, for tidy (`tidy::LetNames`): the `let`s the program wrote, `let mut`'s, one that ends a borrow or holds a frozen one, a drop guard's, and an `if let`'s or let chain's binding named as the field its scrutinee reads, by Rust names, which alone a chain's binding read again in its place may be (ADR 0866, amended, rd226, rd706) | `mir/patterns/let_names.rs` | `let_names` |
 | Which `Option` locals hold `null` for `None` at each write, `OptionWrites::null_nones`: each write a `Some(..)`, a `None` or a call, each read a nullable field's or parameter's, never a parameter, which holds what its caller gave (ADRs 0275, 0781, 0841, #1248) | `mir/patterns/null_nones.rs` | `mir_null_nones`, `tested_some` |
 | A jump MIR shared after an `if` chain, given to each arm that goes on (ADR 0745, amended) | `mir/tidy/jumps/continues.rs` | `jumps_into_branches` |

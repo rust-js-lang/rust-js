@@ -164,7 +164,6 @@ test("every mutation's corpus, diagnostics and limitations tests are there", () 
 // bug no test could see).
 const unmutated: Record<string, string> = {
   "src/program.rs": "the types the phases hand each other, with no behavior of their own",
-  "src/js/known.rs": "the facts an expression may carry, an enum with no behavior of its own; each fact's readers and makers hold its mutations",
   "src/lower/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
   "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
   "src/lower/pipeline/contexts.rs": "a body's or an item's context, made of what its asker gives, with no decision of its own; each field's readers hold its mutations",

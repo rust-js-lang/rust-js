@@ -70,10 +70,9 @@ pub(crate) fn strict_presence(test: &Expr) -> Option<(Op, Expr)> {
     if !set && null_test(test, false).is_none() {
         return None;
     }
-    let none = match test.facts.of_presence() {
-        f if f == Facts::of(Known::NoneUndefined) => Expr::undefined(),
-        f if f == Facts::of(Known::NoneNull) => Expr::null(),
-        _ => return None,
+    let none = match test.facts.only_none()? {
+        Known::NoneUndefined => Expr::undefined(),
+        _ => Expr::null(),
     };
     Some((if set { Op::Ne } else { Op::Eq }, none))
 }

@@ -474,7 +474,7 @@ fn run() -> ExitCode {
         }
     };
     let build = match command::parse(args) {
-        Ok(command::Command::Build(build)) => build,
+        Ok(command::Command::Build(build)) => *build,
         Ok(command::Command::LayoutIdentity) => {
             return match cargo::layout() {
                 Ok(identity) => {
@@ -496,6 +496,18 @@ fn run() -> ExitCode {
         Ok(command::Command::PreparePasses) => {
             for (_, name) in prepare::PASSES {
                 println!("{name}");
+            }
+            return ExitCode::SUCCESS;
+        }
+        Ok(command::Command::Knowns) => {
+            for known in js::Known::ALL {
+                let role = match known.role() {
+                    js::Role::Permits => "permits",
+                    js::Role::AsWritten => "as written",
+                    js::Role::Warns => "warns",
+                    js::Role::Form => "form",
+                };
+                println!("{} {role}", known.name());
             }
             return ExitCode::SUCCESS;
         }
@@ -654,10 +666,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         tidy_until,
         prepare_without,
         prepare_fired,
+        without_known,
+        knowns_found,
         std_iterators,
         js_made_all,
         ..
     } = build;
+    // Before anything is lowered: a fact forgotten is one never said.
+    js::forget_known(&without_known);
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
     let settings = settings::Settings {
@@ -737,6 +753,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             ));
         }
         plan.plan(linked, sources)?.publish()?;
+        // Which facts a reader found, of lowering to printing, a line each,
+        // where it's asked (ADR 1127): the driver's to write, as the
+        // decisions' counts are, once all that reads a fact has run.
+        if let Some(path) = &knowns_found {
+            let found: String = js::known_found().iter().map(|name| format!("{name}\n")).collect();
+            std::fs::write(path, found)
+                .map_err(|error| format!("can't write the facts found to {}: {error}", path.display()))?;
+        }
     }
     drop(stage);
     // Once it's all written, the crate's checks of it. Cargo's build runs

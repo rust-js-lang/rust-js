@@ -79,7 +79,7 @@ impl Expr {
         }
         let none = option.facts.of_presence();
         let test = Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null());
-        match none == Facts::of(Known::NoneUndefined) || none == Facts::of(Known::NoneNull) {
+        match none.only_none().is_some() {
             true => Expr {
                 facts: test.facts.and(none),
                 ..test
@@ -1424,7 +1424,7 @@ fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
     let strict = if present { Op::Eq } else { Op::Ne };
     let x = match &lhs.kind {
         ExprKind::Binary(o, x, u) if *o == strict && matches!(u.kind, ExprKind::Undefined) => &**x,
-        _ => null_test(lhs, !present).filter(|_| lhs.facts.of_presence() == Facts::of(Known::NoneUndefined))?,
+        _ => null_test(lhs, !present).filter(|_| lhs.facts.only_none() == Some(Known::NoneUndefined))?,
     };
     if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {
         return None;

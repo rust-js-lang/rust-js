@@ -9,8 +9,14 @@
 // otherwise, or runs on where Rust ends, names the stage or the rewrite
 // that made it so (`bun scripts/tidy-trace.ts <case>` shows tidy's).
 //
-//   case.rs ─┬─ rustc ──► native ──────────────────────────────────────┐
-//            └─ rust-js --tidy-until <stage> | --prepare-without <r> ──► node ─┴─► the same?
+// And each fact an expression carries that only permits a plainer form, or
+// says how the program wrote it (`js::Known`'s roles, ADR 1127): a program
+// compiled with one forgotten, `--without-known`, does the same, as a
+// rewrite that drops a fact must leave it. One whose JS does otherwise
+// names a fact its reader needs, a form's, not a permission.
+//
+//   case.rs ─┬─ rustc ──► native ──────────────────────────────────────────────────────────┐
+//            └─ rust-js --tidy-until <stage> | --prepare-without <r> | --without-known <k> ──► node ─┴─► the same?
 //
 //   bun test test/tidy-stages.test.ts                                        # a few cases, every variant
 //   TIDY_STAGES=corpus RUST_JS_CASES=1/6 bun test test/tidy-stages.test.ts   # the corpus, a sixth of it
@@ -66,6 +72,14 @@ const few = [
   // A drop that panics as a panic unwinds aborts at every stage end: tidy
   // guards its cleanups wherever it stops (#847).
   "unwinding_drop_aborts_locals.rs",
+  // A `while let` of a `by_ref()`'s steps: what isn't known to be a JS
+  // iterator is taken for an array, so `Known::Iterator` is a form, never
+  // forgotten (ADR 1127).
+  "by_ref_steps.rs",
+  // A `finally` the lowering wrote of what never throws, which tidy's
+  // contract takes for guarded by `Known::NeverThrows`: forgotten, the
+  // contract still reads it (ADR 1127).
+  "flattened_state_got_mut.rs",
 ];
 const which = partSetting("TIDY_STAGES");
 if (which !== undefined && which !== "corpus" && which !== "programs") {
@@ -104,18 +118,34 @@ function preparePasses(): string[] {
   return (rewrites ??= run([compiler, "--prepare-passes"]).trim().split("\n"));
 }
 
+/** Each fact the JS is right without, as `--without-known` names it: one
+ * that permits, or says what was written; never one that warns or is a
+ * form (`rust-js --knowns`, a fact and its role a line). */
+let forgotten: string[] | undefined;
+function forgettable(): string[] {
+  return (forgotten ??= run([compiler, "--knowns"])
+    .trim()
+    .split("\n")
+    .map((line) => line.split(" "))
+    .filter(([, ...role]) => ["permits", "as written"].includes(role.join(" ")))
+    .map(([name]) => name));
+}
+
 /** A way to compile a program: its name, and rust-js's flags for it. */
 type Variant = { name: string; flags: string[] };
 
 /** A program's variants, of those of preparation's rewrites that changed
- * it, `fired`: tidy stopped after each stage; preparation without each
- * of those, as one that changed nothing leaves the JS as it is; and both
- * at their least. */
-function variants(fired: string[]): Variant[] {
+ * it, `fired`, and the facts a reader found in it, `found`: tidy stopped
+ * after each stage; preparation without each of those, as one that
+ * changed nothing leaves the JS as it is; each of those facts the JS is
+ * right without forgotten, as one no reader found changes nothing; and
+ * tidy and preparation both at their least. */
+function variants(fired: string[], found: string[]): Variant[] {
   const all = preparePasses();
   return [
     ...stageEnds().map((end) => ({ name: `after ${end}`, flags: ["--tidy-until", end] })),
     ...fired.map((pass) => ({ name: `without preparation's ${pass}`, flags: ["--prepare-without", pass] })),
+    ...(forgettable().filter((known) => found.includes(known))).map((known) => ({ name: `without knowing ${known}`, flags: ["--without-known", known] })),
     {
       name: `after ${stageEnds()[0]}, without any of preparation's rewrites`,
       flags: ["--tidy-until", stageEnds()[0], ...all.flatMap((pass) => ["--prepare-without", pass])],
@@ -146,17 +176,22 @@ function compile(file: string, dir: string, edition: string, flags: string[]): P
   return made;
 }
 
-/** `file`'s finished JS, and the rewrites of preparation's that changed
- * it, as `--prepare-fired` writes them into `dir`. */
-const fullCompiles = new Map<string, Promise<{ compiled: Compiled; fired: string[] }>>();
-function compileFull(file: string, dir: string, edition: string): Promise<{ compiled: Compiled; fired: string[] }> {
+/** `file`'s finished JS, the rewrites of preparation's that changed it,
+ * as `--prepare-fired` writes them into `dir`, and the facts a reader
+ * found, as `--knowns-found` does. */
+type Full = { compiled: Compiled; fired: string[]; found: string[] };
+const fullCompiles = new Map<string, Promise<Full>>();
+function compileFull(file: string, dir: string, edition: string): Promise<Full> {
   const key = [file, edition].join("\0");
   let made = fullCompiles.get(key);
   if (made === undefined) {
     const firedFile = join(dir, "fired.txt");
-    made = compileJsAsync(file, dir, edition, false, {}, ["--prepare-fired", firedFile]).then((compiled) => ({
+    const foundFile = join(dir, "found.txt");
+    const lines = (path: string) => readFileSync(path, "utf8").split("\n").filter(Boolean);
+    made = compileJsAsync(file, dir, edition, false, {}, ["--prepare-fired", firedFile, "--knowns-found", foundFile]).then((compiled) => ({
       compiled,
-      fired: "js" in compiled ? readFileSync(firedFile, "utf8").split("\n").filter(Boolean) : [],
+      fired: "js" in compiled ? lines(firedFile) : [],
+      found: "js" in compiled ? lines(foundFile) : [],
     }));
     fullCompiles.set(key, made);
   }
@@ -189,12 +224,12 @@ async function eachAtOnce<T, U>(items: T[], f: (item: T) => Promise<U>): Promise
  * Its variants are compiled at once, then run one after another. */
 async function differences(file: string, dir: string, edition: string, native: Run, only?: string): Promise<string[]> {
   const problems: string[] = [];
-  const { compiled: full, fired } = await compileFull(file, dir, edition);
+  const { compiled: full, fired, found } = await compileFull(file, dir, edition);
   if (!("js" in full)) return [`rust-js failed: ${full.error.split("\n").slice(0, 6).join("\n")}`];
   const finalEnd = stageEnds().at(-1);
-  const least = variants([]).at(-1)!.name;
+  const least = variants([], []).at(-1)!.name;
   const listed = leastDiffers[basename(file)];
-  const chosen = variants(fired).filter((variant) => only === undefined || variant.name === only);
+  const chosen = variants(fired, found).filter((variant) => only === undefined || variant.name === only);
   const made = await eachAtOnce(chosen, ({ flags }) => compile(file, dir, edition, flags));
   for (const [at, { name, flags }] of chosen.entries()) {
     const compiled = made[at];
@@ -272,6 +307,33 @@ test("a rewrite of preparation's that fired nowhere leaves a case's JS as it is"
     expect([name, code(without.js) === full]).toEqual([name, true]);
   }
 }, 300_000);
+
+// A fact forgotten is one no reader finds, wherever it was said, so the
+// variants above try what they say (ADR 1127): a case's JS without a fact
+// that changes its form isn't its JS with it; what `--knowns-found` says is
+// each fact a reader found, a form's too, and none that's forgotten; and a
+// name that's no fact is refused.
+test("a case's JS without a fact a reader found isn't its JS with it", async () => {
+  buildCompiler();
+  const name = "calculator.rs";
+  const dir = caseDir(name);
+  const { compiled, found } = await compileFull(join(corpus, name), dir, "2024");
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  expect(found).toEqual(expect.arrayContaining(["ArrayItems", "Else", "Literal"]));
+  expect(forgettable()).toEqual(expect.arrayContaining(["ArrayItems", "Else", "NeverThrows"]));
+  // What warns, or is a form, is never forgotten by a variant.
+  for (const fact of ["Getter", "Live", "Iterator", "InPlace", "IterLent"]) expect(forgettable()).not.toContain(fact);
+  const foundFile = join(dir, "found-without.txt");
+  const without = await compile(join(corpus, name), dir, "2024", ["--without-known", "ArrayItems", "--knowns-found", foundFile]);
+  if (!("js" in without)) throw new Error(without.error);
+  expect(code(without.js)).not.toBe(code(compiled.js));
+  expect(readFileSync(foundFile, "utf8").split("\n")).not.toContain("ArrayItems");
+  // Into the case's folder: one that compiled would write beside its source,
+  // over the case's snapshot, as a mutant that takes any name did.
+  const unknown = Bun.spawnSync([compiler, join(corpus, name), "-o", join(dir, "unknown.js"), "--without-known", "Nothing"]);
+  expect(unknown.exitCode).not.toBe(0);
+  expect(unknown.stderr.toString()).toContain("--without-known: no fact `Nothing`; `rust-js --knowns` lists them");
+});
 
 // A name that's no case is the test above's to report.
 for (const name of chosen.filter((name) => cases.includes(name))) {

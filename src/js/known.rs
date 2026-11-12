@@ -1,10 +1,29 @@
 //! What the lowering knows of an expression that its kind doesn't say,
-//! each fact a `Known`, held by `Facts` (`super::Facts`).
+//! each fact a `Known`, held by `Facts` (`super::Facts`); what each is to
+//! those that read it, its `Role`; and the facts a compile forgets,
+//! `--without-known`'s, a test hook as `--prepare-without` is (ADR 1127).
 
-/// What the lowering knows of an expression that its kind doesn't say:
-/// the one place a later pass reads it from, not from where it's written.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Known {
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// `Known`, its variants each with what it says, and `Known::ALL`, every
+/// one in the order they're declared: one list, so none is left out.
+macro_rules! knowns {
+    ($($(#[$doc:meta])* $name:ident,)*) => {
+        /// What the lowering knows of an expression that its kind doesn't say:
+        /// the one place a later pass reads it from, not from where it's written.
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        pub enum Known {
+            $($(#[$doc])* $name,)*
+        }
+
+        impl Known {
+            /// Each fact, in the order they're declared.
+            pub const ALL: &'static [Known] = &[$(Known::$name,)*];
+        }
+    };
+}
+
+knowns! {
     /// A call of a method of a `str` or a slice, as Rust's types tell,
     /// `s.startsWith(t)`: never a crate's or a binding's of the same
     /// name, `P.at(p)`, which may do anything.
@@ -303,4 +322,176 @@ pub enum Known {
     /// none, `Array.from(set.values())`, where one of a `dyn` Rust made
     /// asks it (`iterators::binding_made`, the user's decision, #1359).
     BindingIterator,
+}
+
+/// What a `Known` is to those that read it: whether the JS is right
+/// without it (ADR 1127, #1460). A fact that only lets a reader do more is
+/// safe to lose, a move or a rebuilt expression that drops it leaving the
+/// JS longer and right; one a reader needs is not, and is named so here,
+/// each `match` of every fact.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Role {
+    /// Lets its reader write a plainer form of what's right without it:
+    /// unknown, the reader writes the form that's right of any value.
+    Permits,
+    /// Says how the program wrote it, which a rewrite keeps as written:
+    /// unknown, the rewrite is made, and the JS does the same.
+    AsWritten,
+    /// Warns of what evaluating it may do that its kind doesn't say, a
+    /// getter's answer or a live binding's value: unknown, its reader takes
+    /// it for what its kind says, a plain read or write. Never forgotten.
+    Warns,
+    /// What the JS is, a form the lowering chose that its kind doesn't
+    /// spell, which its readers take apart or finish by: unknown, they
+    /// read another form's JS. Never forgotten: a typed IR's to carry as a
+    /// type, not a fact (#1459).
+    Form,
+}
+
+impl Known {
+    /// What this fact is to its readers.
+    pub fn role(self) -> Role {
+        match self {
+            Known::Read
+            | Known::Lasting
+            | Known::Sliced
+            | Known::SetItems
+            | Known::Chars
+            | Known::Defined
+            | Known::Present
+            | Known::Taken
+            | Known::ArrayItems
+            | Known::Item
+            | Known::NeverThrows
+            | Known::Unseen
+            | Known::RunsNothing
+            | Known::Boolean
+            | Known::Diverges
+            | Known::NoneUndefined
+            | Known::NoneNull
+            | Known::Whole
+            | Known::ReceiverIterated
+            | Known::Text
+            | Known::NeverNaN
+            | Known::Absent
+            | Known::AsGiven
+            | Known::OwnMethodCall
+            | Known::ThisUnread
+            | Known::NamespaceMethod
+            | Known::KeyedMethod
+            | Known::Part
+            | Known::Literal
+            | Known::RunsInItsCall
+            | Known::BindingIterator => Role::Permits,
+            Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
+            Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Binding | Known::Evidence => {
+                Role::Warns
+            }
+            // `Iterator` among them: what isn't known to be one is taken
+            // for an array, not for either (by_ref_steps, ADR 1127).
+            Known::InPlace
+            | Known::Iterator
+            | Known::ClosesWhatItSteps
+            | Known::IterStepped
+            | Known::IterRange
+            | Known::IterOwn
+            | Known::IterKnowing
+            | Known::IterClosing
+            | Known::IterLent
+            | Known::IterRev
+            | Known::IterStepBy
+            | Known::IterRepeatingN
+            | Known::IterKnowsBack
+            | Known::IterKnowsLength
+            | Known::IterEnumerate
+            | Known::IterMappedAsItIs
+            | Known::NullStored
+            | Known::HandledObject => Role::Form,
+        }
+    }
+
+    /// Its name, as `--knowns` lists it and `--without-known` names it.
+    pub fn name(self) -> String {
+        format!("{self:?}")
+    }
+
+    /// The fact `name` names, if any.
+    pub fn named(name: &str) -> Option<Known> {
+        Known::ALL.iter().copied().find(|known| known.name() == name)
+    }
+
+    pub(super) const fn bit(self) -> u64 {
+        1 << self as u64
+    }
+}
+
+/// The facts this compile forgets, `--without-known`'s: none, of a build.
+static FORGOTTEN: AtomicU64 = AtomicU64::new(0);
+/// The facts a reader found so far, of those not forgotten.
+static FOUND: AtomicU64 = AtomicU64::new(0);
+
+/// Forgets `knowns` for the rest of the compile: no reader finds one,
+/// wherever it was said. Set once, before anything is lowered.
+pub fn forget(knowns: &[Known]) {
+    FORGOTTEN.store(
+        knowns.iter().fold(0, |bits, known| bits | known.bit()),
+        Ordering::Relaxed,
+    );
+}
+
+/// `check` run with nothing forgotten: a contract's check of what a pass
+/// left reads what was said. Forgetting a fact tries the rewrites that
+/// read it, not what checks them, which would take the JS a fact vouches
+/// for, a `finally` of what never throws, for broken.
+pub fn remembering<T>(check: impl FnOnce() -> T) -> T {
+    let forgotten = FORGOTTEN.swap(0, Ordering::Relaxed);
+    let checked = check();
+    FORGOTTEN.store(forgotten, Ordering::Relaxed);
+    checked
+}
+
+/// What a reader sees of `facts`' bits: those not forgotten.
+pub(super) fn seen(facts: u64) -> u64 {
+    facts & !FORGOTTEN.load(Ordering::Relaxed)
+}
+
+/// Notes that a reader found `facts`' bits, each a fact it acts on.
+pub(super) fn found(facts: u64) {
+    if facts != 0 {
+        FOUND.fetch_or(facts, Ordering::Relaxed);
+    }
+}
+
+/// The facts a reader found in this compile, in `Known::ALL`'s order:
+/// what `--knowns-found` writes, the facts whose forgetting can change a
+/// compile's JS.
+pub fn found_names() -> Vec<String> {
+    let found = FOUND.load(Ordering::Relaxed);
+    (Known::ALL.iter())
+        .filter(|known| found & known.bit() != 0)
+        .map(|known| known.name())
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Known, Role};
+
+    #[test]
+    fn every_fact_is_listed_once_in_its_order_and_named() {
+        for (at, known) in Known::ALL.iter().enumerate() {
+            assert_eq!(*known as usize, at);
+            assert_eq!(Known::named(&known.name()), Some(*known));
+        }
+        assert!(Known::ALL.len() <= 64, "a `Facts` is 64 bits");
+        assert_eq!(Known::named("Nothing"), None);
+    }
+
+    #[test]
+    fn a_fact_has_its_role() {
+        assert_eq!(Known::Lasting.role(), Role::Permits);
+        assert_eq!(Known::Else.role(), Role::AsWritten);
+        assert_eq!(Known::Getter.role(), Role::Warns);
+        assert_eq!(Known::IterLent.role(), Role::Form);
+    }
 }

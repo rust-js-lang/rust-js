@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     name: "presence-none-kind-unsaid",
     breaks: "an `Option` whose `None` is only `undefined` is tested `currentEvent == null`, where React's resolveUpdatePriority writes `currentEvent === undefined` (ADR 0298, amended by the user)",
     file: "src/js/make.rs",
-    find: "        match none == Facts::of(Known::NoneUndefined) || none == Facts::of(Known::NoneNull) {\n",
+    find: "        match none.only_none().is_some() {\n",
     replace: "        match false {\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
   },

@@ -203,4 +203,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a long type's name is printed in its error"],
   },
+  {
+    name: "knowns-found-unwritten",
+    breaks: "`--knowns-found` writes no fact, so the net makes no variant of any: each fact is tried by nothing (ADR 1127)",
+    file: "src/main.rs",
+    find: "            let found: String = js::known_found().iter().map(|name| format!(\"{name}\\n\")).collect();\n",
+    replace: "            let found = String::new();\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
+  },
 ];

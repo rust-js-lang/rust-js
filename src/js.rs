@@ -29,7 +29,7 @@ pub use self::{
     },
     expr_walk::*,
     imports::{Import, ImportFrom, Package, Reexport},
-    known::Known,
+    known::{Known, Role, forget as forget_known, found_names as known_found, remembering},
     stmt_walk::*,
     walk::*,
     writes::Writes,
@@ -695,9 +695,19 @@ impl PartialEq for HeldAs {
 }
 
 /// What the lowering knows of an expression, each of `Known`'s: a set, so
-/// one fact never hides another (the review's P2, ADR 0889).
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+/// one fact never hides another (the review's P2, ADR 0889). Every read of
+/// it is of what the compile hasn't forgotten (`known::seen`, ADR 1127):
+/// `has`, the parts below and `==`, so a fact forgotten is one never said.
+#[derive(Clone, Copy, Default)]
 pub struct Facts(u64);
+
+impl PartialEq for Facts {
+    fn eq(&self, other: &Facts) -> bool {
+        known::seen(self.0) == known::seen(other.0)
+    }
+}
+
+impl Eq for Facts {}
 
 impl Facts {
     /// Nothing known.
@@ -705,21 +715,23 @@ impl Facts {
 
     /// `known` alone.
     pub const fn of(known: Known) -> Facts {
-        Facts(1 << known as u64)
+        Facts(known.bit())
     }
 
     pub fn has(self, known: Known) -> bool {
-        self.0 & Facts::of(known).0 != 0
+        let has = known::seen(self.0) & known.bit();
+        known::found(has);
+        has != 0
     }
 
     /// These and `known`.
     pub fn with(self, known: Known) -> Facts {
-        Facts(self.0 | Facts::of(known).0)
+        Facts(self.0 | known.bit())
     }
 
     /// These but `known`.
     pub fn without(self, known: Known) -> Facts {
-        Facts(self.0 & !Facts::of(known).0)
+        Facts(self.0 & !known.bit())
     }
 
     /// These and `other`'s.
@@ -727,19 +739,35 @@ impl Facts {
         Facts(self.0 | other.0)
     }
 
+    /// Those of these that are among `kept`, as a reader finds them.
+    fn part(self, kept: &[Known]) -> Facts {
+        let part = known::seen(self.0) & kept.iter().fold(0, |bits, known| bits | known.bit());
+        known::found(part);
+        Facts(part)
+    }
+
     /// What an `Option`'s presence test says of the `None` it tests for,
     /// `Known::NoneUndefined` or `Known::NoneNull`, which a test made
     /// again of the same `Option`, its negation, keeps.
     pub fn of_presence(self) -> Facts {
-        Facts(self.0 & (Facts::of(Known::NoneUndefined).0 | Facts::of(Known::NoneNull).0))
+        self.part(&[Known::NoneUndefined, Known::NoneNull])
+    }
+
+    /// The one `None` an `Option`'s is only ever, `Known::NoneUndefined`
+    /// or `Known::NoneNull`, where these say one of them alone.
+    pub fn only_none(self) -> Option<Known> {
+        match (self.has(Known::NoneUndefined), self.has(Known::NoneNull)) {
+            (true, false) => Some(Known::NoneUndefined),
+            (false, true) => Some(Known::NoneNull),
+            _ => None,
+        }
     }
 
     /// Whether two `Option`s' `None` is one and the same, each only `null`,
     /// a WebIDL getter's `T | null`, or each only `undefined`: where `===`
     /// answers as `==` does, `node.firstChild === node.lastChild` (rd117).
     pub fn same_none(self, other: Facts) -> bool {
-        let none = self.of_presence();
-        none == other.of_presence() && (none == Facts::of(Known::NoneNull) || none == Facts::of(Known::NoneUndefined))
+        self.only_none().is_some() && self.only_none() == other.only_none()
     }
 
     /// What evaluating it may do that its kind doesn't say, a getter's or
@@ -747,14 +775,14 @@ impl Facts {
     /// evaluation made again keeps: `a != b` of `!(a == b)`, `+m` of `+m`
     /// (#462).
     pub fn of_evaluation(self) -> Facts {
-        Facts(self.0 & Facts::of(Known::Getter).0)
+        self.part(&[Known::Getter])
     }
 
     /// What a test says of its `if`, not of its value: a written `else`
     /// (`Known::Else`) and a guard (`Known::Guard`), which a test made again
     /// of the same truth keeps, `flags & 4` of `(flags & 4) !== 0`.
     pub fn of_statement(self) -> Facts {
-        Facts(self.0 & (Facts::of(Known::Else).0 | Facts::of(Known::Guard).0))
+        self.part(&[Known::Else, Known::Guard])
     }
 }
 

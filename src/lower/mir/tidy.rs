@@ -190,7 +190,9 @@ fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &
     }
     if cfg!(debug_assertions) {
         for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
-            if let Some(why) = (contract.broken)(body) {
+            // Of every fact said, one `--without-known` forgets too: what's
+            // tried without it is the passes, not their check (ADR 1127).
+            if let Some(why) = crate::js::remembering(|| (contract.broken)(body)) {
                 panic!("tidy's `{name}` stage broke \"{}\": {why}", contract.name);
             }
         }

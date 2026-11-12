@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "    let js_made_all = false;\n",
     tests: ["test/object-model.test.ts", "-t", "js-made-all"],
   },
+  {
+    name: "without-known-any-name",
+    breaks: "`--without-known` of a name that's no fact is taken, forgetting nothing: a variant of a fact misspelled, or renamed since, tries the JS a build makes (ADR 1127)",
+    file: "src/command.rs",
+    find: "            return Err(format!(\n                \"--without-known: no fact `{name}`; `rust-js --knowns` lists them\"\n            ));\n",
+    replace: "            continue;\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
+  },
 ];

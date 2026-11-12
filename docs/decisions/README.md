@@ -115,6 +115,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0092 Generated programs, each from a seed, and reduced when they fail](0092-generated-programs.md)
 - [0093 Known bugs put back into the compiler, which the tests must catch](0093-mutations.md) *(amended by 1031: built many to a build)*
 - [1087 Each readability rewrite is checked on and off, against native Rust and JS-made reads](1087-each-readability-rewrite-is-checked-on-and-off.md) *(the user's decision, 2026-11-04)*
+- [1127 A fact an expression carries has a role, and the JS is right without each that only permits](1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md) *(#1460: `Known::role`, a permission, what was written, a warning or a form; `--without-known <fact>` forgets one for a compile, and ADR 1087's oracle tries each program without each of the 37 that permit or say what was written; `Known::Iterator` found a form)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place; a library's struct of functions is one too)*
