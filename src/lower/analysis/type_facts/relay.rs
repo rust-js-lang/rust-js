@@ -98,6 +98,44 @@ pub(super) type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), (std::collecti
 /// type and the fact.
 pub(super) type CarriedAsks = IndexSet<(DefId, TypeFact)>;
 
+/// How deep a type built of a function's slots may hold one type
+/// constructor within itself, where its layout is relayed to callers:
+/// zerocopy's `impl<T: KnownLayout> KnownLayout for MaybeUninit<T>`, whose
+/// `MaybeUninit` is `MaybeUninit<T::MaybeUninit>`, asks one wider of its
+/// makers each round, `MaybeUninit<MaybeUninit<..>>`, which never settles
+/// (#1430). Past it, the layout isn't relayed: a caller that would have to
+/// give it is refused where it's lowered, as one no caller gives.
+const NESTED_AT_MOST: usize = 8;
+
+/// Whether `ty` holds a type constructor, or an associated type's
+/// projection, `<<T as Shape>::Uninit as Shape>::Uninit`, within itself
+/// more than `NESTED_AT_MOST` deep, `held` the constructors around it.
+fn nests_past_bound(ty: ty::Ty<'_>, held: &mut Vec<DefId>) -> bool {
+    let constructed = match ty.kind() {
+        ty::Adt(adt, args) => Some((adt.did(), *args)),
+        ty::Alias(_, alias) => match alias.kind {
+            ty::Projection { def_id } => Some((def_id, alias.args)),
+            _ => None,
+        },
+        _ => None,
+    };
+    if let Some((id, args)) = constructed {
+        if held.iter().filter(|&&held| held == id).count() >= NESTED_AT_MOST {
+            return true;
+        }
+        held.push(id);
+        let past = args.types().any(|part| nests_past_bound(part, held));
+        held.pop();
+        return past;
+    }
+    let parts: Vec<ty::Ty<'_>> = match ty.kind() {
+        ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => vec![*inner],
+        ty::Tuple(parts) => parts.iter().collect(),
+        _ => Vec::new(),
+    };
+    parts.into_iter().any(|part| nests_past_bound(part, held))
+}
+
 /// `caller` asks `asked`: whether that's new.
 pub(super) fn ask<'tcx>(
     (asked, built, carried): (
@@ -111,6 +149,7 @@ pub(super) fn ask<'tcx>(
     match each {
         Asked::Carried(assoc, fact) => carried.insert((assoc, fact)),
         Asked::Slot(index, fact) => asked.insert((caller, index, fact)),
+        Asked::Built(ty, ..) if nests_past_bound(ty, &mut Vec::new()) => false,
         Asked::Built(ty, fact, gates) => match built.get_mut(&(caller, ty)) {
             Some((facts, read)) => {
                 let wider = either_gates(read, &gates);

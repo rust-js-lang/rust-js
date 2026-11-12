@@ -483,3 +483,50 @@ slot asked both is given `Size` alone; a library's manifest names it
 associated type no caller gives and no dictionary carries: its growth then
 isn't kept and `capacity()` refuses it (ADR 0419's amendment, which has
 the rest).
+
+## Amendment (2026-11-12): an impl's own dictionaries ask their makers, each fact relayed once, nested types bounded (#1430)
+
+An impl's dictionary makes the dictionaries of its supertraits and of its
+associated types' bounds (`supertrait_entries`, `item_bound_entries`), and
+the analysis never asked what those impls need of their makers. So
+ppv-lite86's `BitOps0: AndNot<Output = Self>` of an `x2<W, G>`, whose
+`AndNot` dictionary carries the size of `Output`, the built `x2<W, G>`, was
+refused, "`size_of` of a type parameter", where native Rust runs it.
+
+- **Each impl the crate makes a dictionary of asks for the dictionaries it
+  makes** (`of_impl_entries`), as a caller does that gives that impl for a
+  bound: a call edge to an impl rust-js lowers, or that impl's manifest
+  facts asked in its own terms.
+- **A dictionary that generic code makes of its own type parameters**,
+  `X2<W, u8>` given `W`, relays the layouts of the types that impl builds
+  of them, not only its parameters' facts: a call edge wherever an impl
+  argument names a type parameter.
+- **The fixpoint relays each fact of each call once** (`relayed_once`,
+  `carried_once`). What a fact relays depends only on the call and the
+  fact, so each round asks only what's new. Calls are deduplicated, and
+  each call's `copies_of_default` is found once.
+- **A built type nested in itself is bounded.** zerocopy's `impl<T:
+  KnownLayout> KnownLayout for MaybeUninit<T>`, whose `MaybeUninit` is
+  `MaybeUninit<T::MaybeUninit>`, asks its makers a layout one wider each
+  round, `MaybeUninit<MaybeUninit<..>>`, and so does a projection,
+  `<<T as Shape>::Uninit as Shape>::Uninit`, which never settles. A built
+  type that holds one constructor or projection within itself more than
+  `NESTED_AT_MOST` (8) deep isn't relayed. A caller that would have to give
+  it is refused where it's lowered, as one no caller gives, which is
+  rust-js's error, never a wrong layout. Such an impl was refused on main
+  too.
+
+zerocopy 0.8.63, timed on a quiet machine (load 2.1–2.6): 14.3 s on main,
+15.4 s with this. The fix without the bound didn't settle in 5 minutes.
+Its verdict is unchanged, still refused at its own `size_of` of a type
+parameter. Case C of ADR 0262: what was refused compiles, as Rust runs it.
+Corpus case `associated_iterator_steps` now gives the caller's own
+`IFused` to its item-bound dictionary's `from`, where it gave `false`.
+That was the same answer for a fused iterator, but no longer a guess.
+Tests: corpus case `supertrait_dictionary_asks_its_makers` (through a
+supertrait, generic code's dictionary of its own parameters, and an
+associated type's bound) against native Rust in both builds and through
+the metamorphic net; diagnostics.test.ts's "a layout of a type an impl
+nests in itself without end", refused, not followed forever; mutations
+`impl-entries-ask-nothing`, `dictionary-of-callers-params-relays-no-layout`,
+`nested-layouts-unbounded` and `nested-projections-unbounded`, caught.

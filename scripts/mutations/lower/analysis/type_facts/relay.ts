@@ -72,4 +72,20 @@ export const mutations: Mutation[] = [
     replace: "            false && crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
   },
+  {
+    name: "nested-layouts-unbounded",
+    breaks: "an impl whose associated type nests its own type around its parameter's asks its makers a layout one wider each round, forever (#1430)",
+    file: "src/lower/analysis/type_facts/relay.rs",
+    find: "const NESTED_AT_MOST: usize = 8;\n",
+    replace: "const NESTED_AT_MOST: usize = usize::MAX;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nests in itself without end"],
+  },
+  {
+    name: "nested-projections-unbounded",
+    breaks: "a projection nested in itself, `<<T as Shape>::Uninit as Shape>::Uninit`, isn't counted, so its layouts are asked one wider each round, forever (#1430)",
+    file: "src/lower/analysis/type_facts/relay.rs",
+    find: "            ty::Projection { def_id } => Some((def_id, alias.args)),\n",
+    replace: "            ty::Projection { def_id: _ } => None,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nests in itself without end"],
+  },
 ];

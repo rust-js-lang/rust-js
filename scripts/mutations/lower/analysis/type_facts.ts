@@ -37,12 +37,12 @@ export const mutations: Mutation[] = [
   {
     name: "type-facts-not-passed-on",
     breaks:
-      "a generic function passing its `U` on to one that asks `size_of::<T>()` isn't given `U`'s size",
+      "a library's impl the crate compiles itself, whose kept default asks `size_of` of the trait's `Self`, isn't given its own parameter's size (#1409)",
     file: "src/lower/analysis/type_facts.rs",
     find: "                if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
     replace:
       "                if false && asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
-    tests: ["test/corpus.test.ts", "-t", "type_facts"],
+    tests: ["test/crates.test.ts", "-t", "library_instance_impl_asks_its_defaults_facts"],
   },
   {
     name: "type-facts-unsized-asked",
@@ -287,8 +287,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller giving an impl's dictionary for a type of its slots that isn't one of its type parameters, `impl<T: Iterator> Itertools for T` of `<I as IntoIterator>::IntoIter`, asks none of what the impl asks, and is refused, as itertools' `free::sorted` and semver's were (#794)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                true if (0..impl_args.len()).any(of_slots) => self.calls.push((caller, impl_id, impl_args)),\n",
-    replace: "                true if (0..impl_args.len()).any(of_slots) => {}\n",
+    find: "                true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "                true if given_params => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {
@@ -379,8 +379,8 @@ export const mutations: Mutation[] = [
     name: "default-call-facts-unasked-of-copies",
     breaks: "a trait's default that gives its `Self` to a function asking `IInPlace` of it is copied into a blanket impl that asks its caller nothing, so its call is refused, \"the buffer std collects an iterator in place in\", itertools' `multi_cartesian_product(self)` (#1313)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            let copies = copies_of_default(tcx, caller, args);\n",
-    replace: "            let copies: Vec<collects::DefaultCopy<'tcx>> = Vec::new();\n",
+    find: "            let copies = copies[at].get_or_insert_with(|| copies_of_default(tcx, caller, args));\n",
+    replace: "            let copies: Vec<collects::DefaultCopy<'tcx>> = Vec::new();\n            let _ = &copies[..];\n",
     tests: ["test/corpus.test.ts", "-t", "^default_gives_its_callee_what_self_collects_in_place.rs$"],
   },
   {
@@ -473,5 +473,21 @@ export const mutations: Mutation[] = [
     find: "        settle_room(facts);\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "one TSize"],
+  },
+  {
+    name: "impl-entries-ask-nothing",
+    breaks: "an impl's supertrait and item-bound dictionaries ask their makers nothing, so the size of an associated type a supertrait's impl gives, `BitOps0: AndNot<Output = Self>` of an `X2<W, G>`, is refused (#1430)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        asking.of_impl_entries(tcx, foreign, trait_id, imp);\n",
+    replace: "        let _ = (trait_id, imp);\n",
+    tests: ["test/corpus.test.ts", "-t", "^supertrait_dictionary_asks_its_makers.rs$"],
+  },
+  {
+    name: "dictionary-of-callers-params-relays-no-layout",
+    breaks: "generic code that makes an impl's dictionary of its own type parameters, `X2<W, u8>`, relays none of the layouts of the types the impl builds of them, and is refused (#1430)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "                true if given_params && impl_args.iter().any(|arg| arg.as_type().is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())) => self.calls.push((caller, impl_id, impl_args)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^supertrait_dictionary_asks_its_makers.rs$"],
   },
 ];

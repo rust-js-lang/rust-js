@@ -26,10 +26,10 @@ function refWrapIntoIterator_intoIter(wrap, IClone) {
 
 const $markerFusedI = new WeakMap();
 
-export function markerFusedI(IIterator, IClone) {
-  return $traitImpl($markerFusedI, [IIterator, IClone], () => ({
+export function markerFusedI(IIterator, IClone, IFused) {
+  return $traitImpl($markerFusedI, [IIterator, IClone, IFused], () => ({
     OutIterator: () => ({ next: $nextSome }),
-    OutFromI: () => ({ from: (value) => wrapFromI_from(value, IIterator, IClone, false) }),
+    OutFromI: () => ({ from: (value) => wrapFromI_from(value, IIterator, IClone, IFused) }),
   }));
 }
 
@@ -67,6 +67,7 @@ function main() {
       markerFusedI(
         { next: $next },
         { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+        true,
       ),
     ),
     (iterator) =>

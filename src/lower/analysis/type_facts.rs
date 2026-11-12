@@ -264,6 +264,13 @@ pub(super) fn type_fact_params<'tcx>(
             asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
         }
     }
+    // What each impl the crate makes a dictionary of asks for the
+    // dictionaries its own makes, its supertraits' and its associated
+    // types' bounds' (#1430).
+    let lowered = crate::lower::traits::lowered_impls(tcx, foreign);
+    for &(trait_id, imp) in &lowered {
+        asking.of_impl_entries(tcx, foreign, trait_id, imp);
+    }
     let Asking {
         mut asked,
         mut built,
@@ -278,7 +285,6 @@ pub(super) fn type_fact_params<'tcx>(
     carried.retain(|&(assoc, fact)| carries(foreign, assoc, fact));
     // What every impl's dictionary carries, whatever asks it (#1341).
     carried.extend(carried_by_every_impl(tcx, foreign, library));
-    let lowered = crate::lower::traits::lowered_impls(tcx, foreign);
     let traits: IndexSet<DefId> = lowered.iter().map(|&(trait_id, _)| trait_id).collect();
     for trait_id in traits {
         if trait_id.is_local() {
@@ -335,6 +341,13 @@ pub(super) fn type_fact_params<'tcx>(
             }
         }
     }
+    // Each call once, and each fact of its callee's relayed of it once,
+    // whichever round finds it: what a fact relays depends on the call and
+    // the fact alone, so a round asks only what's new (#1430).
+    let calls: Vec<_> = (calls.into_iter().collect::<IndexSet<_>>()).into_iter().collect();
+    let mut copies: Vec<Option<Vec<collects::DefaultCopy<'tcx>>>> = calls.iter().map(|_| None).collect();
+    let mut relayed_once: IndexSet<(usize, ty::Ty<'tcx>, TypeFact, Gates)> = IndexSet::default();
+    let mut carried_once: IndexSet<(DefId, TypeFact)> = IndexSet::default();
     let mut changed = true;
     while changed {
         changed = false;
@@ -364,23 +377,33 @@ pub(super) fn type_fact_params<'tcx>(
                 changed |= asked.insert((id, tcx.generics_of(id).parent_count as u32 + at, fact));
             }
         }
-        for &(caller, callee, args) in &calls {
+        let mut asked_by: IndexMap<DefId, Vec<(u32, TypeFact)>> = IndexMap::default();
+        for &(id, index, fact) in &asked {
+            asked_by.entry(id).or_default().push((index, fact));
+        }
+        let mut built_of: IndexMap<DefId, Vec<(ty::Ty<'tcx>, TypeFact, Gates)>> = IndexMap::default();
+        for ((id, of), (asked_facts, gates)) in &built {
+            let each = asked_facts.iter().map(|&fact| (*of, fact, gates.clone()));
+            built_of.entry(*id).or_default().extend(each);
+        }
+        for (at, &(caller, callee, args)) in calls.iter().enumerate() {
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
             let no_built = Default::default();
-            let mut facts: Vec<(ty::Ty<'tcx>, TypeFact, Gates)> = (asked.iter())
-                .filter(|&&(id, _, _)| id == callee)
-                .map(|&(_, index, fact)| {
+            let mut facts: Vec<(ty::Ty<'tcx>, TypeFact, Gates)> = (asked_by.get(&callee).into_iter().flatten())
+                .map(|&(index, fact)| {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &no_built), callee, index);
                     (slot, fact, None)
                 })
                 .collect();
             // And the layouts of the types built of its slots it asks (#737).
-            for ((_, of), (asked_facts, gates)) in built.iter().filter(|((id, _), _)| *id == callee) {
-                facts.extend(asked_facts.iter().map(|&fact| (*of, fact, gates.clone())));
+            facts.extend(built_of.get(&callee).into_iter().flatten().cloned());
+            facts.retain(|(slot, fact, gates)| relayed_once.insert((at, *slot, *fact, gates.clone())));
+            if facts.is_empty() {
+                continue;
             }
             // Of a trait's default, in each impl's terms that copies it, as
             // its collects' are (`copies_of_default`, #1313).
-            let copies = copies_of_default(tcx, caller, args);
+            let copies = copies[at].get_or_insert_with(|| copies_of_default(tcx, caller, args));
             for (slot, fact, gates) in facts {
                 let relayed = (caller, callee, args);
                 for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &gates)) {
@@ -391,7 +414,7 @@ pub(super) fn type_fact_params<'tcx>(
                     args,
                     typing_env: impl_env,
                     own,
-                } in &copies
+                } in copies.iter()
                 {
                     let (imp, args, impl_env) = (*imp, *args, *impl_env);
                     // Not of what names any of the default's own parameters,
@@ -445,8 +468,12 @@ pub(super) fn type_fact_params<'tcx>(
         // = T`, of its own parameter; of one built of them, itertools'
         // `type Out = Result<U, E>`, the built type's, of the impl's makers
         // (#1348); of another's associated type, what its trait carries.
-        let impls: Vec<_> = (carried.iter())
-            .flat_map(|&(assoc, fact)| {
+        let fresh: Vec<_> = (carried.iter().copied())
+            .filter(|&each| !carried_once.contains(&each))
+            .collect();
+        carried_once.extend(fresh.iter().copied());
+        let impls: Vec<_> = (fresh.into_iter())
+            .flat_map(|(assoc, fact)| {
                 let trait_id = tcx.trait_of_assoc(assoc).expect("an associated type");
                 tcx.all_impls(trait_id)
                     .filter(|&imp| crate::lower::traits::is_lowered_impl(foreign, imp))
@@ -800,6 +827,45 @@ impl<'tcx> Asking<'tcx> {
         }
     }
 
+    /// What `imp`, an impl of `trait_id`, asks of its makers for the
+    /// dictionaries its own dictionary makes, its supertraits' and its
+    /// associated types' bounds' (`supertrait_entries`,
+    /// `item_bound_entries`): what each of those impls asks, as a caller
+    /// giving it for a bound asks it. ppv-lite86's `BitOps0: AndNot<Output
+    /// = Self>` of an `x2<W, G>`, whose `AndNot` dictionary carries its
+    /// `Output`'s size, the built `x2<W, G>`'s (#1430).
+    fn of_impl_entries(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        trait_id: DefId,
+        imp: DefId,
+    ) {
+        let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+        let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+        let supers = crate::lower::traits::held_supertraits(tcx, foreign, trait_id, trait_ref.args);
+        let item_bounds = (crate::lower::traits::item_bounds(tcx, trait_id, trait_ref.args).into_iter())
+            .filter(|(_, bound)| crate::lower::traits::has_item_bound_entry(tcx, foreign, bound.def_id));
+        for (_, bound) in supers.into_iter().chain(item_bounds) {
+            let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound)) else {
+                continue;
+            };
+            let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
+                continue;
+            };
+            if crate::lower::traits::is_lowered_impl(foreign, impl_id) {
+                self.calls.push((imp, impl_id, impl_args));
+                continue;
+            }
+            for (at, fact) in foreign.type_facts(impl_id) {
+                let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
+                for each in asked_of_caller(tcx, foreign, typing_env, (imp, impl_id, impl_args), (slot, fact, &None)) {
+                    self.ask(imp, each);
+                }
+            }
+        }
+    }
+
     /// `caller` asks `asked`.
     fn ask(&mut self, caller: DefId, each: Asked<'tcx>) {
         ask((&mut self.asked, &mut self.built, &mut self.carried), caller, each);
@@ -916,18 +982,16 @@ impl<'tcx> Asking<'tcx> {
                 }
                 continue;
             };
+            // An impl the crate lowers asks of a caller's parameter given
+            // it through the call edge below, as of a type built of them.
             for (index, arg) in impl_args.iter().enumerate() {
                 if let Some(ty) = arg.as_type()
                     && let ty::Param(param) = ty.kind()
+                    && !crate::lower::traits::is_lowered_impl(foreign, impl_id)
                 {
-                    match crate::lower::traits::is_lowered_impl(foreign, impl_id) {
-                        true => self.passed.push(((caller, param.index), (impl_id, index as u32))),
-                        false => {
-                            for (at, fact) in foreign.type_facts(impl_id) {
-                                if at as usize == index {
-                                    self.asked.insert((caller, param.index, fact));
-                                }
-                            }
+                    for (at, fact) in foreign.type_facts(impl_id) {
+                        if at as usize == index {
+                            self.asked.insert((caller, param.index, fact));
                         }
                     }
                 }
@@ -936,20 +1000,21 @@ impl<'tcx> Asking<'tcx> {
             // type parameters, `impl<T: Iterator> Itertools for T` of an
             // `<I as IntoIterator>::IntoIter`: what the impl asks of that,
             // as of a call's (#794).
-            let of_slots = |at: usize| {
-                impl_args
-                    .get(at)
-                    .and_then(|arg| arg.as_type())
-                    .is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())
-            };
+            let names_slots = |at: usize| (impl_args.get(at).and_then(|arg| arg.as_type())).filter(|ty| ty.has_param());
+            let of_slots = |at: usize| names_slots(at).is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)));
             // And of a library's, its slots past its type parameters, a std
             // associated type of one, `<T as Iterator>::Item` of
             // `impl<T: Iterator> Itertools for T`, given `<I as
             // Iterator>::Item` of the caller's `I`: its caller's, as a call's
             // is (#1401).
             let relayed = |at: usize| of_slots(at) || at >= impl_args.len();
+            // Of one given the caller's own type parameters too, the layouts
+            // of the types built of them its dictionary asks, `X2<W, u8>`'s
+            // of an `impl<W, G> AndNot for X2<W, G>` whose `Output` is
+            // `Self`, given `W` (#1430).
+            let given_params = (0..impl_args.len()).any(|at| names_slots(at).is_some());
             match crate::lower::traits::is_lowered_impl(foreign, impl_id) {
-                true if (0..impl_args.len()).any(of_slots) => self.calls.push((caller, impl_id, impl_args)),
+                true if given_params => self.calls.push((caller, impl_id, impl_args)),
                 true => {}
                 false => {
                     for (at, fact) in foreign.type_facts(impl_id) {
