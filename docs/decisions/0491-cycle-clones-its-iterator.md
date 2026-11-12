@@ -94,3 +94,30 @@ whose `usize::MAX` is rust-js's, in both builds. Mutations
 `cycle-hint-of-its-source-unasked`, `cycle-of-items-hintless`
 (`runtime/cycle.ts`) and `cycle-hint-unasked`
 (`lower/recognition/types.ts`).
+
+## Amendment (2026-11-13, #1585): what it holds where a clone or a drop panics
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. Three of
+`$cycleOf`'s steps lost a drop, or made one twice, where the crate's
+`Clone` or `Drop` panics, each as std's `Cycle` doesn't:
+
+- `Cycle::new(iter)` is `Cycle { orig: iter.clone(), iter }`: where the
+  clone panics, `iter`, a local of `new`'s frame, drops as it unwinds.
+  `$cycleOf` dropped nothing.
+- A `Cycle`'s derived `Clone` clones `orig`, then `iter`: where the second
+  panics, the first clone drops. `$cloneKey`, a held `Cycle`'s clone (ADR
+  0544), dropped nothing.
+- `self.iter = self.orig.clone()` drops the one it steps, then writes the
+  fresh clone, which Rust's assignment writes though that drop panics. The
+  runtime kept the dropped one, which closing then dropped again, a panic
+  while one unwinds, an abort, and never dropped the fresh one.
+
+Each now drops as Rust does, by `$unwinds`, the runtime's one place for
+what a frame does as it unwinds: the third writes the fresh clone there,
+then as it goes on. The build of std's bodies compiles std's
+`Cycle`, which did each already.
+`test/corpus/cycle_clone_or_drop_panics_drops_what_it_holds.rs` holds the
+three against native Rust in both builds; mutations
+`cycle-of-unwinding-clone-keeps-given`,
+`cycle-replaced-drop-unwinding-keeps-old` and
+`cycle-clone-unwinding-keeps-orig-clone` (`runtime/cycle.ts`).

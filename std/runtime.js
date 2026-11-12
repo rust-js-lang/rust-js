@@ -20143,9 +20143,12 @@ export function $cycle(items, clone = (item) => item) {
 // Closed, it drops both, the one kept first, as `Cycle`'s fields are, the
 // second though the first's drop throws, a panic, `$inTurn`'s, as its drop
 // glue goes on (#883). `boxed`: whether `next` gives a `Some` that may look
-// like `None` boxed (ADR 0051).
+// like `None` boxed (ADR 0051). Where the clone it keeps throws, a panic,
+// what it was given is dropped as it unwinds, a local of `Cycle::new`'s
+// frame (#1585).
 export function $cycleOf(iterator, clone, next, boxed = false, drop) {
-  return $cycleFrom(clone(iterator), iterator, clone, next, boxed, drop);
+  const orig = $unwinds(() => clone(iterator), drop && (() => drop(iterator)));
+  return $cycleFrom(orig, iterator, clone, next, boxed, drop);
 }
 
 // A `Cycle` of what it started with, `orig`, and what it steps, `iter`,
@@ -20160,8 +20163,17 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
       if (cycled.$state === "closed") return { done: true, value: undefined };
       let item = next(cycled.iter);
       if (item === undefined) {
+        // `self.iter = self.orig.clone()`: the one it steps dropped, then
+        // the fresh one in its place, though that drop throws, a panic, as
+        // Rust's assignment writes it as it unwinds, so what's closed then
+        // is the fresh one, not the one dropped again (#1585).
         const fresh = clone(cycled.orig);
-        drop?.(cycled.iter);
+        $unwinds(
+          () => drop?.(cycled.iter),
+          () => {
+            cycled.iter = fresh;
+          },
+        );
         cycled.iter = fresh;
         item = next(cycled.iter);
         if (item === undefined) return { done: true, value: undefined };
@@ -20185,7 +20197,14 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
     if (low === 0 && high === 0) return [0, 0];
     return low === 0 ? [0, undefined] : [4294967295, undefined];
   };
-  cycled[$cloneKey] = () => $cycleFrom(clone(cycled.orig), clone(cycled.iter), clone, next, boxed, drop);
+  // Its derived `Clone`, each field's in turn: where the clone of what it
+  // steps throws, a panic, the clone of what it started with is dropped as
+  // it unwinds (#1585).
+  cycled[$cloneKey] = () => {
+    const orig = clone(cycled.orig);
+    const iter = $unwinds(() => clone(cycled.iter), drop && (() => drop(orig)));
+    return $cycleFrom(orig, iter, clone, next, boxed, drop);
+  };
   return cycled;
 }
 
