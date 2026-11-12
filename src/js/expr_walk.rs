@@ -5,7 +5,15 @@ use super::*;
 
 /// The methods of a `str` or a slice, made by `Expr::read`, that only read
 /// it and throw nothing (`Known::Read`, ADR 0892).
-const READS: &[&str] = &["startsWith", "endsWith", "includes", "toUpperCase", "toLowerCase", "at"];
+const READS: &[&str] = &[
+    "startsWith",
+    "endsWith",
+    "includes",
+    "toUpperCase",
+    "toLowerCase",
+    "at",
+    "slice",
+];
 
 impl Expr {
     /// Each variable this reads, closures' bodies too, but not a string's

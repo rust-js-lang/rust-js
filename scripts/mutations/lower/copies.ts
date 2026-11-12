@@ -457,4 +457,20 @@ export const mutations: Mutation[] = [
     replace: "        let copied = Expr::var(\"item\");\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "moved-inline-fields-shared",
+    breaks: "a move of a struct whose address is taken shares the struct inline in it, which a write over a pointer into it then changes in the value moved (#1535)",
+    file: "src/lower/copies.rs",
+    find: "            own(t)\n                && self.is_object(t)\n",
+    replace: "            false\n                && self.is_object(t)\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_local_moved_out.rs$"],
+  },
+  {
+    name: "moved-std-type-spread",
+    breaks: "a move of std's type whose address is taken, a `HashMap`, is spread as its Rust fields, which its JS `Map` hasn't, not refused (#1551)",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, _) => !self.recognition().in_sysroot(adt.did()),\n",
+    replace: "            ty::Adt(..) => true,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a HashMap whose address is taken, moved"],
+  },
 ];

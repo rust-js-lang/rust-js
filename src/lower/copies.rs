@@ -246,6 +246,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// A place a raw pointer is taken to or into, moved, `let kept = m;`:
+    /// a copy, as the value moved is its own allocation, at another address,
+    /// as each live local is (#1535), and the place keeps its object, which
+    /// a write after the move is over (#1500). Of what Rust's move copies,
+    /// its bytes: each struct, tuple or array inline in it copied in turn,
+    /// `{ ...o, inner: [o.inner[0], o.inner[1]] }`, and what it owns
+    /// elsewhere, a `Vec`'s items, moved with it, shared, as is each of
+    /// std's types, which JS holds in a form of its own, a `Map`. None of
+    /// one moved whole, a `Vec` JS holds as one object with its items,
+    /// whose copy would be another's (#1551).
+    pub(super) fn moved_apart(&self, place: Expr, ty: Ty<'tcx>) -> Option<Expr> {
+        // Of the crate's types, or a library's, a tuple or an array: held as
+        // its fields, which `shape` lists, as a std type isn't.
+        let own = |t: Ty<'tcx>| match t.kind() {
+            ty::Adt(adt, _) => !self.recognition().in_sysroot(adt.did()),
+            ty::Tuple(_) | ty::Array(..) => true,
+            _ => false,
+        };
+        if !own(ty) {
+            return None;
+        }
+        // A field held inline that's an object of its own, copied in turn.
+        let inline = |t: Ty<'tcx>| {
+            own(t)
+                && self.is_object(t)
+                && !self.mut_ref_form(t).is_cell()
+                && (!matches!(self.shape(t), Shape::Other) || matches!(t.kind(), ty::Array(..)))
+        };
+        match self.shape(ty) {
+            Shape::Object(fields) => {
+                let mut props = vec![Prop::Spread(place.clone())];
+                for (name, t) in Self::named_fields(fields) {
+                    if inline(t) {
+                        props.push(Prop::Field(
+                            name.clone(),
+                            self.moved_apart(Expr::member(place.clone(), name), t)?,
+                        ));
+                    }
+                }
+                Some(Expr::object(props))
+            }
+            Shape::Array(tys) => {
+                let mut items = Vec::new();
+                for (i, t) in tys.into_iter().enumerate() {
+                    let item = Expr::index(place.clone(), Expr::int(i as i128));
+                    items.push(if inline(t) { self.moved_apart(item, t)? } else { item });
+                }
+                Some(Expr::array(items))
+            }
+            // An array's items: shared, as nothing writes into one of
+            // them over its place yet (#1553).
+            Shape::Other => match ty.kind() {
+                ty::Array(..) => Some(Expr::read(place, "slice", Vec::new())),
+                _ => None,
+            },
+        }
+    }
+
     /// Rust copies a `Copy` value when it's read, and JS objects are shared
     /// references. The two only disagree if one of the copies is later
     /// changed in place, which needs a type in `mutated`. So only those

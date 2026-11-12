@@ -22,10 +22,11 @@ for (const [name, source, message, crate] of [
   // pointers to one place that differ (#1502, #1513).
   ["a raw pointer to what Option::as_mut lends through another's", "pub fn f() -> bool { let mut alone = Some(Some(10u32)); let one = &raw mut *(*alone.as_mut().unwrap()).as_mut().unwrap(); let two = &raw mut *(*alone.as_mut().unwrap()).as_mut().unwrap(); one as usize == two as usize }", "which JS holds in a cell made at each call, a place on no record (#1513)"],
   ["a raw pointer to what Option::as_mut lends", "pub fn f(o: &mut Option<Option<(u8, u32)>>) -> bool { let at = &raw const *o.as_mut().unwrap(); at == &raw const *o.as_mut().unwrap() }", "a raw pointer to what a `&mut` a call lends refers to, `o.as_mut()`'s, which JS holds in a cell made at each call, a place on no record (#1513)"],
-  // A local whose address is taken, moved out and assigned again: the
-  // value moved holds its object, so the write can't be over it, and
-  // another object would be at another address (#1484).
-  ["a local whose address is taken, moved out and assigned again", "pub struct N(u8);\npub fn f() -> (usize, usize, u8) { let mut m = N(1); let at = &raw const m as usize; let kept = m; m = N(2); (at, &raw const m as usize, kept.0 + m.0) }", "a place whose address is taken, assigned whole where it may hold a value or not, or after it's moved out (#1500)"],
+  // A `Vec` whose own address is taken, moved: JS holds its header and
+  // items as one object, so a copy would be another's items and the same
+  // object the same address (#1551).
+  ["a HashMap whose address is taken, moved", "use std::collections::HashMap;\npub fn f() -> bool { let m = HashMap::<u8, u8>::new(); let at = &raw const m as usize; let k = m; at == &raw const k as usize }", "a value of std's type whose address is taken, moved, which JS holds in a form of its own, a `Vec` as one object with its items: a copy would be another's, and the same object has the same address (#1551)"],
+  ["a Vec whose address is taken, moved", "pub fn f() -> bool { let v = vec![1u8, 2]; let at = &raw const v as usize; let k = v; at == &raw const k as usize }", "a value of std's type whose address is taken, moved, which JS holds in a form of its own, a `Vec` as one object with its items: a copy would be another's, and the same object has the same address (#1551)"],
   // An object std lends from inside its receiver in a `$some` box, a
   // `OnceCell` of an `Option` of a struct's, in a crate that asks that
   // type's address, is no record's: refused (#1513), where one held as the

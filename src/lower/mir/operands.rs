@@ -27,6 +27,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "copying a closure that changes what it captured"));
         }
         let read = self.mir_operand_read(state, operand, out)?;
+        // A place a raw pointer is taken to or into, moved: a copy of its
+        // own, at another address, the place keeping its object (#1535).
+        if let Operand::Move(place) = operand
+            && state.facts.moved_apart(state.location(), *place)
+        {
+            let ty = operand.ty(&state.body.local_decls, self.tcx);
+            let span = state.body.local_decls[place.local].source_info.span;
+            let held = self.value_expr(read, span)?;
+            let Some(copied) = self.moved_apart(held, ty) else {
+                return Err(refuse(
+                    self.tcx,
+                    span,
+                    Refused::Memory(
+                        "a value of std's type whose address is taken, moved, which JS holds in a form of its own, a `Vec` as one object with its items: a copy would be another's, and the same object has the same address (#1551)",
+                    ),
+                ));
+            };
+            return Ok(Value::Expr(copied));
+        }
         // A field held where it's made read whole: the box code that
         // doesn't hold it so reads, where it's read not as it's held
         // (`assign`'s, #470, rd645).

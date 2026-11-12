@@ -288,4 +288,13 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) && false => {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a binding that runs nothing makes"],
   },
+  {
+    name: "slice-read-effectful",
+    breaks: "an array's copy, `a.slice()`, given to `mem::forget` is kept as a statement that does nothing (#1535)",
+    file: "src/js/expr_walk.rs",
+    find: "    \"slice\",\n];\n",
+    replace: "];\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+    snapshots: true,
+  },
 ];

@@ -35,6 +35,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// How each whole write of a local a raw pointer is taken to, an object
     /// assigned whole again, is written (#1484).
     rewritten: IndexMap<mir::Location, (crate::lower::pointers::Rewritten, Vec<mir::Place<'tcx>>)>,
+    /// Each move of a place a raw pointer is taken to or into, a copy
+    /// (`moved_apart_moves`, #1535).
+    moved_apart: IndexSet<(mir::Location, mir::Place<'tcx>)>,
     /// Where each range or constant pattern is, `2..=5` or `1.0`, whose
     /// tests MIR writes bound or constant first, `2 <= k`, `1 == kind`.
     tested: Vec<Span>,
@@ -194,6 +197,11 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         at: mir::Location,
     ) -> Option<&(crate::lower::pointers::Rewritten, Vec<mir::Place<'tcx>>)> {
         self.rewritten.get(&at)
+    }
+
+    /// Whether a move of `place` at `at` copies it (#1535).
+    pub(super) fn moved_apart(&self, at: mir::Location, place: mir::Place<'tcx>) -> bool {
+        self.moved_apart.contains(&(at, place))
     }
 
     pub(super) fn tested(&self) -> &[Span] {
@@ -478,6 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             pointed: self.pointed_locals(body),
             rewritten: self.rewritten_writes(body),
+            moved_apart: self.moved_apart_moves(body),
             tested: self.tested_patterns(),
             jumps: self.written_jumps(),
             payloads: self.mir_payloads(body, locals),
