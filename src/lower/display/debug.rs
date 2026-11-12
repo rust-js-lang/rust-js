@@ -438,6 +438,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.range_kind(ty).is_some() {
             return self.range_debug(value, ty, span, pretty);
         }
+        // A `RandomState`, `RandomState { .. }`, as std's `Debug` shows it,
+        // `{:#?}` too, whose `finish_non_exhaustive` of no field writes it
+        // on one line (#1420).
+        if self.is_std_type(ty, crate::lower::recognition::StdItem::RandomState) {
+            return Ok(Expr::str("RandomState { .. }"));
+        }
         // `PhantomData<u8>`, its type's name as `type_name` gives it (ADR
         // 0132); of a type parameter, the name its caller gives (ADR 0452).
         if let ty::Adt(_, args) = ty.kind()

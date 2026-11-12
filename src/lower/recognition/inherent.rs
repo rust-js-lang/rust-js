@@ -3,6 +3,27 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether `def_id`, a `HashMap`'s or a `HashSet`'s own method, is of
+    /// one whose hasher, the type after its keys and values as `args` give
+    /// it, before its allocator, is a `RandomState` (#1420).
+    fn random_state_table(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let Some(imp) = tcx.inherent_impl_of_assoc(def_id) else {
+            return false;
+        };
+        let impl_args = &args[..tcx.generics_of(imp).count().min(args.len())];
+        let owner = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization())
+            .instantiate(tcx, impl_args)
+            .skip_normalization();
+        let hasher_at = if self.is_std_type(owner, StdItem::HashMap) {
+            2
+        } else {
+            1
+        };
+        matches!(owner.kind(), ty::Adt(_, of) if of.types().nth(hasher_at)
+            .is_some_and(|hasher| self.is_std_type(hasher, StdItem::RandomState)))
+    }
+
     /// A method of a std type's own, by its type and its name.
     pub(super) fn classify_inherent(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         let tcx = self.tcx;
@@ -33,6 +54,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             sorted: self.is_sorted(owner),
             placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),
             hashed: adt(StdItem::HashMap) || adt(StdItem::HashSet),
+            random_state: (adt(StdItem::HashMap) || adt(StdItem::HashSet)) && self.random_state_table(def_id, args),
             entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry),
             occupied: self.is_occupied_entry(owner),
             vacant: self.is_vacant_entry(owner),

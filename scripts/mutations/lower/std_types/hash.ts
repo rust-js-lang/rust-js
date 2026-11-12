@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-built-as-its-default",
+    breaks: "a `RandomState`'s `build_hasher()` is its hasher's `Default` as a `BuildHasherDefault`'s, of a `DefaultHasher` it holds none of, refused",
+    file: "src/lower/std_types/hash.rs",
+    find: "        if is_std_def(self.tcx, adt.did(), StdItem::RandomState) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
+    name: "random-state-new-unrecognized",
+    breaks: "`RandomState::new()` is refused as a call rust-js doesn't know",
+    file: "src/lower/std_types/hash.rs",
+    find: "            HashOp::RandomState => Expr::undefined(),\n",
+    replace: "            HashOp::RandomState => return Ok(None),\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "hash-one-of-nothing",
     breaks: "`hash_one(x)` of a `BuildHasherDefault<DefaultHasher>` writes nothing of `x`, every value's hash an empty hasher's (#1155)",
     file: "src/lower/std_types/hash.rs",

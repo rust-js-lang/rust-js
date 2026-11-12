@@ -22,13 +22,14 @@ const sources = files("src").filter(path => path.endsWith(".rs"));
 // differ from one compile of a program to the next.
 test("the compiler's maps and sets are walked in an order the program decides", () => {
   // What the code names, not its comments or strings: std's, or a hasher
-  // of a process's random keys.
+  // of a process's random keys, `RandomState` as a type, not a variant of
+  // the compiler's own that names it, `StdItem::RandomState` (#1420).
   const code = (file: string) =>
     read(file)
       .split("\n")
       .map((line) => line.replace(/"(?:[^"\\]|\\.)*"/g, '""').replace(/\/\/.*$/, ""))
       .join("\n");
-  const std = /\b(?:collections::(?:\{[^}]*\b)?Hash(?:Map|Set)\b|hash_(?:map|set)::|RandomState\b)|(?<!::)\bHash(?:Map|Set)\s*(?:<|::)/;
+  const std = /\b(?:collections::(?:\{[^}]*\b)?Hash(?:Map|Set)\b|hash_(?:map|set)::|hash::RandomState\b|(?<![:\w])RandomState\b(?!\s*[,}]))|(?<!::)\bHash(?:Map|Set)\s*(?:<|::)/;
   expect(sources.filter((file) => std.test(code(file)))).toEqual([]);
   expect(read("src/collections.rs")).toContain("pub type IndexMap<K, V> = indexmap::IndexMap<K, V, rustc_hash::FxBuildHasher>;");
 });

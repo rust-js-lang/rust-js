@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "table-hasher-taken-for-its-room",
+    breaks: "`with_capacity_and_hasher(n, s)` and `with_hasher(s)` take the hasher for a capacity, `$tableRoomFor(noted(undefined), ..)`, a room check of nothing that JS's comparisons of `undefined` pass, so only the JS reads otherwise",
+    file: "src/lower/std_types/map.rs",
+    find: "                let room = given.len() - usize::from(hasher);\n",
+    replace: "                let room = given.len();\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "table-hasher-unread",
+    breaks: "a `HashMap`'s `hasher()` of a `RandomState` is refused",
+    file: "src/lower/std_types/map.rs",
+    find: "        \"hasher\" if random_state => MapOp::Hasher,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "map-made-of-iter",
     breaks:
       "a set or a map collected from an array is `new Set($iter([1, 2]))`, `new $KeySet($iter(xs))`, where its constructor steps the array the same",

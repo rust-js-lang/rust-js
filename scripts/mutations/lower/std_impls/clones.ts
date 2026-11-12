@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-clone-refused",
+    breaks: "a `RandomState`'s `clone()`, of generic code too, is refused, though it holds nothing JS sees",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::RandomState) => Ok(place),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "map-keys-cloned-by-value-alone",
     breaks:
       "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",

@@ -575,6 +575,10 @@ pub(crate) enum StdItem {
     /// `hash::BuildHasherDefault<H>`, which holds nothing, building an
     /// `H::default()` (#1155).
     BuildHasherDefault,
+    /// `hash::RandomState`, which holds nothing in JS, building a
+    /// `DefaultHasher` (#1420, ADR 0262's "none" row: its keys are random
+    /// in Rust, so no program can see which a build hashes with).
+    RandomState,
     ArrayIntoIter,
     AsMut,
     AsRef,
@@ -699,6 +703,7 @@ impl StdItem {
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::FutureReady => Symbol::intern("FutureReady"),
             StdItem::BuildHasherDefault => Symbol::intern("BuildHasherDefault"),
+            StdItem::RandomState => Symbol::intern("RandomState"),
             StdItem::Ord => sym::Ord,
             StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -760,6 +765,12 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
             tcx.def_kind(id) == DefKind::Struct
                 && tcx.item_name(id).as_str() == "BuildHasherDefault"
                 && of_std_crate(tcx, id, StdCrate::Core)
+        }
+        // `std`'s `hash::RandomState`, by its crate and name.
+        StdItem::RandomState => {
+            tcx.def_kind(id) == DefKind::Struct
+                && tcx.item_name(id).as_str() == "RandomState"
+                && of_std_crate(tcx, id, StdCrate::Std)
         }
         StdItem::OnceCell | StdItem::LazyCell => {
             let (cell, lock) = match item {

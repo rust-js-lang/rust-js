@@ -17,11 +17,18 @@ pub(in crate::lower) enum MapOp {
     /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`;
     /// of a capacity, `with_capacity(n)`, a hash table's room for it asked
     /// first, `table`'s (ADR 0774, amended).
+    /// Of a `RandomState`, which holds nothing JS sees (#1420),
+    /// `with_hasher(s)` and `with_capacity_and_hasher(n, s)` too, `hasher`
+    /// what's given last, made for what it does alone.
     New {
         set: bool,
         sorted: bool,
         table: Option<Table>,
+        hasher: bool,
     },
+    /// A `HashMap`'s or a `HashSet`'s `hasher()` of a `RandomState`:
+    /// `undefined`, which it is (#1420).
+    Hasher,
     /// A hash table's `reserve(n)`: room asked for its entries and `n`
     /// more (ADR 0774, amended); its capacity is the engine's.
     Reserve(Table),
@@ -172,6 +179,9 @@ pub(in crate::lower) struct MapOwner {
     /// std's own hash table, a `HashMap`'s or a `HashSet`'s, whose room is
     /// hashbrown's.
     pub(in crate::lower) hashed: bool,
+    /// Of those, one whose hasher is a `RandomState`, which holds nothing JS
+    /// sees, so no table's order or hashes are its (#1420).
+    pub(in crate::lower) random_state: bool,
     pub(in crate::lower) entry: bool,
     pub(in crate::lower) occupied: bool,
     pub(in crate::lower) vacant: bool,
@@ -187,6 +197,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         sorted,
         placed,
         hashed,
+        random_state,
         entry,
         occupied,
         vacant,
@@ -208,7 +219,19 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "pop" if placed => MapOp::ByPlace(PlaceOp::Pop),
         "sort_keys" if placed && map => MapOp::ByPlace(PlaceOp::SortKeys),
         "sort" if placed && set => MapOp::ByPlace(PlaceOp::SortKeys),
-        "new" | "with_capacity" if map || set => MapOp::New { set, sorted, table },
+        "new" | "with_capacity" if map || set => MapOp::New {
+            set,
+            sorted,
+            table,
+            hasher: false,
+        },
+        "with_hasher" | "with_capacity_and_hasher" if random_state => MapOp::New {
+            set,
+            sorted,
+            table,
+            hasher: true,
+        },
+        "hasher" if random_state => MapOp::Hasher,
         "reserve" if let Some(table) = table => MapOp::Reserve(table),
         "insert" if map => MapOp::Insert,
         "insert" if set => MapOp::Add,
@@ -898,9 +921,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
             }
             // What `with_capacity` is given does what it does (ADR 0315).
-            MapOp::New { set, sorted, table } => {
-                for value in values.by_ref() {
-                    if let Some(table) = table {
+            MapOp::New {
+                set,
+                sorted,
+                table,
+                hasher,
+            } => {
+                let given: Vec<Expr> = values.by_ref().collect();
+                let room = given.len() - usize::from(hasher);
+                for (i, value) in given.into_iter().enumerate() {
+                    if i >= room {
+                        if value.has_effects() {
+                            out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                        }
+                    } else if let Some(table) = table {
                         self.table_room(table, set, generic_args, value, span, out);
                     } else if value.has_effects() {
                         out.push(StmtKind::Expr(value).at(self.js_span(span)));
@@ -1001,6 +1035,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             },
             MapOp::Len => Expr::member(arg(), "size"),
+            MapOp::Hasher => {
+                let table = arg();
+                if table.has_effects() {
+                    out.push(StmtKind::Expr(table).at(self.js_span(span)));
+                }
+                Expr::undefined()
+            }
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
             // Of a map given by value, `into_keys()` or `into_values()`: the
             // array of the part it gives, which owns them and drops what it

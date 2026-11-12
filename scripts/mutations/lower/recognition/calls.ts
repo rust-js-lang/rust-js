@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-not-a-build-hasher",
+    breaks: "a `RandomState`'s `build_hasher()` and `hash_one(x)` are refused, as no std `BuildHasher` rust-js knows",
+    file: "src/lower/recognition/calls.rs",
+    find: "                || is_std_def(tcx, adt.did(), StdItem::RandomState))\n",
+    replace: "                || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "build-hasher-unrecognized",
     breaks: "`build_hasher()` of a `BuildHasherDefault` isn't std's, so a call of it is refused (#1155)",
     file: "src/lower/recognition/calls.rs",

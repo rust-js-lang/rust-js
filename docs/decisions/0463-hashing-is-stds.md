@@ -153,6 +153,33 @@ Held by the corpus case `build_hasher_default.rs`, against native Rust in
 both builds, and the mutations `build-hasher-default-refused`,
 `hash-one-of-nothing` and `build-hasher-unrecognized`, caught.
 
+## Amendment: `RandomState` (2026-11-12, #1420)
+
+quickcheck's `Arbitrary` of a `HashSet<K, H: BuildHasher + Default>`, and
+so itertools' `correct_permutations`, was refused at `RandomState`.
+**A `RandomState` is `undefined`**, as a `BuildHasherDefault` is: it holds
+only its two random keys, which no program can read but through the
+hashes it builds. `new()`, `Default` and `Clone`, a dictionary's in
+generic code too, give `undefined`; `{:?}` is std's `RandomState { .. }`,
+`{:#?}` and a width the same, as `finish_non_exhaustive` of no field writes
+it. Its `build_hasher()` is a `DefaultHasher`, `new $SipHasher(1, 3)`, and
+`hash_one(x)` std's provided body over one (`built_hasher`, its
+`BuildHasher::Hasher`). Rust's keys are random, a new pair each run and
+each `RandomState`, so a hash a `RandomState` builds is no value a program
+can depend on, and rust-js's fixed keys give none it could tell from
+Rust's: ADR 0262's "none" row, JavaScript's behavior. Two hashers of one
+`RandomState` agree, as Rust's do. A `HashMap`'s or a `HashSet`'s
+`with_hasher(s)` and `with_capacity_and_hasher(n, s)` of a `RandomState`
+are its `new()` and `with_capacity(n)`, `s` made for what it does alone,
+and its `hasher()` is `undefined` (`MapOwner::random_state`, of the type
+after its keys and values, before its allocator). A table of another
+hasher, and a `BuildHasher` method generic code calls of its type
+parameter, stay refused.
+
+Held by the corpus case `random_state_holds_nothing.rs`, against native
+Rust in both builds and through the metamorphic net, and nine mutations,
+caught.
+
 ## Amendment: std's ranges (2026-11-11, #1361)
 
 itertools' probe, once #1346 let it compile, was refused at "implementation

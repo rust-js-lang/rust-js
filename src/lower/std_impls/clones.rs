@@ -588,6 +588,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `BuildHasherDefault`, which holds nothing, `undefined` (#1155):
             // itself, a `HashMap<K, V, S>`'s `S: Clone` given one (#1420).
             ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::BuildHasherDefault) => Ok(place),
+            // And a `RandomState`, which holds nothing JS sees (#1420).
+            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::RandomState) => Ok(place),
             // A C-variadic function's `VaList`, the array of what it hasn't
             // read: a copy, read on its own (ADR 0428).
             ty::Adt(..) if crate::lower::recognition::is_va_list(self.tcx, ty) => {

@@ -38,8 +38,11 @@ pub(in crate::lower) enum HashOp {
     /// `ptr::hash(p, state)`: its pointer's address, as a `*const T`'s
     /// `hash` writes it (ADRs 0562, 0864).
     Address,
+    /// `RandomState::new()`: `undefined`, as its `Default` is, as it holds
+    /// nothing JS sees (#1420).
+    RandomState,
     /// `BuildHasherDefault::<H>`'s `build_hasher()`: an `H::default()`
-    /// (#1155).
+    /// (#1155); `RandomState`'s, a `DefaultHasher` (#1420).
     BuildHasher,
     /// `BuildHasherDefault::<H>`'s `hash_one(x)`, std's provided body: an
     /// `H::default()`, `x`'s `Hash` written into it, its `finish()` (#1155).
@@ -155,6 +158,31 @@ pub(in crate::lower) fn new_hasher(which: StdHasher, keys: Vec<Expr>) -> Expr {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What std's `BuildHasher` `built` builds, and its type: of a
+    /// `BuildHasherDefault<H>`, an `H::default()` (#1155); of a
+    /// `RandomState`, a `DefaultHasher`, whose keys are random in Rust and
+    /// fixed here, which no program can tell apart (#1420, ADR 0262's
+    /// "none" row).
+    fn built_hasher(&mut self, call: &Call<'_, 'tcx>) -> R<(Expr, Ty<'tcx>)> {
+        let built = call.generic_args.type_at(0);
+        let ty::Adt(adt, of) = built.kind() else {
+            unreachable!("a `BuildHasherDefault` or a `RandomState`")
+        };
+        if is_std_def(self.tcx, adt.did(), StdItem::RandomState) {
+            // Its `BuildHasher::Hasher`, std's `DefaultHasher`.
+            let build_hasher = self.tcx.trait_of_assoc(call.def_id).expect("`BuildHasher`'s");
+            let hasher = (self.tcx.associated_items(build_hasher).in_definition_order())
+                .find(|item| matches!(item.kind, ty::AssocKind::Type { .. }) && item.name().as_str() == "Hasher")
+                .expect("`BuildHasher::Hasher`");
+            let projected = Ty::new_projection(self.tcx, ty::IsRigid::No, hasher.def_id, [built]);
+            let hasher = (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projected))
+                .unwrap_or(projected);
+            return Ok((new_hasher(StdHasher::Default, Vec::new()), hasher));
+        }
+        Ok((self.default_value(of.type_at(0), call.span)?, of.type_at(0)))
+    }
+
     /// Hashing's function: `None` if `known` is another.
     pub(in crate::lower) fn hash_call(
         &mut self,
@@ -182,22 +210,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     values.collect(),
                 )
             }
-            HashOp::BuildHasher => {
-                let built = call.generic_args.type_at(0);
-                let ty::Adt(_, of) = built.kind() else {
-                    unreachable!("a `BuildHasherDefault`")
-                };
-                self.default_value(of.type_at(0), call.span)?
-            }
+            HashOp::RandomState => Expr::undefined(),
+            HashOp::BuildHasher => self.built_hasher(&call)?.0,
             HashOp::HashOne => {
-                let built = call.generic_args.type_at(0);
-                let ty::Adt(_, of) = built.kind() else {
-                    unreachable!("a `BuildHasherDefault`")
-                };
-                let hasher_ty = of.type_at(0);
+                let (made, hasher_ty) = self.built_hasher(&call)?;
                 let _built = values.next();
                 let value = values.next().expect("what's hashed");
-                let made = self.default_value(hasher_ty, call.span)?;
                 let state = self.spill("hasher", made, out);
                 let hasher = self.hasher(state, hasher_ty, call.span, out)?;
                 self.hash_writes(value, call.generic_args.type_at(1), &hasher, call.span, out)?;

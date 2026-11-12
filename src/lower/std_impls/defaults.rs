@@ -190,6 +190,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `BuildHasherDefault`'s, which holds nothing but the hasher's
             // type, a `PhantomData`, as an empty struct's (#1155).
             ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::undefined(),
+            // A `RandomState`, which holds nothing JS sees (#1420).
+            ty::Adt(..) if std(StdItem::RandomState) => Expr::undefined(),
             // A std hasher's, as its `new()` (ADR 0463).
             ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {
                 std_types::hash::new_hasher(which, Vec::new())

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-shown-otherwise",
+    breaks: "`{:?}` of a `RandomState` shows `RandomState`, not std's `RandomState { .. }`",
+    file: "src/lower/display/debug.rs",
+    find: "            return Ok(Expr::str(\"RandomState { .. }\"));\n",
+    replace: "            return Ok(Expr::str(\"RandomState\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "duration-options-dropped",
     breaks: "a `Duration`'s `{:?}` given options, `{:10?}` or a derived `Debug`'s given them as it runs, applies none",
     file: "src/lower/display/debug.rs",

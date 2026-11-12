@@ -1013,13 +1013,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::hash::DefaultHasher::new" => return Some(HashOp::New(StdHasher::Default)),
             "std::hash::SipHasher::new" => return Some(HashOp::New(StdHasher::Sip)),
             "std::hash::SipHasher::new_with_keys" => return Some(HashOp::NewWithKeys),
+            "std::hash::RandomState::new" => return Some(HashOp::RandomState),
             _ => {}
         }
         let tr = tcx.trait_of_assoc(def_id)?;
         let self_ty = args.types().next()?;
-        // `BuildHasherDefault<H>`'s, of std's `BuildHasher` (#1155).
+        // `BuildHasherDefault<H>`'s, of std's `BuildHasher` (#1155), and
+        // `RandomState`'s (#1420).
         if std_path(tcx, tr) == "std::hash::BuildHasher"
-            && matches!(self_ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::BuildHasherDefault))
+            && matches!(self_ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::BuildHasherDefault)
+                || is_std_def(tcx, adt.did(), StdItem::RandomState))
         {
             return match tcx.item_name(def_id).as_str() {
                 "build_hasher" => Some(HashOp::BuildHasher),

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-table-unseen",
+    breaks: "a `HashMap` or `HashSet` of a `RandomState` isn't known to hold one, so its `with_hasher` and `hasher()` are refused",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        let hasher_at = if self.is_std_type(owner, StdItem::HashMap) {\n            2\n        } else {\n            1\n        };\n",
+    replace: "        let hasher_at = 3;\n",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "replacen-unrecognized",
     breaks:
       "`replacen(p, r, 1)` is a call rust-js doesn't support, where it's JS's `replace`",

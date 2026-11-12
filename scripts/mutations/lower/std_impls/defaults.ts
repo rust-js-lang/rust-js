@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "random-state-default-refused",
+    breaks: "a `RandomState`'s `Default`, `HashSet::with_hasher(Default::default())`'s and generic code's, is refused",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            ty::Adt(..) if std(StdItem::RandomState) => Expr::undefined(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
+  },
+  {
     name: "build-hasher-default-refused",
     breaks: "`BuildHasherDefault::<DefaultHasher>::default()`, which holds nothing, is refused, so uuid's `test_compare` is (#1155)",
     file: "src/lower/std_impls/defaults.rs",
