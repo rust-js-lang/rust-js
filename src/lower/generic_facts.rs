@@ -333,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Form::Box) => "box",
             Some(Form::HeldBox) => "held-box",
             Some(Form::Tagged) => "tagged",
-            Some(Form::Valued) => "valued",
+            Some(Form::Valued) => unreachable!("`form_of` never asks `Form::Valued`"),
         };
         crate::decisions::record("generic-form", answer);
         form

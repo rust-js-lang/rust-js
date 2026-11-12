@@ -42,14 +42,21 @@ test("each record names a catalogued decision and its answers", () => {
   for (const file of sources("src")) {
     const text = readFileSync(join(root, file), "utf8");
     // A record's decision, and each answer it gives in its call or the
-    // answer `match` that feeds it, as literals.
-    for (const [call, name] of text.matchAll(/decisions::record(?:_typed)?\(\s*"([^"]+)",([^;]*)\);/g)) {
+    // answer `match` that feeds it, as literals: of an answer a local
+    // holds, each value its `let` gives, a literal not an argument of a
+    // call (`unreachable!("..")`'s).
+    for (const record of text.matchAll(/decisions::record(?:_typed)?\(\s*"([^"]+)",\s*([^;]*)\);/g)) {
+      const [call, name, rest] = record;
       const answers = decisions.get(name);
       if (!answers) {
         wrong.push(`${file}: ${name} isn't catalogued`);
         continue;
       }
-      for (const [, literal] of call.slice(call.indexOf(",")).matchAll(/"([^"]+)"/g)) {
+      const local = rest.match(/^([a-z_][a-z0-9_]*)\s*[,)]/)?.[1];
+      const given = local ? text.slice(text.lastIndexOf(`let ${local} =`, record.index), record.index) : "";
+      if (local && !given) wrong.push(`${file}: ${name}'s answer ${local} is given by no \`let\` before it`);
+      const literals = [...call.slice(call.indexOf(",")).matchAll(/"([^"]+)"/g), ...given.matchAll(/(?<![(\[!]\s*)"([^"]+)"/g)];
+      for (const [, literal] of literals) {
         if (!answers.includes(literal)) wrong.push(`${file}: ${name}'s answer ${literal} isn't catalogued`);
       }
     }
@@ -84,6 +91,26 @@ test("a compile asked counts every answer of every decision, a 0 too, then what 
   expect(after.length).toBeGreaterThan(0);
   expect(after.filter((row) => Number(row[4]) === 0)).toEqual([]);
 }, underLoad(240_000));
+
+// An answer given only by a program that reaches it is counted, not
+// refused as uncatalogued: `generic-form`'s `tagged`, a write's result
+// given to generic code, crashed every compile the nightly counted that
+// reached one (nightly 43133510260), as no check before it counted.
+test("a compile asked counts generic code's tagged form of a write's result", () => {
+  const dir = fixture("decisions-tagged");
+  const counts = join(dir, "counts.tsv");
+  rmSync(counts, { force: true });
+  const source = join(root, "test/corpus/write_result_given_to_generic_code.rs");
+  const compiled = Bun.spawnSync([compiler, source, "-o", join(dir, "main.js")], {
+    cwd: root,
+    env: { ...process.env, RUST_JS_DECISIONS: counts },
+  });
+  expect([compiled.exitCode, compiled.stderr.toString().match(/panicked.*\n.*/)?.[0]]).toEqual([0, undefined]);
+  const tagged = readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))
+    .filter(([decision, answer]) => decision === "generic-form" && answer === "tagged")
+    .reduce((n, row) => n + Number(row[4]), 0);
+  expect(tagged).toBeGreaterThan(0);
+}, underLoad(120_000));
 
 // A workflow gives an empty setting where it asks no counts, a run not the
 // nightly's (nightly.yml, check.yml): that asks none, not a file named ``.

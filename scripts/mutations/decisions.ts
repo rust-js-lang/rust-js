@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    let outer = BODY.with(|body| body.replace(if own { \"crate\" } else { \"crate\" }));\n",
     tests: ["test/decisions.test.ts", "-t", "counts every answer"],
   },
+  {
+    name: "generic-form-tagged-uncatalogued",
+    breaks: "`generic_facts`' `form_of` answers `tagged`, a result generic code writes, where the catalogue has no such answer, so every compile the nightly counts that reaches one crashes (nightly 43133510260)",
+    file: "src/decisions.rs",
+    find: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\", \"tagged\"],\n",
+    replace: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\"],\n",
+    tests: ["test/decisions.test.ts", "-t", "tagged form of a write's result"],
+  },
 ];

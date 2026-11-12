@@ -132,3 +132,20 @@ corpus case try_borrow_of_a_cell_never_contested's, as a program and as
 a library; and `library-writer-options`' `plain` the crate pair
 library_writer_without_options', an app's padding writer given the
 library's plain ones, each against native Rust.
+
+## Amendment: an answer a local holds is checked before the nightly
+
+`generic-form`'s `tagged`, a write's result given to generic code
+(#1410's `Form::Tagged`), was recorded through a local, `let answer =
+match form { .. }`, and never catalogued. `test/decisions.test.ts`'s
+"each record names a catalogued decision and its answers" read only a
+record call's own literals, and only the nightly counts, so every compile
+it counted that reached one crashed on `count`'s assertion: 33 of nightly
+43133510260's 117 jobs, the corpus and every net among them. The test now
+reads, of an answer a local holds, each literal the `let` before the
+record gives, an argument of a call (`unreachable!("..")`'s) aside; and
+"a compile asked counts generic code's tagged form of a write's result"
+compiles corpus case write_result_given_to_generic_code counting, so the
+answer is given, counted and catalogued in the per-push check. `form_of`
+never asks `Form::Valued`, so its arm is `unreachable!`, not an answer
+the catalogue lists that no compile gives. 22 decisions, 65 answers.
