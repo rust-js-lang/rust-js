@@ -1107,11 +1107,12 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     await seen(button.filter({ hasText: "Count 1" }));
     // Next.js's Fast Refresh is live a while after the page loads, longer
     // under the suite's load, and an update before then is lost: a save
-    // until one is shown, each another, as the same JS is no update.
+    // until one is shown, each another, as the same JS is no update. Each
+    // waited for as long as the machine's load makes 5 s (#1429).
     for (let tries = 0; ; tries++) {
       await save(counter(`Warm${tries} `));
       try {
-        await button.filter({ hasText: `Warm${tries} 1` }).waitFor({ timeout: 5_000 });
+        await button.filter({ hasText: `Warm${tries} 1` }).waitFor({ timeout: browserDeadline() / 6 });
         break;
       } catch (error) {
         if (tries === 8) throw error;
