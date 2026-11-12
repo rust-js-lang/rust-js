@@ -373,7 +373,10 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
             let inputs = sig.inputs();
             let given = inputs.iter().filter(|&&input| itself(input) || lent(input));
             let meet = inputs.iter().any(|&input| lent(input)) && given.count() > 1;
-            let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));
+            // Not a `Box<I>`, which is `I`'s value, stepped as `I` is
+            // (`iterator_held`, #1601).
+            let inside =
+                (inputs.iter()).any(|&input| !itself(crate::lower::recognition::iterator_held(input)) && has(input));
             has(sig.output()) || meet || inside
         };
     // Another bound that names it, `impl Is<I>`'s (#966, #969), is given as

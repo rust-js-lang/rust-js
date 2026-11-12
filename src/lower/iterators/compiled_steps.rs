@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<(Expr, bool)> {
         let next = trait_method(self.tcx, trait_id, method);
-        let args = self.args_of(trait_id, ty.peel_refs());
+        let args = self.args_of(trait_id, crate::lower::recognition::iterator_held(ty));
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
         let boxed = self.resolve_instance(next, args)?.is_some_and(|instance| {
             let id = instance.def_id();

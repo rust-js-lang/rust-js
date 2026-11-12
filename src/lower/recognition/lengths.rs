@@ -12,7 +12,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn writes_size_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
-        let args = self.args_of(iterator, ty.peel_refs());
+        let args = self.args_of(iterator, super::iterator_held(ty));
         crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, size_hint, args)
             .ok()
             .flatten()

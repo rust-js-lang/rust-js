@@ -65,3 +65,6 @@ plain std loud-drop drop_guard_restores_taken_fields.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
+
+#1611 P0: a Box<I> given through impl Is<Box<I>> (#966's shape) steps by the crate iterator's own count and last, which std's Box<I> doesn't forward
+plain std impl-owned boxed_iterator_steps_as_std_box_does.rs

@@ -479,4 +479,12 @@ export const mutations: Mutation[] = [
     tests: ["test/tidy-stages.test.ts","-t","adapted by its type, without into_iter's recogniser"],
   },
 
+  {
+    name: "box-param-not-given-a-js-iterator",
+    breaks: "generic code's `Box<I>` is given the crate's iterator's value as it is, which it steps as plain data, `count()` of `Up(0, 3)` its two fields (#1601)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                _ if let Some(inner) = input.boxed_ty() => (inner, given),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

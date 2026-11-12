@@ -131,7 +131,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         (iterator_trait
             && inner.is_sized(tcx, self.typing_env)
-            && (!lends || self.std_impl_writes(def_id, generic_args)))
+            && (!(lends || self.is_user_iterator(inner)) || self.std_impl_writes(def_id, generic_args)))
         .then(|| tcx.mk_args_from_iter(std::iter::once(unboxed.into()).chain(generic_args.iter().skip(1))))
     }
 

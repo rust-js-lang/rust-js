@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`second(Wrap(7..10))`'s range, in what's given, is stepped as a JS iterator",
     file: "src/lower/iterators.rs",
-    find: "            let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));\n",
+    find: "            let inside =\n                (inputs.iter()).any(|&input| !itself(crate::lower::recognition::iterator_held(input)) && has(input));\n",
     replace: "            let inside = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
@@ -442,5 +442,13 @@ export const mutations: Mutation[] = [
     find: "    e.facts.has(js::Known::InPlace) || is_js_adapter(e)\n",
     replace: "    e.facts.has(js::Known::InPlace)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_map_given_for_its_len.rs$"],
+  },
+  {
+    name: "box-param-held-as-it-is",
+    breaks: "generic code's `Box<I>` is taken for a value holding `I`, given as it is, though its body steps it as a JS iterator (#1601)",
+    file: "src/lower/iterators.rs",
+    find: "(inputs.iter()).any(|&input| !itself(crate::lower::recognition::iterator_held(input)) && has(input));\n",
+    replace: "(inputs.iter()).any(|&input| !itself(input.peel_refs()) && has(input));\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
 ];

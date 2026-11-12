@@ -705,4 +705,20 @@ export const mutations: Mutation[] = [
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
   },
+  {
+    name: "box-passes-on-every-own-step",
+    breaks: "a `Box` of the crate's iterator reaches its own `fold` and `count`, which std's `Box<I>` never calls (#1601)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        if !self.is_user_iterator(ty) || (behind_a_box(ty) && !BOX_PASSES_ON.contains(&name)) {\n",
+    replace: "        if !self.is_user_iterator(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
+  {
+    name: "box-iterator-not-held",
+    breaks: "a `Box` of the crate's iterator isn't its iterator, so its value is stepped as plain data, `count()` of `Box::new(Up(0, 3))` its fields' (#1601)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "    while let Some(inner) = ty.boxed_ty() {\n",
+    replace: "    while let Some(inner) = ty.boxed_ty().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

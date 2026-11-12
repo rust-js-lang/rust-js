@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
     name: "box-iterator-defaults-not-passed-through",
     breaks: "a default of a `Box<I>`'s, `take(n)`, `map(f)` or `sum()`, is the box's, not `I`'s, though the box's value is `I`'s: `boxed.take is not a function` (#1278)",
     file: "src/lower/recognition/std_items.rs",
-    find: "            && (!lends || self.std_impl_writes(def_id, generic_args)))\n",
+    find: "            && (!(lends || self.is_user_iterator(inner)) || self.std_impl_writes(def_id, generic_args)))\n",
     replace: "            && self.std_impl_writes(def_id, generic_args))\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
   },
@@ -318,5 +318,13 @@ export const mutations: Mutation[] = [
     find: "    (\"std::path::Path::canonicalize\", NodeOnly::Fs(FsOp::PathCanonicalize)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
+  },
+  {
+    name: "box-user-iterator-default-passed-through",
+    breaks: "a default of a `Box` of the crate's iterator, `count()` or `fold()`, is passed on to the iterator's own, where std's `Box<I>` steps it by `next` (#1601)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            && (!(lends || self.is_user_iterator(inner)) || self.std_impl_writes(def_id, generic_args)))\n",
+    replace: "            && (!lends || self.std_impl_writes(def_id, generic_args)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
 ];

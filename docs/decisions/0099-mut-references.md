@@ -737,3 +737,33 @@ as a `&mut &[T]` was: `{ value: view }`, a write through it writes what
 the view's over, `b.value[i] = v`, and a write of the whole re-points it,
 `b.value = $view(taken, n)`, each the caller's, its box copied back as any
 cell's. Case C of ADR 0262.
+
+## Amendment (2026-11-13, #1601): a `Box` of the crate's iterator passes on what std's does
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. #1278 passed
+each method of a `Box<I>` taken by value or by `&self` on to `I`'s, a
+default's too, `count()`, `fold()`, `sum()`: right of std's iterators,
+which write none of those apart from their `next`'s, and wrong of the
+crate's, whose own `count` and `fold` std's `impl Iterator for Box<I>`
+never calls. It writes `next`, `size_hint`, `nth` and `last`, and
+`next_back`, `nth_back` and `len` (alloc/src/boxed/iter.rs); the rest
+are the traits' defaults, stepped by `next`. `Box::new(Up(0, 3)).count()`
+called `Up`'s own `count`, `sum()` its own `fold`; and generic code's
+`Box<I>` was given `Up`'s value as it is, which it stepped as plain data,
+`count()` of its two fields, `2` where native Rust gives `3`.
+
+`recognition::iterator_held` is the iterator a type steps, through
+references and `Box`es, the one answer of which impl its steps reach,
+and `BOX_PASSES_ON` what a `Box` passes on to it: `own_method` finds the
+crate's own of no other through a `Box`, so `Box::new(Up(..))` is
+`$iterator(value, upIterator_next)`, its `nth` and `last` its own, its
+folds and `count` std's by `next`. `passed_through_box` passes a
+default on to `I` only where `I` isn't the crate's iterator; generic
+code's `Box<I>` is given the box of it as a JS iterator, as an `I` is
+(`given_iterators`), not held as it is (`given_as_it_is`'s `inside`).
+Held by `test/corpus/boxed_iterator_steps_as_std_box_does.rs` against
+native Rust in both builds, every other snapshot unchanged; mutations
+`box-user-iterator-default-passed-through`, `box-passes-on-every-own-step`,
+`box-iterator-not-held`, `box-param-not-given-a-js-iterator` and
+`box-param-held-as-it-is`; `box-iterator-defaults-not-passed-through` and
+`given-as-it-is-not-in-input` re-anchored.

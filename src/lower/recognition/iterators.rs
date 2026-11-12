@@ -127,7 +127,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// iterator (ADR 0561).
     pub(in crate::lower) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
-        let ty = self.reveal(ty.peel_refs());
+        let ty = self.reveal(iterator_held(ty));
         matches!(ty.kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty) && !is_compiled_std_iterator(self.tcx, ty)
     }
 
@@ -547,11 +547,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The method `name` of the trait `tr` the crate's iterator `ty`'s impl
     /// of it writes.
+    /// Through a `Box`, only what std's `Box<I>` passes on (`BOX_PASSES_ON`).
     fn own_method(&self, ty: Ty<'tcx>, tr: DefId, name: &str) -> Option<DefId> {
-        if !self.is_user_iterator(ty) {
+        if !self.is_user_iterator(ty) || (behind_a_box(ty) && !BOX_PASSES_ON.contains(&name)) {
             return None;
         }
-        let imp = self.user_impl(ty::TraitRef::new(self.tcx, tr, [ty.peel_refs()]))?;
+        let imp = self.user_impl(ty::TraitRef::new(self.tcx, tr, [iterator_held(ty)]))?;
         let method = trait_method(self.tcx, tr, name);
         self.tcx.impl_item_implementor_ids(imp).get(&method).copied()
     }
@@ -1139,6 +1140,40 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.bounded_by(ty, sym::Iterator)
     }
 }
+
+/// The iterator a `ty` steps: itself, or what a reference to it or a `Box`
+/// of it holds, each of which steps it, a `Box` by what std's impl passes
+/// on to it (`BOX_PASSES_ON`, #1601). The one answer of which iterator's
+/// impl a type's steps reach.
+pub(in crate::lower) fn iterator_held(ty: Ty<'_>) -> Ty<'_> {
+    let mut ty = ty.peel_refs();
+    while let Some(inner) = ty.boxed_ty() {
+        ty = inner.peel_refs();
+    }
+    ty
+}
+
+/// Whether a `ty` is a `Box` of the iterator it steps, or a reference to
+/// one (`iterator_held`).
+pub(in crate::lower) fn behind_a_box(ty: Ty<'_>) -> bool {
+    ty.peel_refs().boxed_ty().is_some()
+}
+
+/// The methods std's `impl Iterator for Box<I>`, and its
+/// `DoubleEndedIterator` and `ExactSizeIterator`, pass on to `I`'s own
+/// (alloc/src/boxed/iter.rs): the rest, `fold`, `count`, `try_fold` and
+/// `advance_by` among them, are the traits' defaults, which step `I` by its
+/// `next`, never its own of them (#1601).
+pub(in crate::lower) const BOX_PASSES_ON: [&str; 8] = [
+    "next",
+    "size_hint",
+    "nth",
+    "last",
+    "next_back",
+    "nth_back",
+    "len",
+    "is_empty",
+];
 
 /// `dyn Iterator`, or `dyn DoubleEndedIterator` (ADR 0429), behind a
 /// reference or a `Box`, or not.

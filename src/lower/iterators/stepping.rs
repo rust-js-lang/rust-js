@@ -391,8 +391,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
+            // Through a reference, what it's to; through a `Box<I>`, its `I`,
+            // given as the box of it is, which steps it by what std's `Box`
+            // passes on (`iterator_held`, #1601).
             let (input, given) = match *input.kind() {
                 ty::Ref(_, inner, _) => (inner, given.peel_refs()),
+                _ if let Some(inner) = input.boxed_ty() => (inner, given),
                 _ => (input, given),
             };
             // One that asks its length, a JS iterator that knows it, its back
@@ -687,7 +691,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ExactSizeIterator`, its length its hint's.
     pub(in crate::lower) fn user_exact_size(&self, ty: ty::Ty<'tcx>) -> bool {
         self.is_user_iterator(ty)
-            && (self.recognition().exact_size_iterator()).is_some_and(|exact| self.has_user_impl(exact, ty.peel_refs()))
+            && (self.recognition().exact_size_iterator())
+                .is_some_and(|exact| self.has_user_impl(exact, crate::lower::recognition::iterator_held(ty)))
     }
 
     /// `DoubleEndedIterator`, if `ty` is an iterator of the crate's whose
@@ -702,7 +707,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let next_back = trait_method(self.tcx, double_ended, "next_back");
-        let args = self.args_of(double_ended, ty.peel_refs());
+        let args = self.args_of(double_ended, crate::lower::recognition::iterator_held(ty));
         let own = self
             .resolve_instance(next_back, args)?
             .is_some_and(|i| self.is_rust_fn(i.def_id()));
