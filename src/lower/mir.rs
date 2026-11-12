@@ -61,6 +61,7 @@ mod threaded;
 mod tidy;
 mod tried_ints;
 mod vec_growth;
+pub(in crate::lower) use tidy::fired::{record as record_tidy_fired, report as tidy_fired_report};
 pub(super) use tidy::pass_names as tidy_pass_names;
 pub(in crate::lower) use tidy::settle_unthrown_catches;
 mod writer;

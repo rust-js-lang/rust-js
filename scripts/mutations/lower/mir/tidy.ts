@@ -473,4 +473,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(why) = (contract.broken)(body) {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "flattened_state_got_mut after each"],
   },
+  {
+    name: "tidy-fired-unhooked",
+    breaks: "tidy's stages record no pass, so `--tidy-fired` says none fired (#1461)",
+    file: "src/lower/mir/tidy.rs",
+    find: "        fired::after(was, body, || pass_name(name, pass));\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "tidy-fired"],
+  },
 ];

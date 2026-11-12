@@ -245,7 +245,9 @@ offsets without emission. `mir/tidy/stages.rs` lists the body rewrites, in
 stages that each say what they leave a body with; `mir/tidy.rs` runs them and,
 in a debug build, checks each stage's contracts (`mir/tidy/contracts.rs`).
 `rust-js --tidy-until <stage/pass>` and `scripts/tidy-trace.ts` show what each
-pass does to a crate's JS ([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)).
+pass does to a crate's JS, and `--tidy-fired <file>` (`mir/tidy/fired.rs`)
+and `scripts/tidy-fired.ts`, over the corpus, which passes changed a body
+([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)).
 `mir/tidy/moves.rs` decides where a temporary's value may be read in its
 place, and why, apart from the rewrite that moves it ([ADR 0689](decisions/0689-a-moves-decision-is-apart-from-the-move.md)).
 Its `held_receivers` calls a field's function through its object where the

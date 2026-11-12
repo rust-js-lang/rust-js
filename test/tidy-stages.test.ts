@@ -330,6 +330,34 @@ test("a rewrite of preparation's that fired nowhere leaves a case's JS as it is"
   }
 }, 300_000);
 
+// Which of tidy's passes changed a body, and how many, `--tidy-fired`
+// (#1461), is what a pass's deletion is measured by: each a pass
+// `--tidy-passes` names, in its order, some of them and far from all, each
+// of bodies it changed; and a compile that records them writes the JS
+// one that doesn't writes.
+test("what --tidy-fired says of a case is passes tidy runs, some and far from all, each of bodies it changed", () => {
+  buildCompiler();
+  const dir = fixture("stages-tidy-fired");
+  const file = join(corpus, "calculator.rs");
+  const fired = join(dir, "tidy-fired.txt");
+  const recorded = compileJs(file, dir, "2024", false, {}, ["--tidy-fired", fired]);
+  if (!("js" in recorded)) throw new Error(recorded.error);
+  const plain = compileJs(file, dir, "2024", false, {});
+  if (!("js" in plain)) throw new Error(plain.error);
+  expect(code(recorded.js)).toBe(code(plain.js));
+  const passes = run([compiler, "--tidy-passes"]).trim().split("\n");
+  const lines = readFileSync(fired, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t"));
+  const names = lines.map(([name]) => name);
+  // Some, and far from all: each pass is a shape's rewrite, so most change
+  // nothing of one program, 49 of 322 of this one's; a pass recorded for
+  // running, not for changing a body, would be most of them.
+  expect(names.length).toBeGreaterThan(5);
+  expect(names.length).toBeLessThan(passes.length / 3);
+  expect(names.filter((name) => !passes.includes(name))).toEqual([]);
+  expect(names).toEqual(passes.filter((pass) => names.includes(pass)));
+  expect(lines.filter(([, count]) => !(Number(count) >= 1))).toEqual([]);
+}, 300_000);
+
 // A fact forgotten is one no reader finds, wherever it was said, so the
 // variants above try what they say (ADR 1127): a case's JS without a fact
 // that changes its form isn't its JS with it; what `--knowns-found` says is

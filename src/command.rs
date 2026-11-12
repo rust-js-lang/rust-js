@@ -76,6 +76,9 @@ pub(crate) struct Build {
     /// runs, `finish`'s naming and taking apart its parameters among them,
     /// so what's printed is what that pass made.
     pub tidy_until: Option<String>,
+    /// `--tidy-fired <file>`: where to write which of tidy's passes changed
+    /// a body, and how many, a line each (#1461).
+    pub tidy_fired: Option<PathBuf>,
     /// `--prepare-without <pass>`, any number: each module prepared with
     /// every rewrite but these, to see that each changes nothing a program
     /// does (ADR 1087).
@@ -178,6 +181,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         prepare_without.push(pass);
     }
     let prepare_fired = valued(&mut ours, "--prepare-fired", "a path")?.map(PathBuf::from);
+    let tidy_fired = valued(&mut ours, "--tidy-fired", "a path")?.map(PathBuf::from);
     let mut without_known = Vec::new();
     while let Some(name) = valued(&mut ours, "--without-known", "a fact an expression may carry")? {
         let Some(known) = crate::js::Known::named(&name) else {
@@ -223,6 +227,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        tidy_fired,
         prepare_without,
         prepare_fired,
         without_known,

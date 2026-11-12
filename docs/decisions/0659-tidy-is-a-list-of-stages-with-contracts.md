@@ -568,3 +568,34 @@ where the test holds; another exit that still leaves or goes on with the
 loop keeps its `while`.** Held by `test/corpus/loop_exit_tested_after_the_loop.rs`
 against native Rust in both builds, and the mutations
 `loop-exit-break-moved-past-the-loop` and `loop-exit-break-tested-left-a-loop`.
+
+## Amendment (2026-11-13, #1461): which passes fired, `--tidy-fired`
+
+`rust-js case.rs -o out.js --tidy-fired fired.txt` writes each of tidy's
+passes that changed a body, and how many it changed, a line each,
+`stage/pass<TAB>bodies`, in `--tidy-passes`' order; a pass not listed
+changed nothing in that compile. It mirrors `--prepare-fired` (ADR 1087).
+`mir/tidy/fired.rs` records it, by statics, as `known.rs`' facts found
+are, tidy's hints being JS's alone: `run_stage` keeps each body before a
+pass where the compile records, and counts the pass where the body after
+isn't `==` it. `Stmt`'s `==` compares facts as their readers see them and
+leaves a value's held name out, so a pass that only renames one held
+doesn't fire. A stage run again is recorded under its own name,
+`again/<stage>`, as `--tidy-until` names it. The JS of a compile that
+records is the JS of one that doesn't.
+
+`bun scripts/tidy-fired.ts [--stage <stage>] [--std-iterators]` compiles
+each corpus case with it, on every core, and lists the passes that changed
+no body first, then each that did, with its cases and bodies. Over the
+corpus (2026-11-13), 2,342 cases in 24 s, each of the 322 passes changed a
+body somewhere: no pass is shown dead by the corpus alone. "Fired" is
+"changed a body", not "was needed": a pass may fire and a later one undo
+it, and one that never fires on the corpus may on a user's program, so a
+pass is deleted only where the corpus's, the ports' and the generated
+programs' counts are all zero (#1461's design, agent-fable's).
+
+Held by `test/tidy-stages.test.ts`' "what --tidy-fired says of a case":
+each name a pass `--tidy-passes` names, in its order, some and far from
+all, each of a body or more, and the JS unchanged. Mutations
+`tidy-fired-every-pass` (`lower/mir/tidy/fired.ts`), `tidy-fired-unhooked`
+(`lower/mir/tidy.ts`) and `tidy-fired-unrecorded` (`main.ts`).

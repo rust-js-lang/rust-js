@@ -211,4 +211,12 @@ export const mutations: Mutation[] = [
     replace: "            let found = String::new();\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
+  {
+    name: "tidy-fired-unrecorded",
+    breaks: "`--tidy-fired` doesn't record, so its file says no pass fired (#1461)",
+    file: "src/main.rs",
+    find: "        lower::session::record_tidy_fired();\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "tidy-fired"],
+  },
 ];

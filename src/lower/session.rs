@@ -71,6 +71,19 @@ pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
     recognized.borrow().iter().map(|path| format!("{path}\n")).collect()
 }
 
+/// Records which of tidy's passes change a body, for the rest of the
+/// compile: `--tidy-fired`'s (#1461).
+pub(crate) fn record_tidy_fired() {
+    super::mir::record_tidy_fired();
+}
+
+/// Each of tidy's passes that changed a body, and how many it changed, a
+/// line each, `stage/pass<TAB>bodies`, in the order they run: what
+/// `--tidy-fired` writes; nothing of a compile that records none.
+pub(crate) fn tidy_fired() -> String {
+    super::mir::tidy_fired_report(&super::mir::tidy_pass_names())
+}
+
 /// The address of `tcx`'s rustc session, one each session.
 fn gcx_of(tcx: TyCtxt<'_>) -> usize {
     std::ptr::from_ref(tcx.sess) as usize

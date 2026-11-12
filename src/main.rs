@@ -678,6 +678,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        tidy_fired,
         prepare_without,
         prepare_fired,
         without_known,
@@ -688,8 +689,12 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         js_made_all,
         ..
     } = build;
-    // Before anything is lowered: a fact forgotten is one never said.
+    // Before anything is lowered: a fact forgotten is one never said, and
+    // which of tidy's passes fire recorded from the first body (#1461).
     js::forget_known(&without_known);
+    if tidy_fired.is_some() {
+        lower::session::record_tidy_fired();
+    }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
     let settings = settings::Settings {
@@ -779,6 +784,11 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             let found: String = js::known_found().iter().map(|name| format!("{name}\n")).collect();
             std::fs::write(path, found)
                 .map_err(|error| format!("can't write the facts found to {}: {error}", path.display()))?;
+        }
+        // Which of tidy's passes changed a body, and how many (#1461).
+        if let Some(path) = &tidy_fired {
+            std::fs::write(path, lower::session::tidy_fired())
+                .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
         }
     }
     drop(stage);
