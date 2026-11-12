@@ -48,3 +48,20 @@ Proof: corpus case generic_borrow_of_a_counted_rc, a counted `Rc<str>`,
 `Box` of one, and an uncounted `Rc<[i32]>`, against native Rust in both
 builds. Mutations `as-ref-of-a-counted-rc-is-the-rc` and
 `borrow-of-a-counted-rc-is-the-rc`, caught.
+
+## Amendment: as far as what it's asked as (2026-11-12, #1518)
+
+Case: C, a wrong answer of #1503's fix. It read through every `Box` and
+counted `Rc` of the implementing type, whatever the trait's target: a
+`Box<Rc<str>>` given as `T: AsRef<Rc<str>>` or `K: Borrow<Rc<str>>` was
+read to its text, where what it's asked as is the counted `Rc`, so
+`Rc::strong_count(t.as_ref())` was undefined and `k.borrow().len()` threw.
+How far to read is the pair of types: `through_boxes_to(value, ty, to)`,
+`through_boxes`' one loop, stops once what's left is the target, `to`, so a
+`Box<Rc<str>>`'s `AsRef<Rc<str>>` is the `Rc` itself and an `Rc<str>`'s
+`AsRef<str>` what it points at, as before.
+
+Proof: corpus case generic_borrow_of_a_counted_rc, a `Box<Rc<str>>` as
+`AsRef<Rc<str>>` (its count read) and `Borrow<Rc<str>>`, beside #1503's
+`Rc<str>` as `AsRef<str>`, against native Rust in both builds. Mutation
+`borrowed-past-its-target`, caught; #1503's two refitted.

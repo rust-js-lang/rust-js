@@ -266,4 +266,16 @@ export const mutations: Mutation[] = [
     replace: "                    RcForm::Instance => helper(\"$newCyclic\", vec![f]),\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
   },
+  {
+    name: "borrowed-past-its-target",
+    breaks: "generic code's `T: AsRef<Rc<str>>` of a `Box<Rc<str>>` reads through the counted `Rc` it's asked as to its text, so `Rc::strong_count(t.as_ref())` is undefined (#1518)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            if until.is_some_and(|to| erased(ty) == erased(to)) {\n",
+    replace: "            if false && until.is_some_and(|to| erased(ty) == erased(to)) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^generic_borrow_of_a_counted_rc.rs$"
+    ]
+  },
 ];

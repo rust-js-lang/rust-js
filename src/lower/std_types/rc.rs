@@ -439,8 +439,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
     /// `Pin`'s pointer does (ADR 0329); a `Box`'s or another `Rc`'s, which is
     /// it in JS (ADR 0023). Any other value is itself.
-    pub(in crate::lower) fn through_boxes(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+    pub(in crate::lower) fn through_boxes(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        self.through_boxes_until(value, ty, None)
+    }
+
+    /// `through_boxes`, read only until what's left is `to`: what `AsRef<to>`
+    /// or `Borrow<to>` of a `ty` gives, a `Box<Rc<str>>`'s `Rc<str>` the
+    /// counted `Rc` itself, an `Rc<str>`'s `str` what it points at (#1503,
+    /// #1518).
+    pub(in crate::lower) fn through_boxes_to(&self, value: Expr, ty: Ty<'tcx>, to: Ty<'tcx>) -> Expr {
+        self.through_boxes_until(value, ty, Some(to.peel_refs())).0
+    }
+
+    fn through_boxes_until(&self, mut value: Expr, mut ty: Ty<'tcx>, until: Option<Ty<'tcx>>) -> (Expr, Ty<'tcx>) {
+        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
         loop {
+            if until.is_some_and(|to| erased(ty) == erased(to)) {
+                return (value, ty);
+            }
             if let Some(pointer) = self.recognition().pinned(ty) {
                 (value, ty) = self.through_refs(value, pointer);
                 continue;

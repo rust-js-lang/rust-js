@@ -43,7 +43,30 @@ function valueOf(k, KBorrowI32) {
   return (KBorrowI32.borrow(k) + 1) | 0;
 }
 
+function count(t, TAsRefRc, dropT) {
+  let result;
+  try {
+    result = TAsRefRc.asRef(t).strong;
+  } catch (error) {
+    $cleanup(() => {
+      dropT?.(t);
+    }, error);
+    throw error;
+  }
+  dropT?.(t);
+  return result;
+}
+
+function text(t, TAsRefRc) {
+  return TAsRefRc.asRef(t).value;
+}
+
+function held(k, KBorrowRc) {
+  return (KBorrowRc.borrow(k).strong + $byteLen(KBorrowRc.borrow(k).value)) >>> 0;
+}
+
 function main() {
+  const boxAsRef = { asRef: (value) => value };
   const rcAsRef = { asRef: (value) => value.value };
   const rcBorrow = { borrow: (value) => value.value };
   const shared = { value: "abc", strong: 1, weak: 0 };
@@ -82,12 +105,28 @@ function main() {
           try {
             console.log(`${n.strong} ${valueOf(m, rcBorrow)}`);
 
-            // Not counted: its value already.
-            const plain = { value: [7], strong: 1, weak: 0 };
+            const counted = { value: "abc", strong: 1, weak: 0 };
             try {
-              console.log(`${first(plain, rcAsRef)}`);
+              const boxedRc = $rcClone(counted);
+              try {
+                console.log(
+                  `${count($rcClone(counted), boxAsRef, $rcDrop)} ${text(boxedRc, boxAsRef)}`,
+                );
+                console.log(`${held(boxedRc, { borrow: (value) => value })}`);
+                console.log(`${len($rcClone(boxedRc), rcBorrow, $rcDrop)}`);
+
+                // Not counted: its value already.
+                const plain = { value: [7], strong: 1, weak: 0 };
+                try {
+                  console.log(`${first(plain, rcAsRef)}`);
+                } finally {
+                  $rcDrop(plain);
+                }
+              } finally {
+                $rcDrop(boxedRc);
+              }
             } finally {
-              $rcDrop(plain);
+              $rcDrop(counted);
             }
           } finally {
             $rcDrop(m);

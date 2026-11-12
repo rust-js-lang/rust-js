@@ -778,8 +778,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))
         {
-            // Through a counted `Rc`, what it points at (#1503).
-            let (inside, _) = self.through_boxes(Expr::var("value"), ty.peel_refs());
+            // Through a counted `Rc`, what it points at, as far as what it's
+            // asked as (#1503, #1518).
+            let inside = self.through_boxes_to(Expr::var("value"), ty.peel_refs(), tr.args.type_at(1));
             let same = Expr::arrow(
                 vec!["value".into()],
                 vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
@@ -819,10 +820,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as a `str`, a `Vec` as a slice (ADR 0167). Of a `&mut`, which
         // generic code holds as its box, `$cellOf(parser)` or a number's
         // cell, what the box holds (`Form::Box`, #1414); through a counted
-        // `Rc`, what it points at (#1503).
+        // `Rc`, what it points at, as far as what it's borrowed as (#1503,
+        // #1518).
         let in_box = |value: Expr| {
-            self.through_boxes(self.held_in_generic_box(ty)(value), ty.peel_refs())
-                .0
+            self.through_boxes_to(self.held_in_generic_box(ty)(value), ty.peel_refs(), tr.args.type_at(1))
         };
         if is_std_def(self.tcx, tr.def_id, StdItem::Borrow)
             && !self.has_user_impl(tr.def_id, ty)
