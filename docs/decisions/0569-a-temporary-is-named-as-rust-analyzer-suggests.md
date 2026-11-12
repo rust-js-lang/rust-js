@@ -294,3 +294,27 @@ Held by the corpus case `closure_param_shadows_a_named_temporary.rs`, which
 the push's `tidy-stages` runs at each stage end, throwing the same
 `TypeError` without it, and mutation
 `named-temporary-renamed-in-a-closure-of-its-own` (`tidy/bindings.ts`).
+
+## Amendment: no name of the module's beside an item written in the body
+
+A function or a `const` written in a body (ADRs 0308, 0031) is placed
+once tidy is done and filled once every body is lowered, so what it reads
+is nowhere in the body tidy names. `readable_temporaries` took the first
+suggested name the body didn't read or declare, `note` of a `match` one
+of whose arms calls `note`, and `const note = id(-1)` hid the module's
+function `note` from `function h0(p1) { return note(0, p1); }` written
+beside it: `note is not a function` where Rust prints (the nightly's
+fuzz and program stages, generated program 12461955; P0, ADR 0262's
+third case). **Of a body with an item written in it, a function's or a
+closure's, a temporary takes no name of the module's**, its functions,
+imports and globals, which a local the program names never takes either
+(`pipeline.rs`' `names`): `Hints::items_read`, by `items_written_in`
+(`mir/closures.rs`), the one answer of which items a body writes, which
+placing them asks too. A body with none keeps the names it gives, as what
+it reads is all that's read in it: `entry`, `node` and `pop` of the
+corpus, each a name of its module's no item there reads, are unchanged.
+
+Held by the corpus case `temporaries_beside_items_written_in_the_body.rs`
+(a function's body, a closure's and a block's), and mutations
+`temporary-takes-a-name-items-read` (`tidy/bindings.ts`) and
+`items-written-in-a-closure-unseen` (`mir/closures.ts`).

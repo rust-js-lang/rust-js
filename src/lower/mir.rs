@@ -685,16 +685,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 placed.insert(index);
             }
         });
-        let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
-            .chain(self.krate.local_consts.keys())
-            .filter(|&&id| {
-                let mut parent = self.tcx.parent(id);
-                while self.tcx.is_closure_like(parent) {
-                    parent = self.tcx.parent(parent);
-                }
-                parent == def_id && !placed.contains(&id.index.as_u32())
-            })
-            .copied()
+        let written: Vec<rustc_span::def_id::DefId> = (self.items_written_in(def_id))
+            .filter(|id| !placed.contains(&id.index.as_u32()))
             .collect();
         self.place_written(written, &mut out);
         tidy::unsuffixed_params(&mut out, self.module_names);
@@ -1209,6 +1201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 until: self.krate.tidy_until,
                 params: &params,
                 suggested: &self.temporaries_names(mir_body, &state),
+                items_read: &self.items_read(def_id),
                 named: &state.locals.named(),
                 again: &Default::default(),
                 commented: &state.commented,
@@ -1217,6 +1210,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let params = params.into_inner();
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
+    }
+
+    /// What the items written in `def_id`'s body may read that the body
+    /// doesn't show (`Hints::items_read`): the module's names, which no
+    /// local takes (ADR 0267), where it has any; else none.
+    fn items_read(&self, def_id: rustc_span::def_id::DefId) -> IndexSet<String> {
+        if self.items_written_in(def_id).next().is_none() {
+            return IndexSet::default();
+        }
+        (self.module_names.iter().cloned())
+            .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
+            .collect()
     }
 
     /// The names of plain values, which nothing changes (`Locals::plain`),

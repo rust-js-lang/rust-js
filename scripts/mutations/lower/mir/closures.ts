@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "items-written-in-a-closure-unseen",
+    breaks:
+      "a function written in a closure's body isn't one of the closure's, so a temporary beside it takes a name of the module's it calls, `const note = id(k)`, and the function throws `note is not a function`",
+    file: "src/lower/mir/closures.rs",
+    find: "                while parent != def_id && self.tcx.is_closure_like(parent) {\n",
+    replace: "                while self.tcx.is_closure_like(parent) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporaries_beside_items_written_in_the_body.rs$"],
+  },
+  {
     name: "local-const-after-its-read",
     breaks:
       "a `const` written in a function's body is where it's written though a closure before that reads it, which JS's `const` isn't yet",

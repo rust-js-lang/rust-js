@@ -610,10 +610,18 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 pub(super) fn readable_temporaries(
     params: &[js::Pattern],
     body: &mut Vec<Stmt>,
-    suggested: &IndexMap<String, Vec<String>>,
+    (suggested, items_read): (&IndexMap<String, Vec<String>>, &IndexSet<String>),
 ) {
     let mut taken: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::names_in(body, &mut taken);
+    // Nor what an item written in the body, a function or a `const`, may
+    // read where nothing here shows it, as it's placed after: a name of
+    // the module's, which no local takes (ADR 0267), so `const note =
+    // id(-1)` hid the `note` a function `h0` written beside it calls
+    // (nightly 43133510260's generated program 12461955). Of a body with
+    // none, what it reads is all that's read in it, and a name of the
+    // module's it doesn't read hides nothing.
+    taken.extend(items_read.iter().cloned());
     // And the name each function another module gives this one is imported
     // by, which the link step keeps where no local takes it: a suggested
     // `prepare` of `prepare(3)` would push the import apart, `prepare$1`.

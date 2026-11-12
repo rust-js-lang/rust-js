@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "temporary-takes-a-name-items-read",
+    breaks:
+      "a temporary beside a function written in the body takes a name of the module's that function reads, `const note = id(-1)`, and the function throws `note is not a function`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "    taken.extend(items_read.iter().cloned());\n",
+    replace: "    _ = items_read;\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporaries_beside_items_written_in_the_body.rs$"],
+  },
+  {
     name: "named-temporary-renamed-in-a-closure-of-its-own",
     breaks:
       "naming a temporary renames a closure's own parameter of its name's reads, `(_2) => { const a = ty523830[0]; .. }`, and the JS after tidy's `in place` stage throws `Cannot convert NaN to a BigInt` where Rust prints `2 [41, 52]` (#1105)",
