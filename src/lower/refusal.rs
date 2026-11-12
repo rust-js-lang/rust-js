@@ -106,7 +106,6 @@ pub(crate) fn issue_of(open: OpenCall) -> &'static str {
         OpenCall::Conversion => " (#1452)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
-        OpenCall::PinRead => " (#1448)",
         OpenCall::StdHash => " (#1447)",
     }
 }

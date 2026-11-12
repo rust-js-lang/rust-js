@@ -194,7 +194,6 @@ impls write them, a crate's own `Hash` inside called as std calls it (ADR
 
 - A `BuildHasher`, `RandomState`'s: `use std::hash::BuildHasher; let s = std::hash::RandomState::new(); println!("{}", s.hash_one(5u32) == s.hash_one(5u32));`
 - `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
-- Reading through a `Pin` of a pointer other than a reference or a `Box`, the crate's own smart pointer, and `Rc::pin` (#1448): `struct T(Box<u8>); impl std::ops::Deref for T { type Target = u8; fn deref(&self) -> &u8 { &self.0 } } let p = std::pin::Pin::new(T(Box::new(4))); println!("{}", *p.as_ref());`
 - Hashing a std type rust-js doesn't write, a `Duration`, alone or in a key whose `Hash` runs code (#1447): `use std::hash::{Hash, Hasher}; let mut h = std::hash::DefaultHasher::new(); std::time::Duration::from_secs(1).hash(&mut h); println!("{}", h.finish());`
 
 ## Panics, processes and I/O

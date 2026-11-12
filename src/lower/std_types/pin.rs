@@ -79,10 +79,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let target = match *pointer.kind() {
             ty::Ref(_, target, _) => target,
             ty::Adt(_, args) if pointer.is_box() => args.type_at(0),
-            _ => {
-                let issue = crate::lower::refusal::issue_of(crate::lower::recognition::OpenCall::PinRead);
-                return Err(self.unsupported(span, &format!("a `Pin` of this pointer{issue}")));
-            }
+            // A `ManuallyDrop`, what it holds in JS, as a `Box` is (#1454).
+            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(pointer) => held,
+            _ => return self.pin_of_another_call(op, pin, values, span, out).map(Some),
         };
         // A `&mut` to a pinned `Box` is a box of it, whose `value` is the
         // `Box`, what it points at (ADR 0074).
@@ -112,6 +111,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
         }))
+    }
+
+    /// A `Pin`'s call of a pointer other than a reference or a `Box`, an
+    /// `Rc`, an `Arc` or the crate's own smart pointer (#1448): `as_ref()`
+    /// and its `Deref` what it points at (`pin_read`), `map_unchecked(f)` `f`
+    /// of that; `as_mut()` and `set(v)` through the crate's own pointer's
+    /// `deref_mut()`, as std's `Pin<Ptr: DerefMut>`'s are.
+    fn pin_of_another_call(
+        &mut self,
+        op: PinOp,
+        pin: Ty<'tcx>,
+        values: &mut std::vec::IntoIter<Expr>,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut arg = || values.next().expect("rustc checked the arguments");
+        let target = self.recognition().pinned_target(pin);
+        Ok(match (op, target) {
+            (PinOp::Ref, _) => self.pin_read(arg(), pin, span, out)?,
+            (PinOp::Map, _) => {
+                let (pin_value, f) = (arg(), arg());
+                apply(f, vec![self.pin_read(pin_value, pin, span, out)?])
+            }
+            (PinOp::Mut, Some(PinTarget::Deref(pointer, _))) => self.own_deref_mut(arg(), pointer, span, out)?,
+            (PinOp::Set, Some(PinTarget::Deref(pointer, target))) => {
+                let (pin_value, value) = (arg(), arg());
+                let place = self.own_deref_mut(pin_value, pointer, span, out)?;
+                let js_span = self.js_span(span);
+                out.push(match self.mut_ref_form(target).is_cell() {
+                    true => StmtKind::Assign(Expr::held(place), value).at(js_span),
+                    false => StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, value])).at(js_span),
+                });
+                Expr::undefined()
+            }
+            _ => return Err(self.unsupported(span, &format!("`as_mut()` or `set()` of a `{pin}`"))),
+        })
+    }
+
+    /// What `value`, a `Pin` of type `pin`, points at, as `*pin` reads it:
+    /// a counted `Rc`'s `value` (ADR 0320), another std pointer itself,
+    /// which is its target in JS, or the crate's own pointer's `deref()`.
+    fn pin_read(&mut self, value: Expr, pin: Ty<'tcx>, span: rustc_span::Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let (read, read_ty) = self.pin_target(value, pin, span, out)?;
+        Ok(match self.counted_rc(read_ty) {
+            Some(pointee) => self.counted_pointee(read, pointee),
+            None => read,
+        })
+    }
+
+    /// `value.deref_mut()` of the crate's own smart pointer of type `pointer`.
+    fn own_deref_mut(
+        &mut self,
+        value: Expr,
+        pointer: Ty<'tcx>,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let deref_mut = self
+            .tcx
+            .require_lang_item(rustc_hir::attrs::lang_items::LangItem::DerefMut, span);
+        let method = crate::lower::recognition::trait_method(self.tcx, deref_mut, "deref_mut");
+        let args = self.tcx.mk_args(&[pointer.into()]);
+        match self.trait_call(method, args, vec![value], span, out)? {
+            Some(place) => Ok(place),
+            None => Err(self.unsupported(span, &format!("the `DerefMut` of a `{pointer}` a `Pin` writes through"))),
+        }
     }
 
     /// Is `pointer`, a `Pin`'s, a `&mut` to a number or text, which is a

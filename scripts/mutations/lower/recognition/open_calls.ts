@@ -18,12 +18,4 @@ export const mutations: Mutation[] = [
     replace: "    (is_std_def(tcx, trait_id, StdItem::Hash) && std_type && false).then_some(OpenCall::StdHash)\n",
     tests: ["test/diagnostics.test.ts", "-t", "a set of a Duration beside"],
   },
-  {
-    name: "rc-pin-unnamed",
-    breaks: "`Rc::pin` names no issue, where #1448 covers it",
-    file: "src/lower/recognition/open_calls.rs",
-    find: "        return Some(OpenCall::PinRead);\n",
-    replace: "        return None;\n",
-    tests: ["test/diagnostics.test.ts", "-t", "an Rc's pin"],
-  },
 ];

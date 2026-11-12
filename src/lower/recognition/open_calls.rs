@@ -20,9 +20,6 @@ pub(crate) enum OpenCall {
     /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
     /// answer: a reader's of the crate's own (#1297, ADR 0425).
     OwnReader,
-    /// `Rc::pin` and `Arc::pin`, and a read through a `Pin` of a pointer
-    /// other than a reference or a `Box` (#1448).
-    PinRead,
     /// The `Hash` of a std type rust-js doesn't write, a `Duration`'s (#1447).
     StdHash,
 }
@@ -54,9 +51,6 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
         return Some(OpenCall::OwnReader);
     }
     let path = tcx.def_path_str(id);
-    if path == "std::rc::Rc::<T>::pin" || path == "std::sync::Arc::<T>::pin" {
-        return Some(OpenCall::PinRead);
-    }
     let spawns = matches!(
         tcx.item_name(id).as_str(),
         "spawn" | "spawn_scoped" | "scope" | "spawn_unchecked"

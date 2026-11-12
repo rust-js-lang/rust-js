@@ -181,7 +181,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A map's, a set's or an entry's (ADRs 0059, 0325, 0345).
             name if let Some(op) = map_method(name, of) => Std::Map(op),
             _ if arguments || argument => return format_args_method(name.as_str(), arguments),
-            "new" if adt(StdItem::Rc) || adt(StdItem::Arc) => Std::Same,
+            "new" | "pin" if adt(StdItem::Rc) || adt(StdItem::Arc) => Std::Same,
             // What only a counted one answers (ADR 0320).
             "strong_count" if rc => Std::Rc(RcOp::StrongCount),
             "weak_count" if rc => Std::Rc(RcOp::WeakCount),

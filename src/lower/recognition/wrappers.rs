@@ -101,7 +101,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let imp = tcx.inherent_impl_of_assoc(def_id)?;
         let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
-        (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
+        // `Rc::pin(x)` too, std's `Pin::new_unchecked(Rc::new(x))`, the `Pin`
+        // its pointer in JS (ADR 0329, #1448).
+        let made = matches!(tcx.item_name(def_id).as_str(), "new" | "pin");
+        (rc_pointee(tcx, owner).is_some() && made).then(|| (true, args.type_at(0)))
     }
 
     /// Whether `def_id` is `Rc::new_cyclic` or `Arc::new_cyclic`, by its

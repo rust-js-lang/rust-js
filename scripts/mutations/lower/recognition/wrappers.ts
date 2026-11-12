@@ -624,4 +624,12 @@ export const mutations: Mutation[] = [
     replace: "        let std = pointer.is_box() || self.is_rc(pointer);\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_compare_and_hash_their_targets.rs$"],
   },
+  {
+    name: "rc-pin-not-made",
+    breaks: "`Rc::pin(x)` isn't `Rc::new(x)`, a counted one's `{ value, strong }` never made (#1448)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        let made = matches!(tcx.item_name(def_id).as_str(), \"new\" | \"pin\");\n",
+    replace: "        let made = matches!(tcx.item_name(def_id).as_str(), \"new\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],
+  },
 ];

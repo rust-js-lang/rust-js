@@ -357,7 +357,7 @@
 + Result::unwrap_or_default	safe
 + Result::unwrap_or_else	safe
 + Result::unwrap_unchecked	safe
-# Rc 13 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
+# Rc 14 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
 + Rc::as_ptr	memory
 - Rc::assume_init	memory
 - Rc::decrement_strong_count	memory
@@ -375,13 +375,13 @@
 - Rc::new_uninit_slice	memory
 - Rc::new_zeroed	memory
 - Rc::new_zeroed_slice	memory
-- Rc::pin	memory
++ Rc::pin	memory
 + Rc::ptr_eq	memory
 + Rc::strong_count	memory
 + Rc::try_unwrap	memory
 + Rc::unwrap_or_clone	memory
 + Rc::weak_count	memory
-# Arc 13 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
+# Arc 14 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
 + Arc::as_ptr	memory
 - Arc::assume_init	memory
 - Arc::decrement_strong_count	memory
@@ -399,7 +399,7 @@
 - Arc::new_uninit_slice	memory
 - Arc::new_zeroed	memory
 - Arc::new_zeroed_slice	memory
-- Arc::pin	memory
++ Arc::pin	memory
 + Arc::ptr_eq	memory
 + Arc::strong_count	memory
 + Arc::try_unwrap	memory
