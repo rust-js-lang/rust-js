@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     breaks: "a generic collect into a `Result` of a `Vec` of a caller's values grows it by none, as if each were of no size, so its hint isn't asked again as it fills (a wrong answer, #848)",
     file: "src/lower/iterators/hint_asks.rs",
     find: "                    true => self.type_fact_value(value, TypeFact::Size, span)?,\n",
-    replace: "                    true => self.room_item_size(value),\n",
+    replace: "                    true => Expr::int(0),\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
   },
   {
