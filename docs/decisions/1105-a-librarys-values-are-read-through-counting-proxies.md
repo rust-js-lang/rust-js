@@ -137,3 +137,15 @@ calls through it (`may_read_this`), so it's listed as decided under #1070,
 closed.
 The net's own test holds the hook: a library's `Pair`'s fields read once
 under it; mutations `js-made-all-ignored` and `js-made-all-unread`.
+
+## Amendment: an object a symbol holds is counted, the one proxy of it
+
+The membrane gave an object a symbol-keyed property holds as it is, the
+library's own, while the same object given any other way was its proxy,
+so a counted class instance's hidden box, `instance[$countedKey]`, was
+two identities of one object: `$countedRc`'s `box.value[$countedKey] ===
+box` failed for a `Weak` the library gave, `$upgrade` gave the box, not
+the instance, and `c.watch()` threw (nightly 43133510260's object model
+net, class_rc_counted_is_the_instance). A function a symbol holds stays
+JS's protocol, run as the library's; an object is counted, uncounted as
+a read since it's no field the program names.

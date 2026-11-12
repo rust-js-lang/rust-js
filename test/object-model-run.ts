@@ -124,9 +124,15 @@ function counted(value: unknown, path: string, exported = false, bound: unknown[
       // method runs as the library's, on its own object, uncounted.
       // An array's is JS's own, run on the proxy, whose items it gives
       // counted.
+      // An object a symbol holds, a counted instance's hidden box
+      // (`$countedKey`), is the one proxy of it the program sees wherever
+      // it's given, as the box a `Weak` is: `box.value[$countedKey] ===
+      // box` holds through the membrane as it does without it (nightly
+      // 43133510260's class_rc_counted_is_the_instance).
       if (typeof k === "symbol") {
         const v = Reflect.get(t, k, array ? proxy : t);
-        return typeof v === "function" && !array ? counted(v, `${at()}${key(k)}`, false, [], true) : v;
+        if (array) return v;
+        return typeof v === "function" ? counted(v, `${at()}${key(k)}`, false, [], true) : counted(v, `${at()}${key(k)}`);
       }
       // A function of what the module exports, a class's or a namespace's,
       // `Parser.expr`, is the module's, read where JS reads a callee: what
