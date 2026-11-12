@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $chars,
   $cmp,
+  $count,
   $debugStr,
   $extend,
   $intoIter,
@@ -31,7 +32,7 @@ function bump(i) {
   }
 }
 function count(i) {
-  return Iterator.from(i).reduce((n) => n + 1, 0);
+  return $count($intoIter(i));
 }
 function firsts(i, IItemDebug) {
   return Array.from(

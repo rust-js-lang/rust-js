@@ -5,6 +5,7 @@ import {
   $cleanup,
   $closing,
   $collecting,
+  $count,
   $debugStr,
   $extend,
   $held,
@@ -77,7 +78,7 @@ function pickyFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {
   const iter = $intoIter(it);
   let result;
   try {
-    result = iter.reduce((n) => n + 1, 0);
+    result = $count(iter);
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

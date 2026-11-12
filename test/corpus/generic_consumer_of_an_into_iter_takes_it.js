@@ -105,7 +105,7 @@ function counted(iter, dropTIntoIter) {
   const iter$1 = $intoIter(iter);
   let result;
   try {
-    result = iter$1.reduce((n) => n + 1, 0);
+    result = $count(iter$1);
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {

@@ -184,3 +184,25 @@ against native Rust in both builds. Mutations
 `generic-into-iter-own-steps-unasked` (`lower/mir/iter.ts`) and
 `into-iter-fold-unreached` (`lower/recognition/own_steps.ts`), caught;
 `generic-own-steps-unasked` and `may-fold-its-own-not-generic` refitted.
+
+## Amendment: generic code's `count()` of a `T::IntoIter` is its own (2026-11-13, #1602)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+The `ty::Param` audit #1590 asked for found a third check of the same
+question: `count()`'s "its caller's iterator may have its own `count`,
+`$count`", asked of a type parameter alone. Of a `T::IntoIter` the count
+was folded by `reduce`, so the crate's own `count` never ran, or its own
+`fold` ran in its place, and the drop after it, guarded by `!iter.ownFold
+&& !iter.ownCount`, never ran either: native prints `own count`, `drop Up
+0 3`, `3`, the JS `3` (P0, both builds). It asks `is_unknown` too: an
+associated type's `count()` is `$count(it, dropItem)`. Nine snapshots
+change, each such a count now `$count`.
+
+`generic_count_of_an_into_iter_by_its_own.rs` holds the count of an
+iterator with its own `count`, with its own `count` and `fold`, and with
+neither, into-iterated, stepped first, held in an `Option` or a `Vec`,
+and past a `by_ref()`'s, against native Rust in both builds; its
+metamorphic rewrites pass. Mutation `into-iter-count-reduced`, caught;
+`param-count-reduced` refitted.

@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $checked,
+  $count,
   $debugStr,
   $iter,
   $iterator,
@@ -48,7 +49,7 @@ function countdownContainer_items(countdown) {
 }
 
 function count(c, CContainer) {
-  return CContainer.items(c).reduce((n) => n + 1, 0);
+  return $count(CContainer.items(c));
 }
 
 function first(c, CContainer) {

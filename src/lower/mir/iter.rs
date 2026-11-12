@@ -1252,8 +1252,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its own `count` where it may have one, `$count`'s: std's compiled
         // one, a `Take`'s, which advances its source and asks no `nth`
         // (#213, ADR 0913), a `Skip`'s, whose `nth` drops a reversed `Vec`'s
-        // as one slice (#261), and a type parameter's, which its caller's
-        // iterator may have, `Take`'s in std's `Skip::count`. A flatten made
+        // as one slice (#261), and a type's only a caller knows, a type
+        // parameter's or an associated type's, `T::IntoIter` (`is_unknown`,
+        // #1602), which its caller's iterator may have, `Take`'s in std's
+        // `Skip::count`. A flatten made
         // in place has one where its inner iterators' own count is reached,
         // `$flatMap`'s (#736); JS's `flatMap` has none.
         let iterator = std_item(self.tcx, StdItem::Iterator);
@@ -1271,7 +1273,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And a std source's own, `repeat_n`'s, its length, which clones
         // none (#1124).
         let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);
-        let own_count = matches!(iter_ty.kind(), ty::Param(_))
+        let own_count = self.is_unknown(iter_ty)
             || filter_asks
             || slice_count
             || source_own

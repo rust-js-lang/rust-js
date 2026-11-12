@@ -420,9 +420,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
     file: "src/lower/mir/iter.rs",
-    find: "        let own_count = matches!(iter_ty.kind(), ty::Param(_))\n",
-    replace:
-      "        let own_count = false && matches!(iter_ty.kind(), ty::Param(_))\n",
+    find: "        let own_count = self.is_unknown(iter_ty)\n",
+    replace: "        let own_count = false && self.is_unknown(iter_ty)\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -948,5 +947,13 @@ export const mutations: Mutation[] = [
     find: "        if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
     replace: "        if false && method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "fallible_collect_into_own_from_iter with std"],
+  },
+  {
+    name: "into-iter-count-reduced",
+    breaks: "generic code's `count()` of a `T::IntoIter` is folded by `reduce`, a type parameter's alone its own `count`: the crate's own `count` never runs and the iterator is never dropped (#1602)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let own_count = self.is_unknown(iter_ty)\n",
+    replace: "        let own_count = matches!(iter_ty.kind(), ty::Param(_))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_count_of_an_into_iter_by_its_own.rs$"],
   },
 ];

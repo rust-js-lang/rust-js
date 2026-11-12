@@ -5,6 +5,7 @@ import {
   $closing,
   $collectDropping,
   $collectsInPlace,
+  $count,
   $dropEach,
   $dropItems,
   $foldToArray,
@@ -49,10 +50,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       const iter = $intoIter(extra);
       let result;
       try {
-        result = iter.reduce((n, item) => {
-          dropUItem?.(item);
-          return n + 1;
-        }, 0);
+        result = $count(iter, dropUItem);
       } catch (error) {
         $cleanup(() => {
           if (!iter.ownFold && !iter.ownCount) {

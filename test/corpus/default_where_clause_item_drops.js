@@ -242,10 +242,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         try {
           iter$1 = $intoIter(extra);
           try {
-            result$1 = iter$1.reduce((n, item) => {
-              dropUItem?.(item);
-              return n + 1;
-            }, 0);
+            result$1 = $count(iter$1, dropUItem);
           } catch (error) {
             $cleanup(() => {
               if (!iter$1.ownFold && !iter$1.ownCount) {
