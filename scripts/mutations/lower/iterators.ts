@@ -417,4 +417,13 @@ export const mutations: Mutation[] = [
     replace: "    read || held\n",
     tests: ["test/corpus.test.ts", "-t", "^index_gives_an_adapter_of_its_iterator.rs$"],
   },
+  {
+    name: "hash-union-not-an-iterator",
+    breaks: "a hash set's `union`, a JS iterator, is wrapped again where one's asked, `Iterator.from($hashSetUnion(a, b))` (#1219)",
+    file: "src/lower/iterators.rs",
+    find: "    \"$hashSetUnion\",\n",
+    replace: "    \"$hashSetUnion-unlisted\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_set_methods.rs$"],
+    snapshots: true,
+  },
 ];

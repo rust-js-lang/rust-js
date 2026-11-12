@@ -298,11 +298,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether std's hint of an iterator of type `ty` has a lower bound its
-    /// merge's state gives as it's stepped, which JS's array of the result
-    /// doesn't keep: a B-tree set's `difference(..)`, what's left of the
-    /// first less what's left of the second, and `union(..)`, the more of
-    /// the two, and a hash set's `union(..)`, what's left of the larger
-    /// (#1215).
+    /// merge's state gives as it's stepped: a B-tree set's `difference(..)`,
+    /// what's left of the first less what's left of the second, and
+    /// `union(..)`, the more of the two, and a hash set's `union(..)`,
+    /// what's left of the larger (#1215), each made as std's where a crate
+    /// keeps capacities (#1219).
     fn hints_merged_lower_bound(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
@@ -352,9 +352,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             return held.into_iter().all(|held| self.lower_bound_is_stds(held));
         }
-        // A set's merge, whose lower bound JS's array doesn't keep (#1215).
+        // A set's merge, made as std's where a crate keeps capacities, a
+        // B-tree's `$treeSetAlgebra` and a hash set's `$hashSetUnion`, whose
+        // hint is its merge's as it's stepped, which JS's array of the
+        // result doesn't keep (#1215, #1219).
         if self.hints_merged_lower_bound(ty) {
-            return false;
+            return true;
         }
         // A string's `chars()` or `char_indices()`, lazy (#1186): JS's own
         // string iterator knows no hint, and JS's adapters of the runtime's

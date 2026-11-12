@@ -779,8 +779,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Of items whose order can be seen, std's own lazy iterators,
             // which ask `cmp` what std's ask as they're stepped (#943); of
-            // others, its items, which no one sees asked.
-            MapOp::Algebra(name) if seen_items => {
+            // others, its items, which no one sees asked. And a `union` or a
+            // `difference` of a crate that reads a `Vec`'s capacity, whose
+            // hint, which a collect grows one by, is its merge's as it's
+            // stepped (#1219).
+            MapOp::Algebra(name)
+                if seen_items
+                    || self.krate.keeps_capacity && cmp.is_some() && matches!(name, "union" | "difference") =>
+            {
                 let cmp = cmp.expect("a B-tree's order");
                 map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp])
             }
@@ -805,6 +811,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let ord = self.tree_build_dictionary(item, span)?;
                         map_ops("$treeOfSorted", vec![Expr::new_(class, Vec::new()), items, ord])
                     }
+                    // A hash set's `|`, `self.union(rhs).cloned().collect()`,
+                    // of its `union` as std steps it (#1219).
+                    false if name == "union" && cmp.is_none() => {
+                        Expr::new_(class, vec![cloned(map_ops("$hashSetUnion", vec![arg(), arg()]))])
+                    }
                     false => {
                         let mut list = vec![arg(), arg(), Expr::str(name)];
                         list.extend(cmp);
@@ -812,6 +823,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // A hash set's `union`, lazy as std's is, the larger's items
+            // first, its hint the chain's of it (#1219).
+            MapOp::Algebra("union") if cmp.is_none() => map_ops("$hashSetUnion", vec![arg(), arg()]),
             MapOp::Algebra(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);

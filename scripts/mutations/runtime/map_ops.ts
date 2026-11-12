@@ -574,4 +574,20 @@ export const mutations: Mutation[] = [
     replace: "    drop?.($entryInsert(entry._0, value));\n",
     tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
   },
+  {
+    name: "hash-union-smaller-first",
+    breaks: "a hash set's `union` steps the smaller set first, so its hint after a step isn't std's, and a `Vec` collected of what's left grows to another capacity (#1219)",
+    file: "src/runtime/map_ops.js",
+    find: "  const [first, second] = a.size >= b.size ? [a, b] : [b, a];\n",
+    replace: "  const [first, second] = a.size >= b.size ? [b, a] : [a, b];\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "hash-union-hint-unbounded-below",
+    breaks: "a hash set's `union` hints no lower bound, so a `Vec` collected of it grows from less than std's (#1219)",
+    file: "src/runtime/map_ops.js",
+    find: "    return [n, n + m];\n",
+    replace: "    return [0, n + m];\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
+  },
 ];

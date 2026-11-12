@@ -9995,6 +9995,30 @@ export function $setAlgebra(a, b, op, cmp) {
   return cmp ? items.sort(cmp) : items;
 }
 
+// `a.union(&b)` of two hash sets as std steps it, lazy, its hint what a
+// `Vec` a crate collects it in grows by (#1219): the larger's items, then
+// the smaller's not in it, `larger.iter().chain(smaller.difference(larger))`
+// (hash/set.rs), its hint the chain's, `(n, Some(n + m))` of the larger's
+// `n` left and the smaller's `m`, then the difference's, `(0, Some(m))`.
+export function $hashSetUnion(a, b) {
+  const [first, second] = a.size >= b.size ? [a, b] : [b, a];
+  const [xs, ys] = [Array.from(first), Array.from(second)];
+  let [i, j] = [0, 0];
+  const it = new $Steps(() => {
+    if (i < xs.length) return { done: false, value: xs[i++] };
+    while (j < ys.length) {
+      const y = ys[j++];
+      if (!first.has(y)) return { done: false, value: y };
+    }
+    return { done: true, value: undefined };
+  });
+  it.sizeHint = () => {
+    const [n, m] = [xs.length - i, ys.length - j];
+    return [n, n + m];
+  };
+  return it;
+}
+
 // `a.is_subset(&b)`, or `a.is_superset(&b)`: each of the one's in the other.
 export function $isSubset(a, b, superset) {
   const [inner, outer] = superset ? [b, a] : [a, b];

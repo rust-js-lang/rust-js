@@ -679,7 +679,8 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$filterEnds` (ADR 0526), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
 /// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
-/// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a map's or a
+/// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a hash set's
+/// `union`, std's lazy chain of it (`$hashSetUnion`, #1219), a map's or a
 /// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
 /// a `Vec`'s `Splice`, which puts its replacement in place as it's closed
 /// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
@@ -687,7 +688,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// its back or asks its rest, and every `char_indices()`, `$chars` and
 /// `$charIndices` (#1186), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 43] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 44] = [
     "$stdIterator",
     "$chars",
     "$charIndices",
@@ -727,6 +728,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 43] = [
     "$successors",
     "$keysIn",
     "$treeSetAlgebra",
+    "$hashSetUnion",
     "$mapExtractIf",
     "$splice",
     "$splicing",

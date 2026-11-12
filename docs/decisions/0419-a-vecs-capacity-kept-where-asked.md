@@ -602,3 +602,32 @@ build, refused in the plain build; corpus case
 `vec_collected_in_place_capacity`'s `opaque` rewrite in the std build, off
 test/metamorphic-known.txt. Mutation `in-place-opaque-chain-unwalked`,
 caught; four refitted to the new arguments.
+
+## Amendment (2026-11-12, #1219): set merges collected where a capacity is read, as std steps them
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; three
+refusals lifted. Where a crate reads a `Vec`'s capacity, a `Vec`
+collected of a B-tree set's `difference(..)` or `union(..)`, or of a hash
+set's `union(..)`, was refused (#1215): std grows it by the merge's hint
+as it's stepped, which JS's eager array of the result doesn't keep.
+
+- **A B-tree set's `difference` and `union`** in such a crate are made
+  with `$treeSetAlgebra`, std's own lazy merge (#943), already used where
+  items' order can be seen. A difference's hint is `(self_left -
+  other_left, Some(self_left))` of whichever way std takes, stitched,
+  searched or its own items alone. A union's is `(max(a, b), Some(a + b))`
+  of its sides, a peeked one counted.
+- **A hash set's `union`** is `$hashSetUnion(a, b)` in every crate, as m6
+  decided: std's `larger.iter().chain(smaller.difference(larger))`, lazy,
+  the larger set's items first, then the smaller's not in it. Its hint is
+  the chain's, `(n, Some(n + m))`, then the difference's `(0, Some(m))`.
+  Its `|` is the set of that, as std's is `union(rhs).cloned().collect()`.
+  Its item order is the larger set's first, where the eager array's was
+  `a`'s: a hash set's order is unspecified (case N). It's one of the
+  runtime's iterator helpers, so a `sorted` of it reads `sorted(
+  $hashSetUnion(a, b))` and a collect `Array.from($hashSetUnion(a, b))`.
+
+Held by corpus case `set_merges_collected_where_capacity_is_read.rs`
+(each way of a difference, the unions, a hash union both ways round, its
+`|`, and what's left after a step) against native Rust in both builds;
+three cases' JS changed to the lazy union. Guide limitations.md updated.

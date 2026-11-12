@@ -165,12 +165,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
   {
-    name: "merged-lower-bound-unrefused",
-    breaks: "a B-tree set's `difference(..)` collected in a crate that reads a capacity compiles, grown by JS's count where std's merge gives another lower bound (#1215)",
+    name: "merged-lower-bound-refused",
+    breaks: "a B-tree set's `difference` or `union`, or a hash set's `union`, collected in a crate that reads a capacity, made as std steps it, is refused though its hint is std's (#1219)",
     file: "src/lower/recognition/lengths.rs",
-    find: "        if self.hints_merged_lower_bound(ty) {\n            return false;\n        }\n",
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a set's difference"],
+    find: "        if self.hints_merged_lower_bound(ty) {\n            return true;\n        }\n",
+    replace: "        if self.hints_merged_lower_bound(ty) {\n            return false;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
   },
   {
     name: "text-patterns-hinted-as-counted",

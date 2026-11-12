@@ -15,6 +15,7 @@ import {
   $eq,
   $extendMap,
   $getKeyValue,
+  $hashSetUnion,
   $hashSlice,
   $hashedMap,
   $hashedSet,
@@ -299,7 +300,7 @@ function sets() {
       .join(", ")}]`,
   );
   console.log(
-    `[${each($setAlgebra(left, right, "union"))
+    `[${each(Array.from($hashSetUnion(left, right)))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

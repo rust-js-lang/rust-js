@@ -10,6 +10,7 @@ import {
   $eq,
   $extendMap,
   $getKeyValue,
+  $hashSetUnion,
   $intsOrdered,
   $isDisjoint,
   $isSubset,
@@ -119,7 +120,7 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
+    `[${sorted($hashSetUnion(a, b), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
   );
   console.log(
     `[${sorted($iter($setAlgebra(a, b, "difference")), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
