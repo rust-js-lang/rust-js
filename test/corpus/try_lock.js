@@ -19,8 +19,15 @@ export function entry() {
 
 function main() {
   const m = { value: 5 };
-  const g = $unwrapOk($tryLock(m, true), undefined, (e) =>
-    e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+  const g = $unwrapOk(
+    $tryLock(m, true),
+    undefined,
+    (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
+    (tryLockError) => {
+      if (tryLockError.TAG === "Poisoned") {
+        $unlock(tryLockError._0.data);
+      }
+    },
   );
   g.value = (g.value + 1) | 0;
   try {
@@ -76,12 +83,26 @@ function main() {
   }
 
   const l = { value: "a" };
-  const r1 = $unwrapOk($tryLock(l), undefined, (e) =>
-    e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+  const r1 = $unwrapOk(
+    $tryLock(l),
+    undefined,
+    (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
+    (tryLockError) => {
+      if (tryLockError.TAG === "Poisoned") {
+        $unborrow(tryLockError._0.data);
+      }
+    },
   );
   try {
-    const r2 = $unwrapOk($tryLock(l), undefined, (e) =>
-      e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+    const r2 = $unwrapOk(
+      $tryLock(l),
+      undefined,
+      (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
+      (tryLockError) => {
+        if (tryLockError.TAG === "Poisoned") {
+          $unborrow(tryLockError._0.data);
+        }
+      },
     );
     try {
       const tryWrite = $tryLock(l, true);
@@ -100,14 +121,21 @@ function main() {
   } finally {
     $unborrow(r1);
   }
-  const value$1 = $unwrapOk($tryLock(l, true), undefined, (e) =>
-    e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+  const value$1 = $unwrapOk(
+    $tryLock(l, true),
+    undefined,
+    (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
+    (tryLockError) => {
+      if (tryLockError.TAG === "Poisoned") {
+        $unlock(tryLockError._0.data);
+      }
+    },
   );
   value$1.value += "b";
   $unlock(value$1);
   const w = $lock(l);
   try {
-    const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value));
+    const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value), $unborrow);
     console.log(
       `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,
     );

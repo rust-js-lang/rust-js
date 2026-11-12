@@ -10,7 +10,7 @@ function lastCopied(it) {
   return $nextBack(Iterator.from(it));
 }
 function lastThrough(r) {
-  return $nextBack($lent(Iterator.from(r)));
+  return $nextBack($lent(r));
 }
 function counted(it) {
   return Iterator.from(it).len();

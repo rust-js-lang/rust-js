@@ -2536,3 +2536,24 @@ The readability baseline is blessed with it: `map_collect_drops.js` is 7
 lines shorter (295 to 288) and names nothing apart either way, so the
 corpus's renamed `x$1`, unchanged in count, is a larger share of fewer
 lines, 499.8 to 499.9 in 10,000. No name was given apart.
+
+## Amendment (2026-11-12, #1509): an `extend` by `for_each` drops what it's given once
+
+`extend` never closes what it's given, so its drop comes after the call
+(#1120). But std's `extend` of a `String`, a hash map or set, a B-tree
+map or set, or a `LinkedList` is `iter.into_iter().for_each(..)`. That
+reaches the crate's own `fold(self, ..)`, which takes the iterator and
+drops it. `$extendMap` and `$extend` call that `fold`, and the drop after
+dropped it again. A B-tree's `collect` gathers a `Vec` by `next` first,
+so `collects_by_fold` says no of it, but its `extend` folds.
+`extends_by_fold` (mir/iter/collect.rs) is now the one answer of which
+`extend` folds. `dropped_after` asks it as it asks `consumes_by_fold` of
+a consumer: an `extend` that folds, of an iterator whose own `fold` it
+reaches, drops nothing after. Results change (a second drop), so Rust's
+behaviour is kept (ADR 0262's third row).
+
+Proof: the corpus case `extend_by_fold_drops_once`, against native Rust
+in both builds. It extends each collection by the crate's iterator with
+its own `fold`, by a `skip` and a `map` of it, and a `String` by one of
+`char`s. `own_fold_and_nth`'s `loud` rewrite found it. Generic code's
+`extend` by a dictionary is #1511.

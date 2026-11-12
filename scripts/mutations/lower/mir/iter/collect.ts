@@ -712,4 +712,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "extend-by-fold-of-a-b-tree-unasked",
+    breaks: "a B-tree's `extend`, `iter.into_iter().for_each(..)`, is taken to step by `next` as its `collect` does, so the crate's iterator its own `fold` drops is dropped again after (#1509)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        self.collects_by_fold(collection) || self.is_map(collection)\n",
+    replace: "        self.collects_by_fold(collection)\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_by_fold_drops_once.rs$"],
+  },
 ];

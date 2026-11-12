@@ -123,6 +123,13 @@ impl IterValue {
             e = made("$closing", args, &[Known::IterClosing]);
         }
         if self.lent {
+            // What it lends, never `Iterator.from(x)` of it, which calls a
+            // `$Steps`' `[Symbol.iterator]()`, arming it to close itself at
+            // its end, as a consumer that takes it by value does: `$lent(x)`,
+            // which makes a JS iterator of what's no iterator itself (#1508).
+            if let Some(x) = super::iterator_from(&e) {
+                e = x.clone();
+            }
             e = made("$lent", vec![e], &[Known::IterLent]);
         }
         e

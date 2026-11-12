@@ -401,3 +401,20 @@ limitations.md loses the concrete struct's entry. Mutations
 `copied_clone`'s refusal of a copy whose items are copied as it steps
 stays, guarding what no clone apart covers, but nothing known reaches it
 now, so `copied-copying-clone-allowed`, which its limitation held, goes.
+
+## Amendment (2026-11-12, #1506): what an adapter cloned apart holds is closed to drop it
+
+A `Chain`, a `Map`, a `Filter` or a `Copied` cloned apart, `makeChain(a,
+b)`, stepped its sources as `$iterator(a, ..)`, never closed. So the
+crate's iterator with a `Drop` was never dropped: not at a temporary's
+statement end, not where a clone ended. The adapter not cloned apart
+holds each source `$closing(.., drop)` (ADR 0465). `cloned_apart_adapter`
+refused items with a destructor, but not sources with one. Now each
+`build` closes each source it steps by `closing`, as the adapter not
+cloned apart does. A clone's sources are clones, closed as theirs.
+Results change, so Rust's behaviour is kept (ADR 0262's third row).
+
+Proof: the corpus case `cloned_apart_adapter_drops_its_sources`, against
+native Rust in both builds. It covers a chain, a map and a filter
+stepped from either end, collected, counted and cloned. The metamorphic
+net's `loud` rewrite of `cloned_chain_stepped_from_its_back` found it.

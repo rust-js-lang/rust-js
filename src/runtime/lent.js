@@ -10,6 +10,12 @@
 // `last` std's defaults, of those, so none reaches `it`'s own, which would
 // take it from its lender (#747, #749).
 function $lent(it) {
+  // Of an iterable that's no iterator, an array a caller gives, a JS
+  // iterator of it. Never `Iterator.from` of one: it calls a `$Steps`'
+  // `[Symbol.iterator]()`, which arms what's lent to close at its end, as
+  // a consumer that takes it by value does, so its lender's would be
+  // dropped at its first `None` (#1508).
+  if (typeof it.next !== "function") it = Iterator.from(it);
   // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
   // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
   // `fold` that `tryFold`, as std's `&mut I` folds by its `I::try_fold`: an

@@ -49,3 +49,25 @@ const evens = $lent(nums).filter((n) => n % 2 === 0).take(2);
 
 - **What generic code may do grows**: `by_ref().take(k)` of items with a
   destructor, as itertools' `k_smallest`, `tail` and `max_set` do.
+
+## Amendment (2026-11-12, #1508): what's lent is never `Iterator.from` of it
+
+Generic code that lends what it's given, `it.by_ref()` or `&mut it`, was
+`$lent(Iterator.from(it))`. `Iterator.from` calls its argument's
+`[Symbol.iterator]()`. A `$Steps`' arms it to close itself at its end,
+as a JS consumer that takes it by value would. So the lender, not the
+lent view, closed at its first `None`: a given iterator with a `Drop` was
+dropped there, stepped on after its drop, and not dropped where Rust
+drops it. Now `emit`, `$lent`'s one writer, lends `x` of an
+`Iterator.from(x)`, `$lent(it)`. `$lent` makes a JS iterator of what has
+no `next` itself, an array, as `Iterator.from` did. Results change, so
+Rust's behaviour is kept (ADR 0262's third row). The coordinator approved
+the form. It removes a call, and 20 snapshots lose their
+`Iterator.from`.
+
+Proof: the corpus case `lent_given_iterator_dropped_where_it_goes`,
+against native Rust in both builds. Generic code steps what it's given by
+`next` twice past a `None`, by `by_ref().sum()`, by a `for` over
+`by_ref()` and over `&mut it`, and `by_ref().collect()`s it past a
+`skip(3)`. The metamorphic net's `loud` rewrite of `restarting_iterators`
+found it.

@@ -65,7 +65,7 @@ function total(items) {
 }
 
 function third(items) {
-  return $nth($lent(Iterator.from(items)), 2);
+  return $nth($lent(items), 2);
 }
 
 function boxedTotal(items) {

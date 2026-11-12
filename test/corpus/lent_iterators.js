@@ -51,7 +51,7 @@ function word(it) {
 }
 
 function take2(it) {
-  return Array.from($roomForHint($lent(Iterator.from(it)).take(2), 4, false));
+  return Array.from($roomForHint($lent(it).take(2), 4, false));
 }
 
 function untilZero(it) {

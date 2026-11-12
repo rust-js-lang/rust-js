@@ -65,6 +65,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || output.is_unit()
     }
 
+    /// Whether std's `extend` of a `collection` takes what it's given by
+    /// `for_each`, its `fold`, which takes the iterator and drops it: a
+    /// string's, a hash map's or set's, a B-tree's (`iter.into_iter()
+    /// .for_each(..)`, where its `collect` gathers a `Vec` by `next` first)
+    /// and a list's; not a `Vec`'s, a deque's or a heap's, which step it by
+    /// `next` (#1509).
+    pub(in crate::lower) fn extends_by_fold(&self, collection: Ty<'tcx>) -> bool {
+        let collection = collection.peel_refs();
+        self.collects_by_fold(collection) || self.is_map(collection)
+    }
+
     /// Whether std's `collect` into an `output` of `item`s takes its first
     /// item by `next`, then extends with the rest: a `String`'s of `String`s
     /// or of `Cow<str>`s; of `char`s, `&str`s and `Box<str>`s, it extends

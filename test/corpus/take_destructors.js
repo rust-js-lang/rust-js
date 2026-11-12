@@ -32,7 +32,7 @@ function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
   let first;
   try {
     first = $collectDropping(
-      $roomForHint($lent(Iterator.from(iter)).take(k), IItemSize, false, false, dropIItem),
+      $roomForHint($lent(iter).take(k), IItemSize, false, false, dropIItem),
       dropIItem,
       true,
     );

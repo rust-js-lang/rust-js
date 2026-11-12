@@ -393,7 +393,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 // One stepped from its back, its source made knowing it, a map
                 // `$mapEnds` and a filter `$filterEnds`, as one not cloned
-                // apart is (ADRs 0455, 0526, 0984).
+                // apart is (ADRs 0455, 0526, 0984), closed to drop what it
+                // holds as `as_double_ended` makes it.
                 if matches!(parted, Parted::Map | Parted::Filter) && back {
                     let source = cx.as_double_ended(a, receiver_ty, span)?;
                     let callback = cx.unary_callback(b, own);
@@ -405,7 +406,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Expr::call_helper(ends, vec![source, callback]));
                 }
                 let a_value = a.clone();
+                // Each source closed to drop what it holds, as the adapter not
+                // cloned apart holds it (`closing`, ADR 0465, #1506).
                 let a = cx.as_js_iterator(a, receiver_ty, span)?;
+                let a = cx.closing(a, receiver_ty, span)?;
                 Ok(match parted {
                     // Its source given its function, `it.map(f)`; a copy's,
                     // which has none, is `copied_cloned_apart`'s.
@@ -417,9 +421,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // is (#718, #739).
                     Parted::Chain if back => {
                         let b = cx.as_double_ended(b, other_ty, span)?;
-                        Expr::call_helper("$lazyChain", vec![cx.as_double_ended(a_value, receiver_ty, span)?, b])
+                        let b = cx.closing(b, other_ty, span)?;
+                        let a = cx.as_double_ended(a_value, receiver_ty, span)?;
+                        Expr::call_helper("$lazyChain", vec![cx.closing(a, receiver_ty, span)?, b])
                     }
-                    Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                    Parted::Chain => {
+                        let b = cx.as_js_iterator(b, other_ty, span)?;
+                        Expr::call_helper("$lazyChain", vec![a, cx.closing(b, other_ty, span)?])
+                    }
                 })
             },
         )?;
@@ -766,7 +775,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .reaches_its_own(receiver, OwnStep::Rfold, Reach::Sure),
             false => self.recognition().reaches_its_own(receiver, OwnStep::Fold, Reach::Sure),
         };
-        if self.consumes_by_fold(def_id, output) && own {
+        // Or an `extend` by `for_each`, of a hash set's, a B-tree's or a
+        // list's, which reaches it too (#1509).
+        let folds = match extends {
+            true => arg_tys.first().is_some_and(|&into| self.extends_by_fold(into)),
+            false => self.consumes_by_fold(def_id, output),
+        };
+        if folds && own {
             if (self.recognition().held_function(receiver))
                 .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing)
             {
@@ -1151,6 +1166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             |cx, parts| {
                 let source = parts.into_iter().next().expect("its source");
                 let source = cx.as_js_iterator(source, iter_ty, span)?;
+                let source = cx.closing(source, iter_ty, span)?;
                 cx.copied_items(source, item, output, span)
             },
         )

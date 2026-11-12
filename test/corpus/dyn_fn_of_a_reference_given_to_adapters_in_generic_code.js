@@ -19,7 +19,7 @@ function kept(items) {
 
 function firstEven(items) {
   const even = (x) => x % 2 === 0;
-  return $position($lent(Iterator.from(items)), (item) => even(item));
+  return $position($lent(items), (item) => even(item));
 }
 
 function seen(items) {

@@ -31,3 +31,6 @@ plain generic-instances counted_where_made_runs_each_part_once.rs
 
 #1490 P0: a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
 plain std library printed_while_a_line_is_formatted.rs
+
+#1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
+plain std loud-clone cloned_apart_adapter_drops_its_sources.rs

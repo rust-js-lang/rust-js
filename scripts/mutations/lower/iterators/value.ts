@@ -215,4 +215,12 @@ export const mutations: Mutation[] = [
     replace: "        (\"take_\", [n]) => match (literal(n), count_bound(source)) {\n",
     tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
   },
+  {
+    name: "lent-iterator-from-kept",
+    breaks: "what's lent is `$lent(Iterator.from(it))`, whose `Iterator.from` arms a `$Steps` to close at its end, so generic code's `by_ref()` drops what it's given at its first `None` and steps it after (#1508)",
+    file: "src/lower/iterators/value.rs",
+    find: "            if let Some(x) = super::iterator_from(&e) {\n                e = x.clone();\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lent_given_iterator_dropped_where_it_goes.rs$"],
+  },
 ];

@@ -91,7 +91,7 @@ function fuseNth(it, IFused) {
 }
 
 function nthOf(it) {
-  return $nthSome($lent(Iterator.from(it)), 1);
+  return $nthSome($lent(it), 1);
 }
 
 function main() {

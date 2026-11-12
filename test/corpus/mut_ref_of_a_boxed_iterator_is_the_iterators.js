@@ -18,7 +18,7 @@ export function entry() {
 }
 
 function total(it) {
-  return $lent(Iterator.from(it))
+  return $lent(it)
     .take(2)
     .reduce((a, b) => (a + b) >>> 0, 0);
 }

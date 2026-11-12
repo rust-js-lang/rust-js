@@ -439,7 +439,19 @@ function main() {
   caught("queue", () => {
     const [send, receive] = $channel();
     try {
-      $unwrapOk($send(send, { TAG: "Loud", _0: [24] }), undefined, (e) => "SendError { .. }");
+      $unwrapOk(
+        $send(send, { TAG: "Loud", _0: [24] }),
+        undefined,
+        (e) => "SendError { .. }",
+        (sendError) => {
+          if (sendError[0].TAG === "Quiet") {
+            loudDrop_drop(sendError[0]._0);
+          }
+          if (sendError[0].TAG === "Loud") {
+            boomDrop_drop(sendError[0]._0);
+          }
+        },
+      );
     } catch (error) {
       $cleanup(() => {
         $dropReceiver(receive, (item) => {
@@ -455,7 +467,19 @@ function main() {
       throw error;
     }
     try {
-      $unwrapOk($send(send, { TAG: "Quiet", _0: [25] }), undefined, (e) => "SendError { .. }");
+      $unwrapOk(
+        $send(send, { TAG: "Quiet", _0: [25] }),
+        undefined,
+        (e) => "SendError { .. }",
+        (sendError) => {
+          if (sendError[0].TAG === "Quiet") {
+            loudDrop_drop(sendError[0]._0);
+          }
+          if (sendError[0].TAG === "Loud") {
+            boomDrop_drop(sendError[0]._0);
+          }
+        },
+      );
     } catch (error) {
       $cleanup(() => {
         $dropReceiver(receive, (item) => {

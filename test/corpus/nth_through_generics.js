@@ -30,7 +30,7 @@ function second(items, dropI) {
   $held(items);
   let result;
   try {
-    result = $nth($lent(Iterator.from(items)), 1);
+    result = $nth($lent(items), 1);
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
@@ -44,7 +44,7 @@ function secondOf(items, dropI, dropIItem) {
   $held(items);
   let result;
   try {
-    result = $nthDropping($lent(Iterator.from(items)), 1, dropIItem, true);
+    result = $nthDropping($lent(items), 1, dropIItem, true);
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
@@ -55,7 +55,7 @@ function secondOf(items, dropI, dropIItem) {
   return result;
 }
 function thirdRef(items) {
-  return $nth($lent(Iterator.from(items)), 2);
+  return $nth($lent(items), 2);
 }
 function main() {
   const value = second($iterator(["a", 0], plainIterator_next), (it) => {

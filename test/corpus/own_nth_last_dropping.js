@@ -33,7 +33,7 @@ function plainIterator_next(plain) {
   return plain.at < 5 ? value() : undefined;
 }
 function third(it) {
-  const nth = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
+  const nth = $nthDropping($lent(it), 2, noisyDrop_drop, false);
   function map(n) {
     const result = n[0];
     noisyDrop_drop(n);

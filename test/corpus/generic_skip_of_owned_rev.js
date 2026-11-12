@@ -47,7 +47,7 @@ function nthOf(it, dropI) {
     return result;
   }
   try {
-    nth = $nthDropping($lent(Iterator.from(it)), 1, noisyDrop_drop, false);
+    nth = $nthDropping($lent(it), 1, noisyDrop_drop, false);
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);

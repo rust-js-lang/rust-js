@@ -68,3 +68,25 @@ if (option != null) {
   each in generic code too, with native Rust.
 - **It's what Rust's own `filter` and `map_or` do:** the value is theirs,
   dropped as they return.
+
+## Amendment (2026-11-12, #1505): what `unwrap` panics over is dropped
+
+A `Result`'s `unwrap`, `expect`, `unwrap_err` or `expect_err` that panics
+dropped nothing of the value it panicked over. Std's is `Err(e) =>
+unwrap_failed("..", &e)`: `e` is a local of `unwrap`'s frame, which the
+panic unwinds out of, so it's dropped there, after its message is made,
+caught or not. Now, where that value has a destructor, `$unwrapOk` and
+`$unwrapErr` are given its drop after their `debug`, `$unwrapOk(r,
+undefined, loudDebug_fmt, loudDrop_drop)`. They make the message, then
+run the drop under `$dropsUnwinding`, where a second panic aborts as
+Rust's does, then throw. A generic function's is the drop its callers
+give, `dropE`. Results change, so Rust's behaviour is kept (ADR 0262's
+third row). The coordinator approved the fourth argument.
+
+Proof: the corpus case `unwrap_panic_drops_what_it_panics_over`, against
+native Rust in both builds. It covers each of the four caught, in
+generic code, a value whose drop glue drops two, a box, and one uncaught
+as `main` unwinds. The metamorphic net's `loud` rewrite of
+`unwrap_typed_debug` found it. Snapshots that gain the drop:
+`channel_of_droppers`, `drop_parts_past_a_panic`, `try_lock` (a
+`TryLockError::Poisoned`'s guard, released).

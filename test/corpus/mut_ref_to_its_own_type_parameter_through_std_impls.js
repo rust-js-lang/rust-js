@@ -72,7 +72,7 @@ function shown(held, TDisplay, TDebug) {
 }
 
 function firstTwo(items) {
-  const byRef = $lent(Iterator.from(items));
+  const byRef = $lent(items);
   return [$next(byRef), $next(items)];
 }
 

@@ -22,7 +22,14 @@ function loudDrop_drop(loud) {
 function main() {
   const [tx, rx] = $channel();
   try {
-    $unwrapOk($send(tx, ["a"]), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(tx, ["a"]),
+      undefined,
+      (e) => "SendError { .. }",
+      (sendError) => {
+        loudDrop_drop(sendError[0]);
+      },
+    );
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
@@ -31,7 +38,14 @@ function main() {
     throw error;
   }
   try {
-    $unwrapOk($send(tx, ["b"]), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(tx, ["b"]),
+      undefined,
+      (e) => "SendError { .. }",
+      (sendError) => {
+        loudDrop_drop(sendError[0]);
+      },
+    );
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
@@ -40,7 +54,14 @@ function main() {
     throw error;
   }
   try {
-    $unwrapOk($send(tx, ["c"]), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(tx, ["c"]),
+      undefined,
+      (e) => "SendError { .. }",
+      (sendError) => {
+        loudDrop_drop(sendError[0]);
+      },
+    );
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
@@ -110,7 +131,14 @@ function main() {
   const innerTx = tmp[0];
   const innerRx = tmp[1];
   try {
-    $unwrapOk($send(outerTx, innerTx), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(outerTx, innerTx),
+      undefined,
+      (e) => "SendError { .. }",
+      (sendError) => {
+        $dropSender(sendError[0]);
+      },
+    );
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(innerRx);

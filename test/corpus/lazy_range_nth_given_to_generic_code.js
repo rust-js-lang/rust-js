@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function far(it) {
-  return $nth($lent(Iterator.from(it)), 2000000000);
+  return $nth($lent(it), 2000000000);
 }
 
 function skipped(it) {

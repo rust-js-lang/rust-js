@@ -64,7 +64,7 @@ function nthOf(it, k, dropI) {
     return result;
   }
   try {
-    nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+    nth = $nthDropping($lent(it), k, dDrop_drop, false);
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
@@ -182,7 +182,7 @@ function nthAndLen(it, k, dropI) {
   }
   let d;
   try {
-    nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+    nth = $nthDropping($lent(it), k, dDrop_drop, false);
     d = nth != null ? map(nth) : 0;
   } catch (error) {
     $cleanup(() => {

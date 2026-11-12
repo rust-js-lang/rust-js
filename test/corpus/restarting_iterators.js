@@ -47,8 +47,8 @@ function f() {
   return { n: 0 };
 }
 function twice(it, IVecCollect) {
-  const a = $collectVec($lent(Iterator.from(it)), 4, IVecCollect);
-  const b = $collectVec($lent(Iterator.from(it)), 4, IVecCollect);
+  const a = $collectVec($lent(it), 4, IVecCollect);
+  const b = $collectVec($lent(it), 4, IVecCollect);
   const c = $collectVec(Iterator.from(it), 4, IVecCollect);
   return [a, b, c];
 }

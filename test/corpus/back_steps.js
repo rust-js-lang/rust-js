@@ -53,7 +53,7 @@ function lastBig(it) {
 }
 
 function firstSome(it, f) {
-  return $lent(Iterator.from(it))
+  return $lent(it)
     .map(f)
     .find((item) => item != null);
 }

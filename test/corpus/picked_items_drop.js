@@ -26,7 +26,7 @@ function third(it, dropI) {
   $held(it);
   let result;
   try {
-    result = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
+    result = $nthDropping($lent(it), 2, noisyDrop_drop, false);
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
@@ -41,7 +41,7 @@ function named(it, name, dropI) {
   $held(it);
   let result;
   try {
-    result = $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
+    result = $findDropping($lent(it), (n) => n[0] === name, noisyDrop_drop, false);
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);

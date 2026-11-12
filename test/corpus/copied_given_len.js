@@ -86,7 +86,7 @@ function lent(it, IIterator, IExactSizeIterator, IClone) {
 
 // What stops early, `take(1)`, leaves its lender to step on.
 function lentPlain(it) {
-  const copied = $lent(Iterator.from(it));
+  const copied = $lent(it);
   const n = copied.len();
   const first = Array.from($roomForHint(copied.take(1), 4, false));
   return [n, first, $next(it)];

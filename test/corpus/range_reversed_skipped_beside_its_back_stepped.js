@@ -21,7 +21,7 @@ function secondFromItsFront(range) {
 }
 
 function backThenFar(it) {
-  return [$nextBack(it), $nth($lent(Iterator.from(it)), 4000000000)];
+  return [$nextBack(it), $nth($lent(it), 4000000000)];
 }
 
 function backThenSkipped(it) {

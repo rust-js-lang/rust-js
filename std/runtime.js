@@ -16995,9 +16995,14 @@ export function $restStr(it) {
   return it.rest !== undefined ? it.rest() : it.items.slice(it.at, it.end).join("");
 }
 
-export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug) {
+// `r.unwrap_err()` or `r.expect_err(message)`: what an `Err` holds; of an
+// `Ok`, a panic whose message shows its value by `debug`, the value then
+// dropped by `drop`, where it has a destructor, as `$unwrapOk`'s (#1505).
+export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug, drop) {
   if (result.TAG === "Ok") {
-    throw new Error(message + ": " + debug(result._0));
+    const panic = new Error(message + ": " + debug(result._0));
+    if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
+    throw panic;
   }
   return result._0;
 }
@@ -20164,9 +20169,16 @@ export function $settle(promise) {
   return promise.then((value) => ({ TAG: "Ok", _0: value }), (e) => ({ TAG: "Err", _0: e }));
 }
 
-export function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug) {
+// `r.unwrap()` or `r.expect(message)`: what an `Ok` holds; of an `Err`, a
+// panic whose message shows its value by `debug`, the value then dropped by
+// `drop`, where it has a destructor, as std's `unwrap_failed(msg, &e)`
+// panics while `e` is a local of `unwrap`'s frame, which drops it as the
+// panic unwinds, caught or not; a drop that panics then aborts (#1505).
+export function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
   if (result.TAG === "Err") {
-    throw new Error(message + ": " + debug(result._0));
+    const panic = new Error(message + ": " + debug(result._0));
+    if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
+    throw panic;
   }
   return result._0;
 }
@@ -20375,6 +20387,12 @@ export function $formatFloat(value, options, show) {
 // `last` std's defaults, of those, so none reaches `it`'s own, which would
 // take it from its lender (#747, #749).
 export function $lent(it) {
+  // Of an iterable that's no iterator, an array a caller gives, a JS
+  // iterator of it. Never `Iterator.from` of one: it calls a `$Steps`'
+  // `[Symbol.iterator]()`, which arms what's lent to close at its end, as
+  // a consumer that takes it by value does, so its lender's would be
+  // dropped at its first `None` (#1508).
+  if (typeof it.next !== "function") it = Iterator.from(it);
   // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
   // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
   // `fold` that `tryFold`, as std's `&mut I` folds by its `I::try_fold`: an

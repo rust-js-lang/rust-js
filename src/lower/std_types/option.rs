@@ -241,6 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // its message (ADR 0063), as `ParseIntError { kind: .. }`.
                 if let Some(error) = generic_args.types().nth(1) {
                     self.typed_debug(&mut list, error, span)?;
+                    self.panicked_over_dropped(&mut list, error, span)?;
                 }
                 Expr::call(Expr::helper("$unwrapOk"), list)
             }
@@ -248,6 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 if let Some(value) = generic_args.types().next() {
                     self.typed_debug(&mut list, value, span)?;
+                    self.panicked_over_dropped(&mut list, value, span)?;
                 }
                 Expr::call(Expr::helper("$unwrapErr"), list)
             }
@@ -540,6 +542,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => Expr::arrow(vec![e.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]),
         };
         list.push(debug);
+        Ok(())
+    }
+
+    /// The drop a `$unwrapOk` or a `$unwrapErr` is given, after its message
+    /// and its `debug`, of the value of type `ty` it panics over, where that
+    /// has a destructor: std's `unwrap_failed(msg, &e)` panics while `e` is
+    /// a local of `unwrap`'s frame, so it's dropped as the panic unwinds,
+    /// once its message is made, caught or not (#1505).
+    fn panicked_over_dropped(&mut self, list: &mut Vec<Expr>, ty: Ty<'tcx>, span: rustc_span::Span) -> R<()> {
+        let Some(drop) = self.std_drop_function(ty, span)? else {
+            return Ok(());
+        };
+        while list.len() < 3 {
+            list.push(Expr::undefined());
+        }
+        list.push(drop);
         Ok(())
     }
 

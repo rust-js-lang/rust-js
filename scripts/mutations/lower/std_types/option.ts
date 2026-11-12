@@ -546,4 +546,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^locks\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "panicked-over-undropped",
+    breaks: "a `Result`'s `unwrap` that panics drops nothing of the `Err` it panics over, where std's `unwrap` frame drops it as the panic unwinds (#1505)",
+    file: "src/lower/std_types/option.rs",
+    find: "        list.push(drop);\n        Ok(())\n",
+    replace: "        let _ = drop;\n        Ok(())\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_panic_drops_what_it_panics_over.rs$"],
+  },
 ];

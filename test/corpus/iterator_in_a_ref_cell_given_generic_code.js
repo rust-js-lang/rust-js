@@ -133,7 +133,7 @@ function summed(it) {
   const items = { value: it };
   const borrowMut = $borrowMut(items, true);
   try {
-    return $lent(Iterator.from(borrowMut.value)).reduce((a, b) => (a + b) >>> 0, 0);
+    return $lent(borrowMut.value).reduce((a, b) => (a + b) >>> 0, 0);
   } finally {
     $unborrow(borrowMut);
   }
