@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local a closure sets is a `const`, which the closure can't set",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "        js::each_item_block_mut(items, &mut |stmts| {\n            for stmt in stmts.iter() {\n                if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    replace:
-      "        js::each_item_block_mut(&mut [], &mut |stmts| {\n            for stmt in stmts.iter() {\n                if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    find: "            js::each_item_block_mut(items, &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    replace: "            js::each_item_block_mut(&mut [], &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -146,9 +145,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local of an array its module gives a new one stays `const`, and JS throws assigning it (ADR 0270, amended)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "                c.mutable = true;\n                if c.export {\n                    exported.push((name.clone(), true));\n",
-    replace:
-      "                if c.export {\n                    exported.push((name.clone(), true));\n",
+    find: "                    c.mutable = true;\n                    if c.export {\n                        exported.push((name.clone(), true));\n",
+    replace: "                    if c.export {\n                        exported.push((name.clone(), true));\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -269,5 +267,14 @@ export const mutations: Mutation[] = [
     replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$local") => {\n',
     tests: ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"],
     snapshots: true,
+  },
+  {
+    name: "own-bindings-of-its-name-counted",
+    breaks:
+      "an exported thread-local cell beside a function's own local of its name, `const tickPair = tickPair$1()`, is taken to be rebound there, kept a box and refused, though that function never reads it (#1555)",
+    file: "src/lower/std_types/cell/variables.rs",
+    find: "    rename(items, name, APART);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exported_cell_beside_a_local_of_its_name.rs$"],
   },
 ];

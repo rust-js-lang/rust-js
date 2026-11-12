@@ -43,66 +43,68 @@ pub(in crate::lower) fn plain_statics(
         .collect();
     let mut exported = Vec::new();
     for name in cells {
-        let (mut reads, mut values, mut sets) = (0, 0, 0);
-        js::each_item_expr_mut(items, &mut |e| match &e.kind {
-            js::ExprKind::Var(v) if *v == name => reads += 1,
-            js::ExprKind::Member(of, key)
-                if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
-            {
-                values += 1;
+        outside_own_bindings(items, &name.clone(), |items| {
+            let (mut reads, mut values, mut sets) = (0, 0, 0);
+            js::each_item_expr_mut(items, &mut |e| match &e.kind {
+                js::ExprKind::Var(v) if *v == name => reads += 1,
+                js::ExprKind::Member(of, key)
+                    if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
+                {
+                    values += 1;
+                }
+                _ => {}
+            });
+            if binds_name(items, &name) || reads != values {
+                return;
             }
-            _ => {}
-        });
-        if binds_name(items, &name) || reads != values {
-            continue;
-        }
-        // What sets it, `X.value = ..`, its value replaced: in a function, a
-        // closure too, a constant's, or in what the module runs when it's
-        // loaded, `js::on_load!`'s body in its place (ADRs 0840, 0270
-        // amended, #201).
-        js::each_item_block_mut(items, &mut |stmts| {
-            for stmt in stmts.iter() {
-                if let StmtKind::Assign(target, _) = &stmt.kind
-                    && matches!(&target.kind, js::ExprKind::Member(of, key)
+            // What sets it, `X.value = ..`, its value replaced: in a function, a
+            // closure too, a constant's, or in what the module runs when it's
+            // loaded, `js::on_load!`'s body in its place (ADRs 0840, 0270
+            // amended, #201).
+            js::each_item_block_mut(items, &mut |stmts| {
+                for stmt in stmts.iter() {
+                    if let StmtKind::Assign(target, _) = &stmt.kind
+                        && matches!(&target.kind, js::ExprKind::Member(of, key)
+                            if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                    {
+                        sets += 1;
+                    }
+                }
+            });
+            // A handle on it, lent, may set it too.
+            js::each_item_expr_mut(items, &mut |e| {
+                if let js::ExprKind::Handle(place, _) = &e.kind
+                    && matches!(&place.kind, js::ExprKind::Member(of, key)
                         if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
                 {
                     sets += 1;
                 }
-            }
-        });
-        // A handle on it, lent, may set it too.
-        js::each_item_expr_mut(items, &mut |e| {
-            if let js::ExprKind::Handle(place, _) = &e.kind
-                && matches!(&place.kind, js::ExprKind::Member(of, key)
-                    if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
-            {
-                sets += 1;
-            }
-        });
-        js::each_item_expr_mut(items, &mut |e| {
-            if let js::ExprKind::Member(of, key) = &e.kind
-                && key == js::HELD
-                && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
-            {
-                *e = Expr {
-                    span: e.span,
-                    ..Expr::var(&name)
-                };
-            }
-        });
-        for item in items.iter_mut() {
-            if let js::Item::Const(c) = item
-                && c.name == name
-                && let js::ExprKind::Object(props, ..) = &mut c.value.kind
-                && let Some(js::Prop::Field(_, init)) = props.pop()
-            {
-                c.value = init;
-                c.mutable = sets > 0;
-                if c.export {
-                    exported.push((name.clone(), c.mutable));
+            });
+            js::each_item_expr_mut(items, &mut |e| {
+                if let js::ExprKind::Member(of, key) = &e.kind
+                    && key == js::HELD
+                    && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
+                {
+                    *e = Expr {
+                        span: e.span,
+                        ..Expr::var(&name)
+                    };
+                }
+            });
+            for item in items.iter_mut() {
+                if let js::Item::Const(c) = item
+                    && c.name == name
+                    && let js::ExprKind::Object(props, ..) = &mut c.value.kind
+                    && let Some(js::Prop::Field(_, init)) = props.pop()
+                {
+                    c.value = init;
+                    c.mutable = sets > 0;
+                    if c.export {
+                        exported.push((name.clone(), c.mutable));
+                    }
                 }
             }
-        }
+        });
     }
     // A `RefCell` of an object that's its module's variable is the object
     // (ADR 0863), written whole in place, `$assign(callbacks, [])`, its
@@ -117,39 +119,41 @@ pub(in crate::lower) fn plain_statics(
         })
         .collect();
     for name in objects {
-        if binds_name(items, &name) {
-            continue;
-        }
-        let mut sets = 0;
-        js::each_item_block_mut(items, &mut |stmts| {
-            for stmt in stmts.iter_mut() {
-                if let StmtKind::Expr(e) = &mut stmt.kind
-                    && let js::ExprKind::Call(callee, args) = &mut e.kind
-                    && callee.helper_name() == Some("$assign")
-                    && let [target, _] = args.as_slice()
-                    && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
+        outside_own_bindings(items, &name.clone(), |items| {
+            if binds_name(items, &name) {
+                return;
+            }
+            let mut sets = 0;
+            js::each_item_block_mut(items, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Expr(e) = &mut stmt.kind
+                        && let js::ExprKind::Call(callee, args) = &mut e.kind
+                        && callee.helper_name() == Some("$assign")
+                        && let [target, _] = args.as_slice()
+                        && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
+                    {
+                        let value = args.pop().expect("what it's given");
+                        let target = args.pop().expect("the variable");
+                        stmt.kind = StmtKind::Assign(target, value);
+                        sets += 1;
+                    }
+                }
+                sets += taken_whole(stmts, &name);
+            });
+            if sets == 0 {
+                return;
+            }
+            for item in items.iter_mut() {
+                if let js::Item::Const(c) = item
+                    && c.name == name
                 {
-                    let value = args.pop().expect("what it's given");
-                    let target = args.pop().expect("the variable");
-                    stmt.kind = StmtKind::Assign(target, value);
-                    sets += 1;
+                    c.mutable = true;
+                    if c.export {
+                        exported.push((name.clone(), true));
+                    }
                 }
             }
-            sets += taken_whole(stmts, &name);
         });
-        if sets == 0 {
-            continue;
-        }
-        for item in items.iter_mut() {
-            if let js::Item::Const(c) = item
-                && c.name == name
-            {
-                c.mutable = true;
-                if c.export {
-                    exported.push((name.clone(), true));
-                }
-            }
-        }
     }
     // Each exported one of a value still its `{ value }`, its cell handed
     // out or its borrows asked of: a JS module importing it reads the box,
@@ -264,6 +268,52 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
 fn is_box(made: &Expr) -> bool {
     matches!(&made.kind, js::ExprKind::Object(props, ..)
         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD))
+}
+
+/// `change` of `items`, each function that binds `name` for all of its
+/// body set apart while it runs, `main`'s `const tickPair = tickPair$1()`
+/// beside the module's `tickPair` (#1555): a parameter, or a `const` or
+/// `let` of its own top block, which JS's scope makes what every mention
+/// of `name` in the function reads, before it's declared too, so the
+/// function tells nothing of the module's. Not one bound in an inner
+/// block or a closure, beside which the function may read the module's,
+/// which `binds_name` still sees.
+fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOnce(&mut [js::Item]) -> T) -> T {
+    const APART: &str = "\u{0}own";
+    let own = |function: &js::Function| {
+        function.params.iter().any(|p| p.names().contains(&name))
+            || function.body.iter().any(|stmt| match &stmt.kind {
+                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
+                StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name),
+                _ => false,
+            })
+    };
+    let rename = |items: &mut [js::Item], from: &str, to: &str| {
+        for function in items.iter_mut().flat_map(js::Item::functions_mut).filter(|f| own(f)) {
+            for param in function.params.iter_mut() {
+                param.each_name_mut(&mut |n| {
+                    if n == from {
+                        *n = to.to_string();
+                    }
+                });
+            }
+            js::renamed(&mut function.body, from, to);
+        }
+    };
+    rename(items, name, APART);
+    let made = change(items);
+    // Back: `APART` is only in what was set apart.
+    for function in items.iter_mut().flat_map(js::Item::functions_mut) {
+        for param in function.params.iter_mut() {
+            param.each_name_mut(&mut |n| {
+                if n == APART {
+                    *n = name.to_string();
+                }
+            });
+        }
+        js::renamed(&mut function.body, APART, name);
+    }
+    made
 }
 
 /// Whether a function of `items`, or what the module runs when it's

@@ -363,3 +363,33 @@ that isn't its statement's first, `$extend(log, $take(queue, []))`, after
   taken array is walked, a `replace`, a take unread) and the mutations
   `taken-whole-in-place`, `taken-unread-read` and `taken-let-of-old`
   (`scripts/mutations/lower/std_types/cell.ts`).
+
+## Amendment (2026-11-12, #1555): a local of its name elsewhere isn't a rebinding
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a valid program was
+refused; it now compiles and runs as native Rust does.
+
+`plain_statics` kept an exported thread-local's `{ value }` box, and so
+refused it, wherever any local bound its name, as a local of that name
+might hide what reads the cell. But a local may take a module's name a
+body doesn't read (ADR 0569, amended), and #890 named a temporary by its
+call: `println!("{:?}", tick_pair())` beside `pub static TICK_PAIR` gave
+`main` `const tickPair = tickPair$1()`, and the export was refused. A
+function whose parameter, or a `const` or `let` of its own top block,
+binds the name reads its own wherever it mentions it, by JS's scope, before
+it's declared too, so it tells nothing of the module's.
+`outside_own_bindings` sets each such function apart while
+`plain_statics` looks at the module's variables, of a cell and of an
+object alike, and gives it back after. One bound only in an inner block or
+a closure stays in, as the function may read the module's beside it: a
+first version set apart any function that bound it anywhere, and
+getrandom 0.1's `fill`, which borrows its private thread-local
+`RNG_SOURCE`, a `RefCell`, then read `undefined.borrows`
+(`test/compat.test.ts` caught it, before the push).
+
+`test/corpus/exported_cell_beside_a_local_of_its_name.rs` holds a
+temporary named by its call, a parameter and a local named apart beside
+the export, against native Rust in both builds. Mutation
+`own-bindings-of-its-name-counted` (`lower/std_types/cell/variables.ts`);
+`mir-statics-closure-set-unseen` and `module-array-set-const`
+re-anchored. Guide: limitations.md.
