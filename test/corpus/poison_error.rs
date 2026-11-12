@@ -1,7 +1,7 @@
-// A lock's `Err` is a `PoisonError` of its guard, which a lock never
-// poisoned doesn't give: `unwrap_or_else(|e| e.into_inner())` of its `Ok`,
-// just made, is the guard, as `unwrap()`'s is, uuid's clock sequence's
-// (ADRs 0144, 0449).
+// A lock's `Err` is a `PoisonError` of its guard, which a lock no panic
+// poisoned doesn't give: `unwrap_or_else(|e| e.into_inner())` of its `Ok`
+// is the guard, as `unwrap()`'s is, uuid's clock sequence's (ADRs 0144,
+// 0449; a poisoned one's, lock_poisoning).
 use std::sync::{Mutex, PoisonError};
 
 fn bump(m: &Mutex<u32>) -> u32 {

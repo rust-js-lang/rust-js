@@ -21,6 +21,7 @@ import {
   $tryRecv,
   $tryRecvItems,
   $unborrow,
+  $unlock,
   $unwrapOk,
 } from "@rust-js/std";
 
@@ -38,43 +39,51 @@ function main() {
   try {
     const other = $rcClone(shared);
     try {
-      const value = $lock(other.value, true);
+      const value = $lock(other.value);
       try {
         value.value.push(2);
-      } finally {
-        $unborrow(value);
+      } catch (error) {
+        $cleanup(() => {
+          $unlock(value);
+        }, error);
+        throw error;
       }
-      const value$1 = $lock(shared.value, true);
+      $unlock(value);
+      const value$1 = $lock(shared.value);
       try {
         console.log(`[${value$1.value.join(", ")}] ${shared.strong}`);
-      } finally {
-        $unborrow(value$1);
+      } catch (error) {
+        $cleanup(() => {
+          $unlock(value$1);
+        }, error);
+        throw error;
       }
+      $unlock(value$1);
       const held = $tryLock(shared.value, true);
       console.log(`${held.TAG === "Ok"}`);
       let held$live = false;
       if (held.TAG === "Ok") {
-        $unborrow(held._0);
+        $unlock(held._0);
       }
       if (held.TAG === "Err") {
         if (held._0.TAG === "Poisoned") {
-          $unborrow(held._0._0.data);
+          $unlock(held._0._0.data);
         }
       }
       const rw = { value: 5 };
-      const value$2 = $lock(rw, true);
+      const value$2 = $lock(rw);
       value$2.value = (value$2.value + 1) | 0;
-      $unborrow(value$2);
-      const value$3 = $lockRead(rw, true);
+      $unlock(value$2);
+      const value$3 = $lockRead(rw);
       try {
         const tryWrite = $tryLock(rw, true);
         console.log(`${value$3.value} ${tryWrite.TAG === "Ok"}`);
         if (tryWrite.TAG === "Ok") {
-          $unborrow(tryWrite._0);
+          $unlock(tryWrite._0);
         }
         if (tryWrite.TAG === "Err") {
           if (tryWrite._0.TAG === "Poisoned") {
-            $unborrow(tryWrite._0._0.data);
+            $unlock(tryWrite._0._0.data);
           }
         }
       } finally {
@@ -252,11 +261,11 @@ function main() {
             }
             if (held$live) {
               if (held.TAG === "Ok") {
-                $unborrow(held._0);
+                $unlock(held._0);
               }
               if (held.TAG === "Err") {
                 if (held._0.TAG === "Poisoned") {
-                  $unborrow(held._0._0.data);
+                  $unlock(held._0._0.data);
                 }
               }
             }
@@ -280,11 +289,11 @@ function main() {
             }
             if (held$live) {
               if (held.TAG === "Ok") {
-                $unborrow(held._0);
+                $unlock(held._0);
               }
               if (held.TAG === "Err") {
                 if (held._0.TAG === "Poisoned") {
-                  $unborrow(held._0._0.data);
+                  $unlock(held._0._0.data);
                 }
               }
             }
@@ -307,11 +316,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }
@@ -334,11 +343,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }
@@ -362,11 +371,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }
@@ -387,11 +396,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }
@@ -423,11 +432,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }
@@ -444,11 +453,11 @@ function main() {
           }
           if (held$live) {
             if (held.TAG === "Ok") {
-              $unborrow(held._0);
+              $unlock(held._0);
             }
             if (held.TAG === "Err") {
               if (held._0.TAG === "Poisoned") {
-                $unborrow(held._0._0.data);
+                $unlock(held._0._0.data);
               }
             }
           }

@@ -8,6 +8,8 @@ import {
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unlock,
+  $unpoisoned,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -43,13 +45,17 @@ function main() {
   });
   const l = { value: [["a"], ["b"]] };
   try {
-    const value = $lock(l, true);
+    const value = $lock(l);
     try {
       value.value.push(["c"]);
-    } finally {
-      $unborrow(value);
+    } catch (error) {
+      $cleanup(() => {
+        $unlock(value);
+      }, error);
+      throw error;
     }
-    const value$1 = $lockRead(l, true);
+    $unlock(value);
+    const value$1 = $lockRead(l);
     console.log(`${value$1.value.length} held`);
     $unborrow(value$1);
   } catch (error) {
@@ -69,7 +75,7 @@ function main() {
   try {
     let tmp;
     try {
-      tmp = $lock(m, true);
+      tmp = $lock(m);
     } catch (error) {
       $cleanup(() => {
         noisyDrop_drop(noisy);
@@ -78,14 +84,14 @@ function main() {
     }
     noisyDrop_drop(tmp.value);
     tmp.value = noisy;
-    $unborrow(tmp);
+    $unlock(tmp);
     console.log("replaced");
     const w = { value: ["before"] };
     const value = ["after"];
     try {
       let tmp;
       try {
-        tmp = $lock(w, true);
+        tmp = $lock(w);
       } catch (error) {
         $cleanup(() => {
           noisyDrop_drop(value);
@@ -94,7 +100,7 @@ function main() {
       }
       noisyDrop_drop(tmp.value);
       tmp.value = value;
-      $unborrow(tmp);
+      $unlock(tmp);
       console.log("written");
     } catch (error) {
       throw $unwindsOn(error);
@@ -110,8 +116,8 @@ function main() {
       noisyDrop_drop(m.value);
     }
   }
-  m = ["taken"];
-  const inner = m;
+  m = { value: ["taken"] };
+  const inner = $unpoisoned(m).value;
   console.log(`took ${inner[0]}`);
   noisyDrop_drop(inner);
   console.log("end");

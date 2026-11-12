@@ -1,7 +1,9 @@
 # 0449. A `PoisonError` gives its guard, and a lock's `Ok` is its guard however it's unwrapped
 
 Status: Accepted. Extends [0144](0144-locks.md) and
-[0327](0327-cell-deque-char-methods.md).
+[0327](0327-cell-deque-char-methods.md). Amended by 0144's amendment
+(#1438): a poisoned lock's `Err` is made, its `PoisonError` the guard's,
+`{ data }`, so what handles one gives what Rust's gives.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): a lock is never
 poisoned in rust-js (ADR 0327), so its `Err` is never made, and what

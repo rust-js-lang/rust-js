@@ -2,11 +2,13 @@
 
 import {
   $byteLen,
+  $cleanup,
   $debugStr,
   $lock,
   $lockRead,
   $tryLock,
   $unborrow,
+  $unlock,
   $unwrapErr,
   $unwrapOk,
 } from "@rust-js/std";
@@ -33,40 +35,44 @@ function main() {
       console.log("free");
     }
     if (tryLock.TAG === "Ok") {
-      $unborrow(tryLock._0);
+      $unlock(tryLock._0);
     }
     if (tryLock.TAG === "Err") {
       if (tryLock._0.TAG === "Poisoned") {
-        $unborrow(tryLock._0._0.data);
+        $unlock(tryLock._0._0.data);
       }
     }
     const value = $tryLock(m, true);
     console.log(`${value.TAG === "Err"}`);
     if (value.TAG === "Ok") {
-      $unborrow(value._0);
+      $unlock(value._0);
     }
     if (value.TAG === "Err") {
       if (value._0.TAG === "Poisoned") {
-        $unborrow(value._0._0.data);
+        $unlock(value._0._0.data);
       }
     }
-  } finally {
-    $unborrow(g);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(g);
+    }, error);
+    throw error;
   }
+  $unlock(g);
   const value = $tryLock(m, true);
   if (value.TAG === "Ok") {
     console.log(`${value._0.value}`);
-    $unborrow(value._0);
+    $unlock(value._0);
     if (value.TAG !== "Ok") {
       if (value.TAG === "Err") {
         if (value._0.TAG === "Poisoned") {
-          $unborrow(value._0._0.data);
+          $unlock(value._0._0.data);
         }
       }
     }
   } else if (value.TAG === "Err") {
     if (value._0.TAG === "Poisoned") {
-      $unborrow(value._0._0.data);
+      $unlock(value._0._0.data);
     }
   }
 
@@ -82,11 +88,11 @@ function main() {
       const tryWrite = $tryLock(l, true);
       console.log(`${r1.value} ${r2.value} ${tryWrite.TAG === "Err"}`);
       if (tryWrite.TAG === "Ok") {
-        $unborrow(tryWrite._0);
+        $unlock(tryWrite._0);
       }
       if (tryWrite.TAG === "Err") {
         if (tryWrite._0.TAG === "Poisoned") {
-          $unborrow(tryWrite._0._0.data);
+          $unlock(tryWrite._0._0.data);
         }
       }
     } finally {
@@ -99,8 +105,8 @@ function main() {
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   value$1.value += "b";
-  $unborrow(value$1);
-  const w = $lock(l, true);
+  $unlock(value$1);
+  const w = $lock(l);
   try {
     const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value));
     console.log(
@@ -109,10 +115,14 @@ function main() {
     if (e.TAG === "Poisoned") {
       $unborrow(e._0.data);
     }
-  } finally {
-    $unborrow(w);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(w);
+    }, error);
+    throw error;
   }
-  const value$2 = $lockRead(l, true);
+  $unlock(w);
+  const value$2 = $lockRead(l);
   console.log(`${value$2.value}`);
   $unborrow(value$2);
 }

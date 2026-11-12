@@ -2,12 +2,15 @@
 
 import {
   $byteLen,
+  $cleanup,
   $debugStr,
   $displayF64,
   $index,
   $lock,
   $lockRead,
   $unborrow,
+  $unlock,
+  $unpoisoned,
 } from "@rust-js/std";
 
 export function entry() {
@@ -15,61 +18,79 @@ export function entry() {
 }
 
 function record(stats, name) {
-  const s = $lock(stats, true);
+  const s = $lock(stats);
   s.value.hits = (s.value.hits + 1) >>> 0;
   try {
     s.value.names.push(name);
-  } finally {
-    $unborrow(s);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(s);
+    }, error);
+    throw error;
   }
+  $unlock(s);
 }
 
 function total(shared, f) {
-  const value = $lock(shared, true);
+  const value = $lock(shared);
+  let result;
   try {
-    return f(value.value);
-  } finally {
-    $unborrow(value);
+    result = f(value.value);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(value);
+    }, error);
+    throw error;
   }
+  $unlock(value);
+  return result;
 }
 
 function main() {
   const stats = { value: { hits: 0, names: [] } };
   record(stats, "a");
   record(stats, "b");
-  const value = $lock(stats, true);
+  const value = $lock(stats);
   const hits = value.value.hits;
-  $unborrow(value);
-  const value$1 = $lock(stats, true);
+  $unlock(value);
+  const value$1 = $lock(stats);
   try {
     console.log(`${hits} [${value$1.value.names.map((item) => $debugStr(item)).join(", ")}]`);
-  } finally {
-    $unborrow(value$1);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(value$1);
+    }, error);
+    throw error;
   }
+  $unlock(value$1);
 
   const count = { value: 5 };
-  const value$2 = $lock(count, true);
+  const value$2 = $lock(count);
   value$2.value = (value$2.value + 2) >>> 0;
-  $unborrow(value$2);
-  const value$3 = $lock(count, true);
+  $unlock(value$2);
+  const value$3 = $lock(count, "not poisoned");
   value$3.value = (value$3.value * 3) >>> 0;
-  $unborrow(value$3);
-  const value$4 = $lock(count, true);
+  $unlock(value$3);
+  const value$4 = $lock(count);
   const now = value$4.value;
-  $unborrow(value$4);
+  $unlock(value$4);
   console.log(`${now} ${total(count, (n) => (n + 1) >>> 0)}`);
 
   const config = { value: [1, 2] };
-  const value$5 = $lock(config, true);
+  const value$5 = $lock(config);
   try {
     value$5.value.push(3);
-  } finally {
-    $unborrow(value$5);
+  } catch (error) {
+    $cleanup(() => {
+      $unlock(value$5);
+    }, error);
+    throw error;
   }
-  const value$6 = $lockRead(config, true);
+  $unlock(value$5);
+  const value$6 = $lockRead(config);
   const len = value$6.value.length;
   $unborrow(value$6);
-  const value$7 = $lockRead(config, true);
+  const value$7 = $lockRead(config);
   try {
     console.log(`[${value$7.value.join(", ")}] ${len}`);
   } finally {
@@ -77,46 +98,46 @@ function main() {
   }
 
   const m = { value: "x" };
-  const value$8 = $lock(m, true);
+  const value$8 = $lock(m);
   value$8.value += "y";
-  $unborrow(value$8);
-  console.log(`${m.value}`);
+  $unlock(value$8);
+  console.log(`${$unpoisoned(m).value}`);
 
   const counter = { value: 0 };
-  const num = $lock(counter, true);
+  const num = $lock(counter);
   num.value = (num.value + 1) | 0;
   num.value = (num.value * 10) | 0;
   console.log(`inside ${num.value}`);
-  $unborrow(num);
-  const value$9 = $lock(counter, true);
+  $unlock(num);
+  const value$9 = $lock(counter);
   console.log(`${value$9.value}`);
-  $unborrow(value$9);
+  $unlock(value$9);
   let cell = 1.5;
   cell++;
   let r = cell;
   console.log(`${$displayF64(r)} ${$displayF64(cell)}`);
   const text = { value: "a" };
-  const w = $lock(text, true);
+  const w = $lock(text);
   w.value += "b";
   w.value += "c";
-  $unborrow(w);
+  $unlock(w);
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
-  const first = $lock($index(slots, i), true);
+  const first = $lock($index(slots, i));
   i++;
   first.value = (first.value + 10) | 0;
   console.log(`${first.value} ${i}`);
-  $unborrow(first);
+  $unlock(first);
   console.log(
     `[${slots
       .map((m) => {
-        const value = $lock(m, true);
-        $unborrow(value);
+        const value = $lock(m);
+        $unlock(value);
         return value.value;
       })
       .join(", ")}]`,
   );
-  r = $lockRead(text, true);
+  r = $lockRead(text);
   console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64(cell)}`);
   $unborrow(r);
 }

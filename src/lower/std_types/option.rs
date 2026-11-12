@@ -222,6 +222,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(value) = result::unwrapped_made(&list[0], &list[1..]) {
                     return Ok(Some(value));
                 }
+                // A lock's, its guard, or what it holds (#1438).
+                if let Some(value) = super::cell::unwrapped_lock(&list[0], list.get(1)) {
+                    return Ok(Some(value));
+                }
                 // `.unwrap()` of a throwing JS call's `Result` is the call: what
                 // it throws goes on as JS threw it (ADR 0643). An `.expect(msg)`
                 // keeps its message, `$unwrapOk`'s.

@@ -600,4 +600,12 @@ export const mutations: Mutation[] = [
     replace: "            | \"is_negative\" | \"is_power_of_two\" => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
   },
+  {
+    name: "reading-guard-poisons",
+    breaks: "an `RwLock`'s reading guard dropped as a panic unwinds poisons it, where std's never does (#1438)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        self.is_std_type(ty, StdItem::MutexGuard) || self.is_std_type(ty, StdItem::RwLockWriteGuard)\n",
+    replace: "        self.is_std_type(ty, StdItem::MutexGuard) || self.is_std_type(ty, StdItem::RwLockWriteGuard) || self.is_std_type(ty, StdItem::RwLockReadGuard)\n",
+    tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
+  },
 ];

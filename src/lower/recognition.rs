@@ -193,11 +193,13 @@ pub(super) enum Std {
     CellFromMut,
     /// `as_slice_of_cells()` and `as_array_of_cells()`: a cell of each item.
     CellItems,
-    /// A lock's `is_poisoned()`: `false`, as nothing can catch a panic that
-    /// holds it (ADR 0327).
-    NotPoisoned,
+    /// A lock's `is_poisoned()`, whether a panic poisoned it, and its
+    /// `clear_poison()` (`clear`), as std's (ADR 0144, amended; #1438).
+    Poison {
+        clear: bool,
+    },
     /// A `PoisonError`'s `into_inner()` and `get_ref()`: what it holds, its
-    /// guard, which a lock never poisoned gives in its `Ok` (ADR 0449).
+    /// guard, which a poisoned lock gives in its `Err` (ADR 0449).
     PoisonData,
     /// `RefCell::borrow`, `borrow_mut`, a `Mutex`'s `lock()` and an `RwLock`'s
     /// `read()` and `write()`, `Ok` of it: a guard, which is the cell, checked
@@ -224,7 +226,8 @@ pub(super) enum Std {
         mutable: bool,
         op: crate::lower::std_types::cell::GuardMapOp,
     },
-    /// A lock's `into_inner()` and `get_mut()`: `Ok` of its `value`.
+    /// A lock's `into_inner()` and `get_mut()`: `Ok` of its `value`, or of a
+    /// poisoned one, `Err` of a `PoisonError` of it (#1438).
     Lock,
     /// A `Pin`'s functions, each its pointer's (ADR 0329).
     Pin(PinOp),

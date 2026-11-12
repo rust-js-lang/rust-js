@@ -41,7 +41,12 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
-        if let Some(end) = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end])) {
+        // Of a drop no `finally` holds, as it asks whether a panic unwinds,
+        // a lock's guard's (#1438): one `catch` of a run of more than one
+        // statement, each way out dropping it as it did, and the drop at its
+        // end.
+        let run = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end]));
+        if let Some(end) = run.filter(|&end| end > i + 1 || finally_holds(&stmts[end])) {
             let drop = stmts[end].clone();
             // A guard's `let` past each statement before the run, and what
             // their blocks hold: the run's, not an earlier value's.
@@ -49,7 +54,8 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
             js::each_list(&stmts[..i], &mut |list| {
                 written = (list.iter().filter_map(written_at)).fold(written, u32::max);
             });
-            let mut body = unwound(stmts.drain(i..end).collect(), &drop);
+            let finally = finally_holds(&drop);
+            let mut body = unwound(stmts.drain(i..end).collect(), &drop, finally);
             // From where its first statement is, as the Rust has nothing of
             // its own there, a guard's `let` printing nothing, to its drop:
             // what's before it, a blank line or a comment, is before the
@@ -76,7 +82,15 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
             let hoisted = hoist_read_after(&mut body, &rest);
             stmts.extend(hoisted);
             i = stmts.len();
-            stmts.push(StmtKind::Try(body, vec![drop]).at(span));
+            if finally {
+                stmts.push(StmtKind::Try(body, vec![drop]).at(span));
+            } else {
+                let thrown = StmtKind::Throw(Expr::var("error")).at(span);
+                let handler = vec![drop.clone(), thrown];
+                stmts.push(StmtKind::TryCatch(body, Some("error".into()), handler).at(span));
+                stmts.push(drop);
+                i = stmts.len();
+            }
             stmts.extend(rest);
             scoped = true;
             continue;
@@ -259,7 +273,8 @@ fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
 /// written as that drop, if every statement before it that may throw drops
 /// it too and nothing leaves the run another way.
 fn scope_end(stmts: &[Stmt], start: usize, result: &str) -> Option<usize> {
-    let drop = first_drop(std::slice::from_ref(&stmts[start])).filter(|drop| finally_holds(drop))?;
+    let drop = first_drop(std::slice::from_ref(&stmts[start]))
+        .filter(|drop| !crate::lower::drops::may_throw(std::slice::from_ref(drop)))?;
     let run = Run::of(&stmts[start..], drop, result);
     for (at, stmt) in stmts.iter().enumerate().skip(start) {
         if at > start && alike(stmt, drop) {
@@ -388,14 +403,17 @@ impl<'a> Run<'a> {
 /// `stmts` of a run `Run::covers`, in a `finally` that drops `drop`: each
 /// `catch`'s drop of it gone, and a `catch` that only throws again with
 /// it; and the drop before each way out, which the `finally` runs, `const
-/// v = e; drop; return v;` given as it's made, `return e;`.
-fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
+/// v = e; drop; return v;` given as it's made, `return e;`. In one
+/// `catch` that drops it, where no `finally` holds it (`finally` false),
+/// each way out drops it still.
+fn unwound(stmts: Vec<Stmt>, drop: &Stmt, finally: bool) -> Vec<Stmt> {
     let all = stmts.clone();
     let mut out: Vec<Stmt> = Vec::new();
     let mut stmts = stmts.into_iter().peekable();
     while let Some(stmt) = stmts.next() {
         let leaves = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
-        if alike(&stmt, drop)
+        if finally
+            && alike(&stmt, drop)
             && stmts.peek().is_some_and(leaves)
             && let Some(mut leaving) = stmts.next()
         {
@@ -429,13 +447,15 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
                 }
                 StmtKind::TryCatch(inner, Some(error), handler)
             }
-            StmtKind::If(test, a, b) => StmtKind::If(test, unwound(a, drop), b.map(|b| unwound(b, drop))),
+            StmtKind::If(test, a, b) => {
+                StmtKind::If(test, unwound(a, drop, finally), b.map(|b| unwound(b, drop, finally)))
+            }
             StmtKind::While { label, cond, body } => StmtKind::While {
                 label,
                 cond,
-                body: unwound(body, drop),
+                body: unwound(body, drop, finally),
             },
-            StmtKind::Labeled(label, body) => StmtKind::Labeled(label, unwound(body, drop)),
+            StmtKind::Labeled(label, body) => StmtKind::Labeled(label, unwound(body, drop, finally)),
             kind => kind,
         };
         out.push(Stmt { kind, ..stmt });
@@ -488,13 +508,12 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
 }
 
 /// A `catch` that only throws on what it caught.
-/// Whether a scope's `finally` may hold `drop`: one that can't throw. A
-/// `finally` runs on either path and can't tell them apart, and a drop
-/// that panics as a panic unwinds aborts (#847), so one that may throw
-/// stays in each `catch`, which `guarded_cleanups` guards, and at each way
-/// out.
+/// Whether a scope's `finally` may hold `drop` (`drops::finally_holds`):
+/// one that can't throw and asks nothing of whether a panic unwinds. One
+/// that may stays in each `catch`, which `guarded_cleanups` guards, and at
+/// each way out.
 fn finally_holds(drop: &Stmt) -> bool {
-    !crate::lower::drops::may_throw(std::slice::from_ref(drop))
+    crate::lower::drops::finally_holds(std::slice::from_ref(drop))
 }
 
 /// `stmts`, each `catch` that throws on what it caught, a cleanup, whose

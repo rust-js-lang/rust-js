@@ -4,6 +4,7 @@ import {
   $addr,
   $borrow,
   $borrowMut,
+  $cleanup,
   $exposeAddresses,
   $fieldCell,
   $lock,
@@ -20,6 +21,7 @@ import {
   $storedItems,
   $storedValue,
   $unborrow,
+  $unlock,
 } from "@rust-js/std";
 
 $exposeAddresses();
@@ -118,7 +120,7 @@ function main() {
   }
   const m = { value: { a: 9, b: 10 } };
   try {
-    guard = $lock($storedValue(m, 4), true);
+    guard = $lock($storedValue(m, 4));
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -127,21 +129,25 @@ function main() {
   try {
     tmp$1 = $addr($ptr(guard.value, "b", 4), 4);
   } catch (error) {
-    $unborrow(guard);
-    $unborrow(borrow);
+    $cleanup(() => {
+      $unlock(guard);
+      $unborrow(borrow);
+    }, error);
     throw error;
   }
   try {
     console.log(`mutex ${(tmp$1 - $addr($ptrTo(m), 12)) >>> 0}`);
   } catch (error) {
-    $unborrow(guard);
-    $unborrow(borrow);
+    $cleanup(() => {
+      $unlock(guard);
+      $unborrow(borrow);
+    }, error);
     throw error;
   }
-  $unborrow(guard);
+  $unlock(guard);
   const r = { value: { a: 11, b: 12 } };
   try {
-    read = $lockRead($storedValue(r, 4), true);
+    read = $lockRead($storedValue(r, 4));
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -164,13 +170,13 @@ function main() {
   $unborrow(read);
   let written;
   try {
-    written = $lock($storedValue(r, 4), true);
+    written = $lock($storedValue(r, 4));
   } catch (error) {
     $unborrow(borrow);
     throw error;
   }
   console.log(`rwlock write ${($addr($ptrTo(written.value), 8) - $addr($ptrTo(r), 12)) >>> 0}`);
-  $unborrow(written);
+  $unlock(written);
 
   // Through an `Rc`, a reference no borrow here made.
   const shared = {
@@ -239,10 +245,10 @@ function main() {
     const props = { ...c.value };
     const value$2 = $storedValue(items, 4).value;
     const value$3 = $storedValue(shared, 4).value;
-    const value$4 = $lock($storedValue(m, 4), true);
+    const value$4 = $lock($storedValue(m, 4));
     const value$5 = (((value$2[0].a + value$3[0].a) & 255) + value$4.value.a) & 255;
     try {
-      const value$2 = $lockRead($storedValue(r, 4), true);
+      const value$2 = $lockRead($storedValue(r, 4));
       try {
         console.log(
           `${tag} ${value.value} ${seen} ${pDebug_fmt(value$1)} ${pDebug_fmt({ ...props })} ${(value$5 + value$2.value.a) & 255}`,
@@ -250,9 +256,13 @@ function main() {
       } finally {
         $unborrow(value$2);
       }
-    } finally {
-      $unborrow(value$4);
+    } catch (error) {
+      $cleanup(() => {
+        $unlock(value$4);
+      }, error);
+      throw error;
     }
+    $unlock(value$4);
   } finally {
     $unborrow(borrow);
   }

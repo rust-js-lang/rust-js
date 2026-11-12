@@ -1,7 +1,8 @@
 # 0144. A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md)
-and [0025](0025-vec-loops-refcell-mut.md).
+and [0025](0025-vec-loops-refcell-mut.md). Amended: a lock a panic poisons
+is poisoned (#1438).
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -104,3 +105,50 @@ place every use reads, which changes only through interior mutability, so
 their lookup table so. Held by the corpus case `static_locks` and the
 mutation `static-lock-refused`.
 
+
+## Amendment: a lock a panic poisons is poisoned (#1438)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. The user's decision, reopening ADRs 0327 and 0449.
+
+A lock was never poisoned, on the reasoning that nothing could catch the
+panic that would poison it. `catch_unwind` does catch it, and so does JS
+that calls an exported function again, or a drop a panic runs: there
+`lock()` gave `Ok` where Rust's gives `Err(PoisonError)`, and
+`is_poisoned()` was `false` where Rust's is `true`. That's a wrong answer.
+
+**A lock is poisoned as std's is:**
+
+| Rust | JS |
+|---|---|
+| a `MutexGuard` or `RwLockWriteGuard` dropped | `$unlock(guard)`: poisons its lock where a panic unwinds that didn't as it was taken |
+| `m.lock()`, `l.write()`, `l.read()` | `$locked(m, true)`, `$locked(l)`: `Ok` of the guard, or `Err` of `{ data: guard }` |
+| `.unwrap()`, `.expect(msg)` of one | `$lock(m)`, `$lockRead(l)`, `$lock(m, msg)`: the guard, or `unwrap`'s panic, `.. : PoisonError { .. }` |
+| `into_inner()`, `get_mut()` | `$lockedValue(m)`; unwrapped, `$unpoisoned(m).value` |
+| `try_lock()` of a poisoned lock | `Err` of `TryLockError::Poisoned` of the `PoisonError` |
+| `is_poisoned()`, `clear_poison()` | `$isPoisoned(m)`, `$clearPoison(m)` |
+| `{:?}`, `{}` of a `PoisonError`; `{:?}` of a lock | `PoisonError { .. }`, `poisoned lock: another task failed inside`; `poisoned: true` |
+
+- **Poisoned where std's is:** a guard taken while no panic unwinds and
+  dropped as one does. One taken in a drop a panic runs poisons nothing,
+  as std's records `thread::panicking()` as it's taken; a reading guard
+  never does. The runtime keeps which locks are poisoned in a `WeakSet`,
+  so a lock is still `{ value }`.
+- **Only a cleanup a panic runs knows one unwinds** (`$cleanup`, ADR
+  1126): a `finally` runs either way. So a drop that asks, `$unlock` or
+  `thread::panicking()`, is in no `finally` (`drops::finally_holds`): a
+  guard's scope is one `try { .. } catch (error) { $cleanup(() =>
+  $unlock(g), error); throw error; }` and the `$unlock(g)` after it, where
+  it was `try { .. } finally { $unborrow(g); }`; and a failed bounds
+  check's drops run in `$cleanup` before it throws.
+- **A `LazyLock` whose init panics is poisoned for good**, each later use
+  panicking `LazyLock instance has previously been poisoned`, as std's; it
+  was refused as an init that used itself. A `OnceLock`'s init that panics
+  leaves it empty, tried again, as std's.
+- **`Once` is still refused**, so its poisoning is too.
+
+Held by the corpus case `lock_poisoning`, against native Rust in both
+builds, and by mutations of where a guard poisons, of what a poisoned
+lock's `lock()`, `try_lock()` and `into_inner()` give, of `unwrap()`'s
+panic, of `clear_poison()`, of a `PoisonError`'s `{:?}` and `{}`, of a
+`LazyLock`'s poisoning, and of which drops a `finally` may hold.

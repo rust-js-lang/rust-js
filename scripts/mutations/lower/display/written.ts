@@ -327,4 +327,12 @@ export const mutations: Mutation[] = [
     replace: "            this.debug_string(value, ty, span)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
   },
+  {
+    name: "poison-error-display-refused",
+    breaks: "`{}` of a `PoisonError` is refused, where std's shows that the lock is poisoned (#1438)",
+    file: "src/lower/display/written.rs",
+    find: "        if crate::lower::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"poisoned lock: another task failed inside\"));",
+    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"poisoned lock: another task failed inside\"));",
+    tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
+  },
 ];

@@ -5,6 +5,7 @@ import {
   $borrow,
   $byteLen,
   $cellSwap,
+  $clearPoison,
   $copyOf,
   $debugStr,
   $decodeUtf16,
@@ -13,6 +14,7 @@ import {
   $escapeDebug,
   $escapeDefault,
   $escapeUnicode,
+  $isPoisoned,
   $iter,
   $mutAt,
   $partitionPoint,
@@ -43,9 +45,10 @@ function main() {
   const borrow = $borrow(list);
   const value = $borrow(more);
   console.log(`[${borrow.join(", ")}] [${value.join(", ")}]`);
-  let lock = 1;
-  let rw = 2;
-  console.log("false false");
+  const lock = { value: 1 };
+  const rw = { value: 2 };
+  $clearPoison(lock);
+  console.log(`${$isPoisoned(lock)} ${$isPoisoned(rw)}`);
 
   const deque = $range(1, 7);
   const get = deque[1];

@@ -456,6 +456,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .any(|item| self.is_std_type(ty, item))
     }
 
+    /// A guard whose drop as a panic unwinds poisons its lock, as std's:
+    /// a `MutexGuard` or an `RwLockWriteGuard` (ADR 0144, amended; #1438).
+    pub(in crate::lower) fn poisons_its_lock(&self, ty: Ty<'tcx>) -> bool {
+        self.is_std_type(ty, StdItem::MutexGuard) || self.is_std_type(ty, StdItem::RwLockWriteGuard)
+    }
+
     /// A thread-local `RefCell`'s function, or a guard's own, `Ref::map`
     /// say (ADR 0328).
     pub(in crate::lower) fn asks_borrows(&self, id: DefId) -> bool {

@@ -598,4 +598,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
   },
+  {
+    name: "poison-error-debug-refused",
+    breaks: "`{:?}` of a `PoisonError` is refused, where std's shows `PoisonError { .. }` (#1438)",
+    file: "src/lower/display/debug.rs",
+    find: "        if crate::lower::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
+    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
+    tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
+  },
 ];

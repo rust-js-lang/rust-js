@@ -251,8 +251,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             {
                 Std::CellNew
             }
-            // On one thread a lock is never contested by another: always `Ok`
-            // (ADR 0025), but locked again while held, a deadlock (ADR 0328).
+            // On one thread a lock is never contested by another: `Ok` but where
+            // a panic poisoned it (ADR 0144), and locked again while held, a deadlock (ADR 0328).
             "lock" if adt(StdItem::Mutex) => Std::Borrow {
                 mutable: true,
                 lock: true,
@@ -262,8 +262,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 lock: true,
             },
             "into_inner" | "get_mut" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Lock,
-            "is_poisoned" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::NotPoisoned,
-            "clear_poison" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Nothing,
+            "is_poisoned" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Poison { clear: false },
+            "clear_poison" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Poison { clear: true },
             "into_inner" | "get_ref" if is_poison_error(owner) => Std::PoisonData,
             "each_ref" | "each_mut" if owner.is_array() => Std::Same,
             "swap_remove_back" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: false }),

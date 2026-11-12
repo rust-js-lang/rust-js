@@ -533,6 +533,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Ok(var_error_shown(value, shown));
         }
+        // A poisoned lock's `PoisonError`, as std shows it (#1438).
+        if crate::lower::recognition::is_poison_error(ty) {
+            return Ok(Expr::str("poisoned lock: another task failed inside"));
+        }
         // A lock's `TryLockError`, as std shows it.
         if self.recognition().is_try_lock_error(ty) {
             let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));

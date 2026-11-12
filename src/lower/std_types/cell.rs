@@ -677,7 +677,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(Expr::held(cell), updated).at(js_span));
                 Expr::undefined()
             }
-            Std::NotPoisoned => Expr::bool(false),
+            // Whether a panic poisoned it, and its poison cleared (#1438).
+            Std::Poison { clear } => Expr::call_helper(if clear { "$clearPoison" } else { "$isPoisoned" }, vec![arg()]),
             Std::PoisonData => self.project(arg(), tys[0].peel_refs(), 0),
             // A guard is its cell, checked free to borrow so, and counted
             // while it's held where something could ask (ADR 0328).
@@ -690,24 +691,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = arg();
                 self.uncounted(cell)
             }
-            Std::Borrow { mutable, lock } => {
-                if !lock {
-                    crate::decisions::record("refcell-borrow", if call.momentary { "momentary" } else { "counted" });
-                }
-                let name = match (lock, mutable) {
-                    (false, false) => "$borrow",
-                    (false, true) => "$borrowMut",
-                    (true, false) => "$lockRead",
-                    (true, true) => "$lock",
-                };
+            // A lock's, `Ok` of its guard, held, or of a poisoned lock `Err`
+            // (`locked`).
+            Std::Borrow { mutable, lock: true } => locked("$locked", arg(), mutable),
+            Std::Borrow { mutable, lock: false } => {
+                crate::decisions::record("refcell-borrow", if call.momentary { "momentary" } else { "counted" });
                 // Held only while nothing can ask: checked, not counted
                 // (rd218).
                 let mut given = vec![arg()];
-                if !call.momentary || lock {
+                if !call.momentary {
                     given.push(Expr::bool(true));
                 }
-                let guard = Expr::call(Expr::helper(name), given);
-                if lock { result::ok(guard) } else { guard }
+                Expr::call(Expr::helper(if mutable { "$borrowMut" } else { "$borrow" }), given)
             }
             // Of one no borrow of which can meet another, as a borrow of it
             // is: its guard, `Ok`, as no other can be held (#687); a
@@ -736,7 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::GuardValue { mutable } => self.guard_value(arg(), generic_args.type_at(0), mutable),
             Std::GuardMap { mutable, op } => self.guard_map((op, mutable), (arg(), arg()), (&call, tys[0]), out),
-            Std::Lock => result::ok(Expr::held(arg())),
+            Std::Lock => locked("$lockedValue", arg(), false),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             // Of a guard of a field's `RefCell` no borrow of which can meet
             // another, which counted nothing, nothing (ADR 0863, amended).
@@ -898,6 +893,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         }))
     }
+}
+
+/// A lock's `Result`, `Ok` but of one a panic poisoned (#1438): its
+/// guard's, `$locked(cell, true)` of `lock()` and `write()`,
+/// `$locked(cell)` of `read()`, or what it holds, `$lockedValue(cell)` of
+/// `into_inner()` and `get_mut()`. The one maker of its forms, which
+/// `unwrapped_lock` reads.
+fn locked(helper: &'static str, cell: Expr, mutable: bool) -> Expr {
+    let mut given = vec![cell];
+    if mutable {
+        given.push(Expr::bool(true));
+    }
+    Expr::call(Expr::helper(helper), given)
+}
+
+/// What `unwrap()` of `result`, or `expect(message)`, gives where it's a
+/// lock's (`locked`): the guard, `$lock(cell)` or `$lockRead(cell)`, or
+/// what it holds, `$unpoisoned(cell).value`, each panicking as `unwrap` of
+/// its `Err` would where the lock is poisoned (ADR 0144, amended).
+pub(in crate::lower) fn unwrapped_lock(result: &Expr, message: Option<&Expr>) -> Option<Expr> {
+    let js::ExprKind::Call(callee, given) = &result.kind else {
+        return None;
+    };
+    let (helper, cell) = match (callee.helper_name()?, given.as_slice()) {
+        ("$locked", [cell, mutable]) if matches!(mutable.kind, js::ExprKind::Bool(true)) => ("$lock", cell),
+        ("$locked", [cell]) => ("$lockRead", cell),
+        ("$lockedValue", [cell]) => ("$unpoisoned", cell),
+        _ => return None,
+    };
+    let mut given = vec![cell.clone()];
+    given.extend(message.cloned());
+    let unwrapped = Expr::call(Expr::helper(helper), given);
+    Some(if helper == "$unpoisoned" {
+        Expr::held(unwrapped)
+    } else {
+        unwrapped
+    })
 }
 
 /// What `take()`, `mem::take` or `mem::replace` of `target`, an object a

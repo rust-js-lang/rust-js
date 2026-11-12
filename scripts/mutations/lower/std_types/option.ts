@@ -537,4 +537,13 @@ export const mutations: Mutation[] = [
     replace: "            Std::OptionCloned\n                if false && self\n",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
   },
+  {
+    name: "lock-unwrap-unfolded",
+    breaks: "`lock().unwrap()` is `$unwrapOk($locked(m, true))`, not the guard `$lock(m)` gives (#1438)",
+    file: "src/lower/std_types/option.rs",
+    find: "                if let Some(value) = super::cell::unwrapped_lock(&list[0], list.get(1)) {\n",
+    replace: "                if let Some(value) = super::cell::unwrapped_lock(&list[0], list.get(1)).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts","-t","^locks\\.rs$"],
+    snapshots: true,
+  },
 ];

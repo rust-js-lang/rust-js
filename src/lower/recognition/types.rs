@@ -622,7 +622,7 @@ pub(crate) fn has_number_arithmetic(ty: Ty<'_>) -> bool {
 }
 
 /// std's `PoisonError`, a lock's `Err`, which has no diagnostic item.
-pub(super) fn is_poison_error(ty: Ty<'_>) -> bool {
+pub(crate) fn is_poison_error(ty: Ty<'_>) -> bool {
     ty::tls::with_opt(|tcx| {
         tcx.is_some_and(|tcx| {
             matches!(ty.kind(), ty::Adt(adt, _)

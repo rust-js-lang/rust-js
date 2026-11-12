@@ -7339,16 +7339,24 @@ export function $force(lazy) {
 }
 
 // A `LazyLock`'s value, made by its `init` the first time. An init that
-// uses its own `LazyLock` deadlocks in Rust, which JS can't do.
+// uses its own `LazyLock` deadlocks in Rust, which JS can't do. One that
+// panics poisons it as it unwinds, as std's `Once` guard's drop does: each
+// later use panics (#1438).
 export function $forceLock(lazy) {
   const init = lazy.init;
   if (init !== undefined) {
     if (init === null) throw $unsupported("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust");
     lazy.init = null;
-    lazy.value = init();
+    lazy.value = $unwinds(init, () => {
+      lazy.init = $lazyLockPoisoned;
+    });
     lazy.init = undefined;
   }
   return lazy.value;
+}
+
+export function $lazyLockPoisoned() {
+  throw new Error("LazyLock instance has previously been poisoned");
 }
 
 // `cow.to_mut()` of a `Cow` of text or a number, which JS never changes in
@@ -10650,38 +10658,103 @@ export function $refCellSwap(a, b, itself) {
   }
 }
 
-// A `Mutex`'s `lock()`, an `RwLock`'s `write()`, and its `read()`: the
-// guard, as a `RefCell`'s. On one thread, locking what the thread holds
-// deadlocks in Rust.
-export function $lock(cell, hold) {
-  if (cell.borrows) $deadlock();
-  if (hold) $setBorrows(cell, -1);
+// The locks a panic poisoned, as std's are (#1438): each `Mutex` or
+// `RwLock` whose writing guard was dropped as a panic unwound, where none
+// unwound as it was taken, until its `clear_poison()`. And those whose
+// writing guard was taken as one unwound, in a drop it runs, whose drop
+// poisons nothing.
+export const $poisonedLocks = new WeakSet();
+export const $lockedUnwinding = new WeakSet();
+
+// A `Mutex`'s `lock()`, an `RwLock`'s `write()` (`mutable`) and its
+// `read()`: `Ok` of the guard, as a `RefCell`'s, held; or, of a poisoned
+// lock, `Err` of a `PoisonError` that holds it. On one thread, locking
+// what the thread holds deadlocks in Rust.
+export function $locked(cell, mutable) {
+  const guard = $lockHeld(cell, mutable);
+  return $poisonedLocks.has(cell) ? { TAG: "Err", _0: { data: guard } } : { TAG: "Ok", _0: guard };
+}
+
+// What `lock().unwrap()` and `write().unwrap()` give, and `read().unwrap()`,
+// or with `expect(message)`, its message: the guard, held; or, of a
+// poisoned lock, `unwrap`'s panic, the guard it held released as it
+// unwinds, as the lock was.
+export function $lock(cell, message) {
+  return $unpoisoned($lockHeld(cell, true), message, true);
+}
+
+export function $lockRead(cell, message) {
+  return $unpoisoned($lockHeld(cell, false), message, true);
+}
+
+export function $lockHeld(cell, mutable) {
+  if (mutable ? cell.borrows : cell.borrows < 0) $deadlock();
+  if (!mutable) {
+    $setBorrows(cell, (cell.borrows ?? 0) + 1);
+  } else {
+    $setBorrows(cell, -1);
+    if ($panicking()) $lockedUnwinding.add(cell);
+  }
   return cell;
 }
 
-export function $lockRead(cell, hold) {
-  if (cell.borrows < 0) $deadlock();
-  if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
-  return cell;
+// A lock, `cell`, where it isn't poisoned; else `unwrap`'s panic, or
+// `expect(message)`'s, of the `PoisonError` that holds its guard, which is
+// released as the panic unwinds where it's `held`.
+export function $unpoisoned(cell, message = "called `Result::unwrap()` on an `Err` value", held = false) {
+  if (!$poisonedLocks.has(cell)) return cell;
+  if (held) $unlock(cell);
+  throw new Error(`${message}: PoisonError { .. }`);
+}
+
+// A `Mutex`'s or an `RwLock`'s `into_inner()` and `get_mut()`: `Ok` of
+// what it holds, or, of a poisoned lock, `Err` of a `PoisonError` that
+// holds it.
+export function $lockedValue(cell) {
+  return $poisonedLocks.has(cell) ? { TAG: "Err", _0: { data: cell.value } } : { TAG: "Ok", _0: cell.value };
+}
+
+// A `Mutex`'s guard or an `RwLock`'s writing one dropped: one borrow
+// fewer, and, where a panic unwinds that didn't as it was taken, its lock
+// poisoned, as std's (#1438). Only a cleanup a panic runs tells that
+// (`$panicking`), so it's never in a `finally`, which runs either way.
+export function $unlock(cell) {
+  if ($lockedUnwinding.has(cell)) {
+    $lockedUnwinding.delete(cell);
+  } else if ($panicking()) {
+    $poisonedLocks.add(cell);
+  }
+  $unborrow(cell);
+}
+
+// A lock's `is_poisoned()` and `clear_poison()`.
+export function $isPoisoned(cell) {
+  return $poisonedLocks.has(cell);
+}
+
+export function $clearPoison(cell) {
+  $poisonedLocks.delete(cell);
 }
 
 // `try_lock()`, `try_write()` (`mutable`) and `try_read()`: `Ok` of a guard
-// held, or, while the thread holds it so, `Err` of `TryLockError::WouldBlock`,
-// where `lock()` would deadlock.
+// held; while the thread holds it so, `Err` of `TryLockError::WouldBlock`,
+// where `lock()` would deadlock; or, of a poisoned lock, `Err` of
+// `TryLockError::Poisoned` of the `PoisonError` that holds the guard.
 export function $tryLock(cell, mutable) {
   if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: "Err", _0: "WouldBlock" };
-  return { TAG: "Ok", _0: mutable ? $lock(cell, true) : $lockRead(cell, true) };
+  const locked = $locked(cell, mutable);
+  return locked.TAG === "Ok" ? locked : { TAG: "Err", _0: { TAG: "Poisoned", _0: locked._0 } };
 }
 
 // A `Mutex`'s or an `RwLock`'s `{:?}`: what it holds, shown by `show`
 // where it could be locked to read it, a `Mutex`'s by anything holding it,
 // an `RwLock`'s by a writer, else that it's locked, as std's `try_lock` and
 // `try_read` say, a `Mutex`'s as a string, `"<locked>"`, as std's shows it;
-// never poisoned (ADR 0328).
+// and whether it's poisoned.
 export function $showLocked(cell, show, name, exclusive) {
   const locked = exclusive ? cell.borrows : cell.borrows < 0;
   const data = !locked ? $withBorrow(cell, show) : exclusive ? '"<locked>"' : "<locked>";
-  return `${name} { data: ${data}, poisoned: false, .. }`;
+  return `${name} { data: ${data}, poisoned: ${$poisonedLocks.has(cell)}, .. }`;
 }
 
 export function $deadlock() {

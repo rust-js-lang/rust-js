@@ -685,10 +685,6 @@ prints or changes; only a load that can't make it first refuses it.
 
 Differences:
 
-- **A lock is never poisoned:** a panic that unwinds through a held guard
-  releases it, and JS that catches the panic and calls back into Rust finds
-  the lock as if nothing had happened, where Rust's would be poisoned
-  ([0144](../decisions/0144-locks.md)).
 - **A JS getter that calls back into Rust while a cell is borrowed isn't
   seen:** where a binding reads a property, rust-js takes it to run no
   Rust, so a borrow such a getter makes of a held cell passes, where
@@ -1674,8 +1670,16 @@ block or an `async` closure is an async arrow
   makes a rejected promise an `Err` ([0102](../decisions/0102-js-and-webapi.md)).
 - **There's one thread** ([1126](../decisions/1126-a-program-has-one-thread.md)).
   `Arc`, `Mutex`, `RwLock`, atomics and `OnceLock` work as they do on one
-  thread. A thread-local's `try_with` is `Ok`, `thread::panicking()` is
-  whether this thread unwinds, and `hint::spin_loop()` does nothing.
+  thread. A lock a panic poisons is poisoned, as std's: a `Mutex`'s guard
+  or an `RwLock`'s writing one dropped as a panic unwinds poisons it, and
+  its `lock()` then gives a `PoisonError`; a `LazyLock` whose init panics
+  is poisoned for good ([0144](../decisions/0144-locks.md)). A
+  thread-local's `try_with` is `Ok`, `thread::panicking()` is whether this
+  thread unwinds, and `hint::spin_loop()` does nothing. The main thread's
+  thread-locals are never dropped, as on wasm32 and Linux: Rust's docs
+  leave unspecified whether they are, so following the target changes
+  nothing Rust promises ([0262](../decisions/0262-when-rust-and-js-disagree.md)'s
+  first row).
   Starting a thread, `std::thread::spawn` or a scope's, is refused. A
   channel is a queue its ends share ([0142](../decisions/0142-channels.md)):
   its `iter()` ends once every sender is gone, and its `recv()` or
@@ -1905,8 +1909,7 @@ React and JSX are [their own pages](README.md#react).
 4. Float library functions, `sin`, `exp`, `powf`, are JS's: the last bit may
    differ. A NaN's sign and payload aren't kept.
 5. A `HashMap` iterates in insertion order.
-6. A lock is never poisoned; one locked again by its thread throws, where
-   Rust deadlocks.
+6. A lock locked again by its thread throws, where Rust deadlocks.
 7. A JS getter that calls back into Rust and borrows a held cell isn't
    seen.
 8. A future starts when it's made, and runs though no one awaits it.

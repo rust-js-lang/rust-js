@@ -18,6 +18,9 @@ plain std library refcell_borrow_while_mut.rs
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
 
-#difference 11 a panic's message downcasts as a `&str` and a `String` both: a formatted `panic!`'s payload, a `String` natively, is a `&str` too, which a loud drop's `thread::panicking()`, answered since #1285, now reaches
+#difference 11 a panic's message downcasts as a `&str` and a `String` both, so a loud rewrite's call in the branch of a downcast that native Rust takes runs in the other, or not at all: a formatted `panic!`'s payload, a `String` natively, is a `&str` too (a loud drop's `thread::panicking()`, answered since #1285, reaches it), and a literal's, a `&str`, a `String` too (lock_poisoning's `message`, #1438)
 plain std loud-drop extend_by_a_dyn_iterator_asks_its_hint.rs
 plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs
+plain std loud lock_poisoning.rs
+plain std loud-call lock_poisoning.rs
+plain std loud-drop lock_poisoning.rs

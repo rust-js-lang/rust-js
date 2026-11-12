@@ -473,7 +473,20 @@ const NEVER_THROW: &[&str] = &[
     // A `RefCell` guard's drop: its count, one less (ADR 0328), which a
     // cleanup runs as a panic unwinds unguarded (#847).
     "$unborrow",
+    // A lock's guard's drop, which poisons it as a panic unwinds (#1438).
+    "$unlock",
 ];
+
+/// The helpers that ask whether a panic unwinds, which only a cleanup a
+/// panic runs tells (`$cleanup`): a lock's guard's drop, which poisons it
+/// where one does (#1438), and `thread::panicking()` (#1285). A drop that
+/// calls one is in no `finally`, which runs on either path alike.
+const ASKS_UNWINDING: &[&str] = &["$unlock", "$panicking"];
+
+/// Whether `name` is a helper that asks whether a panic unwinds.
+pub(crate) fn asks_unwinding(name: &str) -> bool {
+    ASKS_UNWINDING.contains(&name)
+}
 
 /// Whether `name` is a helper whose call throws only where its arguments
 /// do: the pure ones, and those that change what they're given but never

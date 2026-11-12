@@ -247,6 +247,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.recognition().peek_mut_of(ty).is_some() => {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$peekMutDrop"), vec![value])).at(js_span));
             }
+            // A lock's guard that poisons it as a panic unwinds: `$unlock(cell)`,
+            // which asks whether one does, so it's seen and in no `finally`
+            // (#1438).
+            ty::Adt(..) if self.recognition().poisons_its_lock(ty) => {
+                out.push(StmtKind::Expr(Expr::call_helper("$unlock", vec![value])).at(js_span));
+            }
             // A guard: `$unborrow(cell)` (ADR 0328).
             ty::Adt(..) if self.is_guard(ty) => {
                 let mut call = Expr::call(Expr::helper("$unborrow"), vec![value]);
@@ -485,7 +491,7 @@ pub(super) fn dropped_after_unwinding(
 /// body thrown on through `$unwindsOn` later, `aborting_finally`); else
 /// `try { body } catch (error) { unwinding; throw error; } dropped`.
 fn after(body: Vec<Stmt>, (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>), js_span: js::Span) -> Vec<Stmt> {
-    if !may_throw(&dropped) {
+    if finally_holds(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
     }
     let mut handler = unwinding;
@@ -517,10 +523,12 @@ pub(in crate::lower) fn dropped_unwinding(body: Vec<Stmt>, dropped: Vec<Stmt>, j
 /// Of what unwinds, `error`, where it's caught, `catch (error) { .. throw
 /// error; }`, which may be a stack overflow, Rust's abort with no drop run
 /// (#1193): `$cleanup(() => { .. }, error)` too where its drops run what a
-/// program sees (`unseen`), which `$cleanup` aborts before.
+/// program sees (`unseen`), which `$cleanup` aborts before. And in
+/// `$cleanup` where it asks whether a panic unwinds, which only `$cleanup`
+/// tells: a lock's guard's drop, which poisons it then (#1438).
 pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&str>, js_span: js::Span) -> Vec<Stmt> {
     let seen = error.is_some() && !unseen(&cleanup);
-    if !may_throw(&cleanup) && !seen {
+    if !may_throw(&cleanup) && !seen && !asks_unwinding(&cleanup) {
         return cleanup;
     }
     let mut args = vec![Expr::arrow(vec![], cleanup)];
@@ -587,6 +595,22 @@ pub(in crate::lower) fn is_aborting(body: &[Stmt]) -> bool {
         if matches!(handler.as_slice(), [Stmt { kind: StmtKind::Throw(Expr { kind: js::ExprKind::Call(callee, given), .. }), .. }]
             if callee.helper_name() == Some("$unwindsOn")
                 && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(v), .. }] if v == error)))
+}
+
+/// Whether a `finally`, which runs on either path and can't tell them
+/// apart, may hold `dropped`: what can't throw, as a drop's panic as a
+/// panic unwinds aborts (#847), and asks nothing of whether one unwinds
+/// (#1438). The one answer of what a `finally` may hold.
+pub(in crate::lower) fn finally_holds(dropped: &[Stmt]) -> bool {
+    !may_throw(dropped) && !asks_unwinding(dropped)
+}
+
+/// Whether `stmts` call a helper that asks whether a panic unwinds, which
+/// only `$cleanup` tells (`runtime::asks_unwinding`).
+fn asks_unwinding(stmts: &[Stmt]) -> bool {
+    let mut asks = false;
+    js::visit_stmts(stmts, &mut |name| asks |= crate::runtime::asks_unwinding(name));
+    asks
 }
 
 /// Whether `stmts`, drops, run nothing a program sees (`Known::Unseen`):

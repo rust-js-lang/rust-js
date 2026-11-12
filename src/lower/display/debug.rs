@@ -238,6 +238,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_var_error(ty) {
             return Ok(var_error_shown(value, ("NotPresent", "NotUnicode(", ")")));
         }
+        // A poisoned lock's `PoisonError`, as std shows it, none of what it
+        // holds (#1438).
+        if crate::lower::recognition::is_poison_error(ty) {
+            return Ok(Expr::str("PoisonError { .. }"));
+        }
         // A lock's `TryLockError`, as std shows it: its variant's name, quoted.
         if self.recognition().is_try_lock_error(ty) {
             let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));
