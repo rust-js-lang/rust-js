@@ -168,28 +168,28 @@ function maps() {
       .join(", ")}]`,
   );
   console.log(`${counts.size}`);
-  const value = counts.get(["APPLE"]);
+  const get = counts.get(["APPLE"]);
+  console.log(`${get == null ? "None" : `Some(${get})`}`);
+  const value = counts.get(["durian"]);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = counts.get(["durian"]);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`${counts.has(["CHERRY"])}`);
   // `insert` of a key it holds keeps the key it holds, the value given.
-  const value$2 = $insert(counts, ["BANANA"], 10);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $getKeyValue(counts, ["banana"]);
+  const insert = $insert(counts, ["BANANA"], 10);
+  console.log(`${insert == null ? "None" : `Some(${insert})`}`);
+  const value$1 = $getKeyValue(counts, ["banana"]);
   console.log(
-    `${value$3 == null ? "None" : `Some((${wordDebug_fmt(value$3[0])}, ${value$3[1]}))`}`,
+    `${value$1 == null ? "None" : `Some((${wordDebug_fmt(value$1[0])}, ${value$1[1]}))`}`,
   );
   const n = $mutGet(counts, ["Cherry"]);
   if (n != null) {
     n.value = (n.value + 5) >>> 0;
   }
-  const value$4 = $removeEntry(counts, ["CHERRY"]);
+  const removeEntry = $removeEntry(counts, ["CHERRY"]);
   console.log(
-    `${value$4 == null ? "None" : `Some((${wordDebug_fmt(value$4[0])}, ${value$4[1]}))`}`,
+    `${removeEntry == null ? "None" : `Some((${wordDebug_fmt(removeEntry[0])}, ${removeEntry[1]}))`}`,
   );
-  const value$5 = $remove(counts, ["cherry"]);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  const remove = $remove(counts, ["cherry"]);
+  console.log(`${remove == null ? "None" : `Some(${remove})`}`);
   console.log(
     `[${words(counts)
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
@@ -241,9 +241,9 @@ function maps() {
   );
   const probe = { id: 2, name: "nobody" };
   const getKeyValue = $getKeyValue(users, probe);
-  const value$6 = getKeyValue != null ? [getKeyValue[0].name, getKeyValue[1]] : undefined;
+  const value$2 = getKeyValue != null ? [getKeyValue[0].name, getKeyValue[1]] : undefined;
   console.log(
-    `${value$6 == null ? "None" : `Some((${$debugStr(value$6[0])}, ${$debugStr(value$6[1])}))`}`,
+    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
   );
 
   const parities = new ($hashedMap(parityHash, parityPartialEq_eq))();
@@ -273,15 +273,15 @@ function sets() {
   kept.sort($cmp);
   console.log(`[${kept.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(`${seen.has(["NOT"])}`);
-  const value = $storedKey(seen, ["OR"]);
-  console.log(`${value == null ? "None" : `Some(${wordDebug_fmt(value)})`}`);
+  const get = $storedKey(seen, ["OR"]);
+  console.log(`${get == null ? "None" : `Some(${wordDebug_fmt(get)})`}`);
   // `replace` puts the one given in the place of the one it held.
-  const value$1 = $setReplace(seen, ["Be"]);
-  console.log(`${value$1 == null ? "None" : `Some(${wordDebug_fmt(value$1)})`}`);
-  const value$2 = $storedKey(seen, ["be"]);
-  console.log(`${value$2 == null ? "None" : `Some(${wordDebug_fmt(value$2)})`}`);
-  const value$3 = $setTake(seen, ["Or"]);
-  console.log(`${value$3 == null ? "None" : `Some(${wordDebug_fmt(value$3)})`}`);
+  const replace = $setReplace(seen, ["Be"]);
+  console.log(`${replace == null ? "None" : `Some(${wordDebug_fmt(replace)})`}`);
+  const value = $storedKey(seen, ["be"]);
+  console.log(`${value == null ? "None" : `Some(${wordDebug_fmt(value)})`}`);
+  const take = $setTake(seen, ["Or"]);
+  console.log(`${take == null ? "None" : `Some(${wordDebug_fmt(take)})`}`);
   console.log(`${seen.delete(["NoT"])}`);
   console.log(`${seen.size}`);
 
@@ -357,10 +357,10 @@ function holding() {
     (a, b) => wordPartialEq_eq(a[0], b[0]) && a[1] === b[1],
   ))();
   pairs.set([["x"], 1], "one");
-  const value = pairs.get([["X"], 1]);
+  const get = pairs.get([["X"], 1]);
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`}`);
+  const value = pairs.get([["X"], 2]);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$1 = pairs.get([["X"], 2]);
-  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
 
   const tagged = new ($hashedSet(
     taggedHash,

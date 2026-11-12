@@ -23,8 +23,8 @@ function main() {
   const rest = Array.from(e).join("");
   console.log(`${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${rest}`);
   const u = $iter(Array.from($escapeDebug("ab", true)));
-  const value = $next(u);
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} ${$restStr(u)}`);
+  const next = $next(u);
+  console.log(`${next == null ? "None" : `Some(${$debugStr(next, "'")})`} ${$restStr(u)}`);
   const w = $iter(Array.from($escapeUnicode("\t")));
   $next(w);
   $next(w);
@@ -38,10 +38,10 @@ function main() {
   const arg = $iter($escapeAscii(bytes));
   console.log(`${n} ${s} ${$restBytes(arg)}`);
   const held = $iter($escapeAscii(bytes));
-  const next = $next(held);
-  const value$1 = $nextBack(held);
+  const value = $next(held);
+  const nextBack = $nextBack(held);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$restBytes(held)}`,
+    `${value == null ? "None" : `Some(${value})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${$restBytes(held)}`,
   );
 
   // A case mapping, the same array of its `char`s, knows its length.
@@ -49,9 +49,9 @@ function main() {
   $next(upper);
   console.log(`${upper.end - upper.at} ${$restStr(upper)}`);
   const lower = $iter(Array.from("İ".toLowerCase()));
-  const value$2 = $nextBack(lower);
+  const value$1 = $nextBack(lower);
   console.log(
-    `${value$2 == null ? "None" : `Some(${$debugStr(value$2, "'")})`} ${$restStr(lower)}`,
+    `${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} ${$restStr(lower)}`,
   );
 }
 //# sourceMappingURL=case.js.map

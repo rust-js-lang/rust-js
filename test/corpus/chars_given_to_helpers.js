@@ -70,42 +70,42 @@ function main() {
     console.log(`${$debugStr(Lexer.digits(lexer))}`);
     const ends = { chars: $chars(s) };
     const last = Ends.last(ends);
-    const value$1 = $next(ends.chars);
+    const next = $next(ends.chars);
     console.log(
-      `${last == null ? "None" : `Some(${$debugStr(last, "'")})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`}`,
+      `${last == null ? "None" : `Some(${$debugStr(last, "'")})`} ${next == null ? "None" : `Some(${$debugStr(next, "'")})`}`,
     );
 
-    const value$2 = hint($chars(s));
-    const value$3 = hint($mapEnds($chars(s), (c) => $byteLen(c)));
+    const value$1 = hint($chars(s));
+    const value$2 = hint($mapEnds($chars(s), (c) => $byteLen(c)));
     console.log(
-      `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
+      `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
     );
     const held = $chars(s);
     $next(held);
-    const value$4 = hint(held);
-    console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
+    const value$3 = hint(held);
+    console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
 
-    const value$5 = back($chars(s));
-    const value$6 = back($filterEnds($chars(s), (c) => c !== "l"));
+    const value$4 = back($chars(s));
+    const value$5 = back($filterEnds($chars(s), (c) => c !== "l"));
     console.log(
-      `${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`} ${value$6 == null ? "None" : `Some(${$debugStr(value$6, "'")})`}`,
+      `${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`}`,
     );
-    const value$7 = secondLast($charIndices(s));
+    const value$6 = secondLast($charIndices(s));
     console.log(
-      `${value$7 == null ? "None" : `Some((${value$7[0]}, ${$debugStr(value$7[1], "'")}))`}`,
+      `${value$6 == null ? "None" : `Some((${value$6[0]}, ${$debugStr(value$6[1], "'")}))`}`,
     );
 
     const fused = iterator_fuse($chars(s), { next: $next }, true);
     const nextBack = fuseDoubleEndedIterator_nextBack(fused, { next_back: $nextBack }, true);
-    const value$8 = $next(fused);
+    const value$7 = $next(fused);
     console.log(
-      `${nextBack == null ? "None" : `Some(${$debugStr(nextBack, "'")})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`}`,
+      `${nextBack == null ? "None" : `Some(${$debugStr(nextBack, "'")})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7, "'")})`}`,
     );
     const boxed = $chars(s);
-    const value$9 = $nextBack(boxed);
-    const value$10 = $next(boxed);
+    const value$8 = $nextBack(boxed);
+    const value$9 = $next(boxed);
     console.log(
-      `${value$9 == null ? "None" : `Some(${$debugStr(value$9, "'")})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10, "'")})`}`,
+      `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9, "'")})`}`,
     );
   }
 }

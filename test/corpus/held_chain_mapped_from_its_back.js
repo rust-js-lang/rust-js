@@ -124,9 +124,9 @@ function main() {
         chain.return();
       },
     );
-    const value = $next(it);
+    const next = $next(it);
     console.log(
-      `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
     );
   } catch (error) {
     throw $unwindsOn(error);

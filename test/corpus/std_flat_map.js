@@ -56,9 +56,9 @@ function main() {
     false,
   );
   const next = $next(runs);
-  const value = $sizeHint(runs);
+  const sizeHint = $sizeHint(runs);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+    `${next == null ? "None" : `Some(${next})`} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
   const nextBack = flatMapDoubleEndedIterator_nextBack(
     runs,
@@ -69,9 +69,9 @@ function main() {
     true,
     false,
   );
-  const value$1 = $sizeHint(runs);
+  const value = $sizeHint(runs);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
   console.log(`[${Array.from($roomForHint(runs, 4, false)).join(", ")}]`);
 
@@ -85,8 +85,8 @@ function main() {
     2,
     false,
   );
-  const value$2 = $sizeHint(doubled);
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const value$1 = $sizeHint(doubled);
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   flatMapDoubleEndedIterator_nextBack(
     doubled,
     { next: $next },
@@ -96,9 +96,9 @@ function main() {
     true,
     false,
   );
-  const sizeHint = $sizeHint(doubled);
+  const value$2 = $sizeHint(doubled);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${flatMapDoubleEndedIterator_rfold(doubled, 0, (a, x) => (((a * 10) | 0) + x) | 0, { next: $next }, { next_back: $nextBack }, intoIterator, { next_back: $nextBack }, false)}`,
+    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${flatMapDoubleEndedIterator_rfold(doubled, 0, (a, x) => (((a * 10) | 0) + x) | 0, { next: $next }, { next_back: $nextBack }, intoIterator, { next_back: $nextBack }, false)}`,
   );
 
   // Of `Option`s, one item at most each.

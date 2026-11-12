@@ -12,15 +12,15 @@ function last(s) {
 
 function main() {
   const w = [10, 20, 30];
-  const value = $nextBack($enumerate($iter(w)));
-  console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-  const value$1 = last([7, 8]);
-  const value$2 = last([]);
+  const nextBack = $nextBack($enumerate($iter(w)));
+  console.log(`${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`}`);
+  const value = last([7, 8]);
+  const value$1 = last([]);
   console.log(
-    `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`,
+    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
   );
   const last$1 = $nextBack($iter(w));
-  const value$3 = last$1 === undefined ? undefined : (last$1 + 1) | 0;
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = last$1 === undefined ? undefined : (last$1 + 1) | 0;
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

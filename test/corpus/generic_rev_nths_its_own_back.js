@@ -41,11 +41,11 @@ function backsDoubleEndedIterator_nextBack(backs) {
 function backsDoubleEndedIterator_nthBack(backs, n) {
   console.log(`own nth_back ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = backsDoubleEndedIterator_nextBack(backs);
-    if (value == null) {
+    const nextBack = backsDoubleEndedIterator_nextBack(backs);
+    if (nextBack == null) {
       return;
     }
-    dDrop_drop(value);
+    dDrop_drop(nextBack);
   }
   return backsDoubleEndedIterator_nextBack(backs);
 }

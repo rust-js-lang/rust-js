@@ -55,8 +55,8 @@ function main() {
   $dispose(negated);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const last = (c) => c.codePointAt(0);
-  const value$4 = $minByKey("rust"[Symbol.iterator](), last, $cmp);
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`}`);
+  const minByKey = $minByKey("rust"[Symbol.iterator](), last, $cmp);
+  console.log(`${minByKey == null ? "None" : `Some(${$debugStr(minByKey, "'")})`}`);
   const sorted = (x) => (x / 10) | 0;
   console.log(
     `${$isSortedBy(
@@ -77,12 +77,12 @@ function main() {
     calls = (calls + 1) | 0;
     return $index($utf8Bytes(w), 0);
   }
-  const value$5 = $minByKey(words, counted, $cmp);
-  console.log(`${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`);
+  const value$4 = $minByKey(words, counted, $cmp);
+  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
   console.log(`${calls} calls`);
 
   let dropping = (x) => [(x % 7) | 0];
-  const value$6 = $maxByKey(
+  const value$5 = $maxByKey(
     [5, 9, 13, 2],
     dropping,
     (a, b) => $cmp(a[0], b[0]),
@@ -91,7 +91,7 @@ function main() {
     undefined,
     keyDrop_drop,
   );
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   dropping = (x) => [x];
   let dropping$1$live = true;
   let tmp$1;

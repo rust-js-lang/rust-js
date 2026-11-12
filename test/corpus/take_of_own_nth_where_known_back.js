@@ -43,11 +43,11 @@ function countIterator_sizeHint(count) {
 function countIterator_nth(count, n) {
   console.log(`own nth ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = countIterator_next(count);
-    if (value == null) {
+    const next = countIterator_next(count);
+    if (next == null) {
       return;
     }
-    dDrop_drop(value);
+    dDrop_drop(next);
   }
   return countIterator_next(count);
 }

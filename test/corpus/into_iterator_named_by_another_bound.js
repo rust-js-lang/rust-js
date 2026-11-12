@@ -31,11 +31,11 @@ export function entry() {
 }
 
 function quietIterator_next(quiet) {
-  const value = $checked(quiet[0] - 1, 0, 4294967295);
-  if (value == null) {
+  const checkedSub = $checked(quiet[0] - 1, 0, 4294967295);
+  if (checkedSub == null) {
     return;
   }
-  quiet[0] = value;
+  quiet[0] = checkedSub;
   return quiet[0];
 }
 

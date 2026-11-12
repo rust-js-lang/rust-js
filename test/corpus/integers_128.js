@@ -62,13 +62,13 @@ function main() {
   // Methods.
   const checkedAdd = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
   const checkedMul = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
-  const value = $bigChecked(
+  const checkedNeg = $bigChecked(
     -top,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
   console.log(
-    `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`} ${checkedNeg == null ? "None" : `Some(${checkedNeg})`}`,
   );
   console.log(
     `${$bigClamp(max + 9n, 0n, 340282366920938463463374607431768211455n)} ${$bigClamp(min - 1n, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${BigInt.asUintN(128, $bigPow(3n, 80, 128))}`,
@@ -88,9 +88,9 @@ function main() {
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$1 = BigInt.asUintN(128, 1n << 100n);
+  const value = BigInt.asUintN(128, 1n << 100n);
   console.log(
-    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) None ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) None ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
     `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
@@ -121,42 +121,42 @@ function main() {
   );
   console.log(`${small} ${wide}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const value$2 = result.TAG === "Ok" ? result._0 : undefined;
+  const value$1 = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$3 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const value$2 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
-  const value$4 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+  const value$3 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 
   // Parsing.
-  const value$5 = $parseBig(
+  const parse = $parseBig(
     "340282366920938463463374607431768211455",
     0n,
     340282366920938463463374607431768211455n,
   );
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`}`,
+    `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`}`,
   );
   console.log(
     `${$parseBig("340282366920938463463374607431768211456", 0n, 340282366920938463463374607431768211455n).TAG === "Err"}`,
   );
-  const value$6 = $parseBig(
+  const value$4 = $parseBig(
     "-170141183460469231731687303715884105728",
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
   console.log(
-    `${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugParseError(value$6._0, "ParseIntError")})`}`,
+    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`}`,
   );
-  const value$7 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
+  const value$5 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
   console.log(
-    `${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`}`,
+    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`}`,
   );
 
   // Matching and ordering.

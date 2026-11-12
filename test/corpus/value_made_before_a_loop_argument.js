@@ -46,12 +46,12 @@ export function main() {
   // Two made before it, of a call and of text.
   let n = 1;
   const value$2 = BigInt.asIntN(64, BigInt(step(2)) - 1n);
-  const value$3 = "ab".repeat(2);
+  const repeat = "ab".repeat(2);
   let t;
   while (true) {
     n = step(n);
     if (n > 30) {
-      t = triple(value$2, value$3, n);
+      t = triple(value$2, repeat, n);
       break;
     }
   }
@@ -59,12 +59,12 @@ export function main() {
 
   // A `while` the loop is, its argument a negation.
   let i = 0;
-  const value$4 = BigInt.asIntN(64, -BigInt(step(4)));
+  const value$3 = BigInt.asIntN(64, -BigInt(step(4)));
   let w;
   while (i < 4) {
     i++;
   }
-  w = pair(value$4, i);
+  w = pair(value$3, i);
   console.log(`(${w[0]}, ${w[1]})`);
 }
 //# sourceMappingURL=case.js.map

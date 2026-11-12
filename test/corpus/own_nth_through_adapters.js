@@ -117,11 +117,11 @@ function main() {
   ).take(4);
   const nth = $nth($lent(t), 1);
   const value$5 = $nth($lent(t), 1);
-  const value$6 = $next(t);
+  const next = $next(t);
   console.log(
-    `take ${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `take ${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${next == null ? "None" : `Some(${next})`}`,
   );
-  const value$7 = $nth(
+  const value$6 = $nth(
     $lent(
       $stepBy(
         $iterator(
@@ -139,8 +139,8 @@ function main() {
     ),
     1,
   );
-  console.log(`step ${value$7 == null ? "None" : `Some(${value$7})`}`);
-  const value$8 = $nth(
+  console.log(`step ${value$6 == null ? "None" : `Some(${value$6})`}`);
+  const value$7 = $nth(
     $lent(
       $stepBy(
         $iterator(
@@ -158,7 +158,7 @@ function main() {
     ),
     0,
   );
-  console.log(`step ${value$8 == null ? "None" : `Some(${value$8})`}`);
+  console.log(`step ${value$7 == null ? "None" : `Some(${value$7})`}`);
   console.log(
     `step ${$lent($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4)).some((x) => x > 6)}`,
   );
@@ -181,13 +181,13 @@ function main() {
     ),
     5,
   );
-  const next = $next(s);
+  const value$8 = $next(s);
   const value$9 = $nth($lent(s), 1);
   const value$10 = $next(s);
   console.log(
-    `step ${next == null ? "None" : `Some(${next})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
+    `step ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
-  const value$11 = Array.from(
+  const last = Array.from(
     $folded(
       $iterator(
         c(),
@@ -201,8 +201,8 @@ function main() {
       ).drop(2),
     ),
   ).at(-1);
-  console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
-  const value$12 = Array.from(
+  console.log(`last ${last == null ? "None" : `Some(${last})`}`);
+  const value$11 = Array.from(
     $folded(
       $stepBy(
         $iterator(
@@ -219,8 +219,8 @@ function main() {
       ),
     ),
   ).at(-1);
-  console.log(`last ${value$12 == null ? "None" : `Some(${value$12})`}`);
-  const value$13 = Array.from(
+  console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
+  const value$12 = Array.from(
     $iterator(
       c(),
       countIterator_next,
@@ -232,7 +232,7 @@ function main() {
       countIterator_nth,
     ).take(5),
   ).at(-1);
-  console.log(`last ${value$13 == null ? "None" : `Some(${value$13})`}`);
+  console.log(`last ${value$12 == null ? "None" : `Some(${value$12})`}`);
   const text = Array.from(
     $folded(
       $iterator(
@@ -250,7 +250,7 @@ function main() {
     ),
   ).join("");
   console.log(`${text}`);
-  const value$14 = $nth(
+  const value$13 = $nth(
     $lent(
       $lent(
         $iterator(
@@ -267,9 +267,9 @@ function main() {
     ),
     0,
   );
-  console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
+  console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
   const held = c();
-  const value$15 = $nth(
+  const value$14 = $nth(
     $lent(
       $lent(
         $iterator(
@@ -286,11 +286,11 @@ function main() {
     ),
     0,
   );
-  const value$16 = countIterator_next(held);
+  const value$15 = countIterator_next(held);
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15})`} ${value$16 == null ? "None" : `Some(${value$16})`}`,
+    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
   );
-  const value$17 = $nthSome(
+  const value$16 = $nthSome(
     $lent(
       $iterator(
         [0],
@@ -305,7 +305,7 @@ function main() {
     ),
     0,
   );
-  const value$18 = $nthSome(
+  const value$17 = $nthSome(
     $lent(
       $iterator(
         [0],
@@ -321,14 +321,14 @@ function main() {
     0,
   );
   console.log(
-    `${value$17 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$17))})`} ${value$18 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$18))})`}`,
+    `${value$16 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$16))})`} ${value$17 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$17))})`}`,
   );
   console.log(
     `${$lazyRange(1, 10, 4)
       .map((x) => (x * 2) | 0)
       .reduce((a, x) => (a + x) | 0, 0)}`,
   );
-  const value$19 = $nth(
+  const value$18 = $nth(
     $lent(
       $enumerate(
         $iterator(
@@ -345,7 +345,7 @@ function main() {
     ),
     3,
   );
-  console.log(`enumerate ${value$19 == null ? "None" : `Some((${value$19[0]}, ${value$19[1]}))`}`);
+  console.log(`enumerate ${value$18 == null ? "None" : `Some((${value$18[0]}, ${value$18[1]}))`}`);
   const e = $enumerate(
     $iterator(
       c(),
@@ -358,11 +358,11 @@ function main() {
       countIterator_nth,
     ),
   );
-  const value$20 = $next(e);
-  const value$21 = $nth($lent(e), 2);
-  const value$22 = $next(e);
+  const value$19 = $next(e);
+  const value$20 = $nth($lent(e), 2);
+  const value$21 = $next(e);
   console.log(
-    `enumerate ${value$20 == null ? "None" : `Some((${value$20[0]}, ${value$20[1]}))`} ${value$21 == null ? "None" : `Some((${value$21[0]}, ${value$21[1]}))`} ${value$22 == null ? "None" : `Some((${value$22[0]}, ${value$22[1]}))`}`,
+    `enumerate ${value$19 == null ? "None" : `Some((${value$19[0]}, ${value$19[1]}))`} ${value$20 == null ? "None" : `Some((${value$20[0]}, ${value$20[1]}))`} ${value$21 == null ? "None" : `Some((${value$21[0]}, ${value$21[1]}))`}`,
   );
   console.log(
     `enumerate ${$lent($enumerate($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2))).some(([i, x]) => (((i | 0) + x) | 0) > 8)}`,

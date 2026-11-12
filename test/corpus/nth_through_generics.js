@@ -81,8 +81,8 @@ function main() {
   try {
     const value = thirdRef($iterator(p, plainIterator_next));
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const value$1 = plainIterator_next(p);
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const next = plainIterator_next(p);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
     console.log("end");
   } catch (error) {
     throw $unwindsOn(error);

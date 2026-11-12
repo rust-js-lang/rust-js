@@ -36,19 +36,19 @@ function main() {
   const v = [1, 2, 3, 4, 5];
   const a = iterator_rev($filterEnds($iter(v), (x) => x % 2 === 1));
   const next = $next(a);
-  const value = revDoubleEndedIterator_nextBack(a);
+  const nextBack = revDoubleEndedIterator_nextBack(a);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
   const b = v
     .toReversed()
     .values()
     .map((x) => (x > 2 ? (x * 2) >>> 0 : undefined))
     .filter((item) => item != null);
+  const value = $next(b);
   const value$1 = $next(b);
-  const value$2 = $next(b);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const c = iterator_rev(
     iterator_map({ start: 1, end: 6 }, tens, { next: $rangeNext }),
@@ -88,16 +88,16 @@ function main() {
         ),
     },
   );
-  const value$3 = $next(c);
-  const value$4 = revDoubleEndedIterator_nextBack(c, mapIterator);
+  const value$2 = $next(c);
+  const value$3 = revDoubleEndedIterator_nextBack(c, mapIterator);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   const d = $iterator({ start: 1, end: 6 }, $rangeNextBack).filter((x) => x % 2 === 0);
+  const value$4 = $next(d);
   const value$5 = $next(d);
-  const value$6 = $next(d);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

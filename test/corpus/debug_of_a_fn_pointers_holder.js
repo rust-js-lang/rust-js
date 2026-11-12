@@ -29,11 +29,11 @@ function countdownDebug_fmt(countdown) {
 }
 
 function countdownIterator_next(countdown) {
-  const value = $checked(countdown[0] - 1, 0, 4294967295);
-  if (value == null) {
+  const checkedSub = $checked(countdown[0] - 1, 0, 4294967295);
+  if (checkedSub == null) {
     return;
   }
-  countdown[0] = value;
+  countdown[0] = checkedSub;
   return countdown[0];
 }
 

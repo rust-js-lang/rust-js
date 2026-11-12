@@ -81,13 +81,13 @@ function main() {
   m.set("a", 1);
   const current = $orInsert(m, "a", 0);
   m.set("a", (current + 2) | 0);
-  const value = m.get("a");
-  console.log(`${value == null ? "None" : `Some(${value})`} RandomState { .. }`);
+  const get = m.get("a");
+  console.log(`${get == null ? "None" : `Some(${get})`} RandomState { .. }`);
   noted(s);
   const sized = new Map();
   sized.set(1, "one");
-  const get = sized.get(1);
-  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`} ${sized.size}`);
+  const value = sized.get(1);
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`} ${sized.size}`);
   const empty = new Set();
   console.log(`${empty.size === 0} RandomState { .. }`);
 }

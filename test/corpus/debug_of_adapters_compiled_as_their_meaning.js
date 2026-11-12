@@ -38,13 +38,13 @@ function leftoverDebug_fmt(leftover, IDebug) {
 }
 
 function exactlyOne(it, IIterator) {
+  const next = IIterator.next(it);
   const value = IIterator.next(it);
-  const value$1 = IIterator.next(it);
-  if (value != null && value$1 == null) {
-    const one = value;
+  if (next != null && value == null) {
+    const one = next;
     return { TAG: "Ok", _0: one };
   }
-  const first = value;
+  const first = next;
   return { TAG: "Err", _0: { first, rest: it } };
 }
 

@@ -155,8 +155,8 @@ function main() {
     ),
   );
   try {
-    const value = $nth($lent(rev), 1);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const nth = $nth($lent(rev), 1);
+    console.log(`${nth == null ? "None" : `Some(${nth})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -291,8 +291,8 @@ function main() {
     ),
   );
   try {
-    const value = $nextBack(filter);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const nextBack = $nextBack(filter);
+    console.log(`${nextBack == null ? "None" : `Some(${nextBack})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

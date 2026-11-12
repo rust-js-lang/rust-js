@@ -158,10 +158,10 @@ function main() {
     ),
   );
   try {
-    const value = $next(it);
-    console.log(`next ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+    const next = $next(it);
+    console.log(`next ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`);
     console.log(`len ${$exactLen($sizeHint(it))}`);
-    const value$1 = zipDoubleEndedIterator_nextBack(
+    const nextBack = zipDoubleEndedIterator_nextBack(
       it,
       {
         next: $next,
@@ -314,7 +314,7 @@ function main() {
         map.return();
       },
     );
-    console.log(`back ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+    console.log(`back ${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

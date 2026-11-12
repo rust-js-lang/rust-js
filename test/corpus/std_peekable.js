@@ -120,12 +120,12 @@ function main() {
   );
   const r = iterator_peekable({ start: 5, end: 8 }, { next: $rangeNext });
   const next = $next(r);
-  const value$6 = peekableDoubleEndedIterator_nextBack(r, {
+  const nextBack = peekableDoubleEndedIterator_nextBack(r, {
     next_back: $rangeNextBack,
     nthBack: $rangeNthBack,
   });
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, debug)}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, debug)}`,
   );
   console.log(`${$count(r)}`);
 }

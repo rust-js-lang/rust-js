@@ -164,9 +164,9 @@ function plain(plains, at) {
 }
 
 function slot(slots, at) {
-  const value = $someGet(slots, at);
-  const value$1 = $someValue(value);
-  const slot = value == null ? value : $some(Array.isArray(value$1) ? value$1.slice() : value$1);
+  const get = $someGet(slots, at);
+  const value = $someValue(get);
+  const slot = get == null ? get : $some(Array.isArray(value) ? value.slice() : value);
   if (slot == null) {
     return 0;
   }
@@ -179,9 +179,9 @@ function slot(slots, at) {
 
 // A clone changed, of one whose clone copies: the map's is as it was.
 function grown(slots, at) {
-  const value = $someGet(slots, at);
-  const value$1 = $someValue(value);
-  const slot = value == null ? value : $some(Array.isArray(value$1) ? value$1.slice() : value$1);
+  const get = $someGet(slots, at);
+  const value = $someValue(get);
+  const slot = get == null ? get : $some(Array.isArray(value) ? value.slice() : value);
   if (slot != null && Array.isArray($someValue(slot))) {
     const items = $someValue(slot);
     items.push(0);
@@ -192,12 +192,10 @@ function grown(slots, at) {
 }
 
 function moved(shapes, at) {
-  const value = $someGet(shapes, at);
-  const value$1 = $someValue(value);
+  const get = $someGet(shapes, at);
+  const value = $someValue(get);
   const shape =
-    value == null
-      ? value
-      : $some(typeof value$1 === "object" && value$1 !== null ? { ...value$1 } : value$1);
+    get == null ? get : $some(typeof value === "object" && value !== null ? { ...value } : value);
   if (shape != null) {
     if (typeof $someValue(shape) === "object" && $someValue(shape) !== null) {
       const point = $someValue(shape);

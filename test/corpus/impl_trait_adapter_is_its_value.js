@@ -45,8 +45,8 @@ function main() {
   console.log(
     `${revDoubleEndedIterator_rfold(down(4), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0, { next: $rangeNext })}`,
   );
-  const value = $rangeFirst({ start: 1, end: 6 });
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const last = $rangeFirst({ start: 1, end: 6 });
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   const d = down(3);
   const collect = $foldToArray(
     $roomForHint(
@@ -82,9 +82,9 @@ function main() {
   console.log(
     `${mapDoubleEndedIterator_rfold(at(iterator_map($iter(v), (n) => (n + 1) >>> 0)), 0, (a, b) => (((a * 10) >>> 0) + b) >>> 0)}`,
   );
-  const value$1 = mapDoubleEndedIterator_nextBack(
+  const value = mapDoubleEndedIterator_nextBack(
     at(iterator_map(at($iter(v)), (n) => (n * 2) >>> 0)),
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

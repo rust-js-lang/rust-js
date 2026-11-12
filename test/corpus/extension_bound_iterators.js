@@ -39,11 +39,11 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
 
 const Ends = {
   pop(ends, IDoubleEndedIterator, IExactSizeIterator) {
-    const value = IDoubleEndedIterator.next_back(ends.inner);
-    if (value == null) {
+    const nextBack = IDoubleEndedIterator.next_back(ends.inner);
+    if (nextBack == null) {
       return;
     }
-    const item = $someValue(value);
+    const item = $someValue(nextBack);
     return [item, IExactSizeIterator.len(ends.inner)];
   },
 

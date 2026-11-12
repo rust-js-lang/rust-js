@@ -116,11 +116,11 @@ function ownIterator_next(own) {
 function ownIterator_nth(own, n) {
   console.log(`own nth ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = ownIterator_next(own);
-    if (value == null) {
+    const next = ownIterator_next(own);
+    if (next == null) {
       return;
     }
-    dDrop_drop(value);
+    dDrop_drop(next);
   }
   return ownIterator_next(own);
 }

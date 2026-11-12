@@ -145,9 +145,9 @@ function main() {
   console.log(`${sum}`);
 
   held = [0];
-  const value = $lent(
+  const find = $lent(
     $iterator(held, countIterator_next, false, undefined, undefined, undefined, countIterator_fold),
   ).find((n) => n === 2);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  console.log(`${find == null ? "None" : `Some(${find})`}`);
 }
 //# sourceMappingURL=case.js.map

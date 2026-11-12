@@ -89,15 +89,15 @@ function main() {
       `strip ${$debugStr(base)} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : "Err(StripPrefixError(()))"} ${r.TAG === "Ok"}`,
     );
   }
-  const value = $pathStripPrefix("./a/b", "./a");
-  console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(StripPrefixError(()))"}`);
-  const value$1 = $pathStripPrefix("a/./b/.", "a");
+  const stripPrefix = $pathStripPrefix("./a/b", "./a");
   console.log(
-    `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : "Err(StripPrefixError(()))"}`,
+    `${stripPrefix.TAG === "Ok" ? `Ok(${$debugStr(stripPrefix._0)})` : "Err(StripPrefixError(()))"}`,
   );
-  const stripPrefix = $pathStripPrefix("x/y", "z");
-  if (stripPrefix.TAG === "Ok") {
-    console.log(`rest ${$debugStr(stripPrefix._0)}`);
+  const value = $pathStripPrefix("a/./b/.", "a");
+  console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(StripPrefixError(()))"}`);
+  const value$1 = $pathStripPrefix("x/y", "z");
+  if (value$1.TAG === "Ok") {
+    console.log(`rest ${$debugStr(value$1._0)}`);
   } else {
     console.log("error prefix not found StripPrefixError(())");
   }

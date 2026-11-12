@@ -159,7 +159,7 @@ function entries(
   hashed("and_modify of one there");
   $tableRoomFor(16, TStringSize, TStringAlign);
   let names = new TMap();
-  const value = $entryOrInsertWith(
+  const orInsertWithKey = $entryOrInsertWith(
     $entry(names, TCopy ? TCopy.copy(a) : a),
     (k) => TDebug.fmt(k),
     true,
@@ -167,10 +167,10 @@ function entries(
     undefined,
     true,
   );
-  value.value += "!";
+  orInsertWithKey.value += "!";
   hashed("or_insert_with_key, then push");
-  const value$1 = $entryOrInsertWith($entry(names, TCopy ? TCopy.copy(a) : a), () => "", true);
-  value$1.value += "?";
+  const value = $entryOrInsertWith($entry(names, TCopy ? TCopy.copy(a) : a), () => "", true);
+  value.value += "?";
   hashed("or_default, then push");
   const entry = $entry(names, TCopy ? TCopy.copy(b) : b);
   if (entry.TAG === "Occupied") {
@@ -179,18 +179,18 @@ function entries(
     value.value += "o";
   } else {
     const missing = entry._0;
-    const value = $vacantInsert(missing, "new", true);
-    value.value += "v";
+    const insert = $vacantInsert(missing, "new", true);
+    insert.value += "v";
   }
   hashed("a vacant entry's insert");
-  const value$2 = $entry(names, TCopy ? TCopy.copy(b) : b);
-  if (value$2.TAG === "Occupied") {
-    const there = value$2._0;
-    const value = $entryGet(there, true);
-    value.value += "o";
-    const value$1 = there[1];
-    const value$3 = $entryGet(there);
-    console.log(`${TDebug.fmt(value$1)} ${$debugStr(value$3)}`);
+  const value$1 = $entry(names, TCopy ? TCopy.copy(b) : b);
+  if (value$1.TAG === "Occupied") {
+    const there = value$1._0;
+    const getMut = $entryGet(there, true);
+    getMut.value += "o";
+    const value = there[1];
+    const get = $entryGet(there);
+    console.log(`${TDebug.fmt(value)} ${$debugStr(get)}`);
   }
   hashed("an occupied entry's get_mut");
   for (const name of $mapGetDisjointMut(names, [a, c], true)

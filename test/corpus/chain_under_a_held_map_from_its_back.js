@@ -201,7 +201,7 @@ function main() {
         chain.return();
       },
     );
-    const value = $nthBack(
+    const nthBack = $nthBack(
       $knowing(
         it,
         (iterator) =>
@@ -250,7 +250,7 @@ function main() {
       0,
     );
     console.log(
-      `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${nextBack == null ? "None" : `Some(${nextBack})`} ${nthBack == null ? "None" : `Some(${nthBack})`}`,
     );
     const v = [["v1"], ["v2"]];
     try {

@@ -48,7 +48,7 @@ function main() {
     [5, 1, 9].values().map((x) => [x]),
     reversePartialOrd,
   );
-  const value = $heapPop(low, reversePartialOrd);
-  console.log(`${value == null ? "None" : `Some(Reverse(${value[0]}))`}`);
+  const pop = $heapPop(low, reversePartialOrd);
+  console.log(`${pop == null ? "None" : `Some(Reverse(${pop[0]}))`}`);
 }
 //# sourceMappingURL=case.js.map

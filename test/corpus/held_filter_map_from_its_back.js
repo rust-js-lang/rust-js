@@ -25,9 +25,9 @@ function main() {
   );
   const more = iterator_map(tripled, (x) => (x + 1) | 0);
   const nextBack = mapDoubleEndedIterator_nextBack(more);
-  const value = $next(more);
+  const next = $next(more);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

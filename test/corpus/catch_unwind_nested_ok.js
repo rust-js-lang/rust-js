@@ -30,11 +30,11 @@ function finish(n) {
   } catch (thrown) {
     $catchable(thrown);
     const error = $unwound(thrown);
-    const value =
+    const downcastRef =
       error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
         ? error.value
         : undefined;
-    console.log(`caught ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+    console.log(`caught ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}`);
   } finally {
     if ($live()) {
       console.log(`restored ${previous}`);

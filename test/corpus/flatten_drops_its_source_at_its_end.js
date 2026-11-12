@@ -46,14 +46,14 @@ function flaky() {
     }).flatMap((item) => item),
   );
   try {
+    const next = $next(h);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
     const value = $next(h);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const value$1 = $next(h);
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = $next(h);
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-    const value$3 = $next(h);
-    console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
     console.log("end h");
     const g = $held(
       $closing($iterator([0], flakyIterator_next), (it) => {
@@ -61,11 +61,11 @@ function flaky() {
       }).flatMap((v) => v.values().map((x) => (x * 10) >>> 0)),
     );
     try {
-      const next = $next(g);
       const value = $next(g);
       const value$1 = $next(g);
+      const value$2 = $next(g);
       console.log(
-        `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+        `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
       );
       console.log("end g");
       const s = $closing($iterator([0], flakyIterator_next), (it) => {

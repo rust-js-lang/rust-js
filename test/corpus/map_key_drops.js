@@ -47,8 +47,8 @@ function main() {
     throw error;
   }
   try {
-    const value = $insert(m, [1], 11, keyDrop_drop);
-    console.log(`insert ${value == null ? "None" : `Some(${value})`}`);
+    const insert = $insert(m, [1], 11, keyDrop_drop);
+    console.log(`insert ${insert == null ? "None" : `Some(${insert})`}`);
   } catch (error) {
     $cleanup(() => {
       for (const item of m.keys()) {
@@ -101,8 +101,8 @@ function main() {
   orInsertWith.value = (orInsertWith.value + 1) | 0;
   const value = [2];
   try {
-    const value$1 = $remove(m, value, keyDrop_drop);
-    console.log(`remove ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const remove = $remove(m, value, keyDrop_drop);
+    console.log(`remove ${remove == null ? "None" : `Some(${remove})`}`);
   } catch (error) {
     $cleanup(() => {
       keyDrop_drop(value);
@@ -115,8 +115,8 @@ function main() {
   keyDrop_drop(value);
   const value$1 = [1];
   try {
-    const value = m.get(value$1);
-    console.log(`get ${value == null ? "None" : `Some(${value})`}`);
+    const get = m.get(value$1);
+    console.log(`get ${get == null ? "None" : `Some(${get})`}`);
   } catch (error) {
     $cleanup(() => {
       keyDrop_drop(value$1);

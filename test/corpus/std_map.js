@@ -113,8 +113,8 @@ function main() {
   console.log(
     `${mapDoubleEndedIterator_rfold(mapClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 100) >>> 0) + x) >>> 0)}`,
   );
-  const value = $sizeHint(held);
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const sizeHint = $sizeHint(held);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
 
   const shown = iterator_map([2], double, {
     next: countdownIterator_next,
@@ -125,18 +125,18 @@ function main() {
   const d = {
     inner: doubled([3], { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint }),
   };
-  const value$1 = $next(d.inner);
-  const value$2 = mapDoubleEndedIterator_nextBack(d.inner, {
+  const value = $next(d.inner);
+  const value$1 = mapDoubleEndedIterator_nextBack(d.inner, {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${mapExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${mapExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
   );
-  const value$3 = lastOf(
+  const value$2 = lastOf(
     iterator_map($iter(v), (x) => (x + 1) >>> 0),
     { next_back: $nextBack },
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 
   const holder = {
     it: iterator_map({ start: 0, end: 3 }, (x) => (x + 100) | 0, { next: $rangeNext }),
@@ -215,14 +215,14 @@ function main() {
         ),
     },
   );
-  const value$4 = revDoubleEndedIterator_nextBack(back, {
+  const value$3 = revDoubleEndedIterator_nextBack(back, {
     next: $next,
     fold: $foldOf,
     getUnchecked: mapIterator___iteratorGetUnchecked,
   });
-  const value$5 = $next(back);
+  const value$4 = $next(back);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,
   );
 
   const by = "map's";

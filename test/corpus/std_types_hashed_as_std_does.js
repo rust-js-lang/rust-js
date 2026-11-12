@@ -218,8 +218,8 @@ function main() {
     },
     $eq,
   ))([[[later, [3]], "later"]]);
-  const value = times.get([later, [3]]);
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const get = times.get([later, [3]]);
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`}`);
 
   const paths = [
     "",

@@ -48,8 +48,8 @@ function main() {
     any.impl.$drop?.(any.value);
     const number = boxed(5, { typeId: () => "u8" });
     try {
-      const value = number.impl.typeId() === "u8" ? number.value : undefined;
-      console.log(`five: ${value == null ? "None" : `Some(${value})`}`);
+      const downcastRef = number.impl.typeId() === "u8" ? number.value : undefined;
+      console.log(`five: ${downcastRef == null ? "None" : `Some(${downcastRef})`}`);
     } catch (error) {
       $cleanup(() => {
         number.impl.$drop?.(number.value);

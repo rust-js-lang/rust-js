@@ -85,13 +85,13 @@ function main() {
   );
   console.log(`[${Array.from(copy.take(4)).join(", ")}]`);
   const v = iterator_fuse($iter([1, 2, 3]), { next: $next }, true);
-  const value$2 = $sizeHint(v);
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const sizeHint = $sizeHint(v);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const w = fuseClone_clone(v, { clone: (value) => $iter(value.items.slice(value.at, value.end)) });
   $next(v);
-  const sizeHint = $sizeHint(v);
+  const value$2 = $sizeHint(v);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${$foldToArray(w).join(", ")}] ${fuseDebug_fmt(v, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
+    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) [${$foldToArray(w).join(", ")}] ${fuseDebug_fmt(v, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
   );
   console.log(
     `[${$foldToArray($lent(v)).join(", ")}] ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(v))}`,

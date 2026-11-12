@@ -350,9 +350,9 @@ function main() {
     true,
     false,
   );
-  const value$8 = $next(it);
+  const next = $next(it);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
 
   s = $rev(

@@ -45,8 +45,8 @@ Counted.prototype.lastRead = function () {
 
 function main() {
   const counted = new Counted(3);
-  const value = counted.lastRead();
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const lastRead = counted.lastRead();
+  console.log(`${lastRead == null ? "None" : `Some(${lastRead})`}`);
   const total = (((counted.rowCounted() + counted.rowCounted()) | 0) + counted.rowBumped(2)) | 0;
   const readCount = counted.readCount();
   const arg = counted.lastRead();

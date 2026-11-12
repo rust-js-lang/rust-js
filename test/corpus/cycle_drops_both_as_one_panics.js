@@ -32,8 +32,8 @@ function main() {
       ),
     );
     try {
-      const value = $next(cycled);
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
+      const next = $next(cycled);
+      console.log(`${next == null ? "None" : `Some(${next})`}`);
     } catch (error) {
       $cleanup(() => {
         cycled.return();

@@ -122,7 +122,7 @@ function main() {
     undefined,
     false,
   );
-  const value = flatMapDoubleEndedIterator_nextBack(
+  const nextBack = flatMapDoubleEndedIterator_nextBack(
     it,
     { next: $next },
     { next_back: $nextBack },
@@ -131,9 +131,9 @@ function main() {
     true,
     false,
   );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`}`);
   const next = $next(it);
-  const nextBack = flatMapDoubleEndedIterator_nextBack(
+  const value = flatMapDoubleEndedIterator_nextBack(
     it,
     { next: $next },
     { next_back: $nextBack },
@@ -144,7 +144,7 @@ function main() {
   );
   const value$1 = $next(it);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const value$2 = flatMapDoubleEndedIterator_nextBack(
     it,

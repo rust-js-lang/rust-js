@@ -14,12 +14,12 @@ function setThenPanic(slot) {
 function textIn(root, path) {
   let dir = root;
   for (const part of path.split("/")) {
-    const value = $unwrap(dir).get(part);
-    if (value == null) {
+    const get = $unwrap(dir).get(part);
+    if (get == null) {
       return;
     }
-    if (value.TAG !== "Dir") {
-      return value._0;
+    if (get.TAG !== "Dir") {
+      return get._0;
     }
     $unwrap(
       dir == null
@@ -32,7 +32,7 @@ function textIn(root, path) {
               dir = value;
             },
           },
-    ).value = value._0;
+    ).value = get._0;
   }
 }
 

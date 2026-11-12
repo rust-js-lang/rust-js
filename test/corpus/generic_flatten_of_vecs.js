@@ -80,7 +80,9 @@ function main() {
     false,
   );
   $next(it);
-  const value$2 = $sizeHint(it);
-  console.log(`array hint (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const sizeHint = $sizeHint(it);
+  console.log(
+    `array hint (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -54,8 +54,8 @@ function main() {
   } catch (thrown) {
     $catchable(thrown);
     const empty = $unwound(thrown);
-    const value = empty.impl.typeId() === "&str" ? empty.value : undefined;
-    console.log(`empty ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+    const downcastRef = empty.impl.typeId() === "&str" ? empty.value : undefined;
+    console.log(`empty ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}`);
   }
 }
 //# sourceMappingURL=case.js.map

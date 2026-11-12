@@ -13,14 +13,69 @@ use crate::lower::temporary_names::{self, Role};
 /// whose method is called, `receiver`; else `value`, an argument held
 /// `arg`, or `tmp` of a `let` its branches set. The first of those names no
 /// other in the function has, its parameters' and closures' too, else
-/// `value`, `arg` or `tmp`, given apart where it must be.
+/// `value`, `arg` or `tmp`, given apart where it must be. And each value
+/// lowering spilled for a role, named at once, `value$3`, in the body's
+/// naming table (`spilled`): named again by the same pick, its call's name
+/// first, `pullTwo`, else its role's word (#890, #837).
+/// What MIR suggests of its temporaries, the body's naming table, and what
+/// an item written in the body may read (`readable_temporaries`).
+type Named<'a> = (
+    &'a IndexMap<String, Vec<String>>,
+    &'a IndexMap<String, Role>,
+    &'a IndexSet<String>,
+);
+
+/// What made `value` suggests a `const` of it is named, its call's name,
+/// `pullTwo` of `RangePull.pullTwo(..)` (`held_name`).
+fn held_names(value: &Expr) -> Vec<String> {
+    (crate::lower::mir::temporaries::held_name(value).into_iter())
+        .map(|held| held.name.clone())
+        .collect()
+}
+
 pub(in crate::lower::mir::tidy) fn readable_temporaries(
     params: &[js::Pattern],
     body: &mut Vec<Stmt>,
-    (suggested, items_read): (&IndexMap<String, Vec<String>>, &IndexSet<String>),
+    (suggested, spilled, items_read): Named<'_>,
 ) {
     let mut taken: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::names_in(body, &mut taken);
+    // A spilled value's name, picked again: of those still declared, as
+    // tidy may have read one in place, and once; and named nowhere in a
+    // function or closure of the body, whose own names its tidy gave
+    // already, `eval$`'s `result` beside its maker's `result` (#890).
+    let mut nested: IndexSet<String> = IndexSet::default();
+    js::statement_lists(body, &mut |list| {
+        for stmt in list.iter() {
+            if let StmtKind::Function(function) = &stmt.kind {
+                js::names_in(&function.body, &mut nested);
+                nested.extend(function.params.iter().flat_map(|p| p.names()).map(str::to_string));
+            }
+        }
+    });
+    js::each_expr(body, &mut |e| match &e.kind {
+        ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner) => {
+            js::names_in(inner, &mut nested);
+            nested.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+        }
+        ExprKind::Function(function) => {
+            js::names_in(&function.body, &mut nested);
+            nested.extend(function.params.iter().flat_map(|p| p.names()).map(str::to_string));
+        }
+        _ => {}
+    });
+    let mut declared: IndexMap<String, usize> = IndexMap::default();
+    js::statement_lists(body, &mut |list| {
+        for stmt in list.iter() {
+            if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
+                *declared.entry(name.clone()).or_default() += 1;
+            }
+        }
+    });
+    let spilled: Vec<(&String, &Role)> = spilled
+        .iter()
+        .filter(|(name, _)| declared.get(name.as_str()) == Some(&1) && !nested.contains(name.as_str()))
+        .collect();
     // Nor what an item written in the body, a function or a `const`, may
     // read where nothing here shows it, as it's placed after: a name of
     // the module's, which no local takes (ADR 0267), so `const note =
@@ -78,6 +133,13 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
+                StmtKind::Const(name, value)
+                    if !is_temporary(name)
+                        && let Some((_, role)) = spilled.iter().find(|(n, _)| *n == name)
+                        && role.says_nothing() =>
+                {
+                    renames.push((name.clone(), held_names(value), **role));
+                }
                 StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
                     let any = match is_held_arg(name) {
                         true => Role::Arg,
@@ -93,6 +155,13 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                             vec![field.clone()]
                         }
                         (None, _) => suggested.get(name).cloned().unwrap_or_default(),
+                    };
+                    // Else what made its value suggests, its call's name
+                    // (#890, #837); not an argument held, which MIR's rule
+                    // names `arg`.
+                    let names = match names.is_empty() && !is_held_arg(name) {
+                        true => held_names(value),
+                        false => names,
                     };
                     renames.push((name.clone(), names, any));
                 }
@@ -121,6 +190,13 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     });
     renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));
     for (from, names, role) in renames {
+        // A spilled value's name changes only to what made it suggests, its
+        // call's, where that's free: else it keeps the one it has, which
+        // tidy may have given again in a block apart, `result` of each arm
+        // (ADR 0352), not its role's word given apart anew (#890).
+        if spilled.iter().any(|(name, _)| **name == from) && names.iter().all(|name| taken.contains(name)) {
+            continue;
+        }
         let to = temporary_names::pick(names, role, &mut taken);
         // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
         js::outside_shadows(body, &from, |body| {

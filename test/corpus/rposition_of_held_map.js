@@ -9,19 +9,19 @@ export function entry() {
 function main() {
   const v = [1, 2, 3];
   let it = $mapEnds($iter(v), (x) => (x + 1) | 0);
-  const value = $rposition(it, (x) => x === 3);
+  const rposition = $rposition(it, (x) => x === 3);
+  console.log(`${rposition == null ? "None" : `Some(${rposition})`}`);
+  const next = $next(it);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
+  it = $mapEnds($iter(v), (x) => (x * 2) | 0);
+  const value = $rposition(it, (x) => x === 2);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $next(it);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   it = $mapEnds($iter(v), (x) => (x * 2) | 0);
-  const value$2 = $rposition(it, (x) => x === 2);
+  const value$2 = $rposition(it, (x) => x === 9);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = $next(it);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  it = $mapEnds($iter(v), (x) => (x * 2) | 0);
-  const value$4 = $rposition(it, (x) => x === 9);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $next(it);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }
 //# sourceMappingURL=case.js.map

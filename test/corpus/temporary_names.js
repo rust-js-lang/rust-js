@@ -44,9 +44,9 @@ function main() {
   // What `println!` shows, a reference it takes to a call's result: the
   // call's name too.
   const get = ages.get("bob");
-  const value = $checked(ages.size - 4, 0, 4294967295);
+  const checkedSub = $checked(ages.size - 4, 0, 4294967295);
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`}`,
   );
   const points = [
     { x: 1, y: 2 },
@@ -56,9 +56,9 @@ function main() {
   if (point != null) {
     console.log(`at ${point.x} ${point.y}`);
   }
-  const value$1 = find(points, 1);
-  if (value$1 != null) {
-    console.log(`at ${value$1.x} ${value$1.y}`);
+  const value = find(points, 1);
+  if (value != null) {
+    console.log(`at ${value.x} ${value.y}`);
   }
   let count = 0;
   for (const step of [1, 2, 3]) {

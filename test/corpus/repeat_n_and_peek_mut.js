@@ -99,8 +99,8 @@ function peeked() {
       .join(", ")}]`,
   );
   const empty = iterator_peekable($iter([]));
-  const value = $peekCell(empty);
-  console.log(`${value == null ? "None" : `Some(${value.value})`}`);
+  const peekMut = $peekCell(empty);
+  console.log(`${peekMut == null ? "None" : `Some(${peekMut.value})`}`);
 }
 function main() {
   repeated();

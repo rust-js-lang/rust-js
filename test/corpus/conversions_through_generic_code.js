@@ -34,11 +34,11 @@ function exact(bytes, BIntoVec) {
 }
 
 function peekN(bytes, n, UTryFromU8Slice) {
-  const value = $sliceGet(bytes, 0, n);
-  if (value == null) {
+  const get = $sliceGet(bytes, 0, n);
+  if (get == null) {
     return;
   }
-  const result = UTryFromU8Slice.tryFrom(value);
+  const result = UTryFromU8Slice.tryFrom(get);
   return result.TAG === "Ok" ? result._0 : undefined;
 }
 

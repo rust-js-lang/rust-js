@@ -25,8 +25,8 @@ function main() {
   console.log(`${result}`);
   const p = $held(taken([1], { next: counterIterator_next }, counterDrop_drop));
   try {
-    const value = $next(p);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(p);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

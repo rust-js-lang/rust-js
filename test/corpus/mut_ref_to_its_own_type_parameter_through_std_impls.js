@@ -117,9 +117,9 @@ function main() {
   console.log(`${value$3} | ${value$4}`);
   const items = $iter([1, 2, 3]);
   const value$5 = firstTwo(items);
-  const value$6 = $next(items);
+  const next = $next(items);
   console.log(
-    `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) ${next == null ? "None" : `Some(${next})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

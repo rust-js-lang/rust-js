@@ -71,9 +71,9 @@ function main() {
   const EmptyExt = tExt({ next: $next });
   const value = EmptyExt.positionMax($iter([3, 9, 4]), $intsOrdered);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = EmptyExt.positionMax($chars("bca"), $charsOrdered);
+  const positionMax = EmptyExt.positionMax($chars("bca"), $charsOrdered);
+  console.log(`${positionMax == null ? "None" : `Some(${positionMax})`}`);
+  const value$1 = EmptyExt.positionMax($iter([]), $intsOrdered);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = EmptyExt.positionMax($iter([]), $intsOrdered);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

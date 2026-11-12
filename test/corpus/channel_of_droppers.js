@@ -149,8 +149,8 @@ function main() {
     throw error;
   }
   try {
-    const value = $tryRecv(innerRx);
-    console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`);
+    const tryRecv = $tryRecv(innerRx);
+    console.log(`${tryRecv.TAG === "Ok" ? `Ok(${tryRecv._0})` : `Err(${tryRecv._0})`}`);
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(innerRx);

@@ -32,17 +32,17 @@ function hint(it) {
   return $sizeHint(it);
 }
 function main() {
-  const value = $sizeHint(
+  const sizeHint = $sizeHint(
     $iterator([3], countIterator_next, false, undefined, undefined, countIterator_sizeHint),
   );
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const held = iterator_map([4], (x) => (x + 1) >>> 0, {
     next: countIterator_next,
     sizeHint: countIterator_sizeHint,
   });
-  const sizeHint = $sizeHint(held);
+  const value = $sizeHint(held);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${mapExactSizeIterator_len(held, { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) })}`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${mapExactSizeIterator_len(held, { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) })}`,
   );
   const value$1 = hint(
     $iterator([5], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(

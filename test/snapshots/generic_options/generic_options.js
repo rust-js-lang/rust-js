@@ -88,8 +88,8 @@ export function mapped(x, f) {
 }
 
 function mappedBoxed(x, f) {
-  const option = pickBoxed(x, true);
-  return option != null ? f($someValue(option)) : undefined;
+  const pick = pickBoxed(x, true);
+  return pick != null ? f($someValue(pick)) : undefined;
 }
 
 /** `?` on an `Option<T>`. */
@@ -102,11 +102,11 @@ export function tried(x, keep) {
 }
 
 function triedBoxed(x, keep) {
-  const value = pickBoxed(x, keep);
-  if (value == null) {
+  const pick = pickBoxed(x, keep);
+  if (pick == null) {
     return;
   }
-  const v = $someValue(value);
+  const v = $someValue(pick);
   return $some(v);
 }
 

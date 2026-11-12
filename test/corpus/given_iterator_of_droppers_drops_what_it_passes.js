@@ -93,18 +93,18 @@ function ds() {
 }
 
 function main() {
-  const value = Held.mappedNth(
+  const mappedNth = Held.mappedNth(
     [ds()],
     { next: $next, advanceBy: $advanceSlice },
     $dropEach(dDrop_drop),
   );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = Held.skipped(
+  console.log(`${mappedNth == null ? "None" : `Some(${mappedNth})`}`);
+  const skipped = Held.skipped(
     [ds()],
     { next: $next, advanceBy: $advanceSlice },
     $dropEach(dDrop_drop),
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${skipped == null ? "None" : `Some(${skipped})`}`);
   console.log(
     `[${Held.stepped([ds()], { next: $next, advanceBy: $advanceSlice }, $dropEach(dDrop_drop)).join(
       ", ",

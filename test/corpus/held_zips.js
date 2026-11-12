@@ -30,12 +30,12 @@ function main() {
     v.values().map((x) => noisy("a", x)),
     $iter(w),
   );
-  const value = $next(z);
-  console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
   const next = $next(z);
+  console.log(`${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`);
+  const value = $next(z);
   const value$1 = $next(z);
   console.log(
-    `${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
+    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
   );
 
   const nth = $trustedZip(

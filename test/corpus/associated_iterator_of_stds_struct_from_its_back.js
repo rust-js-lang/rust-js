@@ -98,8 +98,10 @@ function folded(SSource) {
 }
 
 function main() {
-  const value = fromItsBack(tensSource);
-  console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
+  const itsBack = fromItsBack(tensSource);
+  console.log(
+    `(${itsBack[0] == null ? "None" : `Some(${itsBack[0]})`}, [${itsBack[1].join(", ")}])`,
+  );
   console.log(`[${hidden(tensSource).join(", ")}]`);
   console.log(`${folded(tensSource)}`);
   console.log(

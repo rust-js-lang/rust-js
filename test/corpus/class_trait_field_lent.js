@@ -18,8 +18,8 @@ function fill(cell, holder) {
   const held = $borrowMut(cell, true);
   held.value = 2;
   try {
-    const value = holder.read();
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const read = holder.read();
+    console.log(`${read == null ? "None" : `Some(${read})`}`);
   } finally {
     $unborrow(held);
   }
@@ -27,8 +27,8 @@ function fill(cell, holder) {
 
 function main() {
   const holder = new Holder();
-  const value = holder.read();
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const read = holder.read();
+  console.log(`${read == null ? "None" : `Some(${read})`}`);
   fill($fieldCell(holder, "slot"), holder);
 }
 //# sourceMappingURL=case.js.map

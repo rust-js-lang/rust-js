@@ -39,8 +39,8 @@ function main() {
     ).drop(4),
   );
   try {
-    const value = $next(skip);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(skip);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -56,8 +56,8 @@ function main() {
     ),
   );
   try {
-    const value = Array.from($lent(flatten).drop(4).take(1))[0];
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const nth = Array.from($lent(flatten).drop(4).take(1))[0];
+    console.log(`${nth == null ? "None" : `Some(${nth})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

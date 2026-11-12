@@ -96,11 +96,11 @@ function main() {
   } catch (thrown) {
     $catchable(thrown);
     const payload = $unwound(thrown);
-    const value =
+    const downcastRef =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
         ? payload.value
         : undefined;
-    console.log(`panicked: ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+    console.log(`panicked: ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}`);
   }
   console.log(`${firstDiff("hello there", "hello world")} ${firstDiff("ab", "ab")}`);
   const indent = -1;

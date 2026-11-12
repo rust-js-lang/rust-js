@@ -203,8 +203,8 @@ function main() {
     true,
     true,
   );
-  const value = $sizeHint(z);
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const sizeHint = $sizeHint(z);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   n = z.reduce((a) => (a + 1) | 0, 0);
   console.log(`${n} ${calls}`);
 }

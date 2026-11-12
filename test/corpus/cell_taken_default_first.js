@@ -81,7 +81,7 @@ function main() {
   const cell = local();
   const next$3 = logDefault_default();
   old = $take($borrowMut(cell), next$3);
-  const value = $withBorrow(local(), (l) => l[0], true);
-  console.log(`took ${logDebug_fmt(old)}, left ${value}`);
+  const withBorrow = $withBorrow(local(), (l) => l[0], true);
+  console.log(`took ${logDebug_fmt(old)}, left ${withBorrow}`);
 }
 //# sourceMappingURL=case.js.map

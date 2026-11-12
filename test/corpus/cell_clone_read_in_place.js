@@ -40,8 +40,8 @@ function pair(old, fiber) {
 function main() {
   const holder = { fiber: { tag: 3 } };
   console.log(`${Holder.hasTag(holder, 3)} ${Holder.hasTag(holder, 4)}`);
-  const value = Holder.tagThenSwap(holder);
-  console.log(`(${value[0]}, ${value[1]})`);
+  const tagThenSwap = Holder.tagThenSwap(holder);
+  console.log(`(${tagThenSwap[0]}, ${tagThenSwap[1]})`);
   console.log(`${Holder.swappedFirst(holder)}`);
   console.log(`${holder.fiber.tag}`);
 }

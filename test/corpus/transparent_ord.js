@@ -24,9 +24,9 @@ function main() {
   const ids = [b, a];
   ids.sort((a, b) => $cmpItems(a, b, $cmp));
   console.log(`[${ids.map((item) => idDebug_fmt(item)).join(", ")}]`);
-  const value$2 = $partialCmp(NaN, 1);
+  const partialCmp = $partialCmp(NaN, 1);
   console.log(
-    `true ${value$2 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$2 + 1]})`}`,
+    `true ${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

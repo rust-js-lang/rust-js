@@ -246,12 +246,12 @@ function main() {
     const value = it(90);
     try {
       try {
-        const value$1 = $position($lent($iterator(value, itIterator_next)), (d) => {
+        const position = $position($lent($iterator(value, itIterator_next)), (d) => {
           const result = d[0] === 91;
           dDrop_drop(d);
           return result;
         });
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+        console.log(`${position == null ? "None" : `Some(${position})`}`);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
@@ -273,7 +273,7 @@ function main() {
     const value = it(100);
     try {
       try {
-        const value$1 = $tryFoldSome(
+        const tryFold = $tryFoldSome(
           $closing($iterator(value, itIterator_next), (it) => {
             console.log("drop it");
             for (const item of it.of.items) {
@@ -287,7 +287,7 @@ function main() {
             return result;
           },
         );
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+        console.log(`${tryFold == null ? "None" : `Some(${tryFold})`}`);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
@@ -309,7 +309,7 @@ function main() {
     const value = it(110);
     try {
       try {
-        const value$1 = $tryFoldOk(
+        const tryForEach = $tryFoldOk(
           $closing($iterator(value, itIterator_next), (it) => {
             console.log("drop it");
             for (const item of it.of.items) {
@@ -323,7 +323,7 @@ function main() {
             return result;
           },
         );
-        console.log(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}`);
+        console.log(`${tryForEach.TAG === "Ok" ? "Ok(())" : `Err(${tryForEach._0})`}`);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {

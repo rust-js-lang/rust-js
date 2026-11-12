@@ -85,12 +85,12 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value = Array.from(
+  const last = Array.from(
     $iterator(tagged(hidden([1]), "m"), (iterator) =>
       taggedIterator_next(iterator, { next: countIterator_next }),
     ),
   ).at(-1);
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  console.log(`${last == null ? "None" : `Some(${$debugStr(last)})`}`);
   console.log(`${squared([0], { next: countIterator_next }).reduce((a, b) => (a + b) >>> 0, 0)}`);
   const stepped = hidden([0]);
   const next = countIterator_next(stepped);

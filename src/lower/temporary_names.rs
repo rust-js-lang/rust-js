@@ -152,6 +152,15 @@ pub(in crate::lower) enum Role {
 }
 
 impl Role {
+    /// Whether this role's word says nothing of the value, `value` or
+    /// `option`, so what made it names it better, its call's name (#890);
+    /// not a word the lowering chose for what it holds, `at` of a found
+    /// index, as upstream's `idx`, `fallback` of `a || fallback`, nor a
+    /// `Result`'s `result`, which its call names worse, `parse` (#769).
+    pub(in crate::lower) fn says_nothing(self) -> bool {
+        matches!(self, Role::Value | Role::Option)
+    }
+
     /// The word a name of this role is.
     pub(in crate::lower) fn word(self) -> &'static str {
         match self {

@@ -68,28 +68,28 @@ function main() {
       .join(", ")}]`,
   );
   const splitOnce = $splitOnceBy(s, digit);
-  const value = $splitOnceBy(s, (c) => [",", ";"].includes(c), true);
+  const rsplitOnce = $splitOnceBy(s, (c) => [",", ";"].includes(c), true);
   console.log(
-    `${splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`} ${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
+    `${splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`} ${rsplitOnce == null ? "None" : `Some((${$debugStr(rsplitOnce[0])}, ${$debugStr(rsplitOnce[1])}))`}`,
   );
-  const value$1 = $splitOnceBy("ab", digit);
-  const value$2 = $stripBy(s, (c) => /^\p{Alphabetic}$/u.test(c));
+  const value = $splitOnceBy("ab", digit);
+  const stripPrefix = $stripBy(s, (c) => /^\p{Alphabetic}$/u.test(c));
   console.log(
-    `${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
+    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${stripPrefix == null ? "None" : `Some(${$debugStr(stripPrefix)})`}`,
   );
   const stripSuffix = $stripBy(s, digit, true);
-  const value$3 = $stripSuffix(s, "x");
+  const value$1 = $stripSuffix(s, "x");
   console.log(
-    `${stripSuffix == null ? "None" : `Some(${$debugStr(stripSuffix)})`} ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`,
+    `${stripSuffix == null ? "None" : `Some(${$debugStr(stripSuffix)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   console.log(`${$replaceBy(s, digit, "#")} ${$replaceBy(s, (c) => /^[0-9]$/.test(c), "", 2)}`);
   console.log(`${$replaceBy("hello world", (c) => /^\p{White_Space}$/u.test(c), "_")}`);
   console.log(`${$lazySplitTerminatorBy("", digit).reduce((n) => n + 1, 0)}`);
   console.log(`${$lazySplitInclusiveBy("", digit).reduce((n) => n + 1, 0)}`);
-  const stripPrefix = $stripBy("1", digit);
-  const value$4 = $stripBy("ab", digit);
+  const value$2 = $stripBy("1", digit);
+  const value$3 = $stripBy("ab", digit);
   console.log(
-    `${stripPrefix == null ? "None" : `Some(${$debugStr(stripPrefix)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
+    `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

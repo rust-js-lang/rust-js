@@ -124,8 +124,8 @@ function main() {
     ),
   );
   try {
-    const value = $peek(peeked);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const peek = $peek(peeked);
+    console.log(`${peek == null ? "None" : `Some(${peek})`}`);
   } catch (error) {
     $cleanup(() => {
       peeked.return();

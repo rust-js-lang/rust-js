@@ -65,14 +65,14 @@ function main() {
     );
     const value$1 = $iter(noisy([1, 2, 3]));
     try {
-      const value = $lent(value$1)
+      const findMap = $lent(value$1)
         .map((n) => {
           const result = n[0] > 1 ? n[0] : undefined;
           noisyDrop_drop(n);
           return result;
         })
         .find((item) => item != null);
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
+      console.log(`${findMap == null ? "None" : `Some(${findMap})`}`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

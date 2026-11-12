@@ -91,12 +91,12 @@ function main() {
   console.log(
     `${revDoubleEndedIterator_rfold(revClone_clone(back, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0)}`,
   );
-  const value$3 = revDoubleEndedIterator_rfind(back, (x) => x > 3);
+  const rfind = revDoubleEndedIterator_rfind(back, (x) => x > 3);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
+    `${rfind == null ? "None" : `Some(${rfind})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
   );
 
-  const value$4 = lastOf(
+  const value$3 = lastOf(
     reversed(
       [3],
       { next: countdownIterator_next },
@@ -104,11 +104,11 @@ function main() {
     ),
     { next: countdownIterator_next },
   );
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = lastOf(reversed($iter(v), { next: $next }, { next_back: $nextBack }), {
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = lastOf(reversed($iter(v), { next: $next }, { next_back: $nextBack }), {
     next: $next,
   });
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 
   const range = iterator_rev(
     { start: 0, end: 4294967295 },
@@ -116,9 +116,9 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   const nth = $rangeNthBack(range.iter, 4000000000);
-  const value$6 = revDoubleEndedIterator_nextBack(range, { next: $rangeNext });
+  const value$5 = revDoubleEndedIterator_nextBack(range, { next: $rangeNext });
   console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
 
   const louds = [[1], [2], [3]];
@@ -158,13 +158,13 @@ function main() {
     ).join(", ")}]`,
   );
   // Its own impl's, of what it's made into where it's made.
-  const value$7 = $nextBack($iter(v.toReversed()));
+  const value$6 = $nextBack($iter(v.toReversed()));
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );
   // Shown or cloned where it's made, by its own compiled impl.
   const rev = iterator_rev($iter(v));
-  const value$8 = $foldToArray(
+  const collect = $foldToArray(
     $roomForHint(
       revClone_clone(
         iterator_rev(
@@ -178,6 +178,6 @@ function main() {
       true,
     ),
   );
-  console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${value$8.join(", ")}]`);
+  console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${collect.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

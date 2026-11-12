@@ -136,11 +136,11 @@ function howMany(items, dropI, dropIItem) {
 }
 
 function countdownIterator_next(countdown) {
-  const value = $checked(countdown.left - 1, 0, 4294967295);
-  if (value == null) {
+  const checkedSub = $checked(countdown.left - 1, 0, 4294967295);
+  if (checkedSub == null) {
     return;
   }
-  countdown.left = value;
+  countdown.left = checkedSub;
   return [countdown.left, "n"];
 }
 

@@ -123,8 +123,8 @@ function besideALiveDrop() {
     console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     const value$1 = [1, 2, 3, 4];
     const enumerate = value$1.entries();
-    const value$2 = $nextBack($enumerate($iter(value$1)));
-    console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
+    const nextBack = $nextBack($enumerate($iter(value$1)));
+    console.log(`${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`}`);
     console.log(
       `[${$collectDropping(
         $rev($enumerate($closing($iter([[1], [2], [3]]), $dropEach(dDrop_drop)))).map(([i, d]) => {

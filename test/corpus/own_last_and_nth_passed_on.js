@@ -68,7 +68,7 @@ function main() {
     2,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $last(
+  const last = $last(
     $iterator(
       c("skiplast"),
       cIterator_next,
@@ -81,8 +81,8 @@ function main() {
       cIterator_last,
     ).drop(1),
   );
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $last(
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
+  const value$2 = $last(
     iterator_fuse(
       c("fuselast"),
       {
@@ -94,8 +94,8 @@ function main() {
       false,
     ),
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = $last(
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = $last(
     iterator_peekable(c("peeklast"), {
       next: cIterator_next,
       sizeHint: cIterator_sizeHint,
@@ -103,8 +103,8 @@ function main() {
       last: cIterator_last,
     }),
   );
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $last(
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = $last(
     $lazyChain(
       $iterator(
         c("chainlast"),
@@ -130,7 +130,7 @@ function main() {
       ),
     ),
   );
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   console.log(
     `${$lent(
       iterator_fuse(
@@ -155,7 +155,7 @@ function main() {
       }).drop(2),
     ).some((x) => x === 4)}`,
   );
-  const value$6 = $next(
+  const value$5 = $next(
     [c("flat1"), c("flat2")]
       .values()
       .flatMap((item) =>
@@ -173,6 +173,6 @@ function main() {
       )
       .drop(7),
   );
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }
 //# sourceMappingURL=case.js.map

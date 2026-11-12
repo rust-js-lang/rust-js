@@ -181,8 +181,8 @@ function main() {
     ),
   );
   try {
-    const value = $next(filtered);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(filtered);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

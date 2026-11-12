@@ -18,11 +18,11 @@ export function entry() {
 const _u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
 function _u32__u32_Collect_fromIterNoBuf(iter) {
   const it = $intoIter(iter);
-  const value = $next(it);
-  if (value != null) {
-    const value$1 = $next(it);
-    if (value$1 != null) {
-      return [value, value$1];
+  const next = $next(it);
+  if (next != null) {
+    const value = $next(it);
+    if (value != null) {
+      return [next, value];
     }
   }
 }
@@ -48,15 +48,15 @@ function main() {
   );
   const v = $iter([7, 8, 9]);
   const value = pairOf(v);
-  const value$1 = $next(v);
+  const next = $next(v);
   console.log(
-    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const q = { start: 10, end: 15 };
-  const value$2 = pairOf($iterator(q, $rangeNext));
-  const value$3 = $rangeNext(q);
+  const value$1 = pairOf($iterator(q, $rangeNext));
+  const value$2 = $rangeNext(q);
   console.log(
-    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

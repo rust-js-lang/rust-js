@@ -7,8 +7,8 @@ export function entry() {
 }
 
 function first(items) {
-  const value = $someAt(items, 0);
-  return value == null ? value : $some($someValue(value));
+  const first = $someAt(items, 0);
+  return first == null ? first : $some($someValue(first));
 }
 
 function last(items) {

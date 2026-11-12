@@ -111,11 +111,11 @@ function apply(edit) {
 }
 
 function countedIterator_next(counted, IIterator, dropI, dropIItem) {
-  const value = IIterator.next(counted.inner.value);
-  if (value == null) {
+  const next = IIterator.next(counted.inner.value);
+  if (next == null) {
     return;
   }
-  const item = $someValue(value);
+  const item = $someValue(next);
   counted.count = (counted.count + 1) >>> 0;
   return $some(item);
 }
@@ -139,8 +139,8 @@ function main() {
   slot.at.value.x = (slot.at.value.x + 10) | 0;
   $assign(slot.at.value, { x: slot.at.value.y, y: slot.at.value.x });
   const seen = slot.at.value;
-  const value = Slot.get(slot, pointCopy);
-  console.log(`${pointDebug_fmt(seen)} ${pointDebug_fmt(value)}`);
+  const get = Slot.get(slot, pointCopy);
+  console.log(`${pointDebug_fmt(seen)} ${pointDebug_fmt(get)}`);
   console.log(`${poke(slot, 7)}`);
   const back = release(slot).value;
   back.y = (back.y - 1) | 0;

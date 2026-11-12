@@ -26,10 +26,10 @@ function main() {
   const sizes = new $PathMap();
   sizes.set("src/main.rs", 10);
   sizes.set("src//lib.rs", 20);
-  const value = sizes.get("src/./main.rs");
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $insert(sizes, "src/lib.rs", 25);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const get = sizes.get("src/./main.rs");
+  console.log(`${get == null ? "None" : `Some(${get})`}`);
+  const insert = $insert(sizes, "src/lib.rs", 25);
+  console.log(`${insert == null ? "None" : `Some(${insert})`}`);
   console.log(`${sizes.size} ${sizes.has("src/lib.rs/")}`);
   const names = Array.from(sizes.keys());
   names.sort($cmp);
@@ -38,13 +38,13 @@ function main() {
   sizes.set("./src/main.rs", (current + 1) >>> 0);
   const current$1 = $orInsert(sizes, "src/main.rs", 0);
   sizes.set("src/main.rs", (current$1 + 1) >>> 0);
-  const get = sizes.get("src/main.rs");
-  const value$2 = sizes.get("./src/main.rs");
+  const value = sizes.get("src/main.rs");
+  const value$1 = sizes.get("./src/main.rs");
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$3 = $remove(sizes, "src//main.rs");
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const remove = $remove(sizes, "src//main.rs");
+  console.log(`${remove == null ? "None" : `Some(${remove})`}`);
 
   const seen = new $PathSet();
   for (const p of ["a/b", "a//b", "a/b/", "./a/b", "/a/b"]) {

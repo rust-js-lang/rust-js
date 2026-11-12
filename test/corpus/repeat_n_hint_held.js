@@ -39,25 +39,25 @@ function main() {
     last: $last,
     count: $count,
   });
+  const sizeHint = $sizeHint(held);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+  const peek = $peek(held);
+  console.log(`${peek == null ? "None" : `Some(${peek})`}`);
   const value = $sizeHint(held);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const value$1 = $peek(held);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $sizeHint(held);
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   $next(held);
-  const value$3 = $sizeHint(held);
-  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$1 = $sizeHint(held);
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
 
   const twos = $repeating(2);
-  const value$4 = $sizeHint(
+  const value$2 = $sizeHint(
     iterator_peekable(
       iterator_take(twos, 4, { next: $next, nth: $nth, last: $last, count: $count }),
       { next: $next, fold: $foldOf, nth: $nth },
     ),
   );
-  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const value$5 = $sizeHint(
+  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const value$3 = $sizeHint(
     iterator_peekable(
       iterator_fuse(
         $repeatingN("x", 3),
@@ -67,8 +67,8 @@ function main() {
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
     ),
   );
-  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
-  const value$6 = $sizeHint(
+  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$4 = $sizeHint(
     iterator_peekable(
       iterator_zip(
         $repeatingN(1, 4),
@@ -85,8 +85,8 @@ function main() {
       { next: $next, fold: $foldOf },
     ),
   );
-  console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
-  const value$7 = $sizeHint(
+  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
+  const value$5 = $sizeHint(
     iterator_peekable(
       iterator_chain(
         $repeatingN(1, 4),
@@ -100,15 +100,15 @@ function main() {
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
     ),
   );
-  console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
-  const value$8 = $sizeHint(
+  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
+  const value$6 = $sizeHint(
     iterator_peekable(
       iterator_skip($repeatingN(1, 4), 1, { next: $next, nth: $nth, last: $last, count: $count }),
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
     ),
   );
-  console.log(`(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`);
-  const value$9 = $sizeHint(
+  console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
+  const value$7 = $sizeHint(
     iterator_peekable(
       iterator_map($repeatingN(1, 4), (n) => (n + 1) & 255, {
         next: $next,
@@ -119,18 +119,18 @@ function main() {
       { next: $next, fold: $foldOf },
     ),
   );
-  console.log(`(${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`);
-  const value$10 = $sizeHint(
+  console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
+  const value$8 = $sizeHint(
     iterator_peekable(
       iterator_enumerate($repeatingN(1, 4), { next: $next, nth: $nth, last: $last, count: $count }),
       { next: $next, fold: $foldOf, nth: $nth, count: $count },
     ),
   );
-  console.log(`(${value$10[0]}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`})`);
-  const value$11 = $sizeHint(
+  console.log(`(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`);
+  const value$9 = $sizeHint(
     iterator_peekable($repeatingN("a", 0), { next: $next, nth: $nth, last: $last, count: $count }),
   );
-  console.log(`(${value$11[0]}, ${value$11[1] == null ? "None" : `Some(${value$11[1]})`})`);
+  console.log(`(${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`);
 
   let n = 0;
   const counted = Iterator.from(
@@ -139,16 +139,16 @@ function main() {
       return n < 3 ? n : undefined;
     }),
   );
-  const value$12 = $sizeHint(iterator_peekable(counted));
-  console.log(`(${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`})`);
+  const value$10 = $sizeHint(iterator_peekable(counted));
+  console.log(`(${value$10[0]}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`})`);
   const halves = $successors(8, (n) => (n > 1 ? (n / 2) >>> 0 : undefined));
-  const value$13 = $sizeHint(iterator_peekable(halves));
-  console.log(`(${value$13[0]}, ${value$13[1] == null ? "None" : `Some(${value$13[1]})`})`);
+  const value$11 = $sizeHint(iterator_peekable(halves));
+  console.log(`(${value$11[0]}, ${value$11[1] == null ? "None" : `Some(${value$11[1]})`})`);
   const ones = $repeatingWith(() => 1);
-  const value$14 = $sizeHint(
+  const value$12 = $sizeHint(
     iterator_peekable(iterator_take(ones, 3), { next: $next, fold: $foldOf }),
   );
-  console.log(`(${value$14[0]}, ${value$14[1] == null ? "None" : `Some(${value$14[1]})`})`);
+  console.log(`(${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`})`);
 
   // What a collect reserves by it.
   let made = $foldToArray(

@@ -75,9 +75,9 @@ function main() {
   const drained$1 = $strDrain(s, 1, 10);
   s = drained$1[0];
   d = $iter(drained$1[1]);
-  const value = $nextBack(d);
+  const nextBack = $nextBack(d);
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value, "'")})`} Drain(${$debugStr($restStr(d))})`,
+    `${nextBack == null ? "None" : `Some(${$debugStr(nextBack, "'")})`} Drain(${$debugStr($restStr(d))})`,
   );
   console.log(`${$debugStr($restStr(d))}`);
   const back = $rest(d).toReversed().join("");

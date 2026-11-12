@@ -69,8 +69,8 @@ function nthsIterator_next(nths) {
 function nthsIterator_nth(nths, n) {
   console.log(`own nth ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = nthsIterator_next(nths);
-    if (value == null) {
+    const next = nthsIterator_next(nths);
+    if (next == null) {
       return;
     }
   }

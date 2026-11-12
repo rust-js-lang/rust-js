@@ -63,8 +63,8 @@ function main() {
     2,
     { next: $next, fold: $foldOf, nth: $nth },
   );
-  const value = $sizeHint(stepped);
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const sizeHint = $sizeHint(stepped);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   console.log(`fold ${stepped.reduce((a) => (a + 1) | 0, 0)}`);
 
   const skipped = $iterator(
@@ -79,8 +79,8 @@ function main() {
   ).drop(2);
   const any = skipped.take(2);
   console.log(`any ${$lent(any).some((x) => x > 2)}`);
-  const value$1 = $next(any);
-  console.log(`next ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const next = $next(any);
+  console.log(`next ${next == null ? "None" : `Some(${next})`}`);
 
   const tried = $iterator(
     counted(9),

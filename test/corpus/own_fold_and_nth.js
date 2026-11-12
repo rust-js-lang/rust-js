@@ -79,7 +79,7 @@ function main() {
   console.log(
     `count ${$iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth).reduce((n) => n + 1, 0)}`,
   );
-  const value = Array.from(
+  const last = Array.from(
     $folded(
       $iterator(
         up(),
@@ -93,7 +93,7 @@ function main() {
       ),
     ),
   ).at(-1);
-  console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+  console.log(`last ${last == null ? "None" : `Some(${last})`}`);
   $iterator(
     up(),
     upIterator_next,
@@ -138,7 +138,7 @@ function main() {
   console.log(
     `enumerate ${$enumerate($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, [i, x]) => (a + (Math.imul(i, x) >>> 0)) >>> 0, 0)}`,
   );
-  const value$1 = $max(
+  const max = $max(
     $iterator(
       up(),
       upIterator_next,
@@ -150,8 +150,8 @@ function main() {
       upIterator_nth,
     ),
   );
-  console.log(`max ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $minByKey(
+  console.log(`max ${max == null ? "None" : `Some(${max})`}`);
+  const minByKey = $minByKey(
     $iterator(
       up(),
       upIterator_next,
@@ -165,8 +165,8 @@ function main() {
     (x) => x % 2,
     $cmp,
   );
-  console.log(`min_by_key ${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $next(
+  console.log(`min_by_key ${minByKey == null ? "None" : `Some(${minByKey})`}`);
+  const value = $next(
     $iterator(
       up(),
       upIterator_next,
@@ -178,8 +178,8 @@ function main() {
       upIterator_nth,
     ).drop(2),
   );
-  console.log(`skip next ${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = Array.from(
+  console.log(`skip next ${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = Array.from(
     $folded(
       $iterator(
         up(),
@@ -193,7 +193,7 @@ function main() {
       ).drop(1),
     ),
   ).at(-1);
-  console.log(`skip last ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`skip last ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `step_by [${Array.from($roomForHint($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2), 4, false)).join(", ")}]`,
   );
@@ -214,7 +214,7 @@ function main() {
   console.log(
     `chain ${$lazyChain($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
-  const value$5 = Array.from(
+  const value$2 = Array.from(
     $folded(
       $lazyChain(
         $iterator(
@@ -240,7 +240,7 @@ function main() {
       ),
     ),
   ).at(-1);
-  console.log(`chain last ${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`chain last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(
     `flat_map ${$iterator(
       up(),
@@ -364,7 +364,7 @@ function main() {
   console.log(
     `generic sum ${total($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth))}`,
   );
-  const value$6 = third(
+  const value$3 = third(
     $iterator(
       up(),
       upIterator_next,
@@ -376,7 +376,7 @@ function main() {
       upIterator_nth,
     ),
   );
-  console.log(`generic nth ${value$6 == null ? "None" : `Some(${value$6})`}`);
+  console.log(`generic nth ${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log(
     `boxed sum ${boxedTotal($iterator(up(), upIterator_next, false, undefined, undefined, undefined, undefined, upIterator_nth))}`,
   );

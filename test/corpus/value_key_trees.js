@@ -32,8 +32,8 @@ function main() {
   grid.set([2, 1], "a");
   grid.set([1, 5], "b");
   grid.set([1, -3], "c");
-  const value = $insert(grid, [2, 1], "d");
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`}`);
+  const insert = $insert(grid, [2, 1], "d");
+  console.log(`${insert == null ? "None" : `Some(${$debugStr(insert, "'")})`}`);
   const get = grid.get([1, 5]);
   console.log(
     `{${Array.from($sortedEntries(grid, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])))
@@ -60,7 +60,7 @@ function main() {
     false,
     false,
   );
-  const value$1 = $treeEnd(
+  const lastKeyValue = $treeEnd(
     grid,
     (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
     true,
@@ -68,13 +68,13 @@ function main() {
     false,
   );
   console.log(
-    `${firstKeyValue == null ? "None" : `Some(((${firstKeyValue[0][0]}, ${firstKeyValue[0][1]}), ${$debugStr(firstKeyValue[1], "'")}))`} ${value$1 == null ? "None" : `Some(((${value$1[0][0]}, ${value$1[0][1]}), ${$debugStr(value$1[1], "'")}))`}`,
+    `${firstKeyValue == null ? "None" : `Some(((${firstKeyValue[0][0]}, ${firstKeyValue[0][1]}), ${$debugStr(firstKeyValue[1], "'")}))`} ${lastKeyValue == null ? "None" : `Some(((${lastKeyValue[0][0]}, ${lastKeyValue[0][1]}), ${$debugStr(lastKeyValue[1], "'")}))`}`,
   );
   const key = [0, 0];
   $orInsert(grid, key, "z");
   $mutGet(grid, key).value = "y";
   const remove = $remove(grid, [1, -3]);
-  const value$2 = $treeEnd(
+  const popFirst = $treeEnd(
     grid,
     (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
     false,
@@ -82,7 +82,7 @@ function main() {
     true,
   );
   console.log(
-    `${remove == null ? "None" : `Some(${$debugStr(remove, "'")})`} ${value$2 == null ? "None" : `Some(((${value$2[0][0]}, ${value$2[0][1]}), ${$debugStr(value$2[1], "'")}))`}`,
+    `${remove == null ? "None" : `Some(${$debugStr(remove, "'")})`} ${popFirst == null ? "None" : `Some(((${popFirst[0][0]}, ${popFirst[0][1]}), ${$debugStr(popFirst[1], "'")}))`}`,
   );
   $retainMap(
     grid,

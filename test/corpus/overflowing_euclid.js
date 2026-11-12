@@ -9,26 +9,26 @@ export function entry() {
 function main() {
   const min = -128;
   const overflowingDivEuclid = $overflowingEuclid(min, -1, -128, true);
-  const value = $overflowingEuclid(min, -1, -128, false);
+  const overflowingRemEuclid = $overflowingEuclid(min, -1, -128, false);
   console.log(
-    `(${overflowingDivEuclid[0]}, ${overflowingDivEuclid[1]}) (${value[0]}, ${value[1]})`,
+    `(${overflowingDivEuclid[0]}, ${overflowingDivEuclid[1]}) (${overflowingRemEuclid[0]}, ${overflowingRemEuclid[1]})`,
   );
-  const value$1 = $overflowingEuclid(-7, 2, -2147483648, true);
-  const value$2 = $overflowingEuclid(-7, 2, -2147483648, false);
-  console.log(`(${value$1[0]}, ${value$1[1]}) (${value$2[0]}, ${value$2[1]})`);
-  const value$3 = $overflowingEuclid(7n, -2n, -9223372036854775808n, true);
-  const value$4 = $overflowingEuclid(7n, -2n, -9223372036854775808n, false);
-  console.log(`(${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]})`);
-  const value$5 = $overflowingEuclid(
+  const value = $overflowingEuclid(-7, 2, -2147483648, true);
+  const value$1 = $overflowingEuclid(-7, 2, -2147483648, false);
+  console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
+  const value$2 = $overflowingEuclid(7n, -2n, -9223372036854775808n, true);
+  const value$3 = $overflowingEuclid(7n, -2n, -9223372036854775808n, false);
+  console.log(`(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`);
+  const value$4 = $overflowingEuclid(
     -170141183460469231731687303715884105728n,
     -1n,
     -170141183460469231731687303715884105728n,
     true,
   );
-  console.log(`(${value$5[0]}, ${value$5[1]})`);
-  const value$6 = $overflowingEuclid(18446744073709551615n, 7n, undefined, true);
-  const value$7 = $overflowingEuclid(200, 7, undefined, false);
-  console.log(`(${value$6[0]}, ${value$6[1]}) (${value$7[0]}, ${value$7[1]})`);
+  console.log(`(${value$4[0]}, ${value$4[1]})`);
+  const value$5 = $overflowingEuclid(18446744073709551615n, 7n, undefined, true);
+  const value$6 = $overflowingEuclid(200, 7, undefined, false);
+  console.log(`(${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`);
   const zero = $catchUnwind(() => $overflowingEuclid(5, 0, undefined, true));
   console.log(`${zero.TAG === "Err"}`);
 }

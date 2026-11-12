@@ -91,11 +91,11 @@ function main() {
   console.log(`${$unionField(bits, "proto", [], { other: (value) => value >>> 0 })}`);
 
   const chained = new Chained();
+  const proto = chained.proto();
+  console.log(`${proto == null ? "None" : `Some(${proto})`}`);
+  chained.set(2);
   const value$1 = chained.proto();
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  chained.set(2);
-  const value$2 = chained.proto();
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 
   const map = new Map();
   map.set("__proto__", 1);

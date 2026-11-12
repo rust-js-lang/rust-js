@@ -27,11 +27,11 @@ export function entry() {
 }
 
 function ownIterator_next(own) {
-  const value = $checked(own.left - 1, 0, 4294967295);
-  if (value == null) {
+  const checkedSub = $checked(own.left - 1, 0, 4294967295);
+  if (checkedSub == null) {
     return;
   }
-  own.left = value;
+  own.left = checkedSub;
   return own.left;
 }
 function ownIterator_sizeHint(own) {

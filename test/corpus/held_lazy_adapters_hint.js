@@ -51,8 +51,8 @@ function dropping() {
     ),
   );
   try {
-    const value = $sizeHint(f);
-    console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+    const sizeHint = $sizeHint(f);
+    console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
     const next = $next(f);
     try {
       const value = $sizeHint(f);
@@ -193,18 +193,18 @@ function dropping() {
     try {
       const e = $held(evens(louds([11, 12])));
       try {
-        const sizeHint = $sizeHint(e);
-        const value = $next(e);
+        const value = $sizeHint(e);
+        const value$1 = $next(e);
         try {
           console.log(
-            `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value == null ? "None" : `Some(${loudDebug_fmt(value)})`}`,
+            `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${value$1 == null ? "None" : `Some(${loudDebug_fmt(value$1)})`}`,
           );
         } catch (error) {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            if (value != null) {
-              loudDrop_drop(value);
+            if (value$1 != null) {
+              loudDrop_drop(value$1);
             }
           }
         }

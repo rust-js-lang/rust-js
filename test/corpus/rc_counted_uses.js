@@ -113,11 +113,11 @@ function main() {
     throw error;
   }
   try {
-    const value =
+    const partialCmp =
       $cmp(copy.title.value, doc.title.value) || $cmpItems(copy.pages.value, doc.pages.value, $cmp);
     console.log(
       `${tmp} ${tmp$1} ${
-        value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`
+        partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`
       }`,
     );
   } catch (error) {

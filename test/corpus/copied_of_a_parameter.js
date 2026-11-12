@@ -21,9 +21,9 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const it = $iter(v);
   const value$1 = lastThrough($iter(it));
-  const value$2 = $next(it);
+  const next = $next(it);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   console.log(`${counted($iter(v))}`);
 }

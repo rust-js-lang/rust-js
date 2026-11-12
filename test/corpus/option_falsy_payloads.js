@@ -90,11 +90,11 @@ function called(f) {
 }
 
 function firstPoint(points) {
-  const value = $someAt(points, 0);
-  if (value == null) {
+  const first = $someAt(points, 0);
+  if (first == null) {
     return;
   }
-  const p = $someValue(value);
+  const p = $someValue(first);
   if (p == null) {
     return;
   }

@@ -28,12 +28,12 @@ function kind(c) {
 function main() {
   const counts = new $CowMap();
   counts.set({ TAG: "Borrowed", _0: "a" }, 1);
-  const value = $insert(counts, { TAG: "Owned", _0: "a" }, 2);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const insert = $insert(counts, { TAG: "Owned", _0: "a" }, 2);
+  console.log(`${insert == null ? "None" : `Some(${insert})`}`);
   const get = counts.get("a");
-  const value$1 = counts.get({ TAG: "Borrowed", _0: "a" });
+  const value = counts.get({ TAG: "Borrowed", _0: "a" });
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const key = { TAG: "Owned", _0: "b" };
   const current = $orInsert(counts, key, 0);
@@ -79,7 +79,7 @@ function main() {
   const rows = new $CowMap();
   rows.set({ TAG: "Borrowed", _0: [1, 2] }, "first");
   rows.set({ TAG: "Owned", _0: [1, 2] }, "second");
-  const value$2 = rows.get([1, 2]);
-  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${rows.size}`);
+  const value$1 = rows.get([1, 2]);
+  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${rows.size}`);
 }
 //# sourceMappingURL=case.js.map

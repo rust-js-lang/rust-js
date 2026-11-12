@@ -105,9 +105,9 @@ function main() {
         }
       } catch (error) {
         $cleanup(() => {
-          for (const [key, value$1] of $sortedEntries(m, dOrd_cmp)) {
+          for (const [key, value] of $sortedEntries(m, dOrd_cmp)) {
             dDrop_drop(key);
-            dDrop_drop(value$1);
+            dDrop_drop(value);
           }
         }, error);
         throw error;
@@ -208,8 +208,8 @@ function main() {
       }
       const value = [2];
       try {
-        const value$1 = w.get(value);
-        console.log(`${value$1 == null ? "None" : `Some(${dDebug_fmt(value$1)})`}`);
+        const get = w.get(value);
+        console.log(`${get == null ? "None" : `Some(${dDebug_fmt(get)})`}`);
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(value);

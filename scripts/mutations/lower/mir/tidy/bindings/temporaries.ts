@@ -95,4 +95,34 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results.rs$"],
     snapshots: true,
   },
+  {
+    name: "temporary-not-named-by-its-call",
+    breaks:
+      "a temporary of a call's value, a `println!` argument's, is named by its role, `const value = RangePull.pullTwo(..)`, not its call's name, `pullTwo` (#890, #837)",
+    file: "src/lower/mir/tidy/bindings/temporaries.rs",
+    find: "                        true => held_names(value),\n",
+    replace: "                        true => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "spilled-not-named-by-its-call",
+    breaks:
+      "a value lowering spilled for a role keeps its role's word, `const result$2 = Parser.expr(parser)`, not its call's name, `expr` (#890)",
+    file: "src/lower/mir/tidy/bindings/temporaries.rs",
+    find: "                    renames.push((name.clone(), held_names(value), **role));\n",
+    replace: "                    renames.push((name.clone(), Vec::new(), **role));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "spilled-renamed-to-its-role-anew",
+    breaks:
+      "a spilled value with no free suggestion is given its role's word apart anew, `result$3`, undoing the `result` tidy gave each arm apart (ADR 0352, #890)",
+    file: "src/lower/mir/tidy/bindings/temporaries.rs",
+    find: "        if spilled.iter().any(|(name, _)| **name == from) && names.iter().all(|name| taken.contains(name)) {\n",
+    replace: "        if spilled.iter().any(|(name, _)| **name == from) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
+    snapshots: true,
+  },
 ];

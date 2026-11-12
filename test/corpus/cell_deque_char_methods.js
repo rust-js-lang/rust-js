@@ -66,9 +66,9 @@ function main() {
   const arg = $copyOf(deque, 1, 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
-  const value$3 = $dequeSwapRemove(deque, 3, true);
+  const swapRemoveFront = $dequeSwapRemove(deque, 3, true);
   console.log(
-    `${swapRemoveBack == null ? "None" : `Some(${swapRemoveBack})`} ${value$3 == null ? "None" : `Some(${value$3})`} [${deque.join(", ")}]`,
+    `${swapRemoveBack == null ? "None" : `Some(${swapRemoveBack})`} ${swapRemoveFront == null ? "None" : `Some(${swapRemoveFront})`} [${deque.join(", ")}]`,
   );
   $retainDeque(
     deque,
@@ -81,12 +81,12 @@ function main() {
   const arg$1 = $partitionPoint(deque, (x) => x < 50);
   console.log(`[${deque.join(", ")}] ${arg$1}`);
   const popFrontIf = $popFrontIf(deque, (x) => x.value > 100, true);
-  const value$4 = $popIfCell(deque, (x) => x.value > 100);
+  const popBackIf = $popIfCell(deque, (x) => x.value > 100);
   console.log(
-    `${popFrontIf == null ? "None" : `Some(${popFrontIf})`} ${value$4 == null ? "None" : `Some(${value$4})`} [${deque.join(", ")}]`,
+    `${popFrontIf == null ? "None" : `Some(${popFrontIf})`} ${popBackIf == null ? "None" : `Some(${popBackIf})`} [${deque.join(", ")}]`,
   );
-  const value$5 = $popFrontIf(deque, (x) => x.value < 100, true);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`} [${deque.join(", ")}]`);
+  const value$3 = $popFrontIf(deque, (x) => x.value < 100, true);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} [${deque.join(", ")}]`);
 
   for (const c of ["a", "\n", "'", "é", "😀", "\x7f"]) {
     const escapeDefault = $iter(Array.from($escapeDefault(c)));

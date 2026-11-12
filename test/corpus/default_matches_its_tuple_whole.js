@@ -48,24 +48,24 @@ function _A__A_Tuple(dropA) {
   }));
 }
 function _A__A_Tuple_taken(it, dropA, dropI) {
-  const value = $nextSome(it);
+  const next = $nextSome(it);
   let result;
-  if (value != null) {
-    const value$2 = $someValue(value);
+  if (next != null) {
+    const value = $someValue(next);
     let value$1;
     try {
       value$1 = $nextSome(it);
     } catch (error) {
       $cleanup(() => {
-        dropA?.(value$2);
+        dropA?.(value);
       }, error);
       throw error;
     }
     if (value$1 != null) {
-      return [value$2, $someValue(value$1)];
+      return [value, $someValue(value$1)];
     }
     result = undefined;
-    dropA?.(value$2);
+    dropA?.(value);
   } else {
     result = undefined;
   }

@@ -34,8 +34,8 @@ function main() {
   $reserve(heap, 20, 4);
   const value = $capacity(heap, 4) >= 22;
   $keepCapacity(heap);
-  const value$1 = $heapPop(heap, $partiallyOrdered);
-  console.log(`${value} ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const pop = $heapPop(heap, $partiallyOrdered);
+  console.log(`${value} ${pop == null ? "None" : `Some(${pop})`}`);
   $keepCapacity(heap);
   heap.length = 0;
   console.log(`${$capacity(heap, 4) >= 22} ${heap.length === 0}`);

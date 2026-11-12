@@ -17,32 +17,32 @@ export function entry() {
 }
 
 function main() {
-  const value = $sizeHint(
+  const sizeHint = $sizeHint(
     $cycleOf(
       { start: 1, end: 10 },
       (iterator) => ({ start: iterator.start, end: iterator.end }),
       $rangeNext,
     ),
   );
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const value$1 = $sizeHint(
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+  const value = $sizeHint(
     $cycleOf(
       { start: 1, end: 1 },
       (iterator) => ({ start: iterator.start, end: iterator.end }),
       $rangeNext,
     ),
   );
-  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
-  const value$2 = $sizeHint(
+  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const value$1 = $sizeHint(
     $cycleOf({ start: 1, end: 3 }, (iterator) => ({ ...iterator }), $rangeInclusiveNext),
   );
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value$2 = $sizeHint($cycle([1, 2]));
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = $sizeHint($cycle([1, 2]));
+  const value$3 = $sizeHint($cycle([]));
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
-  const value$4 = $sizeHint($cycle([]));
+  const value$4 = $sizeHint($cycle([1, 2]));
   console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const value$5 = $sizeHint($cycle([1, 2]));
-  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   const c = $cycleOf(
     { start: 1, end: 3 },
     (iterator) => ({ start: iterator.start, end: iterator.end }),
@@ -51,16 +51,16 @@ function main() {
   $next(c);
   $next(c);
   $next(c);
-  const value$6 = $sizeHint(c);
-  console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
-  const value$7 = $sizeHint(
+  const value$5 = $sizeHint(c);
+  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
+  const value$6 = $sizeHint(
     $cycleOf(
       { start: 1, end: 3 },
       (iterator) => ({ start: iterator.start, end: iterator.end }),
       $rangeNext,
     ).take(5),
   );
-  console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
+  console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
   const all = $grownVec(
     $roomForHint(
       $cycleOf(

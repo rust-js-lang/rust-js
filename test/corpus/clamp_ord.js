@@ -32,8 +32,8 @@ function main() {
   console.log(
     `${$clampBy("L", "S", "M", sizePartialOrd)} ${$clampBy("S", "M", "L", sizePartialOrd)}`,
   );
-  const value = $clampBy([3, "x"], [1, "a"], [3, "b"], tuplePartialOrd);
-  console.log(`(${value[0]}, ${$debugStr(value[1], "'")})`);
+  const clamp = $clampBy([3, "x"], [1, "a"], [3, "b"], tuplePartialOrd);
+  console.log(`(${clamp[0]}, ${$debugStr(clamp[1], "'")})`);
   console.log(`${$clampBy("zz", "a", "m", $partiallyOrdered)}`);
 }
 //# sourceMappingURL=case.js.map

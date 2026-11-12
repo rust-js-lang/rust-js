@@ -25,9 +25,9 @@ Gate.prototype.guarded = function () {
 
 function main() {
   const gate = new Gate();
-  const value = gate.probe();
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = gate.guarded();
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const probe = gate.probe();
+  console.log(`${probe == null ? "None" : `Some(${probe})`}`);
+  const guarded = gate.guarded();
+  console.log(`${guarded == null ? "None" : `Some(${guarded})`}`);
 }
 //# sourceMappingURL=case.js.map

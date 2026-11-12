@@ -56,9 +56,9 @@ function main() {
     ),
   ];
   const nth = $rangeNthBack(range[0].iter, 4000000000);
-  const value = revDoubleEndedIterator_nextBack(range[0], { next: $rangeNext });
+  const nextBack = revDoubleEndedIterator_nextBack(range[0], { next: $rangeNext });
   console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nth == null ? "None" : `Some(${nth})`} ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
   const mapped = [
     iterator_map(
@@ -136,14 +136,14 @@ function main() {
   const filtered = [
     $filterEnds($iterator({ start: 0, end: 6 }, $rangeNext, false, $rangeNextBack), odd),
   ];
-  const value$1 = $next(filtered[0]);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const next = $next(filtered[0]);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
   const old = replaced(
     filtered[0],
     $filterEnds($iterator({ start: 6, end: 10 }, $rangeNext, false, $rangeNextBack), odd),
   );
-  const nextBack = $nextBack(filtered[0]);
-  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`} [${Array.from(old).join(", ")}]`);
+  const value = $nextBack(filtered[0]);
+  console.log(`${value == null ? "None" : `Some(${value})`} [${Array.from(old).join(", ")}]`);
   console.log(`[${Array.from(filtered[0]).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

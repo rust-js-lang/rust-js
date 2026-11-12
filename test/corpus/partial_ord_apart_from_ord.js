@@ -209,12 +209,14 @@ function main() {
     const s = seen[i];
     $heapPush(heap, s, seenPartialOrd);
   }
-  const value$7 = $heapPop(heap, seenPartialOrd);
-  console.log(`${value$7 == null ? "None" : `Some(${seenDebug_fmt(value$7)})`}`);
+  const pop = $heapPop(heap, seenPartialOrd);
+  console.log(`${pop == null ? "None" : `Some(${seenDebug_fmt(pop)})`}`);
   console.log("binary_search");
   const item = [2];
-  const value$8 = $binarySearchBy(v, (each) => seenOrd_cmp(each, item));
-  console.log(`${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${value$8._0})`}`);
+  const binarySearch = $binarySearchBy(v, (each) => seenOrd_cmp(each, item));
+  console.log(
+    `${binarySearch.TAG === "Ok" ? `Ok(${binarySearch._0})` : `Err(${binarySearch._0})`}`,
+  );
   console.log("together <");
   const left$2 = [[1]];
   const right$2 = [[2]];
@@ -222,8 +224,8 @@ function main() {
   console.log("together partial_cmp");
   const left$3 = [[1]];
   const right$3 = [[2]];
-  const value$9 = seenOrd_cmp(left$3[0], right$3[0]);
-  console.log(`${value$9 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$9 + 1]})`}`);
+  const value$7 = seenOrd_cmp(left$3[0], right$3[0]);
+  console.log(`${value$7 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$7 + 1]})`}`);
   console.log("together sort");
   const t = [[[2]], [[1]]];
   $sortStable(t, (a, b) => seenOrd_cmp(a[0], b[0]) < 0, "general8", 4);

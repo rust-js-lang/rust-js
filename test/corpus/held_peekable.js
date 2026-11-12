@@ -63,11 +63,11 @@ function withPosition(iter, IIterator, IFused) {
 }
 
 function withPositionIterator_next(withPosition) {
-  const value = $nextSome(withPosition.peekable);
-  if (value == null) {
+  const next = $nextSome(withPosition.peekable);
+  if (next == null) {
     return;
   }
-  const item = $someValue(value);
+  const item = $someValue(next);
   const first = !withPosition.handledFirst;
   withPosition.handledFirst = true;
   const last = $peekSome(withPosition.peekable) == null;
@@ -177,9 +177,9 @@ function main() {
   const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
   console.log(`${withPositionDebug_fmt(words, undefined, PeekableDebug)}`);
   const sizeHint = $sizeHint(words.peekable);
-  const value = withPositionIterator_next(words);
+  const next = withPositionIterator_next(words);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${next == null ? "None" : `Some((${$debugStr(next[0])}, ${$debugStr(next[1])}))`}`,
   );
   const arg = $sizeHint(words.peekable);
   console.log(
@@ -208,10 +208,10 @@ function main() {
     `${lexerDebug_fmt(lexer)} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
   const one = withPosition({ start: 1, end: 2 }, { next: $rangeNext }, true);
-  const next = withPositionIterator_next(one);
+  const value = withPositionIterator_next(one);
   const value$1 = withPositionIterator_next(one);
   console.log(
-    `${next == null ? "None" : `Some((${$debugStr(next[0])}, ${next[1]}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} ${withPositionDebug_fmt(one, undefined, peekableDebug(fuseDebug({ fmt: (value, options) => `${value.start}..${value.end}` }), { fmt: (value, options) => String(value) }))}`,
+    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} ${withPositionDebug_fmt(one, undefined, peekableDebug(fuseDebug({ fmt: (value, options) => `${value.start}..${value.end}` }), { fmt: (value, options) => String(value) }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

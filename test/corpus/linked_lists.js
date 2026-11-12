@@ -22,9 +22,9 @@ function main() {
   const tail = $splitOff(list, 3);
   console.log(`[${list.join(", ")}] [${tail.join(", ")}]`);
   const popFront = list.shift();
-  const value$1 = list.pop();
+  const popBack = list.pop();
   console.log(
-    `${popFront == null ? "None" : `Some(${popFront})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${popFront == null ? "None" : `Some(${popFront})`} ${popBack == null ? "None" : `Some(${popBack})`}`,
   );
   console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
   const doubled = tail.map((x) => (x * 2) >>> 0);

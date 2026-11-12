@@ -26,9 +26,9 @@ function main() {
   console.log("2147483648 -2147483648 -4");
   const checkedAdd = $checked(250 + 10, 0, 255);
   const checkedSub = $checked(5 - 6, 0, 4294967295);
-  const value = $checked(2147483647 * 2, -2147483648, 2147483647);
+  const checkedMul = $checked(2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`}`,
   );
   console.log(
     `${Math.min(250 + 10, 255)} ${Math.max(0 - 1, 0)} ${Math.min(Math.max(-2147483648 - 1, -2147483648), 2147483647)}`,

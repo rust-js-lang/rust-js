@@ -206,8 +206,8 @@ function main() {
   );
   ChainBufRead.consume({ value: c }, 1);
   const rest$1 = until($cellOf(c), 101, ChainBufRead);
-  const value$2 = Chain.getRef(c);
-  console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}]) [${rest$1.join(", ")}]`);
+  const getRef = Chain.getRef(c);
+  console.log(`([${getRef[0].join(", ")}], [${getRef[1].join(", ")}]) [${rest$1.join(", ")}]`);
 
   // A take of a slice, of a repeat, and of a chain.
   const taken = read_take([104, 101, 108, 108, 111], 3n, $sliceReader);
@@ -252,22 +252,22 @@ function main() {
   );
   const limited = read_take({ byte: 1 }, 4n, $repeatReader);
   const out = [];
-  const value$3 = $unwrapOk(
+  const value$2 = $unwrapOk(
     TakeRead$1.readToEnd({ value: limited }, out),
     undefined,
     $ioErrorDebug,
   );
-  const value$4 = Take.limit(limited);
-  console.log(`${value$3} [${out.join(", ")}] ${value$4}`);
+  const limit = Take.limit(limited);
+  console.log(`${value$2} [${out.join(", ")}] ${limit}`);
   const part = read_take([97, 98, 99, 100, 101, 102], 4n, $sliceReader);
   two = [0, 0];
-  const value$5 = $unwrapOk(TakeRead.read({ value: part }, two), undefined, $ioErrorDebug);
-  const value$6 = Take.limit(part);
-  console.log(`${value$5} [${two.join(", ")}] ${value$6}`);
+  const value$3 = $unwrapOk(TakeRead.read({ value: part }, two), undefined, $ioErrorDebug);
+  const value$4 = Take.limit(part);
+  console.log(`${value$3} [${two.join(", ")}] ${value$4}`);
   const five = new Array(5).fill(0);
-  const value$7 = $unwrapOk(TakeRead.read({ value: part }, five), undefined, $ioErrorDebug);
-  const value$8 = Take.limit(part);
-  console.log(`${value$7} [${five.join(", ")}] ${value$8}`);
+  const value$5 = $unwrapOk(TakeRead.read({ value: part }, five), undefined, $ioErrorDebug);
+  const value$6 = Take.limit(part);
+  console.log(`${value$5} [${five.join(", ")}] ${value$6}`);
   console.log(`[${Take.getRef(part).join(", ")}]`);
   const lines = read_take(
     [111, 110, 101, 10, 116, 119, 111, 10, 116, 104, 114, 101, 101],
@@ -277,14 +277,14 @@ function main() {
   let l = "";
   const arg$2 = $cellOf(lines);
   const buf$3 = { value: l };
-  const value$9 = bufRead_readLine(arg$2, buf$3, TakeBufRead, TakeRead);
+  const value$7 = bufRead_readLine(arg$2, buf$3, TakeBufRead, TakeRead);
   l = buf$3.value;
-  $unwrapOk(value$9, undefined, $ioErrorDebug);
+  $unwrapOk(value$7, undefined, $ioErrorDebug);
   const arg$3 = $cellOf(lines);
   const buf$4 = { value: l };
-  const value$10 = bufRead_readLine(arg$3, buf$4, TakeBufRead, TakeRead);
+  const value$8 = bufRead_readLine(arg$3, buf$4, TakeBufRead, TakeRead);
   l = buf$4.value;
-  $unwrapOk(value$10, undefined, $ioErrorDebug);
+  $unwrapOk(value$8, undefined, $ioErrorDebug);
   const arg$4 = Take.limit(lines);
   console.log(`${$debugStr(l)} ${arg$4}`);
   console.log(
@@ -312,10 +312,8 @@ function main() {
   );
   console.log(`${$debugStr(t$2)}`);
   const result = firstTwo(read_take({ byte: 7 }, 1n, $repeatReader), TakeRead$1);
-  const value$11 = result.TAG === "Err" ? { TAG: "Err", _0: result._0.kind } : result;
-  console.log(
-    `${value$11.TAG === "Ok" ? `Ok([${value$11._0.join(", ")}])` : `Err(${value$11._0})`}`,
-  );
+  const value$9 = result.TAG === "Err" ? { TAG: "Err", _0: result._0.kind } : result;
+  console.log(`${value$9.TAG === "Ok" ? `Ok([${value$9._0.join(", ")}])` : `Err(${value$9._0})`}`);
   console.log(`[${Take.intoInner(read_take([97, 98, 99], 2n, $sliceReader)).join(", ")}]`);
   const t$3 = read_take([120, 121, 122], 2n, $sliceReader);
   console.log(
@@ -349,9 +347,9 @@ function main() {
   const next = bytesIterator_next(it, $sliceReader);
   const map = next != null ? $unwrapOk(next, undefined, $ioErrorDebug) : undefined;
   const next$1 = bytesIterator_next(it, $sliceReader);
-  const value$12 = next$1 != null ? $unwrapOk(next$1, undefined, $ioErrorDebug) : undefined;
+  const value$10 = next$1 != null ? $unwrapOk(next$1, undefined, $ioErrorDebug) : undefined;
   console.log(
-    `${map == null ? "None" : `Some(${map})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${bytesIterator_next(it, $sliceReader) == null}`,
+    `${map == null ? "None" : `Some(${map})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${bytesIterator_next(it, $sliceReader) == null}`,
   );
 
   // A `&mut dyn Read` and a `Box<dyn BufRead>` of them.
@@ -363,8 +361,8 @@ function main() {
   console.log(`[${two.join(", ")}]`);
   let boxed = { value: read_take([109, 10, 110], 10n, $sliceReader), impl: TakeBufRead };
   const b$1 = { value: boxed };
-  const value$13 = linesOf(b$1, $mutReader($dynReader));
+  const value$11 = linesOf(b$1, $mutReader($dynReader));
   boxed = b$1.value;
-  console.log(`[${value$13.map((item) => $debugStr(item)).join(", ")}]`);
+  console.log(`[${value$11.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

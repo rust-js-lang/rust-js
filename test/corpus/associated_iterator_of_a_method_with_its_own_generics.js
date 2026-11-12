@@ -230,21 +230,23 @@ function tagged(SSource) {
 
 function main() {
   const ScaledSource = scaledSource(5);
-  const value = fromItsBack(tensSource);
-  console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
-  const value$1 = hidden(tensSource);
-  console.log(`([${value$1[0].join(", ")}], ${value$1[1]})`);
+  const itsBack = fromItsBack(tensSource);
+  console.log(
+    `(${itsBack[0] == null ? "None" : `Some(${itsBack[0]})`}, [${itsBack[1].join(", ")}])`,
+  );
+  const value = hidden(tensSource);
+  console.log(`([${value[0].join(", ")}], ${value[1]})`);
   console.log(
     `[${tagged(tensSource)
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$2 = fromItsBack(ScaledSource);
+  const value$1 = fromItsBack(ScaledSource);
   console.log(
-    `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, [${value$2[1].join(", ")}])`,
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, [${value$1[1].join(", ")}])`,
   );
-  const value$3 = hidden(ScaledSource);
-  console.log(`([${value$3[0].join(", ")}], ${value$3[1]})`);
+  const value$2 = hidden(ScaledSource);
+  console.log(`([${value$2[0].join(", ")}], ${value$2[1]})`);
   console.log(
     `[${tagged(ScaledSource)
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)

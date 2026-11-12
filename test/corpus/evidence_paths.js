@@ -146,7 +146,7 @@ function main() {
   console.log(`${before} ${pointPositionedS_x(p, clone)}`);
   const bag = { x: [[1]] };
   before = pointMovableS(bagClone, bagAdd).translate($cellOf(bag), [[2, 3]]);
-  const value$1 = pointPositionedS_x(bag, bagClone);
-  console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(value$1)}`);
+  const x = pointPositionedS_x(bag, bagClone);
+  console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(x)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -241,8 +241,8 @@ function main() {
     true,
     true,
   );
-  const value = $next(pairs);
-  console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  const next = $next(pairs);
+  console.log(`${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`);
   show($sizeHint(pairs));
 }
 //# sourceMappingURL=case.js.map

@@ -20,13 +20,13 @@ function main() {
   }
   const d = $decodeUtf16(units);
   const sizeHint = $sizeHint(d);
-  const value = $next(d);
-  console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value == null ? "None" : `Some(${value.TAG === "Ok" ? `Ok(${$debugStr(value._0, "'")})` : `Err(DecodeUtf16Error { code: ${String(value._0)} })`})`}`,
-  );
   const next = $next(d);
   console.log(
-    `${next == null ? "None" : `Some(${next.TAG === "Ok" ? `Ok(${$debugStr(next._0, "'")})` : `Err(DecodeUtf16Error { code: ${String(next._0)} })`})`} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(d))}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${next == null ? "None" : `Some(${next.TAG === "Ok" ? `Ok(${$debugStr(next._0, "'")})` : `Err(DecodeUtf16Error { code: ${String(next._0)} })`})`}`,
+  );
+  const value = $next(d);
+  console.log(
+    `${value == null ? "None" : `Some(${value.TAG === "Ok" ? `Ok(${$debugStr(value._0, "'")})` : `Err(DecodeUtf16Error { code: ${String(value._0)} })`})`} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(d))}`,
   );
   const value$1 = $next(d);
   console.log(

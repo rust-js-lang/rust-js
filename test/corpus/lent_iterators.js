@@ -80,9 +80,9 @@ function main() {
   const c = [5];
   skip($iterator(c, countdownIterator_next), 1);
   const value$1 = first($iterator(c, countdownIterator_next));
-  const value$2 = countdownIterator_next(c);
+  const next = countdownIterator_next(c);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const chars = iterator_peekable($chars("12+345"));
   let a = number(chars);
@@ -103,7 +103,7 @@ function main() {
   const v = $iter([1, 2, 0, 3, 4, 0, 5]);
   const s1 = untilZero(v);
   const s2 = untilZero(v);
-  const value$3 = $next(v);
-  console.log(`${s1} ${s2} ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = $next(v);
+  console.log(`${s1} ${s2} ${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

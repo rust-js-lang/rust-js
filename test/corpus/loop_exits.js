@@ -11,18 +11,18 @@ function textIn(root, path) {
   const parts = iterator_peekable($iter(path.split("/")));
   let part;
   while ((part = $next(parts)) != null) {
-    const value = dir.get(part);
-    if (value == null) {
+    const get = dir.get(part);
+    if (get == null) {
       return;
     }
-    const value$1 = $peek(parts) != null;
-    if (value.TAG === "Dir") {
-      if (value$1) {
-        dir = value._0;
+    const value = $peek(parts) != null;
+    if (get.TAG === "Dir") {
+      if (value) {
+        dir = get._0;
         continue;
       }
-    } else if (value.TAG === "File" && !value$1) {
-      return value._0;
+    } else if (get.TAG === "File" && !value) {
+      return get._0;
     }
     return;
   }

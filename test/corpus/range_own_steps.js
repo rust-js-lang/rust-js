@@ -27,28 +27,28 @@ export function entry() {
 
 function main() {
   const nth = $rangeNth({ start: 0n, end: 18446744073709551615n }, (1 << 31) >>> 0);
-  const value = $rangeLast({ start: 0n, end: 18446744073709551615n });
+  const last = $rangeLast({ start: 0n, end: 18446744073709551615n });
   console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nth == null ? "None" : `Some(${nth})`} ${last == null ? "None" : `Some(${last})`}`,
   );
   const r = { start: 5, end: 10 };
-  const value$1 = $rangeNth(r, 2);
+  const value = $rangeNth(r, 2);
   const next = $rangeNext(r);
-  const value$2 = $rangeNth(r, 5);
-  const value$3 = $rangeNext(r);
+  const value$1 = $rangeNth(r, 5);
+  const value$2 = $rangeNext(r);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${next == null ? "None" : `Some(${next})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const big = { start: 10n, end: 12n };
-  const value$4 = $rangeNth(big, 0);
-  const value$5 = $rangeNth(big, 1);
+  const value$3 = $rangeNth(big, 0);
+  const value$4 = $rangeNth(big, 1);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${big.start}..${big.end}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${big.start}..${big.end}`,
   );
-  const last = $rangeLast({ start: 3, end: 3 });
+  const value$5 = $rangeLast({ start: 3, end: 3 });
   const value$6 = $rangeNth({ start: 7, end: 2 }, 0);
   console.log(
-    `${last == null ? "None" : `Some(${last})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${$rangeLen(
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${$rangeLen(
       { start: 0, end: 4294967295 },
     )} ${$rangeLen({ start: 4, end: -4 })}`,
   );

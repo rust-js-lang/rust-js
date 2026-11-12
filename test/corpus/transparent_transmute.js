@@ -43,14 +43,14 @@ function longer(text) {
 function main() {
   const bytes = [1, 2, 0xab, 0xcd];
   const id = Uuid.fromBytesRef(bytes);
-  const value$1 = Uuid.asHyphenated(id);
-  console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value$1)}`);
+  const hyphenated = Uuid.asHyphenated(id);
+  console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(hyphenated)}`);
   console.log(`[${Uuid.asBytes(id).join(", ")}]`);
   const inner = Uuid.asHyphenated(id);
   console.log(`${inner[3]}`);
   const owned = [9, 8, 7, 6];
-  const value$2 = $eq(owned, [9, 8, 7, 6]);
-  console.log(`${uuidDebug_fmt(owned)} ${value$2}`);
+  const value$1 = $eq(owned, [9, 8, 7, 6]);
+  console.log(`${uuidDebug_fmt(owned)} ${value$1}`);
   const named = "ada";
   let text = named;
   console.log(`${named} ${$byteLen(text)}`);

@@ -38,22 +38,22 @@ function revAll(iterable, IIntoIterator, IIntoIterDoubleEndedIterator) {
 }
 
 function sliceIterator_next(slice) {
-  const value = slice[0].length === 0 ? undefined : [slice[0][0], slice[0].slice(1)];
-  if (value == null) {
+  const splitFirst = slice[0].length === 0 ? undefined : [slice[0][0], slice[0].slice(1)];
+  if (splitFirst == null) {
     return;
   }
-  const [first, rest] = value;
+  const [first, rest] = splitFirst;
   slice[0] = rest;
   return first;
 }
 
 function sliceDoubleEndedIterator_nextBack(slice) {
-  const value =
+  const splitLast =
     slice[0].length === 0 ? undefined : [slice[0][slice[0].length - 1], slice[0].slice(0, -1)];
-  if (value == null) {
+  if (splitLast == null) {
     return;
   }
-  const [last, rest] = value;
+  const [last, rest] = splitLast;
   slice[0] = rest;
   return last;
 }

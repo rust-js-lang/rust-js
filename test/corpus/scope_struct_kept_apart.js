@@ -159,7 +159,7 @@ const Unit = {
 
 function unit() {
   let unit;
-  const value = Unit.method(
+  const method = Unit.method(
     {
       get value() {
         return unit;
@@ -170,15 +170,15 @@ function unit() {
     },
     "one",
   );
-  const value$1 = { TAG: "Ok", _0: 3 };
-  if (!$eq(value, value$1)) {
+  const value = { TAG: "Ok", _0: 3 };
+  if (!$eq(method, value)) {
     $assertFailed(
       "Eq",
+      method.TAG === "Ok" ? `Ok(${method._0})` : `Err(${$debugStr(method._0)})`,
       value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`,
-      value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`,
     );
   }
-  const value$2 = Unit.test({
+  const test = Unit.test({
     get value() {
       return unit;
     },
@@ -186,12 +186,12 @@ function unit() {
       unit = value;
     },
   });
-  const value$3 = { TAG: "Ok", _0: 5 };
-  if (!$eq(value$2, value$3)) {
+  const value$1 = { TAG: "Ok", _0: 5 };
+  if (!$eq(test, value$1)) {
     $assertFailed(
       "Eq",
-      value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`,
-      value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`,
+      test.TAG === "Ok" ? `Ok(${test._0})` : `Err(${$debugStr(test._0)})`,
+      value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`,
     );
   }
   return 8;

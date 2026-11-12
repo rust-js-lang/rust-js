@@ -89,21 +89,21 @@ function main() {
   const RangePull = iPull({ next: $rangeNext });
   const range = { start: 0, end: 5 };
   const pull = iPull_pull(range, { next: $rangeNext });
-  const value = RangePull.pullTwo($cellOf(range));
+  const pullTwo = RangePull.pullTwo($cellOf(range));
   console.log(
-    `${pull == null ? "None" : `Some(${pull})`} (${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+    `${pull == null ? "None" : `Some(${pull})`} (${pullTwo[0] == null ? "None" : `Some(${pullTwo[0]})`}, ${pullTwo[1] == null ? "None" : `Some(${pullTwo[1]})`})`,
   );
   console.log(`${range.start}..${range.end}`);
   console.log(`[${drain($cellOf(range), RangePull).join(", ")}]`);
   const down = [3];
-  const value$1 = iPull({ next: countdownIterator_next }).pullTwo($cellOf(down));
+  const value = iPull({ next: countdownIterator_next }).pullTwo($cellOf(down));
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${down[0]}`,
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${down[0]}`,
   );
   const v = ["a", "b", "c"];
   const e = { inner: $iter(v), count: 0 };
-  const value$2 = enumeratedPull_pull(e, IterPull);
-  console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`);
+  const value$1 = enumeratedPull_pull(e, IterPull);
+  console.log(`${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1])}))`}`);
   console.log(
     `[${drain($cellOf(e), enumeratedPull(IterPull))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)

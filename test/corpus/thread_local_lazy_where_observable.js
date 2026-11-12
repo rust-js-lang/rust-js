@@ -112,8 +112,8 @@ function absent(x) {
 function main() {
   console.log("start");
   len = 5;
-  const value = $withBorrow(lazy(), (arg0) => arg0);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const withBorrow = $withBorrow(lazy(), (arg0) => arg0);
+  console.log(`${withBorrow == null ? "None" : `Some(${withBorrow})`}`);
   console.log(`${LONGER()} ${DIRECT()}`);
   console.log(`${COUNT}`);
   console.log(`${COUNTED()}`);
@@ -124,8 +124,8 @@ function main() {
   bump();
   seen.count = 2;
   console.log(`${BUMPS_AT_FIRST()} ${SEEN_AT_FIRST()}`);
-  const value$1 = found();
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${absent(found())}`);
+  const value = found();
+  console.log(`${value == null ? "None" : `Some(${value})`} ${absent(found())}`);
   if (!FOUND.initWith($nullableCell(null))) {
     $cellReplace($borrowMut(FOUND()), null);
   }
@@ -133,8 +133,8 @@ function main() {
   if (!FOUND.initWith($nullableCell(2))) {
     $cellReplace($borrowMut(FOUND()), 2);
   }
-  const value$2 = $cellReplace($borrowMut(FOUND()), null);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const replace = $cellReplace($borrowMut(FOUND()), null);
+  console.log(`${replace == null ? "None" : `Some(${replace})`}`);
   console.log(`${$withBorrow(FOUND(), (x) => x == null)} ${absent(found())}`);
   if (!FOUND.initWith($nullableCell(3))) {
     $cellReplace($borrowMut(FOUND()), 3);

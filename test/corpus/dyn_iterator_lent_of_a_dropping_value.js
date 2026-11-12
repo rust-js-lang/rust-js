@@ -30,8 +30,8 @@ function main() {
   }
   const lent = $iterator(c, countdownIterator_next);
   try {
-    const value = $next(lent);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(lent);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
     console.log("after");
   } catch (error) {
     throw $unwindsOn(error);

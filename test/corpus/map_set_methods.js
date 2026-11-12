@@ -91,10 +91,14 @@ function main() {
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const value = $getKeyValue(scores, "a");
-  console.log(`${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`}`);
-  const value$1 = $removeEntry(scores, "c");
-  console.log(`${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`}`);
+  const getKeyValue = $getKeyValue(scores, "a");
+  console.log(
+    `${getKeyValue == null ? "None" : `Some((${$debugStr(getKeyValue[0])}, ${getKeyValue[1]}))`}`,
+  );
+  const removeEntry = $removeEntry(scores, "c");
+  console.log(
+    `${removeEntry == null ? "None" : `Some((${$debugStr(removeEntry[0])}, ${removeEntry[1]}))`}`,
+  );
   const drained = sorted($iter($drainAll(scores)), tupleOrd, clone, 12, "general8", "next");
   console.log(
     `[${drained.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] ${scores.size === 0}`,
@@ -131,16 +135,16 @@ function main() {
   );
   const isSuperset = $isSubset(b, new Set([4]), true);
   const get = a.has(2) ? 2 : undefined;
-  const value$2 = a.has(9) ? 9 : undefined;
+  const value = a.has(9) ? 9 : undefined;
   console.log(
-    `${isSuperset} ${get == null ? "None" : `Some(${get})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${isSuperset} ${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const taken = new Set(a);
   const take = taken.delete(1) ? 1 : undefined;
   const replace = $setReplace(taken, 2);
-  const value$3 = $setReplace(taken, 7);
+  const value$1 = $setReplace(taken, 7);
   console.log(
-    `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
   console.log(
@@ -154,9 +158,9 @@ function main() {
     [9, "i"],
   ]);
   const firstKeyValue = $treeEnd(tree, $cmp, false, false, false);
-  const value$4 = $treeEnd(tree, $cmp, true, false, false);
+  const lastKeyValue = $treeEnd(tree, $cmp, true, false, false);
   console.log(
-    `${firstKeyValue == null ? "None" : `Some((${firstKeyValue[0]}, ${$debugStr(firstKeyValue[1])}))`} ${value$4 == null ? "None" : `Some((${value$4[0]}, ${$debugStr(value$4[1])}))`}`,
+    `${firstKeyValue == null ? "None" : `Some((${firstKeyValue[0]}, ${$debugStr(firstKeyValue[1])}))`} ${lastKeyValue == null ? "None" : `Some((${lastKeyValue[0]}, ${$debugStr(lastKeyValue[1])}))`}`,
   );
   console.log(
     `[${$treeRange(
@@ -188,9 +192,9 @@ function main() {
       .join(", ")}]`,
   );
   const popFirst = $treeEnd(tree, $cmp, false, false, true);
-  const value$5 = $treeEnd(tree, $cmp, true, false, true);
+  const popLast = $treeEnd(tree, $cmp, true, false, true);
   console.log(
-    `${popFirst == null ? "None" : `Some((${popFirst[0]}, ${$debugStr(popFirst[1])}))`} ${value$5 == null ? "None" : `Some((${value$5[0]}, ${$debugStr(value$5[1])}))`}`,
+    `${popFirst == null ? "None" : `Some((${popFirst[0]}, ${$debugStr(popFirst[1])}))`} ${popLast == null ? "None" : `Some((${popLast[0]}, ${$debugStr(popLast[1])}))`}`,
   );
   const more = new $BTreeMap([
     [4, "d"],
@@ -235,10 +239,10 @@ function main() {
       .slice()
       .join(", ")}]`,
   );
-  const value$6 = $treeEnd(set, $cmp, false, true, true);
-  const value$7 = $treeEnd(set, $cmp, true, true, true);
+  const value$2 = $treeEnd(set, $cmp, false, true, true);
+  const value$3 = $treeEnd(set, $cmp, true, true, true);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} {${Array.from($sortedKeys(set, $cmp)).join(", ")}}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} {${Array.from($sortedKeys(set, $cmp)).join(", ")}}`,
   );
   const other = new $BTreeSet([1, 4, 9]);
   console.log(

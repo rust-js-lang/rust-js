@@ -46,8 +46,8 @@ function main() {
   $orInsert(marks, undefined, 0);
   const orInsert = $mutGet(marks);
   orInsert.value = (orInsert.value + 1) >>> 0;
-  const value = marks.get(undefined);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const get = marks.get(undefined);
+  console.log(`${get == null ? "None" : `Some(${get})`}`);
 
   const levels = new ($btreeMap(
     (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),

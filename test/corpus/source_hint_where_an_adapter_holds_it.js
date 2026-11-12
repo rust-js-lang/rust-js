@@ -33,29 +33,29 @@ function main() {
     none: iterator_take($successors(undefined, step), 3),
     peeked: iterator_peekable($successors(3, step)),
   };
-  const value = $sizeHint(held.counting);
+  const sizeHint = $sizeHint(held.counting);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+  const value = $sizeHint(held.ones);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const value$1 = $sizeHint(held.ones);
+  const value$1 = $sizeHint(held.none);
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
-  const value$2 = $sizeHint(held.none);
+  const value$2 = $sizeHint(held.peeked);
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const peek = $peek(held.peeked);
+  console.log(`${peek == null ? "None" : `Some(${peek})`}`);
   const value$3 = $sizeHint(held.peeked);
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
-  const value$4 = $peek(held.peeked);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $sizeHint(held.peeked);
-  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
 
   $next(held.counting);
   $next(held.ones);
-  const sizeHint = $sizeHint(held.counting);
-  const value$6 = $sizeHint(held.ones);
+  const value$4 = $sizeHint(held.counting);
+  const value$5 = $sizeHint(held.ones);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
+    `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
   );
   console.log(`[${Array.from($roomForHint($lent(held.peeked), 4, false)).join(", ")}]`);
-  const value$7 = $sizeHint(held.peeked);
-  console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
+  const value$6 = $sizeHint(held.peeked);
+  console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
 
   const chained = iterator_chain(
     held.counting,
@@ -63,8 +63,8 @@ function main() {
     { next: $next, fold: $foldOf },
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
   );
-  const value$8 = $sizeHint(chained);
-  console.log(`(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`);
+  const value$7 = $sizeHint(chained);
+  console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
   const all = Array.from($roomForHint(chained, 4, false));
   console.log(`[${all.join(", ")}]`);
 
@@ -75,7 +75,7 @@ function main() {
     ),
     { next: $next, fold: $foldOf },
   );
-  const value$9 = $sizeHint(taken);
-  console.log(`(${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`);
+  const value$8 = $sizeHint(taken);
+  console.log(`(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

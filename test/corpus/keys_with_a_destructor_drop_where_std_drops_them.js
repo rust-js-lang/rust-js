@@ -80,27 +80,27 @@ function run(name, f) {
 }
 
 function main() {
+  const maxByKey = $maxByKey(
+    $iterator([0, 4], upIterator_next),
+    (x) => [x % 3],
+    kOrd_cmp,
+    false,
+    undefined,
+    undefined,
+    kDrop_drop,
+  );
+  console.log(`${maxByKey == null ? "None" : `Some(${maxByKey})`}`);
+  const minByKey = $minByKey(
+    $iterator([0, 4], upIterator_next),
+    (x) => [x % 3],
+    kOrd_cmp,
+    false,
+    undefined,
+    undefined,
+    kDrop_drop,
+  );
+  console.log(`${minByKey == null ? "None" : `Some(${minByKey})`}`);
   const value = $maxByKey(
-    $iterator([0, 4], upIterator_next),
-    (x) => [x % 3],
-    kOrd_cmp,
-    false,
-    undefined,
-    undefined,
-    kDrop_drop,
-  );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $minByKey(
-    $iterator([0, 4], upIterator_next),
-    (x) => [x % 3],
-    kOrd_cmp,
-    false,
-    undefined,
-    undefined,
-    kDrop_drop,
-  );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $maxByKey(
     $iterator([0, 0], upIterator_next),
     (x) => [x],
     kOrd_cmp,
@@ -109,8 +109,8 @@ function main() {
     undefined,
     kDrop_drop,
   );
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $minByKey(
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = $minByKey(
     $iterator([0, 1], upIterator_next),
     (x) => [x],
     kOrd_cmp,
@@ -119,8 +119,8 @@ function main() {
     undefined,
     kDrop_drop,
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = $maxByKey(
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value$2 = $maxByKey(
     [4, 9, 2],
     (x) => [x],
     kOrd_cmp,
@@ -129,8 +129,8 @@ function main() {
     undefined,
     kDrop_drop,
   );
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const maxByKey = $maxByKey(
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = $maxByKey(
     ds([1, 5, 2]),
     (d) => [d[0]],
     kOrd_cmp,
@@ -140,17 +140,17 @@ function main() {
     kDrop_drop,
   );
   try {
-    console.log(`${maxByKey == null ? "None" : `Some(${dDebug_fmt(maxByKey)})`}`);
+    console.log(`${value$3 == null ? "None" : `Some(${dDebug_fmt(value$3)})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      if (maxByKey != null) {
-        dDrop_drop(maxByKey);
+      if (value$3 != null) {
+        dDrop_drop(value$3);
       }
     }
   }
-  const minByKey = $minByKey(
+  const value$4 = $minByKey(
     ds([1, 5, 2]),
     (d) => [d[0]],
     kOrd_cmp,
@@ -160,13 +160,13 @@ function main() {
     kDrop_drop,
   );
   try {
-    console.log(`${minByKey == null ? "None" : `Some(${dDebug_fmt(minByKey)})`}`);
+    console.log(`${value$4 == null ? "None" : `Some(${dDebug_fmt(value$4)})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      if (minByKey != null) {
-        dDrop_drop(minByKey);
+      if (value$4 != null) {
+        dDrop_drop(value$4);
       }
     }
   }

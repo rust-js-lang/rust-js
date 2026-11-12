@@ -76,9 +76,7 @@ function main() {
       break;
     }
   }
-  const value$5 = namesIterator_next(all);
-  console.log(
-    `${value$5 == null ? "None" : `Some((${$debugStr(value$5[0])}, ${value$5[1]}))`} ${all.at}`,
-  );
+  const next = namesIterator_next(all);
+  console.log(`${next == null ? "None" : `Some((${$debugStr(next[0])}, ${next[1]}))`} ${all.at}`);
 }
 //# sourceMappingURL=case.js.map

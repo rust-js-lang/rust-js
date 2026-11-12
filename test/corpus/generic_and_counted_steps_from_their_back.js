@@ -100,31 +100,31 @@ function main() {
   const it = iterator_stepBy($iter(v), 3);
   $next(it);
   console.log(`${$exactLen($sizeHint(it))}`);
-  const value = Held.mappedNthBack(
+  const mappedNthBack = Held.mappedNthBack(
     [$iter($range(1, 5).map((value) => [value]))],
     { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     $dropEach(dDrop_drop),
   );
+  console.log(`${mappedNthBack == null ? "None" : `Some(${mappedNthBack})`}`);
+  const value = Nums.mappedNthBack(
+    [$iter([1, 2, 3, 4])],
+    { next: $next },
+    { next_back: $nextBack },
+  );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = Nums.mappedNthBack(
+  const value$1 = Nums.mappedRfind(
     [$iter([1, 2, 3, 4])],
     { next: $next },
     { next_back: $nextBack },
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = Nums.mappedRfind(
-    [$iter([1, 2, 3, 4])],
-    { next: $next },
-    { next_back: $nextBack },
-  );
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = Nums.mappedNthBack(
+  const value$2 = Nums.mappedNthBack(
     [{ lo: 0, hi: 4 }],
     { next: countIterator_next },
     { next_back: countDoubleEndedIterator_nextBack },
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

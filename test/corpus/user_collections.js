@@ -60,8 +60,8 @@ function main() {
     console.log(`${name}: ${price.cents}`);
   }
   const total = moneySum_sum(cart.lines.values().map(([, m]) => m));
-  const value = refCartIntoIterator_intoIter(cart).reduce((n) => n + 1, 0);
-  console.log(`${moneyDebug_fmt(total)} ${value}`);
+  const count = refCartIntoIterator_intoIter(cart).reduce((n) => n + 1, 0);
+  console.log(`${moneyDebug_fmt(total)} ${count}`);
   const names = Array.from(cartIntoIterator_intoIter(cart).map(([name]) => name));
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }

@@ -110,11 +110,11 @@ function main() {
     ),
   );
   try {
-    const value = $position($lent(value$2), (_2) => {
+    const position = $position($lent(value$2), (_2) => {
       loudDrop_drop(_2);
       return false;
     });
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    console.log(`${position == null ? "None" : `Some(${position})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

@@ -8,10 +8,10 @@ export function entry() {
 
 function main() {
   const units = new Map();
+  const insert = $insert(units, "a");
+  console.log(`${insert == null ? "None" : "Some(())"}`);
   const value = $insert(units, "a");
   console.log(`${value == null ? "None" : "Some(())"}`);
-  const value$1 = $insert(units, "a");
-  console.log(`${value$1 == null ? "None" : "Some(())"}`);
   console.log(
     `${$someGet(units, "a") == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))($someGet(units, "b"))}`,
   );
@@ -19,35 +19,35 @@ function main() {
     `${$remove(units, "a") == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))($remove(units, "a"))}`,
   );
   const opts = new $BTreeMap();
-  const value$2 = $insert(opts, 1);
+  const value$1 = $insert(opts, 1);
+  console.log(
+    `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
+  );
+  const value$2 = $insert(opts, 1, 5);
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = $insert(opts, 1, 5);
-  console.log(
-    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
-  );
   const get = $someGet(opts, 1);
-  const value$4 = $someGet(opts, 2);
+  const value$3 = $someGet(opts, 2);
   console.log(
-    `${get == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(get))})`} ${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
+    `${get == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(get))})`} ${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
   opts.set(2);
-  const value$5 = $someGet(opts, 2);
+  const value$4 = $someGet(opts, 2);
   console.log(
-    `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
+    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
-  const value$6 = $remove(opts, 2);
+  const remove = $remove(opts, 2);
   console.log(
-    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`}`,
+    `${remove == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(remove))})`}`,
   );
   let v = $mutGet(opts, 1);
   if (v != null) {
     v.value = undefined;
   }
-  const value$7 = $someGet(opts, 1);
+  const value$5 = $someGet(opts, 1);
   console.log(
-    `${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`}`,
+    `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
   );
   v = $mutGet(units, "zz");
   if (v != null) {

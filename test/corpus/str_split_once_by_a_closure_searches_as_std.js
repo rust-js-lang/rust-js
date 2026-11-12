@@ -7,14 +7,16 @@ export function entry() {
 }
 
 function main() {
-  const value = $splitOnceBy("x=y=z", (c) => {
+  const splitOnce = $splitOnceBy("x=y=z", (c) => {
     console.log(`so ${c}`);
     return c === "=";
   });
   console.log(
-    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
+    `${
+      splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`
+    }`,
   );
-  const value$1 = $splitOnceBy(
+  const rsplitOnce = $splitOnceBy(
     "x=y=z",
     (c) => {
       console.log(`rso ${c}`);
@@ -23,26 +25,30 @@ function main() {
     true,
   );
   console.log(
+    `${
+      rsplitOnce == null
+        ? "None"
+        : `Some((${$debugStr(rsplitOnce[0])}, ${$debugStr(rsplitOnce[1])}))`
+    }`,
+  );
+  const value = $splitOnceBy("née=ü", (c) => c === "=");
+  console.log(
+    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
+  );
+  const value$1 = $splitOnceBy("née=ü", (c) => c === "é", true);
+  console.log(
     `${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`}`,
   );
-  const value$2 = $splitOnceBy("née=ü", (c) => c === "=");
-  console.log(
-    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
-  );
-  const value$3 = $splitOnceBy("née=ü", (c) => c === "é", true);
-  console.log(
-    `${value$3 == null ? "None" : `Some((${$debugStr(value$3[0])}, ${$debugStr(value$3[1])}))`}`,
-  );
-  const value$4 = $splitOnceBy("abc", (c) => {
+  const value$2 = $splitOnceBy("abc", (c) => {
     console.log(`none ${c}`);
     return c === "=";
   });
   console.log(
-    `${value$4 == null ? "None" : `Some((${$debugStr(value$4[0])}, ${$debugStr(value$4[1])}))`}`,
+    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
   );
-  const value$5 = $splitOnceBy("abc", (c) => /^\p{N}$/u.test(c), true);
+  const value$3 = $splitOnceBy("abc", (c) => /^\p{N}$/u.test(c), true);
   console.log(
-    `${value$5 == null ? "None" : `Some((${$debugStr(value$5[0])}, ${$debugStr(value$5[1])}))`}`,
+    `${value$3 == null ? "None" : `Some((${$debugStr(value$3[0])}, ${$debugStr(value$3[1])}))`}`,
   );
 }
 //# sourceMappingURL=case.js.map

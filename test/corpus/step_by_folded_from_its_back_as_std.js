@@ -59,11 +59,11 @@ function countDoubleEndedIterator_nextBack(count) {
 function countDoubleEndedIterator_nthBack(count, n) {
   console.log(`nth_back ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = countDoubleEndedIterator_nextBack(count);
-    if (value == null) {
+    const nextBack = countDoubleEndedIterator_nextBack(count);
+    if (nextBack == null) {
       return;
     }
-    dDrop_drop(value);
+    dDrop_drop(nextBack);
   }
   return countDoubleEndedIterator_nextBack(count);
 }
@@ -155,8 +155,8 @@ function numsDoubleEndedIterator_nextBack(nums) {
 function numsDoubleEndedIterator_nthBack(nums, n) {
   console.log(`nth_back ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = numsDoubleEndedIterator_nextBack(nums);
-    if (value == null) {
+    const nextBack = numsDoubleEndedIterator_nextBack(nums);
+    if (nextBack == null) {
       return;
     }
   }

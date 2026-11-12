@@ -27,8 +27,8 @@ function describe(value) {
   if (s != null) {
     return `string ${s}`;
   } else if (value.impl.typeId() === "lib::Point") {
-    const value$1 = value.impl.typeId() === "lib::Point" ? value.value : undefined;
-    return `point ${value$1 == null ? "None" : `Some(${pointDebug_fmt(value$1)})`}`;
+    const downcastRef = value.impl.typeId() === "lib::Point" ? value.value : undefined;
+    return `point ${downcastRef == null ? "None" : `Some(${pointDebug_fmt(downcastRef)})`}`;
   } else {
     return "other";
   }

@@ -144,8 +144,8 @@ function held() {
   }
   console.log("dropped");
   // Of a `Vec`'s items, dropped unstepped, and after a step.
-  const value = $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x);
-  value.return();
+  const scan = $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x);
+  scan.return();
   console.log("unstepped");
   const stepped = $held(
     $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x),

@@ -315,9 +315,9 @@ function main() {
     `${$sliceStartsWith([[1], [2], [3]], [[1], [2]], false, (a, b) => !nePartialEq_ne(a, b))}`,
   );
   console.log("strip prefix");
-  const value$6 = $sliceStrip([[1], [2]], [[1]], false, (a, b) => !nePartialEq_ne(a, b));
+  const stripPrefix = $sliceStrip([[1], [2]], [[1]], false, (a, b) => !nePartialEq_ne(a, b));
   console.log(
-    `${value$6 == null ? "None" : `Some([${value$6.map((item) => neDebug_fmt(item)).join(", ")}])`}`,
+    `${stripPrefix == null ? "None" : `Some([${stripPrefix.map((item) => neDebug_fmt(item)).join(", ")}])`}`,
   );
   console.log("derived of a vec ne");
   const left$6 = { items: [[1]] };
@@ -384,14 +384,14 @@ function main() {
   console.log("generic clamp");
   console.log(`${pickyDebug_fmt(clamped([5, "x"], [1, "l"], [3, "h"], pickyOrd))}`);
   console.log("iter max");
-  const value$7 = $maxBy(
+  const value$6 = $maxBy(
     [
       [1, "a"],
       [1, "b"],
     ],
     pickyOrd_cmp,
   );
-  console.log(`${value$7 == null ? "None" : `Some(${pickyDebug_fmt(value$7)})`}`);
+  console.log(`${value$6 == null ? "None" : `Some(${pickyDebug_fmt(value$6)})`}`);
   console.log("generic max of a destructor");
   const noisy = biggest([1], [2], noisyOrd, noisyDrop_drop);
   try {
@@ -404,7 +404,18 @@ function main() {
     }
   }
   console.log("generic min of a destructor");
-  const value$8 = least([3], [3], noisyOrd, noisyDrop_drop);
+  const value$7 = least([3], [3], noisyOrd, noisyDrop_drop);
+  try {
+    console.log(`${noisyDebug_fmt(value$7)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      noisyDrop_drop(value$7);
+    }
+  }
+  console.log("generic clamp of a destructor");
+  const value$8 = clamped([9], [4], [6], noisyOrd, noisyDrop_drop);
   try {
     console.log(`${noisyDebug_fmt(value$8)}`);
   } catch (error) {
@@ -412,17 +423,6 @@ function main() {
   } finally {
     if ($live()) {
       noisyDrop_drop(value$8);
-    }
-  }
-  console.log("generic clamp of a destructor");
-  const value$9 = clamped([9], [4], [6], noisyOrd, noisyDrop_drop);
-  try {
-    console.log(`${noisyDebug_fmt(value$9)}`);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      noisyDrop_drop(value$9);
     }
   }
   console.log("generic own max of a destructor");

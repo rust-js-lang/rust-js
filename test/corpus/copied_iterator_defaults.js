@@ -231,15 +231,15 @@ function main() {
   GenSkipping.skipOne(g);
   const value = genIterator_next(g);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = GenSkipping.second([0]);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const second = GenSkipping.second([0]);
+  console.log(`${second == null ? "None" : `Some(${second})`}`);
   const r = { start: 0, end: 4 };
   tSkipping({ next: $rangeNext }).skipTwo(r);
   console.log(`${r.start}..${r.end}`);
   const v = $iter([1, 2, 3]);
   tSkipping({ next: $next }).skipOne(v);
-  const value$2 = $next(v);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$1 = $next(v);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const louds = [0];
   tSkipping({ next: loudsIterator_next }, undefined, loudDrop_drop).skipTwo(louds);
   console.log("louds skipped");
@@ -264,8 +264,8 @@ function main() {
     loudDrop_drop(l);
     return result;
   }
-  const value$3 = next != null ? map(next) : undefined;
-  console.log(`held ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = next != null ? map(next) : undefined;
+  console.log(`held ${value$2 == null ? "None" : `Some(${value$2})`}`);
   const numbers = [{ start: 1, end: 4 }];
   holderPeeled({ next: $rangeNext }).dropFirst(numbers);
   console.log(`${numbers[0].start}..${numbers[0].end} ${holderNamed().name(numbers)}`);

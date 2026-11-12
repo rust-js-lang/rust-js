@@ -3521,13 +3521,13 @@ export function copiedIterator___iteratorGetUnchecked(
   TCopy,
   dropI,
 ) {
-  const value = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+  const tryGetUnchecked = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
     copied.it,
     idx,
     IIterator,
     dropI,
   );
-  return TCopy ? TCopy.copy(value) : value;
+  return TCopy ? TCopy.copy(tryGetUnchecked) : tryGetUnchecked;
 }
 
 export function copiedIterator_sizeHint(copied, IIterator = { next: $next }, TCopy, dropI) {

@@ -17,8 +17,8 @@ function bytesFilled_row(bytes, with$, N) {
 }
 
 function main() {
-  const value = __Foo_foo(undefined, 10);
-  const value$1 = [
+  const foo = __Foo_foo(undefined, 10);
+  const value = [
     undefined,
     undefined,
     undefined,
@@ -30,11 +30,11 @@ function main() {
     undefined,
     undefined,
   ];
-  if (!$eq(value, value$1)) {
+  if (!$eq(foo, value)) {
     $assertFailed(
       "Eq",
+      `[${foo.map((item) => "()").join(", ")}]`,
       `[${value.map((item) => "()").join(", ")}]`,
-      `[${value$1.map((item) => "()").join(", ")}]`,
     );
   }
   console.log(`${__Foo_foo(undefined, 3).length}`);

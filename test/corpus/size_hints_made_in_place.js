@@ -17,10 +17,10 @@ function main() {
   const n$2 = Math.max(v.length - 9, 0);
   const value$2 = [n$2, n$2];
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = $sizeHint($iter(v));
-  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const sizeHint = $sizeHint($iter(v));
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const n$3 = Math.min(Math.max(v.length - 1, 0), 3);
-  const value$4 = [n$3, n$3];
-  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
+  const value$3 = [n$3, n$3];
+  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

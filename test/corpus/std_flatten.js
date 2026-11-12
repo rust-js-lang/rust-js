@@ -103,9 +103,9 @@ function main() {
     false,
   );
   const next = $next(cells);
-  const value = $sizeHint(cells);
+  const sizeHint = $sizeHint(cells);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+    `${next == null ? "None" : `Some(${next})`} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
   const nextBack = flattenDoubleEndedIterator_nextBack(
     cells,
@@ -116,9 +116,9 @@ function main() {
     true,
     false,
   );
-  const value$1 = $sizeHint(cells);
+  const value = $sizeHint(cells);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
   console.log(`[${Array.from($roomForHint(cells, 4, false)).join(", ")}]`);
 
@@ -134,8 +134,8 @@ function main() {
     3,
     false,
   );
-  const value$2 = $sizeHint(grid);
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const value$1 = $sizeHint(grid);
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   $next(grid);
   flattenDoubleEndedIterator_nextBack(
     grid,
@@ -146,8 +146,8 @@ function main() {
     true,
     false,
   );
-  const value$3 = $sizeHint(grid);
-  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$2 = $sizeHint(grid);
+  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   console.log(
     `${flattenDoubleEndedIterator_rfold(grid, 0, (acc, x) => (((acc * 10) | 0) + x) | 0, { next: $next }, { next_back: $nextBack }, intoIterator$1, { next: $next }, { next_back: $nextBack }, false)}`,
   );
@@ -159,9 +159,9 @@ function main() {
   ];
   const byRef = iterator_flatten($iter(pairs), { next: $next }, intoIterator$2, true, 2, false);
   $next(byRef);
-  const sizeHint = $sizeHint(byRef);
+  const value$3 = $sizeHint(byRef);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${byRef.reduce((a, b) => (a + b) & 255, 0)}`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) ${byRef.reduce((a, b) => (a + b) & 255, 0)}`,
   );
 
   // Of `Option`s, the `Some`s.

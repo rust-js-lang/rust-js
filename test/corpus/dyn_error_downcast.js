@@ -104,10 +104,10 @@ function code(e) {
 
 function describe(e) {
   const mine = e.impl.typeId?.() === "lib::Mine" ? e.value : undefined;
-  const value = e.impl.typeId?.() === "lib::Other";
+  const is = e.impl.typeId?.() === "lib::Other";
   const parsed = e.impl.typeId?.() === "core::num::error::ParseIntError" ? e.value : undefined;
   if (mine == null) {
-    if (value) {
+    if (is) {
       return "an other";
     }
     if (parsed != null) {

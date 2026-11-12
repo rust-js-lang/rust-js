@@ -50,48 +50,50 @@ function versionOrd_cmp(version, other) {
 function main() {
   const files = new $PathSet();
   files.add("src/lib.rs");
-  const value = $storedKey(files, "src//lib.rs");
+  const get = $storedKey(files, "src//lib.rs");
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`}`);
+  const value = $storedKey(files, "src/main.rs");
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$1 = $storedKey(files, "src/main.rs");
-  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
-  const value$2 = $setReplace(files, "src/./lib.rs");
-  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
-  const value$3 = $setTake(files, "src/lib.rs/");
-  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
+  const replace = $setReplace(files, "src/./lib.rs");
+  console.log(`${replace == null ? "None" : `Some(${$debugStr(replace)})`}`);
+  const take = $setTake(files, "src/lib.rs/");
+  console.log(`${take == null ? "None" : `Some(${$debugStr(take)})`}`);
   console.log(`${files.size}`);
   const ids = new Set([1]);
-  const replace = $setReplace(ids, 2);
-  const value$4 = $setReplace(ids, 1);
+  const value$1 = $setReplace(ids, 2);
+  const value$2 = $setReplace(ids, 1);
   console.log(
-    `${replace == null ? "None" : `Some(${replace})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 
   const words = new $CowMap();
   words.set({ TAG: "Owned", _0: "hi" }, 1);
-  const value$5 = $getKeyValue(words, "hi");
-  console.log(`${value$5 == null ? "None" : `Some((${$debugStr(value$5[0]._0)}, ${value$5[1]}))`}`);
+  const getKeyValue = $getKeyValue(words, "hi");
+  console.log(
+    `${getKeyValue == null ? "None" : `Some((${$debugStr(getKeyValue[0]._0)}, ${getKeyValue[1]}))`}`,
+  );
   const tags = new $CowSet([{ TAG: "Owned", _0: "new" }]);
-  const get = $storedKey(tags, "new");
-  console.log(`${get != null && get.TAG === "Owned"}`);
+  const value$3 = $storedKey(tags, "new");
+  console.log(`${value$3 != null && value$3.TAG === "Owned"}`);
 
   const sizes = new ($btreeMap($pathCmp, $PathMap))();
   sizes.set("a/b", 1);
   const entry = $entry(sizes, "a//b");
   if (entry.TAG === "Occupied") {
     console.log(`${$debugStr(entry._0[1])}`);
-    const value = $entryRemove(entry._0, true);
-    console.log(`(${$debugStr(value[0])}, ${value[1]})`);
+    const removeEntry = $entryRemove(entry._0, true);
+    console.log(`(${$debugStr(removeEntry[0])}, ${removeEntry[1]})`);
   }
 
   const releases = new ($ordSet(versionOrd_cmp))();
   releases.add([2, "two"]);
-  const value$6 = $storedKey(releases, [2, ""]);
+  const value$4 = $storedKey(releases, [2, ""]);
+  console.log(`${value$4 == null ? "None" : `Some(${versionDebug_fmt(value$4)})`}`);
+  const value$5 = $setReplace(releases, [2, "deux"]);
+  console.log(`${value$5 == null ? "None" : `Some(${versionDebug_fmt(value$5)})`}`);
+  const value$6 = $setTake(releases, [2, ""]);
   console.log(`${value$6 == null ? "None" : `Some(${versionDebug_fmt(value$6)})`}`);
-  const value$7 = $setReplace(releases, [2, "deux"]);
+  const value$7 = $setTake(releases, [2, ""]);
   console.log(`${value$7 == null ? "None" : `Some(${versionDebug_fmt(value$7)})`}`);
-  const value$8 = $setTake(releases, [2, ""]);
-  console.log(`${value$8 == null ? "None" : `Some(${versionDebug_fmt(value$8)})`}`);
-  const value$9 = $setTake(releases, [2, ""]);
-  console.log(`${value$9 == null ? "None" : `Some(${versionDebug_fmt(value$9)})`}`);
 }
 //# sourceMappingURL=case.js.map

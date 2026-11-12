@@ -45,37 +45,37 @@ function main() {
   console.log(
     `${$sliceStartsWith(path, origin, false, $eq)} ${$sliceStartsWith(path, $slice(path, 1), true, $eq)}`,
   );
-  const value = $sliceStrip(path, origin, false, $eq);
+  const stripPrefix = $sliceStrip(path, origin, false, $eq);
+  console.log(
+    `${stripPrefix == null ? "None" : `Some([${stripPrefix.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
+  );
+  const stripSuffix = $sliceStrip(path, [{ x: 9, y: 9 }], true, $eq);
+  console.log(
+    `${stripSuffix == null ? "None" : `Some([${stripSuffix.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
+  );
+  const stripCircumfix = $sliceStripCircumfix(path, origin, origin, $eq);
+  console.log(
+    `${stripCircumfix == null ? "None" : `Some([${stripCircumfix.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
+  );
+  const value = $sliceStripCircumfix($slice(path, 0, 1), origin, origin, $eq);
   console.log(
     `${value == null ? "None" : `Some([${value.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
-  );
-  const value$1 = $sliceStrip(path, [{ x: 9, y: 9 }], true, $eq);
-  console.log(
-    `${value$1 == null ? "None" : `Some([${value$1.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
-  );
-  const value$2 = $sliceStripCircumfix(path, origin, origin, $eq);
-  console.log(
-    `${value$2 == null ? "None" : `Some([${value$2.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
-  );
-  const value$3 = $sliceStripCircumfix($slice(path, 0, 1), origin, origin, $eq);
-  console.log(
-    `${value$3 == null ? "None" : `Some([${value$3.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
   );
 
   const loose = [[1], [5], [9]];
   console.log(
     `${$sliceStartsWith(loose, [[2]], false, loosePartialEq_eq)} ${$sliceStartsWith(loose, [[7]], true, loosePartialEq_eq)}`,
   );
-  const value$4 = $sliceStrip(loose, [[0], [6]], false, loosePartialEq_eq);
+  const value$1 = $sliceStrip(loose, [[0], [6]], false, loosePartialEq_eq);
   console.log(
-    `${value$4 == null ? "None" : `Some([${value$4.map((item) => looseDebug_fmt(item)).join(", ")}])`}`,
+    `${value$1 == null ? "None" : `Some([${value$1.map((item) => looseDebug_fmt(item)).join(", ")}])`}`,
   );
   console.log(
     `${framed(path, origin, $partialEq({ eq: $eq }))} ${framed(loose, [[1]], loosePartialEq)}`,
   );
-  const value$5 = $sliceStripCircumfix([1.5, 2], [1.5], [2]);
+  const value$2 = $sliceStripCircumfix([1.5, 2], [1.5], [2]);
   console.log(
-    `${value$5 == null ? "None" : `Some([${value$5.map((item) => $debugF64(item)).join(", ")}])`}`,
+    `${value$2 == null ? "None" : `Some([${value$2.map((item) => $debugF64(item)).join(", ")}])`}`,
   );
 }
 //# sourceMappingURL=case.js.map

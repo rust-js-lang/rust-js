@@ -98,16 +98,16 @@ function main() {
   console.log(`digits (${value[0]}, ${value[1]})`);
   const value$1 = words(text);
   console.log(`words (${value$1[0]}, ${value$1[1]})`);
-  const value$2 = fromTheEnd(text);
-  console.log(`from the end (${value$2[0]}, ${$debugStr(value$2[1], "'")})`);
-  const value$3 = bothEnds(text);
-  console.log(`both ends (${value$3[0]}, ${$debugStr(value$3[1])})`);
+  const theEnd = fromTheEnd(text);
+  console.log(`from the end (${theEnd[0]}, ${$debugStr(theEnd[1], "'")})`);
+  const value$2 = bothEnds(text);
+  console.log(`both ends (${value$2[0]}, ${$debugStr(value$2[1])})`);
   const indices = $charIndices(text);
   const nth = Array.from($lent(indices).drop(3).take(1))[0];
   const nextBack = $nextBack(indices);
-  const value$4 = $sizeHint(indices);
+  const sizeHint = $sizeHint(indices);
   console.log(
-    `${nth == null ? "None" : `Some((${nth[0]}, ${$debugStr(nth[1], "'")}))`} ${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
+    `${nth == null ? "None" : `Some((${nth[0]}, ${$debugStr(nth[1], "'")}))`} ${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

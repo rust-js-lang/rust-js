@@ -87,13 +87,13 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = alwaysHold_hold(undefined, 6);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const hold = alwaysHold_hold(undefined, 6);
+  console.log(`${hold == null ? "None" : `Some(${hold})`}`);
   const nothing = undefined;
   const front = wrapFront_front([nothing], clone);
-  const value$4 = wrapFront_front([3], clone);
+  const value$3 = wrapFront_front([3], clone);
   console.log(
-    `${front == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(front))})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${front == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(front))})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -150,8 +150,8 @@ function main() {
   console.log(
     `${rfind == null ? "None" : `Some(${rfind})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$5 = v.flat().at(-1);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  const last = v.flat().at(-1);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   fused();
 }
 
@@ -213,9 +213,9 @@ function fused() {
     false,
     false,
   );
-  const value$2 = $next(f);
+  const next = $next(f);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const g = iterator_flatMap(
     { n: 0 },
@@ -226,7 +226,7 @@ function fused() {
     undefined,
     false,
   );
-  const next = $next(g);
+  const value$2 = $next(g);
   const value$3 = $next(g);
   const value$4 = flatMapDoubleEndedIterator_nextBack(
     g,
@@ -239,7 +239,7 @@ function fused() {
   );
   const value$5 = $next(g);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

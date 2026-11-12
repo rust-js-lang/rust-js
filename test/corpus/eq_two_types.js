@@ -25,10 +25,10 @@ export function smallPartialEqSmall(AArray, BArray, AItemPartialEqBItem) {
   );
 }
 function smallPartialEqSmall_eq(small, other, AArray, BArray, AItemPartialEqBItem) {
-  const value = AArray.items(small[0]);
+  const items = AArray.items(small[0]);
   const other$1 = BArray.items(other[0]);
   return (
-    value.length === other$1.length && value.every((x, i) => !AItemPartialEqBItem.ne(x, other$1[i]))
+    items.length === other$1.length && items.every((x, i) => !AItemPartialEqBItem.ne(x, other$1[i]))
   );
 }
 

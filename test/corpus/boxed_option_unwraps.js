@@ -33,8 +33,8 @@ function firstOr(cur, it) {
 }
 
 function least(it, f) {
-  const option = $minBy(Iterator.from(it), f, true);
-  return option == null ? [] : [$someValue(option)];
+  const minBy = $minBy(Iterator.from(it), f, true);
+  return minBy == null ? [] : [$someValue(minBy)];
 }
 
 function most(items, TOrd) {

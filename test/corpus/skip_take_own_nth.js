@@ -60,7 +60,7 @@ function main() {
   console.log(
     `count past ${$count($iterator(counted(9), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2).take(9))}`,
   );
-  const value = Array.from(
+  const last = Array.from(
     $folded(
       $iterator(
         counted(9),
@@ -76,7 +76,7 @@ function main() {
         .take(2),
     ),
   ).at(-1);
-  console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+  console.log(`last ${last == null ? "None" : `Some(${last})`}`);
   $iterator(
     counted(9),
     countIterator_next,
@@ -95,7 +95,7 @@ function main() {
   console.log(
     `collected [${Array.from($iterator(counted(5), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(1).take(3)).join(", ")}]`,
   );
-  const value$1 = $max(
+  const max = $max(
     $iterator(
       counted(5),
       countIterator_next,
@@ -109,6 +109,6 @@ function main() {
       .drop(1)
       .take(3),
   );
-  console.log(`max ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`max ${max == null ? "None" : `Some(${max})`}`);
 }
 //# sourceMappingURL=case.js.map

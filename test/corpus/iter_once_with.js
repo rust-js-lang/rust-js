@@ -12,10 +12,10 @@ function main() {
     return 5;
   });
   console.log("made");
+  const next = $next(it);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
   const value = $next(it);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $next(it);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
 
   $onceWith(() => {
     console.log("never");
@@ -41,8 +41,8 @@ function main() {
     return seen;
   }).reduce((n) => n + 1, 0);
   console.log(`${n} ${seen}`);
-  const value$2 = Array.from($onceWith(() => 4)).at(-1);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const last = Array.from($onceWith(() => 4)).at(-1);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(`${$onceWith(() => 6).reduce((a, b) => (a + b) | 0, 0)}`);
 
   let text = "";
@@ -50,11 +50,11 @@ function main() {
   const set = new Set($onceWith(() => 9));
   console.log(`${text} {${Array.from(set).join(", ")}}`);
   const peek = iterator_peekable($onceWith(() => 3));
+  const value$1 = $peek(peek);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value$2 = $next(peek);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = $peek(peek);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = $next(peek);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $peek(peek);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }
 //# sourceMappingURL=case.js.map

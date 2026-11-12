@@ -28,17 +28,17 @@ function peeked(map, names) {
   if (name == null) {
     return;
   }
-  const value$1 = map.get(name);
-  if (value$1 == null) {
+  const get = map.get(name);
+  if (get == null) {
     return;
   }
   const value = $peek(names) != null;
-  if (value$1.TAG === "Circle") {
+  if (get.TAG === "Circle") {
     if (value) {
-      return (value$1._0 * 2) >>> 0;
+      return (get._0 * 2) >>> 0;
     }
-  } else if (value$1.TAG === "Square" && !value) {
-    return value$1._0;
+  } else if (get.TAG === "Square" && !value) {
+    return get._0;
   }
 }
 

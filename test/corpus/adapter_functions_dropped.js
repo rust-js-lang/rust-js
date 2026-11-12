@@ -195,8 +195,8 @@ function main() {
     ),
   );
   try {
-    const value = $next(held);
-    console.log(`${value == null ? "None" : `Some(${value})`} held`);
+    const next = $next(held);
+    console.log(`${next == null ? "None" : `Some(${next})`} held`);
     console.log("end");
   } catch (error) {
     throw $unwindsOn(error);

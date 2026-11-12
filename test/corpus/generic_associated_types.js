@@ -66,8 +66,8 @@ function second(c, CContainer) {
 }
 
 function show(c, CContainer) {
-  const value = CContainer.last(c);
-  return value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`;
+  const last = CContainer.last(c);
+  return last == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(last))})`;
 }
 
 const byteFilled = { filled: byteFilled_filled };

@@ -50,4 +50,14 @@ export const mutations: Mutation[] = [
       "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Result) => args.type_at(0).peel_refs(),\n",
     tests: ["test/snapshots.test.ts", "-t", "inbox"],
   },
+  {
+    name: "every-role-says-nothing",
+    breaks:
+      "a value spilled for a role that names what it holds, a `Result`'s `result`, is named by its call instead, `parse` of `JSON.parse(..)`, which #769 found reads worse (#890)",
+    file: "src/lower/temporary_names.rs",
+    find: "        matches!(self, Role::Value | Role::Option)\n",
+    replace: "        true\n",
+    tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
+    snapshots: true,
+  },
 ];

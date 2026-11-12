@@ -27,8 +27,8 @@ function main() {
   }
   const last = $endEntry(names, $cmp, true);
   if (last != null) {
-    const value = $entryRemove(last, true);
-    console.log(`(${value[0]}, ${$debugStr(value[1])})`);
+    const removeEntry = $entryRemove(last, true);
+    console.log(`(${removeEntry[0]}, ${$debugStr(removeEntry[1])})`);
   }
   console.log(
     `{${Array.from($sortedEntries(names, $cmp))

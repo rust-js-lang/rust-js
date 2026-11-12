@@ -53,8 +53,10 @@ function all(word, IRefIntoIterator) {
     }`,
   );
   console.log(`${!$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}`);
-  const value = $iterCmp("ab"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp);
-  console.log(`${value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`}`);
+  const partialCmp = $iterCmp("ab"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp);
+  console.log(
+    `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`}`,
+  );
   console.log(`${$iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) < 0}`);
   const v = ["z"];
   $extend(v, $grownBy(v, IRefIntoIterator.intoIter(word), 4, false, undefined, true));

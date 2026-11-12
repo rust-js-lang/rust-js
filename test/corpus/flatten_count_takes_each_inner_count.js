@@ -100,16 +100,16 @@ function counted(it, dropI, dropIItem) {
 
 function countedFromBothEnds(it) {
   const next = $next(it);
-  const value = $nextBack(it);
+  const nextBack = $nextBack(it);
   console.log(
-    `next ${next == null ? "None" : `Some(${next})`} back ${value == null ? "None" : `Some(${value})`}`,
+    `next ${next == null ? "None" : `Some(${next})`} back ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
   return $count(Iterator.from(it));
 }
 
 function skippedFromItsBack(it) {
-  const value = $nextBack(it);
-  console.log(`back ${value == null ? "None" : `Some(${value})`}`);
+  const nextBack = $nextBack(it);
+  console.log(`back ${nextBack == null ? "None" : `Some(${nextBack})`}`);
   return $count(Iterator.from(it).drop(1));
 }
 
@@ -194,8 +194,8 @@ function main() {
       ownIterator_count,
     ),
   );
-  const value = $next(it);
-  console.log(`next ${value == null ? "None" : `Some(${value})`}`);
+  const next = $next(it);
+  console.log(`next ${next == null ? "None" : `Some(${next})`}`);
   console.log(`rest ${$count(it)}`);
   // Stepped from both ends first, its back inner's own `count` last.
   it = iterator_flatMap(
@@ -207,8 +207,8 @@ function main() {
     undefined,
     false,
   );
-  const next = $next(it);
-  const value$1 = flatMapDoubleEndedIterator_nextBack(
+  const value = $next(it);
+  const nextBack = flatMapDoubleEndedIterator_nextBack(
     it,
     { next: $next },
     { next_back: $nextBack },
@@ -218,7 +218,7 @@ function main() {
     false,
   );
   console.log(
-    `next ${next == null ? "None" : `Some(${next})`} back ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `next ${value == null ? "None" : `Some(${value})`} back ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
   console.log(`ends ${$count(it)}`);
   console.log(
@@ -276,7 +276,7 @@ function main() {
     undefined,
     false,
   );
-  const value$2 = flatMapDoubleEndedIterator_nextBack(
+  const value$1 = flatMapDoubleEndedIterator_nextBack(
     it,
     { next: $next },
     { next_back: $nextBack },
@@ -285,7 +285,7 @@ function main() {
     true,
     false,
   );
-  console.log(`held back ${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`held back ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`held back skipped ${$count(it.drop(1))}`);
   it = iterator_flatten(
     $iter([[2], [3], [4]]),
@@ -295,7 +295,7 @@ function main() {
     undefined,
     false,
   );
-  const value$3 = flattenDoubleEndedIterator_nextBack(
+  const value$2 = flattenDoubleEndedIterator_nextBack(
     it,
     { next_back: $nextBack },
     intoIterator,
@@ -304,7 +304,7 @@ function main() {
     true,
     false,
   );
-  console.log(`held back ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`held back ${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(`held back skipped ${$count(it.drop(2))}`);
   it = iterator_fuse(
     iterator_flatMap(
@@ -319,7 +319,7 @@ function main() {
     { next: $next, fold: $foldOf, count: $count },
     true,
   );
-  const value$4 = fuseDoubleEndedIterator_nextBack(
+  const value$3 = fuseDoubleEndedIterator_nextBack(
     it,
     {
       next_back: (iterator) =>
@@ -369,7 +369,7 @@ function main() {
     },
     true,
   );
-  console.log(`fused back ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`fused back ${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log(`fused back skipped ${$count(it.drop(1))}`);
   // Std's own `count` of each inner, `Map`'s of the crate's, which isn't
   // the crate's: each stepped by `next`.
@@ -451,7 +451,7 @@ function main() {
         }),
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$5 = Array.from(
+  const value$4 = Array.from(
     $flatMap(
       $closing($iter([kept(42, 2), kept(43, 1)]), (intoIter) => {
         for (const item of intoIter) {
@@ -464,7 +464,7 @@ function main() {
         }),
     ),
   ).at(-1);
-  console.log(`kept last ${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`kept last ${value$4 == null ? "None" : `Some(${value$4})`}`);
   let r = $catchUnwind(() =>
     $count(
       $flatMap($closing($iter([[20], [13], [21]]), $dropEach(dDrop_drop)), (item) =>

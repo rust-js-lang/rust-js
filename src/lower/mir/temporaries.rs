@@ -4,6 +4,14 @@
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
 
+/// The name a value read in place knows its temporary is given (ADR 0569,
+/// #769): what a pending temporary was named by its call, `next` of
+/// `r.next()`, which names a `const` of it, a spill's, MIR's or tidy's
+/// (`readable_temporaries`, #890). The one read of it.
+pub(in crate::lower) fn held_name(value: &Expr) -> Option<&js::Held> {
+    value.held_as.0.as_deref()
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, a subject its call reads more than once, `o.map(f)`'s, in a
     /// `const` named after `base`, as `spill` holds it; but of a value read
@@ -23,7 +31,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (named, bound): (bool, bool),
         out: &mut Vec<Stmt>,
     ) -> Expr {
-        let held = (value.held_as.0.as_deref().filter(|held| named && !(held.read && bound)))
+        let held = (held_name(&value).filter(|held| named && !(held.read && bound)))
             .map(|held| &held.name)
             .filter(|name| !self.names.contains(*name) || self.locals.mir.subjects.contains(*name))
             .cloned();
@@ -32,6 +40,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.locals.mir.subjects.insert(held.clone());
         self.spill(Base::Named(&held), value, out)
+    }
+
+    /// Note `name`, which `spill` gave a value for `role` at once, in the
+    /// body's naming table (#890), for tidy's one pick to name again once
+    /// the code is placed: by what made the value suggests, its call's name
+    /// (`held_name`), else `role`'s word.
+    pub(in crate::lower) fn note_spilled(&mut self, name: &str, role: Role) {
+        (self.locals.mir.made.spilled).insert(name.to_string(), role);
     }
 
     /// `value` held in a `const` named after `name`, as `spill` holds it,

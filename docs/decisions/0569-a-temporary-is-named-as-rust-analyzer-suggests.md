@@ -368,3 +368,52 @@ word. `scripts/readability.ts` now counts it, "role fallbacks": a
 gains that column alone, each file's count beside its others as they
 were: 8,505 of 301,704 lines, 281.9 in 10,000. Steps 3 to 5 must lower
 it, and no change may raise it.
+
+## Amendment (2026-11-12, #890 step 3): a temporary is named after the code is placed, a call's name first
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; names alone
+change, which no program reads (each changed snapshot's tokens are the
+same once names are set aside), and every corpus case still runs as
+native Rust does in both builds.
+
+A value spilled for a role was named at once and never again: a call's
+result a `println!` argument holds was `value`, though a MIR temporary of
+the same call is named by it (#837). Now tidy's `readable_temporaries`,
+after the last pass that moves code, names it again by the one pick:
+
+- `spill` of a `Role` notes its name and role in the body's naming
+  table, `Made::spilled`, which tidy reads as it reads `made`. The name
+  it was given stays valid at every stage end, `value$3`, so a body
+  stopped early (`--tidy-until`) is valid JS.
+- A spilled value whose role's word says nothing of it, `value` or
+  `option` (`Role::says_nothing`), is named by what made it, its call's
+  name (`held_name`, the one read of `held_as`, in `mir/temporaries.rs`),
+  where that's free, `pullTwo` of `RangePull.pullTwo(..)`, `minBy`,
+  `next`. One the lowering named for what it holds keeps its word: `at`
+  of a found index, as upstream React's `idx`, `fallback` of `a ||
+  fallback`, and a `Result`'s `result`, which #769 found its call names
+  worse. Where no suggestion is free, it keeps the name it has, which
+  tidy may have given again in a block apart (ADR 0352).
+- A temporary MIR's hints leave unnamed, `_$1` of an arrow called where
+  it's made or a `const _6` of a call read in place, is named by its
+  value's call too, before falling back to `value`; not an argument held,
+  which MIR's rule names `arg`.
+- Of a body with a function or closure in it, already named by its own
+  tidy, a spilled name that appears in it is left as it is, so a rename
+  never reaches into a function that has its own.
+
+Measured over the readability baseline's files: role fallbacks 281.9 to
+272.4 in 10,000 lines, renamed `x$1` 499.7 to 488.5. Snapshots changed:
+233 corpus cases, four of `test/snapshots` and the committed std's
+`iter.js`; the inline expectations of `compiler.test.ts` follow, `next`
+and `pick`. Mutations: `temporary-not-named-by-its-call`,
+`spilled-not-named-by-its-call` and `spilled-renamed-to-its-role-anew`
+(`lower/mir/tidy/bindings/temporaries.ts`), `spill-named-at-once`
+(`lower.ts`), `every-role-says-nothing` (`lower/temporary_names.ts`);
+`spill-hyphenated-name` and `mir-temporaries-unnamed` re-anchored. A
+local may take a module's name it doesn't read (amended above), and
+`plain_statics` keeps an exported cell boxed where any local binds its
+name; so a temporary named by a call to a private function that
+shares an exported cell's name would refuse it. Held arguments keep `arg`
+for that reason here; that hazard, MIR's temporaries' as well, is
+reported as its own issue.

@@ -91,14 +91,14 @@ function main() {
     false,
   );
   const value = $sizeHint(sn);
-  const value$1 = $next(sn);
-  console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`,
-  );
-  const value$2 = $sizeHint(sn);
   const next = $next(sn);
   console.log(
-    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${next == null ? "None" : `Some([${next.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(sn))}`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${next == null ? "None" : `Some([${next.join(", ")}])`}`,
+  );
+  const value$1 = $sizeHint(sn);
+  const value$2 = $next(sn);
+  console.log(
+    `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(sn))}`,
   );
   const rsn = Array.from(
     $lazySliceSplitBy(
@@ -176,13 +176,13 @@ function main() {
       return a === b;
     }).reduce((n) => n + 1, 0)}`,
   );
-  const value$7 = $last(
+  const last = $last(
     $lazyChunkBy(w, (a, b) => {
       console.log(`last ${a} ${b}`);
       return a === b;
     }),
   );
-  console.log(`${value$7 == null ? "None" : `Some([${value$7.join(", ")}])`}`);
+  console.log(`${last == null ? "None" : `Some([${last.join(", ")}])`}`);
   const m = [5, 0, 6, 7, 0, 8];
   for (const piece of $lazySliceSplitByMut(
     m,

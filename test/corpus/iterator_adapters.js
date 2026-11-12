@@ -116,8 +116,8 @@ function main() {
   );
   console.log(`[${w.join(", ")}]`);
   const r = Doubled.new({ start: 5, end: 9 });
-  const value = doubledIterator_next(r, { next: $rangeNext });
-  console.log(`${value == null ? "None" : `Some(${value})`} ${r.inner.start} ${r.inner.end}`);
+  const next = doubledIterator_next(r, { next: $rangeNext });
+  console.log(`${next == null ? "None" : `Some(${next})`} ${r.inner.start} ${r.inner.end}`);
   console.log(`${Doubled.rest(r, { next: $rangeNext })}`);
   const c = Array.from(
     $iterator(doubled([3]), (iterator) =>
@@ -160,11 +160,11 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$1 = first($lazyRange(3, 5));
-  const value$2 = second([{ start: 7, end: 10 }], { next: $rangeNext });
-  const value$3 = second([[5]], { next: countdownIterator_next });
+  const value = first($lazyRange(3, 5));
+  const value$1 = second([{ start: 7, end: 10 }], { next: $rangeNext });
+  const value$2 = second([[5]], { next: countdownIterator_next });
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   console.log(`${sumKeyed($iter([11, 10, 1]), intoIterKeyed)}`);
   const [t, spare] = totalOf(

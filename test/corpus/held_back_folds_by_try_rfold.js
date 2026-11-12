@@ -149,14 +149,14 @@ function main() {
       2,
     ),
   );
-  const value = Array.from($folded(held)).at(-1);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const last = Array.from($folded(held)).at(-1);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   const back = iterator_skip(
     iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
     1,
     { next: $next, fold: $foldOf },
   );
-  const value$1 = $findBack(
+  const rfind = $findBack(
     $knowing(
       back,
       (iterator) =>
@@ -199,7 +199,7 @@ function main() {
     ),
     (x) => x % 2 === 0,
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${rfind == null ? "None" : `Some(${rfind})`}`);
   const summed = $rev(
     $skipping(
       $taking(

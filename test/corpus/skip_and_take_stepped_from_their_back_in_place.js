@@ -192,9 +192,9 @@ function main() {
     ),
     (x) => x % 2 === 0,
   );
-  const value$15 = $next(it);
+  const next = $next(it);
   console.log(
-    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
+    `${value$14 == null ? "None" : `Some(${value$14})`} ${next == null ? "None" : `Some(${next})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

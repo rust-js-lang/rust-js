@@ -43,15 +43,15 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const range = { start: 1, end: 5 };
   RangeExt.skipOne(range);
-  const value$1 = RangeExt.second(range);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = firstTwo($lazyRange(7, 9));
+  const second = RangeExt.second(range);
+  console.log(`${second == null ? "None" : `Some(${second})`}`);
+  const value$1 = firstTwo($lazyRange(7, 9));
+  console.log(
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+  );
+  const value$2 = firstTwo($iter([4]));
   console.log(
     `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
-  );
-  const value$3 = firstTwo($iter([4]));
-  console.log(
-    `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

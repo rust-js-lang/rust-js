@@ -13,7 +13,7 @@ function main() {
   const value$1 = $findBack($iter(nums), (x) => x % 2 === 0);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`${nums.reduce((n, x) => (((n * 10) >>> 0) + x) >>> 0, 0)}`);
-  const value$2 = nums.slice().at(-1);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const last = nums.slice().at(-1);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
 }
 //# sourceMappingURL=case.js.map

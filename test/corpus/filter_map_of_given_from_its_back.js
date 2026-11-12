@@ -144,9 +144,9 @@ function main() {
   );
   oks = { iter: $iter(results) };
   const nextBack = oksDoubleEndedIterator_nextBack(oks, { next: $next }, { next_back: $nextBack });
-  const value = oksIterator_next(oks, { next: $next });
+  const next = oksIterator_next(oks, { next: $next });
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const doubled = oksDoubleEndedIterator_rfold(
     {

@@ -41,8 +41,12 @@ function main() {
   console.log(`${labelOf({ value: 0 }, counterSource)}`);
   const names = { names: ["a", "b"] };
   console.log(`${labelOf(names, namesSource)}`);
-  const value = namesSource.firstCloned(names, { deref: (x) => x }, { clone: (value) => value });
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const firstCloned = namesSource.firstCloned(
+    names,
+    { deref: (x) => x },
+    { clone: (value) => value },
+  );
+  console.log(`${firstCloned == null ? "None" : `Some(${$debugStr(firstCloned)})`}`);
   const dynNames = { value: { names: [] }, impl: namesSource };
   const next = dynNames.impl.next(dynNames);
   console.log(

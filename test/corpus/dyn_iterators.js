@@ -55,15 +55,15 @@ function doubled(it) {
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
   console.log(`[${Array.from($roomForHint(evens(v), 4, false)).join(", ")}]`);
-  const value = $max(evens(v).map((n) => (n * 10) >>> 0));
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const max = $max(evens(v).map((n) => (n * 10) >>> 0));
+  console.log(`${max == null ? "None" : `Some(${max})`}`);
   console.log(`[${Array.from($roomForHint(numbers(true), 4, false)).join(", ")}]`);
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
 
   const it = $iter(v);
-  const value$1 = firstTwo(it);
+  const value = firstTwo(it);
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
   console.log(`${total(it)}`);
   const rest = $iter(v);
@@ -71,8 +71,8 @@ function main() {
   console.log(`[${doubled(rest).join(", ")}]`);
 
   const boxed = $iter(v);
-  const value$2 = $next(boxed);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const next = $next(boxed);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
   for (const n of boxed) {
     $print(`${n} `);
   }

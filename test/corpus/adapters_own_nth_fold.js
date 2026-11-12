@@ -182,7 +182,7 @@ function main() {
   console.log(
     `${$nth($lent($lazyChain($iterator([0], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth), $iterator([3], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth))), 11) ?? 0}`,
   );
-  const value$3 = Array.from(
+  const last = Array.from(
     $folded(
       $lazyTakeWhile(
         $iterator(
@@ -199,7 +199,7 @@ function main() {
       ),
     ),
   ).at(-1);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$lazyScan(
       $iterator(
@@ -219,7 +219,7 @@ function main() {
       },
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$4 = Array.from(
+  const value$3 = Array.from(
     $folded(
       $lazyMapWhile(
         $stepBy(
@@ -244,7 +244,7 @@ function main() {
       ),
     ),
   ).at(-1);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const base = counted();
   console.log(
     `${$count(

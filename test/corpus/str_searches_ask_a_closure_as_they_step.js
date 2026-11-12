@@ -35,8 +35,8 @@ function first() {
     console.log(`t2 ${c}`);
     return c === ";";
   });
-  const value = $next(it);
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const next = $next(it);
+  console.log(`${next == null ? "None" : `Some(${$debugStr(next)})`}`);
   console.log("after first");
   const n = Array.from(
     $lazySplitBy(
@@ -91,9 +91,9 @@ function backs() {
     (p) => $byteLen(p),
   );
   const nextBack = mapDoubleEndedIterator_nextBack(m);
-  const value = $next(m);
+  const next = $next(m);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const r = Array.from(
     $rev(
@@ -150,9 +150,9 @@ function main() {
     return c === ",";
   });
   const nextBack = $nextBack(sp);
-  const value = $next(sp);
+  const next = $next(sp);
   console.log(
-    `${nextBack == null ? "None" : `Some(${$debugStr(nextBack)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
+    `${nextBack == null ? "None" : `Some(${$debugStr(nextBack)})`} ${next == null ? "None" : `Some(${$debugStr(next)})`}`,
   );
   console.log(
     `[${Array.from(sp)
@@ -163,11 +163,11 @@ function main() {
     console.log(`st ${c}`);
     return c === ".";
   });
+  const value = $nextBack(st);
   const value$1 = $nextBack(st);
   const value$2 = $nextBack(st);
-  const value$3 = $nextBack(st);
   console.log(
-    `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`,
+    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
   );
   const rst = Array.from($lazySplitTerminatorBy("a.b.", (c) => c === ".", true));
   console.log(`[${rst.map((item) => $debugStr(item)).join(", ")}]`);
@@ -175,11 +175,11 @@ function main() {
     console.log(`si ${c}`);
     return /^[0-9]$/.test(c);
   });
-  const value$4 = $nextBack(si);
-  const next = $next(si);
+  const value$3 = $nextBack(si);
+  const value$4 = $next(si);
   const value$5 = $next(si);
   console.log(
-    `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${next == null ? "None" : `Some(${$debugStr(next)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
+    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
   );
   const rn = Array.from(
     $lazyRsplitBy(

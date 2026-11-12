@@ -49,9 +49,9 @@ function main() {
 
   const range = { start: 0, end: 5 };
   const nextBack = $rangeNextBack(range);
-  const value = $rangeNext(range);
+  const next = $rangeNext(range);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
 
   const p = iterator_peekable($iter(v));

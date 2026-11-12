@@ -22,29 +22,27 @@ export function entry() {
 
 function main() {
   const o = $iter([1]);
-  const value = $sizeHint(o);
-  console.log(`once (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const sizeHint = $sizeHint(o);
+  console.log(`once (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   $next(o);
-  const value$1 = $sizeHint(o);
+  const value = $sizeHint(o);
+  console.log(`once stepped (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const value$1 = $sizeHint(iterator_peekable($iter([1])));
   console.log(
-    `once stepped (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
-  );
-  const value$2 = $sizeHint(iterator_peekable($iter([1])));
-  console.log(
-    `once peekable (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
+    `once peekable (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
 
   const w = $onceWith(() => 1);
-  const value$3 = $sizeHint(w);
-  console.log(`once_with (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$2 = $sizeHint(w);
+  console.log(`once_with (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   $next(w);
-  const value$4 = $sizeHint(w);
+  const value$3 = $sizeHint(w);
   console.log(
-    `once_with stepped (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
+    `once_with stepped (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
   );
-  const value$5 = $sizeHint(iterator_peekable($onceWith(() => 2)));
+  const value$4 = $sizeHint(iterator_peekable($onceWith(() => 2)));
   console.log(
-    `once_with peekable (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
+    `once_with peekable (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
 
   const p = iterator_peekable(
@@ -53,12 +51,12 @@ function main() {
       return 5;
     }),
   );
-  const value$6 = $sizeHint(p);
-  console.log(`held (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
+  const value$5 = $sizeHint(p);
+  console.log(`held (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   const peeked = $peek(p);
-  const value$7 = $sizeHint(p);
+  const value$6 = $sizeHint(p);
   console.log(
-    `peeked ${peeked == null ? "None" : `Some(${peeked})`} (${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`,
+    `peeked ${peeked == null ? "None" : `Some(${peeked})`} (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
   );
 
   const chained = $grownVec(

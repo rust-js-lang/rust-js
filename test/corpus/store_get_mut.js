@@ -58,7 +58,7 @@ function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {
 
 export const LiteMap = {
   getMut(liteMap, i, SStoreMutKV) {
-    const value = SStoreMutKV.lmGetMut(
+    const lmGetMut = SStoreMutKV.lmGetMut(
       {
         get value() {
           return liteMap.values;
@@ -69,10 +69,10 @@ export const LiteMap = {
       },
       i,
     );
-    if (value == null) {
+    if (lmGetMut == null) {
       return;
     }
-    return value[1];
+    return lmGetMut[1];
   },
 
   firstMut(liteMap, SStoreMutKV) {

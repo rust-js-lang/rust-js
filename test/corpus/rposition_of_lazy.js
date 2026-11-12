@@ -33,23 +33,23 @@ function cDoubleEndedIterator_nextBack(c) {
 }
 function main() {
   const v = [1, 2, 3, 2, 5];
-  const value = $rposition(
+  const rposition = $rposition(
     $mapEnds($iter(v), (x) => (x * 2) | 0),
     (x) => x === 4,
   );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $rposition(
+  console.log(`${rposition == null ? "None" : `Some(${rposition})`}`);
+  const value = $rposition(
     $mapEnds($iter(v), (x) => (x + 1) | 0),
     (x) => x === 3,
   );
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = $rposition($iter(v.toReversed()), (x) => x === 2);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $rposition($iter(v.toReversed()), (x) => x === 2);
+  const value$2 = $rposition($iter($utf8Bytes("héllo")), (b) => b === 108);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $rposition($iter($utf8Bytes("héllo")), (b) => b === 108);
+  const value$3 = $rposition($enumerate($iter(v)), ([i, x]) => i > 0 && x === 2);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = $rposition($enumerate($iter(v)), ([i, x]) => i > 0 && x === 2);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $rposition(
+  const value$4 = $rposition(
     $iterator(
       [0],
       cIterator_next,
@@ -60,6 +60,6 @@ function main() {
     ),
     (x) => x === 7,
   );
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 }
 //# sourceMappingURL=case.js.map

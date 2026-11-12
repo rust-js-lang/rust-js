@@ -22,8 +22,8 @@ export const Code = {
 };
 
 function main() {
-  const value = Code.raw([2147483652]);
-  console.log(`${codeDebug_fmt([2147483652])} ${value}`);
+  const raw = Code.raw([2147483652]);
+  console.log(`${codeDebug_fmt([2147483652])} ${raw}`);
   console.log(`${$eq(UNSUPPORTED, [2147483652])}`);
 }
 //# sourceMappingURL=case.js.map

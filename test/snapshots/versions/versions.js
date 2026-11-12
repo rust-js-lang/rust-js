@@ -73,9 +73,9 @@ function configDebug_fmt(config) {
 
 function largest(items, TPartialOrd) {
   const it = $iter(items);
-  const value = $next(it);
-  if (value != null) {
-    let best = value;
+  const next = $next(it);
+  if (next != null) {
+    let best = next;
     for (const x of it) {
       if (TPartialOrd.gt(x, best)) {
         best = x;

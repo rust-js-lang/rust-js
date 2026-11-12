@@ -34,9 +34,9 @@ function main() {
   const u = [1, 2, 3];
   const map = $mapEnds($iter(u), (x) => (x * 10) | 0);
   k++;
-  const value = $nthBack(map, k - 2);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $held(
+  const nthBack = $nthBack(map, k - 2);
+  console.log(`${nthBack == null ? "None" : `Some(${nthBack})`}`);
+  const value = $held(
     $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => {
       const result = (d[0] * 10) >>> 0;
       dDrop_drop(d);
@@ -46,20 +46,20 @@ function main() {
   k++;
   let found;
   try {
-    found = $nthBack(value$1, k - 2);
+    found = $nthBack(value, k - 2);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value$1.return();
+      value.return();
     }
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
-  const value$2 = $mapEnds($iter([1, 2, 3, 4]), (x) => (x + 1) >>> 0);
+  const value$1 = $mapEnds($iter([1, 2, 3, 4]), (x) => (x + 1) >>> 0);
   k++;
-  const folded = $foldBack(value$2, k, (n, x) => (((n * 10) >>> 0) + x) >>> 0);
+  const folded = $foldBack(value$1, k, (n, x) => (((n * 10) >>> 0) + x) >>> 0);
   console.log(`${folded}`);
-  const value$3 = $held(
+  const value$2 = $held(
     $mapEnds(
       $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] % 2 === 1, dDrop_drop),
       (d) => {
@@ -72,12 +72,12 @@ function main() {
   k--;
   let odd;
   try {
-    odd = $nthBack(value$3, k - 2);
+    odd = $nthBack(value$2, k - 2);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value$3.return();
+      value$2.return();
     }
   }
   console.log(`${odd == null ? "None" : `Some(${odd})`}`);
@@ -95,8 +95,8 @@ function main() {
   console.log(`${copy == null ? "None" : `Some(${copy})`}`);
   const v = [1, 2, 3];
   const last = $nextBack($iter(v));
-  const value$4 = last === undefined ? undefined : (last * 10) | 0;
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$3 = last === undefined ? undefined : (last * 10) | 0;
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log(`${k}`);
 }
 //# sourceMappingURL=case.js.map

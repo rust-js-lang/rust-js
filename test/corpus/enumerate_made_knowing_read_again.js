@@ -107,8 +107,8 @@ function main() {
     ),
   );
   try {
-    const value = $nextBack(enumerate);
-    console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+    const nextBack = $nextBack(enumerate);
+    console.log(`${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -138,7 +138,7 @@ function main() {
     ),
   );
   try {
-    const nextBack = enumerateDoubleEndedIterator_nextBack(
+    const value = enumerateDoubleEndedIterator_nextBack(
       it,
       mapExactSizeIterator,
       mapDoubleEndedIterator,
@@ -146,9 +146,9 @@ function main() {
         map.return();
       },
     );
-    const value = $next(it);
+    const next = $next(it);
     console.log(
-      `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
+      `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`,
     );
     const value$1 = enumerateDoubleEndedIterator_nextBack(
       it,

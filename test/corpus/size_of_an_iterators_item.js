@@ -61,19 +61,19 @@ function main() {
   console.log(`${itemAlign([1, 2], 1)}`);
   const value = relayed($lazyRange(0, 1), 4, 4);
   console.log(`(${value[0]}, ${value[1]})`);
-  const value$1 = peekableLayout(1, 1).itemLayout(
+  const itemLayout = peekableLayout(1, 1).itemLayout(
     iterator_peekable({ start: 0, end: 2 }, { next: $rangeNext }),
   );
+  console.log(`(${itemLayout[0]}, ${itemLayout[1]})`);
+  const value$1 = pairsLayout.itemLayout([1]);
   console.log(`(${value$1[0]}, ${value$1[1]})`);
-  const value$2 = pairsLayout.itemLayout([1]);
+  const value$2 = layoutOf(iterator_peekable($iter([1n, 2n])), peekableLayout(8, 8));
   console.log(`(${value$2[0]}, ${value$2[1]})`);
-  const value$3 = layoutOf(iterator_peekable($iter([1n, 2n])), peekableLayout(8, 8));
-  console.log(`(${value$3[0]}, ${value$3[1]})`);
-  const value$4 = pairsLayout.collectLayout([2]);
+  const collectLayout = pairsLayout.collectLayout([2]);
   console.log(
-    `([${value$4[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], ${value$4[1]})`,
+    `([${collectLayout[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], ${collectLayout[1]})`,
   );
-  const value$5 = peekableLayout(4, 4).collectLayout(iterator_peekable($chars("xy")));
-  console.log(`([${value$5[0].map((item) => $debugStr(item, "'")).join(", ")}], ${value$5[1]})`);
+  const value$3 = peekableLayout(4, 4).collectLayout(iterator_peekable($chars("xy")));
+  console.log(`([${value$3[0].map((item) => $debugStr(item, "'")).join(", ")}], ${value$3[1]})`);
 }
 //# sourceMappingURL=case.js.map

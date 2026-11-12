@@ -762,7 +762,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary MIR holds is named `_4`, not after the call that made it",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("temporaries named", |b, h| {\n                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, h.items_read))\n            }),\n',
+    find: '            pass("temporaries named", |b, h| {\n                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, &h.made.spilled, h.items_read))\n            }),\n',
     replace: "",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "held temporary is named"],
   },

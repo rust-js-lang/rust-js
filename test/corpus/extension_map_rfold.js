@@ -66,12 +66,12 @@ function main() {
       { next_back: $nextBack },
     );
     console.log(`${words}`);
-    const value$1 = Ends.heldBack(
+    const heldBack = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
       { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
-    console.log(`${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, i32Debug)})`}`);
+    console.log(`${heldBack == null ? "None" : `Some(${tagDebug_fmt(heldBack, i32Debug)})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

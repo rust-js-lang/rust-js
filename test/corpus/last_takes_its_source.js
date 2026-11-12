@@ -115,11 +115,11 @@ function foldsDrop_drop(folds) {
 }
 
 function refsIterator_next(refs) {
-  const value = refs[0].length === 0 ? undefined : [refs[0][0], refs[0].slice(1)];
-  if (value == null) {
+  const splitFirst = refs[0].length === 0 ? undefined : [refs[0][0], refs[0].slice(1)];
+  if (splitFirst == null) {
     return;
   }
-  const [first, rest] = value;
+  const [first, rest] = splitFirst;
   refs[0] = rest;
   return first;
 }
@@ -566,7 +566,7 @@ function main() {
   );
   console.log(`folds ${value$1 == null ? "None" : `Some(${value$1})`}`);
   const items = [4, 5, 6];
-  const value$2 = $last(
+  const last = $last(
     $closing(
       $iterator(
         [items, "c"],
@@ -584,8 +584,8 @@ function main() {
       },
     ),
   );
-  console.log(`copied ${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $last(
+  console.log(`copied ${last == null ? "None" : `Some(${last})`}`);
+  const value$2 = $last(
     $closing(
       $iterator(
         [items, "s"],
@@ -603,7 +603,7 @@ function main() {
       },
     ).drop(1),
   );
-  console.log(`copied ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`copied ${value$2 == null ? "None" : `Some(${value$2})`}`);
   show(
     "generic own",
     end(
@@ -670,7 +670,7 @@ function main() {
       dDrop_drop,
     ),
   );
-  const value$4 = end(
+  const value$3 = end(
     $iterator(
       [[1, 2], "g"],
       foldsIterator_next,
@@ -684,8 +684,8 @@ function main() {
       foldsDrop_drop(it.of);
     },
   );
-  console.log(`generic folds ${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = top(
+  console.log(`generic folds ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = top(
     $iterator(
       [[2, 9, 4], "m"],
       foldsIterator_next,
@@ -700,8 +700,8 @@ function main() {
       foldsDrop_drop(it.of);
     },
   );
-  console.log(`max ${value$5 == null ? "None" : `Some(${value$5})`}`);
-  const value$6 = top(
+  console.log(`max ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$5 = top(
     $closing($iterator([ds(), "m"], heldIterator_next), (it) => {
       console.log(`drop held ${it.of[1]}`);
       for (const item of it.of[0]) {
@@ -717,7 +717,7 @@ function main() {
       map.return();
     },
   );
-  console.log(`max ${value$6 == null ? "None" : `Some(${value$6})`}`);
+  console.log(`max ${value$5 == null ? "None" : `Some(${value$5})`}`);
   console.log(
     `sum ${total(
       $iterator(

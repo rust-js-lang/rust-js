@@ -1062,7 +1062,7 @@ test("an Option of a generic T is its value, boxed only when that looks like Non
   expect(js).toContain("export function innerOr(x, keep, fallback) {\n  return pick(x, keep) ?? fallback;");
   expect(js).toContain("countSomeBoxed([undefined, undefined, undefined]) + keptBoxed([undefined, undefined])");
   // `mapped`'s `U` is given a `bool` and an `i32`, neither like `None`.
-  expect(js).toContain("  return option != null ? f($someValue(option)) : undefined;");
+  expect(js).toContain("  return pick != null ? f($someValue(pick)) : undefined;");
   expect(js).toContain("  return $pop(xs);");
   // Code that isn't generic keeps `Some(x)` as `x`.
   expect(await Bun.file(join(target, "options.js")).text()).not.toContain("$some");
@@ -1369,7 +1369,7 @@ test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", a
   expect(js).toContain("const v = {\n    patch: tick(order, 1),\n    major: tick(order, 2),\n    minor: made(order).minor,\n  };");
   // `largest`'s `T` is given numbers alone, none like `None`: its first
   // item is the value, no box (ADR 0051, amended).
-  expect(js).toContain("const value = $next(it);");
+  expect(js).toContain("const next = $next(it);");
   expect(js).toContain("fs.sort((a, b) => $totalCmp(a, b));");
   expect(js).toContain("const tail = $splitOff(v, 5);");
   expect(js).toContain("$lowerExp(1234.5)");

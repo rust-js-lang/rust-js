@@ -45,8 +45,8 @@ function main() {
     { next: $next, fold: $foldOf, nth: $nth },
     true,
   );
-  const value = $sizeHint(fused);
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const sizeHint = $sizeHint(fused);
+  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const cycled = {
     it: $cycleOf(
       { start: 0, end: 3 },
@@ -55,16 +55,16 @@ function main() {
     ),
   };
   const taken = iterator_fuse(iterator_take(cycled.it, 5), { next: $next, fold: $foldOf }, true);
-  const value$1 = $sizeHint(taken);
-  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value = $sizeHint(taken);
+  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   const single = { it: iterator_take($iter([9]), 1) };
-  const value$2 = $sizeHint(single.it);
+  const value$1 = $sizeHint(single.it);
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value$2 = firstTwo($iter([1, 2, 3]), true);
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = firstTwo($iter([1, 2, 3]), true);
+  const value$3 = firstTwo($iter([1]), true);
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
-  const value$4 = firstTwo($iter([1]), true);
+  const value$4 = firstTwo($lazyRange(0, 10), true);
   console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const value$5 = firstTwo($lazyRange(0, 10), true);
-  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

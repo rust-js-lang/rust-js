@@ -64,8 +64,8 @@ function main() {
     );
   const it = iterator_map({ start: 1, end: 4 }, make(calls$1, base), { next: $rangeNext });
   const copy = mapClone_clone(it, rangeClone, clone);
-  const value = $next(copy);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const next = $next(copy);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
   console.log(`[${$foldToArray($roomForHint(it, 4, true)).join(", ")}]`);
   console.log(`[${$foldToArray($roomForHint(copy, 4, true)).join(", ")}]`);
 
@@ -95,8 +95,8 @@ function main() {
       makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)),
     );
   const odd = makeFilter$1(copied, make$1(seen$1));
-  const value$1 = both(odd, { next: $next }, clone, "next");
-  console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
+  const value = both(odd, { next: $next }, clone, "next");
+  console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
 
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
   // copies' (ADR 0480).

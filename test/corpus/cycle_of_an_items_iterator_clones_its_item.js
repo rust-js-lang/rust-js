@@ -71,11 +71,11 @@ function main() {
           throw error;
         }
         try {
-          const value = $closing(copy, $dropEach(lDrop_drop)).reduce((n, item) => {
+          const count = $closing(copy, $dropEach(lDrop_drop)).reduce((n, item) => {
             lDrop_drop(item);
             return n + 1;
           }, 0);
-          console.log(`${next == null ? "None" : `Some(${lDebug_fmt(next)})`} ${value}`);
+          console.log(`${next == null ? "None" : `Some(${lDebug_fmt(next)})`} ${count}`);
         } catch (error) {
           throw $unwindsOn(error);
         } finally {

@@ -30,8 +30,8 @@ function make(t, yes) {
 }
 
 function found(m, k, KHash, KPartialEq, VCopy) {
-  const value = $someGet(m, k);
-  return value == null ? value : VCopy ? VCopy.copy(value) : value;
+  const get = $someGet(m, k);
+  return get == null ? get : VCopy ? VCopy.copy(get) : get;
 }
 
 function byPointer(t) {

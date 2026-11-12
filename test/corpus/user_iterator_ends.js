@@ -106,7 +106,7 @@ function main() {
   const it = cd(6);
   const next = countdownIterator_next(it);
   const nextBack = countdownDoubleEndedIterator_nextBack(it);
-  const value = Array.from(
+  const nth = Array.from(
     $lent(
       $iterator(
         it,
@@ -121,7 +121,7 @@ function main() {
       .take(1),
   )[0];
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${nth == null ? "None" : `Some(${nth})`}`,
   );
   console.log(
     `[${Array.from($roomForHint($iterator(it, countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint), 4, false)).join(", ")}]`,
@@ -132,7 +132,7 @@ function main() {
   console.log(
     `${$iterator(cd(4), countdownIterator_next).reduce((a, b) => (a + b) >>> 0, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($maxByKey($iterator(cd(4), countdownIterator_next), (x) => x % 3, $cmp))}`,
   );
-  const value$1 = $rposition(
+  const value = $rposition(
     $iterator(
       cd(5),
       countdownIterator_next,
@@ -143,6 +143,6 @@ function main() {
     ),
     (x) => x < 3,
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

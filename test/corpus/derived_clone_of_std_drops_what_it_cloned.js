@@ -149,8 +149,8 @@ function main() {
       iterator_peekable([3], { next: countdownIterator_next }, countdownDrop_drop, itemDrop_drop),
     );
     try {
-      const value = $peek(p);
-      console.log(`${value == null ? "None" : `Some(${itemDebug_fmt(value)})`}`);
+      const peek = $peek(p);
+      console.log(`${peek == null ? "None" : `Some(${itemDebug_fmt(peek)})`}`);
       CLONES = 0;
       PANIC_AT = 1;
       const r = $catchUnwind(() => {

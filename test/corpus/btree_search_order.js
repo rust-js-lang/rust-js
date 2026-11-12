@@ -172,8 +172,8 @@ function main() {
     run("insert", boom$1, () => {
       const m = map(keys.slice(0, 6));
       try {
-        const value = $insert(m, [4], 4, dDrop_drop);
-        console.log(`${value == null ? "None" : `Some(${value})`}`);
+        const insert = $insert(m, [4], 4, dDrop_drop);
+        console.log(`${insert == null ? "None" : `Some(${insert})`}`);
       } catch (error) {
         $cleanup(() => {
           for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
@@ -183,8 +183,8 @@ function main() {
         throw error;
       }
       try {
-        const value$1 = $insert(m, [12], 12, dDrop_drop);
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+        const value = $insert(m, [12], 12, dDrop_drop);
+        console.log(`${value == null ? "None" : `Some(${value})`}`);
       } catch (error) {
         $cleanup(() => {
           for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
@@ -201,8 +201,8 @@ function main() {
       const m = map(keys);
       const d = [7];
       try {
-        const value = m.get(d);
-        console.log(`${value == null ? "None" : `Some(${value})`}`);
+        const get = m.get(d);
+        console.log(`${get == null ? "None" : `Some(${get})`}`);
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(d);
@@ -320,8 +320,8 @@ function main() {
       const m = map(keys.slice(0, 5));
       const d = [2];
       try {
-        const value = $remove(m, d, dDrop_drop);
-        console.log(`${value == null ? "None" : `Some(${value})`}`);
+        const remove = $remove(m, d, dDrop_drop);
+        console.log(`${remove == null ? "None" : `Some(${remove})`}`);
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(d);
@@ -624,16 +624,16 @@ function main() {
   for (const k of $lazyRange(0, 40).map((i) => ((i * 17) >>> 0) % 40)) {
     big.set([k], (k * 2) >>> 0);
   }
-  const get = big.get([33]);
-  const value = big.get([41]);
+  const value = big.get([33]);
+  const value$1 = big.get([41]);
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`} ${big.size}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${big.size}`,
   );
   big.delete([7]);
   const tail = $treeSplitOff(big, [30], qOrd_cmp, false);
   const size = big.size;
-  const value$1 = $sortedEntries(tail, qOrd_cmp).map((entry) => entry[0])[0];
-  console.log(`${size} ${tail.size} ${value$1 == null ? "None" : `Some(${qDebug_fmt(value$1)})`}`);
+  const value$2 = $sortedEntries(tail, qOrd_cmp).map((entry) => entry[0])[0];
+  console.log(`${size} ${tail.size} ${value$2 == null ? "None" : `Some(${qDebug_fmt(value$2)})`}`);
 }
 
 /** Its own order, which prints nothing: by its number. */

@@ -54,8 +54,8 @@ function main() {
     throw error;
   }
   try {
-    const value = m.get(k);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const get = m.get(k);
+    console.log(`${get == null ? "None" : `Some(${get})`}`);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(k);
@@ -66,9 +66,9 @@ function main() {
     throw error;
   }
   const other = { value: "a", strong: 1, weak: 0 };
-  let get;
+  let tmp;
   try {
-    get = m.get(other);
+    tmp = m.get(other);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(other);
@@ -79,7 +79,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`${get == null ? "None" : `Some(${get})`} ${k.strong}`);
+  console.log(`${tmp == null ? "None" : `Some(${tmp})`} ${k.strong}`);
   try {
     $insert(m, $rcClone(other), 2, $rcDrop);
   } catch (error) {
@@ -92,9 +92,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp;
+  let tmp$1;
   try {
-    tmp = m.get(k);
+    tmp$1 = m.get(k);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(other);
@@ -105,7 +105,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`${tmp == null ? "None" : `Some(${tmp})`} ${k.strong} ${other.strong}`);
+  console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${k.strong} ${other.strong}`);
   let removed;
   try {
     removed = $removeEntry(m, other);
@@ -423,28 +423,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$1;
-  try {
-    tmp$1 = $add(us);
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(p);
-      for (const item of s) {
-        $rcDrop(item);
-      }
-      $rcDrop(other);
-      $rcDrop(k);
-      for (const item of m.keys()) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
   let tmp$2;
-  let tmp$3;
   try {
     tmp$2 = $add(us);
-    tmp$3 = us;
   } catch (error) {
     $cleanup(() => {
       $rcDrop(p);
@@ -459,7 +440,26 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`${tmp$1} ${tmp$2} ${tmp$3.size}`);
+  let tmp$3;
+  let tmp$4;
+  try {
+    tmp$3 = $add(us);
+    tmp$4 = us;
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(p);
+      for (const item of s) {
+        $rcDrop(item);
+      }
+      $rcDrop(other);
+      $rcDrop(k);
+      for (const item of m.keys()) {
+        $rcDrop(item);
+      }
+    }, error);
+    throw error;
+  }
+  console.log(`${tmp$2} ${tmp$3} ${tmp$4.size}`);
   $rcDrop(p);
   try {
     for (const item of s) {

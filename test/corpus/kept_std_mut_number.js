@@ -16,12 +16,12 @@ export function f(m) {
 function main() {
   const m = new Map();
   f(m);
-  const value = m.get(1);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const get = m.get(1);
+  console.log(`${get == null ? "None" : `Some(${get})`}`);
   m.set(1, 5);
   f(m);
   f(m);
-  const value$1 = m.get(1);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value = m.get(1);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

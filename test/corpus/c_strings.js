@@ -156,8 +156,8 @@ function main() {
     ),
     7,
   );
-  const value$13 = map.get([107, 0]);
-  console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
+  const get = map.get([107, 0]);
+  console.log(`${get == null ? "None" : `Some(${get})`}`);
   const v = $cstringIntoBytes(owned);
   console.log(`[${v.join(", ")}] ${$debugCStr([0])} ${$debugCStr([0])}`);
   const r = owned;

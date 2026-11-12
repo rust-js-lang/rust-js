@@ -24,8 +24,8 @@ function main() {
   const map = new Map();
   map.set(22, "Hello, world");
   console.log(`${processOrInsertDefault(map, 22)} ${processOrInsertDefault(map, 66)}`);
-  const value = map.get(66);
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const get = map.get(66);
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`}`);
 
   const m = new Map();
   m.set(1, 5);
@@ -37,8 +37,8 @@ function main() {
   if (v != null) {
     v.value = (v.value + 1) | 0;
   }
-  const value$1 = m.get(1);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value = m.get(1);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 
   let a = 1;
   let b = 2;

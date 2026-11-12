@@ -41,8 +41,10 @@ function main() {
   console.log(`${elapsed < 5n * 1000000000n}`);
   const t2 = start + 1500n * 1000000n;
   console.log(`${$debugDuration($instantSince(t2, start))}`);
-  const value$1 = $instantCheckedSince(start, t2);
-  console.log(`${value$1 == null ? "None" : `Some(${$debugDuration(value$1)})`}`);
+  const checkedDurationSince = $instantCheckedSince(start, t2);
+  console.log(
+    `${checkedDurationSince == null ? "None" : `Some(${$debugDuration(checkedDurationSince)})`}`,
+  );
   console.log(`${$debugDuration($instantSince(start, t2))}`);
   console.log(
     `${$debugDuration($instantSince(t2, start))} ${$debugDuration($instantSince(start, t2))}`,

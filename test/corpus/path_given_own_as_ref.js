@@ -42,8 +42,10 @@ function main() {
   console.log(`${p}`);
   console.log(`${$pathStartsWith(base, nameAsRefPath.asRef(name("/usr")))}`);
   console.log(`${$pathEndsWith(p, nameAsRefPath.asRef(lib))}`);
-  const value = $pathStripPrefix(p, nameAsRefPath.asRef(name("/a")));
-  console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(StripPrefixError(()))"}`);
+  const stripPrefix = $pathStripPrefix(p, nameAsRefPath.asRef(name("/a")));
+  console.log(
+    `${stripPrefix.TAG === "Ok" ? `Ok(${$debugStr(stripPrefix._0)})` : "Err(StripPrefixError(()))"}`,
+  );
   console.log(`${$pathSetFileName(base, nameAsRefOsStr.asRef(lib))}`);
   const set = $pathSetExtension(p, nameAsRefOsStr.asRef(name("rs")));
   p = set[0];

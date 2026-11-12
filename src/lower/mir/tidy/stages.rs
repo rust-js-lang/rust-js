@@ -1011,7 +1011,7 @@ pub(super) const STAGES: &[Stage] = &[
             // its `let` is (#769).
             pass("closures out of tries", |b, _| values::arrows_out_of_tries(b)),
             pass("temporaries named", |b, h| {
-                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, h.items_read))
+                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, &h.made.spilled, h.items_read))
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
             // A match's tree MIR's block still holds, every other pass done:

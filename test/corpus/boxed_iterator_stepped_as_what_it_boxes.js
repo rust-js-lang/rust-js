@@ -42,37 +42,37 @@ function main() {
     console.log(`got ${n}`);
   }
   const own = [3];
-  const value = countdownIterator_next(own);
-  const value$1 = [0, undefined];
+  const next = countdownIterator_next(own);
+  const value = [0, undefined];
   console.log(
-    `${value == null ? "None" : `Some(${value})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `${next == null ? "None" : `Some(${next})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
-  const value$2 = Array.from($lent($iterator(own, countdownIterator_next)).drop(0).take(1))[0];
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = countdownIterator_next(own);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const nth = Array.from($lent($iterator(own, countdownIterator_next)).drop(0).take(1))[0];
+  console.log(`${nth == null ? "None" : `Some(${nth})`}`);
+  const value$1 = countdownIterator_next(own);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const ranged = { start: 0, end: 5 };
-  const next = $rangeNext(ranged);
-  const value$4 = $rangeNextBack(ranged);
+  const value$2 = $rangeNext(ranged);
+  const nextBack = $rangeNextBack(ranged);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
   const taken = Array.from($lent($iterator(ranged, $rangeNext)).take(2));
   const arg = $rangeNext(ranged);
   console.log(`[${taken.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
-  const value$5 = stepped(ranged);
+  const value$3 = stepped(ranged);
   console.log(
-    `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) ${ranged.start}..${ranged.end}`,
+    `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) ${ranged.start}..${ranged.end}`,
   );
-  const value$6 = firstTwo($iter([7, 8, 9]));
+  const value$4 = firstTwo($iter([7, 8, 9]));
   console.log(
-    `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
+    `(${value$4[0] == null ? "None" : `Some(${value$4[0]})`}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
   const chars = "hey"[Symbol.iterator]();
-  const value$7 = $next(chars);
-  const value$8 = Array.from(chars).at(-1);
+  const value$5 = $next(chars);
+  const last = Array.from(chars).at(-1);
   console.log(
-    `${value$7 == null ? "None" : `Some(${$debugStr(value$7, "'")})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`}`,
+    `${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`}`,
   );
   let boxed = { start: 0, end: 5 };
   console.log(`[${Array.from($iterator(boxed, $rangeNext).take(2)).join(", ")}]`);
@@ -83,10 +83,10 @@ function main() {
   }
   console.log(`${$lazyRange(1, 4).reduce((a, b) => (a + b) | 0, 0)}`);
   const dynamic = $iterator([2], countdownIterator_next);
-  const value$9 = $next(dynamic);
-  const value$10 = $next(dynamic);
+  const value$6 = $next(dynamic);
+  const value$7 = $next(dynamic);
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

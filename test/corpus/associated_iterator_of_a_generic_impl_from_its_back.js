@@ -167,13 +167,13 @@ function hidden(SSource) {
 function main() {
   const ScaledSource = scaledSource(5);
   const TensSource = tensSource(undefined);
-  const value = fromItsBack(TensSource);
-  console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
-  console.log(`[${hidden(TensSource).join(", ")}]`);
-  const value$1 = fromItsBack(ScaledSource);
+  const itsBack = fromItsBack(TensSource);
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, [${value$1[1].join(", ")}])`,
+    `(${itsBack[0] == null ? "None" : `Some(${itsBack[0]})`}, [${itsBack[1].join(", ")}])`,
   );
+  console.log(`[${hidden(TensSource).join(", ")}]`);
+  const value = fromItsBack(ScaledSource);
+  console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
   console.log(`[${hidden(ScaledSource).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

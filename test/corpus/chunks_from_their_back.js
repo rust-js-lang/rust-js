@@ -42,17 +42,17 @@ function main() {
       .join(", ")}]`,
   );
   const rposition = $rposition($iter($windows(v, 2)), (w) => $index(w, 0) < 3);
-  const value$2 = $chunks(v, 3).at(-1);
+  const last = $chunks(v, 3).at(-1);
   console.log(
-    `${rposition == null ? "None" : `Some(${rposition})`} ${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`,
+    `${rposition == null ? "None" : `Some(${rposition})`} ${last == null ? "None" : `Some([${last.join(", ")}])`}`,
   );
   const m = [1, 2, 3, 4, 5];
   for (const c of $chunksMut(m, 2).toReversed()) {
     c[0] = (c[$at(c, 0)] * 10) | 0;
   }
   console.log(`[${m.join(", ")}]`);
-  const value$3 = $nthBack($iter($chunks(v, 2)), 1);
-  console.log(`${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}`);
+  const value$2 = $nthBack($iter($chunks(v, 2)), 1);
+  console.log(`${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`);
   const result = [];
   const e = $chunks(result, 2);
   console.log(`[${e.map((item) => `[${item.join(", ")}]`).join(", ")}]`);

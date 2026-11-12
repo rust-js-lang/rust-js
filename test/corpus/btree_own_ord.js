@@ -115,14 +115,14 @@ function main() {
   const owners = new ($ordMap(taskOrd_cmp))();
   owners.set(task(1, 3, "write"), "ana");
   owners.set(task(4, 1, "test"), "bo");
-  const value = $insert(owners, task(1, 9, "rewrite"), "cy");
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$1 = owners.get(task(4, 0, ""));
-  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
+  const insert = $insert(owners, task(1, 9, "rewrite"), "cy");
+  console.log(`${insert == null ? "None" : `Some(${$debugStr(insert)})`}`);
+  const get = owners.get(task(4, 0, ""));
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`}`);
   const getKeyValue = $getKeyValue(owners, task(1, 0, ""));
-  const value$2 = getKeyValue != null ? [getKeyValue[0].name, getKeyValue[1]] : undefined;
+  const value = getKeyValue != null ? [getKeyValue[0].name, getKeyValue[1]] : undefined;
   console.log(
-    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
+    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
   );
   console.log(
     `[${$sortedEntries(owners, taskOrd_cmp)
@@ -132,8 +132,8 @@ function main() {
       .join(", ")}]`,
   );
   const firstKeyValue = $treeEnd(owners, taskOrd_cmp, false, false, false);
-  const value$3 = firstKeyValue != null ? firstKeyValue[0].id : undefined;
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$1 = firstKeyValue != null ? firstKeyValue[0].id : undefined;
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const key = task(2, 5, "ship");
   $orInsert(owners, key, "dee");
   $mutGet(owners, key).value = "eve";
@@ -164,8 +164,8 @@ function main() {
   console.log(`${$add(queue, task(7, 0, "c"))} ${queue.size}`);
   const name = $storedKey(queue, task(7, 0, ""))?.name;
   console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`}`);
-  const value$4 = $treeEnd(queue, taskOrd_cmp, false, true, true)?.name;
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
+  const value$2 = $treeEnd(queue, taskOrd_cmp, false, true, true)?.name;
+  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
   const more = $treeFrom(
     new ($ordSet(taskOrd_cmp))(),
     [task(3, 1, "x"), task(9, 1, "y"), task(9, 2, "z")],

@@ -57,12 +57,12 @@ function main() {
       countdownIterator_sizeHint,
     ),
   );
-  const value$1 = countdownIterator_sizeHint(countdown);
+  const sizeHint = countdownIterator_sizeHint(countdown);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
   countdownIterator_next(countdown);
-  const value$2 = hint(
+  const value$1 = hint(
     $iterator(
       countdown,
       countdownIterator_next,
@@ -72,20 +72,20 @@ function main() {
       countdownIterator_sizeHint,
     ),
   );
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = hint($iterator([0], blinkIterator_next));
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value$2 = hint($iterator([0], blinkIterator_next));
   console.log(
-    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) [${collected($iterator([3], countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint)).join(", ")}]`,
+    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) [${collected($iterator([3], countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint)).join(", ")}]`,
   );
   const fused = iterator_fuse(
     [3],
     { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     false,
   );
-  const sizeHint = $sizeHint(fused);
+  const value$3 = $sizeHint(fused);
   const value$4 = hint(fused);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
   const peek = iterator_peekable([2], {
     next: countdownIterator_next,

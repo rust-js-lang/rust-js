@@ -42,8 +42,8 @@ function itDoubleEndedIterator_nextBack(it) {
 // Its own, which a `step_by()`'s `rfold` asks of it.
 function itDoubleEndedIterator_nthBack(it, n) {
   for (let i = 0; i < n; i++) {
-    const value = itDoubleEndedIterator_nextBack(it);
-    if (value == null) {
+    const nextBack = itDoubleEndedIterator_nextBack(it);
+    if (nextBack == null) {
       return;
     }
   }

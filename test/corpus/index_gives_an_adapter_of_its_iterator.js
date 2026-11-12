@@ -62,9 +62,9 @@ function main() {
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
     rangeInclusiveIteratorIndexI({ next: $rangeNext }),
   );
-  const value = $next(it);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = takeIDoubleEndedIterator_nextBack(
+  const next = $next(it);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
+  const nextBack = takeIDoubleEndedIterator_nextBack(
     it,
     {
       next: $next,
@@ -112,7 +112,7 @@ function main() {
     },
     { len: (iterator) => $exactLen($sizeHint(iterator)) },
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`}`);
   console.log(`[${$foldToArray($roomForHint(it, 4, true)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

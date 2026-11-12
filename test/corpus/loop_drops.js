@@ -21,11 +21,11 @@ function noisyDrop_drop(noisy) {
 }
 
 function countdownIterator_next(countdown) {
-  const value = $checked(countdown[0] - 1, 0, 255);
-  if (value == null) {
+  const checkedSub = $checked(countdown[0] - 1, 0, 255);
+  if (checkedSub == null) {
     return;
   }
-  countdown[0] = value;
+  countdown[0] = checkedSub;
   return [$index(["c0", "c1", "c2"], countdown[0])];
 }
 

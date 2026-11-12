@@ -68,17 +68,17 @@ function main() {
     );
     const ends = $iter($pathComponents(path));
     const nextBack = $nextBack(ends);
-    const value = $next(ends);
+    const next = $next(ends);
     console.log(
-      `${nextBack == null ? "None" : `Some(${nextBack === "RootDir" ? "RootDir" : nextBack === "CurDir" ? "CurDir" : nextBack === "ParentDir" ? "ParentDir" : `Normal(${$debugStr(nextBack._0)})`})`} ${value == null ? "None" : `Some(${value === "RootDir" ? "RootDir" : value === "CurDir" ? "CurDir" : value === "ParentDir" ? "ParentDir" : `Normal(${$debugStr(value._0)})`})`}`,
+      `${nextBack == null ? "None" : `Some(${nextBack === "RootDir" ? "RootDir" : nextBack === "CurDir" ? "CurDir" : nextBack === "ParentDir" ? "ParentDir" : `Normal(${$debugStr(nextBack._0)})`})`} ${next == null ? "None" : `Some(${next === "RootDir" ? "RootDir" : next === "CurDir" ? "CurDir" : next === "ParentDir" ? "ParentDir" : `Normal(${$debugStr(next._0)})`})`}`,
     );
     const texts = $pathComponents(path)
       .toReversed()
       .map((c) => $unwrap($componentText(c)));
     console.log(`${texts.join("|")}`);
     console.log(`${$pathComponents(path).filter((c) => c.TAG === "Normal").length}`);
-    const value$1 = $nextBack($iter($pathParts(path)));
-    console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
+    const value = $nextBack($iter($pathParts(path)));
+    console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
   const x = "x";
   console.log(`${$pathComponents(x).some((c) => $eq(c, { TAG: "Normal", _0: "x" }))}`);

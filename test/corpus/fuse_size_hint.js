@@ -39,11 +39,11 @@ function tExt(TIterator, TFused) {
 function main() {
   const items = [1, 2, 3];
   const value = hint($iter(items), true);
-  const value$1 = $sizeHint(iterator_fuse($iter(items), { next: $next }, true));
+  const sizeHint = $sizeHint(iterator_fuse($iter(items), { next: $next }, true));
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
-  const value$2 = tExt({ next: $next }, true).hinted($iter(items));
-  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const hinted = tExt({ next: $next }, true).hinted($iter(items));
+  console.log(`(${hinted[0]}, ${hinted[1] == null ? "None" : `Some(${hinted[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

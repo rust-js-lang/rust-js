@@ -173,8 +173,8 @@ function main() {
     throw error;
   }
   try {
-    const value = $recv(rx$1);
-    console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
+    const recv = $recv(rx$1);
+    console.log(`${recv.TAG === "Ok" ? `Ok(${$debugStr(recv._0)})` : "Err(RecvError)"}`);
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx$1);
@@ -207,9 +207,9 @@ function main() {
     }, error);
     throw error;
   }
-  let recv;
+  let tmp$4;
   try {
-    recv = $recv(rx$1);
+    tmp$4 = $recv(rx$1);
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx$1);
@@ -218,7 +218,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`${recv.TAG === "Err"}`);
+  console.log(`${tmp$4.TAG === "Err"}`);
   try {
     $dropReceiver(rx$1);
   } catch (error) {

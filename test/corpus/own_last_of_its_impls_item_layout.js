@@ -43,7 +43,7 @@ function main() {
     ).map((x) => (x * 2) & 255),
   ).at(-1);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $last(
+  const last = $last(
     $iterator(
       ["abc"[Symbol.iterator]()],
       (iterator) => wrapIterator_next(iterator, { next: $next }),
@@ -56,6 +56,6 @@ function main() {
       (iterator) => wrapIterator_last(iterator, { next: $next }, "next", 4),
     ).drop(1),
   );
-  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2, "'")})`}`);
+  console.log(`${last == null ? "None" : `Some(${$debugStr(last, "'")})`}`);
 }
 //# sourceMappingURL=case.js.map

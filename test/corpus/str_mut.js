@@ -129,7 +129,7 @@ function main() {
     head.value = $asciiCase(head.value, true);
   }
   console.log(`${word}`);
-  const value = $strGetMut(
+  const getMut = $strGetMut(
     {
       get value() {
         return word;
@@ -141,8 +141,8 @@ function main() {
     1,
     9,
   );
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value.value)})`}`);
-  const value$1 = $strGetMut(
+  console.log(`${getMut == null ? "None" : `Some(${$debugStr(getMut.value)})`}`);
+  const value = $strGetMut(
     {
       get value() {
         return word;
@@ -153,7 +153,7 @@ function main() {
     },
     9,
   );
-  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1.value)})`}`);
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value.value)})`}`);
   let accented = "ébc";
   console.log(
     `${
@@ -247,9 +247,9 @@ function main() {
 
   // A `&mut str` of bytes, written through to them.
   const bytes = [104, 101, 108, 108, 111];
-  const value$2 = $fromUtf8Mut(bytes);
-  if (value$2.TAG === "Ok") {
-    const text = value$2._0;
+  const value$1 = $fromUtf8Mut(bytes);
+  if (value$1.TAG === "Ok") {
+    const text = value$1._0;
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }

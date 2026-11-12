@@ -73,7 +73,7 @@ function main() {
     false,
     true,
   );
-  const value$7 = $treeEnd(
+  const last = $treeEnd(
     set,
     (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
     true,
@@ -82,7 +82,7 @@ function main() {
     true,
   );
   console.log(
-    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`} ${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`}`,
+    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`} ${last == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(last))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

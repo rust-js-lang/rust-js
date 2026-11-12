@@ -25,8 +25,8 @@ function main() {
       break;
     }
   }
-  const value = $rangeNext(numbers);
-  console.log(`${value == null ? "None" : `Some(${value})`} ${numbers.start}..${numbers.end}`);
+  const next = $rangeNext(numbers);
+  console.log(`${next == null ? "None" : `Some(${next})`} ${numbers.start}..${numbers.end}`);
   const letters = { start: "a", end: "e" };
   const some = Array.from($folded($lent($iterator(letters, $rangeInclusiveNext)).take(2))).join("");
   const arg = Array.from($iterator(letters, $rangeInclusiveNext)).join("");

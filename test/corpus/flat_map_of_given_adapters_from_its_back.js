@@ -761,9 +761,9 @@ function main() {
     true,
     false,
   );
-  const value = $next(it);
+  const next = $next(it);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   console.log(
     `${flatMapDoubleEndedIterator_rfold(
@@ -777,7 +777,7 @@ function main() {
       false,
     )}`,
   );
-  const value$1 = $nthBack(
+  const value = $nthBack(
     $knowing(
       nested(),
       (iterator) =>
@@ -814,7 +814,7 @@ function main() {
     ),
     2,
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   const o = $held(owned([[1], [2], [3]]));
   try {
     const value = mapDoubleEndedIterator_nextBack(
@@ -1104,7 +1104,7 @@ function local() {
     true,
     false,
   );
-  const value = $nthBack(
+  const nthBack = $nthBack(
     $knowing(
       f,
       (iterator) =>
@@ -1142,7 +1142,7 @@ function local() {
     1,
   );
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${nthBack == null ? "None" : `Some(${nthBack})`}`,
   );
   const picked = Array.from(
     $rev(
@@ -1181,7 +1181,7 @@ function local() {
     undefined,
     false,
   );
-  const value$1 = flatMapDoubleEndedIterator_nextBack(
+  const value = flatMapDoubleEndedIterator_nextBack(
     p,
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
@@ -1190,8 +1190,8 @@ function local() {
     true,
     false,
   );
-  const value$2 = $next(p);
-  const value$3 = $nthBack(
+  const value$1 = $next(p);
+  const value$2 = $nthBack(
     $knowing(
       p,
       (iterator) =>
@@ -1229,7 +1229,7 @@ function local() {
     1,
   );
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const last = $nextBack(
     $flattenEnds($iterator(source(4), $rangeNext, false, $rangeNextBack), scaled(3), (items) =>

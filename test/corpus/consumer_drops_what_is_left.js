@@ -400,21 +400,21 @@ function held(n) {
   let taken$live = true;
   if (n > 0) {
     taken$live = false;
-    const value = $max(
+    const max = $max(
       $lazySkipWhile(taken, (l) => l[0] < 99, loudDrop_drop).map((l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }),
     );
-    console.log(`held max ${value == null ? "None" : `Some(${value})`}`);
+    console.log(`held max ${max == null ? "None" : `Some(${max})`}`);
   }
   try {
     const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
     let taken$1$live = true;
     if (n > 0) {
       taken$1$live = false;
-      const value = $reduce(
+      const reduce = $reduce(
         $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop).map((l) => {
           const result = l[0];
           loudDrop_drop(l);
@@ -422,7 +422,7 @@ function held(n) {
         }),
         (a, b) => (a + b) >>> 0,
       );
-      console.log(`held sum ${value == null ? "None" : `Some(${value})`}`);
+      console.log(`held sum ${reduce == null ? "None" : `Some(${reduce})`}`);
     }
     try {
       const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));

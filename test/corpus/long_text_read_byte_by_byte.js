@@ -103,10 +103,10 @@ function widths(input) {
     const value = (width - 1) >>> 0;
     counts[value] = (counts[$at(counts, value)] + 1) >>> 0;
     tail = (tail + ($byteLen($strSlice(input, (i + width) >>> 0)) % 7)) >>> 0;
-    const value$1 = $byteLen($strSlice(input, i, (i + width) >>> 0));
-    const value$2 = width;
-    if (value$1 !== value$2) {
-      $assertFailed("Eq", String(value$1), String(value$2));
+    const len = $byteLen($strSlice(input, i, (i + width) >>> 0));
+    const value$1 = width;
+    if (len !== value$1) {
+      $assertFailed("Eq", String(len), String(value$1));
     }
     i = (i + width) >>> 0;
   }

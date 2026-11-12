@@ -134,8 +134,8 @@ export function report() {
   const id = Id.new(1700000000123n, 5, 42);
   const millis = Id.millis(id);
   const worker = Id.worker(id);
-  const value = Id.sequence(id);
-  out += `${idDebug_fmt(id)} ${millis} ${worker} ${value}\n`;
+  const sequence = Id.sequence(id);
+  out += `${idDebug_fmt(id)} ${millis} ${worker} ${sequence}\n`;
   const later = Id.new(1700000000124n, 1, 0);
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
 
@@ -165,23 +165,23 @@ export function report() {
   const checkedAdd = $bigChecked(max + 1n, 0n, 18446744073709551615n);
   const checkedSub = $bigChecked(0n - min, -9223372036854775808n, 9223372036854775807n);
   const checkedDiv = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
-  const value$1 = $checkedPow(10n, 19, 0n, 18446744073709551615n);
-  out += `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`;
+  const checkedPow = $checkedPow(10n, 19, 0n, 18446744073709551615n);
+  out += `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${checkedPow == null ? "None" : `Some(${checkedPow})`}\n`;
   out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(BigInt.asUintN(64, 1n << 40n))} ${$bigCountOnes(max)}\n`;
   const remEuclid = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
   const divEuclid = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
   const parse = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
   out += `${remEuclid} ${divEuclid} ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
-  const value$2 = $tryFromInt(max, 0, 4294967295);
+  const value = $tryFromInt(max, 0, 4294967295);
   const isErr =
     $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG ===
     "Err";
-  out += `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugParseError(value$2._0, "TryFromIntError")})`} ${isErr} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
+  out += `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugParseError(value._0, "TryFromIntError")})`} ${isErr} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   // Of too small a value, and its message, which is one for both.
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
-  const value$3 = $unwrapErr($tryFromInt(300n, 0, 255));
-  const value$4 = low === $unwrapErr($tryFromInt(300n, 0, 255));
-  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$3} ${value$4}\n`;
+  const value$1 = $unwrapErr($tryFromInt(300n, 0, 255));
+  const value$2 = low === $unwrapErr($tryFromInt(300n, 0, 255));
+  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$1} ${value$2}\n`;
 
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);

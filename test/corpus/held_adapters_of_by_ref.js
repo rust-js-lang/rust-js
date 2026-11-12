@@ -57,21 +57,21 @@ function main() {
   const numbers = { start: 1, end: 10 };
   const doubled = iterator_map(numbers, (x) => (x * 2) | 0, { next: $rangeNext });
   const next = $next(doubled);
-  const value = $sizeHint(doubled);
+  const sizeHint = $sizeHint(doubled);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+    `${next == null ? "None" : `Some(${next})`} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`,
   );
-  const value$1 = Array.from($lent(doubled).drop(2).take(1))[0];
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const nth = Array.from($lent(doubled).drop(2).take(1))[0];
+  console.log(`${nth == null ? "None" : `Some(${nth})`}`);
   console.log(`${numbers.start}..${numbers.end}`);
 
   const counted = { at: 0, end: 9 };
   const fused = iterator_fuse(counted, { next: countIterator_next, nth: countIterator_nth }, false);
-  const value$2 = $nth($lent(fused), 1);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value = $nth($lent(fused), 1);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`${fused.reduce((a, b) => (a + b) >>> 0, 0)}`);
-  const value$3 = countIterator_next(counted);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$1 = countIterator_next(counted);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
 
   const again = { at: 0, end: 6 };
   const peeked = iterator_peekable(again, { next: countIterator_next, nth: countIterator_nth });
@@ -79,7 +79,7 @@ function main() {
   const arg = $count(peeked);
   console.log(`${first == null ? "None" : `Some(${first})`} ${arg}`);
 
-  const value$4 = halves(
+  const value$2 = halves(
     $iterator(
       { at: 0, end: 7 },
       countIterator_next,
@@ -92,8 +92,8 @@ function main() {
     ),
     false,
   );
-  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const value$5 = halves($lazyRange(3, 9), true);
-  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
+  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const value$3 = halves($lazyRange(3, 9), true);
+  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

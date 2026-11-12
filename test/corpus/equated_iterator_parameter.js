@@ -7,9 +7,9 @@ export function entry() {
 }
 
 function front(outer, slot, f, IItemIntoIterator) {
-  const value = $nextSome(outer);
-  if (value != null) {
-    slot.value = IItemIntoIterator.intoIter($someValue(value));
+  const next = $nextSome(outer);
+  if (next != null) {
+    slot.value = IItemIntoIterator.intoIter($someValue(next));
     const inner = slot.value;
     return f(inner);
   }

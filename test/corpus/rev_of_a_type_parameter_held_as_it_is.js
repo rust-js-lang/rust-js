@@ -108,7 +108,7 @@ function main() {
   console.log(`${Held.folded([$iter([1, 2, 3])], { next: $next }, { next_back: $nextBack })}`);
   const value$1 = Held.found([$iter([1, 2, 3, 4])], { next: $next }, { next_back: $nextBack });
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = Held.secondLast(
+  const secondLast = Held.secondLast(
     [iterator_map({ start: 1, end: 6 }, (x) => (x * 2) >>> 0, { next: $rangeNext })],
     {
       next: $next,
@@ -151,20 +151,20 @@ function main() {
         ),
     },
   );
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = HeldD.secondLast(
+  console.log(`${secondLast == null ? "None" : `Some(${secondLast})`}`);
+  const value$2 = HeldD.secondLast(
     [$iter($range(1, 5).map((value) => [value]))],
     { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     $dropEach(dDrop_drop),
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = Held.secondLast(
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = Held.secondLast(
     [{ at: 0 }],
     { next: countIterator_next, nth: countIterator_nth },
     { next_back: countDoubleEndedIterator_nextBack },
   );
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

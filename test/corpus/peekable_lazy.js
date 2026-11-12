@@ -104,9 +104,9 @@ function main() {
     `${a == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(a))})`} ${b == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(b))})`} ${c == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(c))})`} ${arg == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(arg))})`}`,
   );
   const peeked = $peek(empty);
-  const value = $next(empty);
+  const next = $next(empty);
   console.log(
-    `${peeked == null ? "None" : `Some(${peeked})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${peeked == null ? "None" : `Some(${peeked})`} ${next == null ? "None" : `Some(${next})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -21,12 +21,12 @@ function show(name, s) {
   const arg = $sizeHint(chars);
   $print(`${name}: (${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`})`);
   $nextBack(chars);
-  const value = $sizeHint(chars);
-  $print(` (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  $next(chars);
   const sizeHint = $sizeHint(chars);
+  $print(` (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+  $next(chars);
+  const value = $sizeHint(chars);
   console.log(
-    ` (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${$debugStr($restStr(chars))}`,
+    ` (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${$debugStr($restStr(chars))}`,
   );
 
   const indices = $charIndices(s);

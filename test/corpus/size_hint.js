@@ -14,11 +14,11 @@ function countdownIterator_next(countdown) {
 }
 
 function knownIterator_next(known) {
-  const value = $checked(known[0] - 1, 0, 4294967295);
-  if (value == null) {
+  const checkedSub = $checked(known[0] - 1, 0, 4294967295);
+  if (checkedSub == null) {
     return;
   }
-  known[0] = value;
+  known[0] = checkedSub;
   return known[0];
 }
 function knownIterator_sizeHint(known) {
@@ -50,31 +50,31 @@ function main() {
   );
   const indexed = { inner: [2], at: 0 };
   const sizeHint = indexedIterator_sizeHint(indexed);
-  const value$1 = indexedIterator_next(indexed);
+  const next = indexedIterator_next(indexed);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`,
   );
 
   const v = [1, 2, 3];
   const it = $iter(v);
   $next(it);
-  const value$2 = $sizeHint(it);
+  const value$1 = $sizeHint(it);
+  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value$2 = $sizeHint($iter(v));
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = $sizeHint($iter(v));
-  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
-  const value$4 = $sizeHint($iter([1, 2]));
-  const value$5 = $sizeHint($iter(v));
+  const value$3 = $sizeHint($iter([1, 2]));
+  const value$4 = $sizeHint($iter(v));
   console.log(
-    `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
 
   const stepped = $iter(v);
   $next(stepped);
-  const value$6 = hint($iter(v));
-  const value$7 = hint(stepped);
-  const value$8 = hint($iterator([2], countdownIterator_next));
+  const value$5 = hint($iter(v));
+  const value$6 = hint(stepped);
+  const value$7 = hint($iterator([2], countdownIterator_next));
   console.log(
-    `(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}) (${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`}) (${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`,
+    `(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}) (${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

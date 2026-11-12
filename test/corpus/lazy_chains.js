@@ -59,35 +59,35 @@ function main() {
   );
   console.log(`[${first.join(", ")}]`);
 
-  const value = $lent(v.values().map((x) => noisy("find", x))).find((x) => x > 1);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const find = $lent(v.values().map((x) => noisy("find", x))).find((x) => x > 1);
+  console.log(`${find == null ? "None" : `Some(${find})`}`);
   console.log(`${$lent(v.values().map((x) => noisy("any", x))).some((x) => x === 2)}`);
-  const value$1 = $position($lent(v.values().map((x) => noisy("position", x))), (x) => x === 3);
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $lent($iter(v))
+  const position = $position($lent(v.values().map((x) => noisy("position", x))), (x) => x === 3);
+  console.log(`${position == null ? "None" : `Some(${position})`}`);
+  const value = $lent($iter(v))
     .map((x) => {
       if (noisy("find_map", x) > 1) {
         return (x * 10) | 0;
       }
     })
     .find((item) => item != null);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   // A found `None` is `Some(None)`, from a lazy chain as from an array.
-  const value$3 = $nextSome(
+  const value$1 = $nextSome(
     $lent(
       [undefined, 1].values().map((x) => (x != null ? noisy("find none", x) : undefined)),
     ).filter((x) => x == null),
   );
   console.log(
-    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
+    `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
   );
-  const value$4 = $nextSome(
+  const value$2 = $nextSome(
     $lent(
       [1, undefined].values().map((x) => (x != null ? noisy("find some", x) : undefined)),
     ).filter((x) => x == null),
   );
   console.log(
-    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
+    `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
 
   for (const x of $lazyTakeWhile(
@@ -150,13 +150,13 @@ function main() {
   console.log(`[${joined.join(", ")}]`);
 
   // `next()` takes one item, of a chain made there or kept to step through.
-  const value$5 = $next(v.values().map((x) => noisy("next", x)));
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  const next = $next(v.values().map((x) => noisy("next", x)));
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
   const stepped = v.values().map((x) => noisy("stepped", x));
-  const value$6 = $next(stepped);
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
-  const value$7 = $next(stepped);
-  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
+  const value$3 = $next(stepped);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = $next(stepped);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 
   // Closures that do nothing that can be seen keep arrays.
   const doubled$1 = v

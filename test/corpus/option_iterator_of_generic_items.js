@@ -7,11 +7,11 @@ export function entry() {
 }
 
 function firsts(it) {
+  const next = $nextSome(it);
   const option = $nextSome(it);
-  const option$1 = $nextSome(it);
   return [
+    ...(next == null ? [] : [$someValue(next)]),
     ...(option == null ? [] : [$someValue(option)]),
-    ...(option$1 == null ? [] : [$someValue(option$1)]),
   ];
 }
 

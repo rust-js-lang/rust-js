@@ -121,8 +121,8 @@ function main() {
   );
   console.log(`[${v.join(", ")}]`);
   const p = iterator_peekable($iter([1, 2, 3, 4]));
-  const value = $peek(p);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const peek = $peek(p);
+  console.log(`${peek == null ? "None" : `Some(${peek})`}`);
   const w = Array.from(
     $rev(
       $skipping(

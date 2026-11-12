@@ -47,11 +47,11 @@ const intoIterSummed = {
   },
 };
 function countIterator_next(count) {
-  const value = $checked(count[0] - 1, 0, 255);
-  if (value == null) {
+  const checkedSub = $checked(count[0] - 1, 0, 255);
+  if (checkedSub == null) {
     return;
   }
-  count[0] = value;
+  count[0] = checkedSub;
   return ((count[0] * 3) & 255) % 5;
 }
 function through(t, TReversed, TItemOrd) {

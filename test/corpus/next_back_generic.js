@@ -15,14 +15,14 @@ function main() {
   const value = back(ends, { next_back: $nextBack });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = back(ends, { next_back: $nextBack });
-  const value$2 = $next(ends.inner);
+  const next = $next(ends.inner);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const range = { inner: { start: 0, end: 2 } };
-  const value$3 = back(range, { next_back: $rangeNextBack, nthBack: $rangeNthBack });
+  const value$2 = back(range, { next_back: $rangeNextBack, nthBack: $rangeNthBack });
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${range.inner.start}..${range.inner.end}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${range.inner.start}..${range.inner.end}`,
   );
 }
 //# sourceMappingURL=case.js.map

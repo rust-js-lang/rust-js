@@ -254,44 +254,44 @@ function main() {
   const heap = [];
   $heapPush(heap, [1], ownOpsPartialOrd);
   $heapPush(heap, [4], ownOpsPartialOrd);
-  const value$1 = $heapPop(heap, ownOpsPartialOrd);
-  console.log(`${value$1 == null ? "None" : `Some(${ownOpsDebug_fmt(value$1)})`}`);
+  const pop = $heapPop(heap, ownOpsPartialOrd);
+  console.log(`${pop == null ? "None" : `Some(${ownOpsDebug_fmt(pop)})`}`);
   console.log("concrete clamp own");
   console.log(`${ownOpsDebug_fmt($clampBy([0], [1], [3], ownOpsPartialOrd))}`);
 
   const x = [1];
   const y = [2];
-  const value$2 = less(x, y, downOrd);
-  const value$3 = order(x, y, downOrd);
-  const value$4 = sorted([y, x], downOrd, clone, 4, "general8");
+  const value$1 = less(x, y, downOrd);
+  const value$2 = order(x, y, downOrd);
+  const value$3 = sorted([y, x], downOrd, clone, 4, "general8");
   const down = larger(x, y, downOrd);
-  const value$5 = heaped([x, y], downOrd);
+  const value$4 = heaped([x, y], downOrd);
   console.log(
-    `down: ${value$2} ${
-      value$3 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$3 + 1]})`
-    } [${value$4.map((item) => downDebug_fmt(item)).join(", ")}] ${downDebug_fmt(down)} [${value$5.map((item) => downDebug_fmt(item)).join(", ")}]`,
+    `down: ${value$1} ${
+      value$2 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$2 + 1]})`
+    } [${value$3.map((item) => downDebug_fmt(item)).join(", ")}] ${downDebug_fmt(down)} [${value$4.map((item) => downDebug_fmt(item)).join(", ")}]`,
   );
   const p = [1];
   const q = [2];
-  const value$6 = less(p, q, upOrd);
-  const value$7 = order(p, q, upOrd);
-  const value$8 = sorted([p, q], upOrd, clone, 4, "general8");
+  const value$5 = less(p, q, upOrd);
+  const value$6 = order(p, q, upOrd);
+  const value$7 = sorted([p, q], upOrd, clone, 4, "general8");
   const up = larger(p, q, upOrd);
-  const value$9 = heaped([p, q], upOrd);
+  const value$8 = heaped([p, q], upOrd);
   console.log(
-    `up: ${value$6} ${
-      value$7 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$7 + 1]})`
-    } [${value$8.map((item) => upDebug_fmt(item)).join(", ")}] ${upDebug_fmt(up)} [${value$9.map((item) => upDebug_fmt(item)).join(", ")}]`,
+    `up: ${value$5} ${
+      value$6 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$6 + 1]})`
+    } [${value$7.map((item) => upDebug_fmt(item)).join(", ")}] ${upDebug_fmt(up)} [${value$8.map((item) => upDebug_fmt(item)).join(", ")}]`,
   );
   const r = [1, 2];
   const s = [1, 3];
-  const value$10 = same(r, s, pairOrd);
-  const value$11 = less(r, s, pairOrd);
-  const value$12 = sorted([s, r], pairOrd, clone, 8, "general8");
+  const value$9 = same(r, s, pairOrd);
+  const value$10 = less(r, s, pairOrd);
+  const value$11 = sorted([s, r], pairOrd, clone, 8, "general8");
   const pair = clamped([0, 0], r, s, pairOrd);
-  const value$13 = heaped([s, r], pairOrd);
+  const value$12 = heaped([s, r], pairOrd);
   console.log(
-    `pair: ${value$10} ${value$11} [${value$12.map((item) => pairDebug_fmt(item)).join(", ")}] ${pairDebug_fmt(pair)} [${value$13.map((item) => pairDebug_fmt(item)).join(", ")}]`,
+    `pair: ${value$9} ${value$10} [${value$11.map((item) => pairDebug_fmt(item)).join(", ")}] ${pairDebug_fmt(pair)} [${value$12.map((item) => pairDebug_fmt(item)).join(", ")}]`,
   );
   console.log(
     `numbers: ${same(1, 1, $intsOrdered)} ${less("a", "b", $ordered)} [${sorted(

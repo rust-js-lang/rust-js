@@ -65,14 +65,14 @@ function main() {
     ).join(", ")}]`,
   );
   const s = v.values().filter((_, i) => i % 3 === 0);
-  const value = $next(s);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $next(
+  const next = $next(s);
+  console.log(`${next == null ? "None" : `Some(${next})`}`);
+  const value = $next(
     $rev(
       $stepByEnds($iterator({ start: 0, end: 0 }, $rangeNext, false, $rangeNextBack, $rangeLen), 2),
     ),
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`[${Array.from($rev($stepByEnds($skipping($iter(v), 1), 2)).take(2)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

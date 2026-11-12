@@ -58,12 +58,12 @@ function pairFrom_A__B__from([a, b], AIntoIterator, BIntoIterator) {
 }
 
 function pairIterator_next(pair, AIterator, BIterator) {
-  const value = AIterator.next(pair.t[0]);
-  if (value != null) {
-    const value$2 = $someValue(value);
+  const next = AIterator.next(pair.t[0]);
+  if (next != null) {
+    const value = $someValue(next);
     const value$1 = BIterator.next(pair.t[1]);
     if (value$1 != null) {
-      return [value$2, $someValue(value$1)];
+      return [value, $someValue(value$1)];
     }
   }
 }

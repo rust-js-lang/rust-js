@@ -26,8 +26,8 @@ function countingIterator_next(counting) {
 function countingIterator_nth(counting, n) {
   console.log(`nth ${n}`);
   for (let i = 0; i < n; i++) {
-    const value = countingIterator_next(counting);
-    if (value == null) {
+    const next = countingIterator_next(counting);
+    if (next == null) {
       return;
     }
   }
