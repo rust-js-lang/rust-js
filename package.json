@@ -53,6 +53,7 @@
     "bless": "BLESS=1 bun test test/snapshots.test.ts test/jsx.test.ts test/corpus.test.ts && BLESS=1 bun test test/readability.test.ts",
     "adr:next": "bun scripts/adr.ts next",
     "adr:renumber": "bun scripts/adr.ts renumber",
+    "adr:amended": "bun scripts/adr.ts amended",
     "ci:check": "bun scripts/ci.ts check",
     "ci:status": "bun scripts/ci.ts status",
     "ci:bless": "bun scripts/ci.ts bless",

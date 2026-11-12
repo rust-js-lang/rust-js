@@ -38,6 +38,16 @@ reads the commits too.
    commits, issues and owner files. File it as a `Refactor:` or `Test net:`
    issue, and add its row below.
 
+6. **Read the decisions amended most** (`bun run adr:amended`, #1465). A
+   decision amended again and again is a list of cases, and each amendment
+   was a wrong answer or a readability bug first. Each one amended 25 times
+   or more has a row in [the table below](#the-decisions-amended-most),
+   which says what its amendments have in common and which refactor would
+   end them, or why none is wanted. Whoever takes one past 25 adds its row
+   (`test/adr.test.ts` asks for it). The same command lists the semantic
+   owners whose row in [the architecture](architecture.md#semantic-owners)
+   takes a paragraph: the next candidates.
+
 A fix with no issue says its kind, area and regression in its message, as
 `Kind: missing case. Area: iterators. Not a regression.`, so the next audit
 reads them instead of judging them again.
@@ -59,6 +69,9 @@ git log origin/main --no-merges --since='7 days ago' --format='@%s' --name-only 
 git log origin/main --no-merges --since='21 days ago' --date=short --format='%ad %s' \
   -- src/to_oxc.rs src/to_oxc/ | grep -E '^[0-9-]+ fix' | grep -iE 'comment|blank line' \
   | cut -c1-10 | uniq -c
+
+# The decisions amended most, and the owners whose row takes a paragraph
+bun run adr:amended
 
 # The cluster's issues filed since its structural fix: new finds, not backlog
 gh issue list --state all --limit 500 --json number,title,createdAt \
@@ -208,6 +221,24 @@ together: `js::Writes` beside the on/off differential, `JsSignature` beside
 generated TypeScript callers, `MutRefForm` beside the `&mut` matrix. Tidy's
 stage differential alone (10-25), and the evidence list alone (10-25),
 didn't stop their clusters.
+
+## The decisions amended most
+
+As of 2026-11-12: 2,617 amendments of 591 of the 1,039 decisions; 12 are
+amended 25 times or more, 57 more 10 to 24 times. What each of the 12's
+amendments are, and what would end them:
+
+| ADR | Amendments | What each amendment is | The refactor, or why none |
+|---|---:|---|---|
+| 0465 | 75 | One adapter, one step and one panic point of the hand-written iterator runtime: who closes what, which step is asked, what's dropped as it unwinds | ADR 1092's contract and tables find them; #871 and #860 remove two of their deciders; #1458 ends the kind: std's compiled bodies the default, a hand-written model on only where the tables prove it |
+| 0545 | 58 | One adapter made knowing its back or its length | #851, a value's fact in place of a type's set (closed 11-10); still amended since, for a crate that reads a capacity (#1317, #1394): #1458 |
+| 0914 | 40 | One way a library's JS doesn't fit what its consumer gives it, compiled by the consumer from its MIR | #1462: one canonical form at a library's boundary, so its JS fits every consumer |
+| 0629, 0905, 0702, 0879 | 35, 27, 26, 33 | One shape of MIR's control flow tidied back to the `switch`, the fallen-through case, the `while` or the `if` the program wrote | #1461: one structuring of the CFG with the written construct as its hint ([proposal 3](#to-file)); #771 measures it |
+| 0444 | 33 | One construct and one place a comment or a blank line is in it | #888, a comment carried from lowering, is not planned (the user's triage, 2026-11-11): placement works, a misplacement is its own bug; reopened if they recur in numbers |
+| 0364 | 32 | The root decision, bodies from MIR: where each later decision of a `match`'s arms, defaults and labels was recorded | Its control-flow amendments are #1461's; the rest are the record of what moved from THIR to MIR, no rule of its own |
+| 0454 | 32 | One boundary where generic code's box of a `&mut` meets its caller's form | ADR 1115's one boundary, `generic_facts.rs`, for those between a function and its callers; #1459 for the rest: a form that's a type, its change a node only its owner makes |
+| 0863 | 29 | One place a `RefCell`'s borrow comes from, or one way a cell is reached | `analysis/cell_flow.rs`, the cells' value flow (#445), ended the reaching; what's left is #1459's, as 0454's |
+| 0562 | 28 | One more operation on a pointer or on plain data's bytes that's lowered, where it was refused | None: addressable memory grows one refusal lifted at a time, which is the safe order; its wrong answers (#1081, #1113) are judged in the audit's `mut-refs` row |
 
 ## Proposed refactors
 

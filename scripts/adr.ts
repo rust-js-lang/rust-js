@@ -3,6 +3,7 @@
 //
 //   bun run adr:next                    # the next number neither main nor this branch has
 //   bun run adr:renumber <from> <to>    # move this branch's decision <from> to <to>
+//   bun run adr:amended                 # the decisions amended most, and the owners' longest rows
 //
 // `next` reads `main` as it's pushed, fetched first, and this checkout, so
 // a number another change pushed is taken. `renumber` moves a decision
@@ -59,6 +60,55 @@ export function addedLines(diff: string): Map<string, Set<number>> {
   return added;
 }
 
+/** How often a decision was amended: its `## Amendment` and `## Amended`
+ * headings. One amended again and again is a list of cases, each a bug
+ * first: the weekly audit reads which (docs/bug-clusters.md, #1465). */
+export function amendments(text: string): number {
+  return (text.match(/^## Amend(?:ment|ed)\b/gm) ?? []).length;
+}
+
+/** The decisions of `texts`, name to text, amended `least` times or more,
+ * the most amended first. */
+export function mostAmended(texts: Map<string, string>, least: number): [string, number][] {
+  return [...texts]
+    .map(([name, text]): [string, number] => [name, amendments(text)])
+    .filter(([, count]) => count >= least)
+    .sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
+}
+
+/** The rows of the architecture's table of semantic owners, each concept
+ * with its row's length, the longest first: a row that takes a paragraph
+ * to say what its owner answers is a list of cases too. */
+export function ownerRows(architecture: string): [string, number][] {
+  const from = architecture.indexOf("### Semantic owners");
+  const to = architecture.indexOf("**Calls.**", from);
+  if (from < 0 || to < 0) throw new Error("docs/architecture.md: no table of semantic owners before `**Calls.**`");
+  return architecture
+    .slice(from, to)
+    .split("\n")
+    .filter((line) => line.startsWith("| ") && !line.startsWith("| Concept") && !line.startsWith("|---"))
+    .map((line): [string, number] => [line.split(" | ")[0].slice(2), line.length])
+    .sort(([, x], [, y]) => y - x);
+}
+
+/** The least amendments a decision has that the audit's table names. */
+export const AMENDED_MOST = 25;
+
+function amended(least: number) {
+  const texts = new Map(
+    readdirSync(join(root, dir))
+      .filter((name) => /^\d{4}-.*\.md$/.test(name))
+      .map((name) => [name, readFileSync(join(root, dir, name), "utf8")]),
+  );
+  const all = mostAmended(texts, 1);
+  console.log(`${all.reduce((sum, [, count]) => sum + count, 0)} amendments of ${all.length} of ${texts.size} decisions; amended ${least} times or more:`);
+  for (const [name, count] of mostAmended(texts, least)) console.log(`${String(count).padStart(4)}  ${name}`);
+  const rows = ownerRows(readFileSync(join(root, "docs/architecture.md"), "utf8"));
+  const long = rows.filter(([, length]) => length > 600);
+  console.log(`\n${long.length} of the ${rows.length} semantic owners' rows are over 600 characters:`);
+  for (const [concept, length] of long) console.log(`${String(length).padStart(5)}  ${concept.slice(0, 100)}`);
+}
+
 function onMain(): string[] {
   git(["fetch", "--quiet", "origin", "main"]);
   return git(["ls-tree", "--name-only", "origin/main", `${dir}/`]).split("\n").map((path) => path.slice(dir.length + 1));
@@ -108,8 +158,9 @@ if (import.meta.main) {
   try {
     if (command === "next") next();
     else if (command === "renumber") renumber(args[0] ?? "", args[1] ?? "");
+    else if (command === "amended" && /^\d*$/.test(args[0] ?? "")) amended(Number(args[0] ?? AMENDED_MOST));
     else {
-      console.error("usage: bun scripts/adr.ts next | renumber <from> <to>");
+      console.error("usage: bun scripts/adr.ts next | renumber <from> <to> | amended [least]");
       process.exit(2);
     }
   } catch (error) {
