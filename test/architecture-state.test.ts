@@ -168,6 +168,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/queries.rs": ["body", "locals", "own_names"],
   "src/lower/mir/queries/reads.rs": ["body", "locals"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement"],
+  "src/lower/mir/rvalues/fields.rs": ["body"],
   "src/lower/mir/rvalues/aggregate.rs": ["body", "locals"],
   "src/lower/mir/scopes.rs": ["body", "locals"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
