@@ -131,6 +131,17 @@ fn main() {
     }
     .read_to_string(&mut s);
     println!("invalid: {:?} {s:?}", bad.map_err(|e| e.kind()));
+    print!("borrowed unused:");
+    let mut unused = String::new();
+    {
+        let _nothing = &mut unused;
+    }
+    let read = counted(6, 99).read_to_string(&mut unused);
+    println!(" = {:?} {unused}", read.map_err(|e| e.kind()));
+    print!("boxed:");
+    let mut boxed = Box::new(String::new());
+    let read = counted(4, 99).read_to_string(&mut *boxed);
+    println!(" = {:?} {boxed}", read.map_err(|e| e.kind()));
     print!("held:");
     let mut held = (String::new(), 7);
     let read = counted(5, 99).read_to_string(&mut held.0);

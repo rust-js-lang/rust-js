@@ -1,33 +1,41 @@
-// A type's own `io::Seek` is never lowered (ADR 0425), and so neither is a
-// private function only it calls, as base64's `DecoderReader`'s
-// `read_from_delegate` was of its `io::Read`, lowered since (#1297): no JS
-// calls them.
-use std::io::{self, Seek, SeekFrom};
+// A type's own `Future` is never lowered (ADR 0425), and so neither is a
+// private function only it calls: no JS calls them. Its `io::Read`'s and
+// `Seek`'s are lowered since (#1297, #1489).
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
-struct Counting<S> {
-    inner: S,
-    count: usize,
+struct Ready<T> {
+    value: Option<T>,
+    polled: u32,
 }
 
-impl<S: Seek> Counting<S> {
-    fn new(inner: S) -> Self {
-        Counting { inner, count: 0 }
+impl<T> Ready<T> {
+    fn new(value: T) -> Self {
+        Ready {
+            value: Some(value),
+            polled: 0,
+        }
     }
 
-    fn seek_in_delegate(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        let at = self.inner.seek(pos)?;
-        self.count += 1;
-        Ok(at)
+    fn take_ready(&mut self) -> Poll<T> {
+        self.polled += 1;
+        match self.value.take() {
+            Some(value) => Poll::Ready(value),
+            None => Poll::Pending,
+        }
     }
 }
 
-impl<S: Seek> Seek for Counting<S> {
-    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        self.seek_in_delegate(pos)
+impl<T: Unpin> Future for Ready<T> {
+    type Output = T;
+
+    fn poll(mut self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<T> {
+        self.take_ready()
     }
 }
 
 fn main() {
-    let seeker = Counting::new(io::Cursor::new(b"abc"));
-    println!("{} {}", seeker.count, seeker.inner.get_ref().len());
+    let ready = Ready::new(5u32);
+    println!("{} {:?}", ready.polled, ready.value);
 }

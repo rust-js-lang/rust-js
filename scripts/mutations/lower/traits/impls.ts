@@ -629,4 +629,28 @@ export const mutations: Mutation[] = [
       "^read_of_a_crates_own_reader.rs$"
     ]
   },
+  {
+    name: "own-seek-impl-no-defaults",
+    breaks: "a crate's own `Seek`'s dictionary is its impl's alone, without std's `stream_position` and `seek_relative` over its `seek` (#1489)",
+    file: "src/lower/traits/impls.rs",
+    find: "            false if self.own_seek_impl(tr) => Expr::call(Expr::helper(\"$seekDefaults\"), vec![Expr::object(props)]),\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
+  },
+  {
+    name: "own-seek-provided-copied",
+    breaks: "a crate's own `Seek`'s provided `stream_position` is copied as a default of its trait, which is refused (#1489)",
+    file: "src/lower/traits/impls.rs",
+    find: "                || self.own_seek_impl(tr))\n",
+    replace: "                || false)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
+  },
 ];

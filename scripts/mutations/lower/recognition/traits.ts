@@ -351,26 +351,25 @@ export const mutations: Mutation[] = [
     name: "user-future-refused",
     breaks: "a type's own `impl Future`, either's, is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "    tcx.is_lang_item(id, LangItem::Future) || matches!(",
-    replace: "    false || matches!(",
+    find: "    tcx.is_lang_item(id, LangItem::Future)\n}\n",
+    replace: "    false\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
     name: "user-buf-read-refused",
-    breaks: "a type's own `impl BufRead` is lowered, JS nothing calls, which its case's snapshot holds out (ADR 0425; #1489)",
+    breaks: "a type's own `impl BufRead` is never lowered, so its dictionary is refused, given to generic code (#1489)",
     file: "src/lower/recognition/traits.rs",
-    find: '"std::io::BufRead" | "std::io::Seek")',
-    replace: '"std::io::Seek")',
-    tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
-    snapshots: true,
+    find: "    tcx.is_lang_item(id, LangItem::Future)\n}\n",
+    replace: "    tcx.is_lang_item(id, LangItem::Future) || matches!(std_path(tcx, id), \"std::io::BufRead\")\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^readers_of_the_crates_own_and_boxed.rs$"],
   },
   {
     name: "user-seek-refused",
-    breaks: "a type's own `impl Seek` is an error",
+    breaks: "a type's own `impl Seek` is never lowered, so its dictionary is refused, given to generic code (#1489)",
     file: "src/lower/recognition/traits.rs",
-    find: '"std::io::BufRead" | "std::io::Seek")',
-    replace: '"std::io::BufRead")',
-    tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
+    find: "    tcx.is_lang_item(id, LangItem::Future)\n}\n",
+    replace: "    tcx.is_lang_item(id, LangItem::Future) || matches!(std_path(tcx, id), \"std::io::Seek\")\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^readers_of_the_crates_own_and_boxed.rs$"],
   },
   {
     name: "dyn-display-refused",
@@ -666,12 +665,36 @@ export const mutations: Mutation[] = [
     name: "own-read-unlowered",
     breaks: "a crate's own `io::Read` is never lowered again, and each use of it is refused (#1297)",
     file: "src/lower/recognition/traits.rs",
-    find: "\"std::io::BufRead\" | \"std::io::Seek\")",
-    replace: "\"std::io::Read\" | \"std::io::BufRead\" | \"std::io::Seek\")",
+    find: "    tcx.is_lang_item(id, LangItem::Future)\n}\n",
+    replace: "    tcx.is_lang_item(id, LangItem::Future) || matches!(std_path(tcx, id), \"std::io::Read\")\n}\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
       "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "dyn-not-known-by-a-dictionary",
+    breaks: "a `dyn Read`'s and a `Box<dyn Read>`'s `read_to_string`, given a `&mut String`, aren't called by its pair, and are refused (#1489)",
+    file: "src/lower/recognition/traits.rs",
+    find: "    known_by_bounds(ty) || matches!(held.kind(), ty::Dynamic(..))\n",
+    replace: "    known_by_bounds(ty) || held != held\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
+  },
+  {
+    name: "dyn-in-boxes-seen-once",
+    breaks: "a `Box` of a `Box<dyn Read>`'s `read_to_string`, given a `&mut String`, isn't called by its dictionary, and is refused (#1489's metamorphic rewrite)",
+    file: "src/lower/recognition/traits.rs",
+    find: "    while let Some(inner) = held.boxed_ty() {\n",
+    replace: "    if let Some(inner) = held.boxed_ty().filter(|_| ty.boxed_ty().is_none()) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
     ]
   },
 ];

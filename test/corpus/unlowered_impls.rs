@@ -1,9 +1,9 @@
 //@ library-differs
-// A type of the crate's that implements std traits JS has no use for,
-// `Future`, `BufRead` and `Seek`, as either's `Either` does (ADR 0425):
-// allowed, and never lowered, as a `Hash` impl isn't; its `io::Read` is
-// lowered, std's provided methods over its `read` (#1297). The type is the
-// crate's as any other is, its own methods called.
+// A type of the crate's that implements std's `Future`, as either's `Either`
+// does (ADR 0425): allowed, and never lowered, as a `Hash` impl isn't; its
+// `io::Read`, `BufRead` and `Seek` are lowered, std's provided methods over
+// its own (#1297, #1489). The type is the crate's as any other is, its own
+// methods called.
 use std::future::Future;
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 use std::pin::Pin;

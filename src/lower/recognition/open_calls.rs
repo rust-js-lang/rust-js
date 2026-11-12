@@ -19,11 +19,6 @@ pub(crate) enum OpenCall {
     /// Another thread's start, `thread::spawn`, a `Builder`'s or a scope's:
     /// a program has one thread, its realm's (ADR 1126).
     Thread,
-    /// A method of `io::Read`, `BufRead` or `Seek` neither std's byte
-    /// sources nor a reader of the crate's own answer: a crate's own
-    /// `BufRead` or `Seek`, a `Box<dyn Read>`'s, a `dyn Read`'s
-    /// `read_to_string` (#1489, ADR 0425).
-    OwnReader,
     /// A `BuildHasher` method not of std's `BuildHasherDefault` or
     /// `RandomState`, which are recognised: a type parameter's, generic
     /// code's, or another builder's (#1482).
@@ -44,12 +39,6 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
         .any(of_trait)
     {
         return Some(OpenCall::Conversion);
-    }
-    if [StdItem::IoRead, StdItem::IoBufRead, StdItem::IoSeek]
-        .into_iter()
-        .any(of_trait)
-    {
-        return Some(OpenCall::OwnReader);
     }
     if tcx
         .trait_of_assoc(id)

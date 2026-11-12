@@ -310,12 +310,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if is_std_def(tcx, trait_id, StdItem::IoWrite) {
             return (is_file_handle(tcx, self_ty) && FILE_WRITES.contains(&name.as_str())).then_some(IoOp::Dictionary);
         }
-        // And a reader of the crate's own's `Read`, its dictionary's,
-        // `$readerDefaults`' of its impl: its own where it writes one, else
-        // std's defaults over its `read` (#1297).
-        let own_reader = is_std_def(tcx, trait_id, StdItem::IoRead)
-            && matches!(self_ty.peel_refs().kind(), ty::Adt(adt, _) if !is_std_crate(tcx, adt.did()))
-            && matches!(name.as_str(), "read_exact" | "read_to_end" | "read_to_string");
+        // And a reader of the crate's own's, its dictionary's, its impl's:
+        // its own where it writes one, else std's defaults over its `read`,
+        // `$readerDefaults`' (#1297), or over its `seek` (#1489).
+        let own_reader = matches!(self_ty.peel_refs().kind(), ty::Adt(adt, _) if !is_std_crate(tcx, adt.did()))
+            && DICTIONARY_METHODS.contains(&name.as_str());
         (is_io_reading(tcx, trait_id)
             && (self
                 .byte_source(self_ty)

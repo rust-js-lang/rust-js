@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "fresh-string-borrowck-reads-touch",
     breaks: "a `let`'s `FakeRead` of a `String` is taken as a read of it, so the idiom `let mut s = String::new(); r.read_to_string(&mut s)` of a crate's reader is refused (#1297)",
     file: "src/lower/analysis/fresh_strings.rs",
-    find: "            if matches!(\n                statement.kind,\n                StatementKind::FakeRead(..) | StatementKind::PlaceMention(..) | StatementKind::AscribeUserType(..)\n            ) {\n                continue;\n            }\n",
+    find: "            if borrowck_only(statement) {\n                continue;\n            }\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -84,6 +84,30 @@ export const mutations: Mutation[] = [
       "test/diagnostics.test.ts",
       "-t",
       "held String made of one written"
+    ]
+  },
+  {
+    name: "fresh-string-dead-borrow-touches",
+    breaks: "a borrow of a `String` nothing uses, `{ let _r = &mut s; }`, is taken as touching it, so the idiom's read of a crate's reader into it after is refused (#1489's metamorphic rewrite)",
+    file: "src/lower/analysis/fresh_strings.rs",
+    find: "            if dead_borrow(body, statement, string.local) {\n",
+    replace: "            if false && dead_borrow(body, statement, string.local) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "fresh-string-box-unfollowed",
+    breaks: "a `String` made fresh and boxed, `Box::new(String::new())`, read into through the `Box`, isn't proved fresh-empty, so a crate's reader read into it is refused (#1489's metamorphic rewrite)",
+    file: "src/lower/analysis/fresh_strings.rs",
+    find: "                if let Some(boxed) = boxed_into(tcx, data.terminator(), string) {\n",
+    replace: "                if let Some(boxed) = boxed_into(tcx, data.terminator(), string).filter(|_| false) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^read_of_a_crates_own_reader.rs$"
     ]
   },
 ];

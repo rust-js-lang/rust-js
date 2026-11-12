@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`w.write_char(c)` of a generic writer from MIR, its dictionary's, is refused",
     file: "src/lower/mir/dispatch.rs",
-    find: "                        || (generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs())))))\n",
+    find: "                        || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))\n",
     replace: "                        || false)))\n",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
   },
@@ -405,9 +405,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of an associated type, `T::Buffer`, is refused, not its dictionary's",
     file: "src/lower/mir/dispatch.rs",
-    find: "(generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs()))",
-    replace:
-      "(generic_args.types().next()).is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_)))",
+    find: "(generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs()))",
+    replace: "(generic_args.types().next()).is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_)))",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_as_mut.rs$"],
   },
   {

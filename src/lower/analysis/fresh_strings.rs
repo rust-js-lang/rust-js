@@ -81,6 +81,9 @@ fn only_definition<'tcx>(body: &mir::Body<'tcx>, local: Local) -> Option<(Borrow
                 return None;
             };
             let borrowed = match of.projection.as_slice() {
+                // Through a `Box`, its place, `&mut *b` (#1489); through a
+                // reference, a reborrow.
+                [mir::ProjectionElem::Deref] if body.local_decls[of.local].ty.is_box() => Borrowed::Place(*of),
                 [mir::ProjectionElem::Deref] => Borrowed::Reborrow(of.local),
                 fields if fields.iter().all(|elem| matches!(elem, mir::ProjectionElem::Field(..))) => {
                     Borrowed::Place(*of)
@@ -147,6 +150,14 @@ fn made_empty_before<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, string: mi
                 if makes_empty(tcx, data.terminator(), string) {
                     continue;
                 }
+                // A `Box` it's the place of, made of a temporary that must
+                // be made empty before, `b = Box::new(t)` (#1489).
+                if let Some(boxed) = boxed_into(tcx, data.terminator(), string) {
+                    if !made_empty_before(tcx, body, boxed, location) {
+                        return false;
+                    }
+                    continue;
+                }
                 if touches(string.local, |v| v.visit_terminator(data.terminator(), location)) {
                     return false;
                 }
@@ -161,10 +172,11 @@ fn made_empty_before<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, string: mi
             let statement = &data.statements[index];
             // What borrowck alone reads, a `let`'s `FakeRead` or
             // `PlaceMention` of it, or a type it's said to be, does nothing.
-            if matches!(
-                statement.kind,
-                StatementKind::FakeRead(..) | StatementKind::PlaceMention(..) | StatementKind::AscribeUserType(..)
-            ) {
+            if borrowck_only(statement) {
+                continue;
+            }
+            // A borrow of it nothing uses, `let _r = &mut s;`, changes nothing.
+            if dead_borrow(body, statement, string.local) {
                 continue;
             }
             // A temporary moved into it, which must be made empty before.
@@ -189,6 +201,52 @@ fn made_empty_before<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, string: mi
     true
 }
 
+/// Whether `statement` borrows `string`'s local, `_r = &mut s`, into a
+/// reference no statement or call uses after, which can change nothing.
+fn dead_borrow(body: &mir::Body<'_>, statement: &mir::Statement<'_>, string: Local) -> bool {
+    let StatementKind::Assign(assign) = &statement.kind else {
+        return false;
+    };
+    let (place, rvalue) = &**assign;
+    matches!(rvalue, Rvalue::Ref(_, _, of) if of.local == string)
+        && place.projection.is_empty()
+        && read_uses(body, place.local) == 1
+}
+
+/// How many times `local` is used but by what borrowck alone reads, a
+/// `let`'s `FakeRead` or `PlaceMention` of it, or a type it's said to be,
+/// which do nothing: its definition among them.
+fn read_uses(body: &mir::Body<'_>, local: Local) -> usize {
+    struct Count {
+        local: Local,
+        n: usize,
+    }
+    impl<'tcx> Visitor<'tcx> for Count {
+        fn visit_statement(&mut self, statement: &mir::Statement<'tcx>, at: Location) {
+            if !borrowck_only(statement) {
+                self.super_statement(statement, at);
+            }
+        }
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
+            if local == self.local && !matches!(context, PlaceContext::NonUse(_)) {
+                self.n += 1;
+            }
+        }
+    }
+    let mut count = Count { local, n: 0 };
+    count.visit_body(body);
+    count.n
+}
+
+/// Whether `statement` is what borrowck alone reads: a `let`'s `FakeRead` or
+/// `PlaceMention`, or a type a place is said to be.
+fn borrowck_only(statement: &mir::Statement<'_>) -> bool {
+    matches!(
+        statement.kind,
+        StatementKind::FakeRead(..) | StatementKind::PlaceMention(..) | StatementKind::AscribeUserType(..)
+    )
+}
+
 /// The temporary `statement` moves into `string`, whole, `s = move t`, or
 /// as the field of the aggregate it makes of its local, `s = (move t,)`.
 fn moved_into<'tcx>(statement: &mir::Statement<'tcx>, string: mir::Place<'tcx>) -> Option<mir::Place<'tcx>> {
@@ -208,6 +266,38 @@ fn moved_into<'tcx>(statement: &mir::Statement<'tcx>, string: mir::Place<'tcx>) 
         _ => return None,
     };
     moved.projection.is_empty().then_some(*moved)
+}
+
+/// The temporary `terminator` boxes as `string`, the place of the `Box`
+/// it makes, `b = Box::new(move t)` of `*b`.
+fn boxed_into<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    terminator: &mir::Terminator<'tcx>,
+    string: mir::Place<'tcx>,
+) -> Option<mir::Place<'tcx>> {
+    let TerminatorKind::Call {
+        func,
+        args,
+        destination,
+        ..
+    } = &terminator.kind
+    else {
+        return None;
+    };
+    let boxes = func.const_fn_def().is_some_and(|(callee, _)| {
+        crate::lower::recognition::is_std_def(tcx, callee, crate::lower::recognition::StdItem::BoxNew)
+    });
+    if !boxes
+        || destination.local != string.local
+        || !destination.projection.is_empty()
+        || string.projection.as_slice() != [mir::ProjectionElem::Deref]
+    {
+        return None;
+    }
+    match args.first().map(|arg| &arg.node) {
+        Some(Operand::Move(moved)) if moved.projection.is_empty() => Some(*moved),
+        _ => None,
+    }
 }
 
 /// Whether `terminator` is `String::new()` or `String::default()` made in

@@ -85,8 +85,8 @@ use super::generic_facts::{Crossing, Form};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{
-    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, is_unreachable_hint, known_by_bounds,
-    pure_std, std_item, trait_method,
+    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, is_unreachable_hint,
+    known_by_a_dictionary, pure_std, std_item, trait_method,
 };
 use super::refusal::{Refused, refuse};
 use super::representation::{null_params, variant_field};

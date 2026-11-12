@@ -1134,9 +1134,12 @@ Differences:
   `String`'s capacity is none a JS string carries, so reading one into it
   is refused where the reader is known to be the crate's, and throws as
   it runs where generic code is given it, as reading into a `Vec` whose
-  capacity rust-js didn't keep does (#1297, #1261). A crate's own
-  `BufRead` and `Seek`, a `Box<dyn Read>`'s calls and a `dyn Read`'s
-  `read_to_string` are refused (#1489)
+  capacity rust-js didn't keep does (#1297, #1261). Its `BufRead` is its
+  impl's `fill_buf` and `consume`, std's compiled `read_line`, `read_until`
+  and `lines` over them; its `Seek` its `seek`, and std's provided
+  `stream_position` and `seek_relative` over it, `$seekDefaults({ seek })`.
+  A `dyn Read`'s calls are its pair's, `d.impl.read_to_string(d, s)`, and a
+  `Box<dyn Read>`'s, std's `impl Read for Box<R>`, its pair's too (#1489)
   ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-a-crates-own-reader-is-read-1297)).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are

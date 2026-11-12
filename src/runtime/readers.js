@@ -55,6 +55,18 @@ function $defaultSeekRelative(reader, r, offset) {
   if (seek.TAG === "Err") throw seek._0;
 }
 
+// std's provided `stream_position` and `seek_relative` of a `Seek` of the
+// crate's own that doesn't write them, over its `seek`: `seek(Current(0))`,
+// and `$defaultSeekRelative`'s; what the impl writes itself kept, as
+// `$readerDefaults` keeps a reader's (#1489).
+function $seekDefaults(seeker) {
+  return {
+    streamPosition: (r) => seeker.seek(r, { TAG: "Current", _0: 0n }),
+    seekRelative: (r, offset) => $defaultSeekRelative(seeker, r, offset),
+    ...seeker,
+  };
+}
+
 // `impl Read for &[u8]` and `impl BufRead for &[u8]`: what's read is taken
 // from the slice's front, `*self = rest`.
 const $sliceReader = {

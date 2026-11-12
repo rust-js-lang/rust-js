@@ -102,7 +102,6 @@ pub(crate) fn issue_of(open: OpenCall) -> &'static str {
     match open {
         OpenCall::Conversion => " (#1452)",
         OpenCall::Thread => " (ADR 1126)",
-        OpenCall::OwnReader => " (#1489)",
         OpenCall::BuildHasher => " (#1482)",
         OpenCall::CowBorrow => " (#1481)",
     }

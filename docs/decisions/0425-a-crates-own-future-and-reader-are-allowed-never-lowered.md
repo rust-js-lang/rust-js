@@ -637,3 +637,60 @@ probe, of no size hint, is the loop's exact-fit probe in JS, whose only
 difference in alloc is which bytes it counts initialized; and the uncapped
 `max_read_size` follows a `read_buf` that leaves its cursor uninitialized,
 which only std's sources' do, whose reads no program sees.
+
+## Amendment: a crate's own `BufRead` and `Seek`, and a boxed or `dyn` reader's calls (2026-11-12, #1489)
+
+What #1297 left refused is read now; `Future` alone stays on
+`recognition::unlowered_trait`'s list.
+
+- **A crate's own `BufRead`** is its impl's dictionary, its `fill_buf` and
+  `consume`; std's provided `read_line`, `read_until` and `lines` are
+  std's compiled bodies over it, as of std's sources.
+- **A crate's own `Seek`** is its impl's dictionary wrapped in
+  `$seekDefaults({ seek })`, the twin of `$readerDefaults`: std's provided
+  `stream_position`, `seek(SeekFrom::Current(0))`, and `seek_relative`,
+  `$defaultSeekRelative`'s, over its `seek`, what it writes itself kept.
+  A crate type's call of either is its dictionary's, as of `Read`'s.
+- **A `dyn Read`'s call given a `&mut String`**, `read_to_string`, is its
+  pair's as its other calls are, `d.impl.read_to_string(d, s)`: what's
+  called of a `dyn` is known by a dictionary, `known_by_a_dictionary`,
+  which a boxed argument no longer turns away. It's told a fresh `String`,
+  and the runtime refuses another of a crate's reader, as #1297 says.
+- **A `Box<dyn Read>`'s call** is std's `impl Read for Box<R>`'s, whose
+  dictionary is what the `Box` holds, a `dyn`'s `$dynReader`:
+  `$dynReader.read(b, buf)`, as generic code given one reads it. A second
+  route, the `dyn`'s own read through the `Box`, gave the same answer and
+  was dropped, its mutation having survived.
+
+`lower_dictionary` renamed a dictionary's shared entries by `substitute`,
+which gives up on an object holding a closure and left the old name
+read: a first `$seekDefaults` written as arrows printed `seek is not
+defined`. It now refuses such a dictionary rather than leave a dangling
+name; no dictionary reaches it today. The five other callers falling back
+the same way are #1525.
+
+The metamorphic net's rewrites of the case found two idioms the
+fresh-`String` rule (#1297) turned away: a borrow of it nothing uses,
+`{ let _r = &mut s; }`, which changes nothing, now no touch of it
+(`dead_borrow`, counting no borrowck-only statement as a use); and a
+boxed one, `let mut s = Box::new(String::new()); r.read_to_string(&mut
+*s)`, the `Box`'s place followed to the temporary it's made of
+(`boxed_into`). A `Box<Box<dyn Read>>`'s call is its dictionary's as a
+`Box<dyn Read>`'s is, through each `Box`. A deref coercion of a
+`&mut Box<String>`, two derefs, is still refused where the reader is the
+crate's.
+
+`OpenCall::OwnReader`, the refusal family naming this issue, is gone, as
+nothing of `Read`, `BufRead` or `Seek` it named is refused. A crate's
+`impl BufRead` and `impl Seek` are lowered, so `unlowered_helpers` is a
+`Future`'s helper now, still unlowered.
+
+Proof against native Rust in both builds: corpus case
+readers_of_the_crates_own_and_boxed, a crate's `BufRead` (`read_line`,
+`read_until`, generic `lines`) and `Seek` (`stream_position`,
+`seek_relative` past the start, `rewind`, `seek`), a `dyn Read`'s
+`read_to_string` of a crate's reader and a slice, a `Box<dyn Read>`'s
+`read`, `read_to_end` and `read_to_string`, and generic `bytes()` of one.
+Mutations: eight new, caught; `user-buf-read-refused` and
+`user-seek-refused` refitted, `own-reader-names-no-issue` removed with its
+family.

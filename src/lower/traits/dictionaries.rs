@@ -183,20 +183,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let read_buf = Expr::call_helper(if chain { "$followedReadBuf" } else { "$takeReadBuf" }, read_bufs);
                 Ok(Expr::call_helper("$readerDefaults", vec![made, read_buf]))
             }
-            // A reader of the crate's own, its `Read` impl's dictionary, what
-            // that doesn't write std's defaults over its `read`,
-            // `$readerDefaults` its impl wraps it in (#1297).
-            None if is_std_def(self.tcx, tr.def_id, StdItem::IoRead) => {
-                (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr))
-            }
-            None => Err(self.unsupported(
-                span,
-                &format!(
-                    "`{}` as an `io::{}`, a reader of the crate's own (#1489)",
-                    tr.self_ty(),
-                    self.tcx.item_name(tr.def_id)
-                ),
-            )),
+            // A reader of the crate's own, its impl's dictionary: of its
+            // `Read`, what that doesn't write std's defaults over its `read`,
+            // `$readerDefaults` its impl wraps it in (#1297); of its `BufRead`
+            // and `Seek`, its own and std's defaults over them (#1489).
+            None => (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr)),
         }
     }
 

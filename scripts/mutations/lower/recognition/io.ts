@@ -263,4 +263,16 @@ export const mutations: Mutation[] = [
       "^read_of_a_crates_own_reader.rs$"
     ]
   },
+  {
+    name: "own-io-provided-not-dictionary",
+    breaks: "a crate type's call of `Seek`'s provided `stream_position` isn't its dictionary's, and is refused (#1489)",
+    file: "src/lower/recognition/io.rs",
+    find: "            && DICTIONARY_METHODS.contains(&name.as_str());\n",
+    replace: "            && matches!(name.as_str(), \"read_exact\" | \"read_to_end\" | \"read_to_string\");\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
+  },
 ];

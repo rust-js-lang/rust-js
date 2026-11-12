@@ -441,4 +441,16 @@ export const mutations: Mutation[] = [
       "test/lowering-readers.test.ts"
     ]
   },
+  {
+    name: "seek-defaults-position-moves",
+    breaks: "a crate's own `Seek`'s `stream_position` seeks one past where it is, as `seek(Current(1))` (#1489)",
+    file: "src/runtime/readers.js",
+    find: "    streamPosition: (r) => seeker.seek(r, { TAG: \"Current\", _0: 0n }),\n",
+    replace: "    streamPosition: (r) => seeker.seek(r, { TAG: \"Current\", _0: 1n }),\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
+  },
 ];

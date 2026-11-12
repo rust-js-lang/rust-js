@@ -22,6 +22,14 @@ struct EntryForms<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `tr` is the crate's own type's `io::Seek`, whose dictionary
+    /// `$seekDefaults` gives std's provided methods (#1489).
+    fn own_seek_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        crate::lower::recognition::is_std_def(self.tcx, tr.def_id, crate::lower::recognition::StdItem::IoSeek)
+            && matches!(tr.self_ty().peel_refs().kind(),
+                ty::Adt(adt, _) if !crate::lower::recognition::is_std_crate(self.tcx, adt.did()))
+    }
+
     /// Whether `tr` is the crate's own type's `io::Read`, not one of std's
     /// readers `@rust-js/std` compiles (#1297).
     fn own_reader_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
@@ -435,8 +443,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's own `read_exact`, `read_to_end` and `read_to_string` of
             // a `Chain` or a `Take` that doesn't write them: `$readerDefaults`
             // of its dictionary, where it's given (#1156).
-            // And of a reader of the crate's own, its `$readerDefaults`' (#1297).
-            if (crate::lower::recognition::is_std_reader_impl(self.tcx, id) || self.own_reader_impl(tr))
+            // And of a reader of the crate's own, its `$readerDefaults`' (#1297),
+            // and of its `Seek`, its `$seekDefaults`' (#1489).
+            if (crate::lower::recognition::is_std_reader_impl(self.tcx, id)
+                || self.own_reader_impl(tr)
+                || self.own_seek_impl(tr))
                 && crate::lower::recognition::in_io_dictionary(self.tcx, item.def_id)
                 && !self.krate.fns.contains_key(&method)
             {
@@ -755,6 +766,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `read_to_end` and `read_to_string` over its `read`, its
             // `read_buf` the default, as std's are of it (#1297).
             false if self.own_reader_impl(tr) => Expr::call(Expr::helper("$readerDefaults"), vec![Expr::object(props)]),
+            // Of its `Seek`, std's provided methods over its `seek` (#1489).
+            false if self.own_seek_impl(tr) => Expr::call(Expr::helper("$seekDefaults"), vec![Expr::object(props)]),
             false => match crate::lower::ordering::comparison_maker(self.tcx, tr.def_id) {
                 Some(maker) => Expr::call(Expr::helper(maker), vec![Expr::object(props)]),
                 None => Expr::object(props),
@@ -777,14 +790,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .find(|(from, _)| from == v)
                     .map(|(_, to)| Expr::var(to))
             };
+            // Renamed wherever they're read: a closure in what reads one, which
+            // `substitute` won't go into, would leave it reading a name no
+            // longer declared, so it's refused, never left so (#1489).
+            let renamed_in = |value: &Expr| match renamed.is_empty() {
+                true => Some(value.clone()),
+                false => value.substitute(&rename),
+            };
+            let dangling = || {
+                self.unsupported(
+                    span,
+                    "a dictionary whose shared entry a closure in it reads, which it can't rename",
+                )
+            };
             for stmt in &mut shared {
                 if let StmtKind::Const(name, value) = &mut stmt.kind {
-                    *value = value.substitute(&rename).unwrap_or(value.clone());
+                    *value = renamed_in(value).ok_or_else(dangling)?;
                     *name = format!("{cache}_{name}");
                 }
             }
             body.extend(shared);
-            body.push(StmtKind::Return(Some(object.substitute(&rename).unwrap_or(object))).at(js::Span::NONE));
+            body.push(StmtKind::Return(Some(renamed_in(&object).ok_or_else(dangling)?)).at(js::Span::NONE));
         } else {
             // Keyed by what it's given first: a const parameter's value, a
             // number, which only a `Map` holds (ADR 0107), else a dictionary,

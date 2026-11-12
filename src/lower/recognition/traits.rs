@@ -240,6 +240,18 @@ pub(crate) fn known_by_bounds(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_) | ty::Alias(..))
 }
 
+/// Whether what's called of `ty` is its dictionary's: one known by its
+/// bounds, or a `dyn`'s, its pair's `impl`, `d.impl.read_to_string(d, s)`
+/// of a `dyn Read` given a `&mut String` too, or a `Box` of one's, a `Box`
+/// of that's too, std's `impl Read for Box<R>`'s, `$dynReader` (#1489).
+pub(crate) fn known_by_a_dictionary(ty: Ty<'_>) -> bool {
+    let mut held = ty;
+    while let Some(inner) = held.boxed_ty() {
+        held = inner;
+    }
+    known_by_bounds(ty) || matches!(held.kind(), ty::Dynamic(..))
+}
+
 /// How an explicitly fallible JavaScript binding delivers its result.
 pub(in crate::lower) enum Catching {
     Direct,
@@ -486,7 +498,7 @@ pub(in crate::lower) fn implementable(
 /// `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead` and
 /// `Seek`, which JS has no stream of (ADR 0425). The one list.
 pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.is_lang_item(id, LangItem::Future) || matches!(std_path(tcx, id), "std::io::BufRead" | "std::io::Seek")
+    tcx.is_lang_item(id, LangItem::Future)
 }
 
 /// `io::Read`, `io::BufRead` or `io::Seek`, which std's byte sources

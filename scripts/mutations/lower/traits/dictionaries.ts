@@ -843,18 +843,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
   {
-    name: "own-reader-no-dictionary",
-    breaks: "a crate's reader given to generic code is refused, its impl's dictionary not made (#1297)",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "            None if is_std_def(self.tcx, tr.def_id, StdItem::IoRead) => {\n",
-    replace: "            None if false => {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^read_of_a_crates_own_reader.rs$"
-    ]
-  },
-  {
     name: "as-ref-of-a-counted-rc-is-the-rc",
     breaks: "generic code's `T: AsRef<str>` of a counted `Rc<str>` is given the `Rc`, `{ value, strong, weak }`, not what it points at, and `t.as_ref().to_uppercase()` throws (#1503)",
     file: "src/lower/traits/dictionaries.rs",
@@ -893,5 +881,17 @@ export const mutations: Mutation[] = [
     find: "            let steps = self.made_steps(tr, true, span)?;\n",
     replace: "            let steps = self.made_steps(tr, false, span)?;\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
+  },
+  {
+    name: "own-io-impl-no-dictionary",
+    breaks: "a crate's own `BufRead` or `Seek` given to generic code has no dictionary, and is refused (#1489)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            None => (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr)),\n",
+    replace: "            None => Err(self.no_evidence(span, tr)),\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^readers_of_the_crates_own_and_boxed.rs$"
+    ]
   },
 ];

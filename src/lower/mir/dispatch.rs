@@ -1176,7 +1176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || self.krate.foreign.compiled_by_rust_js(trait_id)
                         // One known by its bounds, its dictionary's: `W::write_char(w, c)`
                         // of a generic writer, `T::Buffer`'s `as_mut()` (ADRs 0180, 0533).
-                        || (generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs())))))
+                        || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), (values.clone(), &arg_tys), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
