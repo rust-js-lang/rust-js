@@ -34,7 +34,7 @@ const why = {
   iterators: "a std iterator whose struct std's build doesn't compile, a slice's search",
   "js-own": "a std iterator stepped as JS's own iteration by decision, an array's, a string's `Chars`, any JS iterator's step: its ADR beside it (#1458)",
   memory: "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it",
-  ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile",
+  ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile: its literal panics, its specialized traits, its bound's comparisons, each integer's `Step` and a range's every form would need it (#1589)",
   collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
   sort: "a sort, which rust-js writes as its own in both builds",
   format: "`Debug`, which std's build doesn't compile",

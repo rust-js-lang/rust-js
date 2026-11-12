@@ -102,6 +102,16 @@ and what's merely not done yet:
 `iterators` keeps a slice's lazy searches. The ranges' eight stay `ranges`
 until a probe of compiling `Step`'s bodies says which they are.
 
+The probe (2026-11-13) keeps the ranges' helpers, seven, `ranges` (#1589):
+compiling `Range`'s, `RangeInclusive`'s and `RangeFrom`'s `Iterator` and
+`DoubleEndedIterator` bodies, std's build meets `expect`'s literal panics
+(`core::option::expect_failed`, as #1569's `Repeat`), the specialized
+traits `RangeIteratorImpl` and `RangeInclusiveIteratorImpl`, beside the
+iterators in `core::iter::range` where the types are `core::ops`', a
+comparison of a type parameter by its `PartialOrd` dictionary, each
+integer's `Step`, and, the largest, a range as std's struct wherever the
+build makes one, where every lowering of a range is the recognizers'.
+
 `$repeatingN` is pitted now, std's `RepeatN` compiled in the build of
 std's bodies (ADR 0932, amended). `$repeating` is `memory` (#1569):
 `Repeat`'s `last` and `count` inline a pointer transmute std's build
