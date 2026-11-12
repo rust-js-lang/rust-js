@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "iter-eq-pair-undropped",
     breaks: "`eq` of items with a destructor drops none of the other side's pairs",
     file: "src/runtime/cmp_items.js",
-    find: "      dropB?.(q.value);\n",
-    replace: "",
+    find: "        const dropQ = dropB && (() => dropB(q.value));\n",
+    replace: "        const dropQ = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
@@ -58,5 +58,21 @@ export const mutations: Mutation[] = [
     find: "  if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);\n",
     replace: "  return $iterEq(a, b, eq, dropA, dropB);\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
+  {
+    name: "iter-eq-pair-dropped-one-by-one",
+    breaks: "an `eq`'s compared pair is dropped one drop after the other, so a panic in `b`'s item's drop loses `a`'s (#1609)",
+    file: "src/runtime/cmp_items.js",
+    find: "        $inTurn(dropQ, dropP);\n",
+    replace: "        dropQ?.();\n        dropP?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_eq_drops_the_pair_though_one_panics.rs$"],
+  },
+  {
+    name: "iter-eq-compared-unguarded",
+    breaks: "an `eq` whose `PartialEq` panics drops neither item of the pair it compared (#1609)",
+    file: "src/runtime/cmp_items.js",
+    find: "        same = $unwinds(() => (eq ? eq(p, q.value) : p === q.value), dropQ, dropP);\n",
+    replace: "        same = eq ? eq(p, q.value) : p === q.value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_eq_drops_the_pair_though_one_panics.rs$"],
   },
 ];

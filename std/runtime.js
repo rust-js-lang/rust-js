@@ -21144,7 +21144,15 @@ export function $folded(it, firstByNext = false) {
       list.push(item);
       return list;
     }).values());
-  const folded = Iterator.from({ next: () => listed().next() });
+  // Closed, as a panic in a step unwinds, its source closed too, as std
+  // drops the adapter with it (#1610).
+  const folded = Iterator.from({
+    next: () => listed().next(),
+    return: () => {
+      it.return?.();
+      return { done: true, value: undefined };
+    },
+  });
   // Its hint, before it's folded, what it folds' (#733).
   folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);
   const made = $forward(folded, it, {
@@ -21640,9 +21648,13 @@ export function $iterEq(a, b, eq, dropA, dropB, lengths) {
           same = false;
           return true;
         }
-        same = eq ? eq(p, q.value) : p === q.value;
-        dropB?.(q.value);
-        dropA?.(p);
+        // The pair dropped, `b`'s first, though its `eq` or one drop
+        // panics, the other as that panic unwinds, as std's closure drops
+        // them (#1609).
+        const dropQ = dropB && (() => dropB(q.value));
+        const dropP = dropA && (() => dropA(p));
+        same = $unwinds(() => (eq ? eq(p, q.value) : p === q.value), dropQ, dropP);
+        $inTurn(dropQ, dropP);
         return !same;
       },
       (stop) => stop,

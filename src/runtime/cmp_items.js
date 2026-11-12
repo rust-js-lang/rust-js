@@ -36,9 +36,13 @@ function $iterEq(a, b, eq, dropA, dropB, lengths) {
           same = false;
           return true;
         }
-        same = eq ? eq(p, q.value) : p === q.value;
-        dropB?.(q.value);
-        dropA?.(p);
+        // The pair dropped, `b`'s first, though its `eq` or one drop
+        // panics, the other as that panic unwinds, as std's closure drops
+        // them (#1609).
+        const dropQ = dropB && (() => dropB(q.value));
+        const dropP = dropA && (() => dropA(p));
+        same = $unwinds(() => (eq ? eq(p, q.value) : p === q.value), dropQ, dropP);
+        $inTurn(dropQ, dropP);
         return !same;
       },
       (stop) => stop,
