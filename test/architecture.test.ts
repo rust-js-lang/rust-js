@@ -640,7 +640,8 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // too long to read at once (the second review): its cap is its length now,
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
-  ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
+  ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 2], // What it was, `classified`, which every answer goes through it by (ADR 1128).
+  ["src/lower/recognition/calls.rs", "    fn classified(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 93], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747). Whether a variable holding a function is called as it, `called_as_held` (#581). A method std's impl for a `&mut W` passes on, `W`'s, in `passed_through` (#1309).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 232], // Whether `?` is written as it is, `tried_as_written` (ADR 0913). A method std's impl for a `Box<I>` passes on, `I`'s, `passed_through_box`'s, called again of `I` (#1278).
   ["src/lower/mir/dispatch/known_calls.rs", "    pub(in crate::lower::mir) fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).

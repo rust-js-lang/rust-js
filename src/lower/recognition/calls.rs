@@ -89,7 +89,13 @@ fn set_operator(op: BinOp) -> Option<&'static str> {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// What std function `def_id` of `args` is, which rust-js lowers by
+    /// its own model of it: every recogniser's answer goes through here.
     pub(in crate::lower) fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        self.classified(def_id, args)
+    }
+
+    fn classified(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         if let Some(decided) = self.classify_fn(def_id, args) {
             return decided;
         }
