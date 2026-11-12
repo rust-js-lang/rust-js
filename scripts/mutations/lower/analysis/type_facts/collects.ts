@@ -172,4 +172,12 @@ export const mutations: Mutation[] = [
     replace: "        && let Some((iter, Room::Entries(entry))) = None::<(ty::Ty<'tcx>, Room<'tcx>)>\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },
+  {
+    name: "table-room-of-a-from-iterator-dictionary-unasked",
+    breaks: "a call giving a `B: FromIterator` a generic hash table's dictionary asks its caller no entry layout, so the dictionary's `from_iter` checks the table's room by its count alone and runs on where hashbrown panics `Hash table capacity overflow` (#1450)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "    if !crate::lower::recognition::is_std_crate(tcx, callee) {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
+  },
 ];

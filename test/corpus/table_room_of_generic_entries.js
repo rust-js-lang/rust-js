@@ -4,8 +4,10 @@ import {
   $KeyMap,
   $KeySet,
   $catchable,
+  $collecting,
   $eq,
   $extendMap,
+  $folded,
   $lazyRange,
   $panicMessage,
   $partialEq,
@@ -77,6 +79,21 @@ function collected(v, n, VCopy, UsizeVAlign, UsizeVSize) {
       UsizeVSize,
       UsizeVAlign,
     ),
+  ).size;
+}
+
+function gathered(it, BFromIteratorIItem, ITrustedLen, IInPlace) {
+  return BFromIteratorIItem.fromIter(Iterator.from(it), ITrustedLen, IInPlace);
+}
+
+function collectedThrough(v, n, VCopy, UsizeVAlign, UsizeVSize) {
+  return gathered(
+    $lazyRange(0, n).map((i) => [i, VCopy ? VCopy.copy(v) : v]),
+    {
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $collecting(items, () => new Map($reserveHint($folded(items), UsizeVSize, UsizeVAlign))),
+    },
+    true,
   ).size;
 }
 
@@ -217,6 +234,12 @@ function main() {
   );
   check("collect", () => collected(w, past, { copy: (value) => value.slice() }, 8, 40));
   check("collect fits", () => collected(w, 3, { copy: (value) => value.slice() }, 8, 40));
+  check("collect through a bound", () =>
+    collectedThrough(w, past, { copy: (value) => value.slice() }, 8, 40),
+  );
+  check("collect through a bound fits", () =>
+    collectedThrough(w, 3, { copy: (value) => value.slice() }, 8, 40),
+  );
   check("extend", () => extended(w, past, { copy: (value) => value.slice() }, 8, 40));
   check("extend fits", () => extended(w, 3, { copy: (value) => value.slice() }, 8, 40));
 }

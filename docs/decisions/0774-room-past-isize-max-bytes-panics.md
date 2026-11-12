@@ -514,3 +514,22 @@ own forms. Mutations `collect-count-of-a-call-read-again`,
 `count-bound-of-a-take-unread`, caught; two refitted, and #1436's
 `collect-counted-by-program-unroomed`, whose fallback this replaces,
 removed.
+
+## Amendment: a hash table's room through a `FromIterator` bound (2026-11-12, #1450)
+
+A collect into a hash table through a generic `B: FromIterator<A>`, whose
+dictionary the caller makes in generic code, `at::<_, HashMap<usize, V>>`,
+checked the table's room by its count alone: the dictionary's `from_iter`
+(`collecting_entry`) asks the room of its hint, as it does of any type
+parameter's iterator, by `entry_layout`, but no caller was asked the
+entry's layout, so JS filled the table where hashbrown panics `Hash table
+capacity overflow` (ADR 0262's third case). `table_room_asked` now asks
+`Room` and `Align` of the entry where a call of a function not std's gives
+a `FromIterator` bound a hash table's dictionary, the same entries
+`room_of` names; std's own `collect()` makes no dictionary and is asked
+as a collect.
+
+Tests: corpus case `table_room_of_generic_entries`, a collect through a
+bound past the limit and within it, and its `generic-instances` rewrite,
+off test/metamorphic-known.txt; mutation
+`table-room-of-a-from-iterator-dictionary-unasked`, caught.

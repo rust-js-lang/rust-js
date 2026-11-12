@@ -1032,8 +1032,8 @@ Differences:
   would run code, and nothing where it surely fits, `(0..2).chain(5..7)`
   as it reads (#1441); a collect of a collection's items takes none; and a generic hash table's
   room, of its `with_capacity`, `reserve`, or a collect or `extend` by
-  what the program counts, by its entries' layout, `$tableRoomFor(n,
-  KVSize, KVAlign)` (#1437). By their count alone, as if they had no size,
+  what the program counts, through a `B: FromIterator` bound too, by its
+  entries' layout, `$tableRoomFor(n, KVSize, KVAlign)` (#1437, #1450). By their count alone, as if they had no size,
   only where no caller can give it: an impl's associated type its
   dictionary doesn't carry, `I::Item` in an `impl<I: Iterator>`'s method
   (#934) ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).

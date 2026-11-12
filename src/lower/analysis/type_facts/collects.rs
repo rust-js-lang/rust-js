@@ -280,6 +280,32 @@ fn table_room_asked<'tcx>(
     {
         asks.extend([(entry, TypeFact::Room), (entry, TypeFact::Align)]);
     }
+    // Of a call that gives a `B: FromIterator<A>` a hash table's
+    // dictionary, whose `from_iter` collects what generic code gives it,
+    // asking its hint's room first as it asks any type parameter's
+    // (`collecting_entry`, #1450). Not std's own `collect()`, which makes
+    // none, asked above.
+    if !crate::lower::recognition::is_std_crate(tcx, callee) {
+        let from_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::FromIterator);
+        for (clause, _) in tcx.clauses_of(callee).instantiate(tcx, args) {
+            let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                continue;
+            };
+            let bound = bound.skip_binder().trait_ref;
+            if bound.def_id != from_iterator {
+                continue;
+            }
+            let normal = |ty: ty::Ty<'tcx>| {
+                tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+                    .unwrap_or(ty)
+            };
+            if let Some(Room::Entries(entry)) = revealed.room_of(normal(bound.self_ty()), normal(bound.args.type_at(1)))
+                && !revealed.is_sorted(normal(bound.self_ty()))
+            {
+                asks.extend([(entry, TypeFact::Room), (entry, TypeFact::Align)]);
+            }
+        }
+    }
     asks.into_iter()
         .filter_map(|(entry, fact)| asked_of(tcx, foreign, typing_env, caller, (entry, fact), &None))
         .collect()

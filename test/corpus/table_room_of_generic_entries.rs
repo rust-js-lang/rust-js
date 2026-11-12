@@ -1,7 +1,8 @@
 // Room hashbrown checks for a hash table's entries whose layout a type
 // parameter gives, by their size and alignment (ADR 0774, amended): of a
 // generic `HashMap`'s or `HashSet`'s `with_capacity` and `reserve`, and a
-// collect into one or an `extend` of one by a count the program gives, the
+// collect into one, through a `B: FromIterator` too, whose dictionary is
+// made here (#1450), or an `extend` of one by a count the program gives, the
 // layout its caller gives, `KVSize` and `KVAlign`, a set's `TSize` and
 // `TAlign`, so a count past `isize::MAX` bytes of its table panics `Hash
 // table capacity overflow` as native Rust does, on wasm32 too, and one
@@ -54,6 +55,14 @@ fn collected<V: Copy>(v: V, n: usize) -> usize {
     (0..n).map(|i| (i, v)).collect::<HashMap<usize, V>>().len()
 }
 
+fn gathered<I: Iterator, B: FromIterator<I::Item>>(it: I) -> B {
+    it.collect()
+}
+
+fn collected_through<V: Copy>(v: V, n: usize) -> usize {
+    gathered::<_, HashMap<usize, V>>((0..n).map(|i| (i, v))).len()
+}
+
 fn extended<V: Copy>(v: V, n: usize) -> usize {
     let mut m = HashMap::new();
     m.extend((0..n).map(|i| (i, v)));
@@ -72,6 +81,8 @@ fn main() {
     check("set reserve fits", || set_reserve(w, 3));
     check("collect", || collected(w, past));
     check("collect fits", || collected(w, 3));
+    check("collect through a bound", || collected_through(w, past));
+    check("collect through a bound fits", || collected_through(w, 3));
     check("extend", || extended(w, past));
     check("extend fits", || extended(w, 3));
 }
