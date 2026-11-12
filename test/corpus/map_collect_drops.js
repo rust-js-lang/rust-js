@@ -7,10 +7,9 @@ import {
   $btreeSet,
   $cleanup,
   $cmp,
-  $collectDropping,
   $extendMap,
   $iter,
-  $lazyRange,
+  $range,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
@@ -81,16 +80,10 @@ function main() {
   try {
     c = $treeFrom(
       new $BTreeMap(),
-      $collectDropping(
-        $lazyRange(0, 4).map((i) => {
-          console.log(`make ${i}`);
-          return [i % 2, [(10 + i) & 255]];
-        }),
-        (value) => {
-          loudDrop_drop(value[1]);
-        },
-        true,
-      ),
+      $range(0, 4).map((i) => {
+        console.log(`make ${i}`);
+        return [i % 2, [(10 + i) & 255]];
+      }),
       false,
       $cmp,
       loudDrop_drop,

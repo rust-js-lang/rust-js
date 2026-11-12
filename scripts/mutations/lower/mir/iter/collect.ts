@@ -106,8 +106,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range mapped and collected stays `Array.from($iterator({ start, end }, $rangeNext).map(f))`, not `$range(a, b).map(f)`",
     file: "src/lower/mir/iter/collect.rs",
-    find: "match self.mapped_range(&it, iter_ty, item) {",
-    replace: "match None::<Expr> {",
+    find: "            true => self.mapped_range(&it, iter_ty, item),\n",
+    replace: "            true => None,\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -547,8 +547,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `map` collected into a `Vec` is an array's `map` whatever its items, so where a panic stops it, `(1..=3).map(made).collect()`, what it made isn't dropped: Rust prints `drop 1`, `drop 2`, the JS nothing, a wrong answer (#800)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),\n",
-    replace: "            Some(items) => Some(items),\n",
+    find: "        Ok(!throws || self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
+    replace: "        Ok(true)\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
   {
@@ -686,5 +686,30 @@ export const mutations: Mutation[] = [
     find: "            _ if surely_fits => None,\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
+  },
+  {
+    name: "range-array-made-of-droppers-that-may-panic",
+    breaks: "a range's `map(..).collect()` of items with a destructor whose closure may panic is made `Array.from({ length: n }, f)`, which drops none of what it made as it throws (#1498)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            && self.range_array_collected(&it, iter_ty, (output, item), span)?\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected_drops_on_a_panic.rs$"],
+  },
+  {
+    name: "range-array-closure-throws-unasked",
+    breaks: "whether a range's map function may throw isn't asked, so one of items with a destructor that panics is made as its array, dropping nothing (#1498)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            throws |= crate::lower::iterators::may_throw(f);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected_drops_on_a_panic.rs$"],
+  },
+  {
+    name: "range-array-of-droppers-never",
+    breaks: "a range's map of items with a destructor whose functions can't throw isn't made as its array, `$collectDropping($lazyRange(..).map(f), ..)` where `$range(0, 4).map(f)` does the same (#1498)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        Ok(!throws || self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
+    replace: "        Ok(self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
+    snapshots: true,
   },
 ];

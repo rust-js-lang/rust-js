@@ -2509,3 +2509,30 @@ does nothing, so it's made when it was. Seventeen snapshots changed, each
 that alone. Mutations `held-iterator-spilled` (snapshots) and
 `held-iterator-put-anywhere` (the unit tests `lower::mir::iter::consumers::tests`: one
 read after a call stays held) hold it.
+
+## Amendment (2026-11-12, #1498): a range's map made as its array, one rule
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. #800 kept a range's `map(..).collect()` from being
+`$range(a, b).map(f)` where a panic that stops it has something to drop,
+as an array's `map` drops nothing it made as `f` throws. Its sibling form,
+`counted_range`'s `Array.from({ length: n }, (_, i) => ..)` of one inline
+closure, skipped that question, so `(0..w).map(|n| { if n == 2 { panic!() }
+Cell(7) }).collect::<Vec<Cell>>()` dropped neither `Cell` it had made where
+native Rust drops both as it unwinds (found by the metamorphic net's
+`loud-call`). Both forms now ask one question, `range_array_collected`
+(mir/iter/collect.rs): a range's map is made as its array where its items
+drop nothing as it unwinds, or where none of its map functions may throw
+(`iterators::may_throw`, as an owning chain's stages are asked, #422), so
+`(0..n).map(|n| Cell(n + 100))` and a `println!` in one keep the array
+form. Else it's collected by what drops what it made, `$collectDropping`.
+Corpus case `range_map_collected_drops_on_a_panic` against native Rust in
+both builds; `map_collect_drops` takes the array form again, its closure's
+`println!` throwing nothing; mutations `range-array-made-of-droppers-that-may-panic`,
+`range-array-closure-throws-unasked`, `range-array-of-droppers-never`, and
+#800's two re-anchored.
+
+The readability baseline is blessed with it: `map_collect_drops.js` is 7
+lines shorter (295 to 288) and names nothing apart either way, so the
+corpus's renamed `x$1`, unchanged in count, is a larger share of fewer
+lines, 499.8 to 499.9 in 10,000. No name was given apart.

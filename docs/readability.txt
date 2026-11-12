@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2339
-lines	301096
+files	2341
+lines	301436
 temporaries	0	0
 labeled blocks	0	0
 while (true)	214	7.1
-$iter	2660	88.3
+$iter	2660	88.2
 Iterator.from	288	9.6
 return;	313	10.4
-renamed x$1	15050	499.8
+renamed x$1	15074	500.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1831	0	0	1	19	2	1	98
@@ -23,6 +23,7 @@ test/corpus/adapters_given_to_generic_backs.js	54	0	0	0	2	0	0	4
 test/corpus/adapters_over_own_next_that_panics.js	1199	0	0	2	1	2	0	3
 test/corpus/adapters_own_nth_fold.js	256	0	0	0	0	0	0	8
 test/corpus/adapters_own_work_that_panics.js	572	0	0	0	8	0	0	14
+test/corpus/address_kept_when_assigned_again.js	254	0	0	0	0	0	0	24
 test/corpus/address_of_a_byte_view_of_a_stored_array.js	53	0	0	0	0	0	0	0
 test/corpus/address_of_a_field_through_a_reference.js	60	0	0	0	0	0	0	0
 test/corpus/address_of_a_field_where_its_object_is_stored.js	124	0	0	0	0	0	0	0
@@ -1223,7 +1224,7 @@ test/corpus/manually_drop_values.js	31	0	0	0	0	0	0	0
 test/corpus/map_as_it_is_stepped_from_its_back.js	167	0	0	0	5	0	0	15
 test/corpus/map_capacity_effects.js	26	0	0	0	0	0	0	0
 test/corpus/map_clear_unwinds_emptied.js	525	0	0	0	0	0	0	0
-test/corpus/map_collect_drops.js	295	0	0	0	2	0	0	0
+test/corpus/map_collect_drops.js	288	0	0	0	2	0	0	0
 test/corpus/map_drops.js	380	0	0	0	0	0	0	12
 test/corpus/map_ends_size_hint.js	180	0	0	0	4	0	0	0
 test/corpus/map_entry_hashes_its_key_once.js	341	0	0	0	0	0	0	10
@@ -1594,6 +1595,7 @@ test/corpus/range_into_set.js	45	0	0	0	0	0	0	0
 test/corpus/range_is_empty_ordered.js	90	0	0	0	0	0	0	18
 test/corpus/range_lent_used_up.js	64	0	0	0	0	0	0	8
 test/corpus/range_map_collected.js	43	0	0	0	0	0	0	3
+test/corpus/range_map_collected_drops_on_a_panic.js	93	0	0	0	0	0	0	0
 test/corpus/range_map_rfold_holding.js	59	0	0	0	0	0	0	0
 test/corpus/range_mapped_by_a_function.js	78	0	0	0	1	0	0	2
 test/corpus/range_own_steps.js	161	0	0	0	0	0	0	59

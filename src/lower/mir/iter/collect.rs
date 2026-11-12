@@ -97,13 +97,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let iter_ty = receiver.peel_refs();
-        let unmapped = self.mapped_range(&it, iter_ty, item).is_none();
         // Or one whose count the program gives through adapters that keep
         // it, a zip's, a chain's, a `take(n)`'s of a range (#1441), but a map
         // of a range made its array, which asks its room itself:
         // `counted_range`'s, or a range's array mapped, `$range(a, b,
         // size)`, where nothing it holds drops as it unwinds.
-        let range_array = !unmapped && self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none();
+        let unmapped = self.mapped_range(&it, iter_ty, item).is_none();
+        let range_array = self.range_array_collected(&it, iter_ty, (output, item), span)?;
         let program_counted = self.recognition().counted_by_program(iter_ty)
             && !range_array
             && !(self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
@@ -219,6 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Into a `Vec` alone, the array itself: a heap's is made of it.
         if self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
+            && self.range_array_collected(&it, iter_ty, (output, item), span)?
             && let Some(items) = self.counted_range(&it, iter_ty, item, span, made)
         {
             return Ok(items);
@@ -249,6 +250,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => (it, None),
         };
         self.collected_into((it, walk), output, item, Some(collected), span)
+    }
+
+    /// Whether a range's map collected is made as its array, `counted_range`'s
+    /// `Array.from({ length: n }, f)` or `mapped_range`'s `$range(a, b).map(f)`:
+    /// only where a panic can't stop it with something to drop, as neither
+    /// drops what it made as its function throws: of items that drop
+    /// nothing as it unwinds, or of functions none of which may throw. Else
+    /// it's collected by what drops them as it unwinds (#800, #1498).
+    fn range_array_collected(
+        &mut self,
+        it: &Expr,
+        iter_ty: Ty<'tcx>,
+        (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
+        span: Span,
+    ) -> R<bool> {
+        if self.mapped_range(it, iter_ty, item).is_none() {
+            return Ok(false);
+        }
+        let mut throws = false;
+        let mut at = it;
+        while let js::ExprKind::Call(callee, args) = &at.kind
+            && let js::ExprKind::Member(source, name) = &callee.kind
+            && name == "map"
+            && let [f] = &args[..]
+        {
+            throws |= crate::lower::iterators::may_throw(f);
+            at = source;
+        }
+        Ok(!throws || self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())
     }
 
     /// Whether std collects an iterator of `iter_ty` into a `Vec` of
@@ -885,9 +915,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A range's `map`, an array's `map` (ADR 0063), only where a panic
         // that stops it has nothing to drop: one of items with a
         // destructor drops what it made as it unwinds (#800).
-        let mapped = match self.mapped_range(&it, iter_ty, item) {
-            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),
-            _ => None,
+        let mapped = match self.range_array_collected(&it, iter_ty, (output, item), span)? {
+            true => self.mapped_range(&it, iter_ty, item),
+            false => None,
         };
         Ok(match mapped {
             Some(items) => items,
