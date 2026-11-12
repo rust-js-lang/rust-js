@@ -44,10 +44,6 @@ function itIterator_next(it, IIterator, dropI, dropIItem) {
   return IIterator.next(it.items);
 }
 
-function itDrop_drop(it, dropI) {
-  console.log(`drop ${it.name}`);
-}
-
 function caught(f) {
   try {
     f();
@@ -75,12 +71,9 @@ function main() {
           true,
         ),
         (it) => {
-          try {
-            itDrop_drop(it.of, $dropEach(dDrop_drop));
-          } finally {
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
+          console.log(`drop ${it.of.name}`);
+          for (const item of it.of.items) {
+            dDrop_drop(item);
           }
         },
       ),
@@ -105,12 +98,9 @@ function main() {
           true,
         ),
         (it) => {
-          try {
-            itDrop_drop(it.of, $dropEach(dDrop_drop));
-          } finally {
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
+          console.log(`drop ${it.of.name}`);
+          for (const item of it.of.items) {
+            dDrop_drop(item);
           }
         },
       ),
@@ -151,12 +141,9 @@ function main() {
           true,
         ),
         (it) => {
-          try {
-            itDrop_drop(it.of, $dropEach(dDrop_drop));
-          } finally {
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
+          console.log(`drop ${it.of.name}`);
+          for (const item of it.of.items) {
+            dDrop_drop(item);
           }
         },
       ),
@@ -197,12 +184,9 @@ function main() {
             true,
           ),
           (it) => {
-            try {
-              itDrop_drop(it.of, $dropEach(dDrop_drop));
-            } finally {
-              for (const item of it.of.items) {
-                dDrop_drop(item);
-              }
+            console.log(`drop ${it.of.name}`);
+            for (const item of it.of.items) {
+              dDrop_drop(item);
             }
           },
         ),
@@ -226,7 +210,7 @@ function main() {
               true,
             ),
             (it) => {
-              itDrop_drop(it.of);
+              console.log(`drop ${it.of.name}`);
             },
           ),
           $cmp,
@@ -247,7 +231,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      itDrop_drop(iter);
+      console.log(`drop ${iter.name}`);
     }
   }
   console.log(`${result == null ? "None" : `Some(${["Less", "Equal", "Greater"][result + 1]})`}`);
@@ -262,7 +246,7 @@ function main() {
             true,
           ),
           (it) => {
-            itDrop_drop(it.of);
+            console.log(`drop ${it.of.name}`);
           },
         ),
         $cmp,
@@ -280,7 +264,7 @@ function main() {
             true,
           ),
           (it) => {
-            itDrop_drop(it.of);
+            console.log(`drop ${it.of.name}`);
           },
         ),
         $cmp,
@@ -312,13 +296,7 @@ function main() {
         true,
       ),
       (it) => {
-        itDrop_drop(it.of, (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
-            }
-          }
-        });
+        console.log(`drop ${it.of.name}`);
         for (const item of it.of.items) {
           if (item != null) {
             dDrop_drop(item);
@@ -370,13 +348,7 @@ function main() {
         true,
       ),
       (it) => {
-        itDrop_drop(it.of, (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
-            }
-          }
-        });
+        console.log(`drop ${it.of.name}`);
         for (const item of it.of.items) {
           if (item != null) {
             dDrop_drop(item);

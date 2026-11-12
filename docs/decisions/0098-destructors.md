@@ -955,3 +955,22 @@ builds; mutations `derived-clone-drops-nothing` and
 `derived-clone-of-its-last-field-drops`, caught by
 `std-package.test.ts`'s check that the committed std is what the compiler
 compiles.
+
+## Amendment (2026-11-13, #1578): std's dictionaries carry the drop too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. A dictionary's `$drop` is its type's drop, as Rust's vtable has
+it, and the crate's own impls' dictionaries had it; but those rust-js makes
+of std's impls didn't: the blanket `impl<T: Display> ToString for T`'s,
+std's `Display` of an `Rc` or a `Box`, and std's `Debug` of a `Vec` or an
+`Option`. So a `Box<dyn ToString>` of a `Point` with a destructor was never
+dropped, and neither was a `Box<dyn Debug>` of a `Vec<Point>`'s points.
+Each now has its type's drop (`dictionary_drop`), nothing where it has
+none. `$dropEach(drop)`, which only makes a function of a drop, is a pure
+helper (`runtime.rs`'s `PURE`), so a dictionary holding one is read where
+it's made, as one without is, not a call that splits a cleanup's regions:
+the corpus is 121 lines shorter for it, its `$iter`s as many, so the
+readability gate's `$iter` share moves from 87.4 to 87.5 in 10,000 lines
+by the lines gone alone, blessed for it. Corpus case
+`std_dictionaries_drop_their_values` against native Rust in both builds;
+four mutations.

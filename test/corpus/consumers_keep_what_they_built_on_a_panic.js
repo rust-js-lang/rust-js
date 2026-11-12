@@ -41,10 +41,6 @@ function stepsIterator_next(steps, IIterator, dropI, dropIItem) {
   return IIterator.next(steps.items);
 }
 
-function stepsDrop_drop(steps, dropI) {
-  console.log("drop steps");
-}
-
 function steps(n) {
   return { items: $iter([[1], [2], [3]]), step: 0, n };
 }
@@ -202,12 +198,7 @@ function main() {
           true,
         ),
         (it) => {
-          stepsDrop_drop(it.of, (intoIter) => {
-            for (const item of intoIter) {
-              dDrop_drop(item[0]);
-              dDrop_drop(item[1]);
-            }
-          });
+          console.log("drop steps");
           for (const item of it.of.items) {
             dDrop_drop(item[0]);
             dDrop_drop(item[1]);
@@ -317,12 +308,7 @@ function main() {
         true,
       ),
       (it) => {
-        stepsDrop_drop(it.of, (intoIter) => {
-          for (const item of intoIter) {
-            dDrop_drop(item[0]);
-            dDrop_drop(item[1]);
-          }
-        });
+        console.log("drop steps");
         for (const item of it.of.items) {
           dDrop_drop(item[0]);
           dDrop_drop(item[1]);
@@ -352,12 +338,7 @@ function main() {
         true,
       ),
       (it) => {
-        stepsDrop_drop(it.of, (intoIter) => {
-          for (const item of intoIter) {
-            dDrop_drop(item[0]);
-            dDrop_drop(item[1]);
-          }
-        });
+        console.log("drop steps");
         for (const item of it.of.items) {
           dDrop_drop(item[0]);
           dDrop_drop(item[1]);
@@ -370,12 +351,9 @@ function main() {
       () => steps(3),
       stepsIterator,
       (steps) => {
-        try {
-          stepsDrop_drop(steps, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of steps.items) {
-            dDrop_drop(item);
-          }
+        console.log("drop steps");
+        for (const item of steps.items) {
+          dDrop_drop(item);
         }
       },
     ),
@@ -394,12 +372,9 @@ function main() {
         true,
       ),
       (it) => {
-        try {
-          stepsDrop_drop(it.of, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
+        console.log("drop steps");
+        for (const item of it.of.items) {
+          dDrop_drop(item);
         }
       },
     ),
@@ -418,12 +393,9 @@ function main() {
         true,
       ),
       (it) => {
-        try {
-          stepsDrop_drop(it.of, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
+        console.log("drop steps");
+        for (const item of it.of.items) {
+          dDrop_drop(item);
         }
       },
     ),
@@ -432,12 +404,9 @@ function main() {
     () => steps(3),
     stepsIterator,
     (steps) => {
-      try {
-        stepsDrop_drop(steps, $dropEach(dDrop_drop));
-      } finally {
-        for (const item of steps.items) {
-          dDrop_drop(item);
-        }
+      console.log("drop steps");
+      for (const item of steps.items) {
+        dDrop_drop(item);
       }
     },
   );

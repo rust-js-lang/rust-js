@@ -40,10 +40,6 @@ function itIterator_next(it, IIterator, dropI, dropIItem) {
   return IIterator.next(it[0]);
 }
 
-function itDrop_drop(it, dropI) {
-  $out("drop it\n");
-}
-
 export const listDebug = { fmt: listDebug_fmt };
 function listDebug_fmt(list) {
   const f = $sink();
@@ -88,12 +84,9 @@ function steppedDebug_fmt(stepped) {
         true,
       ),
       (it) => {
-        try {
-          itDrop_drop(it.of, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
-          }
+        $out("drop it\n");
+        for (const item of it.of[0]) {
+          dDrop_drop(item);
         }
       },
     ),
@@ -188,12 +181,9 @@ function main() {
       dDebug,
       undefined,
       (it) => {
-        try {
-          itDrop_drop(it, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it[0]) {
-            dDrop_drop(item);
-          }
+        $out("drop it\n");
+        for (const item of it[0]) {
+          dDrop_drop(item);
         }
       },
       dDrop_drop,

@@ -7,6 +7,7 @@ import {
   $debugF64,
   $debugStr,
   $displayF64,
+  $dropEach,
   $f64Max,
   $index,
   $iter,
@@ -296,6 +297,7 @@ function main() {
         value: shapes,
         impl: {
           fmt: (value) => `[${value.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`,
+          $drop: $dropEach($rcDrop),
         },
       };
       let tmp;

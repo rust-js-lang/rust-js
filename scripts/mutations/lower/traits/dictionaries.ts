@@ -918,4 +918,40 @@ export const mutations: Mutation[] = [
     replace: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::var(\"dropIter\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
   },
+  {
+    name: "std-debug-dictionary-drops-nothing",
+    breaks: "a `Box<dyn Debug>` of a `Vec<Point>`, std's `Debug` dictionary, drops none of its points (#1578)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n                props.extend(self.dictionary_drop(ty, span)?);\n",
+    replace: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_dictionaries_drop_their_values.rs$"
+    ]
+  },
+  {
+    name: "std-display-dictionary-drops-nothing",
+    breaks: "a `Box<dyn Display>` of an `Rc<Point>` or a `Box<Point>`, std's `Display` dictionary, never drops its point (#1578)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                props.extend(self.dictionary_drop(ty, span)?);\n                return Ok(Expr::object(props));\n            }\n            // `ToString` is std's",
+    replace: "                let props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                return Ok(Expr::object(props));\n            }\n            // `ToString` is std's",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_dictionaries_drop_their_values.rs$"
+    ]
+  },
+  {
+    name: "to-string-dictionary-drops-nothing",
+    breaks: "a `Box<dyn ToString>` of a `Point`, the blanket `ToString` dictionary, never drops it (#1578)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                )];\n                props.extend(self.dictionary_drop(ty, span)?);\n                return Ok(Expr::object(props));\n            }\n            // `$partialEq`'s",
+    replace: "                )];\n                let _ = &mut props;\n                return Ok(Expr::object(props));\n            }\n            // `$partialEq`'s",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_dictionaries_drop_their_values.rs$"
+    ]
+  },
 ];

@@ -438,15 +438,12 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of value) {
+      heldDrop_drop(item, $dropEach(dDrop_drop));
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return value.length;
   });
   run("listed, not in place", () => {
@@ -461,15 +458,12 @@ function main() {
       undefined,
       $dropEach(dDrop_drop),
     );
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of value) {
+      heldDrop_drop(item, $dropEach(dDrop_drop));
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return value.length;
   });
   run("listed, ranged", () => listedRanged(7));
@@ -577,15 +571,12 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    $dropItems(heldAll, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of heldAll) {
+      heldDrop_drop(item, $dropEach(dDrop_drop));
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return heldAll.length;
   });
   run("a default, narrow, a panic", () => {
@@ -628,15 +619,12 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    $dropItems(heldAll, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of heldAll) {
+      heldDrop_drop(item, $dropEach(dDrop_drop));
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return heldAll.length;
   });
   run("a default, not in place", () => {
@@ -664,33 +652,20 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    let result;
     try {
-      result = held.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+      return held.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
     } catch (error) {
-      $cleanup(() => {
-        $dropItems(held, (item) => {
-          try {
-            heldDrop_drop(item, $dropEach(dDrop_drop));
-          } finally {
-            for (const item$1 of item.iter) {
-              dDrop_drop(item$1);
-            }
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of held) {
+          heldDrop_drop(item, $dropEach(dDrop_drop));
+          for (const item$1 of item.iter) {
+            dDrop_drop(item$1);
           }
-        });
-      }, error);
-      throw error;
-    }
-    $dropItems(held, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
         }
       }
-    });
-    return result;
+    }
   });
 }
 //# sourceMappingURL=case.js.map

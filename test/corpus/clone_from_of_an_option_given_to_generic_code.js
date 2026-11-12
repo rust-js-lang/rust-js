@@ -115,9 +115,6 @@ function generic(dest, source, AClone, ADebug, dropA) {
 
 function main() {
   const clone = { clone: (value) => value };
-  const optionDebug = {
-    fmt: (value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`),
-  };
   let w = [1];
   const counted = [2];
   const dest = { value: w };
@@ -290,7 +287,16 @@ function main() {
           }
         },
       },
-      optionDebug,
+      {
+        fmt(value) {
+          return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
+        },
+        $drop(option) {
+          if (option != null) {
+            countedDrop_drop(option);
+          }
+        },
+      },
       (option) => {
         if (option != null) {
           countedDrop_drop(option);
@@ -331,7 +337,16 @@ function main() {
           }
         },
       },
-      optionDebug,
+      {
+        fmt(value) {
+          return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
+        },
+        $drop(option) {
+          if (option != null) {
+            countedDrop_drop(option);
+          }
+        },
+      },
       (option) => {
         if (option != null) {
           countedDrop_drop(option);
@@ -372,7 +387,16 @@ function main() {
           }
         },
       },
-      optionDebug,
+      {
+        fmt(value) {
+          return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
+        },
+        $drop(option) {
+          if (option != null) {
+            countedDrop_drop(option);
+          }
+        },
+      },
       (option) => {
         if (option != null) {
           countedDrop_drop(option);

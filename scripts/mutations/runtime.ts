@@ -74,4 +74,17 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_option_of_none_like_payloads.rs$"],
     snapshots: true,
   },
+  {
+    name: "drop-each-unpure",
+    breaks: "`$dropEach(drop)`, which only makes a function, is taken to run something, so a dictionary that holds one, `$drop: $dropEach(dDrop_drop)`, can't be read where it's made and splits a cleanup's regions (#1578)",
+    file: "src/runtime.rs",
+    find: "    \"$dropEach\",\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^dyn_shapes_shared.rs$"
+    ],
+    snapshots: true
+  },
 ];

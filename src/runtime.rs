@@ -409,6 +409,10 @@ const PURE: &[&str] = &[
     // An `Option`'s `Some` of what looks like `None`, a box made of it
     // (ADR 0051), which reads nothing else and does nothing (#841).
     "$some",
+    // What drops each item of what it's given, made of an item's drop: a
+    // function, which runs nothing until it's called, as a dictionary's
+    // `$drop` of a `Vec<Point>` is (#1578).
+    "$dropEach",
     // Whether std collects in place, of a source's layout given (#672).
     "$collectsInPlace",
     // A struct's `RefCell` field's one cell, made where it's first asked

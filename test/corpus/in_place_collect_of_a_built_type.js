@@ -8,16 +8,17 @@ import {
   $collectDropping,
   $collectsInPlace,
   $dropEach,
-  $dropItems,
   $foldToArray,
   $held,
   $index,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $rangeInclusiveNext,
   $roomForHint,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,10 +29,6 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-function heldDrop_drop(held, dropI) {
-  console.log("drop held");
-}
-
 function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
     iter: $held(HItemIntoIterator.intoIter(i)),
@@ -40,16 +37,16 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
       ? $foldToArray(iter, (held) => {
-          heldDrop_drop(held, dropHItemIntoIter);
+          console.log("drop held");
           dropHItemIntoIter?.(held.iter);
         })
       : $collectDropping(
           $roomForHint(iter, HeldSize, false, false, (held) => {
-            heldDrop_drop(held, dropHItemIntoIter);
+            console.log("drop held");
             dropHItemIntoIter?.(held.iter);
           }),
           (held) => {
-            heldDrop_drop(held, dropHItemIntoIter);
+            console.log("drop held");
             dropHItemIntoIter?.(held.iter);
           },
           true,
@@ -137,41 +134,28 @@ function main() {
       16,
       8,
       (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
+        for (const item$1 of intoIter) {
+          if (item$1 != null) {
+            dDrop_drop(item$1);
           }
         }
       },
       $dropEach(dDrop_drop),
     );
-    let result;
     try {
-      result = value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+      return value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
     } catch (error) {
-      $cleanup(() => {
-        $dropItems(value, (item) => {
-          try {
-            heldDrop_drop(item, $dropEach(dDrop_drop));
-          } finally {
-            for (const item$1 of item.iter) {
-              dDrop_drop(item$1);
-            }
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of value) {
+          console.log("drop held");
+          for (const item$1 of item.iter) {
+            dDrop_drop(item$1);
           }
-        });
-      }, error);
-      throw error;
-    }
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
         }
       }
-    });
-    return result;
+    }
   });
   run("wide, a panic", () => {
     const wides = Array.from(
@@ -202,15 +186,12 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of value) {
+      console.log("drop held");
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return value.length;
   });
   run("narrow", () => {
@@ -234,33 +215,20 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    let result;
     try {
-      result = value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+      return value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
     } catch (error) {
-      $cleanup(() => {
-        $dropItems(value, (item) => {
-          try {
-            heldDrop_drop(item, $dropEach(dDrop_drop));
-          } finally {
-            for (const item$1 of item.iter) {
-              dDrop_drop(item$1);
-            }
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of value) {
+          console.log("drop held");
+          for (const item$1 of item.iter) {
+            dDrop_drop(item$1);
           }
-        });
-      }, error);
-      throw error;
-    }
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
         }
       }
-    });
-    return result;
+    }
   });
   run("narrow, a panic", () => {
     const narrows = $collectDropping(
@@ -293,15 +261,12 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of value) {
+      console.log("drop held");
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return value.length;
   });
   run("not in place", () => {
@@ -319,15 +284,12 @@ function main() {
       undefined,
       $dropEach(dDrop_drop),
     );
-    $dropItems(value, (item) => {
-      try {
-        heldDrop_drop(item, $dropEach(dDrop_drop));
-      } finally {
-        for (const item$1 of item.iter) {
-          dDrop_drop(item$1);
-        }
+    for (const item of value) {
+      console.log("drop held");
+      for (const item$1 of item.iter) {
+        dDrop_drop(item$1);
       }
-    });
+    }
     return value.length;
   });
 }

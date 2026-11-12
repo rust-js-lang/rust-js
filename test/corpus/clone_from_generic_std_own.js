@@ -522,7 +522,10 @@ function main() {
               $cloneIntoVec(to.value, from, (item) => dClone_clone(item), undefined, dDrop_drop);
             },
           },
-          { fmt: (value) => `[${value.map((item) => dDebug_fmt(item)).join(", ")}]` },
+          {
+            fmt: (value) => `[${value.map((item) => dDebug_fmt(item)).join(", ")}]`,
+            $drop: $dropEach(dDrop_drop),
+          },
           $dropEach(dDrop_drop),
         );
       } catch (error) {
@@ -575,8 +578,18 @@ function main() {
         },
       },
       {
-        fmt: (value) =>
-          value == null ? "None" : `Some([${value.map((item) => dDebug_fmt(item)).join(", ")}])`,
+        fmt(value) {
+          return value == null
+            ? "None"
+            : `Some([${value.map((item) => dDebug_fmt(item)).join(", ")}])`;
+        },
+        $drop(option) {
+          if (option != null) {
+            for (const item of option) {
+              dDrop_drop(item);
+            }
+          }
+        },
       },
       (option) => {
         if (option != null) {

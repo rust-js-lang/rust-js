@@ -45,10 +45,6 @@ function itIterator_next(it, IIterator, dropI, dropIItem) {
   return IIterator.next(it[0]);
 }
 
-function itDrop_drop(it, dropI) {
-  console.log("drop it");
-}
-
 function made() {
   return iterator_map(
     { start: 1, end: 3 },
@@ -220,12 +216,9 @@ function main() {
           true,
         ),
         (it) => {
-          try {
-            itDrop_drop(it.of, $dropEach(dDrop_drop));
-          } finally {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
+          console.log("drop it");
+          for (const item of it.of[0]) {
+            dDrop_drop(item);
           }
         },
       ),
@@ -328,9 +321,7 @@ function main() {
             true,
           ),
           (it) => {
-            itDrop_drop(it.of, (map) => {
-              map.return();
-            });
+            console.log("drop it");
             it.of[0].return();
           },
         ),
@@ -351,12 +342,9 @@ function main() {
           ),
       },
       (it) => {
-        try {
-          itDrop_drop(it, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it[0]) {
-            dDrop_drop(item);
-          }
+        console.log("drop it");
+        for (const item of it[0]) {
+          dDrop_drop(item);
         }
       },
     );

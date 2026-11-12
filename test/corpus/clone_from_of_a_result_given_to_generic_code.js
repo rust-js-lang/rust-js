@@ -466,7 +466,16 @@ function main() {
             }
           },
         },
-        { fmt: (value) => (value == null ? "None" : `Some(${countedDebug_fmt(value)})`) },
+        {
+          fmt(value) {
+            return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
+          },
+          $drop(option) {
+            if (option != null) {
+              countedDrop_drop(option);
+            }
+          },
+        },
         clone,
         { fmt: (value) => "()" },
         (option) => {

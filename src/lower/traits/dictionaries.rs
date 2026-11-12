@@ -528,7 +528,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })?;
                 body.push(StmtKind::Return(Some(shown)).at(js::Span::NONE));
                 let fmt = Expr::arrow(params, body);
-                return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
+                let mut props = vec![Prop::Field("fmt".into(), fmt)];
+                // Its type's drop, as an impl's dictionary has it: a `Box<dyn
+                // Debug>` of a `Vec<Point>` drops its points (#1578).
+                props.extend(self.dictionary_drop(ty, span)?);
+                return Ok(Expr::object(props));
             }
             // Each with its supertraits', as an impl's is, which generic code
             // reaches by rustc's route, `TOrd.PartialOrd().lt` (#944): std's
@@ -565,17 +569,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let base = self.dictionary_name(tr);
                 return self.module_dictionary((tr.def_id, ty, &base), make);
             }
+            // Each with its type's drop, as an impl's dictionary has it: a
+            // `Box<dyn ToString>` of a `Point` drops it (#1578).
             if display {
                 let fmt = self.display_fn(ty, span)?;
-                return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
+                let mut props = vec![Prop::Field("fmt".into(), fmt)];
+                props.extend(self.dictionary_drop(ty, span)?);
+                return Ok(Expr::object(props));
             }
             // `ToString` is std's of a `Display`: what that shows.
             if to_string {
                 let fmt = self.display_fn(ty, span)?;
-                return Ok(Expr::object(vec![Prop::Field(
+                let mut props = vec![Prop::Field(
                     bindings::trait_method_name(self.tcx, tr.def_id, "to_string"),
                     fmt,
-                )]));
+                )];
+                props.extend(self.dictionary_drop(ty, span)?);
+                return Ok(Expr::object(props));
             }
             // `$partialEq`'s, which gives std's `ne`, `!eq`, but of what
             // asks its parts' `!=`, a tuple's, its own (#962).

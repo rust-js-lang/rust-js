@@ -36,10 +36,6 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-function heldDrop_drop(held, dropI) {
-  console.log("drop held");
-}
-
 const $tHolding = new WeakMap();
 
 function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter) {
@@ -58,7 +54,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
             }, error);
@@ -70,7 +66,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             } catch (error) {
               $cleanup(() => {
                 $dropItems(all, (item) => {
-                  heldDrop_drop(item, dropTItemIntoIter);
+                  console.log("drop held");
                   dropTItemIntoIter?.(item.iter);
                 });
               }, error);
@@ -86,7 +82,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
             }, error);
@@ -98,7 +94,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
             }, error);
@@ -107,7 +103,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         }
         const result = all.length;
         $dropItems(all, (item) => {
-          heldDrop_drop(item, dropTItemIntoIter);
+          console.log("drop held");
           dropTItemIntoIter?.(item.iter);
         });
         return result;
@@ -180,7 +176,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -195,7 +191,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             } catch (error) {
               $cleanup(() => {
                 $dropItems(all, (item) => {
-                  heldDrop_drop(item, dropTItemIntoIter);
+                  console.log("drop held");
                   dropTItemIntoIter?.(item.iter);
                 });
                 if (extra$live) {
@@ -214,7 +210,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -229,7 +225,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                heldDrop_drop(item, dropTItemIntoIter);
+                console.log("drop held");
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -260,7 +256,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         } catch (error) {
           $cleanup(() => {
             $dropItems(all, (item) => {
-              heldDrop_drop(item, dropTItemIntoIter);
+              console.log("drop held");
               dropTItemIntoIter?.(item.iter);
             });
           }, error);
@@ -268,7 +264,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         }
         const result = (length + result$1) >>> 0;
         $dropItems(all, (item) => {
-          heldDrop_drop(item, dropTItemIntoIter);
+          console.log("drop held");
           dropTItemIntoIter?.(item.iter);
         });
         return result;
@@ -476,15 +472,15 @@ function main() {
     dDrop_drop,
     $dropEach(dDrop_drop),
   ).firstHeld($iter([[13n], [14n]]), intoIterator);
-  const value$1 = first != null ? first.iter.end - first.iter.at : undefined;
-  console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  if (first != null) {
-    try {
-      heldDrop_drop(first, $dropEach(dDrop_drop));
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
+  try {
+    const value = first != null ? first.iter.end - first.iter.at : undefined;
+    console.log(`first ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      if (first != null) {
+        console.log("drop held");
         for (const item of first.iter) {
           dDrop_drop(item);
         }
@@ -499,7 +495,7 @@ function main() {
       dDrop_drop,
     ).counted($iter([[15n]]))}`,
   );
-  const value$2 = $iter([[16n]]);
+  const value$1 = $iter([[16n]]);
   console.log(
     `${tJoining(
       { next: $nextSome, advanceBy: $advanceSlice },
@@ -517,7 +513,7 @@ function main() {
       },
       dDrop_drop,
       $dropEach(dDrop_drop),
-    ).heldWith(value$2, [17], intoIterator)}`,
+    ).heldWith(value$1, [17], intoIterator)}`,
   );
   console.log("end");
 }
