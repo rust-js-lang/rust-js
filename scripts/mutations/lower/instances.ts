@@ -234,19 +234,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "trait-method-copies-by-callers",
-    breaks:
-      "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
-    file: "src/lower/instances.rs",
-    find: "                && tcx.trait_of_assoc(id).is_none()\n                && tcx.trait_impl_of_assoc(id).is_none()\n",
-    replace: "                && tcx.trait_impl_of_assoc(id).is_none()\n",
-    tests: [
-      "test/lowering-functions.test.ts",
-      "-t",
-      "a Copy bound takes a copy only",
-    ],
-  },
-  {
     name: "trait-impl-copies-by-callers",
     breaks:
       "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so a copy of an `Option<Point>` its method makes is the value it copies, and a change to it shows there",
@@ -302,6 +289,55 @@ export const mutations: Mutation[] = [
       "test/crates.test.ts",
       "-t",
       "a library counts each type's Rcs apart"
+    ]
+  },
+  {
+    name: "trait-family-unfollowed",
+    breaks: "a method of the crate's own trait takes its callers as unseen, so it takes a copy function, a `Clone` dictionary and boxes its `Some`s whatever its callers give (#1233)",
+    file: "src/lower/instances.rs",
+    find: "                    || method_family(tcx, id).is_some())\n",
+    replace: "                    || false)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^trait_method_given_by_its_callers.rs$"
+    ],
+    snapshots: true
+  },
+  {
+    name: "trait-family-declaration-unmarked",
+    breaks: "a trait's declaration of a method, which no item is, isn't marked with its impls, so a call through it passes no copy function an impl's method takes, refused for want of one (#1233)",
+    file: "src/lower/instances.rs",
+    find: "                    .filter(|&(member, at)| bounded(member).contains(&at))\n",
+    replace: "                    .filter(|&(member, at)| is_item(member) && bounded(member).contains(&at))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^trait_method_given_by_its_callers.rs$"
+    ]
+  },
+  {
+    name: "trait-impl-params-seen",
+    breaks: "an impl's own parameter, which a call through its trait names only as `Self`'s, is taken as seen, so `Some(self.0.clone())` of a `Wrap<Option<u8>>` holding `None` is `None` (#1233)",
+    file: "src/lower/instances.rs",
+    find: "        } else if method_family(tcx, id).is_some() {\n",
+    replace: "        } else if false {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^trait_method_given_by_its_callers.rs$"
+    ]
+  },
+  {
+    name: "trait-family-namings-unshared",
+    breaks: "a naming of a trait's method decides for itself alone, not its family's, so a call through the trait passes a copy function an impl's method doesn't take, and copies nothing (#1233)",
+    file: "src/lower/instances.rs",
+    find: "                Some(own) => (family.iter())\n",
+    replace: "                Some(own) => (family.iter().take(1))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^trait_method_given_by_its_callers.rs$"
     ]
   },
 ];

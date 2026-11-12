@@ -565,8 +565,11 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
             let id = tcx.typeck_root_def_id(owner);
             (id.is_local() || foreign.is_instance(id))
                 && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
-                && tcx.trait_of_assoc(id).is_none()
-                && tcx.trait_impl_of_assoc(id).is_none()
+                && ((tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none())
+                    // A method of the crate's own trait no other crate can
+                    // name, each of whose namings `params_given` follows
+                    // (#1233).
+                    || method_family(tcx, id).is_some())
         }
         Fact::Shared => !tcx.visibility(owner).is_public(),
         Fact::Counted { library } => {
@@ -587,6 +590,27 @@ pub(in crate::lower) fn consumer_compiles(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && !crate::lower::bindings::is_binding(tcx, id)
 }
 
+/// The namings a method of a trait is one of, where every caller of each
+/// is the crate's: the trait's declaration of it and each impl's, of a trait
+/// of the crate's that's no other crate's to name or implement. A call of
+/// any decides what each takes, as generic code calls them by the trait's
+/// dictionary, passing what the declaration takes (#1233). `None` of a
+/// method of another trait, a function of none.
+pub(in crate::lower) fn method_family(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<DefId>> {
+    let declared = tcx.trait_item_of(id).or(tcx.trait_of_assoc(id).map(|_| id))?;
+    let tr = tcx.parent(declared);
+    if !tr.is_local() || tcx.visibility(tr).is_public() {
+        return None;
+    }
+    let mut family = vec![declared];
+    for imp in tcx.all_impls(tr) {
+        if let Some(&method) = tcx.impl_item_implementor_ids(imp).get(&declared) {
+            family.push(method);
+        }
+    }
+    Some(family)
+}
+
 /// Of `items`, each type parameter `bounded` names that some caller gives
 /// what isn't `itself`, carried through generic callers: a caller's own type
 /// parameter given on is given what that one is. A function `seen_whole`
@@ -598,6 +622,7 @@ pub(in crate::lower) fn consumer_compiles(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `Some`s a caller gives (ADRs 0289, 0914, 0051), as a consumer that gives
 /// more compiles its own and JS's is a copy apart.
 pub(super) fn params_given<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
     callers: &Callers<'tcx>,
     (items, is_item): (impl Iterator<Item = &'a DefId>, &dyn Fn(DefId) -> bool),
     seen_whole: &dyn Fn(DefId) -> bool,
@@ -608,24 +633,53 @@ pub(super) fn params_given<'a, 'tcx>(
     for &id in items {
         if !seen_whole(id) {
             given.extend(bounded(id).into_iter().map(|index| (id, index)));
+        } else if method_family(tcx, id).is_some() {
+            // Of a trait's method, its trait's and its impl's parameters,
+            // which a call through the trait names as `Self` alone, any type
+            // (#1233), as `given_on_the_way` takes them.
+            let parents = tcx.generics_of(id).parent_count as u32;
+            given.extend(
+                bounded(id)
+                    .into_iter()
+                    .filter(|&index| index < parents)
+                    .map(|index| (id, index)),
+            );
         }
     }
     let mut passed = Vec::new();
     for (&callee, calls) in callers {
-        if !is_item(callee) {
+        // A trait's method's naming is each of its family's (`method_family`):
+        // what one takes of a parameter of its own, each does.
+        let family = method_family(tcx, callee).unwrap_or_else(|| vec![callee]);
+        if !family.iter().any(|&member| is_item(member)) {
             continue;
         }
+        let parents = |id: DefId| tcx.generics_of(id).parent_count as u32;
+        let targets = |index: u32| -> Vec<(DefId, u32)> {
+            match index.checked_sub(parents(callee)) {
+                // Each member, the declaration too, by which a call through
+                // the trait decides what it passes.
+                Some(own) => (family.iter())
+                    .map(|&member| (member, parents(member) + own))
+                    .filter(|&(member, at)| bounded(member).contains(&at))
+                    .collect(),
+                None => vec![(callee, index)]
+                    .into_iter()
+                    .filter(|&(id, _)| is_item(id))
+                    .collect(),
+            }
+        };
         for &(caller, args, _) in calls {
             for index in bounded(callee) {
                 let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
                     continue;
                 };
                 match given_ty.kind() {
-                    ty::Param(param) => passed.push(((caller, param.index), (callee, index))),
-                    _ if itself(given_ty) => {}
-                    _ => {
-                        given.insert((callee, index));
+                    ty::Param(param) => {
+                        passed.extend(targets(index).into_iter().map(|to| ((caller, param.index), to)));
                     }
+                    _ if itself(given_ty) => {}
+                    _ => given.extend(targets(index)),
                 }
             }
         }

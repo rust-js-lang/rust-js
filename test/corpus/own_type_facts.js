@@ -11,12 +11,12 @@ function plainNamed_nameOf(UName) {
   return UName;
 }
 
-function plainNamed_sizeOf(UClone, USize) {
+function plainNamed_sizeOf(USize) {
   return USize;
 }
 
 function through(XNamed) {
-  return [XNamed.nameOf("u8"), XNamed.sizeOf({ clone: (value) => value }, 8)];
+  return [XNamed.nameOf("u8"), XNamed.sizeOf(8)];
 }
 
 function main() {

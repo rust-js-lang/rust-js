@@ -492,6 +492,7 @@ fn given_params<'a, 'tcx>(
 ) -> IndexSet<(DefId, u32)> {
     let callers = crate::lower::instances::callers_of(tcx, all_bodies);
     crate::lower::instances::params_given(
+        tcx,
         &callers,
         (items, is_item),
         &|id| crate::lower::instances::seen_whole(tcx, id, crate::lower::instances::Fact::CopiedApart(foreign)),

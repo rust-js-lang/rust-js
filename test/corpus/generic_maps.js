@@ -13,7 +13,6 @@ import {
   $hashSlice,
   $iter,
   $next,
-  $nextSome,
   $partialEq,
   $strictlyEqual,
   $toBytes,
@@ -61,7 +60,7 @@ function tCounting(TIterator) {
       );
     },
     tallyBy(self, f, KHash, KPartialEq, KMap) {
-      return tCounting({ next: $nextSome, fold: $foldOf }).counts(
+      return tCounting({ next: $next, fold: $foldOf }).counts(
         iterator_map(self, f, TIterator),
         KHash,
         KPartialEq,

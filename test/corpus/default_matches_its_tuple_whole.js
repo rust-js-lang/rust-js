@@ -116,7 +116,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             if (elt != null) {
-              dropT?.($someValue(elt));
+              dropT?.(elt);
             }
             dropI?.(self);
           }, error);
@@ -136,7 +136,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
           $cleanup(() => {
             if (elt$live) {
               if (elt != null) {
-                dropT?.($someValue(elt));
+                dropT?.(elt);
               }
             }
             dropI?.(self);
@@ -146,7 +146,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         try {
           if (elt$live) {
             if (elt != null) {
-              dropT?.($someValue(elt));
+              dropT?.(elt);
             }
           }
         } catch (error) {
@@ -162,7 +162,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
       try {
         if (nextTuple$live) {
           if (nextTuple != null) {
-            dropT?.($someValue(nextTuple));
+            dropT?.(nextTuple);
           }
         }
       } catch (error) {

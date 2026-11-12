@@ -174,3 +174,45 @@ native Rust in `some_given_to_generic_code_by_its_value.rs` (both builds,
 
 The catalogue files it under **Given**, its owner `boxed_payload` still,
 the representation's.
+
+## Amended (2026-11-12, #1233): a trait's method's copies, clones and `Some`s by its namings
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept; output smaller. `params_given`'s facts, a copy (ADR 0289), a `Clone`
+dictionary (ADR 0914) and an unboxed `Some` (ADR 0051), took a trait's
+method, or an impl's, as unseen, so a trait's generic method always took a
+copy function and a `Clone` dictionary and boxed its `Some`s. Now a method
+of the crate's own trait, one no other crate can name or implement (not
+public), is seen: `instances::method_family` is its declaration and each
+impl's method of it, and a naming of any decides what each takes of a
+parameter of the method's own, as generic code calls them by the trait's
+dictionary, passing what the declaration takes. Each member, the
+declaration too, which no item is, is marked, so a call through the trait
+and the impl's JS agree. A member's parent parameters, its trait's `Self`
+or its impl's own, which a call through the trait names only as `Self`'s,
+stay unseen, as `given_on_the_way` takes them.
+
+A public trait, and another crate's, std's or a library's, keep the rule:
+another crate's code may call its method with what the crate never sees.
+Neither is observable today, so neither has a mutation: a consumer that
+gives a library's trait method more than it takes compiles its own of it,
+the impl and the generic function calling it (crate pairs
+trait_method_of_a_librarys_pub_trait and
+impl_of_a_librarys_trait_called_by_it, each against native Rust), and std's
+provided methods are rust-js's runtime, which calls a crate's `fold` with
+an accumulator of its own, `$folded`'s array (corpus case
+fold_override_given_an_option_by_std).
+
+Proof: corpus case trait_method_given_by_its_callers, a `Copy` bound given
+`u32`s alone (no copy function) and a struct (a copy), a `Clone` bound
+given a `Vec`, a `Some` of what's never `None` (the value) and of an
+`Option` given through a generic caller (a box), and an impl's own
+parameter given an `Option` as `Self`'s (a box), against native Rust in
+both builds; five corpus snapshots smaller, a copy function, a `Clone`
+dictionary or a `$someValue` gone (`rc_counted_through_a_traits_generic_method`
+by a `try` and a clone of what's its own clone). Mutations
+`trait-family-unfollowed` (by its snapshot),
+`trait-family-declaration-unmarked`, `trait-impl-params-seen` and
+`trait-family-namings-unshared`, caught; `trait-method-copies-by-callers`,
+which modelled a call through the dictionary unseen, removed as
+`trait-family-namings-unshared` models it now.

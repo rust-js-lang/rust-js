@@ -30,9 +30,9 @@ export function entry() {
 
 const tensSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (arg0, arg1, UCopy) =>
+  items: (arg0, arg1) =>
     $knowing(
-      tensSource_items(arg0, arg1, UCopy),
+      tensSource_items(arg0, arg1),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -82,9 +82,9 @@ const tensSource = {
           ends,
         ),
     ),
-  tagged: (arg0, arg1, UCopy) =>
+  tagged: (arg0, arg1) =>
     $knowing(
-      tensSource_tagged(arg0, arg1, UCopy),
+      tensSource_tagged(arg0, arg1),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -109,17 +109,14 @@ const tensSource = {
         ),
     ),
 };
-function tensSource_items(n, tag, UCopy) {
+function tensSource_items(n, tag) {
   return iterator_map({ start: 0, end: n }, (x) => (x * 10) >>> 0, { next: $rangeNext });
 }
 function tensSource_hidden(n, M) {
   return iterator_map({ start: 0, end: n }, (x) => Math.imul(x, M) >>> 0, { next: $rangeNext });
 }
-function tensSource_tagged(n, tag, UCopy) {
-  const tag$1 = UCopy ? UCopy.copy(tag) : tag;
-  return iterator_map({ start: 0, end: n }, (x) => [x, UCopy ? UCopy.copy(tag$1) : tag$1], {
-    next: $rangeNext,
-  });
+function tensSource_tagged(n, tag) {
+  return iterator_map({ start: 0, end: n }, (x) => [x, tag], { next: $rangeNext });
 }
 
 const $scaledSource = new Map();
@@ -127,9 +124,9 @@ const $scaledSource = new Map();
 function scaledSource(K) {
   return $traitImpl($scaledSource, [K], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-    items: (arg0, arg1, UCopy) =>
+    items: (arg0, arg1) =>
       $knowing(
-        scaledSource_items(arg0, arg1, K, UCopy),
+        scaledSource_items(arg0, arg1, K),
         (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
         (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
         undefined,
@@ -172,9 +169,9 @@ function scaledSource(K) {
             ends,
           ),
       ),
-    tagged: (arg0, arg1, UCopy) =>
+    tagged: (arg0, arg1) =>
       $knowing(
-        scaledSource_tagged(arg0, arg1, K, UCopy),
+        scaledSource_tagged(arg0, arg1, K),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
@@ -200,7 +197,7 @@ function scaledSource(K) {
       ),
   }));
 }
-function scaledSource_items(n, tag, K, UCopy) {
+function scaledSource_items(n, tag, K) {
   return iterator_rev(
     { start: K, end: (K + n) >>> 0 },
     { next: $rangeNext },
@@ -212,13 +209,8 @@ function scaledSource_hidden(n, K, M) {
     next: $rangeNext,
   });
 }
-function scaledSource_tagged(n, tag, K, UCopy) {
-  const tag$1 = UCopy ? UCopy.copy(tag) : tag;
-  return iterator_map(
-    { start: K, end: (K + n) >>> 0 },
-    (x) => [x, UCopy ? UCopy.copy(tag$1) : tag$1],
-    { next: $rangeNext },
-  );
+function scaledSource_tagged(n, tag, K) {
+  return iterator_map({ start: K, end: (K + n) >>> 0 }, (x) => [x, tag], { next: $rangeNext });
 }
 
 function fromItsBack(SSource) {
