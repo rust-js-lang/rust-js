@@ -46,7 +46,6 @@ refused chk_05
 refused chk_06
 refused collections_std
 refused drop_00
-refused drop_02
 refused drop_03
 refused enum_internal
 refused errapi_02
@@ -164,6 +163,7 @@ same custom_errors
 same default_fields
 same deny_unknown
 same drop_01
+same drop_02
 same enum_adjacent
 same enum_attrs
 same enum_c_like

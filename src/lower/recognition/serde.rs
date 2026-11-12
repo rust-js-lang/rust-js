@@ -3,6 +3,32 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Is `ty` an associated type of a serde trait no crate may implement,
+    /// `<D as Deserializer<'de>>::Error`, `<A as SeqAccess>::Error`, `<S as
+    /// Serializer>::Ok`? Its impls are serde_json's alone, as a crate's own
+    /// `Deserializer`, `Serializer`, access or `Error` is refused
+    /// (`implementable`), in a library's consumer too: values rust-js makes,
+    /// holding none of the program's, so they drop nothing, whichever
+    /// backend a caller gives (#1554). Not a `Visitor`'s `Value`, which is
+    /// the crate's.
+    pub(in crate::lower) fn of_serde_backend(&self, ty: Ty<'tcx>) -> bool {
+        let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *ty.kind()
+        else {
+            return false;
+        };
+        let Some(trait_id) = self.tcx.trait_of_assoc(def_id) else {
+            return false;
+        };
+        matches!(self.tcx.crate_name(trait_id.krate).as_str(), "serde" | "serde_core")
+            && !super::traits::implementable(self.tcx, self.foreign, trait_id)
+    }
+
     /// The crate's impl of serde's `Visitor` for `ty`, a hand-written
     /// `Deserialize`'s (ADR 0459).
     pub(in crate::lower) fn serde_visitor_impl(&self, ty: Ty<'tcx>) -> Option<DefId> {

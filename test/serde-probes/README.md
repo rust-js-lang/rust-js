@@ -31,10 +31,11 @@ program against its manifest and metadata, a producer and its consumer each comp
 that gave native Rust's answer no longer does. Name programs to run only those; `--record` writes this run's Bun
 outcomes to the records, of every program. It runs as many programs at once as `atOnce` says of tests.
 
-`outcomes.txt` at 069058dab, Bun 1.4.4 and Node 24, the same on both, of the generated 358: 242 same, 91 refused,
-9 compiler panics, 13 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since
-#1543, and `drop_03`, a read that fails partway, is refused since 069058dab). Of the review's 28 `different`, 13 now
-give native Rust's answer and `pos_19` and `drop_03` are refused.
+`outcomes.txt` at #1554's fix, Bun 1.4.4 and Node 24, the same on both, of the generated 358: 244 same, 90 refused,
+9 compiler panics, 12 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since
+#1543; `drop_03`, a read that fails partway, is refused since 069058dab; `drop_02`, a guard beside a hand-written
+`Deserialize`, is built since #1554). Of the review's 28 `different`, 13 now give native Rust's answer and `pos_19`
+and `drop_03` are refused.
 
 Each issue the independent review filed is a probe of its own, `issue_<n>.rs`, its repro as the issue gives it, its
 first line naming the issue; the runner copies them into `p/` beside `drop_0N.rs`. Their outcomes, of the baseline:
@@ -51,14 +52,17 @@ first line naming the issue; the runner copies them into `p/` beside `drop_0N.rs
 | #1549 a custom option `Visitor` under `from_value` | `issue_1549.rs` | different |
 | #1550 (closed) a codec looked up without its generic arguments | `issue_1550.rs` | same |
 | #1552 a read that fails partway drops nothing | `issue_1552.rs` | refused |
-| #1554 `impl Drop` beside a hand-written `Deserialize` | `issue_1554.rs` | refused |
+| #1554 (closed) `impl Drop` beside a hand-written `Deserialize` | `issue_1554.rs` | refused, as it reads a `Drop` type, #1552 |
 
-Each way's outcomes at d81f17afb, the same on Bun and Node: as a library, 173 same, 173 refused, 10 compiler
-panics, 10 different, 3 native-invalid; split, 171 same, 185 refused, 5 compiler panics, 5 different, 3 native-invalid,
-none `unsplit`. No program gives native's answer as a program and another answer either other way. What's refused
-only as a library or split: 62 (63 split) by #1554's refusal, met by the header's generic `deserialize_with` helper
-`down`, which a library compiles generically; the nine `ienum_*` by #1559; split, a library's hand-written
-`Serialize` or `Deserialize`, #1560; and `chk_04` panics the compiler as a library, #1558.
+Each way's outcomes at #1554's fix, the same on Bun and Node: as a program, 248 same, 93 refused, 9 compiler panics,
+16 different, 3 native-invalid; as a library, 238 same, 103 refused, 10 compiler panics, 15 different, 3
+native-invalid; split, 224 same, 122 refused, 9 compiler panics, 11 different, 3 native-invalid, none `unsplit`. No
+program gives native's answer as a program and another answer either other way. Since #1554 a serde backend's
+associated type drops nothing, so the 62 (63 split) a library refused for the header's generic `deserialize_with`
+helper `down` are built: 116 now give native's answer, and those that don't (`more_08`–`more_22`, `chk_03`) give the
+answer, or the panic, they give as programs. What's refused only as a library or split: the nine `ienum_*` by #1559;
+split, a library's hand-written `Serialize` or `Deserialize`, #1560; and `chk_04` panics the compiler as a library,
+#1558.
 
 `std_29`'s answer is `usize`'s width, 32 bits in JS, so its native build is for wasm32-wasip1, as the corpus's
 `//@ native: wasm32` cases are (`serde/build.sh --rlib-wasm32`, the runner's `wasm32`): against it, it gives native's

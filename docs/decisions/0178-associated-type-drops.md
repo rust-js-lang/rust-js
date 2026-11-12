@@ -140,3 +140,21 @@ where those types drop. Corpus case `flatten_nth_drops_each_inner_it_runs_out`
 against native Rust in both builds, and in iterator-forms' few; mutations
 `into-iterator-dictionary-drops-nothing` and
 `into-iterator-as-it-is-dropped-as-made`.
+
+## Amendment (2026-11-13, #1554): a serde backend's associated types drop nothing
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal lifted. An associated type of a serde trait no crate may
+implement, `<D as Deserializer<'de>>::Error`, `<A as SeqAccess>::Error`,
+`<S as Serializer>::Ok`, was "a value of an associated type, where a type
+may have a destructor" wherever the crate had a destructor, and always in
+a library, which compiles a generic `deserialize_with` helper as it's
+written: 62 of #1532's serde probes refused as libraries only. A crate's
+own `Deserializer`, `Serializer`, access or `de::Error` is refused
+(`implementable`), in a library's consumer too, so their impls are
+serde_json's alone, values rust-js makes that hold none of the program's
+(ADR 0462, `is_json_error`): they drop nothing, whichever backend a
+caller gives, a fact of recognition (`of_serde_backend`), not a caller's.
+A `Visitor`'s `Value`, the crate's own, is asked as before. Native-compared
+in test/serde.test.ts as a program and as a library; mutation
+`serde-backend-type-may-drop`.

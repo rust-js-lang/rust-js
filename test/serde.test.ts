@@ -1079,3 +1079,58 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A serde backend's associated type, `<D as Deserializer>::Error`, is
+// serde_json's alone, as a crate's own `Deserializer` is refused, so it
+// drops nothing: a crate with a destructor, a guard in a hand-written
+// `Deserialize`, or a generic `deserialize_with` helper compiled as a
+// library, isn't refused as "a value of an associated type, where a type
+// may have a destructor" (#1554). As a program and as a library, against
+// native. Reading a type with a destructor is #1552's.
+test("serde: a backend's error drops nothing, beside a crate's destructors", async () => {
+  const dir = fixture("serde-backend-error-drops");
+  writeFileSync(join(dir, "cases.rs"), `use serde::{Deserialize, Deserializer};
+use std::cell::RefCell;
+thread_local! { static LOG: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) }; }
+fn note(s: String) {
+    LOG.with(|l| l.borrow_mut().push(s));
+}
+pub struct Guard(pub &'static str);
+impl Drop for Guard {
+    fn drop(&mut self) {
+        note(format!("guard {}", self.0));
+    }
+}
+#[derive(Debug)]
+pub struct Sum(pub i32);
+impl<'de> Deserialize<'de> for Sum {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Sum, D::Error> {
+        let _g = Guard("pair");
+        let (a, b) = <(i32, i32)>::deserialize(d)?;
+        Ok(Sum(a + b))
+    }
+}
+pub fn down<'de, D: Deserializer<'de>>(d: D) -> Result<i32, D::Error> {
+    Ok(String::deserialize(d)?.len() as i32)
+}
+#[derive(Deserialize, Debug)]
+pub struct Down {
+    #[serde(deserialize_with = "down")]
+    pub n: i32,
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Sum>("[2,3]").map_err(|e| e.to_string())));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Sum>("[2]").map_err(|e| e.to_string())));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Down>("{\\"n\\":\\"four\\"}").map_err(|e| e.to_string())));
+    out.push_str(&LOG.with(|l| l.borrow().join(", ")));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+  const lib = join(dir, "lib.js");
+  run([compiler, join(dir, "cases.rs"), "-o", lib, "--library", "--manifest", join(dir, "lib.manifest.json"), "--", ...buildSerde()]);
+  expect((await import(lib)).report()).toBe(expected);
+});
+

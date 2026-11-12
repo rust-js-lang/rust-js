@@ -496,6 +496,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             {
                 self.drops_in(normal, walk)
             }
+            // A serde backend's, `<D as Deserializer>::Error`: serde_json's
+            // alone, which drops nothing (`of_serde_backend`, #1554).
+            ty::Alias(..) if self.recognition.of_serde_backend(ty) => Drops::Nothing,
             // One that's no type here (`no_type_here`): an impl's slot of a
             // default whose where clause the arguments here can't meet, which
             // their dictionary leaves out (#798, #828). No value is one.

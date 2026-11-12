@@ -484,4 +484,16 @@ export const mutations: Mutation[] = [
     replace: "            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
+  {
+    name: "serde-backend-type-may-drop",
+    breaks: "a serde backend's associated type, `<D as Deserializer>::Error`, is held to have a destructor where the crate has one, so a guard in a hand-written `Deserialize`, or a generic `deserialize_with` helper in a library, is refused (#1554)",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Alias(..) if self.recognition.of_serde_backend(ty) => Drops::Nothing,\n",
+    replace: "            ty::Alias(..) if false => Drops::Nothing,\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "backend's error drops nothing"
+    ]
+  },
 ];
