@@ -55,9 +55,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn use_reader(&mut self) {}
 
+    /// Refused: a read of a `ty` whose drop can be seen (`drop_seen`). A read that
+    /// fails part-way, a field's text the wrong type, trailing characters,
+    /// a duplicate field, drops what it had read, as Rust's `?` returns
+    /// through each frame; the runtime reader's frames, which hold what's
+    /// read, drop nothing as its error is thrown. #1532's S1: a precise
+    /// refusal, the native behaviour coming with the reader the plan moves
+    /// to serde's own expansion (#1552).
+    pub(in crate::lower) fn refuse_dropping_read(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+        match self.drop_seen(ty, 0) {
+            false => Ok(()),
+            true => Err(self.unsupported(
+                span,
+                &format!("reading a `{ty}` from JSON, which runs code when it's dropped: a read that fails part-way drops what it had read, which serde_json drops (#1552)"),
+            )),
+        }
+    }
+
+    /// Whether dropping a `ty` can be seen: it runs code (`drops`, the drop
+    /// owner's answer), a `Drop` of the crate's whose call can be seen, not
+    /// one that does nothing (`quiet_fns`), a library's, or one of what only
+    /// a caller knows; std's own containers drop only what they hold.
+    fn drop_seen(&self, ty: Ty<'tcx>, depth: usize) -> bool {
+        if self.drops(ty) == crate::lower::drops::Drops::Nothing {
+            return false;
+        }
+        if depth > 8 {
+            return true;
+        }
+        let seen = |t: Ty<'tcx>| self.drop_seen(t, depth + 1);
+        let tcx = self.tcx;
+        match ty.kind() {
+            ty::Adt(adt, args) if crate::lower::recognition::is_std_crate(tcx, adt.did()) => args.types().any(seen),
+            ty::Adt(adt, args) => {
+                !adt.did().is_local()
+                    || tcx
+                        .adt_destructor(adt.did())
+                        .is_some_and(|d| !self.krate.quiet_fns.contains(&d.did))
+                    || args.types().any(seen)
+                    || adt.all_fields().any(|f| seen(f.ty(tcx, args).skip_normalization()))
+            }
+            ty::Tuple(items) => items.iter().any(seen),
+            ty::Array(item, _) | ty::Slice(item) => seen(*item),
+            _ => true,
+        }
+    }
+
     /// `serde_json::from_str::<T>(s)`: `$fromJson(s, read)`, with `read` the
     /// function that reads a `T`.
     pub(in crate::lower) fn json_value(&mut self, text: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.refuse_dropping_read(ty, span)?;
         let read = self.json_reader(ty, span)?;
         self.use_reader();
         Ok(Expr::call(Expr::helper("$fromJson"), vec![text, read]))

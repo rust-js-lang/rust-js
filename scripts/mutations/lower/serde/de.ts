@@ -90,4 +90,28 @@ export const mutations: Mutation[] = [
       "own writer and reader are used"
     ]
   },
+  {
+    name: "dropping-read-unrefused",
+    breaks: "a read of what runs code when it's dropped is let through, and one that fails part-way drops nothing of what it had read, where serde_json's `?` drops each (#1552)",
+    file: "src/lower/serde/de.rs",
+    find: "        match self.drop_seen(ty, 0) {\n",
+    replace: "        match false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "runs code when it's dropped"],
+  },
+  {
+    name: "quiet-drop-taken-as-seen",
+    breaks: "a read of a type whose `Drop` does nothing is refused as one whose drop can be seen (#1552)",
+    file: "src/lower/serde/de.rs",
+    find: "                        .is_some_and(|d| !self.krate.quiet_fns.contains(&d.did))\n",
+    replace: "                        .is_some()\n",
+    tests: ["test/serde.test.ts", "-t", "a value with a destructor"],
+  },
+  {
+    name: "std-container-drop-taken-as-seen",
+    breaks: "a read of a std container of what drops quietly, a `Vec<Item>` whose `Drop` does nothing, is refused as one whose drop can be seen (#1552)",
+    file: "src/lower/serde/de.rs",
+    find: "if crate::lower::recognition::is_std_crate(tcx, adt.did()) => args.types().any(seen),",
+    replace: "if crate::lower::recognition::is_std_crate(tcx, adt.did()) => true,",
+    tests: ["test/serde.test.ts", "-t", "a value with a destructor"],
+  },
 ];

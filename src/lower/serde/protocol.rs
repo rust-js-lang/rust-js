@@ -86,6 +86,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `T::deserialize(d)`: the reader's read of `T`, `Ok`, or what it
         // throws, `Err`.
         if op == SerdeOp::Deserialize {
+            self.refuse_dropping_read(args.type_at(0), span)?;
             let reader = self.json_reader(args.type_at(0), span)?;
             return Ok(Written::Value(Expr::call(
                 Expr::helper("$jsonRead"),
@@ -391,6 +392,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let (first, second) = (first.expect("a type to read"), second);
+        for ty in std::iter::once(first).chain(second) {
+            self.refuse_dropping_read(ty, span)?;
+        }
         let boxed = |cx: &Self, t: ty::Ty<'tcx>| Expr::bool(cx.boxed_payload(t));
         Ok(match next {
             SerdeNext::Element => {

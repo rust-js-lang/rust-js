@@ -51,6 +51,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             JsonCall::FromValue(ty) => {
                 let value = values.remove(0);
+                self.refuse_dropping_read(ty, span)?;
                 let reader = self.json_reader(ty, span)?;
                 Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }

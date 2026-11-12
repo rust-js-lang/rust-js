@@ -237,7 +237,10 @@ writer (`serialize_with`); `with`, `serialize_with` or `deserialize_with`
 on a variant of no field or of more; a width for a `Value`;
 `Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,
 and collecting into one; `Map::clear` and `map::Entry::or_insert`;
-`to_vec`; an `Error`'s `line`, `column`, `is_syntax` and `classify`.
+`to_vec`; an `Error`'s `line`, `column`, `is_syntax` and `classify`;
+reading a value whose drop can be seen, a `Drop` of the crate's that does
+something, its own or a part's, as a read that fails part-way doesn't drop
+what it had read yet (#1552).
 
 ## React and JSX
 

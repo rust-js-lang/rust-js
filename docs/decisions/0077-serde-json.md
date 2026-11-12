@@ -177,3 +177,30 @@ its cache cold and warm", against native serde_json, the one test that
 compiles with `-C incremental` other than Cargo's builds, and the
 mutations `serde-item-def-id-unfound` and `serde-field-def-id-unfound`
 (`lower/serde.ts`).
+
+## Amendment: a read of what runs code when it's dropped is refused (2026-11-12, #1552)
+
+A read that fails part-way, a field's text the wrong type, trailing
+characters, a duplicate field, drops what it had read in Rust, as `?`
+returns through each of serde_json's frames: `drop 1` before the `Err` of
+`from_str::<S>(r#"{"a":1,"b":"x"}"#)`. The runtime reader's frames hold
+what's read, a struct's values, a `Vec`'s items, and drop nothing as its
+`$JsonError` is thrown, so rust-js printed the `Err` alone. #1532's plan
+moves the reader to serde's own expansion, where Rust's frames are
+rust-js's lowered ones; until then a read of a type whose drop can be seen
+is refused, its preferred S1 answer: ADR 0262's last case, as the runtime
+frames can't drop what they hold. One question, `refuse_dropping_read`
+(`serde/de.rs`), asked where a read begins: `from_str`, `from_value`, a
+hand-written impl's `T::deserialize(d)`, and a visitor's `next_element`,
+`next_key`, `next_value` and `next_entry`. A drop is seen (`drop_seen`)
+where the type runs code as it's dropped (`drops`, the drop owner's
+answer) by a `Drop` of the crate's whose call can be seen, not one that
+does nothing (`quiet_fns`), a library's, or one of what only a caller
+knows; std's own containers drop only what they hold. #1552 stays open,
+P2, for the reader that drops.
+
+Held by test/diagnostics.test.ts (a struct of such fields from text, a
+`Vec` of them from a `Value`, a visitor's element), test/serde.test.ts's
+generic codec of a value whose `Drop` does nothing, read as before, and
+mutations `dropping-read-unrefused`, `quiet-drop-taken-as-seen` and
+`std-container-drop-taken-as-seen`.
