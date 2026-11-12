@@ -388,7 +388,7 @@ for (const [name, source, message, crate] of [
   // A `rev()` of the crate's iterator made in place, which a variable holds, has no form to be
   // made again knowing its back past what's made of it (#257).
   ["a held rev of the crate's iterator stepped from its back past a skip", "pub struct C(i32, i32);\nimpl Iterator for C { type Item = i32; fn next(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.0 += 1; self.0 }) } fn size_hint(&self) -> (usize, Option<usize>) { let n = (self.1 - self.0).max(0) as usize; (n, Some(n)) } }\nimpl DoubleEndedIterator for C { fn next_back(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.1 -= 1; self.1 + 1 }) } }\nimpl ExactSizeIterator for C {}\npub fn f() -> Option<i32> { let r = C(0, 9).rev(); r.skip(3).rev().last() }", "a variable holds, stepped from its back past what's made of it"],
-  ["cycling an array's items with a destructor", "#[derive(Clone)]\npub struct Guard;\nimpl Drop for Guard { fn drop(&mut self) {} }\npub fn f() -> usize { vec![Guard].into_iter().cycle().take(2).count() }", "`cycle()` of an array's items with a destructor"],
+  ["cycling an array's items with a destructor", "#[derive(Clone)]\npub struct Guard;\nimpl Drop for Guard { fn drop(&mut self) {} }\npub fn f() -> usize { vec![Guard].into_iter().cycle().take(2).count() }", "`cycle()` of an array's items with a destructor (#1583)"],
   ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "not in an `extern` block"],
   ["a generic constant", "#![feature(generic_const_items)]\n#![allow(incomplete_features)]\npub trait Sizes { const SIZE<T>: usize; }", "generic constants"],
   ["a type constant, refused not crashed", "#![feature(min_generic_const_args)]\n#![allow(incomplete_features)]\npub trait Foo { type const N: usize; }\npub struct Bar;\nimpl Foo for Bar { type const N: usize = 3; }", "type constants"],
@@ -484,6 +484,9 @@ for (const [name, source, message, crate] of [
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).
+  // Refused where the plain build makes the runtime's form; the build of
+  // std's bodies compiles std's struct (#1579).
+  ["a clone of a repeat_n", 'pub fn f() -> usize { let a = std::iter::repeat_n(5u8, 3); a.clone().count() + a.count() }', "cloning `std::iter::RepeatN<u8>` (#1579)"],
   ["an internally tagged newtype variant of a type parameter", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E<T> { M(T) }\npub fn f(e: &E<u32>) -> String { serde_json::to_string(e).unwrap() }', "an internally tagged newtype variant of a type parameter (#1568)", "serde"],
 ] as [string, string, string, string?][]) {
   test(`${name} reports a source location and preserves existing output`, () => {

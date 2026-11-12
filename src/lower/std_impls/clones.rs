@@ -629,9 +629,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })?;
                     Ok(Self::in_turn(Expr::array(items), made))
                 }
-                Shape::Other => Err(self.unsupported(span, &format!("cloning `{ty}`"))),
+                Shape::Other => Err(self.uncloned(ty, span)),
             },
-            _ => Err(self.unsupported(span, &format!("cloning `{ty}`"))),
+            _ => Err(self.uncloned(ty, span)),
+        }
+    }
+
+    /// The refusal of a clone of `ty`, naming the issue that tracks it: a
+    /// `repeat_n`'s, whose runtime form, `$repeatingN`, has none (#1579).
+    fn uncloned(&self, ty: Ty<'tcx>, span: Span) -> rustc_span::ErrorGuaranteed {
+        match crate::lower::recognition::is_repeat_n(self.tcx, ty) {
+            true => self.unsupported(span, &format!("cloning `{ty}` (#1579)")),
+            false => self.unsupported(span, &format!("cloning `{ty}`")),
         }
     }
 

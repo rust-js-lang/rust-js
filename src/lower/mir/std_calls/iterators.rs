@@ -345,9 +345,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                         .iterator_item(iter_ty)
                                         .is_some_and(|item| this.drops(item) != crate::lower::drops::Drops::Nothing)
                                 {
-                                    return Err(
-                                        this.unsupported(span, "`cycle()` of an array's items with a destructor")
-                                    );
+                                    return Err(this
+                                        .unsupported(span, "`cycle()` of an array's items with a destructor (#1583)"));
                                 }
                                 let it = match it.reads_same() || is_stepped_items(&it) {
                                     true => it,

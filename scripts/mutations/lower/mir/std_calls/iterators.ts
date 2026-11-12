@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: '                                    return Err(\n                                        this.unsupported(span, "`cycle()` of an array\'s items with a destructor")\n                                    );\n',
+    find: '                                    return Err(this\n                                        .unsupported(span, "`cycle()` of an array\'s items with a destructor (#1583)"));\n',
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
   },
@@ -224,5 +224,13 @@ export const mutations: Mutation[] = [
     find: "                                    Some(record) => record(peeked),\n",
     replace: "                                    Some(_) => peeked,\n",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
+  {
+    name: "cycle-of-dropping-items-refusal-unnamed",
+    breaks: "the refusal of `cycle()` of an array's items with a destructor doesn't name #1583, which tracks it",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "with a destructor (#1583)\"));\n",
+    replace: "with a destructor\"));\n",
+    tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items with a destructor"],
   },
 ];

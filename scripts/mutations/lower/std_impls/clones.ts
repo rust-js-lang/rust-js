@@ -514,4 +514,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(self.copy(place, ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "repeat-n-clone-refusal-unnamed",
+    breaks: "the refusal of a `repeat_n`'s `clone()` doesn't name #1579, which tracks it",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            true => self.unsupported(span, &format!(\"cloning `{ty}` (#1579)\")),\n",
+    replace: "            true => self.unsupported(span, &format!(\"cloning `{ty}`\")),\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a clone of a repeat_n"],
+  },
 ];
