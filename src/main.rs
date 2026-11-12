@@ -140,6 +140,11 @@ struct RustJs {
     std_iterators: bool,
     /// `--js-made-all`, the object model net's hook (ADR 1105).
     js_made_all: bool,
+    /// `--without-recognizer <std path>`, the std functions no recogniser
+    /// takes in this compile, and `--recognizers-found <file>`, where to
+    /// write which each took (ADR 1128).
+    without_recognizers: Vec<String>,
+    recognizers_found: Option<PathBuf>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -307,6 +312,8 @@ impl Callbacks for RustJs {
             lower::session::Flags {
                 meaning: self.std_bodies || self.std_iterators,
                 every_outside_struct: self.js_made_all,
+                without_recognizers: std::mem::take(&mut self.without_recognizers),
+                records_recognized: self.recognizers_found.is_some(),
             },
         );
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
@@ -370,6 +377,13 @@ impl Callbacks for RustJs {
                 lower::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }
         };
+        // Which std functions a recogniser took, of the crate's analysis and
+        // every body's lowering, where it's asked (ADR 1128).
+        if let Some(path) = &self.recognizers_found
+            && let Err(error) = std::fs::write(path, lower::session::recognized(tcx))
+        {
+            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
         if let Some(unlinked) = lowered
             && tcx.dcx().has_errors().is_none()
         {
@@ -668,6 +682,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         prepare_fired,
         without_known,
         knowns_found,
+        without_recognizers: build_without_recognizers,
+        recognizers_found: build_recognizers_found,
         std_iterators,
         js_made_all,
         ..
@@ -689,6 +705,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         .to_string();
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
+    let (without_recognizers, recognizers_found) = (build_without_recognizers, build_recognizers_found);
     let mut callbacks = RustJs {
         dependencies,
         export_library: library || tested,
@@ -700,6 +717,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         tidy_until,
         std_iterators,
         js_made_all,
+        without_recognizers,
+        recognizers_found,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),

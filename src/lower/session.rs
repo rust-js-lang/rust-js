@@ -46,6 +46,12 @@ pub(crate) struct Caches {
     /// (#1401). A type's address names it in this session's `TyCtxt` alone,
     /// so it lives no longer than the session, never written to disk.
     pub debug_shown: OnceCell<(IndexSet<usize>, IndexSet<&'static str>)>,
+    /// The std functions whose recognisers this session leaves out, by
+    /// their std paths, `--without-recognizer`'s (ADR 1128).
+    pub without_recognizers: IndexSet<String>,
+    /// The std functions a recogniser took, each once, in the order it
+    /// first did, where the session records them (`--recognizers-found`).
+    pub recognized: Option<RefCell<IndexSet<&'static str>>>,
 }
 
 thread_local! {
@@ -54,16 +60,31 @@ thread_local! {
     static SESSION: RefCell<Option<Rc<Caches>>> = const { RefCell::new(None) };
 }
 
+/// The std functions a recogniser took in the session `tcx` is, a line
+/// each, in the order each first was: what `--recognizers-found` writes
+/// (ADR 1128); nothing of a session that records none.
+pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
+    let caches = caches(tcx);
+    let Some(recognized) = &caches.recognized else {
+        return String::new();
+    };
+    recognized.borrow().iter().map(|path| format!("{path}\n")).collect()
+}
+
 /// The address of `tcx`'s rustc session, one each session.
 fn gcx_of(tcx: TyCtxt<'_>) -> usize {
     std::ptr::from_ref(tcx.sess) as usize
 }
 
 /// The flags a session's run is given as it starts.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub(crate) struct Flags {
     pub meaning: bool,
     pub every_outside_struct: bool,
+    /// The std paths of the functions whose recognisers are left out.
+    pub without_recognizers: Vec<String>,
+    /// Whether the functions a recogniser takes are recorded.
+    pub records_recognized: bool,
 }
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
@@ -103,6 +124,8 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             meaning: Cell::new(flags.meaning),
             every_outside_struct: Cell::new(flags.every_outside_struct),
             debug_shown: OnceCell::new(),
+            without_recognizers: flags.without_recognizers.into_iter().collect(),
+            recognized: flags.records_recognized.then(RefCell::default),
         }));
     });
     Session(())
@@ -147,7 +170,7 @@ mod tests {
             1,
             Flags {
                 meaning: true,
-                every_outside_struct: false,
+                ..Flags::default()
             },
         );
         caches_keyed(1).std_paths.keep(item(7), "std::first::Item");

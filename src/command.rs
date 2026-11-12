@@ -90,6 +90,13 @@ pub(crate) struct Build {
     /// `--knowns-found <file>`: where to write which facts a reader found,
     /// a line each (ADR 1127).
     pub knowns_found: Option<PathBuf>,
+    /// `--without-recognizer <std path>`, any number: the crate compiled
+    /// with no recogniser taking these std functions, to see that what's
+    /// left of each is refused or right (ADR 1128).
+    pub without_recognizers: Vec<String>,
+    /// `--recognizers-found <file>`: where to write which std functions a
+    /// recogniser took, a line each (ADR 1128).
+    pub recognizers_found: Option<PathBuf>,
     /// `--std-iterators`: every iterator adapter std compiles is its struct,
     /// none rewritten to the JS chain the recognizers make in place. A test
     /// hook, not a way to build: the differential job compares it with the
@@ -181,6 +188,13 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_known.push(known);
     }
     let knowns_found = valued(&mut ours, "--knowns-found", "a path")?.map(PathBuf::from);
+    let mut without_recognizers = Vec::new();
+    // A std function's path, as `--recognizers-found` writes it: `std::..`,
+    // or of a trait's impl, `<core::io::Cursor<T> as core::io::Seek>::seek`.
+    while let Some(path) = valued(&mut ours, "--without-recognizer", "a std function's path")? {
+        without_recognizers.push(path);
+    }
+    let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
     let test = ours.first().is_some_and(|a| a == "--test");
     let (input, output) = match &ours[usize::from(test)..] {
         [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
@@ -213,6 +227,8 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         prepare_fired,
         without_known,
         knowns_found,
+        without_recognizers,
+        recognizers_found,
         std_iterators,
         js_made_all,
         rustc: rustc.to_vec(),

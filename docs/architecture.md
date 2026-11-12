@@ -260,7 +260,10 @@ and `test/getter-reads.test.ts` compares what each reads of JS-made values
 ([ADR 1087](decisions/1087-each-readability-rewrite-is-checked-on-and-off.md));
 and of the facts those rewrites read, `js::Known`'s, each that only
 permits a plainer form is forgotten in turn, `--without-known <fact>`, the
-program running the same ([ADR 1127](decisions/1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md)). The printer owns spelling and layout, including
+program running the same ([ADR 1127](decisions/1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md));
+and each std function's recogniser is left out in turn,
+`--without-recognizer <std path>`, the program refused or running the same
+([ADR 1128](decisions/1128-what-no-recogniser-takes-is-refused-or-right.md)). The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
 
 ### Semantic owners
@@ -336,7 +339,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | How an item is written over by a clone of another, as std's `clone_from` does it: its own, a type parameter's dictionary's, or a `Vec`'s, std's `SpecCloneIntoVec` (`$cloneIntoVec`), asked by `fill`, `clone_from_slice` and a `Vec`'s `clone_from` (ADRs 0507, 1102 amended, #919) | `std_types/slice.rs` | `clone_over`, `vec_clone_into` |
 | A type equal only to itself, a JS key by itself, a library's as its contract says (ADR 0864) | `std_impls.rs`; `library.rs` | `equal_only_to_itself` |
 | What each comparison runs, from rustc's impls, never one for another (ADR 0057, amended): `partial_cmp` its own, its `cmp` or its parts'; `<` and the rest JS's own, an impl's own `lt` or `partial_cmp` against 0; `!=` an impl's own `ne`, a type parameter's dictionary's, or std's that asks its parts' (#937, #944, #962); the comparison dictionaries' makers, which hold std's provided methods, and std's quiet orders' shared dictionaries | `ordering.rs`; `std_impls/not_equal.rs` | `partial_runs`, `operator_value`, `own_ne`, `ne_value`, `comparison_maker`, `held_by_comparison_dictionary`, `quiet_dictionary` |
-| Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
+| Std call classification, and the std functions a compile leaves unrecognised, `--without-recognizer`'s, in lowering and every analysis alike (ADR 1128) | `recognition/calls.rs`; `recognition/unrecognized.rs`; `session.rs` | `classify`, and its answers through `shortcuts.rs`; `left`; `recognized` |
 | Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | What `size_of`, `align_of`, `type_name` and a `TypeId` tell of a type, and which of std's functions ask them (ADR 0145) | `recognition/type_facts.rs` | `TypeFact`, `type_facts`, `layout_query`, `map_of_param`, `class_key` |
 | The js and react crates' items that lowering knows by name: a JS `Set` or `Map`, a class, the registry's symbols, a function's `bind`, `call` and `apply`, a hook's dependencies and a context's members | `recognition/js_items.rs` | `js_set_or_map`, `is_js_class`, `is_symbol_for_def`, `is_function_bind`, `is_dependency_list`, `is_context_member` |

@@ -15,8 +15,14 @@
 // rewrite that drops a fact must leave it. One whose JS does otherwise
 // names a fact its reader needs, a form's, not a permission.
 //
+// And each std function a recogniser took (ADR 1128): a program compiled
+// with that recogniser left out, `--without-recognizer`, is refused, or
+// does the same. What rust-js does of a call no recogniser takes is then
+// never a wrong answer: a missing case of a recogniser is a refusal.
+//
 //   case.rs ─┬─ rustc ──► native ──────────────────────────────────────────────────────────┐
 //            └─ rust-js --tidy-until <stage> | --prepare-without <r> | --without-known <k> ──► node ─┴─► the same?
+//            └─ rust-js --without-recognizer <std fn> ──► refused, or node ──────────────────────────┴─► the same?
 //
 //   bun test test/tidy-stages.test.ts                                        # a few cases, every variant
 //   TIDY_STAGES=corpus RUST_JS_CASES=1/6 bun test test/tidy-stages.test.ts   # the corpus, a sixth of it
@@ -131,21 +137,54 @@ function forgettable(): string[] {
     .map(([name]) => name));
 }
 
+/** The std functions whose route without their recogniser is neither a
+ * refusal nor right, with the issue each waits on: a trait's method of a
+ * concrete receiver handed to generic code's route (#1477). No variant is
+ * made of one. A list that only shrinks: a name leaves it with its fix. */
+const unrecognizedDiffers: Record<string, string> = Object.fromEntries(
+  [
+    "std::hash::Hasher::finish",
+    "std::hash::Hasher::write",
+    "std::hash::Hasher::write_u8",
+    "std::hash::Hasher::write_u32",
+    "std::hash::Hasher::write_u64",
+    "std::hash::Hasher::write_i64",
+    "std::hash::Hasher::write_usize",
+    "std::io::Read::read",
+    "std::io::Read::read_exact",
+    "std::io::Read::read_to_end",
+    "std::io::BufRead::fill_buf",
+    "std::io::BufRead::consume",
+    "std::io::Seek::seek",
+    "std::io::Seek::seek_relative",
+    "std::io::Seek::stream_position",
+    "std::borrow::Borrow::borrow",
+    "std::borrow::BorrowMut::borrow_mut",
+    "std::convert::AsRef::as_ref",
+    "std::convert::AsMut::as_mut",
+    "std::iter::IntoIterator::into_iter",
+    "std::fmt::Debug::fmt",
+  ].map((path) => [path, "#1477"]),
+);
+
 /** A way to compile a program: its name, and rust-js's flags for it. */
 type Variant = { name: string; flags: string[] };
 
 /** A program's variants, of those of preparation's rewrites that changed
- * it, `fired`, and the facts a reader found in it, `found`: tidy stopped
- * after each stage; preparation without each of those, as one that
- * changed nothing leaves the JS as it is; each of those facts the JS is
- * right without forgotten, as one no reader found changes nothing; and
- * tidy and preparation both at their least. */
-function variants(fired: string[], found: string[]): Variant[] {
+ * it, `fired`, the facts a reader found in it, `found`, and the std
+ * functions a recogniser took in it, `recognized`: tidy stopped after each
+ * stage; preparation without each of those, as one that changed nothing
+ * leaves the JS as it is; each of those facts the JS is right without
+ * forgotten, as one no reader found changes nothing; each of those
+ * functions' recognisers left out; and tidy and preparation both at their
+ * least, the last. */
+function variants(fired: string[], found: string[], recognized: string[] = []): Variant[] {
   const all = preparePasses();
   return [
     ...stageEnds().map((end) => ({ name: `after ${end}`, flags: ["--tidy-until", end] })),
     ...fired.map((pass) => ({ name: `without preparation's ${pass}`, flags: ["--prepare-without", pass] })),
     ...(forgettable().filter((known) => found.includes(known))).map((known) => ({ name: `without knowing ${known}`, flags: ["--without-known", known] })),
+    ...(recognized.filter((path) => unrecognizedDiffers[path] === undefined)).map((path) => ({ name: `without the recogniser of ${path}`, flags: ["--without-recognizer", path] })),
     {
       name: `after ${stageEnds()[0]}, without any of preparation's rewrites`,
       flags: ["--tidy-until", stageEnds()[0], ...all.flatMap((pass) => ["--prepare-without", pass])],
@@ -177,9 +216,10 @@ function compile(file: string, dir: string, edition: string, flags: string[]): P
 }
 
 /** `file`'s finished JS, the rewrites of preparation's that changed it,
- * as `--prepare-fired` writes them into `dir`, and the facts a reader
- * found, as `--knowns-found` does. */
-type Full = { compiled: Compiled; fired: string[]; found: string[] };
+ * as `--prepare-fired` writes them into `dir`, the facts a reader found,
+ * as `--knowns-found` does, and the std functions a recogniser took, as
+ * `--recognizers-found` does. */
+type Full = { compiled: Compiled; fired: string[]; found: string[]; recognized: string[] };
 const fullCompiles = new Map<string, Promise<Full>>();
 function compileFull(file: string, dir: string, edition: string): Promise<Full> {
   const key = [file, edition].join("\0");
@@ -187,11 +227,14 @@ function compileFull(file: string, dir: string, edition: string): Promise<Full> 
   if (made === undefined) {
     const firedFile = join(dir, "fired.txt");
     const foundFile = join(dir, "found.txt");
+    const recognizedFile = join(dir, "recognized.txt");
     const lines = (path: string) => readFileSync(path, "utf8").split("\n").filter(Boolean);
-    made = compileJsAsync(file, dir, edition, false, {}, ["--prepare-fired", firedFile, "--knowns-found", foundFile]).then((compiled) => ({
+    const flags = ["--prepare-fired", firedFile, "--knowns-found", foundFile, "--recognizers-found", recognizedFile];
+    made = compileJsAsync(file, dir, edition, false, {}, flags).then((compiled) => ({
       compiled,
       fired: "js" in compiled ? lines(firedFile) : [],
       found: "js" in compiled ? lines(foundFile) : [],
+      recognized: "js" in compiled ? lines(recognizedFile) : [],
     }));
     fullCompiles.set(key, made);
   }
@@ -224,12 +267,12 @@ async function eachAtOnce<T, U>(items: T[], f: (item: T) => Promise<U>): Promise
  * Its variants are compiled at once, then run one after another. */
 async function differences(file: string, dir: string, edition: string, native: Run, only?: string): Promise<string[]> {
   const problems: string[] = [];
-  const { compiled: full, fired, found } = await compileFull(file, dir, edition);
+  const { compiled: full, fired, found, recognized } = await compileFull(file, dir, edition);
   if (!("js" in full)) return [`rust-js failed: ${full.error.split("\n").slice(0, 6).join("\n")}`];
   const finalEnd = stageEnds().at(-1);
   const least = variants([], []).at(-1)!.name;
   const listed = leastDiffers[basename(file)];
-  const chosen = variants(fired, found).filter((variant) => only === undefined || variant.name === only);
+  const chosen = variants(fired, found, recognized).filter((variant) => only === undefined || variant.name === only);
   const made = await eachAtOnce(chosen, ({ flags }) => compile(file, dir, edition, flags));
   for (const [at, { name, flags }] of chosen.entries()) {
     const compiled = made[at];
@@ -247,7 +290,10 @@ async function differences(file: string, dir: string, edition: string, native: R
       // every phase that refuses.
       const unreadable = compiled.error.includes("rust-js can't read the module it wrote");
       const tidied = flags[0] === "--tidy-until" && flags[1] !== finalEnd;
-      if (compiled.kind === "rejected" && tidied && !unreadable) continue;
+      // And a std function whose recogniser is left out is refused, as
+      // rust-js has no other model of it: what's wanted of one (ADR 1128).
+      const unrecognized = flags[0] === "--without-recognizer";
+      if (compiled.kind === "rejected" && (tidied || unrecognized) && !unreadable) continue;
       problems.push(`${name}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
       continue;
     }
@@ -333,6 +379,31 @@ test("a case's JS without a fact a reader found isn't its JS with it", async () 
   const unknown = Bun.spawnSync([compiler, join(corpus, name), "-o", join(dir, "unknown.js"), "--without-known", "Nothing"]);
   expect(unknown.exitCode).not.toBe(0);
   expect(unknown.stderr.toString()).toContain("--without-known: no fact `Nothing`; `rust-js --knowns` lists them");
+});
+
+// A std function whose recogniser is left out is one no recogniser takes,
+// in every body and analysis alike, so the variants above try what they
+// say (ADR 1128): its call is refused, as rust-js has no other model of
+// it; what `--recognizers-found` says is each function a recogniser took,
+// and none that's left out; and one the list of known differences names
+// has no variant.
+test("a std function's call without its recogniser is refused, and what a compile recognised is listed", async () => {
+  buildCompiler();
+  const name = "calculator.rs";
+  const dir = caseDir(name);
+  const { compiled, recognized } = await compileFull(join(corpus, name), dir, "2024");
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const sqrt = "std::f64::<impl f64>::sqrt";
+  expect(recognized).toEqual(expect.arrayContaining([sqrt, "std::string::String::push"]));
+  const listed = join(dir, "recognized-without.txt");
+  const without = await compile(join(corpus, name), dir, "2024", ["--without-recognizer", sqrt, "--recognizers-found", listed]);
+  if ("js" in without) throw new Error(`${sqrt} left out, the case still compiled`);
+  expect(without.kind).toBe("rejected");
+  expect(without.error).toContain(`rust-js does not support calling \`${sqrt}\` yet`);
+  expect(readFileSync(listed, "utf8").split("\n")).not.toContain(sqrt);
+  const named = variants([], [], ["std::hash::Hasher::finish", sqrt]).map((variant) => variant.name);
+  expect(named).toContain(`without the recogniser of ${sqrt}`);
+  expect(named).not.toContain("without the recogniser of std::hash::Hasher::finish");
 });
 
 // A name that's no case is the test above's to report.

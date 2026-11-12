@@ -92,7 +92,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What std function `def_id` of `args` is, which rust-js lowers by
     /// its own model of it: every recogniser's answer goes through here.
     pub(in crate::lower) fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
-        self.classified(def_id, args)
+        unrecognized::left(self.tcx, def_id, self.classified(def_id, args))
     }
 
     fn classified(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {

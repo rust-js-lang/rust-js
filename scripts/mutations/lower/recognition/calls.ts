@@ -711,4 +711,12 @@ export const mutations: Mutation[] = [
     replace: "            && tcx.item_name(def_id).as_str() == \"repeat_\"\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
   },
+  {
+    name: "classify-past-what-is-left-out",
+    breaks: "`classify` answers of a std function whose recogniser the compile leaves out, so `--without-recognizer` changes nothing (ADR 1128)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        unrecognized::left(self.tcx, def_id, self.classified(def_id, args))\n",
+    replace: "        self.classified(def_id, args)\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "a std function's call without its recogniser is refused"],
+  },
 ];

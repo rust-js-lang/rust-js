@@ -37,6 +37,7 @@ mod std_items;
 mod traits;
 mod type_facts;
 mod types;
+mod unrecognized;
 mod wrappers;
 mod zip_folds;
 
