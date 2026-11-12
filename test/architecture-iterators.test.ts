@@ -428,8 +428,8 @@ test("what's stepped from its back is asked where a value is made, or as a type'
       "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
     ],
     "src/lower/iterators/knowing.rs": [
-      9,
-      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions, `knows_its_back`'s of a `str`'s search by a pattern that runs code too (#1501)",
+      10,
+      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions, `knows_its_back`'s of a `str`'s search by a pattern that runs code too (#1501); `hint_known_made_dyn`, a type's question at the coercion that makes a `dyn Iterator` of it (#1476)",
     ],
   };
   const reader = /\.(stepped_from_its_back|reversed_made_knowing)\(/;

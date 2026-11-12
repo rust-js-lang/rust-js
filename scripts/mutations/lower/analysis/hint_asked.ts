@@ -153,4 +153,31 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^takes_made_knowing_where_they_leave.rs$"],
     snapshots: true,
   },
+  {
+    name: "dyn-size-hint-unasked",
+    breaks:
+      "a crate that asks a `dyn Iterator`'s `size_hint()` makes no value it boxes as one knowing its hint, so a boxed `filter` is JS's own and hints `(0, None)` where native Rust's is `(0, Some(5))` (#1476)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                asked.hinted.dyn_asked = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
+  },
+  {
+    name: "dyn-coercions-unmarked",
+    breaks:
+      "a value made a `dyn Iterator` in a crate that asks one's hint isn't made knowing it, so a boxed `filter` of a slice's items is refused (#1476)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                    _ = mark_given(\n",
+    replace: "                    _ = false && mark_given(\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
+  },
+  {
+    name: "dyn-unseen-unnoticed",
+    breaks:
+      "a `dyn Iterator` a binding gives back isn't noticed, so its `size_hint()` is JS's own iterator's `(0, None)` where it may be another, not refused naming #1562",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                asked.hinted.dyn_unseen = true;\n",
+    replace: "",
+    tests: ["test/js-builtins.test.ts", "-t", "a binding's dyn Iterator's size_hint is refused"],
+  },
 ];

@@ -131,6 +131,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.adapted_hint_known_of(ty, true)
     }
 
+    /// Whether `size_hint()` of an iterator of type `ty`, as it's made, is
+    /// std's: an array's items' `$iter`, or what `adapted_hint_known` finds.
+    /// What `size_hint()` asks of what it's called on, and what a crate
+    /// that asks a `dyn Iterator`'s asks of each value made one (#1476).
+    pub(in crate::lower) fn hint_known_as_made(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.array_source(ty).is_some() || self.adapted_hint_known(ty)
+    }
+
+    /// Whether a value of type `ty` made a `dyn Iterator` gives std's hint
+    /// (#1476): known as it's made (`hint_known_as_made`), or made knowing
+    /// it there, as `hint_asked.rs` marks each such value of a crate that
+    /// asks a `dyn Iterator`'s: a filter's `$filterEnds` (`stepped_from_its_back`'s
+    /// types), a `skip(n)`'s `$skipping` (`made_knowing_its_hint`).
+    pub(in crate::lower) fn hint_known_made_dyn(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.hint_known_as_made(ty) || self.stepped_from_its_back(ty) || self.made_knowing_its_hint(ty)
+    }
+
     /// Whether a source of type `ty` that an adapter the recognizers make
     /// holds is made in place there, its hint its sources' by its JS form:
     /// one of a kind std's struct is where it's held, but a `rev()`, whose
@@ -144,19 +161,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Why `size_hint()` of a `ty` is refused, said after it: where an
     /// adapter in it is made in place inside another, JS's own, which keeps
     /// no hint, though held it would be std's struct, which knows it
-    /// (#1427); where it's a `dyn Iterator`, whose form carries no hint
-    /// (#1476); else nothing.
+    /// (#1427); else nothing. A `dyn Iterator`'s is `size_hint_of`'s own
+    /// (#1476).
     pub(in crate::lower) fn hint_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
         let lost = (ty.peel_refs().walk().filter_map(|part| part.as_type()))
             .any(|part| part != ty.peel_refs() && self.made_in_place_of(part) && self.held_hint_known(part));
-        let peeled = ty.peel_refs();
-        let dynamic = matches!(peeled.boxed_ty().unwrap_or(peeled).kind(), ty::Dynamic(..));
-        match (lost, dynamic) {
-            (true, _) => {
-                ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"
-            }
-            (false, true) => ", a `dyn Iterator`'s, whose form carries no hint (#1476)",
-            (false, false) => "",
+        match lost {
+            true => ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)",
+            false => "",
         }
     }
 

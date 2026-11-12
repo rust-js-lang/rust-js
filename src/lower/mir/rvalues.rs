@@ -569,6 +569,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
+                            // Of a crate that asks a `dyn Iterator`'s hint,
+                            // one whose hint isn't std's as it's made, which
+                            // the `dyn` would give (#1476).
+                            if self.krate.hinted.dyn_asked
+                                && !self.recognition().is_dyn_iter(iterator)
+                                && !self.hint_known_made_dyn(iterator)
+                            {
+                                return Err(self.unsupported(
+                                    span,
+                                    &format!("a `{iterator}` made a `dyn Iterator` in a crate that asks a `dyn Iterator`'s `size_hint()`, as its hint isn't std's as it's made (#1563)"),
+                                ));
+                            }
                             // A `Box`'s of what drops carries its drop, which the
                             // `Box`'s drop runs (ADR 0521, #1420); an `Rc`'s is
                             // refused above.

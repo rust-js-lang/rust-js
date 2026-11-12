@@ -169,6 +169,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+        // Of a `dyn Iterator`, the JS iterator its value was made, which a
+        // crate that asks one's hint made knowing it, each value it made one
+        // of (`Hinted::dyn_asked`, #1476): not one the crate takes from a
+        // library or a binding, which it can't see made.
+        if self.recognition().is_dyn_iter(iter_ty) {
+            if self.krate.hinted.dyn_unseen {
+                return Err(self.unsupported(
+                    span,
+                    &format!("`size_hint()` of a `{iter_ty}` in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)"),
+                ));
+            }
+            return Ok(Expr::call_helper("$sizeHint", vec![receiver]));
+        }
         // Of a string's `char`s, whose hint is of the bytes it has left,
         // `(bytes.div_ceil(4), Some(bytes))` (str/iter.rs:100), not of how
         // many it has, which its JS counted (#733): std's struct's,
@@ -243,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Or of std's adapters of those, each a `$Steps` with std's
             // hint (#733).
-            false => own || self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),
+            false => own || self.hint_known_as_made(iter_ty),
         };
         if !known {
             let why = self.hint_refused_because(iter_ty);

@@ -34,6 +34,8 @@ pub(in crate::lower) struct HintAsked<'tcx> {
 /// generic function's `I` (#1240): a `take(n)`'s, a `skip(n)`'s and a
 /// `step_by(n)`'s made `$taking`, `$skipping` or `$stepBy` (`counted_in`),
 /// and a map's and the like made knowing its back (`knowing_in`).
+// Flags, not a state: `dyn_asked` and `dyn_unseen` are two facts of the
+// crate, either with the other (#1476).
 #[derive(Default)]
 pub(in crate::lower) struct Hinted<'tcx> {
     /// The types of no type parameter marked, as they're found, each
@@ -54,6 +56,15 @@ pub(in crate::lower) struct Hinted<'tcx> {
     /// where its hint meets JS's own iterator, which knows none
     /// (`$hintAsked`, #1251).
     pub(in crate::lower) by_value: IndexSet<(DefId, Ty<'tcx>)>,
+    /// Whether the crate asks the hint of a `dyn Iterator`, `size_hint()`
+    /// of a `Box<dyn Iterator>` (#1476): each value it makes one of is then
+    /// made knowing its hint where it's made (`mark_given`), as what's
+    /// given a library's function is, so the JS iterator a `dyn Iterator`
+    /// is gives std's hint, its value's.
+    pub(in crate::lower) dyn_asked: bool,
+    /// Whether a `dyn Iterator` reaches the crate where it can't see it
+    /// made: a library's or a binding's function gives one back (#1476).
+    pub(in crate::lower) dyn_unseen: bool,
 }
 
 /// What `all_bodies` ask the hint of, through generic code and libraries.
@@ -70,11 +81,25 @@ pub(super) fn of_crate<'tcx>(
     let asks = AsksHint::of(tcx);
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
+    let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
+    let size_hint = crate::lower::recognition::trait_method(tcx, iterator, "size_hint");
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // A `dyn Iterator`'s hint asked, and one given back by what the
+            // crate can't see make it (#1476).
+            if callee == size_hint && args.types().next().is_some_and(|of| recognition.is_dyn_iter(of)) {
+                asked.hinted.dyn_asked = true;
+            }
+            if (recognition.foreign.is_library(callee.krate) || crate::lower::bindings::is_binding(tcx, callee))
+                && (tcx.fn_sig(callee).instantiate(tcx, args).skip_binder().output().walk())
+                    .filter_map(|part| part.as_type())
+                    .any(|part| recognition.is_dyn_iter(part))
+            {
+                asked.hinted.dyn_unseen = true;
+            }
             // A `Vec` generic code grows by an iterator of its type
             // parameters, `extend`'s, whose hint std asks as it fills:
             // asked of each instance its callers give, below.
@@ -114,6 +139,31 @@ pub(super) fn of_crate<'tcx>(
             if recognition.foreign.is_library(callee.krate) {
                 for given in args.types() {
                     _ = mark_given(tcx, recognition, given.peel_refs(), keeps_capacity, &mut asked);
+                }
+            }
+        }
+    }
+    // Of a crate that asks a `dyn Iterator`'s hint, each value it makes
+    // one of, made knowing its hint where it's made (#1476).
+    if asked.hinted.dyn_asked {
+        for body in all_bodies {
+            for expr in body.thir.exprs.iter() {
+                if let ExprKind::PointerCoercion {
+                    cast: rustc_middle::ty::adjustment::PointerCoercion::Unsize,
+                    source,
+                    ..
+                } = expr.kind
+                    && recognition.is_dyn_iter(expr.ty)
+                {
+                    let from = body.thir[source].ty.peel_refs();
+                    let from = from.boxed_ty().unwrap_or(from);
+                    _ = mark_given(
+                        tcx,
+                        recognition,
+                        tcx.erase_and_anonymize_regions(from),
+                        keeps_capacity,
+                        &mut asked,
+                    );
                 }
             }
         }

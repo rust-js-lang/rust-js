@@ -834,3 +834,17 @@ pub fn got(value: &Unknown, names: &[&str]) -> Vec<Option<&'static Unknown>> {
   expect(lib.readEach(expanded, ["marginLeft", "padding"])).toEqual([4, undefined]);
   expect(lib.got({ a: 1, b: "x" }, ["b", "a"])).toEqual(["x", 1]);
 });
+
+// A `dyn Iterator` a binding gives, a typed array's `values()`, is JS's own
+// iterator, which no crate saw made knowing its hint: its `size_hint()` is
+// refused, naming the issue that would carry one (#1562, ADR 0140).
+test("a binding's dyn Iterator's size_hint is refused", () => {
+  const dir = fixture("js-dyn-iterator-hint");
+  writeFileSync(join(dir, "lib.rs"), `pub fn hint(a: &js::Float64Array) -> (usize, Option<usize>) {
+    a.values().size_hint()
+}
+`);
+  const made = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(made.code).not.toBe(0);
+  expect(made.stderr).toContain("in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)");
+});

@@ -88,3 +88,42 @@ generic value reaches it, and the rule changed no JS anywhere. It's gone,
 with its mutation `mir-iterable-collected-generic`.
 "a generic iterator collected keeps an iterator with only a next" still
 holds the behaviour.
+
+## Amendment (2026-11-13, #1476): a `dyn Iterator`'s hint is its value's, made knowing it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. A `dyn
+Iterator`'s `size_hint()` is its value's, as std's vtable gives it; it was
+refused, as the JS iterator a `dyn Iterator` is knew no hint where JS's
+own adapters made it.
+
+A crate that asks a `dyn Iterator`'s `size_hint()` (`Hinted::dyn_asked`,
+`analysis/hint_asked.rs`) makes each value it makes one of knowing its
+hint where it's made: each coercion's source is marked as a library's
+argument is (`mark_given`), a filter's `$filterEnds`, a `skip(n)`'s
+`$skipping`. The call is `$sizeHint(it)`, which asks the value's own.
+What's covered, each against native Rust in both builds
+(`test/corpus/dyn_iterator_size_hints.rs`): a slice's items and an
+adapter of them, `filter`, `skip`, `take`, `rev`, `map`, `enumerate`, a
+`zip` with a range, a `chain` with a range, a `flat_map`; a range and its
+`step_by`; an array's `into_iter().cycle().take(n)`; the crate's own
+iterator, with its own `size_hint` and without; a `dyn` boxed again; and
+a `&mut dyn Iterator` lent to a function that asks it. A crate that asks
+none writes what it did.
+
+Still refused, each naming its open issue: `size_hint()` of a `dyn
+Iterator` in a crate that takes one from a library or a binding, which it
+can't see made (#1562, `test/js-builtins.test.ts`); and, in a crate that
+asks one's, a value made a `dyn Iterator` whose hint isn't std's as it's
+made, refused at the coercion naming its type, a `chars()` map's (#1563,
+`test/diagnostics.test.ts`). `hint_known_made_dyn` (`knowing.rs`) says
+which: known as made (`hint_known_as_made`, which `size_hint()` of a
+concrete one asks too), or made knowing it by the mark.
+
+Mutations: `dyn-size-hint-unasked`, `dyn-coercions-unmarked` and
+`dyn-unseen-unnoticed` (`lower/analysis/hint_asked.ts`),
+`dyn-size-hint-refused` (`lower/mir/iter.ts`),
+`dyn-coercion-hint-unchecked` (`lower/mir/rvalues.ts`);
+`adapter-hint-refused` moved to `lower/iterators/knowing.ts`, of
+`hint_known_as_made`, and `hint-refusal-names-no-cause` re-anchored;
+`dyn-hint-refusal-names-no-issue` gone with the arm it held, as
+`size_hint_of` answers a `dyn`'s itself. Guide: limitations.md.

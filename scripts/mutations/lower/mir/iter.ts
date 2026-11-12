@@ -610,14 +610,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "adapter-hint-refused",
-    breaks: "`size_hint()` of std's adapter of the crate's iterator, `own.filter(f)`'s, is refused where its JS has std's (#733)",
-    file: "src/lower/mir/iter.rs",
-    find: "            false => own || self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),\n",
-    replace: "            false => own || self.array_source(iter_ty).is_some(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
     name: "mapped-adapter-hint-refused",
     breaks: "`size_hint()` of an `enumerate()` of the crate's iterator, made a `map`, is refused (#733)",
     file: "src/lower/mir/iter.rs",
@@ -930,5 +922,14 @@ export const mutations: Mutation[] = [
     find: "                        let b = cx.closing(b, other_ty, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_adapter_drops_its_sources.rs$"],
+  },
+  {
+    name: "dyn-size-hint-refused",
+    breaks:
+      "`size_hint()` of a `dyn Iterator` in a crate that made each value it boxes knowing its hint is refused as before (#1476)",
+    file: "src/lower/mir/iter.rs",
+    find: "            return Ok(Expr::call_helper(\"$sizeHint\", vec![receiver]));\n        }\n        // Of a string's `char`s",
+    replace: "        }\n        // Of a string's `char`s",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
   },
 ];
