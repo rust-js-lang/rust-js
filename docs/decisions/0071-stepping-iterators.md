@@ -197,3 +197,15 @@ makes it. Case ([0262](0262-when-rust-and-js-disagree.md)): none. Held by
 array's own" and the mutations `stepped-slices-length-kept` and
 `stepped-slices-unmade` (`lower/iterators.ts`, `lower/mir/iter/sources.ts`).
 
+
+## Amendment (2026-11-12, #1152): an `$iter` of an `$iter` is the one
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; readability. A
+`Vec`'s `into_iter()` given to generic code that steps it from its back
+printed `summed($iter($iter([1, 2])), $iter([4]))`: lowering makes a name
+that holds one an array's iterator again, `$iter(_37)`, as it can't tell
+the name holds one, and tidy then reads the name in place. The runtime's
+`$iter` gives one back as it is, an outer `lowerless` unread, so tidy's
+`in place/stepped once`, by iterators.rs's `stepped_once`, its owner, writes `$iter($iter(x), ..)`
+as `$iter(x)`: `summed($iter([1, 2]), $iter([4]))`. Four snapshots changed,
+each that alone; mutation `iter-of-an-iter-kept`.

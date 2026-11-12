@@ -426,4 +426,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_set_methods.rs$"],
     snapshots: true,
   },
+  {
+    name: "iter-of-an-iter-kept",
+    breaks: "an array's iterator made one again where what held one was read in place is `$iter($iter([1, 2]))`, not the one (#1152)",
+    file: "src/lower/iterators.rs",
+    find: "    while let js::ExprKind::Call(callee, args) = &mut e.kind\n        && callee.helper_name() == Some(\"$iter\")\n",
+    replace: "    while let js::ExprKind::Call(callee, args) = &mut e.kind\n        && callee.helper_name() == Some(\"$iter-kept\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
+    snapshots: true,
+  },
 ];

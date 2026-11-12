@@ -440,6 +440,11 @@ pub(super) const STAGES: &[Stage] = &[
             // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
             // } }`: what it's a copy of.
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
+            // An array's iterator made one again where what held one was read
+            // in place, `$iter($iter([1, 2]))`: the one (#1152).
+            pass("stepped once", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::iterators::stepped_once)
+            }),
             // What its passes emptied, an `if` of nothing, gone, its test kept
             // where it does anything, as it ensures: `if let Some(_x) =
             // Some(..) {}` in a loop, whose binding `named temporaries` reads

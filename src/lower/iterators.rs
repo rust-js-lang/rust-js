@@ -670,6 +670,18 @@ pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&str> {
     }
 }
 
+/// `$iter($iter(items))`, an array's iterator made one again where a name
+/// that held one was read in place: the one, as the runtime's `$iter` gives
+/// one back as it is, an outer `lowerless` unread (#1152).
+pub(in crate::lower) fn stepped_once(e: &mut Expr) {
+    while let js::ExprKind::Call(callee, args) = &mut e.kind
+        && callee.helper_name() == Some("$iter")
+        && args.first().is_some_and(is_stepped_items)
+    {
+        *e = args.swap_remove(0);
+    }
+}
+
 pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }

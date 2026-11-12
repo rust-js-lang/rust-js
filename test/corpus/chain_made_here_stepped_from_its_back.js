@@ -56,7 +56,7 @@ function main() {
     $iterator({ start: 7, end: 9 }, $rangeNext, false, $rangeNextBack),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = nthBack($iter($iter([1, 2])), $iter([3]));
+  const value$1 = nthBack($iter([1, 2]), $iter([3]));
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = nthBack(
     $iterator({ start: 1, end: 2 }, $rangeNext, false, $rangeNextBack),

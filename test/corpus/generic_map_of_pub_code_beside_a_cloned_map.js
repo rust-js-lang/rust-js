@@ -101,7 +101,7 @@ function main() {
   console.log(
     `${$count(c)} [${Array.from($rev($knowing(c2, chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends)))).join(", ")}]`,
   );
-  const value = chainedBack($iter($iter([1, 2])), $iter([3, 4]));
+  const value = chainedBack($iter([1, 2]), $iter([3, 4]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = chainedBack(
     $iterator({ start: 1, end: 2 }, $rangeNext, false, $rangeNextBack),

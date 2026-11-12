@@ -47,7 +47,7 @@ function main() {
     $iterator({ start: 4, end: 4 }, $rangeNext, false, $rangeNextBack),
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = summed($iter($iter([1, 2])), $iter([4]));
+  const value$2 = summed($iter([1, 2]), $iter([4]));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = summed($iter([1]), $iter([]));
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
