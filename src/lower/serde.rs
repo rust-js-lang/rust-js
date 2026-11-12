@@ -891,7 +891,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.serde_attrs(field)?.serialize_with.is_some() {
                 return Err(self.unsupported(
                     span,
-                    "an internally tagged newtype variant whose field has its own writer",
+                    "an internally tagged newtype variant whose field has its own writer (#1540)",
                 ));
             }
             return self.write_internal_fields(value, json, ty, opening, span, out);
@@ -1068,7 +1068,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => match own {
                 Some(name) => Err(self.unsupported(
                     span,
-                    &format!("`#[serde({name} = ..)]` on a variant that isn't a newtype"),
+                    &format!("`#[serde({name} = ..)]` on a variant that isn't a newtype (#1556)"),
                 )),
                 None => Ok(None),
             },
@@ -1175,7 +1175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it, or its field's (#1536).
         let codec = self.newtype_variant_codec(variant, true, span)?;
         if codec.is_some() && matches!(tagging, Tagging::Internal(_)) {
-            return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer"));
+            return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer (#1540)"));
         }
         // A tuple or struct variant's count of what it writes: before it's
         // opened, or adjacently tagged, before its content, which serde

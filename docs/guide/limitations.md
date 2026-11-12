@@ -233,8 +233,9 @@ Refused, each held by `test/diagnostics.test.ts`, which compiles them with
 serde: a `u128` in JSON; reading a `BinaryHeap` or a `Box<str>`; writing a
 `Cow<str>` or a `Duration`; a map keyed by a struct or an enum; an
 internally tagged newtype variant of a map, or one whose field has its own
-writer (`serialize_with`); `with`, `serialize_with` or `deserialize_with`
-on a variant of no field or of more; a width for a `Value`;
+writer (`serialize_with`, #1540); `with`, `serialize_with` or
+`deserialize_with` on a variant of no field or of more (#1556); a width
+for a `Value`;
 `Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,
 and collecting into one; `Map::clear` and `map::Entry::or_insert`;
 `to_vec`; an `Error`'s `line`, `column`, `is_syntax` and `classify`;
