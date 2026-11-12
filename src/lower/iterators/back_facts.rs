@@ -146,11 +146,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a `take(n)`, a `skip(n)` or a `step_by(n)` of type `ty` is
     /// one generic code asks the hint of, made `$taking`, `$skipping` or
-    /// `$stepBy` where it's made, as `hint_asked.rs` says (#1236).
+    /// `$stepBy` where it's made, in this function, as `hint_asked.rs` says
+    /// of it (#1236, #1333).
     pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-        self.krate.hinted.types.contains(&ty) || self.krate.hinted.counted_in.contains(&(owner, ty))
+        self.krate.hinted.counted_in.contains(&(owner, ty))
     }
 
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {

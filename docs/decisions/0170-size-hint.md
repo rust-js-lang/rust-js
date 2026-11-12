@@ -270,3 +270,33 @@ their hint.
 Held by corpus case `held_lazy_adapters_hint.rs` against native Rust in both
 builds, `size_hint_of_adapters.rs`'s held `rev().filter(..)`, and two
 diagnostics rows; guide limitations.md.
+
+## Amendment (2026-11-12, #1333): a concrete adapter made knowing its hint by the function that makes it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; readability. A
+`take(n)`, `skip(n)` or `step_by(n)` of a type of no type parameter that
+generic code asks the hint of (#1236) was marked by its type alone
+(`Hinted::types`): one function asking made every one of that type in the
+crate `$taking`, a `v.iter().take(2).sum()` that no one asks too. Now
+`hint_asked.rs`, the one owner of the question, keys it by each function
+that makes one whose value may leave it, `may_leave`: the type held in
+what the function returns, takes or captures (fields of the crate's
+structs and revealed opaque types included, an unrevealed one taken to),
+in an argument of a call of what isn't std's, in what a closure it makes
+captures, or unsized into a `dyn`. Values of one type move between
+functions (#721), and each way out is one of those. Lowering reads the
+fact, `counted_in` by its function (`made_knowing_its_hint`); `types` is
+the analysis's scratch, empty once the crate is read. One made and
+stepped where it's made is JS's own adapter: `v.slice(0, 2).reduce(..)`.
+
+Returned or captured, a `take` is held, std's compiled struct (ADR 0871),
+which knows its hint whether it's marked or not, so those two of
+`may_leave`'s questions change no output today: they keep the analysis
+true of itself should what's held change (#1458), and have no mutation.
+
+Held by corpus case `takes_made_knowing_where_they_leave.rs` (consumed in
+place, given back, given to a function of the crate's, captured by a
+closure that asks, given to the asker where made) against native Rust in
+both builds; no other snapshot changed. Mutations
+`take-made-knowing-crate-wide` (snapshots), `take-left-unmarked`,
+`take-passed-unmarked`.

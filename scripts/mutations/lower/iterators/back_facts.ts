@@ -76,8 +76,8 @@ export const mutations: Mutation[] = [
     name: "counted-in-its-maker-unread",
     breaks: "a `take(2)` generic code makes of its own type parameter's iterator, where its hint is asked, is JS's own `.take(2)`, `(0, None)` (#1240)",
     file: "src/lower/iterators/back_facts.rs",
-    find: " || self.krate.hinted.counted_in.contains(&(owner, ty))",
-    replace: "",
+    find: "        self.krate.hinted.counted_in.contains(&(owner, ty))\n",
+    replace: "        false && self.krate.hinted.counted_in.contains(&(owner, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
 ];

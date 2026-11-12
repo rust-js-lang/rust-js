@@ -26,15 +26,19 @@ pub(in crate::lower) struct HintAsked<'tcx> {
     pub(in crate::lower) hinted: Hinted<'tcx>,
 }
 
-/// The adapters made knowing their hint, which the crate's makers read:
-/// of a type of no type parameter, wherever it's made (`types`); and of one
-/// generic code makes of its own parameters, only in the function that
-/// makes it, by its owner, as `Take<I>` is the same type of every generic
-/// function's `I` (#1240): a `take(n)`'s, a `skip(n)`'s and a
+/// The adapters made knowing their hint, which the crate's makers read, by
+/// the function that makes them: of a type of no type parameter, in each
+/// function whose value of it may leave it for the one that asks (#1333,
+/// `may_leave`); of one generic code makes of its own parameters, only in
+/// the function that makes it, as `Take<I>` is the same type of every
+/// generic function's `I` (#1240): a `take(n)`'s, a `skip(n)`'s and a
 /// `step_by(n)`'s made `$taking`, `$skipping` or `$stepBy` (`counted_in`),
 /// and a map's and the like made knowing its back (`knowing_in`).
 #[derive(Default)]
 pub(in crate::lower) struct Hinted<'tcx> {
+    /// The types of no type parameter marked, as they're found, each
+    /// keyed by its makers into `counted_in` once the crate is read: empty
+    /// after `of_crate` (#1333).
     pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
     pub(in crate::lower) counted_in: IndexSet<(DefId, Ty<'tcx>)>,
     pub(in crate::lower) knowing_in: IndexSet<(DefId, Ty<'tcx>)>,
@@ -168,7 +172,101 @@ pub(super) fn of_crate<'tcx>(
             }
         }
     }
+    // A type of no type parameter marked so is made knowing its hint by
+    // each function that makes one whose value may leave it (`may_leave`),
+    // which the one that asks may be given, as values of one type move
+    // between functions (#721); one made and stepped where it's made is
+    // JS's own adapter there (#1333).
+    for ty in std::mem::take(&mut asked.hinted.types) {
+        for body in all_bodies {
+            let makes = body
+                .thir
+                .exprs
+                .iter()
+                .any(|expr| tcx.erase_and_anonymize_regions(expr.ty) == ty);
+            if makes && may_leave(tcx, body, ty) {
+                asked
+                    .hinted
+                    .counted_in
+                    .insert((tcx.typeck_root_def_id(body.def_id), ty));
+            }
+        }
+    }
     asked
+}
+
+/// Whether a value of type `ty` made in `body` may leave it for another
+/// function: `ty` held in what it returns, what it's given or captures
+/// (`holds`), in an argument of a call of what isn't std's, in what a
+/// closure it makes captures, or unsized into a `dyn` (#1333). Of one
+/// whose signature can't be read, an opaque type unrevealed, it may.
+fn may_leave<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, ty: Ty<'tcx>) -> bool {
+    use rustc_middle::ty::adjustment::PointerCoercion;
+    let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+    let holds = |held: Ty<'tcx>| holds(tcx, typing_env, held, ty, &mut Vec::new());
+    let own = tcx.type_of(body.def_id).instantiate_identity().skip_normalization();
+    let signature: Vec<Ty<'tcx>> = match own.kind() {
+        ty::Closure(_, args) => {
+            let closure = args.as_closure();
+            let sig = tcx.instantiate_bound_regions_with_erased(closure.sig());
+            (sig.inputs().iter().copied())
+                .chain([sig.output()])
+                .chain(closure.upvar_tys())
+                .collect()
+        }
+        ty::FnDef(..) => {
+            let sig = tcx.fn_sig(body.def_id).instantiate_identity().skip_normalization();
+            let sig = tcx.instantiate_bound_regions_with_erased(sig);
+            sig.inputs().iter().copied().chain([sig.output()]).collect()
+        }
+        _ => return true,
+    };
+    if signature.into_iter().any(holds) {
+        return true;
+    }
+    let thir = &body.thir;
+    thir.exprs.iter().any(|expr| match &expr.kind {
+        ExprKind::Call { fun, args, .. } => {
+            let std =
+                fn_def(thir[*fun].ty).is_some_and(|(callee, _)| crate::lower::recognition::is_std_crate(tcx, callee));
+            !std && args.iter().any(|&arg| holds(thir[arg].ty))
+        }
+        ExprKind::Closure(closure) => closure.upvars.iter().any(|&upvar| holds(thir[upvar].ty)),
+        ExprKind::PointerCoercion {
+            cast: PointerCoercion::Unsize,
+            source,
+            ..
+        } => holds(thir[*source].ty),
+        _ => false,
+    })
+}
+
+/// Whether a `held` value holds a `ty`: it's one, or one is among its
+/// type's arguments, or a field of a struct or enum of the crate's; an
+/// opaque type revealed, or, unrevealed, taken to.
+fn holds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    held: Ty<'tcx>,
+    ty: Ty<'tcx>,
+    seen: &mut Vec<Ty<'tcx>>,
+) -> bool {
+    let held = tcx.erase_and_anonymize_regions(held);
+    let held = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(held))).unwrap_or(held);
+    if seen.contains(&held) {
+        return false;
+    }
+    seen.push(held);
+    held.walk().filter_map(|part| part.as_type()).any(|part| {
+        let part = tcx.erase_and_anonymize_regions(part);
+        match part.kind() {
+            _ if part == ty => true,
+            ty::Alias(..) | ty::Coroutine(..) | ty::CoroutineWitness(..) => true,
+            ty::Adt(adt, args) if !crate::lower::recognition::is_std_crate(tcx, adt.did()) => (adt.all_fields())
+                .any(|field| holds(tcx, typing_env, field.ty(tcx, args).skip_normalization(), ty, seen)),
+            _ => false,
+        }
+    })
 }
 
 /// Each function of the crate's that asks the hint of what it's given,
