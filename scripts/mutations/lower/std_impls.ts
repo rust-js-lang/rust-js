@@ -187,9 +187,8 @@ export const mutations: Mutation[] = [
     name: "eq-of-pin-as-constant",
     breaks: "`==` of `Pin`s of a unit struct with its own `eq` skips it",
     file: "src/lower/std_impls.rs",
-    find: "                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => {\n                    let pointer",
-    replace:
-      "                ty::Adt(_, args) if false => {\n                    let pointer",
+    find: "                ty::Adt(..) if self.recognition().pinned(ty).is_some() => {\n                    let pin = ty;",
+    replace: "                ty::Adt(..) if false => {\n                    let pin = ty;",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {

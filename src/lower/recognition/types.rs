@@ -114,13 +114,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // (#1289).
             ty::Adt(..) if let Some(held) = self.std_wrapped(ty) => Hashed::Held(held),
             // A `Pin`, its pointer in JS (ADR 0329), whose `Hash` is its
-            // target's, as std's pointers' is: that pointer's (#1289).
-            ty::Adt(..)
-                if let Some(pointer) = self.pinned(ty)
-                    && matches!(self.hashed_as(pointer), Some(Hashed::Pointer(_))) =>
-            {
-                Hashed::Held(pointer)
-            }
+            // target's, `Ptr::Target::hash` (`pinned_target`): of std's
+            // pointer, that pointer's, which hashes as its target (#1289); of
+            // the crate's own, its `deref()`'s target (#1435).
+            ty::Adt(..) if let Some(target) = self.pinned_target(ty) => match target {
+                super::PinTarget::Pointer(pointer) => Hashed::Held(pointer),
+                super::PinTarget::Deref(pointer, target) => Hashed::Target(pointer, target),
+            },
             // A `Cow`, whose `Hash` is what it derefs to's (#1289).
             ty::Adt(..) if let Some((borrowed, _)) = self.cow_parts(ty) => Hashed::Borrowed(borrowed),
             // One of std's enums whose `Hash` is derived, `Bound`, `Poll`,
@@ -148,6 +148,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             _ => return None,
         })
+    }
+
+    /// `<pointer as Deref>::Target`, of a pointer that derefs, the crate's
+    /// own smart pointer's.
+    pub(in crate::lower) fn deref_target_of(&self, pointer: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let target = self.tcx.lang_items().deref_target()?;
+        let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, target, [pointer]);
+        (self
+            .tcx
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection)))
+        .ok()
     }
 
     /// Which of std's ranges `ty` is, if it's one (ADR 0129).

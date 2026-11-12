@@ -512,8 +512,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (self.counted_pointee(a, pointee), self.counted_pointee(b, pointee));
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
-            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {
+            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
+            }
+            // A `Pin`'s target (`pin_target`, #1446).
+            ty::Adt(..) if self.recognition().pinned(ty).is_some() => {
+                let (x, target) = self.pin_target(a, ty, span, out)?;
+                let (y, _) = self.pin_target(b, ty, span, out)?;
+                self.cmp_value(x, y, target, partial, span, out)
             }
             // A `Cow`: what it borrows (ADR 0400).
             ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {

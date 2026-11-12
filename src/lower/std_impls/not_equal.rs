@@ -35,9 +35,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(pointee) = crate::lower::recognition::rc_pointee(self.tcx, ty) => {
                 self.own_ne_in(pointee, seen)
             }
-            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
-                self.own_ne_in(args.type_at(0), seen)
-            }
+            ty::Adt(_, args) if ty.is_box() => self.own_ne_in(args.type_at(0), seen),
+            // A `Pin`'s target's (`pinned_target`, #1446).
+            ty::Adt(..) if let Some(target) = self.recognition().pinned_target(ty) => match target {
+                crate::lower::recognition::PinTarget::Pointer(pointer) => self.own_ne_in(pointer, seen),
+                crate::lower::recognition::PinTarget::Deref(_, target) => self.own_ne_in(target, seen),
+            },
             _ => false,
         };
         seen.pop();
@@ -186,8 +189,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => ne,
                 })
             }
-            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
-                self.ne_value(a, b, args.type_at(0), span, out)
+            ty::Adt(_, args) if ty.is_box() => self.ne_value(a, b, args.type_at(0), span, out),
+            // A `Pin`'s target (`pin_target`, #1446).
+            ty::Adt(..) if self.recognition().pinned(ty).is_some() => {
+                let (x, target) = self.pin_target(a, ty, span, out)?;
+                let (y, _) = self.pin_target(b, ty, span, out)?;
+                self.ne_value(x, y, target, span, out)
             }
             _ => Err(self.unsupported(span, &format!("`!=` on `{ty}`"))),
         }

@@ -2,13 +2,32 @@
 // An impl's own `ne`, `max`, `min` and `clamp` are what `!=` and the
 // others run, as rustc calls them (#962): of generic code, through std's
 // impls that ask their parts' `!=` (a reference's, a `Box`'s, an `Rc`'s, a
-// tuple's), std's slice `==`, which asks each two `!=`, a B-tree's bulk
+// tuple's, a `Pin`'s target's, of a `Box` or of the crate's own pointer,
+// #1446), std's slice `==`, which asks each two `!=`, a B-tree's bulk
 // build, which asks `!=` of each two in a row, and `cmp::max` and
 // `cmp::min`. An integer's `clamp` is its own too, whose panic shows its
 // bounds.
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, LinkedList, VecDeque};
+use std::ops::Deref;
+use std::pin::Pin;
 use std::rc::Rc;
+
+/// A pointer of the crate's own to an `Ne`, never equal itself.
+struct Holder(Box<Ne>);
+
+impl PartialEq for Holder {
+    fn eq(&self, _: &Self) -> bool {
+        false
+    }
+}
+
+impl Deref for Holder {
+    type Target = Ne;
+    fn deref(&self) -> &Ne {
+        &self.0
+    }
+}
 
 /// A `PartialEq` that writes its own `!=`, saying so.
 #[derive(Debug, Clone, Copy)]
@@ -207,6 +226,10 @@ fn main() {
     println!("{}", differ_pairs((Ne(5), 1), (Ne(5), 1)));
     println!("box ne");
     println!("{}", Box::new(Ne(1)) != Box::new(Ne(2)));
+    println!("pin ne");
+    println!("{}", Box::pin(Ne(1)) != Box::pin(Ne(2)));
+    let (h, k) = (Pin::new(Holder(Box::new(Ne(6)))), Pin::new(Holder(Box::new(Ne(6)))));
+    println!("{} {}", h != k, h == k);
     println!("rc ne");
     println!("{}", Rc::new(Ne(1)) != Rc::new(Ne(1)));
     println!("rc ne of one allocation");

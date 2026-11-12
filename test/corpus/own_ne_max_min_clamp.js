@@ -35,6 +35,15 @@ export function entry() {
   main();
 }
 
+export const holderPartialEq = $partialEq({ eq: holderPartialEq_eq });
+function holderPartialEq_eq(holder, _) {
+  return false;
+}
+
+function holderDeref_deref(holder) {
+  return holder[0];
+}
+
 /** A `PartialEq` that writes its own `!=`, saying so. */
 function neDebug_fmt(ne) {
   return `Ne(${ne[0]})`;
@@ -243,6 +252,13 @@ function main() {
   console.log(`${differPairs([[5], 1], [[5], 1], nePartialEq)}`);
   console.log("box ne");
   console.log(`${nePartialEq_ne([1], [2])}`);
+  console.log("pin ne");
+  console.log(`${nePartialEq_ne([1], [2])}`);
+  const h = [[6]];
+  const k = [[6]];
+  console.log(
+    `${nePartialEq_ne(holderDeref_deref(h), holderDeref_deref(k))} ${nePartialEq_eq(holderDeref_deref(h), holderDeref_deref(k))}`,
+  );
   console.log("rc ne");
   const left$1 = [1];
   const right$1 = [1];

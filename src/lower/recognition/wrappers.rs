@@ -177,6 +177,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.pinned(ty).is_some_and(|pointer| pointer.is_ref())
     }
 
+    /// What a `Pin` of type `ty` compares, orders and hashes, std's
+    /// `Ptr::Target` (#1446, #1435): of a reference or std's pointer, a
+    /// `Box`, an `Rc`, a `String`, a `Vec`, whose own `==`, order and `Hash`
+    /// are its target's, that pointer; of the crate's own smart pointer,
+    /// whose may not be, its `Deref` target, read by its `deref()`.
+    pub(in crate::lower) fn pinned_target(&self, ty: Ty<'tcx>) -> Option<PinTarget<'tcx>> {
+        let pointer = self.pinned(ty)?;
+        let std = matches!(pointer.kind(), ty::Adt(adt, _) if is_std_crate(self.tcx, adt.did()));
+        if pointer.is_ref() || std {
+            return Some(PinTarget::Pointer(pointer));
+        }
+        Some(PinTarget::Deref(pointer, self.deref_target_of(pointer)?))
+    }
+
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
     pub(in crate::lower) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
@@ -1013,4 +1027,13 @@ pub(in crate::lower) enum IntNewtype {
     Wrapping,
     /// `std::num::Saturating`, whose arithmetic keeps to its range (#1434).
     Saturating,
+}
+
+/// What a `Pin` compares, orders and hashes (`pinned_target`).
+#[derive(Clone, Copy, Debug)]
+pub(in crate::lower) enum PinTarget<'tcx> {
+    /// Std's pointer, which is its target in JS.
+    Pointer(Ty<'tcx>),
+    /// The crate's own pointer, of its type, and its `Deref` target.
+    Deref(Ty<'tcx>, Ty<'tcx>),
 }

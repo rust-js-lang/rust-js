@@ -422,10 +422,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => {
                     ty = args.type_at(0);
                 }
-                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => {
-                    let pointer = args.type_at(0);
-                    (a, _) = self.through_refs(a, pointer);
-                    (b, ty) = self.through_refs(b, pointer);
+                // A `Pin`, its target (`pin_target`, #1446).
+                ty::Adt(..) if self.recognition().pinned(ty).is_some() => {
+                    let pin = ty;
+                    (a, ty) = self.pin_target(a, pin, span, out)?;
+                    (b, _) = self.pin_target(b, pin, span, out)?;
                 }
                 // A `Cow` what it borrows (ADR 0400).
                 ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {

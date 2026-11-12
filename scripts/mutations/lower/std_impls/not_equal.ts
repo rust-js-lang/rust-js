@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "box-ne-not-its-value",
     breaks: "a `Box`'s `!=` is `!(a == b)`, where std's asks its value's `!=`, an impl's own `ne` (#962)",
     file: "src/lower/std_impls/not_equal.rs",
-    find: "                self.own_ne_in(args.type_at(0), seen)\n",
-    replace: "                false\n",
+    find: "            ty::Adt(_, args) if ty.is_box() => self.own_ne_in(args.type_at(0), seen),\n",
+    replace: "            ty::Adt(_, args) if ty.is_box() => false && self.own_ne_in(args.type_at(0), seen),\n",
     tests: own,
   },
   {
@@ -75,5 +75,13 @@ export const mutations: Mutation[] = [
     find: "        if self.is_unknown(ty) || self.is_unknown(rhs) {\n            return true;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
+  },
+  {
+    name: "pin-ne-unknown",
+    breaks: "`!=` of two `Pin`s whose target writes its own `ne` is refused, where std's calls that `ne` (#1446)",
+    file: "src/lower/std_impls/not_equal.rs",
+    find: "            ty::Adt(..) if self.recognition().pinned(ty).is_some() => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.ne_value(",
+    replace: "            ty::Adt(..) if false => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.ne_value(",
+    tests: own,
   },
 ];

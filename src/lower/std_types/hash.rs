@@ -64,6 +64,10 @@ pub(in crate::lower) enum Hashed<'tcx> {
     /// same value, as std's `Hash` of it writes, a `Pin`'s its target's
     /// (#1289).
     Held(Ty<'tcx>),
+    /// A `Pin` of the crate's own pointer, of that pointer's type and its
+    /// target's: its target, read by the pointer's own `Deref::deref`, as
+    /// std's `Ptr::Target::hash(self)` reads it (#1435).
+    Target(Ty<'tcx>, Ty<'tcx>),
     /// A `Cow`: what it borrows or owns, read through its `Deref`
     /// (`cow_deref`), of its borrowed type, as std's `Hash` of one writes
     /// (#1289).
@@ -237,6 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Hashed::Pointer(held)
                 | Hashed::Held(held)
                 | Hashed::Borrowed(held)
+                | Hashed::Target(_, held)
                 | Hashed::Slice(held)
                 | Hashed::Items(held)
                 | Hashed::Option(held) => self.hash_runs_code(held, seen),
@@ -383,6 +388,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.hash_writes(value, pointee, hasher, span, out)?;
             }
             Hashed::Held(held) => self.hash_writes(value, held, hasher, span, out)?,
+            Hashed::Target(pointer, target) => {
+                let read = self.own_deref(value, pointer, span, out)?;
+                self.hash_writes(read, target, hasher, span, out)?;
+            }
             Hashed::Borrowed(borrowed) => {
                 let (read, _) = self.cow_deref(&value, ty).expect("a Cow's parts");
                 self.hash_writes(read, borrowed, hasher, span, out)?;

@@ -223,7 +223,9 @@ Still refused, each naming its issue: a `Saturating` (#1434), which rust-js
 didn't represent, its arithmetic refused as "calling `std::ops::Add::add`
 (#1434)"; and a `Pin` of the crate's own pointer (#1435), whose `Hash` is
 its target's, not the pointer's own. (Since #1434 a `Saturating` is `[x]`,
-hashed as its derived `Hash` writes, as a `Wrapping` is: ADR 0175, amended.)
+hashed as its derived `Hash` writes, as a `Wrapping` is: ADR 0175, amended;
+since #1435 a `Pin` of the crate's own pointer hashes its `deref()`'s
+target, `Hashed::Target`: ADR 0329, amended. What's left names #1447.)
 
 Held by corpus case `std_keys_around_their_own_hash.rs` against native Rust
 in both builds: each wrapper and enum as a key, its key's `hash` calls

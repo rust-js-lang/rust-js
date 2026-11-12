@@ -608,4 +608,20 @@ export const mutations: Mutation[] = [
     replace: "        self.is_std_type(ty, StdItem::MutexGuard) || self.is_std_type(ty, StdItem::RwLockWriteGuard) || self.is_std_type(ty, StdItem::RwLockReadGuard)\n",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
   },
+  {
+    name: "pin-of-own-pointer-compared-as-it",
+    breaks: "a `Pin` of the crate's own pointer is compared, ordered and hashed by the pointer's own `==`, `cmp` and `Hash`, where std's read its target (#1446)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        if pointer.is_ref() || std {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pins_compare_and_hash_their_targets.rs$"],
+  },
+  {
+    name: "pin-of-std-smart-pointer-dereffed",
+    breaks: "a `Pin<String>` or `Pin<Vec<T>>` is read through std's `Deref`, refused, where it compares and hashes as its target already (#1435)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        let std = matches!(pointer.kind(), ty::Adt(adt, _) if is_std_crate(self.tcx, adt.did()));\n",
+    replace: "        let std = pointer.is_box() || self.is_rc(pointer);\n",
+    tests: ["test/corpus.test.ts", "-t", "^pins_compare_and_hash_their_targets.rs$"],
+  },
 ];

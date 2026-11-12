@@ -211,9 +211,8 @@ export const mutations: Mutation[] = [
     name: "pin-cmp-unknown",
     breaks: "`<` of pinned `Box`es is an error",
     file: "src/lower/ordering.rs",
-    find: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {",
-    replace:
-      "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {",
+    find: "            // A `Pin`'s target (`pin_target`, #1446).\n            ty::Adt(..) if self.recognition().pinned(ty).is_some() => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.cmp_value(",
+    replace: "            // A `Pin`'s target (`pin_target`, #1446).\n            ty::Adt(..) if false => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.cmp_value(",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {

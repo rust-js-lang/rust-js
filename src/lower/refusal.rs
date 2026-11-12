@@ -86,10 +86,28 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
 /// an open issue covers it, that issue, "calling `std::hint::spin_loop`
 /// (#1285)", as a refusal names what's left to do (guide limitations.md).
 pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
-    let issue = open_call(tcx, id).map(|open| match open {
+    let issue = open_call(tcx, id).map(issue_of);
+    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
+}
+
+/// What a missing impl is called: "implementation evidence for `<T as
+/// Hash>`", and where an open issue covers it, that issue (`open_evidence`).
+pub(crate) fn evidence_words<'tcx>(tcx: TyCtxt<'tcx>, tr: rustc_middle::ty::TraitRef<'tcx>) -> String {
+    let open = crate::lower::recognition::open_evidence(tcx, tr.def_id, tr.self_ty());
+    format!(
+        "implementation evidence for `{tr}`{}",
+        open.map(issue_of).unwrap_or_default()
+    )
+}
+
+/// The issue or decision an open family of refusals names, ` (#1284)`.
+pub(crate) fn issue_of(open: OpenCall) -> &'static str {
+    match open {
         OpenCall::Conversion => " (#1284)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
-    });
-    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
+        OpenCall::PinRead => " (#1448)",
+        OpenCall::NewtypeSum => " (#1445)",
+        OpenCall::StdHash => " (#1447)",
+    }
 }

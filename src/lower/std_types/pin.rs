@@ -3,7 +3,7 @@
 
 use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
-use crate::lower::recognition::Std;
+use crate::lower::recognition::{PinTarget, Std};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 
@@ -23,6 +23,43 @@ pub(in crate::lower) enum PinOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `value`, a `Pin` of type `pin`, as its `==`, `!=`, order and `Hash`
+    /// read it, std's `Ptr::Target` (`pinned_target`, #1446, #1435): of
+    /// std's pointer, that pointer through its references, which is its
+    /// target in JS; of the crate's own, its `deref()`. And the type read.
+    pub(in crate::lower) fn pin_target(
+        &mut self,
+        value: Expr,
+        pin: Ty<'tcx>,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<(Expr, Ty<'tcx>)> {
+        match self.recognition().pinned_target(pin) {
+            Some(PinTarget::Pointer(pointer)) => Ok(self.through_refs(value, pointer)),
+            Some(PinTarget::Deref(pointer, target)) => Ok((self.own_deref(value, pointer, span, out)?, target)),
+            None => Err(self.unsupported(span, &format!("what a `{pin}` points at"))),
+        }
+    }
+
+    /// `value.deref()` of the crate's own smart pointer of type `pointer`.
+    pub(in crate::lower) fn own_deref(
+        &mut self,
+        value: Expr,
+        pointer: Ty<'tcx>,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let deref = self
+            .tcx
+            .require_lang_item(rustc_hir::attrs::lang_items::LangItem::Deref, span);
+        let method = crate::lower::recognition::trait_method(self.tcx, deref, "deref");
+        let args = self.tcx.mk_args(&[pointer.into()]);
+        match self.trait_call(method, args, vec![value], span, out)? {
+            Some(read) => Ok(read),
+            None => Err(self.unsupported(span, &format!("the `Deref` of a `{pointer}` a `Pin` reads through"))),
+        }
+    }
+
     /// A `Pin`'s call: `None` if `known` is another.
     pub(in crate::lower) fn pin_call(
         &mut self,
@@ -42,7 +79,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let target = match *pointer.kind() {
             ty::Ref(_, target, _) => target,
             ty::Adt(_, args) if pointer.is_box() => args.type_at(0),
-            _ => return Err(self.unsupported(span, "a `Pin` of this pointer")),
+            _ => {
+                let issue = crate::lower::refusal::issue_of(crate::lower::recognition::OpenCall::PinRead);
+                return Err(self.unsupported(span, &format!("a `Pin` of this pointer{issue}")));
+            }
         };
         // A `&mut` to a pinned `Box` is a box of it, whose `value` is the
         // `Box`, what it points at (ADR 0074).
