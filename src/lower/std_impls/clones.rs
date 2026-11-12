@@ -190,8 +190,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(dictionary) = self.evidence_for(tr) {
                 return Ok(Expr::call(Expr::member(dictionary, "clone"), vec![place]));
             }
-            // A `T: Copy`: its dictionary copies (ADR 0049).
-            return Ok(self.copy(place, ty));
+            // A `T: Copy` alone: its dictionary's supertrait `Clone`'s where
+            // its caller gives it one, else its copy (ADR 0049; ADR 0623,
+            // amended, #1451).
+            return Ok(self.cloned_by_copy_bound(place, ty));
         }
         if self.has_user_impl(self.clone_trait(), ty) {
             let method = self.tcx.require_lang_item(LangItem::CloneFn, span);
@@ -288,7 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type clones each part (ADR 0623, amended). Not one std's own impls
     /// say is its bits, `TrivialClone`, rustc's answer of this toolchain's
     /// std: `#[derive(Clone, Copy)]`'s, a reference's, an array of such.
-    fn copy_clone_runs_code(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn copy_clone_runs_code(&self, ty: Ty<'tcx>) -> bool {
         let trivial = self.tcx.lang_items().get(LangItem::TrivialClone);
         if trivial.is_some_and(|trivial| self.recognition().implements_trait(ty, trivial)) {
             return false;

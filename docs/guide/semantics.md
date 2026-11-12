@@ -320,8 +320,8 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `clone()` copies what needs copying, and `vec![x; n]` makes `n` separate
   values. A hand-written `Clone` of a `Copy` type runs where std's code
   calls it, `cloned()`, `to_vec()` or a clone of an `Option` or a tuple of
-  it, and never where std copies the bits, `copied()`, `copy_from_slice`
-  or `partition`
+  it, generic code bounded by `T: Copy` alone too, and never where std
+  copies the bits, `copied()`, `copy_from_slice` or `partition`
   ([0623](../decisions/0623-a-copy-std-makes-is-a-copy.md), amended;
   [0052](../decisions/0052-std-trait-impls.md),
   [0147](../decisions/0147-replacing-through-mut.md),

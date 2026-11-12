@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that's its own copy is given `{ copy: (value) => value }`, `createContext(7, ..)`, where JS gives none",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            if js::same_path(&copy, &value) {\n",
+    find: "            if js::same_path(&copy, &value) && clone.is_none() {\n",
     replace: "            if false {\n",
     tests: [
       "test/crates-compiled-here.test.ts",
@@ -826,5 +826,21 @@ export const mutations: Mutation[] = [
     find: "                true => (rustc_middle::mir::BinOp::Add, 0),\n",
     replace: "                true => (rustc_middle::mir::BinOp::Add, 1),\n",
     tests: ["test/corpus.test.ts", "-t", "^newtype_sums_and_products.rs$"],
+  },
+  {
+    name: "copy-dictionary-holds-no-clone",
+    breaks: "a `Copy` dictionary of a type with a hand-written `Clone` holds no `Clone()`, so a library's generic code bounded by `T: Copy` alone copies where std's calls that `clone` (#1451)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                true => Some(self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]), span)?),\n",
+    replace: "                true => None,\n",
+    tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
+  },
+  {
+    name: "copy-dictionary-dropped-with-its-clone",
+    breaks: "a `Copy` dictionary whose copy is the value is given as `undefined` though it holds a `Clone()` its generic code calls (#1451)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            if js::same_path(&copy, &value) && clone.is_none() {\n",
+    replace: "            if js::same_path(&copy, &value) {\n",
+    tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
 ];

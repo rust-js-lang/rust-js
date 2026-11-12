@@ -285,6 +285,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A clone of a value of a type parameter bounded by `Copy` and not by
+    /// `Clone`: its `Copy` dictionary's supertrait `Clone`'s, `TCopy.Clone()`,
+    /// which a caller gives where the type's clone runs code, a hand-written
+    /// `Clone` (`copy_clone_runs_code`), else its copy, `copy`'s: `TCopy?.Clone
+    /// ? TCopy.Clone().clone(x) : TCopy ? TCopy.copy(x) : x` (ADR 0623,
+    /// amended, #1451). Read once, `((value) => ..)(source)`.
+    pub(super) fn cloned_by_copy_bound(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        let Some(dictionary) =
+            self.given_evidence(|tr| tr.self_ty() == ty && self.tcx.is_lang_item(tr.def_id, LangItem::Copy))
+        else {
+            return self.copy(place, ty);
+        };
+        let cloned = |place: Expr| {
+            let clone = Expr::call(Expr::member(dictionary.clone(), "Clone"), Vec::new());
+            Expr::cond(
+                Expr::optional_member(dictionary.clone(), "Clone"),
+                Expr::call(Expr::member(clone, "clone"), vec![place.clone()]),
+                self.copy(place, ty),
+            )
+        };
+        if place.reads_same() {
+            return cloned(place);
+        }
+        Expr::call(
+            Expr::arrow(
+                vec!["value".into()],
+                vec![js::StmtKind::Return(Some(cloned(Expr::var("value")))).at(js::Span::NONE)],
+            ),
+            vec![place],
+        )
+    }
+
     /// A function of a `Copy` item's copy as std makes one where it copies
     /// its bits, `copied()`'s, `copy_from_slice`'s, `partition`'s push of a
     /// `&T` and an array made of a slice: `(item) => <copy>` where

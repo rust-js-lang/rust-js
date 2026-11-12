@@ -28,6 +28,20 @@ fn cloned<T: Clone>(value: &T) -> T {
     value.clone()
 }
 
+// Generic code bounded by `T: Copy` alone clones where std's code calls
+// `Clone`, through the `Copy` dictionary's supertrait (#1451).
+fn to_vec_of<T: Copy>(v: &[T]) -> Vec<T> {
+    v.to_vec()
+}
+
+fn cloned_of<T: Copy>(v: &[T]) -> Vec<T> {
+    v.iter().cloned().collect()
+}
+
+fn repeated_of<T: Copy>(v: &[T]) -> Vec<T> {
+    v.repeat(2)
+}
+
 fn copied_in_generic_code<T: Copy>(v: &[T]) -> Vec<T> {
     let mut it = v.iter().copied();
     it.next();
@@ -52,6 +66,10 @@ fn main() {
     let later = it.clone();
     println!("cloned iterator {:?} {:?}", it.collect::<Vec<_>>(), later.collect::<Vec<_>>());
     println!("generic {:?}", copied_in_generic_code(&ps));
+    println!("generic to_vec {:?}", to_vec_of(&ps));
+    println!("generic cloned {:?}", cloned_of(&ps[1..]));
+    println!("generic repeat {:?}", repeated_of(&ps[..1]));
+    println!("generic of a derive {:?}", to_vec_of(&[Plain(P(3))]));
     println!("option {:?}", ps.first().copied());
     let mut one = P(4);
     println!("option of a &mut {:?}", Some(&mut one).copied());

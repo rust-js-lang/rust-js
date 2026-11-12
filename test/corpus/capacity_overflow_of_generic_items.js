@@ -83,8 +83,12 @@ function resizedWith(x, n, TClone, TSize) {
 }
 
 function sliceRepeated(x, n, TCopy, TSize) {
-  return $repeatItems([TCopy ? TCopy.copy(x) : x], n, TSize, (item) =>
-    TCopy ? TCopy.copy(item) : item,
+  return $repeatItems(
+    [TCopy ? TCopy.copy(x) : x],
+    n,
+    TSize,
+    (item) => (TCopy ? TCopy.copy(item) : item),
+    (item) => (TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item),
   ).length;
 }
 

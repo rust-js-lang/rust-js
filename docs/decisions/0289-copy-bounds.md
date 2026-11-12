@@ -139,3 +139,37 @@ program's does, which its contract says, `copy`; a consumer whose call
 gives a value whose copy isn't itself to one that takes none compiles its
 own of it, which takes the copy. A trait's method and an impl's still take
 one, a dictionary's callers being unseen.
+
+## Amendment: a `Copy` dictionary holds its supertrait `Clone` where the type's clone runs code
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results would change,
+so Rust's.
+
+`Copy: Clone`, so generic code bounded by `T: Copy` alone may clone a
+`T`, and std's code does where it calls `clone`: `to_vec()`, `cloned()`,
+`repeat`'s first copy, `repeat_n` ([0623](0623-a-copy-std-makes-is-a-copy.md),
+amended). That clone was the `Copy` dictionary's copy, `TCopy.copy(x)`,
+so a hand-written `Clone` of the type a caller gave never ran (#1451):
+`to_vec_of(&[Loud(1)])` printed no clone and gave `Loud(1)` where Rust's
+prints one and gives what it made.
+
+**A `Copy` dictionary of a type whose clone runs code holds its
+supertrait's dictionary, `{ copy, Clone: () => loudClone }`**, as `Ord`'s
+holds `PartialOrd()`; the caller decides from the type alone
+(`copy_clone_runs_code`, std_impls/clones.rs: a hand-written `Clone` in
+it, not what rustc says implements std's `TrivialClone`), so no fact of
+the callee's and no field of a library's contract is asked, and such a
+dictionary is never `undefined`, its copy the value or not. Every other
+type's is `{ copy }` or `undefined`, as before: a copy stays a copy.
+Generic code's clone through a `Copy` bound alone, and only that, reads
+it where it's given, `TCopy?.Clone ? TCopy.Clone().clone(x) : TCopy ?
+TCopy.copy(x) : x` (`cloned_by_copy_bound`, copies.rs); a copy is
+`TCopy ? TCopy.copy(x) : x` as before.
+
+What holds it: `test/corpus/copied_of_a_copy_with_its_own_clone.rs`'s
+generic `to_vec`, `cloned` and `repeat`, and crate pair
+`library_clones_through_a_copy_bound` (a library's generic code given a
+consumer's type with a hand-written `Clone`, one a unit struct whose copy
+is the value), against native Rust; mutations
+`clone-through-copy-bound-copies`, `copy-dictionary-holds-no-clone` and
+`copy-dictionary-dropped-with-its-clone`.

@@ -127,7 +127,7 @@ function chained(x, n, TCopy, TSize) {
 
 function repeated(x, n, TCopy, TSize) {
   const it = $repeatingN(TCopy ? TCopy.copy(x) : x, n, (value) =>
-    TCopy ? TCopy.copy(value) : value,
+    TCopy?.Clone ? TCopy.Clone().clone(value) : TCopy ? TCopy.copy(value) : value,
   );
   $roomFor(n, TSize);
   return Array.from(it).length;
@@ -135,7 +135,7 @@ function repeated(x, n, TCopy, TSize) {
 
 function taken(x, n, TCopy, TSize) {
   const it = $repeating(TCopy ? TCopy.copy(x) : x, (value) =>
-    TCopy ? TCopy.copy(value) : value,
+    TCopy?.Clone ? TCopy.Clone().clone(value) : TCopy ? TCopy.copy(value) : value,
   ).take(n);
   $roomFor(n, TSize);
   return Array.from(it).length;

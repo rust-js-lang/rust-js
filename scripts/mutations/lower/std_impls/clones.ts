@@ -498,4 +498,12 @@ export const mutations: Mutation[] = [
     replace: "        if trivial.is_some_and(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "clone-through-copy-bound-copies",
+    breaks: "generic code bounded by `T: Copy` alone copies where std's clones, never calling a hand-written `Clone` its caller's type has (#1451)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            return Ok(self.cloned_by_copy_bound(place, ty));\n",
+    replace: "            return Ok(self.copy(place, ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
 ];

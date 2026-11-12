@@ -44,6 +44,30 @@ function cloned(value, TClone) {
   return TClone.clone(value);
 }
 
+// Generic code bounded by `T: Copy` alone clones where std's code calls
+// `Clone`, through the `Copy` dictionary's supertrait (#1451).
+function toVecOf(v, TCopy) {
+  return v.map((item) =>
+    TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item,
+  );
+}
+
+function clonedOf(v, TCopy) {
+  return v.map((item) =>
+    TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item,
+  );
+}
+
+function repeatedOf(v, TCopy, TSize) {
+  return $repeatItems(
+    v,
+    2,
+    TSize,
+    (item) => (TCopy ? TCopy.copy(item) : item),
+    (item) => (TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item),
+  );
+}
+
 function copiedInGenericCode(v, TCopy) {
   const makeCopied = (it) =>
     $cloning(
@@ -57,6 +81,7 @@ function copiedInGenericCode(v, TCopy) {
 }
 
 function main() {
+  const pCopy = { copy: (value) => [value[0]], Clone: () => pClone };
   const ps = [[1], [2], [3]];
 
   const makeCopied = (it) =>
@@ -94,8 +119,28 @@ function main() {
     `cloned iterator [${collect.map((item) => pDebug_fmt(item)).join(", ")}] [${value$1.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );
   console.log(
-    `generic [${copiedInGenericCode(ps, { copy: (value) => [value[0]] })
+    `generic [${copiedInGenericCode(ps, pCopy)
       .map((item) => pDebug_fmt(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `generic to_vec [${toVecOf(ps, pCopy)
+      .map((item) => pDebug_fmt(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `generic cloned [${clonedOf(ps.slice(1), pCopy)
+      .map((item) => pDebug_fmt(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `generic repeat [${repeatedOf(ps.slice(0, 1), pCopy, 1)
+      .map((item) => pDebug_fmt(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `generic of a derive [${toVecOf([[[3]]], { copy: (value) => [[value[0][0]]] })
+      .map((item) => plainDebug_fmt(item))
       .join(", ")}]`,
   );
   const value$2 = ps[0] == null ? ps[0] : [ps[0][0]];
@@ -116,8 +161,7 @@ function main() {
   );
 
   console.log(
-    `cloned [${ps
-      .map((item) => pClone_clone(item))
+    `cloned [${Array.from($mapEnds($iter(ps), (item) => pClone_clone(item)))
       .map((item) => pDebug_fmt(item))
       .join(", ")}]`,
   );

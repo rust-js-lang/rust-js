@@ -934,17 +934,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // apart, and its copy is its clone (#1211).
             let value = Expr::var("value");
             let copy = self.copy(value.clone(), ty);
+            // Its supertrait `Clone`'s, `Clone()`, where the type's clone
+            // runs code, a hand-written `Clone` of a `Copy` type, which
+            // generic code that clones through the `Copy` bound calls as
+            // std's does (ADR 0623, amended, #1451).
+            let clone = match self.copy_clone_runs_code(ty) {
+                true => Some(self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]), span)?),
+                false => None,
+            };
             // A value that's its own copy is given none (ADR 0289, amended).
-            if js::same_path(&copy, &value) {
+            if js::same_path(&copy, &value) && clone.is_none() {
                 return Ok(Expr::undefined());
             }
-            return Ok(Expr::object(vec![Prop::Field(
+            let mut props = vec![Prop::Field(
                 "copy".into(),
                 Expr::arrow(
                     vec!["value".into()],
                     vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
                 ),
-            )]));
+            )];
+            if let Some(clone) = clone {
+                props.push(Prop::Field(
+                    "Clone".into(),
+                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(clone)).at(js::Span::NONE)]),
+                ));
+            }
+            return Ok(Expr::object(props));
         }
         if let Some(made) = self.impl_dictionary(tr, span)? {
             return Ok(made);

@@ -97,8 +97,9 @@ calls `Clone`, rust-js calls it:**
 - `to_vec()`, `extend_from_slice`, `extend(&v)`, `concat` and `cloned()`
   call `Clone`, as std's do, and were right.
 
-Generic code bounded by `T: Copy` alone still copies through the `Copy`
-dictionary where std calls a hand-written `clone` (#1451).
+Generic code bounded by `T: Copy` alone clones through its `Copy`
+dictionary's supertrait `Clone`, which a caller gives where the type's
+clone runs code ([0289](0289-copy-bounds.md), amended, #1451).
 
 What holds it: `test/corpus/copied_of_a_copy_with_its_own_clone.rs`,
 each of the above against native Rust in both builds, each copy changed
