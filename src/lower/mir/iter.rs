@@ -728,12 +728,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator's (ADR 0561): not a `Rev`, an `Enumerate` or a `Map` made in
     /// place, as its maker marked it (`made_in_place`, #730), which is what
     /// the recognizers make of it, a JS iterator that closes as it ends (ADR
-    /// 0871); nor one whose form is JS's own adapter's, `it.map(f)`, a map's
-    /// source asked on its own, which carries no mark of its own (#1491).
+    /// 0871).
     pub(in crate::lower) fn compiled_struct(&self, ty: Ty<'tcx>, value: &Expr) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
             && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
-                && (crate::lower::iterators::made_in_place(value) || crate::lower::iterators::is_js_adapter(value)))
+                && crate::lower::iterators::made_in_place(value))
     }
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as

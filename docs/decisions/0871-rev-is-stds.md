@@ -469,3 +469,28 @@ against native Rust in both builds; the metamorphic net's
 `generic-instances` of `counted_where_made_runs_each_part_once` off
 test/metamorphic-known.txt; mutation `js-adapter-taken-for-compiled-struct`,
 and `in-place-rev-a-struct` re-anchored.
+
+## Amendment (2026-11-12): whether it's made in place is `made_in_place`'s alone
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; no output changes.
+#1491 made `compiled_struct` ask two things of one fact: its maker's mark
+(`made_in_place`) or the value's form, JS's own adapter of a JS iterator
+(`is_js_adapter`). So the mark a flatten's maker sets (`std_calls/iterators.rs`)
+became redundant where its form is JS's own `flatMap`, and mutation
+`in-place-flatten-unmarked` survived. `made_in_place` is now the one
+answer, the mark or that form, which only the recognizers make;
+`compiled_struct` asks it alone, and `is_js_adapter` is its own. The mark
+still decides of a form that isn't JS's own, the runtime's `$flatMap`
+and a flatten stepped from its back: without it, `flatten_from_both_ends_drops_its_inners`
+and three other cases end in `TypeError: it.back is not a function`,
+which is what that mutation now names. `js-adapter-taken-for-compiled-struct`
+moves to `lower/iterators.ts`, of `made_in_place`; `in-place-rev-a-struct`
+re-anchored.
+
+Gone as equivalent: `flat-hint-front-unasked` (`runtime/size_hint.ts`).
+Every path where the program sees a flatten's hint now holds it, std's
+struct: `size_hint()` and functions that ask it (ADR 0899, #1323), a
+collect whose hint reaches the crate's own (#1327), and a `Vec` a crate
+that reads capacities grows (#1528). So the runtime's flat forms answer
+`$flatHint` only where nothing sees it. With `$flatHint` made to throw
+whenever it's asked of a front, all 2,345 corpus cases passed.

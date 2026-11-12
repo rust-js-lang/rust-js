@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Rev` stepped where it's made is taken as std's struct, closed after it's consumed",
     file: "src/lower/mir/iter.rs",
-    find: "                && (crate::lower::iterators::made_in_place(value) || crate::lower::iterators::is_js_adapter(value)))\n",
+    find: "                && crate::lower::iterators::made_in_place(value))\n",
     replace: "                && false)\n",
     snapshots: true,
     tests: [
@@ -930,13 +930,5 @@ export const mutations: Mutation[] = [
     find: "                        let b = cx.closing(b, other_ty, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_adapter_drops_its_sources.rs$"],
-  },
-  {
-    name: "js-adapter-taken-for-compiled-struct",
-    breaks: "a map's source, JS's own `.map(..)` with no mark of its own, is taken for std's compiled struct, so a map of a map given for its `len()` asks one it hasn't and throws (#1491)",
-    file: "src/lower/mir/iter.rs",
-    find: "                && (crate::lower::iterators::made_in_place(value) || crate::lower::iterators::is_js_adapter(value)))\n",
-    replace: "                && crate::lower::iterators::made_in_place(value))\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_of_a_map_given_for_its_len.rs$"],
   },
 ];

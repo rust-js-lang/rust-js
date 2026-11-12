@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/iterators.rs",
     find: "                        true => made.in_place(),\n",
     replace: "                        true => made,\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back|flatten_from_both_ends_drops_its_inners|own_iterator_flattened_from_its_back|associated_into_iterator_flattened_from_its_back).rs$"],
   },
   {
     name: "filter-map-made-unknowing",

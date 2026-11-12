@@ -435,4 +435,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
     snapshots: true,
   },
+  {
+    name: "js-adapter-taken-for-compiled-struct",
+    breaks: "a map's source, JS's own `.map(..)` with no mark of its own, is taken for std's compiled struct, so a map of a map given for its `len()` asks one it hasn't and throws (#1491)",
+    file: "src/lower/iterators.rs",
+    find: "    e.facts.has(js::Known::InPlace) || is_js_adapter(e)\n",
+    replace: "    e.facts.has(js::Known::InPlace)\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_of_a_map_given_for_its_len.rs$"],
+  },
 ];

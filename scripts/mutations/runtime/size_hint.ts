@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
   {
-    name: "flat-hint-front-unasked",
-    breaks: "a flatten's hint counts none of the inner iterator it's in, so a `flat_map()` collected into a `Vec` asks room by its source's alone (#733)",
-    file: "src/runtime/size_hint.js",
-    find: "$hintSum(front === undefined ? none : $sizeHint(front), ",
-    replace: "$hintSum(none, ",
-    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
-  },
-  {
     name: "hint-of-js-iterator-known",
     breaks:
       "a hint that meets JS's own iterator, a string's `chars().skip(n)`'s `drop(n)`, is taken for known: a library's `pub` generic `extend` by it keeps a capacity of 64 where std's is 44, silently (#1251)",

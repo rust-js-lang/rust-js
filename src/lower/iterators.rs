@@ -807,7 +807,7 @@ pub(in crate::lower) fn binding_made(e: &Expr) -> bool {
 /// Whether `e` is a call of JS's own adapter, `it.map(f)`, `filter`,
 /// `flatMap`, `take` or `drop`, of a JS iterator: what the recognizers make
 /// in place, never std's compiled struct, whatever marks it carries (#1491).
-pub(in crate::lower) fn is_js_adapter(e: &Expr) -> bool {
+fn is_js_adapter(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _)
         if matches!(&callee.kind, js::ExprKind::Member(object, name)
             if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && is_js_iterator(object)))
@@ -1083,9 +1083,12 @@ pub(super) fn array_stepped(items: Expr) -> Expr {
 
 /// Whether `e`, of a `Rev`, an `Enumerate` or a `Map`, is what the
 /// recognizers made of it in place, never std's struct, which one held is:
-/// as its maker marked it (`Known::InPlace`, ADR 0871).
+/// as its maker marked it (`Known::InPlace`, ADR 0871), or JS's own adapter
+/// of a JS iterator, `it.map(f)`, which only the recognizers make, though
+/// it carries no mark, a map's source asked on its own (`is_js_adapter`,
+/// #1491). The one answer.
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
-    e.facts.has(js::Known::InPlace)
+    e.facts.has(js::Known::InPlace) || is_js_adapter(e)
 }
 
 /// Of `facts`, a value's, what's known of the value that what holds it
