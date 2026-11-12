@@ -25,3 +25,28 @@ plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
+plain std option_slot_iterators.rs beside address_of_a_nested_field_through_a_deref.rs
+plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_observable.rs user_fmt_traits.rs
+
+#1513 P2 (pointers): a lent object std keeps in a $some box (OnceCell<Option<T>>, Peekable of Options) or lends in generic code is refused in a crate that asks its address
+plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
+
+#1572 P2 (neighbours): a Vec grown by a std adapter whose JS size hint has no lower bound (Rev<Map<CharIndices>>, Take<Cycle<Map<..>>>) is refused beside a case that reads capacity
+plain std rev_of_char_indices.rs beside adapter_size_hints.rs
+plain std cloned_chains_and_cycles.rs beside extend_by_a_dyn_iterator_asks_its_hint.rs
+
+#1573 P2 (neighbours): an Inspect of a vec's IntoIter, or a StepBy of a Rev of a Range, is refused as an ExactSizeIterator beside a case that counts
+plain std unread_collected_chain.rs beside into_iterator_of_a_reference_given_to_generic_code.rs
+plain counted_iterators_held_ask_room.rs beside generic_iterables_given_to_std.rs
+
+#1574 P2 (neighbours): cloning a generic Map made where T isn't bound by Clone is refused beside another case's generic map
+plain adapter_shown_and_cloned_generically.rs beside generic_map_beside_a_cloned_one_of_other_bounds.rs
+
+#1575 P2 (neighbours, std build): an associated type impl DoubleEndedIterator of a method with its own generics is refused beside btree_append_drops.rs
+std associated_iterator_of_a_method_with_its_own_generics.rs beside btree_append_drops.rs
+
+#1576 P2 (neighbours): size_of of a where-clause's item type is refused beside a case that asks a hint as it fills
+plain std default_where_clause_item_drops.rs beside extend_asks_hint_as_it_fills.rs
+
+#1577 P2 (neighbours): {} of a &mut u32 is refused beside a case that counts an Rc of an impl's parameter as Any
+plain std boxed_mut_ref_shown.rs beside rc_of_an_impls_parameter_counted_as_any.rs
