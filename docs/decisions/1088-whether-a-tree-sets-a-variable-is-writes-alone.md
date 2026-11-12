@@ -66,3 +66,61 @@ asks them, and none matches a write of its own.**
   it is live; and a mutation of `(x = ..)` counted, which no pass that
   asks `sets` meets in the corpus (`x++` none at all: it's made after
   every pass that asks). The unit tests of `js/writes.rs` hold both.
+
+## Amendment: which places a tree writes (#1570, #1593)
+
+A guard whose `Drop` does nothing is read as its fields (ADRs 0608 and
+0705): a one-field one's `guard[0]` as a variable of its own
+(`drops/inlined.rs`' `one_field_of`), a named-field one's `guard.count` as
+`count` (`fields_of`), and a struct a scope holds as a variable for each
+field (`mir/scopes.rs`' `scope_fields`). Each keeps a field that's written
+a `let` of its own, or the guard's place, and each asked what's written
+of its own: an `x.f = ..` or `x.f op= ..` statement, and a handle. A
+swap's destructuring assignment, `[spare[0], pair.left] = [pair.left,
+spare[0]]`, wasn't one, nor `(h[0] = ..)` in a condition, so the field
+was a `const` the swap assigned, a `TypeError` (#1570 of a one-field
+guard, #1593 of a named-field one; P0). `js::Writes` itself counted no
+destructuring assignment's targets either: `[a, b] = pair(b)`, of tidy's
+`destructuring.rs`, set neither `a` nor `b` as `sets` saw it.
+
+**Which places a tree writes is `js::Writes::places`' answer, as whether
+it sets a variable is `sets`'**:
+
+- A destructuring assignment writes each of its targets: `Writes` walks
+  into the array target, so `sets`, `count`, `replaced` and `changed`
+  see each one, and `places` lists each.
+- `Writes::places(stmts)` lists each place written once, in any block, a
+  closure's and a declared function's too: an assignment's target, `x op=
+  ..`'s, `(x = ..)`'s, `x++`'s, each target of a destructuring one, and
+  the place a handle is made on. It is `Writes`' own walk, so a kind of
+  write added there is a place every caller sees.
+- `one_field_of`, `fields_of` and `scope_fields` ask it, each matching
+  the place it reads as a field, `guard[0]` or `guard.count`, exactly;
+  `tidy/values.rs`' `arrows_out_of_tries`, which counted a `let`'s
+  `x = ..` statements of its own, asks `Writes::count`; and
+  `prepare/shadows.rs`' walk asks it for the variables a statement sets.
+  A handle on a field's own field, `&mut s.a.b`, now writes `s.a.b`, not
+  `a`, which its setter, `s.a.b = v`, doesn't rebind; no case's output
+  changed by it.
+- **Held by an architecture test** beside this ADR's first: no `src/` file
+  but `js/writes.rs` matches an `Assign` and a `Compound` statement's
+  target together, the shape of asking what a tree writes; the one site
+  left, `tidy/decided.rs`' "a statement that writes through a field", is
+  listed with what it looks for.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Where it was
+wrong, the JS now does what the Rust does; every other corpus case's JS
+is the same byte for byte.
+
+Proof: corpus case `guard_field_written_by_a_swap_or_in_an_expression`, of
+both guards' swaps, `(h[0] = ..)` in a condition and `h[0]++`, against
+native Rust in both builds; `Writes`' unit test
+`each_target_of_a_destructuring_assignment_is_written`. Mutations
+`one-field-guard-written-unasked`, `named-guard-written-unasked`,
+`writes-destructured-targets-unseen` and
+`writes-assigned-in-an-expression-unlisted` are caught by the case;
+`lent-guard-field-unwritten` became `writes-handle-place-unlisted`, as
+the handle's place is `Writes`' now, caught by `mut_ref_to_mut_ref` and
+`mut_ref_kept`. `shadows.rs`' walk has no mutation: a destructuring set
+of `n` while `const n$1 = n;` is read after it is one Rust's scoping
+forbids, as `let n = n;` hides the `n` it shadows.

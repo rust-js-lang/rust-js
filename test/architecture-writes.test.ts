@@ -84,6 +84,30 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
   expect(shapes.filter((site) => !found.includes(site))).toEqual([]);
 });
 
+// Which places a tree writes is `js::Writes::places` (ADR 1088, amended,
+// #1570, #1593): three passes that read a guard's or a struct's fields as
+// variables each matched a field's `x.f = ..` and `x.f op= ..` statements
+// of their own, which missed a swap's `[x.f, y] = [y, x.f]`, so the field
+// stayed a `const` the swap assigned. No file but `js/writes.rs` matches an
+// `Assign` and a `Compound` statement's target together, the shape of
+// asking what a tree writes; the sites below look for something else.
+test("which places a tree writes is js::Writes' alone", () => {
+  const shapes = [
+    // A statement that writes through a field or does something, which
+    // may change what a decided test reads; a destructuring one counts.
+    "src/lower/mir/tidy/decided.rs: matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if !matches!(target.kind, ExprKind::Var(_)))",
+  ];
+  const matching = /StmtKind::Assign\((\w+), _\) \| StmtKind::Compound\(_, \1, _\)/g;
+  const found = files("src")
+    .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
+    .flatMap((file) => {
+      const text = read(file);
+      return [...text.matchAll(matching)].map((m) => `${file}: ${text.split("\n")[text.slice(0, m.index).split("\n").length - 1].trim()}`);
+    });
+  expect(found.filter((site) => !shapes.includes(site))).toEqual([]);
+  expect(shapes.filter((site) => !found.includes(site))).toEqual([]);
+});
+
 // A `String`'s `extend` that steps its iterator is one form,
 // `std_types::text::extend_text`'s, its callback said to run in its call
 // alone, so tidy reuses a binding it captures past it (#1168): the

@@ -893,18 +893,8 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
                 continue;
             };
             let name = name.clone();
-            // Set once, there alone.
-            let mut sets = 0;
-            js::each_list(&stmts[i + 1..], &mut |list| {
-                for stmt in list {
-                    if let StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) = &stmt.kind
-                        && matches!(&target.kind, ExprKind::Var(v) if *v == name)
-                    {
-                        sets += 1;
-                    }
-                }
-            });
-            if sets != 1 {
+            // Set once, there alone, as `js::Writes` counts its sets (ADR 1088).
+            if js::Writes::count(&stmts[i + 1..], &name) != 1 {
                 i += 1;
                 continue;
             }

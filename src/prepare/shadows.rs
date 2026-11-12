@@ -381,9 +381,13 @@ impl Walk {
                         self.shadows.push((self.at, looped, alias.clone(), of.clone()));
                     }
                 }
-                StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => {
-                    if let ExprKind::Var(name) = &target.kind {
-                        self.sets.push((self.at, name.clone()));
+                // Each variable it sets, as `js::Writes` says: each of a
+                // destructuring one's, `[n, m] = ..` (ADR 1088, amended).
+                StmtKind::Assign(..) | StmtKind::Compound(..) => {
+                    for place in js::Writes::places(std::slice::from_ref(stmt)) {
+                        if let ExprKind::Var(name) = place.kind {
+                            self.sets.push((self.at, name));
+                        }
                     }
                 }
                 StmtKind::If(_, a, b) => {

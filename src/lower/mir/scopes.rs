@@ -159,7 +159,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         }
     }
     // Each read of it is a field's.
-    let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::default());
+    let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::<String>::default());
     let mut whole = false;
     js::each_expr(out, &mut |e| match &e.kind {
         js::ExprKind::Var(name) if holders.contains(name) => reads += 1,
@@ -172,30 +172,20 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         js::ExprKind::Unary(js::UnaryOp::Delete, of) if matches!(&of.kind, js::ExprKind::Member(of, _) if held(of)) => {
             whole = true
         }
-        // A handle on a field writes it.
-        js::ExprKind::Handle(place, _) => place.each(&mut |e| {
-            if let js::ExprKind::Member(of, key) = &e.kind
-                && held(of)
-            {
-                written.insert(key.clone());
-            }
-        }),
         _ => {}
     });
-    let mut aliases = 0;
-    for stmt in statements() {
-        match &stmt.kind {
-            StmtKind::Const(alias, e) if alias != value && holders.contains(alias) && held(e) => aliases += 1,
-            StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => match &target.kind {
-                js::ExprKind::Member(of, key) if held(of) => {
-                    written.insert(key.clone());
-                }
-                js::ExprKind::Var(name) if holders.contains(name) => whole = true,
-                _ => {}
-            },
+    // Each field written, or a handle made on it, as `js::Writes` says: a
+    // swap's destructuring of it too (ADR 1088, amended, #1570).
+    for place in js::Writes::places(out) {
+        match place.kind {
+            js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),
+            js::ExprKind::Var(name) if holders.contains(&name) => whole = true,
             _ => {}
         }
     }
+    let aliases = (statements())
+        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if alias != value && holders.contains(alias) && held(e)))
+        .count();
     // Each holder declared once, never named again.
     let mut declared = 0;
     js::each_declared(out, &mut |name| {

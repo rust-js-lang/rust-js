@@ -56,9 +56,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "scope-field-handle-unwritten",
-    breaks: "a scope struct's field a handle writes, `&mut counter.n`, is a `const`",
+    breaks: "a scope struct's field a handle writes, `&mut counter.n`, is a `const`, though `js::Writes::places` says it's written",
     file: "src/lower/mir/scopes.rs",
-    find: "        js::ExprKind::Handle(place, _) => place.each(&mut |e| {\n            if let js::ExprKind::Member(of, key) = &e.kind\n                && held(of)\n            {\n                written.insert(key.clone());\n            }\n        }),\n",
+    find: "            js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
   },

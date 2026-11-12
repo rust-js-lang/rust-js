@@ -440,16 +440,6 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
     }
 }
 
-/// The place `e` lends `&mut`, a handle's, `{ get value() { .. }, set
-/// value(v) { place = v; } }`, which writes it: a guard's field lent so is
-/// written through it, as arrayvec's `ScopeExitGuard`'s `&mut self.value`.
-fn lent(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) => Some(place),
-        _ => None,
-    }
-}
-
 /// How often `item` names `name`.
 fn mentions_in_item(item: &Item, name: &str) -> usize {
     let value = |e: &Expr| js::mentions_in(&[StmtKind::Expr(e.clone()).at(e.span)], name);
@@ -571,26 +561,15 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
             reads += 1;
         }
     });
-    // Each field written through it, or lent `&mut`, a `let` of its own.
-    let mut written = IndexSet::default();
-    js::each_block_mut(&mut stmts, &mut |list| {
-        for s in list.iter() {
-            if let StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) = &s.kind
-                && let ExprKind::Member(of, key) = &t.kind
-                && matches!(&of.kind, ExprKind::Var(v) if v == guard)
-            {
-                written.insert(key.clone());
-            }
-        }
-    });
-    js::each_expr_mut(&mut stmts, &mut |e| {
-        if let Some(place) = lent(e)
-            && let ExprKind::Member(of, key) = &place.kind
-            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
-        {
-            written.insert(key.clone());
-        }
-    });
+    // Each field written through it, or lent `&mut`, a `let` of its own:
+    // what `js::Writes` says is written, a swap's destructuring of it, `[name,
+    // p.left] = ..`, `x++` and `(x = ..)` too (ADR 1088, amended, #1593).
+    let written: IndexSet<String> = (js::Writes::places(body).into_iter())
+        .filter_map(|place| match place.kind {
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),
+            _ => None,
+        })
+        .collect();
     if reads != js::mentions_in(body, guard) {
         return Vec::new();
     }
@@ -742,15 +721,11 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
             if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
     };
     let mut reads = 0;
-    let mut written = false;
     let mut stmts = body.clone();
     js::each_expr_mut(&mut stmts, &mut |e| reads += usize::from(field(e)));
-    js::each_block_mut(&mut stmts, &mut |list| {
-        written |= list
-            .iter()
-            .any(|s| matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) if field(t)));
-    });
-    js::each_expr_mut(&mut stmts, &mut |e| written |= lent(e).is_some_and(field));
+    // Written, or lent `&mut`, as `js::Writes` says: a swap's `[guard[0],
+    // pair.left] = ..` too (ADR 1088, amended, #1570).
+    let written = js::Writes::places(body).iter().any(field);
     if written || reads != js::mentions_in(body, guard) {
         return None;
     }

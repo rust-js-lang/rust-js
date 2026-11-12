@@ -466,14 +466,22 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "lent-guard-field-unwritten",
+    name: "one-field-guard-written-unasked",
     breaks:
-      "a guard's field its `Drop` lends `&mut`, arrayvec's `ScopeExitGuard`'s `&mut self.value`, is a `const` the handle's setter assigns, a `TypeError` as it's dropped (#501)",
+      "a one-field guard's field a swap writes, `[spare[0], pair.left] = ..`, or `(h[0] = ..)` sets, is read as a `const` the write assigns, a `TypeError` (#1570)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) => Some(place),\n",
-    replace: "        ExprKind::Pair(place, ..) => Some(place),\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
-    snapshots: true,
+    find: "    let written = js::Writes::places(body).iter().any(field);\n",
+    replace: "    let written = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
+  },
+  {
+    name: "named-guard-written-unasked",
+    breaks:
+      "a named-field guard's field a swap writes, `[count, pair.right] = ..`, is a `const` the swap assigns, a `TypeError` (#1593)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
+    replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
   },
   {
     name: "guard-closure-beside-itself",

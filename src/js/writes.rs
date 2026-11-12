@@ -6,7 +6,8 @@
 //! and puts its own safety condition together from them; none is kept
 //! across a rewrite. Whether, and how often, a tree sets one variable is
 //! `Writes::sets` and `Writes::count`, the one answer every pass asks
-//! (ADR 1088): no pass matches a write of its own.
+//! (ADR 1088), and which places it writes is `Writes::places`': no pass
+//! matches a write of its own.
 
 use super::*;
 
@@ -30,6 +31,8 @@ pub struct Writes {
     /// How many places set each variable's binding, a handle on it among
     /// them, in a closure too: `Writes::count`'s.
     set: IndexMap<String, usize>,
+    /// Each place written, where `Writes::places` asks for them.
+    places: Option<Vec<Expr>>,
 }
 
 impl Writes {
@@ -68,6 +71,22 @@ impl Writes {
         Writes::of(stmts).set.get(name).copied().unwrap_or(0)
     }
 
+    /// Each place `stmts` write, once each, in any block, a closure's and a
+    /// declared function's too: an assignment's target, `x op= ..`'s, `(x =
+    /// ..)`'s in an expression and `x++`'s; each target of a destructuring
+    /// one, `[a[0], b.f] = [b.f, a[0]]`, a swap's (#1570); and the place a
+    /// handle is made on, which what it's given may write. Whether a field
+    /// of a guard's, `guard[0]`, is written is asked of these (ADR 1088,
+    /// amended).
+    pub fn places(stmts: &[Stmt]) -> Vec<Expr> {
+        let mut writes = Writes {
+            places: Some(Vec::new()),
+            ..Writes::default()
+        };
+        writes.walk(stmts, false);
+        writes.places.unwrap_or_default()
+    }
+
     fn set(&mut self, name: &str) {
         *self.set.entry(name.to_string()).or_default() += 1;
     }
@@ -79,6 +98,9 @@ impl Writes {
         self.lists(stmts, in_closure);
         each_expr(stmts, &mut |e| match &e.kind {
             ExprKind::Handle(place, storage) | ExprKind::Pair(place, _, storage) => {
+                if let Some(places) = &mut self.places {
+                    places.push((**place).clone());
+                }
                 // One whose write changes the object in place, a flattened
                 // state's keys or `$assign`, never sets the variable (#968).
                 if let ExprKind::Var(name) = &place.kind
@@ -128,8 +150,19 @@ impl Writes {
     }
 
     /// What writing `target` writes: its variable's binding, or the object
-    /// at its root; a binding's set counted where `counted`.
+    /// at its root; a binding's set counted where `counted`, which each
+    /// write is once. A destructuring one's, `[a, b.f] = ..`, each of its
+    /// targets (#1570).
     fn target(&mut self, target: &Expr, in_closure: bool, counted: bool) {
+        if let ExprKind::Array(targets) = &target.kind {
+            for target in targets {
+                self.target(target, in_closure, counted);
+            }
+            return;
+        }
+        if counted && let Some(places) = &mut self.places {
+            places.push(target.clone());
+        }
         let mut root = target;
         while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
             root = of;
@@ -253,6 +286,45 @@ mod tests {
         assert_eq!(Writes::count(&inner, "x"), 1);
         assert!(Writes::sets(&inner, "x") && !Writes::sets(&stmts[5..], "x"));
         assert_eq!(names(&Writes::of(&inner).replaced_in_closures), ["x"]);
+    }
+
+    /// A destructuring assignment, a swap's `[a, o.f] = [o.f, a]`, sets
+    /// `a` and changes `o`'s object, and writes each of its targets, the
+    /// places `Writes::places` lists once each, beside a step's, an
+    /// assignment's in a closure and a handle's (#1570).
+    #[test]
+    fn each_target_of_a_destructuring_assignment_is_written() {
+        let field = Expr::member(Expr::var("o"), "f");
+        let swap = assign(Expr::array(vec![Expr::var("a"), field.clone()]));
+        let stepped = Expr::new(ExprKind::Stepped(
+            Op::Add,
+            Box::new(Expr::index(Expr::var("g"), Expr::int(0))),
+        ));
+        let assigned = Expr::assigned(Expr::member(Expr::var("c"), "k"), Expr::int(1));
+        let closure = Expr::arrow(Vec::new(), vec![stmt(StmtKind::Expr(assigned))]);
+        let handle = Expr::new(ExprKind::Handle(
+            Box::new(Expr::member(Expr::var("h"), "f")),
+            Storage::AsGiven,
+        ));
+        let stmts = [
+            swap,
+            stmt(StmtKind::Expr(stepped)),
+            stmt(StmtKind::Const("k".into(), closure)),
+            stmt(StmtKind::Expr(Expr::call(Expr::var("g"), vec![handle]))),
+        ];
+        let writes = Writes::of(&stmts);
+        assert_eq!(names(&writes.replaced), ["a"]);
+        assert_eq!(names(&writes.changed), ["c", "g", "o"]);
+        assert_eq!(Writes::count(&stmts, "a"), 1);
+        let places = Writes::places(&stmts);
+        let written = |of: &str| {
+            places
+                .iter()
+                .filter(|p| mentions_in(&[StmtKind::Expr((*p).clone()).at(Span::NONE)], of) > 0)
+                .count()
+        };
+        assert_eq!(places.len(), 5);
+        assert_eq!(["a", "o", "g", "c", "h"].map(written), [1; 5]);
     }
 
     #[test]
