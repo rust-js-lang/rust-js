@@ -324,12 +324,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
   {
-    name: "printed-in-place-unrefused",
-    breaks: "a derived `Debug` of a value whose `Debug` prints shows it whole before its text, where Rust's print lands between, unrefused (#1495)",
+    name: "stopped-in-place-unrefused",
+    breaks: "a derived `Debug` of a value whose `Debug` prints and may panic where it's caught is let through, and the line loses what the struct wrote before the field, `Holder { first: !Grid(1), second: ` (#1530)",
     file: "src/lower/mir/writer.rs",
-    find: "        match self.writes_through_the_line(self.item) && self.krate.prints.shown_prints(ty) {\n",
-    replace: "        match false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what prints"],
+    find: "            .then(|| self.krate.prints.stops_shown(ty))\n",
+    replace: "            .then(|| None::<Ty<'tcx>>)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what may print and panic"],
   },
   {
     name: "printing-text-of-a-write-unseen",

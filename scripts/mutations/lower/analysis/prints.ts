@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "writer-showing-a-printing-type-unseen",
-    breaks: "a writer that shows a value whose writer prints, through std's `&dyn Debug`, isn't taken to print, and a derived `Debug` of it shows it out of order unrefused (#1495)",
+    breaks: "a writer that shows a value whose writer prints, through std's `&dyn Debug`, isn't taken to print, so a derived `Debug` of it builds its text whole and the field's print comes before the line (#1495)",
     file: "src/lower/analysis/prints.rs",
     find: "        if more.is_empty() {\n",
     replace: "        if true || more.is_empty() {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what prints"],
+    tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_by_derived_debugs_and_builders.rs$"],
   },
   {
     name: "composed-stopping-writer-unrefused",
@@ -40,6 +40,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            .filter(|&writer| !never_unwinding.contains(writer) || failing.contains(writer))\n",
     replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
+  },
+  {
+    name: "stops-composed-of-the-crates-own",
+    breaks: "`{:?}` of the crate's own writer that prints and may panic, which streams its text through the line itself, is refused as a std value's composed `Debug` is (#1521, #1530)",
+    file: "src/lower/analysis/prints.rs",
+    find: "            true => None,\n            false => self.stops_shown(ty),\n",
+    replace: "            true => self.stops_shown(ty),\n            false => self.stops_shown(ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
   },
 ];

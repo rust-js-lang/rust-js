@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(
                 span,
                 &format!(
-                    "`{{:?}}` of a `{ty}` whose part `{part}`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1496)"
+                    "`{{:?}}` of a `{ty}` whose part `{part}`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"
                 ),
             ));
         }

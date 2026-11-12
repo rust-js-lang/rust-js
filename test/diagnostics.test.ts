@@ -31,15 +31,12 @@ for (const [name, source, message, crate] of [
   // type's address, is no record's: refused (#1513), where one held as the
   // object is recorded as stored in its slot (#1475).
   ["a get_mut of a boxed object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<Option<P>>, p: P) -> usize { let at = &raw const p as usize; if let Some(q) = o.get_mut().unwrap() { q.0 += 1; } at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1513)"],
-  // A derived `Debug` of a value whose `Debug` may print as it's formatted,
-  // shown whole before its text is written where Rust's print lands
-  // between: refused, not written out of order (#1490, #1495).
-  // A std value's `Debug` of parts whose `Debug` may print and stop
-  // part-way, where a `catch_unwind` may catch the panic: the line keeps
-  // what the parts before it wrote, which the JS, making the parts' texts
-  // whole, can't rebuild (#1521, #1496).
-  ["a Vec's Debug of what may print and panic where it may be caught", "use std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: Vec<Loud>) -> bool { std::panic::catch_unwind(move || println!(\"{:?}\", v)).is_err() }", "`{:?}` of a `std::vec::Vec<Loud>` whose part `Loud`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1496)"],
-  ["a derived Debug of what prints as it's formatted", "use std::fmt;\npub struct Loud;\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { println!(\"loud\"); write!(f, \"L\") } }\n#[derive(Debug)]\npub struct Holder { pub loud: Loud }\npub fn f(h: &Holder) { println!(\"{:?}\", h); }", "a derived `Debug` or a `Debug` builder's step of a `Loud`, whose `Debug` may print as it's formatted (#1495)"],
+  // A std value's `Debug`, or a derived `Debug`'s field, of parts whose
+  // `Debug` may print and stop part-way, where a `catch_unwind` may catch
+  // the panic: the line keeps what the parts before it wrote, which the JS,
+  // making the parts' texts whole, can't rebuild (#1521, #1495, #1530).
+  ["a Vec's Debug of what may print and panic where it may be caught", "use std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: Vec<Loud>) -> bool { std::panic::catch_unwind(move || println!(\"{:?}\", v)).is_err() }", "`{:?}` of a `std::vec::Vec<Loud>` whose part `Loud`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"],
+  ["a derived Debug of what may print and panic where it may be caught", "use std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\n#[derive(Debug)]\npub struct Holder { pub loud: Loud }\npub fn f(h: Holder) -> bool { std::panic::catch_unwind(move || println!(\"{:?}\", h)).is_err() }", "a derived `Debug` or a `Debug` builder's step of a `Loud`, whose `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what was written before it (#1530)"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.

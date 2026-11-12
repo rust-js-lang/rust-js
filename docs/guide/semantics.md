@@ -283,14 +283,15 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   error is written at once. Elsewhere a line is `console.log`'s. In a
   browser each line is `console.log`'s at its newline, and a line left
   unended at the end of the program's task is written then. Shown inside
-  a `Vec`'s, an `Option`'s, a tuple's or a map's `Debug`, `{:#?}`'s too,
-  each print lands between the value's brackets and commas where Rust's
-  does, `[!D(1), !D(3)]`, and a `format!` of one prints before the line
-  printed next; a `write!` into a `String` of one that returns `Err` gives
-  the `Err` back, the text before it written. A derived `Debug` of such a
-  value is refused, #1495; and so
-  is a std value's `Debug` of one whose writer may also stop part-way, by
-  a panic or an error, in a program with a `catch_unwind`, #1496
+  a `Vec`'s, an `Option`'s, a tuple's or a map's `Debug`, or a derived
+  `Debug`'s field or a `Debug` builder's step, `{:#?}`'s too, each print
+  lands between the value's brackets, fields and commas where Rust's
+  does, `[!D(1), !D(3)]`, `Holder { grid: !Grid(1), n: 5 }`, and a
+  `format!` of one prints before the line printed next; a `write!` into a
+  `String` of one that returns `Err` gives the `Err` back, the text before
+  it written. Any of those of one whose writer may also stop part-way, by
+  a panic or an error, in a program with a `catch_unwind`, is refused,
+  #1530
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
   amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),

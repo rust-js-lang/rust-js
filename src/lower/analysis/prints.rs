@@ -32,7 +32,7 @@ pub(in crate::lower) struct Prints {
     pub(in crate::lower) types: IndexSet<DefId>,
     /// Of those, the ones one of whose writers that print may stop
     /// part-way, by a panic or an `Err`, in a program that may catch the
-    /// panic and print on (`stops_composed`, #1521).
+    /// panic and print on (`stops_shown`, #1521, #1530).
     pub(in crate::lower) stopping: IndexSet<DefId>,
 }
 
@@ -63,26 +63,28 @@ impl Prints {
     }
 
     /// The type of the crate's whose writer may print and stop part-way,
-    /// shown inside `ty`, a value of std's whose `Debug` shows it among
-    /// other parts, `Vec<Loud>`'s, `Option<Loud>`'s or `(Loud, u8)`'s, where
-    /// a panic may be caught (#1521). Rust's stdout keeps what the parts
-    /// before it wrote, `[!D(1), !`, which the JS, making the parts' texts
-    /// whole before they reach the line, can't rebuild: refused, as #1496
-    /// decides what a line a panic stops keeps. Of a type of the crate's,
-    /// whose writer streams its parts through the line itself, none.
-    pub(in crate::lower) fn stops_composed<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
-        if self.stopping.is_empty() || ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
-            return None;
-        }
+    /// where a panic may be caught, shown in `ty`, `Loud` or one made of
+    /// it, `Vec<Loud>`. A `Debug` that shows it among other parts, a std
+    /// value's (`stops_composed`, #1521) or a derived `Debug`'s field or a
+    /// builder's step (#1495), makes each part's text whole before its own
+    /// reaches the line, so a part that stops loses the parts before it,
+    /// `Holder { first: !Grid(1), second: !Grid(` where Rust's stdout keeps
+    /// them: refused (#1530). One that may print and never stops is shown
+    /// as the line has it, each print marked where it ran (#1521).
+    pub(in crate::lower) fn stops_shown<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
         (ty.walk().filter_map(|part| part.as_type()))
             .find(|part| part.ty_adt_def().is_some_and(|adt| self.stopping.contains(&adt.did())))
     }
 
-    /// Is `ty` a type of the crate's one of whose writers may print, or one
-    /// made of one: not a type only a caller or a `dyn` says.
-    pub(in crate::lower) fn shown_prints(&self, ty: ty::Ty<'_>) -> bool {
-        (ty.walk().filter_map(|part| part.as_type()))
-            .any(|part| part.ty_adt_def().is_some_and(|adt| self.types.contains(&adt.did())))
+    /// `stops_shown` of a std value's `Debug`, `Vec<Loud>`'s, `Option<Loud>`'s
+    /// or `(Loud, u8)`'s (#1521). Of a type of the crate's, whose writer is
+    /// the crate's own, none: its derived `Debug`'s fields are asked where
+    /// it shows them (`stops_shown`, #1495).
+    pub(in crate::lower) fn stops_composed<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
+        match ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
+            true => None,
+            false => self.stops_shown(ty),
+        }
     }
 }
 

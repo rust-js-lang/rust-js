@@ -17,7 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Printing(text, _) => Ok(text),
             Value::DynDebug(from, _, value) => {
                 let pretty = self.writer_pretty();
-                self.refuse_printed_in_place(self.pointee(from), span)?;
+                self.refuse_stopped_in_place(self.pointee(from), span)?;
                 self.debug_string_with(value, self.pointee(from), span, &pretty)
             }
             Value::List(items, at) => Ok(Expr::array(
@@ -169,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::DynDebug(from, _, value) => (value, self.pointee(from)),
                     value => (self.value_expr(value, span)?, ty),
                 };
-                self.refuse_printed_in_place(ty, span)?;
+                self.refuse_stopped_in_place(ty, span)?;
                 // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`.
                 let value = match step == BuilderStep::Entries {
                     true => crate::lower::iterators::iterated(value),
@@ -774,18 +774,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Refused: a value of `ty`, whose `Debug` may print as it's formatted,
-    /// shown where it's made by a derived `Debug` or a builder's step of a
-    /// writer that writes through the line, which shows it whole before its
-    /// text is written, where Rust's prints land between (#1495).
-    fn refuse_printed_in_place(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
-        match self.writes_through_the_line(self.item) && self.krate.prints.shown_prints(ty) {
-            true => Err(self.unsupported(
-                span,
-                &format!("a derived `Debug` or a `Debug` builder's step of a `{}`, whose `Debug` may print as it's formatted (#1495)", ty.peel_refs()),
-            )),
-            false => Ok(()),
-        }
+    /// Refused: a value of `ty`, whose `Debug` may print and stop part-way
+    /// where a panic may be caught, shown by a derived `Debug` or a
+    /// builder's step of a writer that writes through the line, which makes
+    /// its text whole before the writer's own reaches the line, so what the
+    /// writer wrote before it would be lost (`stops_shown`, #1530). One that
+    /// prints and never stops is written as the line has it, its prints
+    /// marked where they ran (#1495, #1521).
+    fn refuse_stopped_in_place(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+        let Some(part) = self
+            .writes_through_the_line(self.item)
+            .then(|| self.krate.prints.stops_shown(ty))
+            .flatten()
+        else {
+            return Ok(());
+        };
+        let shown = match part == ty.peel_refs() {
+            true => format!("`{part}`, whose `Debug`"),
+            false => format!("`{}` whose part `{part}`'s `Debug`", ty.peel_refs()),
+        };
+        Err(self.unsupported(
+            span,
+            &format!("a derived `Debug` or a `Debug` builder's step of a {shown} may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what was written before it (#1530)"),
+        ))
     }
 }
 

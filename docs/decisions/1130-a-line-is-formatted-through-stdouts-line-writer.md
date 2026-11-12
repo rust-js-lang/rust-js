@@ -72,7 +72,7 @@ In a browser, the line buffer flushes to `console.log` at each newline,
 and a partial line is flushed at the end of the program's task.
 
 **Refused:** a derived `Debug` or a `Debug` builder's step of a value of
-the crate's whose `Debug` may print (#1495). Each field is shown whole
+the crate's whose `Debug` may print (#1495; lifted, amended below). Each field is shown whole
 before the struct's text is written, and streaming it would also need
 `{:#?}`'s indentation of nested output (`PadAdapter`). A `Formatter` held
 where it isn't its writer's, by a writer that prints, is refused too.
@@ -216,3 +216,35 @@ Corpus case write_result_kept_by_a_writer (a result kept, dropped and
 asked; `?`; and a writer that prints, kept) against native Rust in both
 builds. Mutations `kept-write-result-taken-ok`, `tried-write-result-held`
 (held by the snapshot) and `kept-write-result-partial-lost`.
+
+## Amendment: a derived `Debug`'s field and a builder's step of a writer that prints (2026-11-12, #1495)
+
+A derived `Debug` of a value whose `Debug` may print, or a `Debug`
+builder's step of one, was refused (this ADR's **Refused**): each field
+is shown whole before the struct's text is written, where Rust's print
+lands between. #1521's runtime makes that right with no change to the
+lowering: the field's writer, called in a line, writes into a capture,
+each print a mark where it ran; the struct's text carries the marks to
+the line, which puts each print back in its place, and `$padded`
+indents `{:#?}`'s nested lines after a mark at a line's start, as
+`PadAdapter` does. So the refusal goes.
+
+What stays refused is one shape, #1521's for a std value's `Debug`, now
+one rule for both: a field or step whose writer may print and stop
+part-way, by a panic or an `Err`, in a crate that calls `catch_unwind`.
+The struct's text before that field lives only in the JS expression, so
+the line would lose `Holder { first: !Grid(1), second: ` where Rust's
+stdout keeps it. `Prints::stops_shown` answers it for the derived `Debug`
+and the builder (`refuse_stopped_in_place`) and, of a std value's type,
+`stops_composed`; both name #1530, which streaming a composed `Debug`
+through the sink would lift.
+
+Corpus case printing_writer_shown_by_derived_debugs_and_builders (a
+struct, a tuple struct, an enum's variants, nested, `debug_struct`,
+`debug_list().entries`, `debug_tuple`, `debug_set`, `debug_map`, each
+`{:?}` and `{:#?}`, a `format!` of one, and one after a `print!`) against
+native Rust in both builds. test/diagnostics.test.ts holds the refusal
+of a derived `Debug` whose field may print and panic where it's caught.
+Mutations `stopped-in-place-unrefused` (refitted from
+`printed-in-place-unrefused`), `stops-composed-of-the-crates-own`, and
+`writer-showing-a-printing-type-unseen`, now held by the corpus case.
