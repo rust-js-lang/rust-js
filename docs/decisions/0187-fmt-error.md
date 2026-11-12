@@ -319,3 +319,12 @@ their panic goes on in place of the error. Corpus case
 a writer's local dropped after a builder's `Err`, one whose drop panics
 (caught), and `entries` of what drops. Mutation
 `write-error-drops-unwinding`.
+
+## Amendment: a std value's `Debug` of a part that fails (2026-11-13, #1561)
+
+`Some(Bad)`, `(1, Bad)` or `vec![None, Some(Bad)]` written into a `String`
+kept only the failing part's text, `B`, where native Rust keeps `Some(B`,
+as the value's `Debug` was one JS expression. Now, where a part may fail
+(`fmt_may_fail`), the value is written through std's builders, each piece
+as it's taken, and the `Err` carries what came before it. ADR 1130's
+amendment for #1561 says how, with its proof.

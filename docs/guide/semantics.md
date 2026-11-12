@@ -296,9 +296,13 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   taken, as std's builders do, so what the writer prints between them, an
   `entries` iterator's steps or a field's argument, lands between them,
   `[<step 1>1<step 2>, 2]`, and what they wrote before a part that stops
-  stays. A `Vec`'s, an `Option`'s, a tuple's or a map's `Debug` of one
-  whose writer may stop part-way, by a panic or an error, in a program
-  with a `catch_unwind`, is refused, #1530
+  stays. So does a `Vec`'s, a slice's, a `VecDeque`'s, an `Option`'s, a
+  `Result`'s, a tuple's, a set's or a map's `Debug` of a part that may stop
+  part-way, by an `Err` or by a panic a `catch_unwind` may catch: it's
+  written through std's builders, `$composed(..)`, so what came before the
+  part is kept, in the line or the `String` it's written to (#1561).
+  Another std value's of such a part, a `RefCell`'s say, is refused,
+  #1530
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
   amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),

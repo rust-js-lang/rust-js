@@ -30,8 +30,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
     fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.shown_through(value, ty);
-        // A part whose writer may stop part-way, where a panic may
-        // be caught, which a line keeps the parts before of (#1521).
+        // A part whose writer may stop part-way, by an `Err`, or by a panic
+        // where it may be caught, which a line keeps the parts before of
+        // (#1521): written through std's builders' model, where it's of a
+        // kind std's `Debug` builds (#1561); else refused.
+        if self.composed_may_stop(ty)
+            && let Some(composed) = self.composed_debug(value.clone(), ty, span, pretty)?
+        {
+            return Ok(composed);
+        }
         if let Some(part) = self.krate.prints.stops_composed(ty) {
             return Err(self.unsupported(
                 span,

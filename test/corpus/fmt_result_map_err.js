@@ -2,6 +2,7 @@
 
 import {
   $byteLen,
+  $composed,
   $debugStr,
   $debugTuple,
   $fmtError,
@@ -69,11 +70,18 @@ function main() {
   const errorDebug = { fmt: (value) => "Error" };
   let text = "";
   try {
-    const value = make(8, () => "1-2");
-    text +=
+    text += ((value) =>
       value.TAG === "Ok"
-        ? `Ok(${$debugStr(value._0)})`
-        : `Err(${fullDebug_fmt(value._0, errorDebug)})`;
+        ? $composed((f) => {
+            const tuple = $debugTuple(f, "Ok");
+            tuple.field(() => $debugStr(value._0));
+            tuple.finish();
+          })
+        : $composed((f) => {
+            const tuple = $debugTuple(f, "Err");
+            tuple.field(() => fullDebug_fmt(value._0, errorDebug));
+            tuple.finish();
+          }))(make(8, () => "1-2"));
     text += "\n";
   } catch (error) {
     $fmtPrintFailed(error, text, false);
@@ -81,11 +89,18 @@ function main() {
   $print(text);
   let text$1 = "";
   try {
-    const value = make(2, () => "10-20");
-    text$1 +=
+    text$1 += ((value) =>
       value.TAG === "Ok"
-        ? `Ok(${$debugStr(value._0)})`
-        : `Err(${fullDebug_fmt(value._0, errorDebug)})`;
+        ? $composed((f) => {
+            const tuple = $debugTuple(f, "Ok");
+            tuple.field(() => $debugStr(value._0));
+            tuple.finish();
+          })
+        : $composed((f) => {
+            const tuple = $debugTuple(f, "Err");
+            tuple.field(() => fullDebug_fmt(value._0, errorDebug));
+            tuple.finish();
+          }))(make(2, () => "10-20"));
     text$1 += "\n";
   } catch (error) {
     $fmtPrintFailed(error, text$1, false);

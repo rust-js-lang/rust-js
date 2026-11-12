@@ -3,6 +3,7 @@
 //! and an `Ok` `fmt::Result` is nothing at all; an `Err`, which chrono's
 //! formatting returns, is thrown, with what was written before it (ADR 0187).
 
+mod composed;
 mod debug;
 mod printing;
 mod streamed;

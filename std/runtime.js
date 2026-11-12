@@ -13467,6 +13467,20 @@ export function $debugTuple(f, name, pretty) {
     },
   };
 }
+// A std value's `Debug`, `Some(x)`'s or a `Vec`'s, of a part that may stop
+// part-way, `write(f)` of std's builders through a sink of its own, `f`:
+// its text; or, where a part gave `Err`, that error, what was written
+// before it carried out with it, as a writer's is (#1561).
+export function $composed(write) {
+  const f = $sink();
+  try {
+    write(f);
+  } catch (error) {
+    if (error instanceof $FmtError) throw $fmtWritten(error, f.done());
+    throw error;
+  }
+  return f.done();
+}
 
 // The process a program runs in, Node's (ADR 0391): what std asks of it,
 // each through `$process`, which in a browser, that has none, panics,

@@ -77,4 +77,12 @@ export const mutations: Mutation[] = [
     replace: "        if (struct.fields === 0) f.write(\" {..}\");\n",
     tests: grids,
   },
+  {
+    name: "composed-partial-lost",
+    breaks: "a std value's `Debug` through std's builders loses what it wrote before a part's `Err`, `B1` where native Rust keeps `Some(B1` (#1561)",
+    file: "src/runtime/debug_builders.js",
+    find: "    if (error instanceof $FmtError) throw $fmtWritten(error, f.done());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^failing_std_value_debug_keeps_what_was_written.rs$"],
+  },
 ];

@@ -28,11 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "composed-stopping-writer-unrefused",
-    breaks: "a std value's `Debug` of a part whose writer may print and panic, where a `catch_unwind` may catch it, is let through, and the line loses what the parts before it wrote, `[!` where Rust keeps `[!D(1), !` (#1521)",
+    breaks: "a std value's `Debug` of a part whose writer may print and panic, where a `catch_unwind` may catch it, is made whole, and the line loses what the parts before it wrote, `[!` where Rust keeps `[!L1, !` (#1521, #1561)",
     file: "src/lower/analysis/prints.rs",
     find: "    found.stopping = (stops.iter())\n",
     replace: "    found.stopping = (stops.iter().take(0))\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec's Debug of what may print and panic"],
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_value_stopped_part_way.rs$"],
   },
   {
     name: "composed-stopping-writer-refused-unasked",
@@ -41,6 +41,7 @@ export const mutations: Mutation[] = [
     find: "                !never_unwinding.contains(&id) || failing.contains(&id) || shows_what_may_stop(body, &types)\n",
     replace: "                true || failing.contains(&id) || shows_what_may_stop(body, &types)\n",
     tests: ["test/corpus.test.ts", "-t", "^(printing_writer_stopped_part_way_where_caught|stopping_writers_where_a_panic_is_caught).rs$"],
+    snapshots: true,
   },
   {
     name: "stops-composed-of-the-crates-own",
@@ -68,20 +69,13 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shown-stopping-type-unseen",
-    breaks: "a derived `Debug` of a field whose writer may panic, which it reaches through a `&dyn Debug` what may run doesn't follow, is taken never to stop, so a `Vec` of it where a panic may be caught is let through and loses the items before (#1530)",
+    breaks: "a derived `Debug` of a field whose writer may panic, which it reaches through a `&dyn Debug` what may run doesn't follow, is taken never to stop, so a `Vec` of it where a panic may be caught is made whole and loses the items before (#1530, #1561)",
     file: "src/lower/analysis/prints.rs",
     find: "local_parts(expr.ty).any(|adt| types.contains(&adt)) || unknown_shown(expr)",
     replace: "unknown_shown(expr)",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec's Debug of what shows what may panic"],
+    tests: ["test/corpus.test.ts", "-t", "^std_value_of_quiet_stopping_parts_where_caught.rs$"],
   },
-  {
-    name: "read-dyn-taken-to-go-on",
-    breaks: "a writer that shows a `dyn Debug` it reads from a field, whatever it holds, is taken never to stop, so a `Vec` of it where a panic may be caught is let through (#1530)",
-    file: "src/lower/analysis/prints.rs",
-    find: "        ty::Dynamic(..) => dyn_unknown,\n",
-    replace: "        ty::Dynamic(..) => false,\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec's Debug of what shows a dyn Debug"],
-  },
+
   {
     name: "made-dyn-taken-as-unknown",
     breaks: "a derived `Debug`'s `&dyn Debug` of its field is taken for a `dyn` that may hold anything, so a `Vec` of a derived `Debug` of numbers is refused where a panic may be caught (#1496)",
@@ -92,11 +86,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "what-a-writer-runs-unstopped",
-    breaks: "a writer that calls a helper which shows a value that may panic is taken never to stop, so a `Vec` of it where a panic may be caught is let through (#1530)",
+    breaks: "a writer that calls a helper which shows a value that may panic is taken never to stop, so a `Vec` of it where a panic may be caught is made whole and loses the items before (#1530, #1561)",
     file: "src/lower/analysis/prints.rs",
     find: "                direct.contains(&body.def_id) || run.as_ref().is_none_or(|run| run.iter().any(|id| direct.contains(id)))\n",
     replace: "                direct.contains(&body.def_id)\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec's Debug of a builder whose entries may panic"],
+    tests: ["test/corpus.test.ts", "-t", "^std_value_of_quiet_stopping_parts_where_caught.rs$"],
   },
   {
     name: "stopping-writers-outside-a-line-streamed",

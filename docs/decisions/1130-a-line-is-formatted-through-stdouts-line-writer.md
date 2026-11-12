@@ -404,3 +404,47 @@ removed with the refusal it held. Readability: renamed `x$1` 487.1 to
 487.2 in 10,000 lines, blessed: a builder is held by its kind's word,
 `list`, which a writer whose own parameter is `list` names `list$1`
 (`debug_entries_drop_as_std`'s `List`).
+
+## Amendment: a std value's `Debug` of a part that may stop, through std's builders (2026-11-13, #1561)
+
+A std value's `Debug`, `Some(x)`'s or a `Vec`'s, was one JS expression,
+`` `Some(${show(x)})` ``. A part that panicked where a `catch_unwind` may
+catch it lost what came before it, so it was refused (`stops_composed`,
+#1530). A part that returned `Err` lost it too, silently: `Some(Bad)`
+written into a `String` gave `B` where native Rust keeps `Some(B` (#1561).
+The lead approved the design on #1561 for the user.
+
+**Where a part may stop part-way, the value is written as std writes it,
+through its builders** (`display/composed.rs`). "May stop" is read from
+the owners' facts: `fmt_may_fail` (`fmt_failures.rs`) for an `Err`, and
+`stops_composed` (`prints.rs`) for a panic in a line. `Option` and `Result`
+are `debug_tuple("Some")`, `("Ok")` and `("Err")`. A tuple is
+`debug_tuple("")`. A `Vec`, an array, a slice, a `VecDeque` and the like are
+`debug_list().entries(..)`, a set is `debug_set()` and a map `debug_map()`,
+each through #1533's model. They write into a sink of their own,
+`$composed((f) => { .. })`, the one new helper, which gives the text, or
+throws a part's `Err` with what was written before it (`$fmtWritten`). In a
+line, the sink is a capture, so a panicking part's preceding text is the
+line's already. Every other std value of such a part stays refused, naming
+#1530 (`RefCell`, `Mutex` and the like). A value whose parts can't stop is
+one expression, byte for byte as before. Where the crate's writers may
+fail, a `Result` or a `Vec` of what a dictionary shows is written through
+the builders, since its part may fail: `fmt_result_map_err` and
+`write_result_given_to_generic_code` change so.
+
+Corpus cases, each against native Rust in both builds:
+`failing_std_value_debug_keeps_what_was_written` (`Option`, `None`,
+`Result` both ways, tuples of one and three, `Vec`, a `Vec` of `Option`s,
+an array, a slice, a `VecDeque`, a `BTreeSet`, `BTreeMap`s of two entries
+by key and by value, a `HashMap` of one, nested, `{:?}` and `{:#?}`, and one
+whose parts can't fail); `printing_std_value_stopped_part_way` (a `Vec`, an
+`Option`, a tuple, a `BTreeMap`, a `Vec` of derived `Debug`s and of
+builders, printing and panicking where caught, `{:#?}` too); and
+`std_value_of_quiet_stopping_parts_where_caught`, #1530's refused
+programs, now written. test/diagnostics.test.ts holds the refusal of a
+`RefCell`'s. Mutations `composed-may-stop-never`,
+`composed-map-keys-as-values` and `composed-partial-lost` are new. Four of
+`prints.rs` move to the corpus cases from the diagnostics they held.
+`read-dyn-taken-to-go-on` is removed. Its one observable effect was the
+refusal this lifts: a `dyn`'s call `may_run` can't follow, so a writer that
+shows one stops by that route whatever `dyn_unknown` says.

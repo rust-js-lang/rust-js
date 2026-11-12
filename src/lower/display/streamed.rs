@@ -20,6 +20,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         sink: Expr,
         type_name: Option<Expr>,
     ) -> (Expr, Role) {
+        self.builder_of(kind, sink, type_name, &self.writer_pretty())
+    }
+
+    /// `streamed_builder`'s, as pretty as `pretty` says.
+    pub(super) fn builder_of(
+        &self,
+        kind: DebugBuilder,
+        sink: Expr,
+        type_name: Option<Expr>,
+        pretty: &Pretty,
+    ) -> (Expr, Role) {
         let (helper, role) = match kind {
             DebugBuilder::Struct => ("$debugStruct", Role::Struct),
             DebugBuilder::Tuple => ("$debugTuple", Role::Tuple),
@@ -29,7 +40,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut args = vec![sink];
         args.extend(type_name);
-        let pretty = self.writer_pretty();
         if !matches!(pretty, Pretty::Plain) {
             args.push(pretty.alternate());
         }

@@ -3,7 +3,9 @@
 import {
   $FmtError,
   $IoError,
+  $composed,
   $debugStr,
+  $debugTuple,
   $fmtOrPanic,
   $fmtPrintFailed,
   $fmtWritten,
@@ -61,7 +63,18 @@ function report(what, result, TDebug) {
 
 function shown(r, TDebug, EDebug) {
   return $fmtOrPanic(
-    () => (r.TAG === "Ok" ? `Ok(${TDebug.fmt(r._0)})` : `Err(${EDebug.fmt(r._0)})`),
+    () =>
+      r.TAG === "Ok"
+        ? $composed((f) => {
+            const tuple = $debugTuple(f, "Ok");
+            tuple.field(() => TDebug.fmt(r._0));
+            tuple.finish();
+          })
+        : $composed((f) => {
+            const tuple = $debugTuple(f, "Err");
+            tuple.field(() => EDebug.fmt(r._0));
+            tuple.finish();
+          }),
     "a formatting trait implementation returned an error when the underlying stream did not: Error",
   );
 }
