@@ -98,7 +98,7 @@ function main() {
   console.log(`${x.value}`);
 
   const pt = { x: 1, y: 2 };
-  const px = $ptr(pt, "x");
+  const px = $ptr(pt, "x", 0);
   px.value = 10;
   const pp = $ptrTo(pt);
   pp.value.y = 20;

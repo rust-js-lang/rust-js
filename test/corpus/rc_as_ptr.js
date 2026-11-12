@@ -67,7 +67,7 @@ function main() {
           try {
             try {
               console.log(
-                `${$ptrEq(value, value$1, 4)} ${point === point} ${$ptrEq($ptr(point, "x"), $ptr(point, "y"), 4)}`,
+                `${$ptrEq(value, value$1, 4)} ${point === point} ${$ptrEq($ptr(point, "x", 0), $ptr(point, "y", 4), 4)}`,
               );
 
               const a = { lane: 2 };

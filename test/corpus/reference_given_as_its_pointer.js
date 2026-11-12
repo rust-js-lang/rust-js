@@ -103,7 +103,7 @@ function throughBound(p, PPointed) {
 
 const counterSlot = { slot: (arg0) => counterSlot_slot(arg0.value) };
 function counterSlot_slot(counter) {
-  return $ptr(counter, "n");
+  return $ptr(counter, "n", 12);
 }
 
 // A closure given to generic code, which calls it of its own `&mut T`.
@@ -188,7 +188,7 @@ function main() {
     n: 1,
     label: "c",
   };
-  const field = ptrFromMut($ptr(counter, "n"));
+  const field = ptrFromMut($ptr(counter, "n", 12));
   field.value = (field.value + 10) >>> 0;
   const items = [7, 8];
   const item = ptrFromMut($ptr(items, 1));

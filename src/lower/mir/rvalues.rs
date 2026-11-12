@@ -896,8 +896,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Value::Expr(self.object_pointer(target, pointee, span)?));
                 }
                 // Its byte offset in its struct, where the struct's layout is
-                // known here (ADR 0562).
-                let offset = self.field_offset(*place, decls);
+                // known here (ADR 0562); of what a reference made once of a
+                // field refers to, `*r` of `r = &mut s.n`, that field's (#1471).
+                let field = match place.projection.as_slice() {
+                    [PlaceElem::Deref] => crate::lower::pointers::made_once_of(state.body, place.local),
+                    _ => None,
+                };
+                let offset = self.field_offset(field.unwrap_or(*place), decls);
                 // Of a place reached through more than one field or item, its
                 // root's and its offset there, so its address is in the
                 // root's allocation, `$ptr(items[1], "b", 0, items, 8)` (#1089).

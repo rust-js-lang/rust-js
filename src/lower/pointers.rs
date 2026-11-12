@@ -25,6 +25,7 @@ mod casts;
 mod catalog;
 mod into_copies;
 mod lending;
+pub(in crate::lower) use lending::made_once_of;
 mod rewritten;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;

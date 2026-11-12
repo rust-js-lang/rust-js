@@ -57,10 +57,10 @@ function main() {
   push($cellOf(h), holderGet);
   first($cellOf(h), holderGet).value.push(2);
   console.log(`[${h[0].join(", ")}]`);
-  const kept = $ptr(h, 0);
+  const kept = $ptr(h, 0, 0);
   reset($cellOf(h), [7, 8], holderGet);
   $assign(first($cellOf(h), holderGet).value, [9]);
-  console.log(`[${h[0].join(", ")}] ${$ptrEq(kept, $ptr(h, 0), 12)}`);
+  console.log(`[${h[0].join(", ")}] ${$ptrEq(kept, $ptr(h, 0, 0), 12)}`);
 
   const n = [1];
   bump($cellOf(n), numGet);

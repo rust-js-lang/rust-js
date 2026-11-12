@@ -1528,3 +1528,17 @@ taken was written over the last time round's, `$assign(r, value)`, where
 `r` isn't there yet, and the JS threw; found by this case's `Result` loop.
 A local's life begins at its `StorageLive`, so the search stops there
 (mutation storage-live-crossed).
+
+## Amendment: a pointer made through a reference made once of a field is at the field's offset (#1471)
+
+A field's `&mut` given to generic code that lets it out as a raw pointer,
+`ptr_via(&mut s.n)`, is made where it's made as the field's raw pointer
+(ADR 1114). MIR makes it as a reborrow, `&mut *r` of `r = &mut s.n`, and a
+raw pointer to `*r` asked its offset of the place `*r`, a deref, which says
+none: `$ptr(s, "n")`, whose address generic code then refused at run time
+("the address of a field of a type its caller lays out"), #1479's program
+among them. Now a raw pointer to `*r` of a reference made once of a place
+takes that place's offset (`made_once_of`, src/lower/pointers/lending.rs):
+`$ptr(s, "n", 4)`. #1479's program runs as native Rust does. Corpus case
+address_of_a_field_given_to_generic_code, mutation
+reborrowed-field-offset-unsaid.

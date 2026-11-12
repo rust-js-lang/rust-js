@@ -798,4 +798,12 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_of_a_captured_mut.rs$"],
   },
+  {
+    name: "reborrowed-field-offset-unsaid",
+    breaks: "a raw pointer made of `*r`, `r = &mut s.n` made once, says no offset, so generic code given it refuses its address at run time (#1471)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    [PlaceElem::Deref] => crate::lower::pointers::made_once_of(state.body, place.local),\n",
+    replace: "                    [PlaceElem::Deref] => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_given_to_generic_code.rs$"],
+  },
 ];

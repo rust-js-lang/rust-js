@@ -136,3 +136,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 }
+
+/// The place a reference `local` is made of, where `body` makes it once,
+/// `r = &mut s.n`: `s.n`. None of one made more than once, or otherwise.
+pub(in crate::lower) fn made_once_of<'tcx>(body: &mir::Body<'tcx>, local: Local) -> Option<mir::Place<'tcx>> {
+    let mut made =
+        (body.basic_blocks.iter())
+            .flat_map(|data| &data.statements)
+            .filter_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.local == local && assign.0.projection.is_empty() => {
+                    Some(match &assign.1 {
+                        Rvalue::Ref(_, _, of) => Some(*of),
+                        _ => None,
+                    })
+                }
+                _ => None,
+            });
+    match (made.next(), made.next()) {
+        (Some(of), None) => of,
+        _ => None,
+    }
+}
