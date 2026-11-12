@@ -33,7 +33,6 @@ const why = {
   consumers: "an `Iterator` method std provides, whose default body std's build lowers as the plain build does: it compiles std's adapter structs, not the consumers",
   iterators: "a std iterator whose struct std's build doesn't compile, a slice's search",
   "js-own": "a std iterator stepped as JS's own iteration by decision, an array's, a string's `Chars`, any JS iterator's step: its ADR beside it (#1458)",
-  "to-pit": "a plain std struct whose body std's build doesn't compile yet, each to be pitted in turn (#1458): `DecodeUtf16`",
   memory: "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it",
   ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile",
   collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
@@ -132,7 +131,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$debugMap": "format",
   "$debugSet": "format",
   "$debugStr": "format",
-  "$decodeUtf16": "to-pit",
+  "$decodeUtf16": "iterators", // ADR 0327, #1584: `char::decode_utf16`'s, whose error is its code, where std's body makes `DecodeUtf16Error { code }`
   "$dedupBy": "collections",
   "$dedupByCells": "collections",
   "$dequeInsert": "collections",

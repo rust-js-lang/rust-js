@@ -110,5 +110,12 @@ mistake: it's `vec![item; count]`, `Vec::from_elem`, a collection's, not
 `Repeat`'s, so it's `collections`.
 
 `$cycleOf` is pitted now, std's `Cycle` compiled in the build of std's
-bodies (ADR 0932, amended); `DecodeUtf16`'s `$decodeUtf16` is the last
-`to-pit`.
+bodies (ADR 0932, amended).
+
+`$decodeUtf16` stays shared, listed `iterators`, and `to-pit` is gone
+with it (#1584): `DecodeUtf16Error` is its code (ADR 0327), where std's
+body makes `DecodeUtf16Error { code }`, so pitting it needs std's struct
+table to reach past `std::iter`, a `char` module in `@rust-js/std`, that
+literal written as its one field, and `u16::is_utf16_surrogate` lowered,
+four mechanisms for one helper the corpus already holds against native
+Rust (the lead's decision for the user, (b)).
