@@ -17,14 +17,13 @@ export function entry() {
 }
 
 function manyHash_hash(many, state, HHasher) {
-  const value = [1, "c"];
-  HHasher.writeU8(state, value[0]);
-  HHasher.writeU32(state, value[1].codePointAt(0));
-  const value$1 = [1, 2, 3];
-  HHasher.writeLengthPrefix(state, value$1.length);
+  HHasher.writeU8(state, 1);
+  HHasher.writeU32(state, "c".codePointAt(0));
+  const value = [1, 2, 3];
+  HHasher.writeLengthPrefix(state, value.length);
   HHasher.write(
     state,
-    value$1.flatMap((n) => $toBytes(n, 2, true)),
+    value.flatMap((n) => $toBytes(n, 2, true)),
   );
   if (5n != null) {
     HHasher.writeIsize(state, 1);
@@ -37,9 +36,9 @@ function manyHash_hash(many, state, HHasher) {
   HHasher.writeI8(state, -1);
   HHasher.writeU8(state, 9);
   HHasher.writeU8(state, 3);
-  const value$2 = [1, 2];
-  HHasher.writeLengthPrefix(state, value$2.length);
-  HHasher.write(state, value$2);
+  const value$1 = [1, 2];
+  HHasher.writeLengthPrefix(state, value$1.length);
+  HHasher.write(state, value$1);
   HHasher.writeU32(state, 4);
   HHasher.writeU8(state, Number(true));
   HHasher.writeIsize(state, 0);

@@ -163,7 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(crate::lower::refusal::refuse(
                     self.tcx,
                     span,
-                    crate::lower::refusal::Refused::Call(def_id),
+                    crate::lower::refusal::Refused::Call(def_id, generic_args),
                 ));
             }
         })

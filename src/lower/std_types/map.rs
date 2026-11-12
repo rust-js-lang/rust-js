@@ -450,8 +450,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let hash = self
                     .dictionary(ty::TraitRef::new(self.tcx, hash, [key]), span)
                     .map_err(|_| {
+                        // What's left: a `Pin` of a crate's own pointer, whose
+                        // `Hash` is its target's (#1435), and a `Saturating`,
+                        // which rust-js doesn't represent (#1434).
+                        let pinned = (key.walk().filter_map(|part| part.as_type()))
+                            .any(|part| self.recognition().pinned(part).is_some());
+                        let issue = if pinned { 1435 } else { 1434 };
                         let what = format!(
-                            "values of type `{key}` as a hash map's keys, whose `Hash` rust-js doesn't write (#1289)"
+                            "values of type `{key}` as a hash map's keys, whose `Hash` rust-js doesn't write (#{issue})"
                         );
                         self.unsupported(span, &what)
                     })?;

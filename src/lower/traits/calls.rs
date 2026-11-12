@@ -114,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((key, by)) = self.hashed_key_borrowed(def_id, generic_args) {
             let path = self.tcx.def_path_str(def_id);
             let what = format!(
-                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq` and the key isn't that value in JS, a counted `Rc`'s `{{ value, strong }}`"
+                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq` and the key isn't that value in JS, a counted `Rc`'s `{{ value, strong }}` (#1433)"
             );
             return Err(self.unsupported(span, &what));
         }
@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(crate::lower::refusal::refuse(
                 self.tcx,
                 span,
-                crate::lower::refusal::Refused::Call(id),
+                crate::lower::refusal::Refused::Call(id, tr.args),
             ));
         }
         if operational(self.tcx, self.krate.foreign, trait_id) {

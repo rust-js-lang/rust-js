@@ -139,6 +139,8 @@ that never grows, printed and panicking at its 2nd (ADR 1090, amended,
   `HashSet<Reverse<Version>>`: "values of type .. as a hash map's keys,
   whose `Hash` rust-js doesn't write (#1289)". It was a `$KeySet` that
   never called `hash`, a wrong answer where it panics or prints (#1287).
+  Since #1289 std's wrappers and enums are hashed as std's impls write
+  them (ADR 0463, amended); what's left names #1434 or #1435.
 - Mutations: `hashed-key-by-identity`, `hashed-key-own-hash-unseen`,
   `hashed-key-given-back`, `hash-runs-code-of-derived-unwalked`,
   `hash-runs-code-of-any-bound`, `hashed-key-refused`,
@@ -169,7 +171,7 @@ an `Rc` or an `Arc` nothing counts, its value; a `Box<T>`, its `T`; a
 to. Each is hashed once per lookup, as std hashes it.
 
 Still refused: a counted `Rc`, whose JS is its counts' object, `{ value,
-strong }`, not the value looked up; its message says so, and the guide's
+strong }`, not the value looked up (#1433); its message says so, and the guide's
 limitation keeps it. The crate's own `Borrow` stays refused as before
 (ADR 0160).
 

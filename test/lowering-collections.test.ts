@@ -691,14 +691,18 @@ pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
   expect(compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }")).toContain(hashed);
   expect(compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toContain(hashed);
   expect(compile("identity-set-self", "std::ptr::eq(self, self)")).toContain(hashed);
-  // A `Cow` of a slice of them, which `$cowKey` would find by what's in
-  // each fiber, is refused (ADR 1015, amended).
-  expect(() => compile("identity-set-cow", "std::ptr::eq(self, other)", "", `
+  // A `Cow` of a slice of them, never `$cowKey`'s, which would find it by
+  // what's in each fiber: a `$hashedSet` hashing what it derefs to, each
+  // fiber by its own `Hash`, as std's does (ADR 1015, ADR 0463 amended, #1289).
+  const cows = compile("identity-set-cow", "std::ptr::eq(self, other)", "", `
 pub fn cows(fibers: &'static [Fiber]) -> usize {
     let set: HashSet<std::borrow::Cow<'static, [&'static Fiber]>> = HashSet::new();
     set.len() + fibers.len()
 }
-`)).toThrow("values of type `std::borrow::Cow<'_, [&Fiber]>`");
+`);
+  expect(cows).toContain("fiberHash.hash(item, state, H);");
+  expect(cows).toContain("const set = new ($hashedSet(");
+  expect(cows).not.toContain("$cowKey");
 });
 
 // ADR 0033: a `&mut` of an `Option` is a handle on its place, `Some(x)`

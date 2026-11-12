@@ -93,7 +93,8 @@ hasher.finish(); // 14828406784900857967n, as std's
   0090), so a server compiled for a 64-bit target hashes a `Vec` differently.
 - **Still refused**: `BuildHasher` and its `RandomState`,
   `BuildHasherDefault` and `hash_one`; `{:?}` of a std hasher; and hashing a
-  std type rust-js doesn't write, a `Duration`, a range, a `Cow`.
+  std type rust-js doesn't write, a `Duration`, a range. (A `Cow` and std's
+  wrappers and enums are written since #1289, amended below.)
 
 ## Alternatives
 
@@ -180,3 +181,57 @@ never a key JS finds by value, so a map of them finds them by their own
 The case hashes no slice: its length is a `usize`, four bytes as
 `wasm32`'s, where the host's native run writes eight.
 
+
+## Amendment (2026-11-12, #1289): std's wrappers and enums hash as std's impls write them
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. A hash table keyed by one of std's types around a
+key whose `Hash` is its own, `HashSet<Reverse<Version>>`, was refused (ADR
+1120): rust-js wrote no `Hash` of the std type, and a `$KeySet` that never
+called the key's `hash` would print or panic differently. Each is now
+hashed as std's impl writes it, so the key's `hash` runs as often as std
+runs it (`hashed_as`, recognition/types.rs; `hash_writes`, std_types/hash.rs):
+
+- one of std's that's its fields in JS, `Reverse(x)` and `Wrapping(x)`,
+  `[x]`, whose `Hash` is derived: each field, in order, as a tuple's;
+- one that's in JS the value it holds, a `ManuallyDrop` and the
+  `MaybeDangling` in it: that value, as std's `self.value.as_ref().hash(state)`;
+- a `Pin` of std's pointer, its pointer in JS (ADR 0329): its target, as
+  std's `Ptr::Target::hash` and the pointer's own both write;
+- a `Cow`: what it derefs to (`cow_deref`), as std's `Hash::hash(&**self)`;
+- one of std's enums whose `Hash` is derived, `Bound`, `Poll`,
+  `ControlFlow`, `io::ErrorKind`: its discriminant as its repr's integer,
+  an `isize` unless it says otherwise, where it has more than one variant,
+  then its variant's fields in order, as `#[derive(Hash)]` writes. Each
+  variant is told by `variant_test` and each field read by
+  `field_of_variant` (representation.rs), the enum arm `mir_field` had, so
+  a pattern and a hash read a variant by one owner.
+
+A tuple's parts, a `Wrapping`'s, of an array made where it's hashed that
+does nothing are written as they are, `H.writeU32(state, counted[0])`,
+never the array held and read back; one made of calls is held first, its
+calls made before any part's `hash` runs, as std makes the tuple first.
+`hash_of_a_wrapping_in_generic_code_refused.rs` compiles, renamed without
+`_refused`; and a `Cow` of a slice of what's equal only to itself, refused
+under ADR 1015, is a `$hashedSet`'s key, each found by its own `Hash`.
+
+So `Bound::Excluded(v)` hashes as `Some(v)` does, natively and in JS. What
+the hash comes to differs from a 64-bit target's wherever the discriminant,
+an `isize`, is written, as this ADR's Consequences say of every `usize`.
+
+Still refused, each naming its issue: a `Saturating` (#1434), which rust-js
+doesn't represent, its arithmetic refused as "calling `std::ops::Add::add`
+(#1434)" (a refused call is given its generic arguments, `Refused::Call`,
+so `open_call` can tell); and a `Pin` of the crate's own pointer (#1435),
+whose `Hash` is its target's, not the pointer's own.
+
+Held by corpus case `std_keys_around_their_own_hash.rs` against native Rust
+in both builds: each wrapper and enum as a key, its key's `hash` calls
+counted, and hash equalities, not values, which are a target's. Diagnostics
+rows of the three refusals. Mutations `std-struct-hash-unwritten`,
+`std-enum-hash-unwritten`, `std-wrapped-hash-unwritten`,
+`pin-hash-unwritten`, `pin-of-any-pointer-hashed-as-it`,
+`cow-hash-unwritten`, `std-enum-discriminant-unwritten`,
+`std-enum-discriminant-zero`, `std-enum-hash-runs-no-code`,
+`saturating-call-unnamed`, `unhashed-key-issue-always-1434`,
+`hashed-made-array-parts-with-effects`, `hashed-made-array-held`.

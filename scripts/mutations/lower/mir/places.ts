@@ -143,19 +143,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-variant-cell-field-read",
-    breaks:
-      "MIR's `Cell` a variant's field holds is read as a cell, `slot.n.value`",
-    file: "src/lower/mir/places.rs",
-    find: "                Ok(self.held(\n                    read,\n                    Some(&variant.fields[field]),\n                    self.field_ty(&variant.fields[field], args),\n                ))\n",
-    replace: "                Ok(read)\n",
-    tests: [
-      "test/lowering-cells.test.ts",
-      "-t",
-      "a cell in a field is the property it holds",
-    ],
-  },
-  {
     name: "mir-made-array-unsliced",
     breaks:
       "MIR refuses a slice pattern's rest of an array made where it's taken apart",

@@ -410,6 +410,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.untagged_payloads(ty).is_some_and(|payloads| payloads.iter().any(|&p| self.may_be_object(p)))
     }
 
+    /// Field `field` of `base`, a `ty` enum's `variant`, as the enum holds
+    /// it: what a pattern's binding reads, and std's derived `Hash` of a
+    /// std enum (#1289). An `Option`'s `Some`'s value; a write's result's
+    /// `Ok`'s, `()` (ADRs 0187, 0462); else its property, a `Cell` a handle
+    /// on it, as a struct's (ADR 0288).
+    pub(in crate::lower) fn field_of_variant(
+        &mut self,
+        base: Expr,
+        ty: Ty<'tcx>,
+        variant: VariantIdx,
+        field: rustc_abi::FieldIdx,
+    ) -> Expr {
+        let ty::Adt(adt, args) = ty.kind() else {
+            unreachable!("a variant's field of an enum")
+        };
+        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
+            return self.some_value(base);
+        }
+        if self.is_write_result(ty) {
+            return Expr::undefined();
+        }
+        let variant = adt.variant(variant);
+        let read = Expr::member(base, variant_field(self.tcx, variant, field.as_usize()));
+        self.held(
+            read,
+            Some(&variant.fields[field]),
+            self.field_ty(&variant.fields[field], args),
+        )
+    }
+
     /// An enum variant's fields as JS properties (ADR 0033): `_0`, `_1` for a
     /// tuple variant, as in ReScript, and their names for a struct variant.
     pub(super) fn variant_fields(

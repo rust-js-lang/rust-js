@@ -633,4 +633,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
     snapshots: true,
   },
+  {
+    name: "variant-cell-field-read",
+    breaks: "a `Cell` a variant's field holds is read as a cell, `slot.n.value`, where a pattern binds it",
+    file: "src/lower/representation.rs",
+    find: "        self.held(\n            read,\n            Some(&variant.fields[field]),\n            self.field_ty(&variant.fields[field], args),\n        )\n",
+    replace: "        read\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "a cell in a field is the property it holds"],
+  },
 ];

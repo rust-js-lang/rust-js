@@ -59,8 +59,22 @@ pub(in crate::lower) enum Hashed<'tcx> {
     Text,
     /// A reference, a `Box`, an `Rc` or an `Arc`: what it points at.
     Pointer(Ty<'tcx>),
+    /// One of std's that's in JS the value it holds, a `ManuallyDrop`, the
+    /// `MaybeDangling` in it, a `Pin` its pointer: what it holds, of the
+    /// same value, as std's `Hash` of it writes, a `Pin`'s its target's
+    /// (#1289).
+    Held(Ty<'tcx>),
+    /// A `Cow`: what it borrows or owns, read through its `Deref`
+    /// (`cow_deref`), of its borrowed type, as std's `Hash` of one writes
+    /// (#1289).
+    Borrowed(Ty<'tcx>),
     /// A tuple's parts in order; `()` and `PhantomData`, nothing.
     Tuple(Vec<Ty<'tcx>>),
+    /// One of std's enums whose `Hash` is derived, `Bound`, `Poll` or
+    /// `ControlFlow`: its discriminant, of its repr's integer, where it has
+    /// more than one variant, then its variant's fields in order, as
+    /// `#[derive(Hash)]` writes (#1289).
+    Variants(ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>),
     /// A slice, an array or a `Vec`: its length, then its items, an integer
     /// slice's bytes in one write.
     Slice(Ty<'tcx>),
@@ -220,10 +234,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seen.push(ty);
         if let Some(hashed) = self.recognition().hashed_as(ty) {
             return match hashed {
-                Hashed::Pointer(held) | Hashed::Slice(held) | Hashed::Items(held) | Hashed::Option(held) => {
-                    self.hash_runs_code(held, seen)
-                }
+                Hashed::Pointer(held)
+                | Hashed::Held(held)
+                | Hashed::Borrowed(held)
+                | Hashed::Slice(held)
+                | Hashed::Items(held)
+                | Hashed::Option(held) => self.hash_runs_code(held, seen),
                 Hashed::Tuple(parts) => parts.into_iter().any(|part| self.hash_runs_code(part, seen)),
+                Hashed::Variants(adt, args) => {
+                    (adt.all_fields()).any(|field| self.hash_runs_code(self.field_ty(field, args), seen))
+                }
                 Hashed::Result(ok, err) => self.hash_runs_code(ok, seen) || self.hash_runs_code(err, seen),
                 Hashed::Range(_, bound) => bound.is_some_and(|bound| self.hash_runs_code(bound, seen)),
                 Hashed::Number(_) | Hashed::Bool | Hashed::Char | Hashed::Text | Hashed::Address(_) => false,
@@ -362,16 +382,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.hash_writes(value, pointee, hasher, span, out)?;
             }
-            Hashed::Tuple(parts) => {
+            Hashed::Held(held) => self.hash_writes(value, held, hasher, span, out)?,
+            Hashed::Borrowed(borrowed) => {
+                let (read, _) = self.cow_deref(&value, ty).expect("a Cow's parts");
+                self.hash_writes(read, borrowed, hasher, span, out)?;
+            }
+            Hashed::Variants(adt, args) => {
                 let value = self.spilled(value, out);
+                let discriminant = rustc_middle::ty::util::IntTypeExt::to_ty(&adt.repr().discr_type(), self.tcx);
+                let write = self.hasher_key(&format!("write_{discriminant}"));
+                let mut chain: Option<Vec<Stmt>> = None;
+                for variant in adt.variants().indices().rev() {
+                    let mut arm = Vec::new();
+                    if adt.variants().len() > 1 {
+                        // Its value, of its signed integer sign-extended, `Less`'s `-1`.
+                        let bits = adt.discriminant_for_variant(self.tcx, variant).val;
+                        let at = match discriminant.int_size_and_signed(self.tcx) {
+                            (size, true) => size.sign_extend(bits),
+                            (_, false) => bits as i128,
+                        };
+                        arm.push(hasher.write(&write, vec![Expr::int(at)]));
+                    }
+                    for (i, field) in adt.variant(variant).fields.iter().enumerate() {
+                        let read = self.field_of_variant(value.clone(), ty, variant, i.into());
+                        self.hash_writes(read, self.field_ty(field, args), hasher, span, &mut arm)?;
+                    }
+                    chain = Some(match chain {
+                        None => arm,
+                        Some(rest) => {
+                            let test = self.variant_test(value.clone(), ty, adt, variant, false);
+                            vec![StmtKind::If(test, arm, Some(rest)).at(js::Span::NONE)]
+                        }
+                    });
+                }
+                out.extend(chain.unwrap_or_default());
+            }
+            // Of an array made here that does nothing, `Wrapping(x)`'s `[x]`,
+            // each part as it's written, never the array held to be read.
+            Hashed::Tuple(parts) => {
+                let made = match &value.kind {
+                    js::ExprKind::Array(items) if items.len() == parts.len() && !value.has_effects() => {
+                        Some(items.clone())
+                    }
+                    _ => None,
+                };
+                let value = match made {
+                    Some(_) => value,
+                    None => self.spilled(value, out),
+                };
                 for (i, part) in parts.into_iter().enumerate() {
-                    self.hash_writes(
-                        Expr::index(value.clone(), Expr::int(i as i128)),
-                        part,
-                        hasher,
-                        span,
-                        out,
-                    )?;
+                    let read = match &made {
+                        Some(items) => items[i].clone(),
+                        None => Expr::index(value.clone(), Expr::int(i as i128)),
+                    };
+                    self.hash_writes(read, part, hasher, span, out)?;
                 }
             }
             Hashed::Slice(item) | Hashed::Items(item) => {

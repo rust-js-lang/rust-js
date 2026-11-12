@@ -695,7 +695,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || (at == 0 && self.recognition().fmt_write_on_formatter(def_id, generic_args));
                     let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));
                     if matches!(operation, crate::lower::recognition::WriteCall::Unsupported) && writes && whole {
-                        return Some((span, crate::lower::refusal::calling(self.tcx, def_id)));
+                        return Some((span, crate::lower::refusal::calling(self.tcx, def_id, generic_args)));
                     }
                     if !whole || !writes || aliases.contains(&destination.local) {
                         return Some((span, this()));

@@ -376,23 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(base);
         }
         match (ty.ty.kind(), ty.variant_index) {
-            (ty::Adt(adt, args), Some(variant)) if adt.is_enum() => {
-                if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
-                    return Ok(self.some_value(base));
-                }
-                // A write's result's `Ok`'s, `()` (ADRs 0187, 0462).
-                if self.is_write_result(ty.ty) {
-                    return Ok(Expr::undefined());
-                }
-                // A `Cell` it holds, as a struct's (ADR 0288): a handle on it.
-                let variant = adt.variant(variant);
-                let read = Expr::member(base, variant_field(self.tcx, variant, i));
-                Ok(self.held(
-                    read,
-                    Some(&variant.fields[field]),
-                    self.field_ty(&variant.fields[field], args),
-                ))
-            }
+            (ty::Adt(adt, _), Some(variant)) if adt.is_enum() => Ok(self.field_of_variant(base, ty.ty, variant, field)),
             // A union's, what it holds there (ADR 0406).
             (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),
             // A box is the value it holds, which has no `Unique` to read: an

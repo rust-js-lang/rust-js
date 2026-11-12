@@ -112,7 +112,7 @@ depends on what the program does:
 - A clone of an `Rc<RefCell<dyn Trait>>` put where its type is written, a `Vec`'s item or a field: `use std::{cell::RefCell, rc::Rc}; trait Obs { fn hear(&self) -> u32; } struct A; impl Obs for A { fn hear(&self) -> u32 { 1 } } let e: Rc<RefCell<dyn Obs>> = Rc::new(RefCell::new(A)); let v: Vec<Rc<RefCell<dyn Obs>>> = vec![e.clone()]; println!("{}", v[0].borrow().hear());`
 - A `Weak<RefCell<dyn Trait>>` of a counted `Rc`: `use std::{cell::RefCell, rc::{Rc, Weak}}; trait Obs { fn hear(&self) -> u32; } struct A; impl Obs for A { fn hear(&self) -> u32 { 1 } } let a = Rc::new(RefCell::new(A)); let w = Rc::downgrade(&a) as Weak<RefCell<dyn Obs>>; println!("{:?}", w.upgrade().map(|o| o.borrow().hear()));`
 - Copying a `Copy` closure that changes what it captured, or what holds it, a tuple or a struct, where the crate never clones it; once it's cloned, or given to a `Copy` bound, each copy is its clone: `let mut n = 0; let mut bump = move || { n += 1; n }; let mut copy = bump; println!("{} {}", bump(), copy());`
-- A lookup of a hash map or set whose keys are found by their own `Hash` and `Eq` by what a counted `Rc` key's `Borrow` gives, its value, which in JS is no key but the counts' object, `{ value, strong }` ([ADR 1120](../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md), amended); an `Rc` nothing counts, a `Box`, a `Vec` and a `String` are looked up by their `Borrow`'s value as std looks them up (#1288): `let k = std::rc::Rc::new(1u32); let s: std::collections::HashSet<std::rc::Rc<u32>> = [k.clone()].into(); println!("{} {}", s.contains(&1), std::rc::Rc::strong_count(&k));`
+- A lookup of a hash map or set whose keys are found by their own `Hash` and `Eq` by what a counted `Rc` key's `Borrow` gives, its value, which in JS is no key but the counts' object, `{ value, strong }` ([ADR 1120](../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md), #1433); an `Rc` nothing counts, a `Box`, a `Vec` and a `String` are looked up by their `Borrow`'s value as std looks them up (#1288): `let k = std::rc::Rc::new(1u32); let s: std::collections::HashSet<std::rc::Rc<u32>> = [k.clone()].into(); println!("{} {}", s.contains(&1), std::rc::Rc::strong_count(&k));`
 - Changing an `Option` through the `&mut` a call gives, `get_or_insert` or `insert` of `last_mut().unwrap()` or an entry's `or_insert`, which a binding of the `&mut` compiles: `let mut v = vec![None]; *v.last_mut().unwrap().get_or_insert(1) += 1; println!("{v:?}");`
 - `Option<&T>` from a `&Option<T>`, `(&Some(7)).into()`: `let o: Option<&i32> = (&Some(7)).into(); println!("{o:?}");`
 - A `RefCell`'s guard cloned, `Ref::clone`: `let c = std::cell::RefCell::new(1); let a = c.borrow(); let b = std::cell::Ref::clone(&a); println!("{} {}", *a, *b);`
@@ -188,10 +188,16 @@ depends on what the program does:
 std's hashers and a crate's own hash as native Rust's
 ([ADR 0463](../decisions/0463-hashing-is-stds.md)); a `HashMap` or a `HashSet`
 keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
+std's wrappers and enums, `Reverse`, `Wrapping`, `ManuallyDrop`, a `Pin` of
+std's pointer, a `Cow`, `Bound`, `Poll` and `ControlFlow`, hash as std's
+impls write them, a crate's own `Hash` inside called as std calls it (ADR
+0463, amended; #1289).
 
 - A `BuildHasher`, `RandomState`'s: `use std::hash::BuildHasher; let s = std::hash::RandomState::new(); println!("{}", s.hash_one(5u32) == s.hash_one(5u32));`
 - `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
 - Hashing a std type rust-js doesn't write: `use std::hash::{Hash, Hasher}; let mut h = std::hash::DefaultHasher::new(); std::time::Duration::from_secs(1).hash(&mut h); println!("{}", h.finish());`
+- A `std::num::Saturating`, its arithmetic and its `Hash` (#1434): `let s = std::num::Saturating(250u8) + std::num::Saturating(10); println!("{}", s.0);`
+- A hash map or set keyed by a `Pin` of the crate's own pointer around a key whose `Hash` is its own: std's `Hash` of a `Pin` is its target's, not the pointer's (#1435): `#[derive(PartialEq, Eq, Hash)] struct K(u32); #[derive(PartialEq, Eq, Hash)] struct Mine(Box<K>); impl std::ops::Deref for Mine { type Target = K; fn deref(&self) -> &K { &self.0 } } let s: std::collections::HashSet<std::pin::Pin<Mine>> = [std::pin::Pin::new(Mine(Box::new(K(1))))].into_iter().collect(); println!("{}", s.len());`
 
 ## Panics, processes and I/O
 

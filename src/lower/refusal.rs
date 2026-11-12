@@ -4,7 +4,7 @@
 
 use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::{ErrorGuaranteed, Span};
 
 /// What's refused.
@@ -12,8 +12,9 @@ use rustc_span::{ErrorGuaranteed, Span};
 pub(crate) enum Refused<'a, 'tcx> {
     /// A feature, as its words say: "a `&mut` to a union's field".
     Feature(&'a str),
-    /// A call of a function: "calling `std::env::args`".
-    Call(DefId),
+    /// A call of a function, of its generic arguments: "calling
+    /// `std::env::args`".
+    Call(DefId, ty::GenericArgsRef<'tcx>),
     /// Values, constants or statics of a type: "values of type `*const u8`".
     Type(&'a str, Ty<'tcx>),
     /// A feature, and why it's refused: "a component's `Clone`", "React
@@ -30,7 +31,7 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
     }
-    if let Refused::Call(id) = refused
+    if let Refused::Call(id, _) = refused
         && let Some(why) = uncompiled(tcx, id)
     {
         error = error.with_note(format!(
@@ -60,7 +61,7 @@ const MEMORY: &str = "JavaScript has no memory to address: a raw pointer, `trans
 pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> String {
     let what = match refused {
         Refused::Feature(what) | Refused::Because(what, _) | Refused::Memory(what) => what.to_string(),
-        Refused::Call(id) => calling(tcx, id),
+        Refused::Call(id, args) => calling(tcx, id, args),
         Refused::Type(what, ty) => format!("{what} of type `{ty}`"),
     };
     match (of_memory(tcx, refused), refused) {
@@ -75,7 +76,7 @@ pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> Stri
 /// feature said to be.
 fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
     match refused {
-        Refused::Call(id) => addresses_memory(tcx, id),
+        Refused::Call(id, _) => addresses_memory(tcx, id),
         Refused::Type(_, ty) => is_memory_type(tcx, ty),
         Refused::Memory(_) => true,
         Refused::Feature(_) | Refused::Because(..) => false,
@@ -85,11 +86,12 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
 /// What a refused call is called: "calling `std::env::args`", and where
 /// an open issue covers it, that issue, "calling `std::hint::spin_loop`
 /// (#1285)", as a refusal names what's left to do (guide limitations.md).
-pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
-    let issue = open_call(tcx, id).map(|open| match open {
+pub(crate) fn calling<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> String {
+    let issue = open_call(tcx, id, args).map(|open| match open {
         OpenCall::Conversion => " (#1284)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
+        OpenCall::Saturating => " (#1434)",
     });
     format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
 }

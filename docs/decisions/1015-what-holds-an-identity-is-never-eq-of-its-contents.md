@@ -209,7 +209,9 @@ m.set({ fiber: b, lane: 1 }, "b");
   it: a key's untagged enum with a payload of one, whose number `$id`
   could be another payload's; an `Option` whose `Some` is boxed (ADR
   0051); and a `Cow` of a slice of them, which `$cowKey` finds by what it
-  borrows, "values of type `Cow<'_, [&Fiber]>`".
+  borrows, "values of type `Cow<'_, [&Fiber]>`". (Since #1289 that `Cow` is
+  a `$hashedSet`'s key, hashing what it derefs to, each by its own `Hash`,
+  never `$cowKey`'s: ADR 0463, amended.)
 - **A B-tree finds its keys by their `Ord`**, not their `Hash`: one whose
   `Ord` is its own is an `$OrdMap` of its `cmp` (ADR 0404), and one whose
   `Ord` is derived all through, a fiber's too, which std's `Ord` contract
@@ -245,7 +247,7 @@ m.set({ fiber: b, lane: 1 }, "b");
   read and added to, against native Rust; "a key holding a library's type
   equal only to itself finds it by itself" holds both crates' JS.
 - `test/lowering-collections.test.ts`, "a type equal only to itself keys
-  a JS Set by itself": a `Cow` of them refused.
+  a JS Set by itself": a `Cow` of them a `$hashedSet`'s key (#1289).
 - Mutations `identity-in-key-by-contents`,
   `identity-in-key-library-by-contents`, `identity-in-key-fields-unseen`,
   `identity-in-key-option-by-contents`, `identity-in-key-option-none-read`,

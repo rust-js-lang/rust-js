@@ -108,6 +108,44 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::String) => Hashed::Text,
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => Hashed::Tuple(Vec::new()),
             ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => Hashed::Range(kind, args.types().next()),
+            // One of std's that's in JS the value it holds, `ManuallyDrop`
+            // and the `MaybeDangling` in it: what it holds, as std's `Hash`
+            // of a `ManuallyDrop` hashes, `self.value.as_ref().hash(state)`
+            // (#1289).
+            ty::Adt(..) if let Some(held) = self.std_wrapped(ty) => Hashed::Held(held),
+            // A `Pin`, its pointer in JS (ADR 0329), whose `Hash` is its
+            // target's, as std's pointers' is: that pointer's (#1289).
+            ty::Adt(..)
+                if let Some(pointer) = self.pinned(ty)
+                    && matches!(self.hashed_as(pointer), Some(Hashed::Pointer(_))) =>
+            {
+                Hashed::Held(pointer)
+            }
+            // A `Cow`, whose `Hash` is what it derefs to's (#1289).
+            ty::Adt(..) if let Some((borrowed, _)) = self.cow_parts(ty) => Hashed::Borrowed(borrowed),
+            // One of std's enums whose `Hash` is derived, `Bound`, `Poll`,
+            // `ControlFlow`: its discriminant, then its variant's fields, read
+            // as a pattern reads them (#1289).
+            ty::Adt(adt, args)
+                if adt.is_enum()
+                    && is_std_crate(self.tcx, adt.did())
+                    && self.derives(std_item(self.tcx, StdItem::Hash), ty) =>
+            {
+                Hashed::Variants(adt, args)
+            }
+            // One of std's that's its fields in JS, `Reverse(x)` and
+            // `Wrapping(x)`, `[x]`, whose `Hash` is derived: each field's, in
+            // order, as a tuple's, which runs a crate's own `Hash` of one as
+            // std's does (#1289).
+            ty::Adt(adt, args)
+                if adt.is_struct()
+                    && is_std_crate(self.tcx, adt.did())
+                    && super::traits::struct_is_its_fields(self.tcx, adt.did())
+                    && self.derives(std_item(self.tcx, StdItem::Hash), ty) =>
+            {
+                let fields = adt.non_enum_variant().fields.iter();
+                Hashed::Tuple(fields.map(|field| self.field_ty(field, args)).collect())
+            }
             _ => return None,
         })
     }

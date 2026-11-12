@@ -717,4 +717,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^set_operators_find_by_value.rs$"],
     snapshots: true,
   },
+  {
+    name: "unhashed-key-issue-always-1434",
+    breaks: "a `Pin` key of the crate's own pointer names #1434, not #1435",
+    file: "src/lower/std_types/map.rs",
+    find: "                        let issue = if pinned { 1435 } else { 1434 };\n",
+    replace: "                        let issue = if false && pinned { 1435 } else { 1434 };\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a set of a Pin of the crate's own pointer"],
+  },
 ];
