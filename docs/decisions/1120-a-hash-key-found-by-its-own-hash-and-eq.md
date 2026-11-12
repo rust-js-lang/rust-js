@@ -153,3 +153,27 @@ that never grows, printed and panicking at its 2nd (ADR 1090, amended,
   a walk's handles searched for each key; the same in generic code. A
   B-tree's `values_mut` of a key whose `Ord` is its own compared its keys
   where std's walk compares none, now its entries' handles too.
+
+## Amendment (2026-11-12, #1288): a lookup by what the key's `Borrow` gives, where the key is that value in JS
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal narrowed. A table whose keys are found by their own `Hash` and
+`Eq` hashes a key of their type alone, so a lookup by what the key's
+`Borrow` gives, another type, was refused, `HashSet<Rc<u32>>::contains(&1)`.
+But std's `Borrow` impls keep `Hash` and `Eq` the same, `hash(k.borrow())
+== hash(k)`. Where the key is in JS the very value it borrows as, the
+table's own lookup, the key's `hash` and `eq` of that value, is std's.
+`borrowed_is_the_key` answers which keys are so (std_types/map_keys.rs):
+an `Rc` or an `Arc` nothing counts, its value; a `Box<T>`, its `T`; a
+`Vec<T>`, its `[T]`'s array; a `String`, its `str`; a reference, what it's
+to. Each is hashed once per lookup, as std hashes it.
+
+Still refused: a counted `Rc`, whose JS is its counts' object, `{ value,
+strong }`, not the value looked up; its message says so, and the guide's
+limitation keeps it. The crate's own `Borrow` stays refused as before
+(ADR 0160).
+
+Held by corpus case `hashed_keys_looked_up_by_their_borrow.rs` (an `Rc`
+of a number, an `Rc` and a `Box` of a struct whose `Hash` counts its
+calls, a `Vec` by its slice) against native Rust in both builds, and a
+diagnostics row of the counted one. Mutations `borrowed-key-*`.

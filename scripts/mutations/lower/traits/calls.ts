@@ -551,7 +551,7 @@ export const mutations: Mutation[] = [
     name: "hashed-key-borrowed-unrefused",
     breaks: "a hashed set's lookup by what its key's `Borrow` gives, `HashSet<Rc<u32>>::contains(&1)`, is lowered, hashing the `u32` as an `Rc` (ADR 1120)",
     file: "src/lower/traits/calls.rs",
-    find: "            .find(|&(key, by)| key.peel_refs() != by.peel_refs() && self.found_by_hash(key))\n",
+    find: "            .find(|&(key, by)| self.found_by_hash(key) && !self.borrowed_is_the_key(key, by))\n",
     replace: "            .find(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "Borrow gives"],
   },
@@ -597,5 +597,13 @@ export const mutations: Mutation[] = [
     replace: "        let conversion = [StdItem::Into, StdItem::From]",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
     snapshots: true,
+  },
+  {
+    name: "borrowed-key-always-refused",
+    breaks: "every lookup of a hashed table by what its key's `Borrow` gives is refused, of an `Rc` nothing counts too (#1288)",
+    file: "src/lower/traits/calls.rs",
+    find: "            .find(|&(key, by)| self.found_by_hash(key) && !self.borrowed_is_the_key(key, by))\n",
+    replace: "            .find(|&(key, by)| self.found_by_hash(key) && key.peel_refs() != by.peel_refs())\n",
+    tests: ["test/corpus.test.ts", "-t", "^hashed_keys_looked_up_by_their_borrow.rs$"],
   },
 ];

@@ -22,9 +22,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A hash map's or set's key a call finds by another type, what the
-    /// key's `Borrow` gives, `HashSet<Rc<Point>>::contains(&Point)`, of one
-    /// that finds its keys by their own `Hash` and `Eq` (ADR 1120), whose
-    /// `hash` and `eq` are the key's: the key, and that type.
+    /// key's `Borrow` gives, of one that finds its keys by their own `Hash`
+    /// and `Eq` (ADR 1120), whose `hash` and `eq` are the key's: the key, and
+    /// that type. Not where the key is in JS that type's very value
+    /// (`borrowed_is_the_key`), an `Rc` nothing counts', whose lookup is the
+    /// table's own (#1288).
     fn hashed_key_borrowed(
         &self,
         def_id: DefId,
@@ -50,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .filter(|tr| tr.def_id == borrow)
             .map(|tr| (tr.self_ty(), tr.args.type_at(1)))
-            .find(|&(key, by)| key.peel_refs() != by.peel_refs() && self.found_by_hash(key))
+            .find(|&(key, by)| self.found_by_hash(key) && !self.borrowed_is_the_key(key, by))
     }
 
     /// A collection of the crate's that a call takes as any `IntoIterator`:
@@ -112,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((key, by)) = self.hashed_key_borrowed(def_id, generic_args) {
             let path = self.tcx.def_path_str(def_id);
             let what = format!(
-                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq` (#1288)"
+                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq` and the key isn't that value in JS, a counted `Rc`'s `{{ value, strong }}`"
             );
             return Err(self.unsupported(span, &what));
         }

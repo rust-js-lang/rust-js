@@ -26,6 +26,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_cow_key(peeled)
     }
 
+    /// Whether a hash map's or set's key of type `key` is in JS the very
+    /// value of what its `Borrow` gives, `by`, of std's impls: an `Rc` or an
+    /// `Arc` nothing counts, its value; a `Box<T>`, its `T`; a `Vec<T>`, its
+    /// `[T]`'s array; a `String`, its `str`; a reference, what it's to. A
+    /// lookup by `by` is then the table's own, the key's `hash` and `eq` of
+    /// that value, as std's is, `Borrow` keeping `Hash` and `Eq` the same:
+    /// `HashSet<Rc<u32>>::contains(&1)` (#1288). Not a counted `Rc`, `{
+    /// value, strong }`, nor the crate's own `Borrow`.
+    pub(in crate::lower) fn borrowed_is_the_key(&self, key: Ty<'tcx>, by: Ty<'tcx>) -> bool {
+        let (key, by) = (key.peel_refs(), by.peel_refs());
+        if key == by {
+            return true;
+        }
+        let ty::Adt(adt, args) = key.kind() else { return false };
+        if adt.is_box() {
+            return args.type_at(0) == by;
+        }
+        if let Some(pointee) = crate::lower::recognition::rc_pointee(self.tcx, key) {
+            return pointee == by && !self.krate.counted.counts(self.tcx, pointee);
+        }
+        if self.is_std_type(key, crate::lower::recognition::StdItem::Vec) {
+            return matches!(by.kind(), ty::Slice(item) if *item == args.type_at(0));
+        }
+        self.recognition().is_lang_adt(key, LangItem::String) && by.is_str()
+    }
+
     /// A hash map's or a hash set's key it finds by its own `Hash` and
     /// `Eq`, in a `$hashedMap` or a `$hashedSet` (ADR 1120): one JS can't
     /// find by itself or by its value, its `==` its own, or whose `hash`
