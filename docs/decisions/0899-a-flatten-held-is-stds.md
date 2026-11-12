@@ -536,3 +536,18 @@ Rust in both builds; the compiler before this change gives 64, 64, 64,
 (`lower/iterators/hint_asks.ts`); `local-adapter-held` and
 `collect-hint-seen-made-in-place` re-anchored. Left as it was: cloning a
 `FlatMap` is refused in both builds, before and after.
+
+Then, checking why `flat-hint-front-unasked` survived: a flatten given
+as a `chain`'s second part, `[9].iter().copied().chain(f)`, or a `zip`'s,
+was still made in place, 64 for 48, as `wanted` went to an adapter's
+receiver alone. A chain sums both parts' hints and a zip takes the fewer,
+so `wanted` now goes to each iterator an adapter holds: its receiver, or
+an argument of a type parameter bound as an iterator (`bound_as_iterator`).
+A variable that holds a flatten, given so, is `hint_seen` in the same
+fixed point. The corpus case adds a `chain`'s second part, held and made
+there, and a `zip`'s; mutations `hint-wanted-of-receivers-alone`, and
+`hint-wanted-not-through-adapters` re-anchored. `size-hint-in-place`,
+whose flatten `hint_seen` now holds as well, names the cases where a
+variable's other adapter, a `map`'s or a `zip`'s, is asked its hint. The
+type parameter an adapter is given an iterator for is read once,
+`param_at`, by both questions (the generic facts' audit).

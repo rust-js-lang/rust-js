@@ -216,49 +216,40 @@ pub(super) fn in_place_adapters<'tcx>(
         })
         .collect();
     // A variable that holds a flatten, or an adapter of one, `rev()`'s,
-    // read where its hint is asked, `let mut it = v.iter().flat_map(f);
+    // given where its hint is asked, `let mut it = v.iter().flat_map(f);
     // it.next(); it.collect()` of a crate that keeps capacities
     // (`observed`): the variable isn't made in place, so neither is the
-    // flatten it holds, std's struct, as one given there at once is (#1528).
+    // flatten it holds, std's struct, as one given there at once is
+    // (`hint_seen`, #1528).
     let holds_flatten = |held: ty::Ty<'tcx>| {
         (held.peel_refs().walk().filter_map(|part| part.as_type()))
             .any(|part| crate::lower::recognition::flattened_source(tcx, part).is_some())
     };
-    let mut hint_seen: IndexSet<LocalVarId> = IndexSet::default();
-    for e in thir.exprs.indices() {
-        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
-            continue;
-        };
-        let Some((callee, generic_args)) = crate::lower::fn_def(thir[fun].ty) else {
-            continue;
-        };
-        for (index, &arg) in args.iter().enumerate() {
-            let arg = match thir[strip(thir, arg)].kind {
-                ExprKind::Borrow { arg, .. } => strip(thir, arg),
-                _ => strip(thir, arg),
-            };
-            if let ExprKind::VarRef { id } = thir[arg].kind
-                && made.contains_key(&id)
-                && holds_flatten(thir[arg].ty)
-                && observed((callee, generic_args, index), thir[arg].ty)
-            {
-                hint_seen.insert(id);
-            }
-        }
-    }
     // What's given where its hint is asked: to `size_hint()`, to a function
     // of the crate's that asks the hint of what it's given (`asked_of_own`,
     // the hint's owner's), or to a library's, whose body, which the crate
     // can't see, may ask it, as `hint_asked.rs` takes it; to a collect or
     // an extend, where the program sees what it asks (`collect_hint_seen`,
     // hint_asks.rs', #1327); or
-    // as the receiver of an iterator's method whose own call is, which
-    // gives its hint of it, `flat_map(f).filter(g)`'s: to the fixed point
-    // (#1323), each call's `fn_span`.
+    // as an iterator an iterator's method whose own call is holds, which
+    // gives its hint of it: its receiver, `flat_map(f).filter(g)`'s, or
+    // another it's given, a `chain`'s or a `zip`'s, whose hint sums or takes
+    // the fewer of both (#1528): to the fixed point (#1323), each call's
+    // `fn_span`, and each variable `hint_seen`.
     let library = |callee: DefId| !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee);
+    // The type parameter `callee` is given what's at `index` for, `zip`'s
+    // `U`, whatever it's bound by.
+    let param_at = |callee: DefId, index: usize| {
+        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        match inputs.get(index).map(|input| *input.peel_refs().kind()) {
+            Some(ty::Param(param)) => Some(param),
+            _ => None,
+        }
+    };
     let mut wanted: IndexSet<Span> = IndexSet::default();
+    let mut hint_seen: IndexSet<LocalVarId> = IndexSet::default();
     loop {
-        let before = wanted.len();
+        let before = wanted.len() + hint_seen.len();
         for e in thir.exprs.indices() {
             let ExprKind::Call {
                 fun,
@@ -279,21 +270,25 @@ pub(super) fn in_place_adapters<'tcx>(
                     ExprKind::Borrow { arg, .. } => strip(thir, arg),
                     _ => strip(thir, arg),
                 };
-                let ExprKind::Call { fn_span: made, .. } = thir[arg].kind else {
-                    continue;
-                };
+                let held_iterator = index == 0
+                    || param_at(callee, index)
+                        .is_some_and(|param| crate::lower::iterators::bound_as_iterator(tcx, callee, param));
                 let asks = match inputs.get(index) {
                     _ if observed((callee, generic_args, index), thir[arg].ty) => true,
-                    _ if adapts && index == 0 => wanted.contains(&at),
+                    _ if adapts && held_iterator => wanted.contains(&at),
                     Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),
                     None => false,
                 };
-                if asks {
-                    wanted.insert(made);
+                match thir[arg].kind {
+                    ExprKind::Call { fn_span: given, .. } if asks => _ = wanted.insert(given),
+                    ExprKind::VarRef { id } if asks && made.contains_key(&id) && holds_flatten(thir[arg].ty) => {
+                        _ = hint_seen.insert(id)
+                    }
+                    _ => {}
                 }
             }
         }
-        if wanted.len() == before {
+        if wanted.len() + hint_seen.len() == before {
             break;
         }
     }
@@ -339,9 +334,7 @@ pub(super) fn in_place_adapters<'tcx>(
         // `next_back()`'s and `len()`'s too: not one that holds it,
         // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
         // `Self`, its own compiled impl's, of its struct (#537).
-        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
-        let input = inputs.get(index).map(|input| *input.peel_refs().kind());
-        let Some(ty::Param(param)) = input else {
+        let Some(param) = param_at(callee, index) else {
             return false;
         };
         crate::lower::iterators::bound_as_iterator(tcx, callee, param)

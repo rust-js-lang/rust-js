@@ -47,6 +47,21 @@ fn main() {
     let rest: Vec<u32> = back.collect();
     println!("{} {}", rest.len(), rest.capacity());
 
+    // A `chain`'s second part, whose hint the chain sums: one a `let`
+    // holds, stepped first, and one made there.
+    let mut stepped = (0u32..3).flat_map(|x| vec![x; 12]);
+    stepped.next();
+    let rest: Vec<u32> = [9u32].iter().copied().chain(stepped).collect();
+    println!("{} {}", rest.len(), rest.capacity());
+    let rest: Vec<u32> = [9u32].iter().copied().chain(v.iter().flat_map(|&x| vec![x; 12])).collect();
+    println!("{} {}", rest.len(), rest.capacity());
+
+    // A `zip`'s second part, whose hint the zip takes the fewer of.
+    let mut paired = v.iter().flat_map(|&x| vec![x; 12]);
+    paired.next();
+    let rest: Vec<(u32, u32)> = (0u32..30).zip(paired).collect();
+    println!("{} {}", rest.len(), rest.capacity());
+
     // Of inner iterators of different lengths.
     let words = ["a", "bcd", "efghij"];
     let mut chars = words.iter().flat_map(|w| w.chars().collect::<Vec<_>>());

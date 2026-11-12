@@ -158,14 +158,14 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "size-hint-in-place",
-    "breaks": "a variable's flatten that `size_hint()` asks of is the recognizers' JS iterator, sized `(0, None)`",
+    "breaks": "a variable's adapter that `size_hint()` asks of, a `map`'s, a `zip`'s, is the recognizers' JS iterator, sized `(0, None)` (a flatten's is held by `hint_seen` too, #1528)",
     "file": "src/lower/body_queries/in_place.rs",
     "find": "            && callee != size_hint;\n",
     "replace": ";\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
-      "^std_flatten.rs$"
+      "^(std_flatten|adapter_size_hints|source_hint_where_an_adapter_holds_it|zip_size_hints).rs$"
     ]
   },
   {
@@ -241,8 +241,8 @@ export const mutations: Mutation[] = [
     name: "hint-wanted-not-through-adapters",
     breaks: "a flatten under another adapter given where its hint is asked, `flat_map(f).filter(g)`, is made in place, its hint `(0, None)` (#1323)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "                    _ if adapts && index == 0 => wanted.contains(&at),\n",
-    replace: "                    _ if adapts && index == 0 => false,\n",
+    find: "                    _ if adapts && held_iterator => wanted.contains(&at),\n",
+    replace: "                    _ if adapts && held_iterator => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
@@ -312,6 +312,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "        (held.peel_refs().walk().filter_map(|part| part.as_type()))\n",
     replace: "        [held.peel_refs()].into_iter()\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "hint-wanted-of-receivers-alone",
+    breaks:
+      "a `flat_map` given as a `chain`'s or a `zip`'s second part, collected into a `Vec` in a crate that reads capacities, is made in place, JS's own `flatMap`, whose hint the chain sums with no lower bound: a capacity of 64 where native Rust's is 48 (#1528)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                let held_iterator = index == 0\n                    || param_at(callee, index)\n",
+    replace: "                let held_iterator = index == 0\n                    || false && param_at(callee, index)\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
   },
 ];

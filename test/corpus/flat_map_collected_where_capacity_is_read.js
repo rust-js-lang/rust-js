@@ -9,6 +9,9 @@ import {
   $grownBy,
   $grownVec,
   $iter,
+  $lazyChain,
+  $lazyRange,
+  $lazyZip,
   $next,
   $nextBack,
   $rangeNext,
@@ -203,6 +206,62 @@ function main() {
   const arg$5 = $capacity(rest, 4);
   console.log(`${rest.length} ${arg$5}`);
 
+  // A `chain`'s second part, whose hint the chain sums: one a `let`
+  // holds, stepped first, and one made there.
+  const stepped = iterator_flatMap(
+    { start: 0, end: 3 },
+    (x) => new Array(12).fill(x),
+    { next: $rangeNext },
+    intoIterator,
+    true,
+    undefined,
+    false,
+  );
+  $next(stepped);
+  rest = $grownVec($roomForHint($lazyChain($iter([9]), stepped), 4, false), (grown) =>
+    Array.from(grown),
+  );
+  const arg$6 = $capacity(rest, 4);
+  console.log(`${rest.length} ${arg$6}`);
+  rest = $grownVec(
+    $roomForHint(
+      $lazyChain(
+        $iter([9]),
+        iterator_flatMap(
+          $iter(v),
+          (x) => new Array(12).fill(x),
+          { next: $next },
+          intoIterator,
+          true,
+          undefined,
+          false,
+        ),
+      ),
+      4,
+      false,
+    ),
+    (grown) => Array.from(grown),
+  );
+  const arg$7 = $capacity(rest, 4);
+  console.log(`${rest.length} ${arg$7}`);
+
+  // A `zip`'s second part, whose hint the zip takes the fewer of.
+  const paired = iterator_flatMap(
+    $iter(v),
+    (x) => new Array(12).fill(x),
+    { next: $next },
+    intoIterator,
+    true,
+    undefined,
+    false,
+  );
+  $next(paired);
+  rest = $grownVec($roomForHint($lazyZip($lazyRange(0, 30), paired), 8, false), (grown) =>
+    Array.from(grown),
+  );
+  const arg$8 = $capacity(rest, 8);
+  console.log(`${rest.length} ${arg$8}`);
+
   // Of inner iterators of different lengths.
   const words = ["a", "bcd", "efghij"];
   const chars = iterator_flatMap(
@@ -218,7 +277,7 @@ function main() {
   $next(chars);
   rest = $grownVec($roomForHint(chars, 4, false), (grown) => Array.from(grown));
   const shown = rest.slice().join("");
-  const arg$6 = $capacity(rest, 4);
-  console.log(`${shown} ${rest.length} ${arg$6}`);
+  const arg$9 = $capacity(rest, 4);
+  console.log(`${shown} ${rest.length} ${arg$9}`);
 }
 //# sourceMappingURL=case.js.map
