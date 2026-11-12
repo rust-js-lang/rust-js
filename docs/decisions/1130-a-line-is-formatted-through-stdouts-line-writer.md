@@ -248,3 +248,17 @@ of a derived `Debug` whose field may print and panic where it's caught.
 Mutations `stopped-in-place-unrefused` (refitted from
 `printed-in-place-unrefused`), `stops-composed-of-the-crates-own`, and
 `writer-showing-a-printing-type-unseen`, now held by the corpus case.
+
+## Amendment: what a `format!` made apart from the line prints (2026-11-12, #1534)
+
+A writer whose calls can't be followed, a `dyn Fn`'s, makes every body
+that prints one that may run while a line is formatted, `main` among
+them, so `main`'s `format!` is made apart from the line,
+`$formatting(() => ..)`, which opens a frame. What a writer printed
+inside it was held in the line, as a frame was open, and nothing wrote
+it as the frame ended: `main`'s next line, printed at once with no frame
+open, overtook it, `format L1` then `<1>stepped 2` where Rust's
+`LineWriter` writes `<1>format L1`. Now `$formatting` writes what it
+leaves held as its last frame ends, as `$printing` does. Corpus case
+format_made_apart_prints_before_the_next_line against native Rust in
+both builds; mutation `formatting-held-print-unwritten`.

@@ -13130,13 +13130,21 @@ export function $sink() {
   };
 }
 // A writer's text made as a line is formatted, for anything but that line,
-// `format!`'s or `to_string()`'s: made apart from it.
+// `format!`'s or `to_string()`'s: made apart from it. What its writers
+// printed, held while it's made, is written as `print!` writes it once no
+// line is formatted, as `$printing` writes what it leaves unended, before
+// what's printed next (#1534).
 export function $formatting(make) {
   $printFrames.push(undefined);
   try {
     return make();
   } finally {
     $printFrames.pop();
+    if ($printFrames.length === 0 && $lineHeld !== "") {
+      const rest = $lineHeld;
+      $lineHeld = "";
+      $print(rest);
+    }
   }
 }
 // Bytes written to a standard stream (ADR 0392), and how many: Node's, as
