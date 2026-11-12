@@ -448,3 +448,21 @@ programs, now written. test/diagnostics.test.ts holds the refusal of a
 `read-dyn-taken-to-go-on` is removed. Its one observable effect was the
 refusal this lifts: a `dyn`'s call `may_run` can't follow, so a writer that
 shows one stops by that route whatever `dyn_unknown` says.
+
+## Amendment (2026-11-13): standard error, piece by piece
+
+Tu's decision on #1490, (A), keeps Rust's streams: stdout a `LineWriter`,
+stderr unbuffered. An `eprint!` or `eprintln!` whose formatting may print
+was formatted whole, then written, so what a writer printed to stdout as
+it formatted came before the text written before it: `err line ` then
+`inner f` natively, `inner f` first as JS. Each piece is now written to
+stderr as it's made (`written_to_stderr`), each value made apart from
+stdout's line as the whole text was; one that fails, in a `try`, std's
+panic after what was written. The order of the two streams' writes,
+which the corpus keeps apart and can't tell, is held by
+`test/stream-order.test.ts`: each case's output, stderr written into
+stdout, natively and as JS, the same (`mergedStreams`). Corpus case
+`eprinted_while_formatting`; mutation `eprint-made-whole`. What's left of
+#1490: a stdout line a writer's print completes is held with the writer's
+text, so a stderr write it makes after comes first; to be flushed ahead
+at each stderr write.

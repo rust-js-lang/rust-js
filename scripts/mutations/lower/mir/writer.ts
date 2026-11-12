@@ -362,4 +362,16 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n                    let sink = Expr::var(&state.writer.as_ref().expect(\"a writer\").1);\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step\\.rs$"],
   },
+  {
+    name: "eprint-made-whole",
+    breaks: "an `eprintln!` whose formatting may print is formatted whole before it's written, so what a writer prints to stdout meanwhile comes before its text, where Rust's unbuffered stderr writes each piece first (#1490)",
+    file: "src/lower/mir/writer.rs",
+    find: "        if known == (Std::Print { error: true }) {\n",
+    replace: "        if false && known == (Std::Print { error: true }) {\n",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "eprinted_while_formatting"
+    ]
+  },
 ];

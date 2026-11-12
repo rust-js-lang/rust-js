@@ -817,8 +817,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call given a `format_args!`'s text whose formatting may print
     /// (#1490): `print!`'s or `println!`'s, each piece written through
-    /// stdout's line as it's made, `$printing(..)`; another's, `format!`'s,
-    /// `eprint!`'s or a `write!`'s into a `String`, given the text made
+    /// stdout's line as it's made, `$printing(..)`; `eprint!`'s or
+    /// `eprintln!`'s, each piece to stderr as it's made; another's,
+    /// `format!`'s or a `write!`'s into a `String`, given the text made
     /// apart from the line, as a text that may fail where it may (ADR
     /// 0187), wherever among its arguments it's given, a `write!`'s after
     /// the text it writes to (#1520). `None` of another call.
@@ -844,6 +845,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 fails,
                 self.js_span(span),
             ))));
+        }
+        // To stderr, unbuffered: each piece written as it's made (#1490).
+        if known == (Std::Print { error: true }) {
+            self.flush(state, out)?;
+            let written = self.written_to_stderr(text, fails, self.js_span(span));
+            out.extend(written);
+            return Ok(Some(Value::Expr(Expr::undefined())));
         }
         // Of what may fail, written piece by piece, each value made apart
         // from the line, so the text before the one that fails is written,

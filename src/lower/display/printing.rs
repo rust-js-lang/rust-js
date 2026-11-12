@@ -68,6 +68,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call_helper("$printing", vec![Expr::arrow(Vec::new(), body)])
     }
 
+    /// `eprint!`'s or `eprintln!`'s `text`, whose formatting may print:
+    /// each piece written to stderr as it's made, `$eprint("err ");
+    /// $eprint(noisyDisplay_fmt(n)); $eprint("\n");`, as Rust's stderr is
+    /// unbuffered, so what a writer prints to stdout as it formats comes
+    /// after the text written before it (#1490). Each value made apart from
+    /// stdout's line, as `eprint!`'s whole text was; of what may `fails`, in
+    /// a `try`, std's panic after what was written (ADR 0187).
+    pub(in crate::lower) fn written_to_stderr(&mut self, text: Expr, fails: bool, js_span: js::Span) -> Vec<Stmt> {
+        let mut body: Vec<Stmt> = (line_parts(text).into_iter())
+            .map(|part| {
+                let part = match part.kind {
+                    js::ExprKind::Str(_) => part,
+                    _ => self.made_apart_from_the_line(part),
+                };
+                StmtKind::Expr(Expr::call_helper("$eprint", vec![part])).at(js_span)
+            })
+            .collect();
+        if fails {
+            let caught = self.fresh(Role::Error);
+            let failed = Expr::call_helper(
+                "$fmtPrintFailed",
+                vec![Expr::var(&caught), Expr::str(""), Expr::bool(true)],
+            );
+            body = vec![StmtKind::TryCatch(body, Some(caught), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span)];
+        }
+        body
+    }
+
     /// A print to stdout of the body being lowered, `text`, where it may
     /// run while a line is formatted: through the line, `$out(text)`, so it
     /// lands inside it. `None` elsewhere.

@@ -93,25 +93,12 @@ export function execute(cmd: string[], outcomeFile: string, limit = timeout): Ru
 const abortCode = 134;
 export const aborted: Outcome = { exit: abortCode };
 
-/** A string as a Rust string literal, for the wrappers' `include!`. */
-const rustString = (s: string) => JSON.stringify(s);
-
-// Natively, the case is a module whose `main` the wrapper calls, catching a
-// panic as the JS runner does. The panic hook is silenced, so stderr is only
-// what the program writes. The case is included where it is, so what it
-// reads beside it, an `include_str!`, is found as the JS's compile finds it;
-// the wrapper is where its text says, so a case is one kept binary.
-export function runNative(
-  file: string,
-  dir: string,
-  edition = "2024",
-  target: "host" | "wasm32" = "host",
-  // rustc's flags besides: a library the case uses, `--extern
-  // metamorph_lib=<rlib>` (the metamorphic net's `library`).
-  rustc: string[] = [],
-): Run | string {
-  if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
-  const source = `mod case {
+/** The native wrapper of the case at `file`: it's included, its `main` run
+ * as Rust's runtime runs it, its panic hook silenced, so stderr is only
+ * what the program writes, and how it ended written to the file named
+ * first (`runNative`'s). */
+function nativeSource(file: string): string {
+  return `mod case {
     include!(${rustString(file)});
     pub fn entry() { main() }
 }
@@ -140,6 +127,27 @@ fn main() {
     std::fs::write(std::env::args().nth(1).expect("an outcome file"), outcome).expect("the outcome is written");
 }
 `;
+}
+
+/** A string as a Rust string literal, for the wrappers' `include!`. */
+const rustString = (s: string) => JSON.stringify(s);
+
+// Natively, the case is a module whose `main` the wrapper calls, catching a
+// panic as the JS runner does. The panic hook is silenced, so stderr is only
+// what the program writes. The case is included where it is, so what it
+// reads beside it, an `include_str!`, is found as the JS's compile finds it;
+// the wrapper is where its text says, so a case is one kept binary.
+export function runNative(
+  file: string,
+  dir: string,
+  edition = "2024",
+  target: "host" | "wasm32" = "host",
+  // rustc's flags besides: a library the case uses, `--extern
+  // metamorph_lib=<rlib>` (the metamorphic net's `library`).
+  rustc: string[] = [],
+): Run | string {
+  if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
+  const source = nativeSource(file);
   const built = nativeBinary(source, contentDirectory(source), [...nativeFlags(edition), ...rustc], compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
@@ -335,3 +343,22 @@ export const agree = (a: Run, b: Run) =>
   typeof a.outcome !== "string" &&
   typeof b.outcome !== "string" &&
   same(a.outcome, b.outcome);
+
+/** The case at `file`'s output with standard error written into standard
+ * output, natively and as JS under Node, as a terminal shows them: the
+ * order of the two streams' writes, which runs that keep them apart can't
+ * tell (#1490). Each its bytes, or what stopped it. */
+export function mergedStreams(file: string, dir: string, edition = "2024"): { native: string; js: string } {
+  const source = nativeSource(file);
+  const built = nativeBinary(source, contentDirectory(source), nativeFlags(edition), compileTimeout);
+  if ("error" in built) throw new Error(built.error);
+  const merged = (cmd: string[]) =>
+    Bun.spawnSync(["sh", "-c", '"$0" "$@" 2>&1', ...cmd], { cwd: root, timeout: timeout * 3 }).stdout.toString();
+  const native = merged([built.binary, join(dir, "native.json")]);
+  const compiled = compileJs(file, dir, edition);
+  if (!("js" in compiled)) throw new Error(`rust-js can't compile it: ${JSON.stringify(compiled).slice(0, 400)}`);
+  const outcome = join(dir, "node.json");
+  const js = merged([node ?? "node", join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome]);
+  return { native, js };
+}
+
