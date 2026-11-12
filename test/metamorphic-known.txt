@@ -25,3 +25,6 @@ plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs
 plain std loud lock_poisoning.rs
 plain std loud-call lock_poisoning.rs
 plain std loud-drop lock_poisoning.rs
+
+#1491 P2: a map of a map given to generic code's ExactSizeIterator throws 'it.len is not a function' (its inner map is JS's own)
+plain generic-instances counted_where_made_runs_each_part_once.rs

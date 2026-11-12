@@ -120,3 +120,40 @@ room a range asks, which Rust asks too. Held by corpus
 `mir-len-closure-type-shown` asks the diagnostics row above; `step-by-uncounted`,
 `step-by-made-unstepped` and `step-by-made-by-nth-backless` name their
 lines as they now read.
+
+## Amended (2026-11-12, #1483, #1485): each part runs once, in its order
+
+A count read in place left out what it didn't read and could read a part
+twice. `len()` and `size_hint()` of `repeat_n(made(2), 3).enumerate()`
+counted `3` and never ran `made(2)`. `(made(5)..made(9)).step_by(2).len()`
+ran `made(9)` first, `Math.max(made(9) - made(5), 0)`. And `eq` of two
+`TrustedLen` iterators (ADR 0992) read each length, `Math.max(made(4) -
+made(1), 0)`, before it made the iterator of the same text, so the bounds
+ran twice. Two deciders answered whether a count runs code:
+`counted_in_place` checked only the counts it read itself, and
+`collected_counted` checked the whole answer again (#1441). That second
+check covered every case of the first, so mutation
+`count-read-through-a-call-read-again` survived the nightly.
+
+**`counted_in_place` takes `discards`**, set where the iterator isn't made
+afterwards (`len_in_place`, `len()`'s and `size_hint()`'s). Of such a
+count it refuses (`Uncounted::RunsCode`) where what it leaves unread runs
+code: `repeat_n`'s `x` and what it clones and drops with, a `map`'s
+function, or an endless source a `take(n)` counts by `n`. A range's start
+is held first where both bounds run code, so each runs in its order. A
+count it reads, `*held.as_ref().unwrap()`, is read once, so
+`repeat_n(1u8, *held.as_ref().unwrap()).map(f).len()` now compiles. It
+was refused. **What reads a count before making the iterator of the same
+text asks `unless_run_again`**: a collect's room, and an `eq`'s lengths.
+That is the one answer of whether reading the count runs code.
+`repeat_n(made(2), 3).enumerate().len()` is refused now; it was wrong.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change
+(evaluation order and side effects), so Rust's are kept. No snapshot
+changed: every corpus case compiles to the same JS in both builds. Held by
+corpus `counted_where_made_runs_each_part_once`. Mutations
+`count-of-a-call-read-again`, `count-leaves-unread-code-out`,
+`range-count-reads-its-end-first` and `eq-length-of-a-call-read-again`.
+`count-read-through-a-call-read-again` and collect.rs's
+`collect-count-of-a-call-read-again` are gone with the leaf checks and the
+caller's copy.

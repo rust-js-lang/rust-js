@@ -300,11 +300,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => {
                 let mut spilled = Vec::new();
                 let source = crate::lower::iterators::closed_parts(&it).map_or(&it, |(source, _)| source);
-                let a = self.counted_before_stepping(source, iter_ty, &mut spilled);
+                // Each read before it's made of the same text, so not one
+                // whose reading runs code (#1483).
+                let counted = |this: &mut Self, it: &Expr, ty: Ty<'tcx>, spilled: &mut Vec<Stmt>| {
+                    let count = this
+                        .counted_before_stepping(it, ty, spilled, false)
+                        .ok_or(Uncounted::Unknown);
+                    unless_run_again(count).ok()
+                };
+                let a = counted(self, source, iter_ty, &mut spilled);
                 // What's given whole, a `Vec` or an array: its length.
                 let b = match self.slice_item(other_ty.peel_refs()) {
                     Some(_) if !self.implements_iterator(other_ty) => Some(Expr::member(other.clone(), "length")),
-                    _ => self.counted_before_stepping(&other, other_iter, &mut spilled),
+                    _ => counted(self, &other, other_iter, &mut spilled),
                 };
                 (a.zip(b)).filter(|_| spilled.is_empty())
             }

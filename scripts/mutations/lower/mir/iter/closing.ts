@@ -380,4 +380,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) | None => self.as_js_iterator(other, other_ty, span)?,\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
   },
+  {
+    name: "eq-length-of-a-call-read-again",
+    breaks:
+      "`(0..made(2)).zip(made(1)..made(4)).eq(..)` reads each length before making its iterator of the same text, so `made(1)` and `made(4)` run twice (#1483)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                    unless_run_again(count).ok()\n",
+    replace: "                    count.ok()\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_where_made_runs_each_part_once.rs$"],
+  },
 ];

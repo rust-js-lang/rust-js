@@ -120,33 +120,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         made: &mut Vec<Stmt>,
     ) -> Option<Expr> {
-        self.counted_in_place(it, ty, made).ok()
+        self.counted_in_place(it, ty, made, true).ok()
     }
 
-    /// `len_in_place`'s count, or why there's none: `Uncounted::RunsCode`
-    /// where a count it reads, `repeat_n(x, n)`'s `n`, a `take(n)`'s, a
-    /// `skip(n)`'s or a `step_by(s)`'s `s`, or a `map`'s function, runs
-    /// code where it's read, `*n.as_ref().unwrap()`, so reading it again
-    /// would run it again, asked once what it's made of is counted (#1044).
+    /// `len_in_place`'s count, or why there's none. Of what isn't made
+    /// after, `discards`, a `len()`'s: `Uncounted::RunsCode`
+    /// where what it leaves unread runs code, `repeat_n(x, n)`'s `x`, a
+    /// `map`'s function, an endless source a `take(n)` counts by `n`, or
+    /// where it would read a range's bounds, which run code, out of their
+    /// order (#1483). A count it reads, `*n.as_ref().unwrap()`, it reads
+    /// once, in its order: what reads it before making the iterator of the
+    /// same text, a collect's room or an `eq`'s lengths, asks
+    /// `unless_run_again` (#1044, #1441).
     pub(in crate::lower::mir) fn counted_in_place(
         &mut self,
         it: &Expr,
         ty: Ty<'tcx>,
         made: &mut Vec<Stmt>,
+        discards: bool,
     ) -> Result<Expr, Uncounted> {
         use crate::lower::recognition as r;
         use Uncounted::{RunsCode, Unknown};
-        // A count read, unless reading it runs code.
-        let read = |count: &Expr| match count.has_effects() {
+        // What it leaves unread, unless that runs code.
+        let unread = |part: &Expr| match discards && part.has_effects() {
             true => Err(RunsCode),
-            false => Ok(count.clone()),
+            false => Ok(()),
         };
         let ty = ty.peel_refs();
         if crate::lower::iterators::is_stepped_items(it) {
             return Ok(self.items_left(it.clone(), made));
         }
+        // A range's bounds, which its count reads end first: of what isn't
+        // made after, its start held first where both run code, so each
+        // runs in its order (#1485).
         if let Some(kind) = self.range_kind(ty) {
             let range = crate::lower::iterators::steps(it).unwrap_or(it);
+            if discards
+                && let Some((start, end)) = crate::lower::std_types::range::range_bounds(range)
+                && start.has_effects()
+                && end.has_effects()
+            {
+                let start = self.spill("start", start, made);
+                let held = Expr::object(vec![
+                    js::Prop::Field("start".into(), start),
+                    js::Prop::Field("end".into(), end),
+                ]);
+                return self.range_len(&held, ty, kind).ok_or(Unknown);
+            }
             return self.range_len(range, ty, kind).ok_or(Unknown);
         }
         // A zip made here, the fewer of its sides', as std's `Zip`'s is
@@ -154,8 +174,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let (Some((a_ty, b_ty)), Some(zip)) =
             (r::zipped_sources(self.tcx, ty), crate::lower::iterators::zip_parts(it))
         {
-            let a = self.counted_before_stepping(zip.a, a_ty, made).ok_or(Unknown)?;
-            let b = self.counted_before_stepping(zip.b, b_ty, made).ok_or(Unknown)?;
+            let a = self
+                .counted_before_stepping(zip.a, a_ty, made, discards)
+                .ok_or(Unknown)?;
+            let b = self
+                .counted_before_stepping(zip.b, b_ty, made, discards)
+                .ok_or(Unknown)?;
             return Ok(match (a.as_int(), b.as_int()) {
                 (Some(a), Some(b)) => Expr::int(a.min(b)),
                 _ => Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]),
@@ -167,8 +191,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             r::chained_sources(self.tcx, ty),
             crate::lower::iterators::chain_parts(it),
         ) {
-            let a = self.counted_before_stepping(a, a_ty, made).ok_or(Unknown)?;
-            let b = self.counted_before_stepping(b, b_ty, made).ok_or(Unknown)?;
+            let a = self.counted_before_stepping(a, a_ty, made, discards).ok_or(Unknown)?;
+            let b = self.counted_before_stepping(b, b_ty, made, discards).ok_or(Unknown)?;
             return Ok(match (a.as_int(), b.as_int()) {
                 (Some(a), Some(b)) => Expr::int(a + b),
                 _ => Expr::bin(Op::Add, a, b),
@@ -215,14 +239,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if it.reads_same() => crate::lower::iterators::steps(it).ok_or(Unknown)?,
                 _ => crate::lower::iterators::steps(it).unwrap_or(it),
             };
-            return self.counted_in_place(&source_value.clone(), source, made);
+            return self.counted_in_place(&source_value.clone(), source, made, discards);
         }
         // `repeat_n(x, n)`, `$repeatingN(x, n)`, of a value cloned and
         // dropped as it says too, `$repeatingN(x, n, clone, drop)`: `n`.
         if r::is_repeat_n(self.tcx, ty)
-            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)
+            && let Some([x, n, rest @ ..]) = crate::lower::iterators::repeating_n_parts(it)
         {
-            return read(n);
+            unread(x)?;
+            rest.iter().try_for_each(unread)?;
+            return Ok(n.clone());
         }
         // A `step_by(s)`, a range's `$stepBy(range, s)` or another's filter of
         // every `s`th (`stepped_by_parts`): its source's count `s` apart, as
@@ -232,8 +258,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)
         {
             let mut counting = Vec::new();
-            let count = self.counted_in_place(&source_value, source.peel_refs(), &mut counting)?;
-            let step = read(&step)?;
+            let count = self.counted_in_place(&source_value, source.peel_refs(), &mut counting, discards)?;
+            let step = step.clone();
             made.append(&mut counting);
             // Of numbers known, the number, `(0..10).step_by(3)`'s 4.
             if let (Some(count), Some(step)) = (count.as_int(), step.as_int())
@@ -250,14 +276,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A copy of its source's items, which is its source in JS (ADR 0547).
         if let Some(source) = r::copied_source(self.tcx, ty) {
-            return self.counted_in_place(it, source, made);
+            return self.counted_in_place(it, source, made, discards);
         }
         if let Some(source) = r::enumerated_source(self.tcx, ty) {
             let source_value = crate::lower::iterators::enumerated_of(it)
                 .ok_or(Unknown)?
                 .source
                 .clone();
-            return self.counted_in_place(&source_value, source, made);
+            return self.counted_in_place(&source_value, source, made, discards);
         }
         // `source.map(f)`, `f` made and not called.
         if let Some(source) = r::mapped_source(self.tcx, ty)
@@ -267,8 +293,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let [f] = args.as_slice()
         {
             let mut counting = Vec::new();
-            let count = self.counted_in_place(&source_value.clone(), source, &mut counting)?;
-            read(f)?;
+            let count = self.counted_in_place(&source_value.clone(), source, &mut counting, discards)?;
+            unread(f)?;
             made.append(&mut counting);
             return Ok(count);
         }
@@ -288,11 +314,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         {
             if !skip && self.recognition().endless_by_type(source) {
-                return read(n);
+                unread(source_value)?;
+                return Ok(n.clone());
             }
             let mut counting = Vec::new();
-            let len = self.counted_in_place(&source_value.clone(), source, &mut counting)?;
-            let n = read(n)?;
+            let len = self.counted_in_place(&source_value.clone(), source, &mut counting, discards)?;
+            let n = n.clone();
             made.append(&mut counting);
             let math = |name: &str, args| Expr::call(Expr::member(Expr::var("Math"), name), args);
             return Ok(match skip {
@@ -305,16 +332,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How many `it`, an iterator of type `ty`, has left before it's
     /// stepped: of an array's items, a `$iter` made here or held, where it
-    /// is (`items_left`); of another made in place, `len_in_place`'s count.
+    /// is (`items_left`); of another made in place, `counted_in_place`'s
+    /// count, of one not made after where it `discards`.
     pub(in crate::lower::mir) fn counted_before_stepping(
         &mut self,
         it: &Expr,
         ty: Ty<'tcx>,
         made: &mut Vec<Stmt>,
+        discards: bool,
     ) -> Option<Expr> {
         match self.steps_an_array(ty.peel_refs()) {
             true => Some(self.items_left(it.clone(), made)),
-            false => self.len_in_place(it, ty, made),
+            false => self.counted_in_place(it, ty, made, discards).ok(),
         }
     }
 
@@ -633,11 +662,22 @@ pub(in crate::lower::mir) fn counted_chain(e: &Expr) -> bool {
     stages > 0 && crate::lower::iterators::is_stepped_items(at)
 }
 
+/// A count `counted_in_place` read of an iterator where it's made, for what reads
+/// it before making the iterator of the same text, a collect's room or an
+/// `eq`'s lengths: `RunsCode` where reading it runs code, which making the
+/// iterator would run again (#1044, #1441, #1483). The one answer of it.
+pub(in crate::lower::mir) fn unless_run_again(count: Result<Expr, Uncounted>) -> Result<Expr, Uncounted> {
+    match count {
+        Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),
+        count => count,
+    }
+}
+
 /// Why `counted_in_place` has no count of an iterator made in place.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower::mir) enum Uncounted {
     /// Its form isn't one it counts.
     Unknown,
-    /// A count it reads runs code where it's read (#1044).
+    /// What it reads or leaves unread runs code (#1044, #1483).
     RunsCode,
 }

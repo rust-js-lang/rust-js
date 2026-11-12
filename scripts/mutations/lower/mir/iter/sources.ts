@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat_n(x, n)` made in place has no count, so its `collect()` asks no room: `capacity overflow` unasked (#246)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
-    replace: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
+    find: "            && let Some([x, n, rest @ ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    replace: "            && let Some([x, n, rest @ ..]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
     snapshots: true,
   },
@@ -463,21 +463,39 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
   {
-    name: "count-read-through-a-call-read-again",
+    name: "count-of-a-call-read-again",
     breaks:
-      "`repeat_n(1u16, counted(n)).map(f).collect()` reads its count twice, `$roomFor(counted(n), 2)` and the iterator's, so `counted` runs twice where Rust runs it once (#1044)",
+      "a count whose reading runs code, `repeat_n(1u16, *n.as_ref().unwrap())`'s or a range bound's call, is read again where the iterator is made of the same text: a collect's room and an `eq`'s lengths run it twice (#1044, #1441, #1483)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            true => Err(RunsCode),\n",
-    replace: "            true => Ok(count.clone()),\n",
-    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    find: "        Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(collect_room_counted_by_the_program|counted_where_made_runs_each_part_once).rs$"],
+  },
+  {
+    name: "count-leaves-unread-code-out",
+    breaks:
+      "`repeat_n(made(4), 3).size_hint()`, counted as `3` where it isn't made after, never runs `made(4)` (#1485)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        let unread = |part: &Expr| match discards && part.has_effects() {\n",
+    replace: "        let unread = |part: &Expr| match false && part.has_effects() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_where_made_runs_each_part_once.rs$"],
+  },
+  {
+    name: "range-count-reads-its-end-first",
+    breaks:
+      "`(made(6)..made(11)).step_by(2).len()`, `Math.max(made(11) - made(6), 0)`, runs the end's code before the start's (#1485)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                && end.has_effects()\n",
+    replace: "                && end.has_effects()\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_where_made_runs_each_part_once.rs$"],
   },
   {
     name: "repeat-n-of-a-cloned-value-uncounted",
     breaks:
       "`repeat_n(Dropped(1), usize::MAX).collect()`, `$repeatingN(x, n, clone, drop)`, has no count read, so no room is asked and JS collects until memory runs out where std panics `capacity overflow` (#1044)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
-    replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    find: "            && let Some([x, n, rest @ ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    replace: "            && let Some([x, n, rest @ ..]) = crate::lower::iterators::repeating_n_parts(it).filter(|parts| parts.len() == 2)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
     snapshots: true,
   },

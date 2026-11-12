@@ -672,14 +672,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
   },
   {
-    name: "collect-count-of-a-call-read-again",
-    breaks: "a collect's count whose reading runs code, a range bound's call, is read again where it's made, so each bound runs twice (#1441)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^collect_room_counted_by_the_program.rs$"],
-  },
-  {
     name: "collect-counted-by-program-uncounted",
     breaks: "a collect of items of a type known here counted by the program, a zip's, a chain's, a held map's, checks no room and runs on where std panics `capacity overflow` (#1441)",
     file: "src/lower/mir/iter/collect.rs",

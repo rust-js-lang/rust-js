@@ -139,10 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // where it's made: the room its hint asks instead, once it's made,
         // so each bound runs once, in Rust's order (#1441).
         let count = match counted {
-            true => Some(match self.counted_in_place(&it, iter_ty, &mut held) {
-                Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),
-                count => count,
-            }),
+            true => Some(unless_run_again(self.counted_in_place(&it, iter_ty, &mut held, false))),
             false => None,
         };
         // None where it surely fits, of no more items than its form says
