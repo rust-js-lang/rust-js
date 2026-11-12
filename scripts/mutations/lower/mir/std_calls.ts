@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
     breaks: "`as_str()` of arguments made in another function, whose maker nothing here says, is `Some` of their text, `None` or not (#1091)",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {\n",
-    replace: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at).or(Some(true)) {\n",
+    replace: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at).or(Some((true, rustc_middle::mir::RETURN_PLACE))) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "as_str\\(\\) of arguments made elsewhere"],
   },
   {
