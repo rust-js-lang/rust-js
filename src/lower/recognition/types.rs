@@ -85,6 +85,32 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // `i8`, `-1`, `0` or `1`, as its derived `Hash` writes it.
             ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(args.type_at(0)),
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::OrderingEnum) => Hashed::Number(self.tcx.types.i8),
+            // A `Duration`, an `Instant` or a `SystemTime`, its nanoseconds:
+            // its seconds and the nanoseconds under one, as std's (#1447).
+            ty::Adt(..) if is_duration_ty(ty) || clock_type_of(ty) == Some(ClockType::Instant) => {
+                Hashed::Nanoseconds { before_epoch: false }
+            }
+            ty::Adt(..) if clock_type_of(ty) == Some(ClockType::System) => Hashed::Nanoseconds { before_epoch: true },
+            ty::Adt(..) if self.is_os_text(ty) => Hashed::OsText,
+            ty::Adt(..) if self.compares_by_components(ty) => Hashed::PathText,
+            ty::Adt(..) if self.layout(ty) == Some(true) => Hashed::Layout,
+            // A `TypeId`, its type's name (ADR 0331): that text, `write_str`,
+            // where std writes an id of its own, its value unspecified and
+            // changing between compilers; equal ones hash equal (#1447).
+            ty::Adt(..) if self.is_type_id(ty) => Hashed::Text,
+            // A `mem::Discriminant<T>`, its number (ADR 0393), as `T`'s
+            // discriminant type, which std's hashes (#1447).
+            ty::Adt(_, args) if self.is_discriminant(ty) => Hashed::Number(args.type_at(0).discriminant_ty(self.tcx)),
+            // One of std's with no fields whose `Hash` is derived,
+            // `PhantomPinned`: nothing (#1447).
+            ty::Adt(adt, _)
+                if adt.is_struct()
+                    && adt.non_enum_variant().fields.is_empty()
+                    && is_std_crate(self.tcx, adt.did())
+                    && self.derives(std_item(self.tcx, StdItem::Hash), ty) =>
+            {
+                Hashed::Tuple(Vec::new())
+            }
             ty::Bool => Hashed::Bool,
             ty::Char => Hashed::Char,
             ty::Str => Hashed::Text,
@@ -357,6 +383,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `Path` or a `PathBuf`, whose `==` and ordering are its components'
     /// (ADR 0401), where an `OsStr`'s are its text's.
+    /// Whether a `ty` value compares, orders and hashes by its components,
+    /// not its text, `a/b` and `a//b` equal: a `Path`'s and a `PathBuf`'s
+    /// `==`, `cmp` and `Hash` (ADR 0401, #1467, #1447). The one rule `==`,
+    /// order, a derived or structural comparison of what holds one, and a
+    /// table's keys ask.
+    pub(in crate::lower) fn compares_by_components(&self, ty: Ty<'tcx>) -> bool {
+        self.is_path(ty)
+    }
+
     pub(in crate::lower) fn is_path(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
             if matches!(std_path(self.tcx, adt.did()), "std::path::Path" | "std::path::PathBuf"))

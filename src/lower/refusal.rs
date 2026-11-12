@@ -90,22 +90,11 @@ pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
     format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
 }
 
-/// What a missing impl is called: "implementation evidence for `<T as
-/// Hash>`", and where an open issue covers it, that issue (`open_evidence`).
-pub(crate) fn evidence_words<'tcx>(tcx: TyCtxt<'tcx>, tr: rustc_middle::ty::TraitRef<'tcx>) -> String {
-    let open = crate::lower::recognition::open_evidence(tcx, tr.def_id, tr.self_ty());
-    format!(
-        "implementation evidence for `{tr}`{}",
-        open.map(issue_of).unwrap_or_default()
-    )
-}
-
 /// The issue or decision an open family of refusals names, ` (#1452)`.
 pub(crate) fn issue_of(open: OpenCall) -> &'static str {
     match open {
         OpenCall::Conversion => " (#1452)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::OwnReader => " (#1297)",
-        OpenCall::StdHash => " (#1447)",
     }
 }

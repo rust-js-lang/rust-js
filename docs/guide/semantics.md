@@ -2231,3 +2231,8 @@ React and JSX are [their own pages](README.md#react).
     grows or is cloned: one made `with_capacity` for what it holds calls
     each as std's does (ADR 0262, the user's decision, 2026-11-07, #913;
     [ADR 1120](../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)).
+56. A `TypeId`'s hash values aren't native's: it hashes its type's name,
+    where std hashes an id the compiler picks. std leaves those values
+    unspecified, changing between compilers, so no program can rely on
+    them; equal `TypeId`s still hash equal (ADR 0262's "none" row, #1447;
+    [ADR 0463](../decisions/0463-hashing-is-stds.md)).

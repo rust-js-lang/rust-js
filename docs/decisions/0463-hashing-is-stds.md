@@ -236,3 +236,48 @@ rows of the three refusals. Mutations `std-struct-hash-unwritten`,
 `cow-hash-unwritten`, `std-enum-discriminant-unwritten`,
 `std-enum-discriminant-zero`, `std-enum-hash-runs-no-code`,
 `hashed-made-array-parts-with-effects`, `hashed-made-array-held`.
+
+## Amendment (2026-11-12, #1447): every std type hashed as std's impl writes it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept; for `TypeId`, none. Hashing a std type rust-js
+didn't write was refused, alone and in a key beside one whose `Hash` runs
+code. Each is now written as std's impl does (`hashed_as`, `hash_writes`):
+
+- A `Duration`, an `Instant` and a `SystemTime`, each its nanoseconds, a
+  BigInt (ADRs 0188, 0447): its seconds, a `u64`, then the nanoseconds under
+  one, a `u32`, as `Duration`'s derived `Hash` and wasm32's `Instant` and
+  `SystemTime`, which hold one or a timespec, write them; a `SystemTime`'s
+  seconds floored, an `i64`, its nanoseconds never negative, as wasm32's
+  timespec has one before the epoch.
+- An `OsStr` and an `OsString`, its text: its UTF-8 bytes as a `[u8]`, as
+  `as_encoded_bytes().hash()` does.
+- A `Path` and a `PathBuf`: std's component-wise `Hash`, `$hashPath(path,
+  state, H)` (runtime hasher.js): each part's bytes between separators, a
+  `.` after one left out, then the rotated sum of their lengths, a wasm32
+  `usize`.
+- A `Discriminant<T>`, its number, as `T`'s discriminant type; a std struct
+  with no fields whose `Hash` is derived, `PhantomPinned`, nothing; a
+  `Layout`, its size then its alignment, each a `usize`.
+- A `TypeId`, its type's name (ADR 0331), by `write_str`. std hashes an id
+  the compiler picks, documented as unspecified and changing between
+  compilers, so no program can rely on native's raw value; what std does
+  say, equal ids hash equal, holds. ADR 0262's "none" row, as `RandomState`'s
+  keys are (m6, on the user's behalf); listed in the guide's differences.
+
+Held by corpus case `std_types_hashed_as_std_does.rs` against native wasm32,
+raw `DefaultHasher` values compared, a `TypeId`'s equalities, and each in a
+tuple key beside one that counts its `hash` calls, both builds. Mutations
+`clock-hash-unwritten`, `system-time-hash-truncated`,
+`os-text-hash-unwritten`, `discriminant-hashed-as-u8`,
+`fieldless-std-hash-unwritten`, `path-hash-unwritten`,
+`layout-hash-unwritten`, `type-id-hash-unwritten`,
+`layout-hash-align-first`, `path-hash-dot-kept`, `path-hash-unrotated`.
+Nothing found is left refused, so the `(#1447)` tags, `open_evidence` and
+the guide's limitation line go. And mutation `hash-runs-code-of-any-bound` goes: it held
+`hash_runs_code`'s fallback for std's impls, which counts only `Hash`
+bounds, by a `Discriminant<T>`, whose impl's `T: Sized` names what it never
+hashes; a `Discriminant` is hashed directly now, and with that filter gone
+the whole corpus and every crate pair still pass, no other std type
+reaching it but `NonNull`, which rust-js refuses. The filter stays, as
+std's rule.

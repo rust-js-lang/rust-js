@@ -57,6 +57,23 @@ pub(in crate::lower) enum Hashed<'tcx> {
     Char,
     /// `str` and `String`: `write_str`.
     Text,
+    /// A `Duration`, an `Instant` or a `SystemTime`, its nanoseconds, a
+    /// BigInt (ADRs 0188, 0447): its seconds, a `u64`, then the nanoseconds
+    /// under one, a `u32`, as std's derived `Hash` of a `Duration` writes,
+    /// and of an `Instant` and a `SystemTime` of wasm32's, which hold one or
+    /// a timespec; of a `SystemTime`, `before_epoch`, a timespec's, its
+    /// seconds floored, an `i64`, its nanoseconds never negative (#1447).
+    Nanoseconds { before_epoch: bool },
+    /// An `OsStr` or an `OsString`, its text in JS (ADR 0173): its encoded
+    /// bytes, UTF-8's, as a `[u8]`, a length then the bytes, as std's
+    /// `self.as_encoded_bytes().hash(state)` (#1447).
+    OsText,
+    /// A `Path` or a `PathBuf`, its text: std's component-wise `Hash`,
+    /// `$hashPath(path, state, H)` (#1447).
+    PathText,
+    /// A `Layout`, `{ size, align }` (ADR 0417): its size, then its
+    /// alignment, each a `usize`, as std's derived `Hash` writes (#1447).
+    Layout,
     /// A reference, a `Box`, an `Rc` or an `Arc`: what it points at.
     Pointer(Ty<'tcx>),
     /// One of std's that's in JS the value it holds, a `ManuallyDrop`, the
@@ -251,7 +268,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Hashed::Result(ok, err) => self.hash_runs_code(ok, seen) || self.hash_runs_code(err, seen),
                 Hashed::Range(_, bound) => bound.is_some_and(|bound| self.hash_runs_code(bound, seen)),
-                Hashed::Number(_) | Hashed::Bool | Hashed::Char | Hashed::Text | Hashed::Address(_) => false,
+                Hashed::Number(_)
+                | Hashed::Bool
+                | Hashed::Char
+                | Hashed::Text
+                | Hashed::Nanoseconds { .. }
+                | Hashed::OsText
+                | Hashed::PathText
+                | Hashed::Layout
+                | Hashed::Address(_) => false,
             };
         }
         match ty.kind() {
@@ -373,6 +398,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(hasher.write(&self.hasher_key("write_u32"), vec![code]));
             }
             Hashed::Text => out.push(hasher.write(&self.hasher_key("write_str"), vec![value])),
+            Hashed::Layout => {
+                let value = self.spilled(value, out);
+                for field in ["size", "align"] {
+                    out.push(hasher.write(
+                        &self.hasher_key("write_usize"),
+                        vec![Expr::member(value.clone(), field)],
+                    ));
+                }
+            }
+            Hashed::PathText => {
+                // A std hasher's own, its dictionary's, `$sipHasher` of its cell.
+                let (state, dictionary) = match &hasher.own {
+                    Some(own) => (
+                        Expr::object(vec![js::Prop::Field(js::HELD.into(), own.clone())]),
+                        Expr::helper("$sipHasher"),
+                    ),
+                    None => (hasher.state.clone(), hasher.dictionary.clone()),
+                };
+                let call = Expr::call(Expr::helper("$hashPath"), vec![value, state, dictionary]);
+                out.push(StmtKind::Expr(call).at(js::Span::NONE));
+            }
+            Hashed::OsText => {
+                let bytes = Expr::call(Expr::helper("$utf8Bytes"), vec![value]);
+                let slice = Ty::new_imm_ref(
+                    self.tcx,
+                    self.tcx.lifetimes.re_erased,
+                    Ty::new_slice(self.tcx, self.tcx.types.u8),
+                );
+                self.hash_writes(bytes, slice, hasher, span, out)?;
+            }
+            Hashed::Nanoseconds { before_epoch } => {
+                let value = self.spilled(value, out);
+                let second = || Expr::bigint(1_000_000_000);
+                let (seconds, nanos) = match before_epoch {
+                    false => (
+                        Expr::bin(js::Op::Div, value.clone(), second()),
+                        Expr::bin(js::Op::Rem, value, second()),
+                    ),
+                    true => {
+                        let under = Expr::bin(js::Op::Rem, value.clone(), second());
+                        let wrapped = Expr::bin(js::Op::Add, under, second());
+                        let nanos = self.spill("nanos", Expr::bin(js::Op::Rem, wrapped, second()), out);
+                        let whole = Expr::bin(js::Op::Sub, value, nanos.clone());
+                        (Expr::bin(js::Op::Div, whole, second()), nanos)
+                    }
+                };
+                let seconds_write = if before_epoch { "write_i64" } else { "write_u64" };
+                out.push(hasher.write(&self.hasher_key(seconds_write), vec![seconds]));
+                let nanos = Expr::call(Expr::var("Number"), vec![nanos]);
+                out.push(hasher.write(&self.hasher_key("write_u32"), vec![nanos]));
+            }
             // A raw pointer's address, as `usize` (ADR 0562).
             Hashed::Address(pointee) => {
                 let size = self.pointee_size(pointee, span)?;

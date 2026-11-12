@@ -5,7 +5,7 @@
 
 use super::{StdItem, is_std_def};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 
 /// A refused call of std's that an open issue covers.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -20,16 +20,6 @@ pub(crate) enum OpenCall {
     /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
     /// answer: a reader's of the crate's own (#1297, ADR 0425).
     OwnReader,
-    /// The `Hash` of a std type rust-js doesn't write, a `Duration`'s (#1447).
-    StdHash,
-}
-
-/// The open issue's family the missing impl of trait `trait_id` for
-/// `self_ty` is of, if one is: the `Hash` of a std type rust-js doesn't
-/// write (#1447).
-pub(crate) fn open_evidence(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: ty::Ty<'_>) -> Option<OpenCall> {
-    let std_type = matches!(self_ty.kind(), ty::Adt(adt, _) if super::std_crates::is_std_crate(tcx, adt.did()));
-    (is_std_def(tcx, trait_id, StdItem::Hash) && std_type).then_some(OpenCall::StdHash)
 }
 
 /// The open issue's family `id`, a refused call, is of, if one is.

@@ -17666,6 +17666,29 @@ export function $hasher(dictionary) {
   return dictionary;
 }
 
+// A `Path`'s `Hash`, std's (#1447): the bytes of each part between its
+// separators, a `.` after one left out as `components()` leaves it, then
+// the sum of their lengths, rotated after each, a wasm32 `usize`, so `a/b`
+// and `ab` differ though their bytes are the same.
+export function $hashPath(path, state, H) {
+  const bytes = $utf8Bytes(path);
+  let [start, bits] = [0, 0];
+  const part = (end) => {
+    const chunk = bytes.slice(start, end);
+    bits = (bits + chunk.length) >>> 0;
+    bits = ((bits >>> 2) | (bits << 30)) >>> 0;
+    H.write(state, chunk);
+  };
+  for (let i = 0; i < bytes.length; i++) {
+    if (bytes[i] !== 0x2f) continue;
+    if (i > start) part(i);
+    start = i + 1;
+    if (bytes[start] === 0x2e && (start + 1 === bytes.length || bytes[start + 1] === 0x2f)) start += 1;
+  }
+  if (start < bytes.length) part(bytes.length);
+  H.writeUsize(state, bits);
+}
+
 // `Hash`'s provided `hash_slice`, of a dictionary's `hash`: each item's.
 export function $hashSlice(hash) {
   return (items, state, H) => {

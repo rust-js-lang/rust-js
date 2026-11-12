@@ -281,6 +281,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.counted_rc(ty).is_some() => true,
             // A `Cow` compares what it borrows, not its variant (ADR 0400).
             ty::Adt(..) if self.recognition().is_cow(ty) => true,
+            // A path compares its components, `$pathEq`, not its text, which
+            // `$eq` would (#1467).
+            ty::Adt(..) if self.recognition().compares_by_components(ty) => true,
             // A raw pointer, by its handle or a `dyn`'s pair, not what it
             // points to (ADRs 0407, 0562).
             _ if self.compared_by_address(ty) => true,
@@ -452,7 +455,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.pointers_equal(a, b, pointee, span);
         }
         // A path's components, `a/b` and `a//b` alike (ADR 0401).
-        if self.recognition().is_path(ty) {
+        if self.recognition().compares_by_components(ty) {
             return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));
         }
         // A registered symbol's key and text: the symbol and the text's,

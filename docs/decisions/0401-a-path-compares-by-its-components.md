@@ -60,3 +60,22 @@ sizes.get("src/./main.rs");
 What gives back the key a map holds, refused above, gives it: `$storedKey`,
 the one it holds equal to the one asked with ([ADR 0404](0404-a-b-tree-keyed-by-value.md)
 amended). Held by `test/corpus/held_keys.rs`.
+
+## Amendment (2026-11-12, #1467): inside what holds it too, one owner
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's behavior is kept. A path alone compared by `$pathEq`, but a tuple
+holding one by structural `$eq`, its text: `(PathBuf::from("a/b"), 1) ==
+(PathBuf::from("a//b"), 1)` was `false` where Rust's is `true` (P0), and a
+hash set of such keys kept both once #1447 hashed them. `custom_eq` said a
+std type with no type arguments compares as its value. **One owner says
+it, `compares_by_components`** (recognition/types.rs): `==` (`eq_value`)
+and order (`cmp_value`) ask it for `$pathEq` and `$pathCmp`, `custom_eq`
+counts it custom, so a tuple, an array, a derived struct, an `Option` and a
+`Vec` compare part by part and reach them, and `Hash` asks it for
+`$hashPath`; a table's keys, by `compares_by_value` and `orders_by_value`,
+already never took a path for its text. An `OsString`'s `==` and order are
+its text's, which the `$cmp` of text orders by UTF-8 bytes, as std's.
+
+Held by corpus case `paths_compare_by_components_inside.rs` against native
+Rust in both builds; mutation `path-in-tuple-compared-as-text`.

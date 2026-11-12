@@ -138,14 +138,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
   {
-    name: "hash-runs-code-of-any-bound",
-    breaks: "std's impl is taken to hash what any of its bounds names, `Discriminant<T>`'s `T: Sized` too, so a map of discriminants asks a `Hash` its key's type hasn't (ADR 1120)",
-    file: "src/lower/std_types/hash.rs",
-    find: "                    .filter(|bound| bound.def_id() == hash)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
-  },
-  {
     name: "range-hash-exhausted-unwritten",
     breaks: "a hashed `a..=b` writes its bounds alone, never whether it's exhausted, so one stepped to its end hashes as a fresh one of its bounds, where std's derive writes its `exhausted` (#1361)",
     file: "src/lower/std_types/hash.rs",
@@ -202,5 +194,13 @@ export const mutations: Mutation[] = [
     replace: "                    js::ExprKind::Array(items) if false && items.len() == parts.len() && !value.has_effects() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_of_a_wrapping_in_generic_code.rs$"],
     snapshots: true,
+  },
+  {
+    name: "layout-hash-align-first",
+    breaks: "a `Layout` hashes its alignment before its size, not as std's derive (#1447)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                for field in [\"size\", \"align\"] {\n",
+    replace: "                for field in [\"align\", \"size\"] {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
   },
 ];

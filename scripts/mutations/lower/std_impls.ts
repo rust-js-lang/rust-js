@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     name: "path-eq-as-text",
     breaks: "`==` of paths is refused, where it's their components'",
     file: "src/lower/std_impls.rs",
-    find: '        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));\n',
+    find: '        if self.recognition().compares_by_components(ty) {\n            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));\n',
     replace:
       '        if false {\n            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
@@ -728,5 +728,13 @@ export const mutations: Mutation[] = [
     find: "            || crate::lower::recognition::fs_type(self.tcx, ty) == Some(\"FileType\")\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
+  },
+  {
+    name: "path-in-tuple-compared-as-text",
+    breaks: "a tuple holding a path compares by structural `$eq`, its text, not its components (#1467)",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if self.recognition().compares_by_components(ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^paths_compare_by_components_inside.rs$"],
   },
 ];

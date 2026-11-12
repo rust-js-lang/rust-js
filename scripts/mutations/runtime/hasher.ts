@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "    hash(items[0], state, H);\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
+  {
+    name: "path-hash-dot-kept",
+    breaks: "a `Path`'s `.` part after a separator is hashed, where std's `components()` leaves it out (#1447)",
+    file: "src/runtime/hasher.js",
+    find: "    if (bytes[start] === 0x2e && (start + 1 === bytes.length || bytes[start + 1] === 0x2f)) start += 1;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
+  },
+  {
+    name: "path-hash-unrotated",
+    breaks: "a `Path`'s hash sums its parts' lengths without rotating, so `a/b` and `ab/` would agree (#1447)",
+    file: "src/runtime/hasher.js",
+    find: "    bits = ((bits >>> 2) | (bits << 30)) >>> 0;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
+  },
 ];
