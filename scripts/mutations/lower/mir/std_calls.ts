@@ -645,7 +645,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                    if this.forwards_clone_from(ty, span)? {\n",
     replace: "                    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from_option_own.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_result_refused.rs$"],
   },
   {
     name: "generic-clone-from-place-not-given-back",

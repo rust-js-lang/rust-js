@@ -303,3 +303,45 @@ the lowering test pins both branches and concrete code's form; mutations
 `generic-clone-from-*`, `generic-option-clone-from-unasked`,
 `dictionary-clone-from-forwarded-unrefused`,
 `std-clone-dictionary-without-clone-from`; the guide's `assign_items`.
+
+## Amendment: an `Option`'s and a `Result`'s `clone_from` forward to their value's (2026-11-12, #927)
+
+Generic code given quickcheck 0.9's `impl<A: Arbitrary> Arbitrary for
+Option<A>` or `Result<A, B>` gets their `Clone` dictionary, whose
+`clone_from` is std's: the value's own of two `Some`s, two `Ok`s or two
+`Err`s, otherwise `*dest = source.clone()`. It was refused (#927), and so
+was a direct `clone_from` of an `Option` of a type whose `clone_from` is
+the crate's own.
+
+- **A type's own `clone_from` writes it over** (`written_over`): its
+  impl's, given the value, or its box where JS can't change the value in
+  place, as `clone_over` gives it a slot's. An `Option`, a `Result` and a
+  slice of either reach it.
+- **An `Option`'s boxed payload**, `$some(x)` of a value that may look
+  like `None` (ADR 0051), is read and written through an inline place,
+  `{ get value() { return $someValue(to); }, set value(v) { to =
+  $some(v); } }`, the getter/setter box rust-js already prints. The
+  coordinator chose (A). An unboxed payload's place is the option's own,
+  as before.
+- **A `Result`'s value or error** is read and written the same way,
+  through its `_0`. A setter makes a new `Result` of the same side,
+  `{ TAG: "Ok", _0: v }`, because one may be shared.
+- **What a `Result` held before a replacement** is moved out apart
+  (`moved_out`, `$apart`), because generic code's box of an object may be
+  an in-place cell, `$cellOf(object)`. Otherwise its drop would drop what
+  was just written.
+
+Still refused, naming #927: a `Reverse`'s (`clone_from_generic_reverse_own_refused`,
+`clone_from_slice_reverse_refused`) and a direct `clone_from` of a
+`Result` of a type parameter's (`clone_from_generic_result_refused`).
+Case C of ADR 0262. Corpus cases `clone_from_of_an_option_given_to_generic_code`
+(boxed, nested and numeric payloads, drops seen) and
+`clone_from_of_a_result_given_to_generic_code` check them against native Rust
+in both builds and through the metamorphic net. So do
+`clone_from_option_own`, `clone_from_generic_option_own` (was `_refused`) and
+`clone_from_slice_nested_option`, which compile now. Mutations
+`boxed-option-payload-unwritten`, `own-clone-from-unwritten-over`,
+`result-clone-from-unforwarded` and `result-clone-from-old-shared` are
+caught, and three refusal mutations point
+at the cases still refused.
+

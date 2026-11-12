@@ -1,7 +1,6 @@
-//@ compile-fail: `clone_from` of `std::option::Option<Counted>`, whose std `clone_from` is its value's
 // `clone_from` of an `Option` of a type whose `clone_from` is the crate's
-// own: refused, as std's `Option::clone_from` would call it, which rust-js
-// doesn't write yet, not written as `*dest = source.clone()` (#922).
+// own: of two `Some`s that `clone_from`, as std's `Option::clone_from`
+// calls it, never `*dest = source.clone()` (#922, #927).
 
 struct Counted(u32);
 

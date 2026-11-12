@@ -1,8 +1,6 @@
-//@ compile-fail: a `Clone` dictionary of `std::option::Option<Counted>` given to generic code, whose std `clone_from` is its value's
 // A `Clone` dictionary of an `Option` whose value's `clone_from` is the
 // crate's own, given to generic code: std's `clone_from` of it is its
-// value's, which rust-js doesn't write yet (#927), so a generic caller's
-// `clone_from` would skip it. Refused, not `*dest = source.clone()` (#928).
+// value's, of two `Some`s (#927), never `*dest = source.clone()` (#928).
 struct Counted(u32);
 
 impl Clone for Counted {

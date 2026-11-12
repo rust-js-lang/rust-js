@@ -1,7 +1,6 @@
-//@ compile-fail: `clone_from_slice` of items whose `clone_from` may be the crate's
 // `clone_from_slice` of `Option`s of a type whose `clone_from` is the
-// crate's own: refused, as std's `Option::clone_from` would call it, which
-// rust-js doesn't write yet (a `Vec`'s it does, #919).
+// crate's own: each item's `Option::clone_from`, which calls it of two
+// `Some`s, as std's does (#919, #927).
 
 struct Counted(u32);
 

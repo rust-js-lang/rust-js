@@ -327,10 +327,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         from: Expr,
         span: Span,
     ) -> R<Option<Vec<Stmt>>> {
-        let Some(inner) = self.option_of(ty).filter(|&inner| !self.boxed_payload(inner)) else {
+        let Some(inner) = self.option_of(ty) else {
             return Ok(None);
         };
-        let Some((asked, written)) = self.written_over(inner, (to.clone(), pointer), from.clone(), span)? else {
+        // A `Some` of a value that may look like `None` is boxed, `$some(x)`
+        // (ADR 0051): its value's place is read and written through the
+        // box, `{ get value() { return $someValue(to); }, set value(v) { to
+        // = $some(v); } }`, quickcheck's `Option<A>` (#927).
+        let boxed = self.boxed_payload(inner);
+        let (payload, payload_pointer, from_payload, made) = match boxed {
+            true => {
+                let name = self.fresh("payload");
+                let getter = Expr::arrow(
+                    Vec::new(),
+                    vec![StmtKind::Return(Some(Expr::call_helper("$someValue", vec![to.clone()]))).at(js::Span::NONE)],
+                );
+                let setter = Expr::arrow(
+                    vec!["v".into()],
+                    vec![
+                        StmtKind::Assign(to.clone(), Expr::call_helper("$some", vec![Expr::var("v")]))
+                            .at(js::Span::NONE),
+                    ],
+                );
+                let made = Expr::object(vec![
+                    js::Prop::Getter(js::HELD.into(), getter),
+                    js::Prop::Setter(js::HELD.into(), setter),
+                ]);
+                let pointer = Expr::var(&name);
+                let from_payload = Expr::call_helper("$someValue", vec![from.clone()]);
+                (
+                    Expr::member(pointer.clone(), js::HELD),
+                    pointer,
+                    from_payload,
+                    Some(StmtKind::Const(name, made).at(js::Span::NONE)),
+                )
+            }
+            false => (to.clone(), pointer, from.clone(), None),
+        };
+        let Some((asked, written)) = self.written_over(inner, (payload, payload_pointer), from_payload, span)? else {
             return Ok(None);
         };
         let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
@@ -345,9 +379,83 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
         let written = StmtKind::Expr(written).at(js::Span::NONE);
-        Ok(Some(vec![
-            StmtKind::If(both, vec![written], Some(replaced)).at(js::Span::NONE),
-        ]))
+        let over = made.into_iter().chain([written]).collect();
+        Ok(Some(vec![StmtKind::If(both, over, Some(replaced)).at(js::Span::NONE)]))
+    }
+
+    /// `to.clone_from(from)` of a `Result`, as std's is: of two `Ok`s its
+    /// value's, of two `Err`s its error's, where that's written in place
+    /// (`written_over`); otherwise `*to = from.clone()`, the clone written
+    /// over it, then what it held dropped, quickcheck's `Result<A, B>`
+    /// (#927). Each side's place is read and written through `to`'s `_0`,
+    /// `{ get value() { return to._0; }, set value(v) { to = { TAG: "Ok",
+    /// _0: v }; } }`, a new `Result` where it's set, as one may be shared. `None`
+    /// of another type, or where neither side is written in place.
+    pub(in crate::lower) fn result_clone_over(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        to: Expr,
+        from: Expr,
+        span: Span,
+    ) -> R<Option<Vec<Stmt>>> {
+        if !self.is_std_type(ty, crate::lower::recognition::StdItem::Result) {
+            return Ok(None);
+        }
+        let ty::Adt(_, args) = ty.kind() else {
+            return Ok(None);
+        };
+        let mut sides = Vec::new();
+        for (ok, held) in [(true, args.type_at(0)), (false, args.type_at(1))] {
+            let name = self.fresh("payload");
+            let getter = Expr::arrow(
+                Vec::new(),
+                vec![StmtKind::Return(Some(js::result::held(to.clone()))).at(js::Span::NONE)],
+            );
+            let replaced = js::result::made(ok, Expr::var("v"));
+            let setter = Expr::arrow(
+                vec!["v".into()],
+                vec![StmtKind::Assign(to.clone(), replaced).at(js::Span::NONE)],
+            );
+            let made = Expr::object(vec![
+                js::Prop::Getter(js::HELD.into(), getter),
+                js::Prop::Setter(js::HELD.into(), setter),
+            ]);
+            let pointer = Expr::var(&name);
+            let place = Expr::member(pointer.clone(), js::HELD);
+            let Some((asked, written)) =
+                self.written_over(held, (place, pointer), js::result::held(from.clone()), span)?
+            else {
+                continue;
+            };
+            let mut test = Expr::bin(
+                Op::And,
+                js::result::is(to.clone(), ok),
+                js::result::is(from.clone(), ok),
+            );
+            if let Some(asked) = asked {
+                test = Expr::bin(Op::And, test, asked);
+            }
+            let body = vec![
+                StmtKind::Const(name, made).at(js::Span::NONE),
+                StmtKind::Expr(written).at(js::Span::NONE),
+            ];
+            sides.push((test, body));
+        }
+        if sides.is_empty() {
+            return Ok(None);
+        }
+        let mut replaced = Vec::new();
+        let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
+        let old = self.fresh("old");
+        let held = self.moved_out(to.clone(), ty);
+        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));
+        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
+        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
+        let mut otherwise = Some(replaced);
+        for (test, body) in sides.into_iter().rev() {
+            otherwise = Some(vec![StmtKind::If(test, body, otherwise).at(js::Span::NONE)]);
+        }
+        Ok(otherwise)
     }
 
     /// `held` at `place`, `pointer` the box generic code has of it, written
@@ -367,6 +475,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<(Option<Expr>, Expr)>> {
         if let Some(into) = self.clone_into(held, span)? {
             return Ok(Some((None, into.call(place, from))));
+        }
+        // A type's own `clone_from`, its impl's, given the value, or the box
+        // of a value JS can't change in place (`clone_over`'s, #927).
+        if self.recognition().own_clone_from(held) {
+            let target = match self.handles_mut(held) {
+                true => pointer,
+                false => place,
+            };
+            let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
+            let args = self.args_of(self.clone_trait(), held);
+            return Ok(Some((
+                None,
+                self.impl_call(clone_from, args, vec![target, from], span)?,
+            )));
         }
         let mut value = held;
         while value.is_box() {
@@ -421,8 +543,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Box` of a type parameter's, which is its value: the
             // value's dictionary's, given, where it has one.
             Some((Some(given), _)) => return Ok(Some(given)),
-            None => match self.option_clone_over(ty, (place, to), from, span)? {
+            None => match self.option_clone_over(ty, (place.clone(), to), from.clone(), span)? {
                 Some(over) => over,
+                None if let Some(over) = self.result_clone_over(ty, place, from, span)? => over,
                 None if self.forwards_clone_from(ty, span)? => {
                     return Err(self.unsupported(
                         span,
