@@ -67,16 +67,23 @@ const statOf = (path: string): Stat | undefined => {
   }
 };
 
-/** The compiler `cmd` runs, if it's the one the tests are given, and a
- * build of rust-js, not a script standing in for it: its identity, its
- * build's (ADR 1003, `--version-json`), the same however often Cargo links
- * it again, as `cargo test` does. Asked once a process of each file. */
-const identities = new Map<string, string | undefined>();
+/** The compiler `cmd` runs, if a compile of it is kept: not a mutant's,
+ * nor one given no room, nor one asked to count its decisions (ADR 1124),
+ * which appends to a file no record names, so given again it would count
+ * nothing; and its build's identity (`buildIdentity`). */
 function compilerIdentity(program: string, env: Record<string, string | undefined>): { identity: string; file: Stat } | undefined {
   if (process.env.RUST_JS_MUTANT || capBytes(env) <= 0) return undefined;
-  // A compile asked to count its decisions (ADR 1124) appends to a file
-  // no record names: given again, it would count nothing.
   if (env.RUST_JS_DECISIONS ?? process.env.RUST_JS_DECISIONS) return undefined;
+  return buildIdentity(program);
+}
+
+/** The compiler `program`, if it's the one the tests are given, and a
+ * build of rust-js, not a script standing in for it: its identity, its
+ * build's (ADR 1003, `--version-json`), the same however often Cargo links
+ * it again, as `cargo test` does, whether or not its compiles are kept.
+ * Asked once a process of each file. */
+const identities = new Map<string, string | undefined>();
+function buildIdentity(program: string): { identity: string; file: Stat } | undefined {
   const ours = statOf(testsCompiler);
   const given = statOf(program);
   if (!ours || !given || ours.dev !== given.dev || ours.ino !== given.ino) return undefined;
@@ -99,9 +106,11 @@ function compilerIdentity(program: string, env: Record<string, string | undefine
 }
 
 /** The name of the tests' compiler's build's kept compiles, `prune`'s
- * `current`. */
+ * `current`, and a Crater's build: its build's, kept compiles or not, so
+ * a run that counts decisions, the nightly's, has one (nightly
+ * 43133510260's Crater found none). */
 export function currentBuild(program = testsCompiler): string | undefined {
-  return compilerIdentity(program, {})?.identity.slice(0, 24);
+  return buildIdentity(program)?.identity.slice(0, 24);
 }
 
 // What rust-js does that isn't a compile of a crate, or that writes or

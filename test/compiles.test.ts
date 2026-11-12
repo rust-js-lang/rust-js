@@ -11,11 +11,16 @@ import { join } from "node:path";
 import type { Exit } from "./child";
 import { freeBytes } from "../tooling/bounded.js";
 import { floorBytes } from "./bounded";
-import { capBytes, compileCache, keptCompile, parseRecord, prune, unread } from "./compiles";
+import { capBytes, compileCache, currentBuild, keptCompile, parseRecord, prune, unread } from "./compiles";
 import { target } from "./packages-of";
 import { buildCompiler, compiler, fixture, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
+
+// These tests are of what's kept, and a compile asked to count its
+// decisions (ADR 1124), as every one of the nightly's is, is never kept:
+// they count none, but the one that says it isn't.
+delete process.env.RUST_JS_DECISIONS;
 
 /** `cmd` run as it is, each run counted; and an environment of this run's
  * own, so what an earlier run kept, in the same fixture, isn't found. */
@@ -112,6 +117,26 @@ test("another compiler's compiles, a failed compile and one that read what it wr
   withManifest();
   withManifest();
   expect(ran.length).toBe(7);
+});
+
+// A compile asked to count its decisions (ADR 1124) appends its counts
+// to a file no record names: given again, nothing would be counted, so
+// it's compiled each time; and its build is still named, as a Crater of
+// the nightly's, which counts, names it.
+test("a compile that counts its decisions isn't kept, and its build is named", () => {
+  const dir = fixture("kept-counting");
+  writeFileSync(join(dir, "lib.rs"), lib);
+  writeFileSync(join(dir, "text.txt"), "counted");
+  const { ran, compile, own } = counting();
+  const counts = { ...own, RUST_JS_DECISIONS: join(dir, "counts.tsv") };
+  for (let i = 0; i < 2; i++) keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"], root, counts, compile, room);
+  expect(ran.length).toBe(2);
+  process.env.RUST_JS_DECISIONS = counts.RUST_JS_DECISIONS;
+  try {
+    expect(currentBuild(compiler)).toMatch(/^[0-9a-f]{24}$/);
+  } finally {
+    delete process.env.RUST_JS_DECISIONS;
+  }
 });
 
 // The real disk's floor (#963): a compile is kept where the disk the cache
