@@ -461,4 +461,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
+  {
+    name: "copy-call-unused",
+    breaks: "a call of a copy of a function uses nothing, so a library's generic function a middle library's generic code alone calls, compiled there, is never written: `ReferenceError: given is not defined` (#1596)",
+    file: "src/lower/items.rs",
+    find: "        if copy.is_some() {\n            self.dependencies.borrow_mut().uses.push((self.item, def_id));\n        }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "library_generic_called_only_from_a_middle_generic"],
+  },
 ];

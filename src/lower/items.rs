@@ -247,6 +247,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as; not its default, which is what the module is, imported by its
     /// name.
     fn own_fn_ref_through(&self, def_id: DefId, copy: Option<usize>, through: bool) -> Expr {
+        // A copy is a use of the function it's of, as its own JS's is
+        // (`fn_ref`'s): what's written only where it's reached, a library's
+        // function the crate compiles itself, is reached by a call of its
+        // copy, which may settle as that JS (#1596).
+        if copy.is_some() {
+            self.dependencies.borrow_mut().uses.push((self.item, def_id));
+        }
         let target = &self.krate.fns[&def_id];
         let copy = copy.map(|at| {
             let name = self.krate.given.js_given.name(def_id, at).to_owned();

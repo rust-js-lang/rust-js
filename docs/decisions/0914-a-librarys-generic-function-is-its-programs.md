@@ -1736,3 +1736,24 @@ never read as the copy: its pointer is left, which rust-js refuses. The
 crate pair holds `**b += 1` and a box written across a call, a branch and a
 loop; mutations `box-copy-only-just-before` and
 `box-copied-from-a-place-read-as-the-copy`, refitted.
+
+## Amendment: a call of a copy reaches the function it's of (2026-11-13, #1596)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, the JS threw where
+Rust runs.
+
+A library's function the crate compiles itself is written only where the
+crate's code reaches it (`written_where_reached`, #483), by the uses its
+callers' lowering records. A call of a copy a caller needs (ADR 0051,
+amended), `own_fn_ref_through`'s, recorded none. So where a middle
+library's generic code alone called the first library's generic function,
+giving it a value that drops, its own copy of that function was named,
+`given(..)`, and never written: `ReferenceError: given is not defined`
+(P1). A call of a copy now records the use of the function it's of, as a
+call of its own JS does (`fn_ref`'s).
+
+Crate triple `library_generic_called_only_from_a_middle_generic` holds a
+middle library's generic functions calling the first's with its `Up`,
+against native Rust; no corpus snapshot changes. Mutation
+`copy-call-unused`, caught.
+
