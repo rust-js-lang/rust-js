@@ -1383,3 +1383,18 @@ so a gap anywhere is loud, not wrong. Held by a runtime-package test (an
 accessor handle refused, a box and an object's handle given addresses)
 and the mutation placeless-handle-at-zero. Every corpus case that asks an
 address runs as before.
+
+## Amendment: a pointer to a place handle's value is that handle (#1479)
+
+A raw pointer made in generic code from a `&mut T` its caller gave as a
+place's handle, `$ptr(s, "n")` (ADR 1114), was made, in a closure or
+through a reborrow, as a pointer to that handle's `value`:
+`$ptr(y, "value", 0)`. That's a place of the handle object's own, so its
+address was a fresh allocation's, `64` where native wasm32's is `0`. That
+was a wrong answer. Now `$ptr` of a place handle's `value`, at its start,
+is that handle: the same place. The program in #1479 is refused at run
+time instead ("the address of a field of a type its caller lays out"),
+since its caller's handle carries no offset (#1471); once that is filled,
+it runs as native. Held by a runtime-package test (a field's handle's
+`value` is the handle, at its offset; a `{ value }` cell's isn't) and the
+mutation handle-of-a-handle-own-place.

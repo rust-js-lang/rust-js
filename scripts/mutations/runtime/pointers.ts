@@ -747,4 +747,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "handle on no place it records"],
   },
+  {
+    name: "handle-of-a-handle-own-place",
+    breaks: "a pointer to a place handle's `value` is a place of the handle object's own, its address made up, 64 where native's is 0 (#1479)",
+    file: "src/runtime/pointers.js",
+    find: "    return object;\n  }\n",
+    replace: "  }\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer to a place handle's value is that handle"],
+  },
 ];

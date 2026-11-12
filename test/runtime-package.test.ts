@@ -1036,6 +1036,25 @@ pub fn walked_by(f: fn(f64, &dyn Fn(f64) -> f64, Marker, Option<u8>) -> f64) -> 
   expect(call("[m.walked(), m.walkedBy((...args) => args[1](args[0]) + args.length)].join()")).toBe("2,4\n");
 });
 
+// A pointer to what a place's handle refers to, its `value`, at its
+// start, is that handle, the same place: a pointer made in generic code
+// from a `&mut T` its caller gave as a field's handle, in a closure or
+// through a reborrow, had the handle object's own address, 64 where
+// native's is 0 (#1479).
+test("a pointer to a place handle's value is that handle", () => {
+  const module = join(fixture("runtime-handle-of-a-handle"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $addr, $ptr, $ptrTo } = await import(${JSON.stringify(module)});
+const s = { a: 1, n: 2 };
+const field = $ptr(s, "n", 4);
+console.log($ptr(field, "value", 0) === field, $addr($ptr(field, "value", 0), 4) - $addr($ptrTo(s), 8));
+const cell = { value: 3 };
+console.log($ptr(cell, "value", 0) === cell);
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("true 4\nfalse\n");
+});
+
 // A handle that reads a place it doesn't record, `{ get value() { .. } }`
 // of a `&mut` std lent from inside its storage, is on no allocation it
 // says: its address is refused, never a made-up one (#1474). A box's

@@ -14,6 +14,12 @@ const $items = new WeakMap();
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
+  // What a place's handle refers to, its `value`, at its start: that
+  // handle, the same place, never a place of the handle object's own, which
+  // would be an address made up (#1474).
+  if (key === "value" && !offset && root === undefined && object !== null && typeof object === "object" && object.of !== undefined && $places.get(object.of)?.get(object.at) === object) {
+    return object;
+  }
   // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
   // of, where Rust's is (#1185); of a view of another type's bytes, or of
   // one place, its first item's pointer stepped to it (#1257, #1280).
