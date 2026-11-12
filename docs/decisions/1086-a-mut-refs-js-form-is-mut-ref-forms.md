@@ -453,3 +453,19 @@ code given a `&mut` as its `K: Borrow<i32>`; and the three that keep the
 cell) runs against native Rust in both builds. Mutations
 `same-through-a-mut-the-cell`, `same-of-a-ref-to-a-mut-read-through` and
 `same-into-what-owns-a-mut-read-through` (`lower/representation/mut_ref.ts`).
+
+## The matrix crosses std's impls by type (2026-11-12)
+
+Three operations more, each program's (#1459's third rule): `borrowed`,
+`Borrow::borrow(&r)`, a `&` to what a `&mut` is to (std's `Borrow<T> for
+&mut T`, #1486's); `borrowed_mut`, `BorrowMut<T> for T`, the `&mut` itself
+(#1487's); and `given_back`, `identity` of a reborrow. Their first run of all
+210 found one wrong answer, #1514, of one holder, a closure's capture: a
+`&mut` held as its place's own name, the outer variable a closure reads, gave
+`borrowed undefined`, as #1486's `same_as` asks the types whether a cell is
+read through, and a shared reference to such a `&mut` was the place itself,
+no cell. Now that reference is a handle on the place, the cell its type says
+(`held_as_its_place`, `mir/temporaries.rs`, which owns what a local holds), and `same_as`'s answer by type is
+true of it: all 210 run as native Rust does. Corpus case
+`borrow_of_a_captured_mut`, mutation `captured-mut-ref-no-handle`.
+

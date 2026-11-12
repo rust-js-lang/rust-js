@@ -990,3 +990,17 @@ impl IterLocals {
         }
     }
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `place`, a `&mut`, is held as its place's own name, not the
+    /// cell its type says: a closure's capture of it by name, or a local
+    /// that aliases one (`Value::Ref`, ADR 0099).
+    pub(super) fn held_as_its_place(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> bool {
+        if place.projection.is_empty() {
+            return matches!(state.places.get(&place.local), Some(Value::Ref(_)));
+        }
+        matches!(place.projection.last(), Some(PlaceElem::Field(field, _))
+            if state.facts.captured_field(place) == Some(*field)
+                && state.facts.captures()[field.as_usize()].1)
+    }
+}

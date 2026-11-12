@@ -790,4 +790,12 @@ export const mutations: Mutation[] = [
     replace: "                        && let js::ExprKind::Call(callee, _) = &of.kind\n                        && false\n",
     tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to what Option::as_mut lends"],
   },
+  {
+    name: "captured-mut-ref-no-handle",
+    breaks: "a shared reference to a `&mut` a closure captured by name is the place itself, which what reads through it reads `.value` of (#1514)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && self.held_as_its_place(state, place)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrow_of_a_captured_mut.rs$"],
+  },
 ];

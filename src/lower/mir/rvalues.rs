@@ -156,6 +156,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ]),
                     }));
                 }
+                // A shared reference to a `&mut` whose type says it's a cell, held
+                // as its place's own name, a closure's capture of it by name or
+                // an alias of one (ADR 0099): a handle on that place, the cell
+                // its type says, so what reads through it reads the place, as
+                // `Borrow::borrow(&r)` of a captured `r` does (#1514).
+                if matches!(kind, BorrowKind::Shared)
+                    && let ty::Ref(_, referent, ty::Mutability::Mut) = *place.ty(decls, tcx).ty.kind()
+                    && self.mut_ref_form(referent).is_cell()
+                    && self.held_as_its_place(state, place)
+                {
+                    let target = self.mir_place(state, *place, span, out)?;
+                    return Ok(Value::Place(Expr::handle(target)));
+                }
                 // `&(*(_5.0))`, the reference `_5.0` is, a list's item.
                 if matches!(kind, BorrowKind::Shared)
                     && let Some(item) = self.take_field(state, place, out)?
