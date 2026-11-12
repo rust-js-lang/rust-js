@@ -337,11 +337,11 @@ export const mutations: Mutation[] = [
   {
     name: "std-conversion-through-dictionary",
     breaks:
-      "`VecDeque::from(v)` of a generic `Vec<T>`, which no bound gives, is asked of a dictionary, and refused",
+      "a conversion no bound gives, of a generic type, `NonNull::from(&mut Impl<E>)` or `BTreeMap::from([(V, u32); 1])`, is asked of a dictionary, and refused",
     file: "src/lower/traits/calls.rs",
     find: "            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))\n",
     replace: "            && !tr.args.has_non_region_param()\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(generic_from|generic_map_made_by_entry|pointer_relayout).rs$"],
   },
   {
     name: "dyn-mut-self-always-pair",
