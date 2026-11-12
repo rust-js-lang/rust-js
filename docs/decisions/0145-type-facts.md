@@ -576,3 +576,43 @@ collect and a `LinkedList`'s; 8 corpus snapshots changed, each a
 parameter or a carried fact fewer. Mutations
 `in-place-asked-of-a-bounds-collect` and `in-place-asked-of-a-linked-list`,
 caught.
+
+## Amendment: a built slot has no gates (2026-11-12, #1430)
+
+A built slot's layout was to be read only by a collect that may be in
+place, so it had gates: the slots whose `IInPlace` its collect reads, a
+caller giving each a source std never collects in place giving the layout
+none (`gives_slot`, above). Since #796 no built slot keeps a gate. A
+collect asks its items' in-place layout gated only where each of its
+source's facts is a slot's `IInPlace`, a source std collects in place
+over a type parameter's or an associated type's iterator,
+`InPlaceSource::Of`; that iterator's hint is its caller's, so asking it
+may run the crate's own (`hint_reaches_own`), and the same collect asks
+its items' size of every caller, by which std's `Vec` grows
+(`grown_asked`, `grows_by_callers_size`). One function asks one built
+type's facts where either ask does, so the layout was read wherever the
+function is called, and the gates never reached a manifest or a call.
+
+Evidence: the compiler, instrumented to report each built slot with a
+gate, reported none in any of the corpus's 2,332 cases in either build or
+in test/crates.test.ts; with `grown_asked` taken out, it reported six in
+in_place_collect_of_a_built_type_relayed alone. The three mutations of
+the gates, `built-layout-asked-though-never-read`,
+`built-layout-gate-inverted` and `built-layout-ungated`, survived every
+test for that reason.
+
+So the gates go: `Asked::Built` is the type and the fact, `BuiltSlot` and
+the manifest's `BuiltType` the type alone, `gives_slot` gives each slot
+but one of no type there (#828), and `asked_of_caller` no longer takes
+its callee. No output changes: every corpus snapshot is the same. The
+manifest never wrote `gates`, as it was always empty, so library ABI 16
+is unchanged; tooling/manifest.js no longer checks it.
+
+Mutation `impl-carried-built-type-unasked` had survived beside them: its
+case's collect, through a `C: FromIterator` bound, asks nothing in place
+since #1443. Corpus case collect_of_an_impls_own_associated_type grows an
+inherent `into_vec`, a collect into a `Vec` itself of `R::Out`, which
+asks the built `Result<U, E>`'s layout of the impl's makers, and a panic
+part-way through it, in place, dropping what it collected before what's
+left, against native Rust in both builds; the mutation is caught.
+`built-layout-unrelayed` is refitted to the relay without gates.

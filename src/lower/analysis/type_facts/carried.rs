@@ -161,7 +161,7 @@ fn layouts_given<'tcx>(
         let ty = tcx.type_of(item).instantiate_identity().skip_normalization();
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
         [TypeFact::Size, TypeFact::Align].into_iter().all(|fact| {
-            match super::asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {
+            match super::asked_of(tcx, foreign, typing_env, imp, (ty, fact)) {
                 // Of a type rustc knows the layout of here, of no parameter
                 // or whatever they are (`layout_bytes`): not of a std
                 // associated type of one no caller gives, typenum's `<<U as

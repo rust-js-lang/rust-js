@@ -2,7 +2,10 @@
 // into a `Vec` std may make in place, asks its items' layout, a built
 // type's its caller gives: `MapOk<F>`'s `Out` is `Result<U, E>`, built of
 // the impl's own parameters, itertools' `MapSpecialCaseFnOk`, which its
-// dictionary can't carry of them (#1348).
+// dictionary can't carry of them (#1348). A collect through a
+// `C: FromIterator` bound asks none (#1443), so `into_vec`'s, into a `Vec`
+// itself, asks it; where a panic stops it, in place, it drops what it
+// collected before what's left (#1430).
 trait Call<T> {
     type Out;
     fn call(&mut self, t: T) -> Self::Out;
@@ -36,6 +39,13 @@ impl<I: Iterator, R: Call<I::Item>> Iterator for Mapped<I, R> {
     }
 }
 
+impl<I: Iterator, R: Call<I::Item>> Mapped<I, R> {
+    fn into_vec(self) -> Vec<R::Out> {
+        let mut f = self.f;
+        self.iter.map(move |v| f.call(v)).collect()
+    }
+}
+
 struct Loud(u32);
 impl Drop for Loud {
     fn drop(&mut self) {
@@ -56,4 +66,19 @@ fn main() {
     }
     .collect();
     println!("{}", v.len());
+    let v = Mapped {
+        iter: vec![Ok(1u32), Err(2u8), Ok(3)].into_iter(),
+        f: MapOk(Loud),
+    }
+    .into_vec();
+    println!("{}", v.len());
+    let r = std::panic::catch_unwind(|| {
+        Mapped {
+            iter: vec![Ok(Loud(1)), Err(2u8), Ok(Loud(3)), Ok(Loud(4))].into_iter(),
+            f: MapOk(|l: Loud| if l.0 == 3 { panic!("at 3") } else { Loud(l.0 * 10) }),
+        }
+        .into_vec()
+        .len()
+    });
+    println!("{:?}", r.ok());
 }

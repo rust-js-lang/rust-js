@@ -79,15 +79,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
   {
-    name: "built-layout-gate-inverted",
-    breaks:
-      "a caller gives a built slot's layout only where each of its gates' sources is never collected in place, so a collect that is in place reads `undefined`, and a panic drops what's left first where Rust drops what it collected (#737)",
-    file: "src/lower/traits/drop_params.rs",
-    find: "            || built.gates.iter().any(|&gate| {\n",
-    replace: "            || !built.gates.iter().any(|&gate| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type(_relayed)?.rs$"],
-  },
-  {
     name: "built-slot-misplaced",
     breaks: "a built slot's index names the next one of its function's, or none (#737)",
     file: "src/lower/traits/drop_params.rs",
@@ -138,8 +129,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller gives an impl's slot facts of an associated type no value is there, of a default whose where clause it can't meet, and is refused its `size_of` (#828)",
     file: "src/lower/traits/drop_params.rs",
-    find: "        if crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args)) {\n",
-    replace: "        if false {\n",
+    find: "        !crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args))\n",
+    replace: "        true || !crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args))\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
   },
   {

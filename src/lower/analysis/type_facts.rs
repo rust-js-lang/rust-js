@@ -25,7 +25,7 @@ mod relay;
 pub(in crate::lower) use carried::{CarriedSuper, super_item_of};
 use carried::{carried_by, carried_by_every_impl, carries, default_super_item, slot_super_item};
 use collects::{collect_asks, copies_of_default};
-use relay::{Asked, BuiltAsks, Gates, ask, asked_of, asked_of_caller, foreign_gates};
+use relay::{Asked, BuiltAsks, ask, asked_of, asked_of_caller};
 
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
@@ -346,7 +346,7 @@ pub(super) fn type_fact_params<'tcx>(
     // the fact alone, so a round asks only what's new (#1430).
     let calls: Vec<_> = (calls.into_iter().collect::<IndexSet<_>>()).into_iter().collect();
     let mut copies: Vec<Option<Vec<collects::DefaultCopy<'tcx>>>> = calls.iter().map(|_| None).collect();
-    let mut relayed_once: IndexSet<(usize, ty::Ty<'tcx>, TypeFact, Gates)> = IndexSet::default();
+    let mut relayed_once: IndexSet<(usize, ty::Ty<'tcx>, TypeFact)> = IndexSet::default();
     let mut carried_once: IndexSet<(DefId, TypeFact)> = IndexSet::default();
     let mut changed = true;
     while changed {
@@ -369,7 +369,7 @@ pub(super) fn type_fact_params<'tcx>(
         // default's copy's `Option<<Wrapper<I> as Iterator>::Item>` of a
         // method's `Option<<I as Iterator>::Item>`: one slot of it.
         let lifted_built: Vec<_> = (built.iter())
-            .filter_map(|((id, ty), (facts, gates))| {
+            .filter_map(|((id, ty), facts)| {
                 let impl_id = tcx.trait_impl_of_assoc(*id)?;
                 let count = tcx.generics_of(impl_id).count() as u32;
                 if !names_params(*ty, |index| index < count) {
@@ -383,16 +383,12 @@ pub(super) fn type_fact_params<'tcx>(
                 let same = (built.keys())
                     .find(|&&(at, of)| at == impl_id && normalized(of) == normalized(*ty))
                     .map_or(*ty, |&(_, of)| of);
-                Some((impl_id, same, facts.clone(), gates.clone()))
+                Some((impl_id, same, facts.clone()))
             })
             .collect();
-        for (impl_id, ty, facts, gates) in lifted_built {
+        for (impl_id, ty, facts) in lifted_built {
             for fact in facts {
-                changed |= ask(
-                    (&mut asked, &mut built, &mut carried),
-                    impl_id,
-                    Asked::Built(ty, fact, gates.clone()),
-                );
+                changed |= ask((&mut asked, &mut built, &mut carried), impl_id, Asked::Built(ty, fact));
             }
         }
         // A trait method's own type parameter's fact is the trait's, and each
@@ -414,32 +410,31 @@ pub(super) fn type_fact_params<'tcx>(
         for &(id, index, fact) in &asked {
             asked_by.entry(id).or_default().push((index, fact));
         }
-        let mut built_of: IndexMap<DefId, Vec<(ty::Ty<'tcx>, TypeFact, Gates)>> = IndexMap::default();
-        for ((id, of), (asked_facts, gates)) in &built {
-            let each = asked_facts.iter().map(|&fact| (*of, fact, gates.clone()));
+        let mut built_of: IndexMap<DefId, Vec<(ty::Ty<'tcx>, TypeFact)>> = IndexMap::default();
+        for ((id, of), asked_facts) in &built {
+            let each = asked_facts.iter().map(|&fact| (*of, fact));
             built_of.entry(*id).or_default().extend(each);
         }
         for (at, &(caller, callee, args)) in calls.iter().enumerate() {
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
             let no_built = Default::default();
-            let mut facts: Vec<(ty::Ty<'tcx>, TypeFact, Gates)> = (asked_by.get(&callee).into_iter().flatten())
+            let mut facts: Vec<(ty::Ty<'tcx>, TypeFact)> = (asked_by.get(&callee).into_iter().flatten())
                 .map(|&(index, fact)| {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &no_built), callee, index);
-                    (slot, fact, None)
+                    (slot, fact)
                 })
                 .collect();
             // And the layouts of the types built of its slots it asks (#737).
             facts.extend(built_of.get(&callee).into_iter().flatten().cloned());
-            facts.retain(|(slot, fact, gates)| relayed_once.insert((at, *slot, *fact, gates.clone())));
+            facts.retain(|&(slot, fact)| relayed_once.insert((at, slot, fact)));
             if facts.is_empty() {
                 continue;
             }
             // Of a trait's default, in each impl's terms that copies it, as
             // its collects' are (`copies_of_default`, #1313).
             let copies = copies[at].get_or_insert_with(|| copies_of_default(tcx, caller, args));
-            for (slot, fact, gates) in facts {
-                let relayed = (caller, callee, args);
-                for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &gates)) {
+            for (slot, fact) in facts {
+                for each in asked_of_caller(tcx, foreign, typing_env, (caller, args), (slot, fact)) {
                     changed |= ask((&mut asked, &mut built, &mut carried), caller, each);
                 }
                 for collects::DefaultCopy {
@@ -468,7 +463,7 @@ pub(super) fn type_fact_params<'tcx>(
                     // type its where clause may not hold for, a `Backwards`
                     // with no `Hash` whose caller calls only `ordered` (#1363).
                     let in_default = ty::EarlyBinder::bind(tcx, slot)
-                        .instantiate(tcx, relayed.2)
+                        .instantiate(tcx, calls[at].2)
                         .skip_normalization();
                     if slot_of(tcx, foreign, caller, in_default)
                         .is_some_and(|index| index >= tcx.generics_of(caller).parent_count as u32)
@@ -481,7 +476,7 @@ pub(super) fn type_fact_params<'tcx>(
                     // impl's copy at `Enumerate<Self>`, itertools'
                     // `counts_by`, asks it again of `Enumerate<T>`, and so on,
                     // wider each round, which never settles (#1313).
-                    for each in asked_of_caller(tcx, foreign, impl_env, (imp, callee, args), (slot, fact, &gates)) {
+                    for each in asked_of_caller(tcx, foreign, impl_env, (imp, args), (slot, fact)) {
                         if matches!(each, Asked::Slot(..)) {
                             changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
                         }
@@ -518,7 +513,7 @@ pub(super) fn type_fact_params<'tcx>(
             .collect();
         for (imp, ty, fact) in impls {
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
-            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {
+            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact)) {
                 changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
             }
         }
@@ -565,13 +560,10 @@ pub(super) fn type_fact_params<'tcx>(
         .map(|((id, ty), asked)| ((tcx.def_path_hash(id), format!("{ty:?}")), id, ty, asked))
         .collect();
     each_built.sort_by(|a, b| a.0.cmp(&b.0));
-    for (_, id, ty, (facts, gates)) in each_built {
+    for (_, id, ty, facts) in each_built {
         let slots = built_slots.entry(id).or_default();
         let index = crate::lower::traits::item_slot(tcx, id, drop_items(tcx, foreign, id).len() + slots.len());
-        slots.push(BuiltSlot {
-            ty,
-            gates: gates.into_iter().flatten().collect(),
-        });
+        slots.push(BuiltSlot { ty });
         params
             .entry(id)
             .or_default()
@@ -804,7 +796,7 @@ impl<'tcx> Asking<'tcx> {
         // built slot's (#926).
         if let Some(entries) = tree_built_entries(tcx, callee, args) {
             for fact in [TypeFact::StableSort, TypeFact::Size] {
-                if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact), &None) {
+                if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact)) {
                     self.ask(caller, each);
                 }
             }
@@ -813,7 +805,7 @@ impl<'tcx> Asking<'tcx> {
         // `(K, usize)` pairs std sorts unstably, as their type picks:
         // their caller's, a built slot's (#925).
         if let Some(pairs) = cached_key_pairs(tcx, callee, args)
-            && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (pairs, TypeFact::Sort), &None)
+            && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (pairs, TypeFact::Sort))
         {
             self.ask(caller, each);
         }
@@ -892,7 +884,7 @@ impl<'tcx> Asking<'tcx> {
             }
             for (at, fact) in foreign.type_facts(impl_id) {
                 let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
-                for each in asked_of_caller(tcx, foreign, typing_env, (imp, impl_id, impl_args), (slot, fact, &None)) {
+                for each in asked_of_caller(tcx, foreign, typing_env, (imp, impl_args), (slot, fact)) {
                     self.ask(imp, each);
                 }
             }
@@ -1002,14 +994,7 @@ impl<'tcx> Asking<'tcx> {
                     for (index, fact) in crate::lower::traits::foreign_facts(tcx, foreign, from_iter) {
                         let slot =
                             crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), from_iter, index);
-                        let gates = foreign_gates(foreign, from_iter, index);
-                        let asked = asked_of_caller(
-                            tcx,
-                            foreign,
-                            typing_env,
-                            (caller, from_iter, from_args),
-                            (slot, fact, &gates),
-                        );
+                        let asked = asked_of_caller(tcx, foreign, typing_env, (caller, from_args), (slot, fact));
                         asked.into_iter().for_each(|each| self.ask(caller, each));
                     }
                 }
@@ -1055,8 +1040,7 @@ impl<'tcx> Asking<'tcx> {
                             continue;
                         }
                         let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
-                        let relayed = (caller, impl_id, impl_args);
-                        for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &None)) {
+                        for each in asked_of_caller(tcx, foreign, typing_env, (caller, impl_args), (slot, fact)) {
                             self.ask(caller, each);
                         }
                     }
@@ -1113,8 +1097,7 @@ impl<'tcx> Asking<'tcx> {
                 };
                 for (index, fact) in facts {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);
-                    let gates = foreign_gates(foreign, id, index);
-                    for each in asked_of_caller(tcx, foreign, typing_env, (caller, id, args), (slot, fact, &gates)) {
+                    for each in asked_of_caller(tcx, foreign, typing_env, (caller, args), (slot, fact)) {
                         self.ask(caller, each);
                     }
                 }

@@ -9,28 +9,16 @@ use super::*;
 /// A fact a function asks: of one of its slots, a type parameter's or an
 /// associated type's, by its index; or the layout of a type built of them,
 /// `Held<J>` of a `Vec<Held<J>>` collected in place, by the type, its
-/// index decided once every one of its function's is found (#737), and
-/// whether one of its gates' `IInPlace` must be given for it to be read;
-/// or what its trait's dictionaries carry of an associated type of the
-/// crate's trait or a library's, `<S as Source>::Iter`'s (ADR 0145).
+/// index decided once every one of its function's is found (#737), which
+/// every caller gives, as the collect's `Vec` grows by its size wherever
+/// it's called (#796); or what its trait's dictionaries carry of an
+/// associated type of the crate's trait or a library's, `<S as
+/// Source>::Iter`'s (ADR 0145).
 #[derive(Clone, Debug)]
 pub(super) enum Asked<'tcx> {
     Slot(u32, TypeFact),
-    Built(ty::Ty<'tcx>, TypeFact, Gates),
+    Built(ty::Ty<'tcx>, TypeFact),
     Carried(DefId, TypeFact),
-}
-
-/// What a built slot's layout is read where: `None` wherever its function
-/// is called; else only where one of these slots' `IInPlace`, whether its
-/// collect may be in place, isn't `undefined` (`traits::BuiltSlot`).
-pub(super) type Gates = Option<std::collections::BTreeSet<u32>>;
-
-/// `a` and `b` together: read where either is.
-pub(super) fn either_gates(a: &Gates, b: &Gates) -> Gates {
-    match (a, b) {
-        (Some(a), Some(b)) => Some(a.union(b).copied().collect()),
-        _ => None,
-    }
 }
 
 /// Whether `ty`, of no slot of its own, is built of a function's, a type
@@ -66,15 +54,13 @@ pub(super) fn built_of<'tcx>(
 }
 
 /// Where `caller` asks `(of, fact)`, `of` in its own terms: a slot's, or
-/// a built type's (`built_of`), read where `gates` says; none of a type it
-/// knows.
+/// a built type's (`built_of`); none of a type it knows.
 pub(super) fn asked_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     caller: DefId,
     (of, fact): (ty::Ty<'tcx>, TypeFact),
-    gates: &Gates,
 ) -> Option<Asked<'tcx>> {
     if let Some(slot) = slot_of(tcx, foreign, caller, of) {
         return Some(Asked::Slot(slot, fact));
@@ -87,12 +73,11 @@ pub(super) fn asked_of<'tcx>(
     {
         return Some(Asked::Carried(assoc, fact));
     }
-    built_of(tcx, typing_env, of, fact).then(|| Asked::Built(tcx.erase_and_anonymize_regions(of), fact, gates.clone()))
+    built_of(tcx, typing_env, of, fact).then(|| Asked::Built(tcx.erase_and_anonymize_regions(of), fact))
 }
 
-/// Each function's built types it asks a layout of, by the type: the facts,
-/// and where they're read.
-pub(super) type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), (std::collections::BTreeSet<TypeFact>, Gates)>;
+/// Each function's built types it asks a layout of, by the type: the facts.
+pub(super) type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), std::collections::BTreeSet<TypeFact>>;
 
 /// What its trait's dictionaries carry of each associated type, by the
 /// type and the fact.
@@ -150,46 +135,24 @@ pub(super) fn ask<'tcx>(
         Asked::Carried(assoc, fact) => carried.insert((assoc, fact)),
         Asked::Slot(index, fact) => asked.insert((caller, index, fact)),
         Asked::Built(ty, ..) if nests_past_bound(ty, &mut Vec::new()) => false,
-        Asked::Built(ty, fact, gates) => match built.get_mut(&(caller, ty)) {
-            Some((facts, read)) => {
-                let wider = either_gates(read, &gates);
-                let changed = facts.insert(fact) || wider != *read;
-                *read = wider;
-                changed
-            }
-            None => {
-                built.insert((caller, ty), ([fact].into(), gates));
-                true
-            }
-        },
+        Asked::Built(ty, fact) => built.entry((caller, ty)).or_default().insert(fact),
     }
 }
 
-/// Where a library's function's slot `index` is read, as its manifest says:
-/// a built slot's gates (#737).
-pub(super) fn foreign_gates(foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId, index: u32) -> Gates {
-    (foreign.built_slot(id, index))
-        .map(|built| built.gates.into_iter().collect())
-        .filter(|gates: &std::collections::BTreeSet<u32>| !gates.is_empty())
-}
-
-/// What a caller asks of its own where its call of `callee` with `args`
-/// asks a fact of `slot`, of `callee`'s in its own terms, a type
+/// What a caller asks of its own where its call given `args` asks a fact
+/// of `slot`, of its callee's in its own terms, a type
 /// parameter, an associated type (`drop_slot`) or a type built of them:
 /// its slots', `I::Item`'s of a flatten's `ConstSize` (ADR 0899), or each's
 /// a type is the facts of, `I`'s `TrustedLen` of a `&mut I` (ADR 0975), or
-/// a type's built of them (#737); none of a type it knows. A built slot's,
-/// read where `gates` says in `callee`'s, is read where the caller's slots
-/// given for them say; none where each is given a source std never collects
-/// in place, whose `IInPlace` is `undefined`.
+/// a type's built of them (#737); none of a type it knows.
 pub(super) fn asked_of_caller<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
-    (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
-    (slot, fact, gates): (ty::Ty<'tcx>, TypeFact, &Gates),
+    (caller, args): (DefId, ty::GenericArgsRef<'tcx>),
+    (slot, fact): (ty::Ty<'tcx>, TypeFact),
 ) -> Vec<Asked<'tcx>> {
-    use crate::lower::recognition::{InPlaceSource, held_facts, in_place_source};
+    use crate::lower::recognition::held_facts;
     let here = |ty: ty::Ty<'tcx>| {
         let ty = ty::EarlyBinder::bind(tcx, ty)
             .instantiate(tcx, args)
@@ -197,44 +160,7 @@ pub(super) fn asked_of_caller<'tcx>(
         tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
     };
-    let gates: Gates = match gates {
-        None => None,
-        Some(callee_gates) => {
-            let mut read = std::collections::BTreeSet::new();
-            let mut always = false;
-            for &gate in callee_gates {
-                let gate = here(crate::lower::traits::drop_slot(
-                    tcx,
-                    (foreign, &Default::default()),
-                    callee,
-                    gate,
-                ));
-                if in_place_source(tcx, typing_env, gate) == Some(InPlaceSource::Never) {
-                    continue;
-                }
-                let held = held_facts(tcx, typing_env, gate, TypeFact::InPlace);
-                always |= held.is_empty();
-                for (of, fact) in held {
-                    match (fact == TypeFact::InPlace)
-                        .then(|| slot_of(tcx, foreign, caller, of))
-                        .flatten()
-                    {
-                        Some(at) => {
-                            read.insert(at);
-                        }
-                        None => always = true,
-                    }
-                }
-            }
-            match (always, read.is_empty()) {
-                (true, _) => None,
-                // Of a source never collected in place, never read.
-                (false, true) => return Vec::new(),
-                (false, false) => Some(read),
-            }
-        }
-    };
     (held_facts(tcx, typing_env, here(slot), fact).into_iter())
-        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &gates))
+        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each))
         .collect()
 }

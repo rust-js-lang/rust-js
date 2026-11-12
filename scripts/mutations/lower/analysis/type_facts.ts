@@ -85,8 +85,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "(slot, fact, &gates)) {\n                        self.ask(caller, each);\n",
-    replace: "(slot, fact, &gates)) {\n                        let _ = each;\n",
+    find: "(caller, args), (slot, fact)) {\n                        self.ask(caller, each);\n",
+    replace: "(caller, args), (slot, fact)) {\n                        let _ = each;\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
   {
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {\n",
+    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact)) {\n",
     replace: "            if let Some(each) = None::<Asked<'tcx>>.filter(|_| typing_env == typing_env) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
@@ -387,8 +387,8 @@ export const mutations: Mutation[] = [
     name: "impl-carried-built-type-unasked",
     breaks: "an impl whose dictionary carries a fact of its associated type asks its makers for it only where that type is one of its own parameters, not built of them, itertools' `type Out = Result<U, E>`, so its dictionary is refused, \"`size_of` of a type parameter\" (#1348)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {\n",
-    replace: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None).filter(|each| matches!(each, Asked::Slot(..))) {\n",
+    find: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact)) {\n",
+    replace: "            if let Some(each) = asked_of(tcx, foreign, typing_env, imp, (ty, fact)).filter(|each| matches!(each, Asked::Slot(..))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
   },
   {
@@ -494,8 +494,8 @@ export const mutations: Mutation[] = [
     name: "impl-method-built-layout-unlifted",
     breaks: "an impl's method's layout of a type built of the impl's parameters, quickcheck's `(K, V)` of its `BTreeMap<K, V>`, is asked of no maker, and the impl is refused (#1420)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        for (impl_id, ty, facts, gates) in lifted_built {\n",
-    replace: "        for (impl_id, ty, facts, gates) in lifted_built.into_iter().filter(|_| false) {\n",
+    find: "        for (impl_id, ty, facts) in lifted_built {\n",
+    replace: "        for (impl_id, ty, facts) in lifted_built.into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
   },
 ];

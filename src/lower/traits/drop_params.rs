@@ -223,14 +223,11 @@ pub(in crate::lower) fn slot_index<'tcx>(
 /// A type built of a function's slots that it asks the layout of, a
 /// collect's items' in place, `Held<J>` of a `Vec<Held<J>>` (#737): no
 /// bound names it, so its callers read which it is of its own list, the
-/// crate's analysis's or a library's manifest's. Where `gates` lists any,
-/// it's asked only where one of those slots' `IInPlace`, which says whether
-/// its collect may be in place, is given: a caller that gives each of them
-/// `undefined` gives it none.
+/// crate's analysis's or a library's manifest's. Every caller gives it, as
+/// the collect's `Vec` grows by its size wherever it's called (#796).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::lower) struct BuiltSlot<'tcx> {
     pub(in crate::lower) ty: Ty<'tcx>,
-    pub(in crate::lower) gates: Vec<u32>,
 }
 
 /// Each of the crate's functions' built slots, in their slots' order, after
@@ -475,26 +472,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a call of `id` with `args` gives its slot `index`'s facts:
-    /// each but a built slot's whose every gate's `IInPlace` is
-    /// `undefined` there, a source std never collects in place, whose
-    /// collect then never reads its layout (#737), and one of no type there
+    /// each but one of no type there, of a default whose where clause the
+    /// arguments here can't meet, which nothing called here reads
     /// (`no_type_here`, #828).
     pub(in crate::lower) fn gives_slot(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> bool {
-        // Nor one of no type here, of a default whose where clause the
-        // arguments here can't meet, which nothing called here reads (#828).
-        if crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args)) {
-            return false;
-        }
-        let Some(built) = built_slot(self.tcx, self.slots(), id, index) else {
-            return true;
-        };
-        let typing_env = self.typing_env;
-        built.gates.is_empty()
-            || built.gates.iter().any(|&gate| {
-                let of = self.drop_slot_of(id, gate, args);
-                crate::lower::recognition::in_place_source(self.tcx, typing_env, of)
-                    != Some(crate::lower::recognition::InPlaceSource::Never)
-            })
+        !crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args))
     }
 
     /// The type `id`'s drop `index` drops, of the arguments it's called with

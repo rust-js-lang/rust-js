@@ -276,10 +276,7 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
             );
             continue;
         };
-        param(&mut params, first + at as u32).built = Some(crate::library::BuiltType {
-            of,
-            gates: slot.gates.clone(),
-        });
+        param(&mut params, first + at as u32).built = Some(crate::library::BuiltType { of });
     }
     let mut params: Vec<_> = params.into_values().collect();
     for param in &mut params {
@@ -694,7 +691,6 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         let built = self.item(id)?.calling.param(index)?.built.as_ref()?;
         Some(super::traits::BuiltSlot {
             ty: built_types::made(self.tcx, self, id, &built.of)?,
-            gates: built.gates.clone(),
         })
     }
 

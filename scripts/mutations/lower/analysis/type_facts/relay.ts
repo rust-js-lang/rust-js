@@ -21,23 +21,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
   },
   {
-    name: "built-layout-asked-though-never-read",
-    breaks:
-      "a generic caller giving a built slot's every gate a source std never collects in place still asks the layout of its own caller, which no collect reads (#737)",
-    file: "src/lower/analysis/type_facts/relay.rs",
-    find: "                (false, true) => return Vec::new(),\n",
-    replace: "                (false, true) => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
-    snapshots: true,
-  },
-  {
     name: "built-layout-unrelayed",
     breaks:
       "a generic caller of a function asking a built type's layout, of a type built of its own slots, `Held<IntoIter<T>>`, asks its own caller none, and its call is refused (#737)",
     file: "src/lower/analysis/type_facts/relay.rs",
-    find: "        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &gates))\n",
-    replace:
-      "        .filter_map(|(of, fact)| Some(Asked::Slot(slot_of(tcx, foreign, caller, of)?, fact)).filter(|_| !gates.is_some()))\n",
+    find: "        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each))\n",
+    replace: "        .filter_map(|(of, fact)| Some(Asked::Slot(slot_of(tcx, foreign, caller, of)?, fact)))\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {

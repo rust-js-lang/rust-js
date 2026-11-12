@@ -226,13 +226,10 @@ pub struct TypeParam {
 
 /// A type built of a function's slots, which no bound of it names (#737):
 /// a consumer makes it of the types its call gives them, and gives its
-/// layout where one of `gates`' `IInPlace` it gives isn't `undefined`, or
-/// where `gates` is empty.
+/// layout wherever it calls the function.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BuiltType {
     pub of: TypeTemplate,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub gates: Vec<u32>,
 }
 
 /// A type of a function's slots, by what it's made of: a slot by its

@@ -44,8 +44,7 @@ export function parseManifest(text) {
     || object(value.ref) && typeof value.ref.mutable === "boolean" && template(value.ref.to)
     || object(value.array) && Number.isInteger(value.array.len) && template(value.array.of)
     || typeof value.primitive === "string");
-  const built = value => value === undefined || object(value) && template(value.of)
-    && (value.gates === undefined || Array.isArray(value.gates) && value.gates.every(Number.isInteger));
+  const built = value => value === undefined || object(value) && template(value.of);
   const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "copy", "clone", "no_drop", "unboxed"])
     && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped))
     && built(value.built);

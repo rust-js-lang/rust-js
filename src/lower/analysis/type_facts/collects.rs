@@ -44,14 +44,7 @@ pub(super) fn collect_asks<'tcx>(
         // Of a collect into a `Vec` of what its caller gives, how std
         // collects it, `IVecCollect`, which answers what `IInPlace` would.
         let mut asked = match vec_collected(recognition, typing_env, (callee, args)) {
-            Some(this) => Vec::from_iter(asked_of(
-                tcx,
-                foreign,
-                typing_env,
-                owner,
-                (this, TypeFact::VecCollect),
-                &None,
-            )),
+            Some(this) => Vec::from_iter(asked_of(tcx, foreign, typing_env, owner, (this, TypeFact::VecCollect))),
             None => in_place_asked(recognition, typing_env, drops, owner, (callee, args)),
         };
         asked.extend(grown_asked(
@@ -124,9 +117,10 @@ pub(super) fn collect_asks<'tcx>(
 /// iterator, `IInPlace`, and the items' layout where it's a type
 /// parameter's, `TSize` and `TAlign`, by which a panic drops what it
 /// collected first or what's left (#672); or a type's built of them,
-/// `Held<J>`'s, read only where the source's `IInPlace` isn't `undefined`
-/// (#737). As the lowering's `rest_dropped_first` asks, both of
-/// `recognition::in_place_source`.
+/// `Held<J>`'s (#737), which its callers give wherever it's called, as
+/// `grown_asked` asks its size of each source whose `IInPlace` is its
+/// caller's, whose hint is too. As the lowering's `rest_dropped_first`
+/// asks, both of `recognition::in_place_source`.
 fn in_place_asked<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -153,19 +147,12 @@ fn in_place_asked<'tcx>(
         _ => return Vec::new(),
     }
     let source = held_facts(tcx, typing_env, iter, TypeFact::InPlace);
-    // The destination's layout is read where the source's `IInPlace` isn't
-    // `undefined`: where each of its facts is a slot's `IInPlace`, those
-    // slots'; else, of a source's items' layout, known or not, wherever.
-    let gates: Gates = (source.iter())
-        .map(|&(of, fact)| (fact == TypeFact::InPlace).then(|| slot_of(tcx, foreign, caller, of))?)
-        .collect::<Gates>()
-        .filter(|gates| !gates.is_empty());
     let mut asked: Vec<Asked<'tcx>> = (source.into_iter())
-        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &None))
+        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each))
         .collect();
     if fits_in_place(tcx, typing_env, dest, dest).is_none() {
         for fact in [TypeFact::Size, TypeFact::Align] {
-            asked.extend(asked_of(tcx, foreign, typing_env, caller, (dest, fact), &gates));
+            asked.extend(asked_of(tcx, foreign, typing_env, caller, (dest, fact)));
         }
     }
     asked
@@ -215,7 +202,7 @@ fn grown_asked<'tcx>(
         .then(|| revealed.grown_vec_item(callee, args))
         .flatten();
     if let Some(item) = grown {
-        return asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None)
+        return asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room))
             .into_iter()
             .collect();
     }
@@ -226,7 +213,7 @@ fn grown_asked<'tcx>(
     if !revealed.grows_by_callers_size(output, iter, dest, (shunted, keeps_capacity)) {
         return Vec::new();
     }
-    let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
+    let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size));
     size.into_iter().collect()
 }
 
@@ -257,7 +244,7 @@ fn room_asked<'tcx>(
             .map(|(_, _, dest, _)| dest),
     };
     (item
-        .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None))
+        .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room)))
         .into_iter())
     .collect()
 }
@@ -326,7 +313,7 @@ fn table_room_asked<'tcx>(
         }
     }
     asks.into_iter()
-        .filter_map(|(entry, fact)| asked_of(tcx, foreign, typing_env, caller, (entry, fact), &None))
+        .filter_map(|(entry, fact)| asked_of(tcx, foreign, typing_env, caller, (entry, fact)))
         .collect()
 }
 
