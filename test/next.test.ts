@@ -6,6 +6,7 @@ import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 import { buildCompiler, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
+import { browserDeadline, seen } from "./browser-waits";
 
 const example = join(root, "examples/next");
 const cli = join(root, "tooling/cli.js");
@@ -834,7 +835,10 @@ function freePort(): Promise<number> {
 }
 
 function command(dir: string, args: string[]) {
-  return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
+  // Its watcher polls, `WATCHPACK_POLLING`, as the vite tests' servers do
+  // (`polled`): macOS's file system events run tens of seconds late under
+  // load, a save heard after the deadline (#1429).
+  return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1", WATCHPACK_POLLING: "true" } });
 }
 function rustJs(dir: string, args: string[], env: Record<string, string> = {}) {
   return spawn(process.execPath, [cli, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, ...env } });
@@ -1093,13 +1097,14 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     }
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(browserDeadline());
     await page.goto(`http://localhost:${port}/`);
     // The counter, whose name ends in its count: Next.js's dev server
     // shows a Dev Tools button too, sometimes before the first click.
     const button = page.getByRole("button", { name: /\d$/ });
-    await button.filter({ hasText: "Count 0" }).waitFor();
+    await seen(button.filter({ hasText: "Count 0" }));
     await button.click();
-    await button.filter({ hasText: "Count 1" }).waitFor();
+    await seen(button.filter({ hasText: "Count 1" }));
     // Next.js's Fast Refresh is live a while after the page loads, longer
     // under the suite's load, and an update before then is lost: a save
     // until one is shown, each another, as the same JS is no update.
@@ -1115,43 +1120,43 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
 
     // A build is a Fast Refresh: the client component keeps its state.
     await save(counter("Clicks "));
-    await button.filter({ hasText: "Clicks 1" }).waitFor({ timeout: 30_000 });
+    await seen(button.filter({ hasText: "Clicks 1" }));
 
     // An error is rustc's, rust-js build's, and Next.js goes on serving what
     // was written; fixed, the page is the Rust's again.
     const broken = await save(counter("Clicks ") + "pub fn broken(");
     expect([broken.code, broken.output.includes("error")]).toEqual([1, true]);
     expect(server.exitCode).toBe(null);
-    await button.filter({ hasText: "Clicks 1" }).waitFor();
+    await seen(button.filter({ hasText: "Clicks 1" }));
     await save(counter("Taps "));
-    await button.filter({ hasText: "Taps 1" }).waitFor({ timeout: 30_000 });
+    await seen(button.filter({ hasText: "Taps 1" }));
 
     // A route below it, and next/link back, without loading the page again.
     await page.goto(`http://localhost:${port}/about`);
-    await page.getByRole("heading", { name: "About, in Rust" }).waitFor();
+    await seen(page.getByRole("heading", { name: "About, in Rust" }));
     await page.evaluate(() => ((window as any).loaded = true));
     await page.getByRole("link", { name: "Home" }).click();
-    await button.filter({ hasText: "Taps 0" }).waitFor();
+    await seen(button.filter({ hasText: "Taps 0" }));
     expect(await page.evaluate(() => (window as any).loaded)).toBe(true);
     expect(existsSync(join(dir, "app/about/page.jsx"))).toBe(true);
 
     // next/headers: the request's cookie, as the route reads it.
     await page.context().addCookies([{ name: "theme", value: "dark", url: `http://localhost:${port}` }]);
     await page.goto(`http://localhost:${port}/request`);
-    await page.getByText(/^dark \d+ live \d+$/).waitFor();
+    await seen(page.getByText(/^dark \d+ live \d+$/));
     // The Server Action sets the cookie, and the route is rendered again.
     await page.getByRole("button", { name: "Lighten" }).click();
-    await page.getByText(/^light \d+ live \d+$/).waitFor();
+    await seen(page.getByText(/^light \d+ live \d+$/));
 
     // The server's instrumentation, registered as it started.
     expect(output).toContain("instrumentation registered");
 
     // The Pages Router's page and API route, each of the request.
     await page.goto(`http://localhost:${port}/codes/3`);
-    await page.getByText("Code 1").waitFor();
+    await seen(page.getByText("Code 1"));
     expect(new URL(page.url()).pathname).toBe("/codes/1");
     await page.goto(`http://localhost:${port}/agent`);
-    await page.getByText("GET /agent").waitFor();
+    await seen(page.getByText("GET /agent"));
     const api = await page.request.get(`http://localhost:${port}/api/greet?name=Ada`);
     expect(await api.json()).toEqual({ hello: "Ada", method: "GET" });
 
@@ -1162,7 +1167,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     const image = await page.request.get(`http://localhost:${port}/og`);
     expect([image.status(), image.headers()["content-type"]]).toEqual([200, "image/png"]);
     await page.goto(`http://localhost:${port}/old`);
-    await page.getByRole("heading", { name: "About, in Rust" }).waitFor();
+    await seen(page.getByRole("heading", { name: "About, in Rust" }));
     expect(new URL(page.url()).pathname).toBe("/old");
   } finally {
     await browser?.close();
