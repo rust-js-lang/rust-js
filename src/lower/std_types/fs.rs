@@ -74,6 +74,12 @@ pub(in crate::lower) enum FsOp {
     /// `fs::read_dir(path)`: `$fsReadDir(path)`, `Ok` of its entries, a
     /// JS iterator that reads each as it's asked.
     ReadDir,
+    /// `fs::canonicalize(path)` and `p.canonicalize()`:
+    /// `$fsCanonicalize(path)` and `$pathCanonicalize(path)`, `realpath`'s,
+    /// `Ok` of the absolute path, each link followed, or `Err` of the OS's
+    /// error, quickcheck's (#1420).
+    Canonicalize,
+    PathCanonicalize,
     /// What a `Metadata`'s or a `DirEntry`'s method gives that its value
     /// holds as it is: `m.len()`'s `m.size`, `entry.path()`'s `entry.path`.
     Field(&'static str),
@@ -116,6 +122,8 @@ impl FsOp {
             FsOp::CreateDirAll => "$fsCreateDirAll",
             FsOp::RemoveDir => "$fsRemoveDir",
             FsOp::ReadDir => "$fsReadDir",
+            FsOp::Canonicalize => "$fsCanonicalize",
+            FsOp::PathCanonicalize => "$pathCanonicalize",
             FsOp::FileTypeOf => "$fileType",
             FsOp::Time(helper) => helper,
             FsOp::EntryMetadata => "$entryMetadata",
@@ -202,7 +210,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | FsOp::CreateDir
             | FsOp::CreateDirAll
             | FsOp::RemoveDir
-            | FsOp::ReadDir => Some(0),
+            | FsOp::ReadDir
+            | FsOp::Canonicalize
+            | FsOp::PathCanonicalize => Some(0),
             FsOp::OptionsNew
             | FsOp::OptionsSet(_)
             | FsOp::FileMetadata

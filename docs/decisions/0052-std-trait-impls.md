@@ -271,3 +271,19 @@ dictionary's, `StorageFromW.from(x)`.** Held by
 `test/corpus/into_through_a_from_bound_of_another_type.rs` against native
 Rust in both builds, and the mutation
 `into-of-a-from-bound-on-a-known-type-refused`.
+
+## Amendment: a clone of std's derived-`Clone` enums, and of a `BuildHasherDefault` (2026-11-12, #1420)
+
+A clone of `Bound<T>`, quickcheck 0.9's shrinker's, was refused. **Another
+of std's enums whose `Clone` is derived**, `Bound`'s, is cloned as any
+enum's is (ADR 0033): the same variant, with its fields' clones. That's
+`std_enum_derives_clone`, beside `std_enum_derives_eq`, one rule of
+which std enums are derived. **A `BuildHasherDefault`**, which holds
+nothing and is `undefined` (#1155), is its own clone: a `HashMap<K, V,
+S>`'s `S: Clone`.
+
+Case C of ADR 0262. Corpus cases `os_string_into_string_and_bound_clone`
+(a clone changed apart) and
+`impl_asks_the_layout_of_a_type_of_its_parameters` check them against
+native Rust in both builds. Mutations `std-enum-derived-clone-refused`
+and `build-hasher-default-clone-refused` are caught.

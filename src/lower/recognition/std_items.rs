@@ -217,6 +217,7 @@ const NODE_ONLY: &[(&str, NodeOnly)] = &[
     ("std::env::vars", NodeOnly::Process(ProcessOp::Vars)),
     ("std::env::vars_os", NodeOnly::Process(ProcessOp::VarsOs)),
     ("std::process::exit", NodeOnly::Process(ProcessOp::Exit)),
+    ("std::env::current_dir", NodeOnly::Process(ProcessOp::CurrentDir)),
     ("std::fs::File::open", NodeOnly::Fs(FsOp::Open)),
     ("std::fs::File::create", NodeOnly::Fs(FsOp::Create)),
     ("std::fs::OpenOptions::open", NodeOnly::Fs(FsOp::OptionsOpen)),
@@ -230,6 +231,8 @@ const NODE_ONLY: &[(&str, NodeOnly)] = &[
     ("std::fs::create_dir_all", NodeOnly::Fs(FsOp::CreateDirAll)),
     ("std::fs::remove_dir", NodeOnly::Fs(FsOp::RemoveDir)),
     ("std::fs::read_dir", NodeOnly::Fs(FsOp::ReadDir)),
+    ("std::fs::canonicalize", NodeOnly::Fs(FsOp::Canonicalize)),
+    ("std::path::Path::canonicalize", NodeOnly::Fs(FsOp::PathCanonicalize)),
 ];
 
 /// Whether `def_id`, a function, is given its caller's location: its own

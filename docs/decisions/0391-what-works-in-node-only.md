@@ -120,3 +120,24 @@ entries too, each a helper of `fs.js` that begins with its `$nodeFs` gate. A
 `File`'s, a `Metadata`'s, a `FileType`'s and a `DirEntry`'s methods reach no
 path of their own; each asks what was opened where it works, so they're
 `fs_method_op`'s, beside `OpenOptions`' setters.
+
+## Amendment: the working directory and a canonical path (2026-11-12, #1420)
+
+quickcheck 0.9's `PathBuf` arbitrary and shrinker call two more of std's
+functions of the process and its files. Each is Node's, through `$process`
+and `$nodeFs`, so in a browser it panics, saying so, as every other one
+listed in `NODE_ONLY` does.
+
+- **`env::current_dir()`** is `$currentDir()`: `Ok` of `process.cwd()`,
+  or `Err` of the OS's error, of a directory that's gone.
+- **`fs::canonicalize(path)` and `p.canonicalize()`** are
+  `$fsCanonicalize(path)`: `Ok` of `fs.realpathSync.native(path)`, the OS's
+  `realpath` as std's is, or `Err` of the OS's error.
+
+The coordinator's decision for `current_dir` was (A): Node's `process.cwd()`,
+following how `File` and `env` already split by host. They panic in a
+browser (this ADR), so `current_dir` does too. The guide's environments page
+lists both. Case C of ADR 0262. Corpus case
+`fs_canonicalize_and_current_dir` checks them against native Rust in both
+builds. Mutations `current-dir-unwrapped`, `canonicalize-resolved-not-real`
+and `path-canonicalize-unrecognized` are caught.

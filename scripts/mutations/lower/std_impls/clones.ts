@@ -466,4 +466,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false && crate::lower::recognition::is_repeat(self.tcx, ty) => {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
+  {
+    name: "std-enum-derived-clone-refused",
+    breaks: "a clone of std's `Bound<String>`, its derived `Clone`, is refused (#1420)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "                        || self.std_enum_derives_clone(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^os_string_into_string_and_bound_clone.rs$"],
+  },
+  {
+    name: "build-hasher-default-clone-refused",
+    breaks: "a clone of a `BuildHasherDefault`, a `HashMap<K, V, S>`'s `S: Clone`, is refused (#1420)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::BuildHasherDefault) => Ok(place),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
+  },
 ];

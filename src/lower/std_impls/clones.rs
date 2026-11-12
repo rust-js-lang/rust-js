@@ -508,6 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if adt.is_enum()
                     && (!self.is_std(adt.did())
                         || self.is_known_std(ty)
+                        || self.std_enum_derives_clone(ty)
                         || self.recognition().cow_parts(ty).is_some()) =>
             {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with fields
@@ -558,6 +559,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Expr::call(Expr::member(place, "clone"), Vec::new()))
             }
+            // A `BuildHasherDefault`, which holds nothing, `undefined` (#1155):
+            // itself, a `HashMap<K, V, S>`'s `S: Clone` given one (#1420).
+            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::BuildHasherDefault) => Ok(place),
             // A C-variadic function's `VaList`, the array of what it hasn't
             // read: a copy, read on its own (ADR 0428).
             ty::Adt(..) if crate::lower::recognition::is_va_list(self.tcx, ty) => {

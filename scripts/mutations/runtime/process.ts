@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  globalThis.process?.exit?.(1);\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_field.rs$"],
   },
+  {
+    name: "current-dir-unwrapped",
+    breaks: "`env::current_dir()` is the directory's text itself, no `Ok`, so `?` of it reads a string's `TAG` (#1420)",
+    file: "src/runtime/process.js",
+    find: "  return $fsTry(() => process.cwd());\n",
+    replace: "  return process.cwd();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
+  },
 ];

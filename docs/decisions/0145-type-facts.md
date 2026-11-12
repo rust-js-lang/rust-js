@@ -530,3 +530,20 @@ the metamorphic net; diagnostics.test.ts's "a layout of a type an impl
 nests in itself without end", refused, not followed forever; mutations
 `impl-entries-ask-nothing`, `dictionary-of-callers-params-relays-no-layout`,
 `nested-layouts-unbounded` and `nested-projections-unbounded`, caught.
+
+## Amendment: an impl's method's layout of a type built of the impl's parameters is the impl's (2026-11-12, #1420)
+
+quickcheck 0.9's `impl<K, V> Arbitrary for BTreeMap<K, V>` makes a
+`Vec<(K, V)>`, whose growth asks the size of `(K, V)`. That type is built
+of the impl's parameters, so the method asked it, but nothing gave it: an
+impl's method is given only what its impl's dictionary is made with, and
+the impl itself never asked for the layout. It was refused, "`size_of`
+of a type parameter". **A layout an impl's method asks of a type built of
+the impl's parameters alone is the impl's too**, lifted as a parameter's
+fact is. Its makers give it, `bTreeMapArbitrary(.., KVSize, KVStableSort)`.
+
+Case C of ADR 0262. Corpus case
+`impl_asks_the_layout_of_a_type_of_its_parameters` (a `BTreeMap` and a
+`HashMap` made of a `Vec` of pairs, and a nested one) checks it against
+native Rust in both builds. Mutation `impl-method-built-layout-unlifted`
+is caught.

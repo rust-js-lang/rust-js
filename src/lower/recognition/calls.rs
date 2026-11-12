@@ -293,6 +293,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
             "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
             "std::path::Path::new" | "std::ffi::OsStr::new" => return Some(Some(Std::Path(PathOp::New))),
+            "std::ffi::OsString::into_string" => return Some(Some(Std::Path(PathOp::IntoString))),
             // Its methods, over its components (ADR 0405).
             "std::path::Path::join" => return Some(Some(Std::Path(PathOp::Join))),
             "std::path::Path::parent" => return Some(Some(Std::Path(PathOp::Parent))),

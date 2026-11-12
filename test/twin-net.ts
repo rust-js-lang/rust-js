@@ -234,6 +234,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$partialOrd": "glue",
   "$partition": "consumers",
   "$partitionPoint": "collections",
+  "$pathJoin": "collections",
   "$peek": "iterators",
   "$peekMut": "collections",
   "$peekMutDrop": "collections",

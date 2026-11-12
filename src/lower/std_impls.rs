@@ -117,14 +117,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// path's `Component`'s: the same variant, its fields equal, as any
     /// enum's (ADR 0033), as its derived `{:?}` is shown.
     pub(in crate::lower) fn std_enum_derives_eq(&self, ty: Ty<'tcx>) -> bool {
+        self.std_enum_derives(self.tcx.lang_items().eq_trait(), ty)
+    }
+
+    /// And whose `Clone` is derived, `Bound`'s, quickcheck's (#1420): the
+    /// same variant, its fields cloned, as any enum's (ADR 0033).
+    pub(in crate::lower) fn std_enum_derives_clone(&self, ty: Ty<'tcx>) -> bool {
+        self.std_enum_derives(self.tcx.lang_items().clone_trait(), ty)
+    }
+
+    /// Whether `ty` is one of std's enums, made as any enum is (ADR 0033),
+    /// whose impl of `derived` is std's derive.
+    fn std_enum_derives(&self, derived: Option<DefId>, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
             && !adt.did().is_local()
             && !self.krate.foreign.in_library(adt.did()))
-            && self
-                .tcx
-                .lang_items()
-                .eq_trait()
-                .is_some_and(|eq| self.recognition().derives(eq, ty))
+            && derived.is_some_and(|derived| self.recognition().derives(derived, ty))
     }
 
     pub(super) fn partial_eq_trait(&self) -> DefId {

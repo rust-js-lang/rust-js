@@ -12660,6 +12660,12 @@ export function $vars() {
 export function $varsOs() {
   return Object.entries($process("`std::env::vars_os`").env);
 }
+// `env::current_dir()`: `Ok` of the working directory, or `Err` of the
+// OS's error, of one that's gone.
+export function $currentDir() {
+  const process = $process("`std::env::current_dir`");
+  return $fsTry(() => process.cwd());
+}
 // `process::exit(code)`.
 export function $exit(code) {
   $process("`std::process::exit`").exit(code);
@@ -13130,6 +13136,19 @@ export function $fsCreateDirAll(path) {
 export function $fsRemoveDir(path) {
   const fs = $nodeFs("`std::fs::remove_dir`");
   $fsThrow(() => fs.rmdirSync(path));
+}
+
+// `fs::canonicalize(path)` and `path.canonicalize()`: `realpath`'s, the
+// absolute path, each link followed, or `Err` of the OS's error, a missing
+// file's.
+export function $fsCanonicalize(path) {
+  return $realpath($nodeFs("`std::fs::canonicalize`"), path);
+}
+export function $pathCanonicalize(path) {
+  return $realpath($nodeFs("`std::path::Path::canonicalize`"), path);
+}
+export function $realpath(fs, path) {
+  return $fsTry(() => fs.realpathSync.native(path));
 }
 
 // `fs::read_dir(path)`: `Ok` of its entries, each read as it's asked, in

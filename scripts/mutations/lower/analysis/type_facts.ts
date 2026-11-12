@@ -490,4 +490,12 @@ export const mutations: Mutation[] = [
     replace: "                true if given_params && impl_args.iter().any(|arg| arg.as_type().is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())) => self.calls.push((caller, impl_id, impl_args)),\n",
     tests: ["test/corpus.test.ts", "-t", "^supertrait_dictionary_asks_its_makers.rs$"],
   },
+  {
+    name: "impl-method-built-layout-unlifted",
+    breaks: "an impl's method's layout of a type built of the impl's parameters, quickcheck's `(K, V)` of its `BTreeMap<K, V>`, is asked of no maker, and the impl is refused (#1420)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        for (impl_id, ty, facts, gates) in lifted_built {\n",
+    replace: "        for (impl_id, ty, facts, gates) in lifted_built.into_iter().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
+  },
 ];

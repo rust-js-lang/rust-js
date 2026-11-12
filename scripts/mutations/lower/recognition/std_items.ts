@@ -311,4 +311,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Ref(region, boxed, Mutability::Mut) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
   },
+  {
+    name: "path-canonicalize-unrecognized",
+    breaks: "`p.canonicalize()`, a path's method, is no call of std's files, and is refused (#1420)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"std::path::Path::canonicalize\", NodeOnly::Fs(FsOp::PathCanonicalize)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
+  },
 ];

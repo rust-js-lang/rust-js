@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "        let declared = *self.signature_of(callee).0.get(at)?;",
     tests: ["test/corpus.test.ts", "-t", "^path_given_own_as_ref.rs$"],
   },
+  {
+    name: "os-string-into-string-unwrapped",
+    breaks: "an `OsString`'s `into_string()` is its text itself, no `Ok`, so `unwrap()` of it reads a string's `_0` (#1420)",
+    file: "src/lower/std_types/path.rs",
+    find: "            None if op == PathOp::IntoString => crate::js::result::ok(values.next().expect(\"the text\")),\n",
+    replace: "            None if op == PathOp::IntoString => values.next().expect(\"the text\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^os_string_into_string_and_bound_clone.rs$"],
+  },
 ];

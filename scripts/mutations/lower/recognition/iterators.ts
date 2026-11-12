@@ -276,8 +276,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an adapter of a generic iterator, generic code's `zip`, is refused, not closed by its caller's drop",
     file: "src/lower/recognition/iterators.rs",
-    find: "        if generic\n            || matches!",
-    replace: "        if false\n            || matches!",
+    find: "        if generic\n            || boxed_dyn\n",
+    replace: "        if false\n            || boxed_dyn\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -688,5 +688,13 @@ export const mutations: Mutation[] = [
     find: "            | \"std::iter::Once\"",
     replace: "            | \"std::iter::OnceNever\"",
     tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
+  },
+  {
+    name: "boxed-dyn-iterator-source-unclosed",
+    breaks: "a `filter_map` of a `Box<dyn Iterator>` that carries a drop, quickcheck's `char` shrinker, is no source it can close, and boxing it is refused (#1420)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            || boxed_dyn\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "library_filter_map_of_a_boxed_iterator"],
   },
 ];

@@ -577,6 +577,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => items,
             };
             method("join", items, vec![Expr::str("")])
+        // A `PathBuf` of text, each item pushed in turn, as std's
+        // `FromIterator` extends an empty one: its text joined by
+        // `$pathJoin`, `push`'s (ADR 0405), quickcheck's normalized path
+        // (#1420). An item of another `AsRef<Path>`, whose `as_ref()` its
+        // dictionary gives, isn't one yet.
+        } else if self.recognition().is_path(output)
+            && let Some(item) = item
+            && (item.peel_refs().is_str()
+                || self.is_string_like(item.peel_refs())
+                || self.recognition().is_path_like(item))
+        {
+            let items = match self.unwinding_collect(output, Some(item), iter_ty, span)? {
+                Some(unwinding) => unwinding.folded(it),
+                None => items(it),
+            };
+            method("reduce", items, vec![Expr::helper("$pathJoin"), Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
             // What's left of what it steps, dropped where it stops: closed.
             let it = match iter_ty {

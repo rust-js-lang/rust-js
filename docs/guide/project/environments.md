@@ -72,15 +72,17 @@ as TypeScript's `lib.dom.d.ts`. A call is the DOM's own:
 `document.set_title(title)` is `document.title = title`.
 
 - **Some of std needs a process**, which a browser hasn't:
-  `std::env::args`, `std::env::var`, `std::env::vars` and
-  `std::process::exit` work in Node and panic in a browser, saying so:
+  `std::env::args`, `std::env::var`, `std::env::vars`,
+  `std::env::current_dir`, `std::process::exit` and std's files,
+  `std::fs`'s `File`, `read_dir`, `canonicalize` and the rest, work in
+  Node and panic in a browser, saying so:
 
   ```
   Error: `std::env::args` needs Node's process, which a browser hasn't (ADR 0391)
   ```
 
 - **What JavaScript has no way to do is refused at compile time**: threads,
-  files through `std::fs`, raw memory. See [Compile errors](errors.md).
+  raw memory. See [Compile errors](errors.md).
 
 ## Node.js and Bun
 
@@ -95,8 +97,9 @@ node -e 'import("./src/lib.js").then((m) => console.log(m.totalArea([1, 2])))'
   them: `node::fs::read_file_sync` is `readFileSync` from `"fs"`. See
   [Dependencies](dependencies.md#use-one).
 - **`std::env` and `std::process::exit` are Node's process**:
-  `env::args()` is `process.argv.slice(1)`, `process::exit(code)` is
-  `process.exit(code)`.
+  `env::args()` is `process.argv.slice(1)`, `env::current_dir()` is
+  `process.cwd()`, `process::exit(code)` is `process.exit(code)`, and
+  `fs::canonicalize(path)` is `fs.realpathSync.native(path)`.
 - **`println!` is `console.log`**, and `print!` is `process.stdout.write`.
 - **Node is what rust-js's JS is tested on**, and what it promises. Bun
   imports the same JS, and `bun test` runs rust-js's tests ([ADR 0095](../../decisions/0095-node-runtime.md)).

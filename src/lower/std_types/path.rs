@@ -45,6 +45,10 @@ pub(in crate::lower) enum PathOp {
     /// `Path::new(s)` and `OsStr::new(s)`: what it's given, as a path
     /// (`path_given`).
     New,
+    /// `s.into_string()` of an `OsString`: `Ok` of its text, which every
+    /// `OsString` rust-js makes is, of a `String` or a `&str` (ADR 0173),
+    /// quickcheck's (#1420).
+    IntoString,
 }
 
 impl PathOp {
@@ -66,7 +70,7 @@ impl PathOp {
             PathOp::Ancestors => "$pathAncestors",
             PathOp::Components => "$pathComponents",
             PathOp::ComponentText => "$componentText",
-            PathOp::IsAbsolute | PathOp::IsRelative | PathOp::New => return None,
+            PathOp::IsAbsolute | PathOp::IsRelative | PathOp::New | PathOp::IntoString => return None,
         })
     }
 }
@@ -119,6 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(match op.helper() {
             Some(helper) => Expr::call(Expr::helper(helper), values.collect()),
             None if op == PathOp::New => values.next().expect("what it's given"),
+            None if op == PathOp::IntoString => crate::js::result::ok(values.next().expect("the text")),
             None => {
                 let rooted = Expr::call(
                     Expr::member(values.next().expect("the path"), "startsWith"),

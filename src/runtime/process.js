@@ -36,6 +36,12 @@ function $vars() {
 function $varsOs() {
   return Object.entries($process("`std::env::vars_os`").env);
 }
+// `env::current_dir()`: `Ok` of the working directory, or `Err` of the
+// OS's error, of one that's gone.
+function $currentDir() {
+  const process = $process("`std::env::current_dir`");
+  return $fsTry(() => process.cwd());
+}
 // `process::exit(code)`.
 function $exit(code) {
   $process("`std::process::exit`").exit(code);

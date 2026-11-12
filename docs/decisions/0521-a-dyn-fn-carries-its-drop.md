@@ -363,3 +363,19 @@ Held by:
   `iterator-dyn-disposed-as-a-pair`, `iterator-dyn-carries-no-drop`,
   `iterator-dyns-drop-unfound`, `iterator-dyn-drop-inherited`,
   `iterator-dyn-reboxed-in-place` and `iterator-dyn-unclosed-by-its-consumer`.
+
+## Amendment: an adapter of a boxed iterator closes it (2026-11-12, #1420)
+
+quickcheck 0.9's `char` shrinker boxes
+`(*self as u32).shrink().filter_map(char::from_u32)`, an adapter whose
+source is a `Box<dyn Iterator>` that carries a drop. The adapter's drop
+didn't know how to close its source, so boxing it was refused: "a `dyn`
+of a value with a destructor". **A `Box<dyn Iterator>` is a source an
+adapter closes** (`closing_source`). Closing the adapter, `return()`,
+reaches the box's `$droppingIterator`, whose dispose runs the drop once,
+as std drops the box.
+
+Case C of ADR 0262. Crate pair `library_filter_map_of_a_boxed_iterator`
+checks it against native Rust: dropped part stepped, taken, broken out of,
+counted and collected. Mutation `boxed-dyn-iterator-source-unclosed` is
+caught.

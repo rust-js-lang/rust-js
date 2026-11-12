@@ -362,6 +362,39 @@ pub(super) fn type_fact_params<'tcx>(
         for fact in lifted {
             changed |= asked.insert(fact);
         }
+        // And the layout of a type built of the impl's parameters alone,
+        // quickcheck's `(K, V)` of a `Vec<(K, V)>` its `BTreeMap<K, V>`'s
+        // `arbitrary` makes (#1420).
+        // The impl's own ask of the same type, where it has one, a trait's
+        // default's copy's `Option<<Wrapper<I> as Iterator>::Item>` of a
+        // method's `Option<<I as Iterator>::Item>`: one slot of it.
+        let lifted_built: Vec<_> = (built.iter())
+            .filter_map(|((id, ty), (facts, gates))| {
+                let impl_id = tcx.trait_impl_of_assoc(*id)?;
+                let count = tcx.generics_of(impl_id).count() as u32;
+                if !names_params(*ty, |index| index < count) {
+                    return None;
+                }
+                let typing_env = ty::TypingEnv::non_body_analysis(tcx, impl_id);
+                let normalized = |of: ty::Ty<'tcx>| {
+                    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(of))
+                        .unwrap_or(of)
+                };
+                let same = (built.keys())
+                    .find(|&&(at, of)| at == impl_id && normalized(of) == normalized(*ty))
+                    .map_or(*ty, |&(_, of)| of);
+                Some((impl_id, same, facts.clone(), gates.clone()))
+            })
+            .collect();
+        for (impl_id, ty, facts, gates) in lifted_built {
+            for fact in facts {
+                changed |= ask(
+                    (&mut asked, &mut built, &mut carried),
+                    impl_id,
+                    Asked::Built(ty, fact, gates.clone()),
+                );
+            }
+        }
         // A trait method's own type parameter's fact is the trait's, and each
         // impl's of it, as a caller through its dictionary gives it (ADR 0466).
         let own: Vec<_> = (asked.iter())

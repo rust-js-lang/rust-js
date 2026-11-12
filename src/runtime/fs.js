@@ -459,6 +459,19 @@ function $fsRemoveDir(path) {
   $fsThrow(() => fs.rmdirSync(path));
 }
 
+// `fs::canonicalize(path)` and `path.canonicalize()`: `realpath`'s, the
+// absolute path, each link followed, or `Err` of the OS's error, a missing
+// file's.
+function $fsCanonicalize(path) {
+  return $realpath($nodeFs("`std::fs::canonicalize`"), path);
+}
+function $pathCanonicalize(path) {
+  return $realpath($nodeFs("`std::path::Path::canonicalize`"), path);
+}
+function $realpath(fs, path) {
+  return $fsTry(() => fs.realpathSync.native(path));
+}
+
 // `fs::read_dir(path)`: `Ok` of its entries, each read as it's asked, in
 // the order the OS gives them, `readdir`'s, as std's; the directory opened
 // here, as std's `opendir` is, and closed once they're all read, or once

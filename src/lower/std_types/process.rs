@@ -1,6 +1,6 @@
 //! The process a program runs in (ADR 0391): its arguments, `env::args()`,
 //! its environment, `env::var(key)`, `env::vars()` and their `_os`
-//! forms, and its end,
+//! forms, its working directory, `env::current_dir()`, and its end,
 //! `process::exit(code)`. Node has one, and a browser hasn't:
 //! each is a helper of the runtime's `process.js`, which in a browser
 //! panics, saying which, and recognition's `NODE_ONLY` is the one list of
@@ -27,6 +27,9 @@ pub(in crate::lower) enum ProcessOp {
     VarsOs,
     /// `process::exit(code)`: it ends, with that code.
     Exit,
+    /// `env::current_dir()`: `Ok` of its working directory, a path its text
+    /// (ADR 0173), or `Err` of the OS's error, quickcheck's (#1420).
+    CurrentDir,
 }
 
 impl ProcessOp {
@@ -39,6 +42,7 @@ impl ProcessOp {
             ProcessOp::Vars => "$vars",
             ProcessOp::VarsOs => "$varsOs",
             ProcessOp::Exit => "$exit",
+            ProcessOp::CurrentDir => "$currentDir",
         }
     }
 }

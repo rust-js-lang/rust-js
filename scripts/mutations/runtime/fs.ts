@@ -172,4 +172,12 @@ export const mutations: Mutation[] = [
     replace: "  try {\n    fs.rmdirSync(path);\n  } catch {}\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
   },
+  {
+    name: "canonicalize-resolved-not-real",
+    breaks: "`fs::canonicalize` of a missing file is `Ok` of its absolute path, not the OS's error (#1420)",
+    file: "src/runtime/fs.js",
+    find: "  return $fsTry(() => fs.realpathSync.native(path));\n",
+    replace: "  return $fsTry(() => $process(\"\").getBuiltinModule(\"node:path\").resolve(path));\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
+  },
 ];

@@ -448,7 +448,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     }
                 )
         );
+        // A `Box<dyn Iterator>`, closed by the drop it carries (ADR 0521),
+        // quickcheck's `char` shrinker's `filter_map` of a boxed `u32`'s
+        // (#1420).
+        let boxed_dyn = source.boxed_ty().is_some_and(|inner| self.is_dyn_iter(inner));
         if generic
+            || boxed_dyn
             || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()))
             || is_compiled_std_iterator(self.tcx, source)
         {

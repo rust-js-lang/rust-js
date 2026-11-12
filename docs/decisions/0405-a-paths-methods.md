@@ -85,3 +85,24 @@ the first does; its mutation, `component-text-twice`, survived main's
 check. **Each path method's arguments are `path_given`'s, a component's
 too.** The corpus, both builds and every case's library build, is byte for
 byte what it was without it.
+
+## Amendment: a path collected of text, and an `OsString`'s `into_string()` (2026-11-12, #1420)
+
+quickcheck 0.9's `PathBuf` and `OsString` shrinkers use two forms that
+were refused.
+
+- **A `PathBuf` collected of text**, `p.iter().collect::<PathBuf>()`, is
+  its items pushed in turn onto an empty one, as std's `FromIterator`
+  extends it: `items.reduce($pathJoin, "")`, `push`'s helper. That covers
+  items that are `&str`, `String`, `&OsStr`, `OsString` or `&Path`. An
+  item of another `AsRef<Path>`, whose `as_ref()` its dictionary gives,
+  stays refused.
+- **`s.into_string()` of an `OsString`** is `Ok` of its text. Every
+  `OsString` rust-js makes is text, from a `String` or a `&str` (ADR
+  0173), so it's never `Err`.
+
+Case C of ADR 0262: what was refused compiles, as Rust runs it. Corpus
+cases `path_collected_of_its_parts` and
+`os_string_into_string_and_bound_clone` check each against native Rust in
+both builds. Mutations `os-string-into-string-unwrapped` and
+`path-collected-as-text-joined` are caught.

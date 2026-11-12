@@ -244,6 +244,8 @@ for (const [name, source, message, crate] of [
   // A caller gives a type parameter's sort, not one of a type that holds one (ADR 0471).
   ["an unstable sort of items that hold a type parameter", 'pub fn f<T: Ord>(mut v: Vec<(T, u8)>) -> Vec<(T, u8)> { v.sort_unstable(); v }', "an unstable sort of items that hold a type parameter"],
   // `xor` of two `Some`s drops both, which it doesn't give back (ADR 0098).
+  // An `OsString` collected of others is them joined, not pushed in turn as a `PathBuf`'s (#1420): not one yet.
+  ["a collect of OsStrings into an OsString", 'pub fn f(v: Vec<std::ffi::OsString>) -> std::ffi::OsString { v.into_iter().collect() }', "`collect` into a `std::ffi::OsString`"],
   // An impl whose associated type is its type around its parameter's, zerocopy's `KnownLayout` of a `MaybeUninit<T>`,
   // asks its makers a layout one wider each round; past a depth it asks none, and is refused, not followed forever (#1430).
   ["a layout of a type an impl nests in itself without end", 'pub trait Shape { type Uninit: Shape; }\nimpl Shape for u16 { type Uninit = u16; }\npub struct Maybe<T>(pub T, pub u8);\nimpl<T: Shape> Shape for Maybe<T> { type Uninit = Maybe<T::Uninit>; }\nfn size<T: Shape>() -> usize { std::mem::size_of::<T::Uninit>() }\npub fn f() -> usize { size::<Maybe<u16>>() }', "`size_of` of a type parameter"],
