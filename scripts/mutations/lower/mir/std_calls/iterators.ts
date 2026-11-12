@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "mir-peek-steps",
     breaks: "`p.peek()` of a `Peekable` steps it",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: 'StepOp::Peek => Expr::call_helper("$peek", vec![it]),',
-    replace: 'StepOp::Peek => Expr::call_helper("$next", vec![it]),',
+    find: '                                let [it] = given;\n                                let peeked = Expr::call_helper("$peek", vec![it]);\n',
+    replace: '                                let [it] = given;\n                                let peeked = Expr::call_helper("$next", vec![it]);\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
@@ -216,5 +216,13 @@ export const mutations: Mutation[] = [
     find: "                            this.consumer_closing(it, (method, iter_ty, false), dropping.is_some(), span)?\n",
     replace: "                            this.closing(it, iter_ty, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
+  {
+    name: "peeked-object-record-dropped",
+    breaks: "`peek()`'s object is let through but not recorded as stored in the `Peekable`'s `peeked`, its address an allocation of its own (#1475)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                                    Some(record) => record(peeked),\n",
+    replace: "                                    Some(_) => peeked,\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
   },
 ];

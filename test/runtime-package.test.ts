@@ -1135,7 +1135,7 @@ console.log(said(() => $addr({ value: 1 }, 4)));
 console.log(said(() => $addr($ptrTo({ a: 1 }), 4)));
 `;
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe(
-    "rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1474)\nnumber\nnumber\n",
+    "rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1513)\nnumber\nnumber\n",
   );
 });
 

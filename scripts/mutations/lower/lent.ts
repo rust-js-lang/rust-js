@@ -203,4 +203,28 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],
   },
+  {
+    name: "lent-object-never-recorded",
+    breaks: "an object std lends from inside its receiver is never recorded as stored there, so each is refused in a crate that asks an address (#1475)",
+    file: "src/lower/lent.rs",
+    find: "        !receiver.has_non_region_param()\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
+  {
+    name: "result-lent-object-at-ok",
+    breaks: "a `Result`'s lent `Err` payload is recorded at its `Ok`'s offset (#1475)",
+    file: "src/lower/lent.rs",
+    find: "        let offset = by_slot(&|l| self.lent_offset(receiver, l).expect(\"lend_recorded's\"));\n",
+    replace: "        let offset = by_slot(&|_| self.lent_offset(receiver, lents[0]).expect(\"lend_recorded's\"));\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
+  {
+    name: "lent-object-within-zero",
+    breaks: "an object lent from inside its receiver is recorded at its slot's start, not past an `Option`'s tag where the payload's object is (#1475)",
+    file: "src/lower/lent.rs",
+    find: "        let within = by_slot(&|l| self.lent_within(receiver, l).expect(\"lend_recorded's\"));\n",
+    replace: "        let within = by_slot(&|_| 0);\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
 ];

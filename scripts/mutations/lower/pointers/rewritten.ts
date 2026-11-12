@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "            for end in p.projection.len() + 1..=p.projection.len() {\n",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
   },
+  {
+    name: "storage-live-crossed",
+    breaks: "a pointer made in a loop's last time round is taken to reach the binding's write this time, so a `for` binding is written over a local that isn't there yet (#1484)",
+    file: "src/lower/pointers/rewritten.rs",
+    find: "                return (false, true);\n",
+    replace: "                continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
 ];

@@ -201,18 +201,33 @@ fn moved_out<'tcx>(body: &mir::Body<'tcx>, place: mir::Place<'tcx>, at: mir::Loc
     moves.1
 }
 
-/// Whether `found` holds at some location that may run before `at`.
+/// Whether `found` holds at some location that may run before `at` in
+/// the local's same life: not before its `StorageLive`, where a loop's
+/// `for r in ..` makes its binding a new local each time round (#1484).
 fn reaches<'tcx>(
     body: &mir::Body<'tcx>,
     place: mir::Place<'tcx>,
     at: mir::Location,
     found: fn(&mir::Body<'tcx>, mir::Place<'tcx>, mir::Location) -> bool,
 ) -> bool {
-    let in_block = |block: mir::BasicBlock, end: usize| {
-        (0..end).any(|statement_index| found(body, place, mir::Location { block, statement_index }))
+    // Whether it's found in `block` before `end`, looking back; and
+    // whether the local's life begins there, which ends the search.
+    let in_block = |block: mir::BasicBlock, end: usize| -> (bool, bool) {
+        for statement_index in (0..end).rev() {
+            let location = mir::Location { block, statement_index };
+            if found(body, place, location) {
+                return (true, true);
+            }
+            if let Either::Left(statement) = body.stmt_at(location)
+                && matches!(statement.kind, StatementKind::StorageLive(local) if local == place.local)
+            {
+                return (false, true);
+            }
+        }
+        (false, false)
     };
-    if in_block(at.block, at.statement_index) {
-        return true;
+    if let (found, true) = in_block(at.block, at.statement_index) {
+        return found;
     }
     let mut stack: Vec<mir::BasicBlock> = (body.basic_blocks.predecessors()[at.block]).to_vec();
     let mut seen = IndexSet::default();
@@ -220,10 +235,11 @@ fn reaches<'tcx>(
         if !seen.insert(block) {
             continue;
         }
-        if in_block(block, body.basic_blocks[block].statements.len() + 1) {
-            return true;
+        match in_block(block, body.basic_blocks[block].statements.len() + 1) {
+            (true, _) => return true,
+            (false, true) => continue,
+            (false, false) => stack.extend(body.basic_blocks.predecessors()[block].iter().copied()),
         }
-        stack.extend(body.basic_blocks.predecessors()[block].iter().copied());
     }
     false
 }

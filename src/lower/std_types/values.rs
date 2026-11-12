@@ -443,8 +443,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The call of a std function rust-js knows, of its arguments' values
     /// (ADR 0364). `boxed`: whether the `Option` it gives boxes its `Some`
-    /// (ADR 0051); `output`, what it gives.
+    /// (ADR 0051); `output`, what it gives. One that lends an object from
+    /// inside its receiver, recorded as stored there once it's made (#1475).
     pub(in crate::lower) fn std_values(
+        &mut self,
+        known: Std,
+        call: Call<'_, 'tcx>,
+        mut values: Vec<Expr>,
+        boxed: bool,
+        output: Ty<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let recorded = self.lent_record((call.def_id, call.generic_args), &mut values, out)?;
+        let made = self.std_values_made(known, call, values, boxed, output, out)?;
+        Ok(match recorded {
+            Some(record) => record(made),
+            None => made,
+        })
+    }
+
+    fn std_values_made(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,

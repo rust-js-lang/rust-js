@@ -226,7 +226,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let boxed = this.option_of(output).is_some_and(|item| this.boxed_payload(item));
                         match op {
                             StepOp::Peek if boxed => Expr::call_helper("$peekSome", vec![it]),
-                            StepOp::Peek => Expr::call_helper("$peek", vec![it]),
+                            // The item, in a crate that asks an address recorded as
+                            // stored in the `Peekable`'s `peeked` (#1475).
+                            StepOp::Peek => {
+                                let mut given = [it];
+                                let record = this.lent_record((def_id, generic_args), &mut given, out)?;
+                                let [it] = given;
+                                let peeked = Expr::call_helper("$peek", vec![it]);
+                                match record {
+                                    Some(record) => record(peeked),
+                                    None => peeked,
+                                }
+                            }
                             // A handle on a number or text, else the item itself.
                             StepOp::PeekMut => match this.iterator_item(arg_tys[0].peel_refs()) {
                                 // In a crate that asks an address, a handle on its
@@ -256,7 +267,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 Some(item) if this.mut_ref_form(item).is_cell() => {
                                     Expr::call_helper("$peekCell", vec![it])
                                 }
-                                _ => Expr::call_helper("$peek", vec![it]),
+                                // The item itself, an object, in a crate that asks
+                                // an address recorded as stored in `peeked` (#1475).
+                                _ => {
+                                    let mut given = [it];
+                                    let record = this.lent_record((def_id, generic_args), &mut given, out)?;
+                                    let [it] = given;
+                                    let item = Expr::call_helper("$peek", vec![it]);
+                                    match record {
+                                        Some(record) => record(item),
+                                        None => item,
+                                    }
+                                }
                             },
                             // Of items that may look like `None`, each boxed, the
                             // test given it unboxed.

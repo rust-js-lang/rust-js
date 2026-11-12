@@ -1494,3 +1494,37 @@ preserved" until then (ADR 0262). A diagnostics case and the mutation
 call-lent-cell-pointer-let-through; the metamorphic net's `option` rewrite
 of address_kept_when_assigned_again, which found it, is refused now.
 
+
+## Amendment: an object std lends from inside its receiver is recorded as stored there (#1475)
+
+What std lends of an object from inside its receiver, shared or `&mut`,
+which JS gives as the object itself, was refused in a crate that asks its
+address: nothing recorded it as stored in the receiver, so its address
+would be an allocation of its own. Now the call's JS records it, once the
+call's made, as `get_or_init` and `peek` fill their slot as they're
+called, `$lentFrom(once, "value", 4, 0, once.value)`: the receiver's slot
+object as stored at the slot's offset in the receiver, `within` it where
+its object sits (an `Option` of a struct's past its tag), as `$storedValue`
+records a cell's. The catalog, `lends_object_of` (src/lower/lent.rs): a
+`OnceCell`'s value (`get`, `get_or_init`, `get_mut`), a `LazyCell`'s
+(`force`, `force_mut`), a `Peekable`'s peeked item (`peek`, `peek_mut`),
+a `Result`'s payload (`as_ref`, `as_mut`), its offset and `within` by its
+variant where they differ. One predicate, `lend_recorded`, decides both
+that the check lets a lend through and that the lowering records it: a
+type known here, each slot's offset and `within` known, its payload no
+`$some` box. What it can't record, a value in a `$some` box or a lend the
+catalog doesn't list, names #1513; generic code whose instances disagree,
+#1478. Its proof: the corpus case
+address_of_an_object_std_lends_from_its_storage, run natively on wasm32,
+sweeping each lend over a struct, a tuple and an array, an `Option` of a
+struct as a `Result`'s payload, and a `Result` whose variants keep theirs
+at different offsets. Mutations lent-object-never-recorded,
+result-lent-object-at-ok, lent-object-within-zero, lent-object-record-dropped,
+peeked-object-record-dropped and lent-from-records-nothing.
+
+#1484's writes over a place searched back for a pointer made earlier
+across a loop's back edge, so a `for r in ..` binding whose address is
+taken was written over the last time round's, `$assign(r, value)`, where
+`r` isn't there yet, and the JS threw; found by this case's `Result` loop.
+A local's life begins at its `StorageLive`, so the search stops there
+(mutation storage-live-crossed).

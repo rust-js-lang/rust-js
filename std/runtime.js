@@ -8227,6 +8227,19 @@ export const $contents = new WeakMap();
 // Recorded as std's call is given it, `$borrow($storedValue(cell, 4))`:
 // the cell. `within` `null`: what it holds is an allocation of its own, a
 // `Vec`'s items.
+// What std lends from inside its receiver's storage, an object it keeps in
+// `key`, a `OnceCell`'s `value`, a `Peekable`'s `peeked`, a `Result`'s
+// `_0`: recorded as stored there, at `offset` and `within` past it, so a
+// pointer to it is in the receiver's allocation (#1475). Gives `lent`, the
+// call's value, made first.
+export function $lentFrom(receiver, key, offset, within, lent) {
+  const value = receiver[key];
+  if (value !== null && typeof value === "object") {
+    $items.set(value, { of: receiver, at: key, offset, stride: undefined, within });
+  }
+  return lent;
+}
+
 export function $storedValue(cell, offset, within) {
   $contents.set(cell, offset);
   const value = cell.value;
@@ -8393,13 +8406,13 @@ export function $emptyAt(addr, empty = []) {
 // type its caller lays out. A handle that reads a place it doesn't record,
 // `{ get value() { return slot._0; } }` of a `&mut` std lent from inside
 // its storage, is on no allocation it says: refused, never a made-up
-// address (#1474).
+// address (#1474, #1513).
 export function $offsetIn(pointer, range) {
   if (pointer.bytes !== undefined) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
   }
   if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, "value")?.get !== undefined) {
-    throw $unsupported("rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1474)");
+    throw $unsupported("rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1513)");
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
   const offset = $handleOffset(pointer);

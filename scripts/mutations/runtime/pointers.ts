@@ -763,4 +763,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "a key at another offset is another place's handle"],
   },
+  {
+    name: "lent-from-records-nothing",
+    breaks: "`$lentFrom` records nothing, so a lent object's address is an allocation of its own (#1475)",
+    file: "src/runtime/pointers.js",
+    find: "    $items.set(value, { of: receiver, at: key, offset, stride: undefined, within });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
 ];

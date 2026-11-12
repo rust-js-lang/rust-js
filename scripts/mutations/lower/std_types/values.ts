@@ -816,4 +816,12 @@ export const mutations: Mutation[] = [
     replace: "IoErrorOp::FromRawOsError)",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
   },
+  {
+    name: "lent-object-record-dropped",
+    breaks: "a call of std's that lends an object from inside its receiver is let through but its record isn't made, its address an allocation of its own (#1475)",
+    file: "src/lower/std_types/values.rs",
+    find: "            Some(record) => record(made),\n",
+    replace: "            Some(_) => made,\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
 ];

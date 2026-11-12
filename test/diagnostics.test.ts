@@ -27,10 +27,11 @@ for (const [name, source, message, crate] of [
   // value moved holds its object, so the write can't be over it, and
   // another object would be at another address (#1484).
   ["a local whose address is taken, moved out and assigned again", "pub struct N(u8);\npub fn f() -> (usize, usize, u8) { let mut m = N(1); let at = &raw const m as usize; let kept = m; m = N(2); (at, &raw const m as usize, kept.0 + m.0) }", "a place whose address is taken, assigned whole where it may hold a value or not, or after it's moved out (#1500)"],
-  // An object std lends from inside its receiver, in a crate that asks
-  // that type's address, is no record's: refused (#1475), where a `&mut` to
-  // a number is a handle on its place (#1474).
-  ["a get_mut of an object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<P>, p: P) -> usize { let at = &raw const p as usize; o.get_mut().unwrap().0 += 1; at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1475)"],
+  // An object std lends from inside its receiver in a `$some` box, a
+  // `OnceCell` of an `Option` of a struct's, in a crate that asks that
+  // type's address, is no record's: refused (#1513), where one held as the
+  // object is recorded as stored in its slot (#1475).
+  ["a get_mut of a boxed object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<Option<P>>, p: P) -> usize { let at = &raw const p as usize; if let Some(q) = o.get_mut().unwrap() { q.0 += 1; } at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1513)"],
   // A derived `Debug` of a value whose `Debug` may print as it's formatted,
   // shown whole before its text is written where Rust's print lands
   // between: refused, not written out of order (#1490, #1495).
