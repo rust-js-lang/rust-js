@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde/de.rs",
     find: "        match self.field_codec(field, attrs, false, span)? {\n",
     replace: "        match None::<Expr> {\n",
-    tests: ["test/serde.test.ts", "-t", "its own functions"],
+    tests: ["test/serde-attributes.test.ts", "-t", "its own functions"],
   },
   {
     name: "tuple-struct-default-as-property",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     find: "            Shape::Array(_) => self.project(defaults, ty, i),\n",
     replace: "            Shape::Array(_) => Expr::member(defaults, key.to_owned()),\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "container default gives each missing"
     ]
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     find: "                let read = self.field_reader(field.did, &attrs, self.field_ty(field, args), span)?;\n",
     replace: "                let read = self.json_reader(self.field_ty(field, args), span)?;\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     find: "                flattened.push(self.field_reader(field.did, &attrs, field_ty, span)?);\n",
     replace: "                flattened.push(self.json_reader(field_ty, span)?);\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     find: "                    let read = match codec {\n                        Some(codec) => codec,\n",
     replace: "                    let read = match codec {\n                        Some(_) => self.json_reader(field_ty, span)?,\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]

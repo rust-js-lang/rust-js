@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde.rs",
     find: '                "with" => (attrs.serialize_with, attrs.deserialize_with) = (Some("with"), Some("with")),\n',
     replace: "",
-    tests: ["test/serde.test.ts", "-t", "its own functions"],
+    tests: ["test/serde-attributes.test.ts", "-t", "its own functions"],
   },
   {
     name: "serde-field-written-as-its-type",
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     find: "                self.write_field(codec, value.clone(), json, written, span, &mut body)?;\n",
     replace:
       "                self.write_field(None, value.clone(), json, written, span, &mut body)?;\n",
-    tests: ["test/serde.test.ts", "-t", "its own functions"],
+    tests: ["test/serde-attributes.test.ts", "-t", "its own functions"],
   },
   {
     name: "serde-path-desugared",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde.rs",
     find: "                    && expr.span.desugaring_kind().is_none()\n",
     replace: "",
-    tests: ["test/serde.test.ts", "-t", "its own functions"],
+    tests: ["test/serde-attributes.test.ts", "-t", "its own functions"],
   },
   {
     name: "serde-item-def-id-unfound",
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde.rs",
     find: "                true => owner.def_id,\n",
     replace: "                true => *owner.node_id_to_def_id.get(&id)?,\n",
-    tests: ["test/serde.test.ts", "-t", "under -C incremental"],
+    tests: ["test/serde-attributes.test.ts", "-t", "under -C incremental"],
   },
   {
     name: "serde-field-def-id-unfound",
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde.rs",
     find: "                false => *owner.node_id_to_def_id.get(&id)?,\n",
     replace: "                false => return None,\n",
-    tests: ["test/serde.test.ts", "-t", "under -C incremental"],
+    tests: ["test/serde-attributes.test.ts", "-t", "under -C incremental"],
   },
   {
     name: "newtype-struct-writer-unasked",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     find: "                let codec = self.field_codec(field, &self.serde_attrs(field)?, true, span)?;\n",
     replace: "                let codec = None;\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     find: "                let writer = match codec {\n                    Some(codec) => codec,\n",
     replace: "                let writer = match codec {\n                    Some(_) => self.json_writer(*ty, span)?,\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     find: "                    this.write_field(codec.clone(), fields[0].0.clone(), json, fields[0].1, span, out)\n",
     replace: "                    this.write_field(None, fields[0].0.clone(), json, fields[0].1, span, out)\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     find: "                Some(_) => self.field_codec(variant.def_id, &attrs, serialize, span),\n",
     replace: "                Some(_) => Ok(None),\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "own writer and reader are used"
     ]
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     find: "            counts.push(StmtKind::Expr(test).at(js::Span::NONE));\n",
     replace: "            let _ = test;\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "skip predicate is called as"
     ]
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     find: "        Ok(if flattened { Vec::new() } else { counts })\n",
     replace: "        Ok(counts)\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "skip predicate is called as"
     ]
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     find: "        if !adjacent {\n            out.extend(counts.iter().cloned());\n",
     replace: "        if false {\n            out.extend(counts.iter().cloned());\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "skip predicate is called as"
     ]
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     find: "                let counts = self.skip_counts(variant, &fields, span)?;\n                out.extend(counts);\n                out.extend(opening);\n",
     replace: "                out.extend(opening);\n",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-attributes.test.ts",
       "-t",
       "skip predicate is called as"
     ]
