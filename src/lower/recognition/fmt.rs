@@ -10,6 +10,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         stream_of(self.tcx, ty)
     }
 
+    /// Whether a call of `def_id`, given `args`, writes to standard output:
+    /// `print!`'s, or `io::Write`'s of `io::stdout()` or its lock (#1490).
+    pub(in crate::lower) fn writes_stdout(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        super::print_of(self.tcx, def_id) == Some(false)
+            || (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_| std_path(self.tcx, trait_) == "std::io::Write")
+                && args
+                    .types()
+                    .next()
+                    .is_some_and(|ty| self.stream(ty.peel_refs()) == Some(false))
+    }
+
     /// The runtime's `io::Write` of `ty`, or of what a `&mut` to it is to,
     /// if std's is one rust-js knows (ADR 0392): a `Vec<u8>`'s, which adds
     /// to it, a standard stream's, which writes to it, or a `Box<dyn

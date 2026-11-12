@@ -806,6 +806,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Fmt(Std::FmtDisplay, ty, e) => self.display_string(e, ty, span)?,
             Value::Fmt(Std::FmtDebug, ty, e) => self.debug_string(e, ty, span)?,
             Value::Fmt(_, _, e) => e,
+            // Made as a line is formatted, for anything but it: apart from it
+            // (#1490).
+            Value::Printing(e, _) => self.made_apart_from_the_line(e),
             Value::DynDebug(from, to, e) => self.dyn_debug_pair((from, to), e, span)?,
             Value::List(items, at) => Expr::array(
                 items

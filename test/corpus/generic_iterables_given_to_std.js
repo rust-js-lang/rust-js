@@ -11,13 +11,16 @@ import {
   $extendMap,
   $extendText,
   $folded,
+  $formatting,
   $given,
   $grownBy,
   $grownVec,
   $iter,
   $next,
+  $out,
   $reserveHint,
   $roomForHint,
+  $sink,
   $sortedEntries,
   $sortedKeys,
   $traitImpl,
@@ -28,7 +31,7 @@ export function entry() {
 }
 
 function itIterator_next(it, IIterator) {
-  console.log("next");
+  $out("next\n");
   return IIterator.next(it[0]);
 }
 
@@ -45,18 +48,18 @@ function extended(make, IIterator) {
   $extendMap(h, $reserveHint($given(make(), IIterator), 4, 4, h), true);
   h = $grownVec($roomForHint($iter(Array.from(h)), 4, false), (grown) => Array.from(grown));
   h.sort((a, b) => a - b);
-  console.log(
-    `[${v.join(", ")}] [${d.join(", ")}] [${l.join(", ")}] {${Array.from($sortedKeys(s, $cmp)).join(", ")}} [${h.join(", ")}]`,
+  $out(
+    `[${v.join(", ")}] [${d.join(", ")}] [${l.join(", ")}] {${Array.from($sortedKeys(s, $cmp)).join(", ")}} [${h.join(", ")}]\n`,
   );
 }
 
 function keyed(make, IIterator) {
   const m = new $BTreeMap([[0, "z"]]);
   $extendMap(m, $given(make(), IIterator), false);
-  console.log(
+  $out(
     `{${Array.from($sortedEntries(m, $cmp))
       .map(([key, value]) => `${key}: ${$debugStr(value, "'")}`)
-      .join(", ")}}`,
+      .join(", ")}}\n`,
   );
 }
 
@@ -65,7 +68,7 @@ function texts(make, IIterator) {
   $extendText($given($reserveHint(make(), 1, undefined, s), IIterator), (piece) => {
     s += piece;
   });
-  console.log(`${s}`);
+  $out(`${s}\n`);
 }
 
 const $listedDebug = new WeakMap();
@@ -76,7 +79,11 @@ export function listedDebug(IIterator, IItemDebug) {
   }));
 }
 function listedDebug_fmt(listed, IIterator, IItemDebug) {
-  return `[${$entriesShown($given(listed[0](), IIterator, true), (entry) => IItemDebug.fmt(entry)).join(", ")}]`;
+  const f = $sink();
+  f.write(
+    `[${$entriesShown($given(listed[0](), IIterator, true), (entry) => IItemDebug.fmt(entry)).join(", ")}]`,
+  );
+  return f.done();
 }
 
 function main() {
@@ -93,9 +100,9 @@ function main() {
     itIterator,
   );
   texts(() => [$chars("ab")], itIterator);
-  const shown = listedDebug_fmt([() => [$iter([1, 2])]], itIterator, {
-    fmt: (value) => String(value),
-  });
-  console.log(`${shown}`);
+  const shown = $formatting(() =>
+    listedDebug_fmt([() => [$iter([1, 2])]], itIterator, { fmt: (value) => String(value) }),
+  );
+  $out(`${shown}\n`);
 }
 //# sourceMappingURL=case.js.map

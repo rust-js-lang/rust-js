@@ -250,6 +250,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match op {
             StreamOp::Write { error } => {
                 let text = values.next().expect("a write's text");
+                // To stdout, where a line may be formatted meanwhile: through
+                // the line, so it lands inside it (#1490).
+                if !error && let Some(through) = self.print_through_the_line(&text) {
+                    return through;
+                }
                 match without_newline(text) {
                     Ok(line) => Expr::call(
                         Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
@@ -351,16 +356,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A whole line is `console.log`'s, which ends it; text that may
             // not end one is written as it is (ADR 0087).
-            Std::Print { error } => match without_newline(arg()) {
-                // A write never fails (ADR 0132): it throws only where its
-                // text does (ADR 0901).
-                Ok(line) => Expr::call(
-                    Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
-                    vec![line],
-                )
-                .never_throws(),
-                Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
-            },
+            Std::Print { error } => {
+                let text = arg();
+                // To stdout, where a line may be formatted meanwhile: through
+                // the line, so it lands inside it (#1490).
+                match self.print_through_the_line(&text).filter(|_| !error) {
+                    Some(through) => through,
+                    None => match without_newline(text) {
+                        // A write never fails (ADR 0132): it throws only where
+                        // its text does (ADR 0901).
+                        Ok(line) => Expr::call(
+                            Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
+                            vec![line],
+                        )
+                        .never_throws(),
+                        Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
+                    },
+                }
+            }
             Std::FmtStr => arg(),
             Std::FmtDisplay => {
                 let ty = generic_args.types().next().expect("`new_display` has a type argument");

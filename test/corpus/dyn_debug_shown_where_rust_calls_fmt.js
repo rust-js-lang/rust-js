@@ -8,7 +8,11 @@ import {
   $dropItems,
   $formatFloat,
   $formatted,
+  $formatting,
+  $out,
   $pretty,
+  $printing,
+  $sink,
 } from "@rust-js/std";
 
 export function entry() {
@@ -17,9 +21,11 @@ export function entry() {
 
 export const loudDebug = { fmt: loudDebug_fmt };
 function loudDebug_fmt(loud, options) {
+  const f = $sink();
   loud.calls.value = (loud.calls.value + 1) >>> 0;
-  console.log("fmt called");
-  return `Loud#${loud.calls.value}`;
+  $out("fmt called\n");
+  f.write(`Loud#${loud.calls.value}`);
+  return f.done();
 }
 
 // A value with a destructor, which its pair drops through its `impl`.
@@ -100,11 +106,13 @@ function builtDebug_fmt(built, options) {
 
 export const wrappedDebug = { fmt: wrappedDebug_fmt };
 function wrappedDebug_fmt(wrapped, options) {
-  return `Wrapped<${described({ value: wrapped[0], impl: pointDebug })}>`;
+  const f = $sink();
+  f.write(`Wrapped<${described({ value: wrapped[0], impl: pointDebug })}>`);
+  return f.done();
 }
 
 function described(d) {
-  return d.impl.fmt(d.value);
+  return $formatting(() => d.impl.fmt(d.value));
 }
 
 function showTwice(d) {
@@ -129,14 +137,20 @@ function main() {
   const loud = { calls };
   const d = { value: loud, impl: loudDebug };
   console.log("made");
-  console.log(`${d.impl.fmt(d.value)}`);
+  $printing(() => {
+    $out(d.impl.fmt(d.value));
+    $out("\n");
+  });
   console.log(`${showTwice({ value: loud, impl: loudDebug })}`);
   neverShown({ value: loud, impl: loudDebug });
   const boxed = { value: { calls }, impl: loudDebug };
   console.log("boxed");
   // A `Box<dyn Debug>` made a `&dyn Debug` is the same pair.
   try {
-    console.log(`${boxed.impl.fmt(boxed.value)}`);
+    $printing(() => {
+      $out(boxed.impl.fmt(boxed.value));
+      $out("\n");
+    });
   } catch (error) {
     $cleanup(() => {
       boxed.impl.$drop?.(boxed.value);
@@ -218,7 +232,11 @@ function main() {
   ];
 
   try {
-    console.log(`[${all.map((item) => item.impl.fmt(item.value)).join(", ")}]`);
+    $printing(() => {
+      $out("[");
+      $out(all.map((item) => item.impl.fmt(item.value)).join(", "));
+      $out("]\n");
+    });
   } catch (error) {
     $cleanup(() => {
       $dropItems(all, (item) => {
@@ -229,13 +247,16 @@ function main() {
     throw error;
   }
   try {
-    console.log(
-      `${$pretty(
-        "[",
-        all.map((item) => item.impl.fmt(item.value, { alternate: true })),
-        "]",
-      )}`,
-    );
+    $printing(() => {
+      $out(
+        $pretty(
+          "[",
+          all.map((item) => item.impl.fmt(item.value, { alternate: true })),
+          "]",
+        ),
+      );
+      $out("\n");
+    });
   } catch (error) {
     $cleanup(() => {
       $dropItems(all, (item) => {
@@ -324,7 +345,10 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${wrappedDebug_fmt([{ x: 7, y: 8 }])}`);
+    $printing(() => {
+      $out(wrappedDebug_fmt([{ x: 7, y: 8 }]));
+      $out("\n");
+    });
   } catch (error) {
     $cleanup(() => {
       holder.held.impl.$drop?.(holder.held.value);
@@ -389,7 +413,12 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${noisy.impl.fmt(noisy.value)} ${arg$1}`);
+    $printing(() => {
+      $out(noisy.impl.fmt(noisy.value));
+      $out(" ");
+      $out(arg$1);
+      $out("\n");
+    });
   } catch (error) {
     $cleanup(() => {
       noisy.impl.$drop?.(noisy.value);
@@ -421,7 +450,10 @@ function main() {
     },
   };
   try {
-    console.log(`${receiver.impl.fmt(receiver.value, { debugHex: "x" })}`);
+    $printing(() => {
+      $out(receiver.impl.fmt(receiver.value, { debugHex: "x" }));
+      $out("\n");
+    });
   } catch (error) {
     $cleanup(() => {
       receiver.impl.$drop?.(receiver.value);

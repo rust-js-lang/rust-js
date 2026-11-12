@@ -1012,12 +1012,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .to_string_trait()
                     .expect("a `to_string` call's crate has `ToString`");
                 let to_string = ty::TraitRef::new(self.tcx, to_string_trait, [ty]);
-                match self.is_unknown(ty) && !self.has_evidence(display) {
+                let text = match self.is_unknown(ty) && !self.has_evidence(display) {
                     true if let Some(dictionary) = self.evidence_for(to_string) => {
                         let name = crate::lower::bindings::trait_method_name(self.tcx, to_string_trait, "to_string");
                         Expr::call(Expr::member(dictionary, name), vec![value])
                     }
                     _ => self.display_string(value, ty, span)?,
+                };
+                // Of what may print as it's formatted, made as a line may be
+                // formatted: apart from it (#1490).
+                match self.shown_may_print(ty) {
+                    true => self.made_apart_from_the_line(text),
+                    false => text,
                 }
             }
             _ => return Ok(None),

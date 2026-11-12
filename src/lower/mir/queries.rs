@@ -143,6 +143,7 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         Value::Fmt(_, _, e) | Value::DynDebug(_, _, e) if e.reads_same() => true,
         Value::Expr(e)
         | Value::Fmt(_, _, e)
+        | Value::Printing(e, _)
         | Value::DynDebug(_, _, e)
         | Value::Discriminant(e, ..)
         | Value::Branch(e, _)

@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `write!` of what may fail in a writer is written whole, what came before it lost",
     file: "src/lower/mir/writer.rs",
-    find: "let pieces = values.iter().any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..)));",
+    find: "let pieces = (values.iter()).any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..) | Value::Printing(..)));",
     replace: "let pieces = false;",
     tests: ["test/corpus.test.ts", "-t", "fmt_error"],
   },
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "writer-callable-not-appended",
     breaks: "a writer callable's call isn't what's written: its text is lost",
     file: "src/lower/mir/writer.rs",
-    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);\n",
+    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            self.append_to_writer(state, &name, written, false, self.js_span(span), out);\n",
     replace:
       "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            out.push(js::StmtKind::Expr(written).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
@@ -314,5 +314,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "writer-text-not-through-the-line",
+    breaks: "a writer that prints gives back its text whole, so a print it makes after writing comes before that text (#1490)",
+    file: "src/lower/mir/writer.rs",
+    find: "        state.writer.is_some() && self.writes_through_the_line(owner)\n",
+    replace: "        state.writer.is_some() && self.writes_through_the_line(owner) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
+  },
+  {
+    name: "printed-in-place-unrefused",
+    breaks: "a derived `Debug` of a value whose `Debug` prints shows it whole before its text, where Rust's print lands between, unrefused (#1495)",
+    file: "src/lower/mir/writer.rs",
+    find: "        match self.writes_through_the_line(self.item) && self.krate.prints.shown_prints(ty) {\n",
+    replace: "        match false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what prints"],
   },
 ];

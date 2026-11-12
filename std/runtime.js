@@ -12854,6 +12854,65 @@ export function $write(text, error) {
   }
   $printed[error] = rest;
 }
+// std's stdout `LineWriter` (#1490, ADR 1130): what's written while a line
+// is formatted held till its newline, each whole line then written at once,
+// so what a writer prints as it formats lands inside the line formatted so
+// far, `a inner 1`, as Rust's does, and standard error, written at once,
+// comes before the line it interrupts. Where there's no stream, each line is
+// `console.log`'s, and what's left unended at a task's end is written then.
+export let $lineHeld = "";
+// What each writer that may print, formatting now, writes its text to: the
+// line, `$out`, of a `println!` (`$printing`), or apart from it, `undefined`,
+// of a `format!` made as one formats (`$formatting`).
+export const $printFrames = [];
+export function $out(text) {
+  $lineHeld += text;
+  const end = $lineHeld.lastIndexOf("\n");
+  if (end < 0) return;
+  const lines = $lineHeld.slice(0, end + 1);
+  $lineHeld = $lineHeld.slice(end + 1);
+  $print(lines);
+}
+// A `println!` whose formatting may print, `write` its pieces written
+// through the line. What's left unended, a `print!`'s or a panic's
+// part-way through, is written as `print!` writes it, once no line is
+// formatted, so what's printed after comes after it.
+export function $printing(write) {
+  $printFrames.push($out);
+  try {
+    write();
+  } finally {
+    $printFrames.pop();
+    if ($printFrames.length === 0 && $lineHeld !== "") {
+      const rest = $lineHeld;
+      $lineHeld = "";
+      $print(rest);
+    }
+  }
+}
+// What a writer that may print writes its text to: the line, as it formats
+// into it, so its text comes before what it prints after, and it gives back
+// nothing more; else a string of its own, which it gives back.
+export function $sink() {
+  if ($printFrames.at(-1) === $out) return { write: $out, done: () => "" };
+  let text = "";
+  return {
+    write: (more) => {
+      text += more;
+    },
+    done: () => text,
+  };
+}
+// A writer's text made as a line is formatted, for anything but that line,
+// `format!`'s or `to_string()`'s: made apart from it.
+export function $formatting(make) {
+  $printFrames.push(undefined);
+  try {
+    return make();
+  } finally {
+    $printFrames.pop();
+  }
+}
 // Bytes written to a standard stream (ADR 0392), and how many: Node's, as
 // they are; where there's none, the text they are, a character split
 // between two writes kept till its end comes.
@@ -17679,7 +17738,9 @@ export function $fmtOrPanic(write, message) {
 // `print!` of what fails: the text written before it, then std's panic.
 export function $fmtPrintFailed(error, text, stderr) {
   if (!(error instanceof $FmtError)) throw error;
-  $write(text + error.written, stderr);
+  // In a line formatted through stdout's, after what's written there (#1490).
+  if (!stderr && $printFrames.length > 0) $out(text + error.written);
+  else $write(text + error.written, stderr);
   throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's

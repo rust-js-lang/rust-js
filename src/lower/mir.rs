@@ -105,6 +105,10 @@ enum Value<'tcx> {
     Expr(Expr),
     /// An argument of a `format_args!`: how it's shown, its type, and it.
     Fmt(Std, Ty<'tcx>, Expr),
+    /// A `format_args!`'s text, its pieces kept apart, where formatting one
+    /// may print (#1490): `println!` writes each through stdout's line as
+    /// it's made (`$printing`); and whether it may fail (ADR 0187).
+    Printing(Expr, bool),
     /// A value made a `&dyn Debug` here, of its type and the `dyn`'s:
     /// shown where it's made, by a placeholder, a `Debug` builder's step or
     /// a derived `Debug`'s fields, the string it shows (`shown_in_place`);
@@ -1114,7 +1118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.naming = local_facts::NamingFacts::new(boxes, borrowed_names, flags);
         if let Some(name) = state.made_writing() {
-            out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
+            out.push(StmtKind::Let(name.clone(), Some(self.writer_text_made(&state))).at(js::Span::NONE));
         }
         // Locals assigned more than once are `let`s, declared first.
         for local in mir_body.local_decls.indices() {

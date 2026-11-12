@@ -11,8 +11,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as JS (ADR 0060, amended, #1335).
     pub(super) fn shown_in_place(&mut self, value: Value<'tcx>, span: Span) -> R<Expr> {
         match value {
+            // Written into this writer's text, its pieces as they are, each
+            // through its sink where it writes through the line (#1490).
+            Value::Printing(text, _) => Ok(text),
             Value::DynDebug(from, _, value) => {
                 let pretty = self.writer_pretty();
+                self.refuse_printed_in_place(self.pointee(from), span)?;
                 self.debug_string_with(value, self.pointee(from), span, &pretty)
             }
             Value::List(items, at) => Ok(Expr::array(
@@ -49,7 +53,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn body_epilogue(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) {
         if let Some((_, name)) = &state.writer {
             let name = name.clone();
-            self.writer_epilogue(&name, out);
+            let sink = self.writes_through_a_sink(state);
+            self.writer_epilogue(&name, sink, out);
         }
         if let Some((_, conversion)) = state.thrown_writes.take() {
             let error = self.fresh("error");
@@ -64,7 +69,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// fail gives what it wrote before, in front of what what it called did
     /// (ADR 0187), `let f = ""; try { .. } catch (error) { .. } return f;`;
     /// another, as tidy writes it (`tidy::writer_body`).
-    pub(super) fn writer_epilogue(&mut self, name: &str, out: &mut Vec<Stmt>) {
+    pub(super) fn writer_epilogue(&mut self, name: &str, sink: bool, out: &mut Vec<Stmt>) {
+        // What it's written so far: of one that writes through the line, what's
+        // left of it, `f.done()` (#1490).
+        let written_so_far = || match sink {
+            true => Expr::call(Expr::member(Expr::var(name), "done"), Vec::new()),
+            false => Expr::var(name),
+        };
         match self.writer_fails() {
             // One that may fail gives what it wrote before, in front of
             // what what it called did (ADR 0187): `let f = ""; try { .. }
@@ -85,17 +96,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name));
                 let mut body = out.split_off(made.map_or(0, |at| at + 1));
                 // Its last `return f`, the one after the `try`.
-                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r)))
-                    if matches!(&r.kind, js::ExprKind::Var(v) if v == name))
-                {
+                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if *r == written_so_far()) {
                     body.pop();
                 }
                 let error = self.fresh("error");
-                let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::var(name)]);
+                let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), written_so_far()]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
                 out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
-                out.push(StmtKind::Return(Some(Expr::var(name))).at(js::Span::NONE));
+                out.push(StmtKind::Return(Some(written_so_far())).at(js::Span::NONE));
             }
+            false if sink => {}
             false => tidy::writer_body(out, name),
         }
     }
@@ -158,6 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::DynDebug(from, _, value) => (value, self.pointee(from)),
                     value => (self.value_expr(value, span)?, ty),
                 };
+                self.refuse_printed_in_place(ty, span)?;
                 // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`.
                 let value = match step == BuilderStep::Entries {
                     true => crate::lower::iterators::iterated(value),
@@ -172,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (BuilderStep::Finish { non_exhaustive }, None) => {
                     let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
                     self.flush(state, out)?;
-                    crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+                    self.append_to_writer(state, &name, written, false, self.js_span(span), out);
                 }
                 // Held in a variable: its parts so far, none perhaps, where a
                 // struct's or a tuple's is its name alone (ADR 0532).
@@ -192,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => written,
                     };
                     self.flush(state, out)?;
-                    crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+                    self.append_to_writer(state, &name, written, false, self.js_span(span), out);
                 }
                 (step, Some(parts)) => {
                     let part = self.builder_part(kind, (step, typed, generic_args), span, out)?;
@@ -231,7 +242,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
-            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            self.append_to_writer(state, &name, written, false, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         // A writer called through a `fn` pointer given the writer's
@@ -258,7 +269,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
-            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            self.append_to_writer(state, &name, written, false, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         // A write to the writer's `Formatter` (ADR 0054): `f += s`.
@@ -316,14 +327,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let values = self.take_operands(state, &others, out)?;
             // A `write!` of what may fail: piece by piece, what came before
             // written (ADR 0187).
-            let pieces = values.iter().any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..)));
+            let pieces = (values.iter()).any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..) | Value::Printing(..)));
             let values = (values.into_iter())
                 .map(|v| self.shown_in_place(v, span))
                 .collect::<R<Vec<_>>>()?;
             let pretty = self.writer_pretty();
             let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
             self.flush(state, out)?;
-            crate::lower::display::append_written(&Expr::var(&name), written, pieces, self.js_span(span), out);
+            self.append_to_writer(state, &name, written, pieces, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         Ok(None)
@@ -709,5 +720,98 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         None
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Does the writer being lowered write its text through the line it
+    /// formats into (#1490): its own, or, of a closure that writes its
+    /// maker's, its maker's?
+    pub(super) fn writes_through_a_sink(&self, state: &State<'_, 'tcx>) -> bool {
+        let owner = match state.writes_captured {
+            true => self.tcx.typeck_root_def_id(self.item),
+            false => self.item,
+        };
+        state.writer.is_some() && self.writes_through_the_line(owner)
+    }
+
+    /// `written` written to the writer's own text, `name`: through its sink,
+    /// `f.write(x)`, where it writes through the line (#1490), else
+    /// appended, `f += x`.
+    fn append_to_writer(
+        &self,
+        state: &State<'_, 'tcx>,
+        name: &str,
+        written: Expr,
+        pieces: bool,
+        js_span: js::Span,
+        out: &mut Vec<Stmt>,
+    ) {
+        match self.writes_through_a_sink(state) {
+            true => crate::lower::display::write_to_sink(&Expr::var(name), written, pieces, js_span, out),
+            false => crate::lower::display::append_written(&Expr::var(name), written, pieces, js_span, out),
+        }
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Refused: a value of `ty`, whose `Debug` may print as it's formatted,
+    /// shown where it's made by a derived `Debug` or a builder's step of a
+    /// writer that writes through the line, which shows it whole before its
+    /// text is written, where Rust's prints land between (#1495).
+    fn refuse_printed_in_place(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+        match self.writes_through_the_line(self.item) && self.krate.prints.shown_prints(ty) {
+            true => Err(self.unsupported(
+                span,
+                &format!("a derived `Debug` or a `Debug` builder's step of a `{}`, whose `Debug` may print as it's formatted (#1495)", ty.peel_refs()),
+            )),
+            false => Ok(()),
+        }
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call given a `format_args!`'s text whose formatting may print
+    /// (#1490): `print!`'s or `println!`'s, each piece written through
+    /// stdout's line as it's made, `$printing(..)`; another's, `format!`'s
+    /// or `eprint!`'s, given the text made apart from the line, as a text
+    /// that may fail where it may (ADR 0187). `None` of another call.
+    pub(super) fn printing_call(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        known: Std,
+        values: &mut [Value<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Value<'tcx>>> {
+        let Some(Value::Printing(text, fails)) = values.first() else {
+            return Ok(None);
+        };
+        let (text, fails) = (text.clone(), *fails);
+        if known == (Std::Print { error: false }) {
+            self.flush(state, out)?;
+            return Ok(Some(Value::Expr(self.printed_through_the_line(
+                text,
+                fails,
+                self.js_span(span),
+            ))));
+        }
+        let apart = self.made_apart_from_the_line(text);
+        values[0] = match fails {
+            true => Value::Fmt(Std::FmtNew, self.tcx.types.unit, apart),
+            false => Value::Expr(apart),
+        };
+        Ok(None)
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a writer's text starts as: `""`, or, of one that writes through
+    /// the line it formats into, what it writes through, `$sink()` (#1490).
+    pub(super) fn writer_text_made(&self, state: &State<'_, 'tcx>) -> Expr {
+        match self.writes_through_a_sink(state) {
+            true => Expr::call_helper("$sink", Vec::new()),
+            false => Expr::str(""),
+        }
     }
 }

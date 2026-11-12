@@ -49,6 +49,7 @@ pub(super) mod nulled_params;
 pub(super) mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;
+pub(in crate::lower) mod prints;
 mod programs;
 mod rc_counts;
 mod resolvers;
@@ -240,6 +241,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What its writers take beyond their arguments, and which of its
     /// functions read a `Formatter`'s options (ADRs 0058, 0137, 0559).
     pub writer_facts: WriterFacts,
+    /// Which writers may print to stdout as they format, and what may run
+    /// while one does (#1490).
+    pub prints: prints::Prints,
     /// The type parameters each function shows with options, and each type it gives one (#1331).
     pub shown_params: ShownParams<'tcx>,
     /// Whether it reads a function's identity, of which its libraries'
@@ -834,6 +838,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
         (cell_borrows.pointers(), &std_runs, &runs_settled),
     );
+    // Which writers may print as they format, through stdout's line (#1490).
+    let prints = prints::prints(&recognition, all_bodies, &runs);
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
         at_load: locals_at_load,
@@ -1121,6 +1127,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         asks_capacity,
         generic_consts,
         writer_facts,
+        prints,
         shown_params,
         reads_fn_identity,
         quiet_locals,

@@ -73,7 +73,9 @@ function $fmtOrPanic(write, message) {
 // `print!` of what fails: the text written before it, then std's panic.
 function $fmtPrintFailed(error, text, stderr) {
   if (!(error instanceof $FmtError)) throw error;
-  $write(text + error.written, stderr);
+  // In a line formatted through stdout's, after what's written there (#1490).
+  if (!stderr && $printFrames.length > 0) $out(text + error.written);
+  else $write(text + error.written, stderr);
   throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's

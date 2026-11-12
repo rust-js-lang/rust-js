@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
   },
+  {
+    name: "line-held-past-its-newline",
+    breaks: "stdout's line is never written at its newline, only as `$printing` ends, so standard error written meanwhile comes first, and a print inside a later line follows it (#1490)",
+    file: "src/runtime/print.js",
+    find: "  const end = $lineHeld.lastIndexOf(\"\\n\");\n  if (end < 0) return;\n",
+    replace: "  const end = -1;\n  if (end < 0) return;\n",
+    tests: ["test/runtime-print.test.ts", "-t", "stdout's line is written at its newline"],
+  },
+  {
+    name: "line-left-unended-lost",
+    breaks: "what's left unended of a line, a `print!`'s or a panic's part-way, is never written (#1490)",
+    file: "src/runtime/print.js",
+    find: "      $print(rest);\n    }\n  }\n}\n",
+    replace: "    }\n  }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
+  },
+  {
+    name: "sink-never-the-line",
+    breaks: "a writer that prints writes its text to a string of its own even as it formats into stdout's line, so its text comes after what it prints (#1490)",
+    file: "src/runtime/print.js",
+    find: "  if ($printFrames.at(-1) === $out) return { write: $out, done: () => \"\" };\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
+  },
 ];

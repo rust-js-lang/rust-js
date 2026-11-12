@@ -152,9 +152,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `write!` of what fails writes nothing of its pieces before the one that fails",
     file: "src/lower/display.rs",
-    find: "    let parts = if pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {",
-    replace:
-      "    let parts = if false && pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {",
+    find: "    let parts = match pieces {\n        true => printing::line_parts(written),",
+    replace: "    let parts = match false {\n        true => printing::line_parts(written),",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {

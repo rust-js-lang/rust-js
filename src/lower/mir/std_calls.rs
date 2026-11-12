@@ -250,9 +250,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Fmt(_, ty, _) => this.krate.failing.any && ty.peel_refs().is_adt(),
                         _ => false,
                     });
+                    // Of what may print as it's formatted, its pieces kept apart,
+                    // which `println!` writes through stdout's line as each is
+                    // made (#1490).
+                    let prints = items.iter().any(|item| match *item {
+                        Value::Fmt(Std::FmtDisplay | Std::FmtDebug, ty, _) => this.shown_may_print(ty),
+                        _ => false,
+                    });
                     // What may fail is written piece by piece, so that what
                     // came before is written: its pieces kept apart (ADR 0187).
-                    let joined = crate::lower::display::join_written(parts, fails);
+                    let joined = crate::lower::display::join_written(parts, fails || prints);
+                    if prints {
+                        return Ok(Value::Printing(joined, fails));
+                    }
                     if fails {
                         return Ok(Value::Fmt(Std::FmtNew, output, joined));
                     }
@@ -337,6 +347,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // its writer's: what it writes, appended to the handle's text,
             // plain, as the handle keeps no options (ADR 0461).
             Std::FmtTo(operation) => lower(move |this, state, values, out| {
+                if this.writes_through_a_sink(state) {
+                    return Err(this.unsupported(
+                        span,
+                        "a `Formatter` held where it isn't its writer's, of a writer that may print as it formats (#1490)",
+                    ));
+                }
                 Ok(Value::Expr({
                     let shown = this.value_expr(values.next().expect("what's shown"), span)?;
                     let place = this

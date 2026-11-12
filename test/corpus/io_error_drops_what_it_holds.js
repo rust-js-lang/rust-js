@@ -13,7 +13,9 @@ import {
   $ioErrorDyn,
   $ioThrow,
   $lazyRange,
-  $print,
+  $out,
+  $printing,
+  $sink,
   $stringError,
   $writeCheck,
   $writeTry,
@@ -47,7 +49,7 @@ export const loudError = {
 };
 
 function loudDrop_drop(loud) {
-  console.log(`drop loud ${loud[0]}`);
+  $out(`drop loud ${loud[0]}\n`);
 }
 
 /** rand_core 0.5's error, of any error. */
@@ -59,7 +61,9 @@ export const randErrorDebug = {
 };
 
 function randErrorDebug_fmt(randError) {
-  return `RandError { inner: ${randError.inner.impl.Debug().fmt(randError.inner.value)} }`;
+  const f = $sink();
+  f.write(`RandError { inner: ${randError.inner.impl.Debug().fmt(randError.inner.value)} }`);
+  return f.done();
 }
 
 export const randErrorDisplay = {
@@ -69,14 +73,14 @@ export const randErrorDisplay = {
   },
 };
 function randErrorDisplay_fmt(randError) {
-  let f = "";
+  const f = $sink();
   try {
-    f += "rand: ";
-    f += randError.inner.impl.Display().fmt(randError.inner.value);
+    f.write("rand: ");
+    f.write(randError.inner.impl.Display().fmt(randError.inner.value));
   } catch (error) {
-    throw $fmtWritten(error, f);
+    throw $fmtWritten(error, f.done());
   }
-  return f;
+  return f.done();
 }
 
 const $randErrorError_source = () => undefined;
@@ -118,7 +122,7 @@ function through(n) {
     return result;
   }
   const got = result._0;
-  console.log(`got ${got}`);
+  $out(`got ${got}\n`);
   return { TAG: "Ok", _0: (got + 1) >>> 0 };
 }
 
@@ -132,7 +136,7 @@ function wrote(n) {
 function wroteTwice(n) {
   wrote(1);
   wrote(n);
-  console.log("wrote twice");
+  $out("wrote twice\n");
 }
 
 function randFill() {
@@ -150,7 +154,7 @@ function randFill() {
 function main() {
   let e = new $IoError("TimedOut", { value: [1], impl: loudError });
   try {
-    console.log(`${$ioErrorDisplay(e)} ${e.kind}`);
+    $out(`${$ioErrorDisplay(e)} ${e.kind}\n`);
   } catch (error) {
     $cleanup(() => {
       $ioErrorDrop(e);
@@ -160,7 +164,7 @@ function main() {
   $ioErrorDrop(e);
   const value = through(1);
   try {
-    console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$ioErrorDebug(value._0)})`}`);
+    $out(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$ioErrorDebug(value._0)})`}\n`);
   } catch (error) {
     $cleanup(() => {
       if (value.TAG === "Err") {
@@ -174,10 +178,10 @@ function main() {
   }
   const value$1 = through(3);
   if (value$1.TAG === "Ok") {
-    console.log(`ok ${value$1._0}`);
+    $out(`ok ${value$1._0}\n`);
   } else {
     try {
-      console.log(`err ${$ioErrorDisplay(value$1._0)}`);
+      $out(`err ${$ioErrorDisplay(value$1._0)}\n`);
     } catch (error) {
       $cleanup(() => {
         $ioErrorDrop(value$1._0);
@@ -186,23 +190,30 @@ function main() {
     }
     $ioErrorDrop(value$1._0);
   }
-  console.log("after through");
+  $out("after through\n");
 
   const errors = $collectDropping(
     $lazyRange(10, 13).map((n) => new $IoError("Other", { value: [n], impl: loudError })),
     $ioErrorDrop,
     true,
   );
-  console.log(`${errors.length}`);
+  try {
+    $out(`${errors.length}\n`);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(errors, $ioErrorDrop);
+    }, error);
+    throw error;
+  }
   $dropItems(errors, $ioErrorDrop);
-  console.log("after vec");
+  $out("after vec\n");
 
   const nested = new $IoError("Interrupted", {
     value: new $IoError("Other", { value: [20], impl: loudError }),
     impl: $ioErrorDyn("core::io::error::Error"),
   });
   try {
-    console.log(`${$ioErrorDisplay(nested)}`);
+    $out(`${$ioErrorDisplay(nested)}\n`);
   } catch (error) {
     $cleanup(() => {
       $ioErrorDrop(nested);
@@ -210,16 +221,16 @@ function main() {
     throw error;
   }
   const boxed = { value: nested, impl: $ioErrorDyn("core::io::error::Error") };
-  let text = "";
   try {
-    try {
-      text += "boxed ";
-      text += boxed.impl.Display().fmt(boxed.value);
-      text += "\n";
-    } catch (error) {
-      $fmtPrintFailed(error, text, false);
-    }
-    $print(text);
+    $printing(() => {
+      try {
+        $out("boxed ");
+        $out(boxed.impl.Display().fmt(boxed.value));
+        $out("\n");
+      } catch (error) {
+        $fmtPrintFailed(error, "", false);
+      }
+    });
   } catch (error) {
     $cleanup(() => {
       boxed.impl.$drop?.(boxed.value);
@@ -227,15 +238,22 @@ function main() {
     throw error;
   }
   boxed.impl.$drop?.(boxed.value);
-  console.log("after boxed");
+  $out("after boxed\n");
 
   const value$2 = $writeTry(() => wroteTwice(1));
-  console.log(`${value$2 === undefined}`);
+  try {
+    $out(`${value$2 === undefined}\n`);
+  } catch (error) {
+    $cleanup(() => {
+      $ioErrorDrop(value$2);
+    }, error);
+    throw error;
+  }
   $ioErrorDrop(value$2);
   e = $writeTry(() => wroteTwice(5));
   if (e !== undefined) {
     try {
-      console.log(`${$ioErrorDisplay(e)}`);
+      $out(`${$ioErrorDisplay(e)}\n`);
     } catch (error) {
       $cleanup(() => {
         $ioErrorDrop(e);
@@ -247,7 +265,7 @@ function main() {
 
   const plain = new $IoError("Other", { value: "no destructor", impl: $stringError() });
   try {
-    console.log(`${$ioErrorDisplay(plain)}`);
+    $out(`${$ioErrorDisplay(plain)}\n`);
   } catch (error) {
     $cleanup(() => {
       $ioErrorDrop(plain);
@@ -266,7 +284,7 @@ function main() {
   if (tmp !== undefined) {
     const e = tmp;
     try {
-      console.log(`${$ioErrorDisplay(e)}`);
+      $out(`${$ioErrorDisplay(e)}\n`);
     } catch (error) {
       $cleanup(() => {
         $ioErrorDrop(e);
@@ -294,7 +312,14 @@ function main() {
       throw error;
     }
   }
-  console.log("end");
+  try {
+    $out("end\n");
+  } catch (error) {
+    $cleanup(() => {
+      $ioErrorDrop(plain);
+    }, error);
+    throw error;
+  }
   $ioErrorDrop(plain);
 }
 //# sourceMappingURL=case.js.map

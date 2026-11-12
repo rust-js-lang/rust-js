@@ -4,7 +4,10 @@
 //! formatting returns, is thrown, with what was written before it (ADR 0187).
 
 mod debug;
+mod printing;
 mod written;
+
+pub(super) use printing::write_to_sink;
 
 use super::bindings;
 
@@ -897,18 +900,9 @@ fn shown_number(value: Expr) -> Expr {
 /// `target += written`: piece by piece, `pieces`, where what it writes may
 /// fail, so what came before it is written (ADR 0187).
 pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
-    let parts = if pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {
-        let mut parts = Vec::new();
-        let mut values = values.iter().cloned();
-        for text in texts {
-            if !text.is_empty() {
-                parts.push(Expr::str(text));
-            }
-            parts.extend(values.next());
-        }
-        parts
-    } else {
-        vec![written]
+    let parts = match pieces {
+        true => printing::line_parts(written),
+        false => vec![written],
     };
     for part in parts {
         out.push(StmtKind::Assign(target.clone(), Expr::text_joined(target.clone(), part)).at(js_span));

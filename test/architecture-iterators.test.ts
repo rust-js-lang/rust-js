@@ -270,6 +270,7 @@ const ownUnwinding: Record<string, string> = {
   "src/runtime/fs.js": "Node's error of a call of the OS's caught to become std's `io::Error`, a pipe's positioned read or write tried again where it is, and a collected file's close, whose error std's drop ignores, not a drop (#1156)",
   "src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
   "src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
+  "src/runtime/print.js": "a line formatted through stdout's: its frame popped, and what's left of the line written, as a panic leaves it, not a drop (#1490)",
   "src/runtime/pop_if_cell.js": "a `Vec`'s `pop_if` cell written back as its test returns or panics, not a drop (#906)",
   "src/runtime/rc.js": "`Rc::unwrap_or_clone` of a clone that may panic",
   "src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",

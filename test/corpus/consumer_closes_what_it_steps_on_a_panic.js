@@ -18,9 +18,11 @@ import {
   $isSortedBy,
   $iter,
   $live,
+  $out,
   $partiallyOrdered,
   $repeatingN,
   $reserveHint,
+  $sink,
   $sortedKeys,
   $splicing,
   $unwindsOn,
@@ -32,7 +34,7 @@ export function entry() {
 }
 
 function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
+  $out(`drop ${d[0]}\n`);
 }
 function ds() {
   return [[1], [2], [3]];
@@ -89,7 +91,11 @@ function repeated(d, n, CFromIteratorU32) {
 
 export const listedDebug = { fmt: listedDebug_fmt };
 function listedDebug_fmt(listed) {
-  return `[${$entriesShown($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry)).join(", ")}]`;
+  const f = $sink();
+  f.write(
+    `[${$entriesShown($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry)).join(", ")}]`,
+  );
+  return f.done();
 }
 
 function main() {

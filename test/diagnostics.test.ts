@@ -27,6 +27,10 @@ for (const [name, source, message, crate] of [
   // that type's address, is no record's: refused (#1475), where a `&mut` to
   // a number is a handle on its place (#1474).
   ["a get_mut of an object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<P>, p: P) -> usize { let at = &raw const p as usize; o.get_mut().unwrap().0 += 1; at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1475)"],
+  // A derived `Debug` of a value whose `Debug` may print as it's formatted,
+  // shown whole before its text is written where Rust's print lands
+  // between: refused, not written out of order (#1490, #1495).
+  ["a derived Debug of what prints as it's formatted", "use std::fmt;\npub struct Loud;\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { println!(\"loud\"); write!(f, \"L\") } }\n#[derive(Debug)]\npub struct Holder { pub loud: Loud }\npub fn f(h: &Holder) { println!(\"{:?}\", h); }", "a derived `Debug` or a `Debug` builder's step of a `Loud`, whose `Debug` may print as it's formatted (#1495)"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.

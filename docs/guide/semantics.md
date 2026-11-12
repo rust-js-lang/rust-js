@@ -275,6 +275,16 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   held inside what generic code holds, a `Vec<Result<T, E>>`'s items, is
   refused, #1416 (#1408, #1410; [0461](../decisions/0461-a-formatter-held.md),
   amended).
+- **What a writer prints as it formats lands inside the line,** as Rust's
+  stdout, a line writer, puts it: where your `Display` or `Debug` prints,
+  or runs a drop that prints, that `println!` writes each piece through
+  stdout's line as it's made, `$printing(() => { $out("a "); .. })`, and
+  the writer writes its text through it, `const f = $sink()`. Standard
+  error is written at once. Elsewhere a line is `console.log`'s. In a
+  browser each line is `console.log`'s at its newline, and a line left
+  unended at the end of the program's task is written then. A derived
+  `Debug` of such a value is refused, #1495
+  ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](../decisions/0034-strings-and-chars.md)).

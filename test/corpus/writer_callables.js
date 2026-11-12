@@ -6,8 +6,10 @@ import {
   $formatted,
   $iter,
   $next,
+  $out,
   $peek,
   $restStr,
+  $sink,
   $splitBy,
   $strSlice,
   iterator_peekable,
@@ -39,7 +41,7 @@ function capitalize(s, options) {
 // heck's: each word, where the case changes too, given to `with_word`,
 // and `boundary` between them.
 function transform(s, withWord, boundary, options) {
-  let f = "";
+  const f = $sink();
   let firstWord = true;
   for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
     const charIndices = iterator_peekable($charIndices(word));
@@ -60,9 +62,9 @@ function transform(s, withWord, boundary, options) {
             : mode;
         if (nextMode === "Lowercase" && /^\p{Uppercase}$/u.test(next)) {
           if (!firstWord) {
-            f += boundary(options);
+            f.write(boundary(options));
           }
-          f += withWord($strSlice(word, init, nextI), options);
+          f.write(withWord($strSlice(word, init, nextI), options));
           firstWord = false;
           init = nextI;
           mode = "Boundary";
@@ -72,11 +74,11 @@ function transform(s, withWord, boundary, options) {
           /^\p{Lowercase}$/u.test(next)
         ) {
           if (!firstWord) {
-            f += boundary(options);
+            f.write(boundary(options));
           } else {
             firstWord = false;
           }
-          f += withWord($strSlice(word, init, i), options);
+          f.write(withWord($strSlice(word, init, i), options));
           init = i;
           mode = "Boundary";
         } else {
@@ -84,16 +86,16 @@ function transform(s, withWord, boundary, options) {
         }
       } else {
         if (!firstWord) {
-          f += boundary(options);
+          f.write(boundary(options));
         } else {
           firstWord = false;
         }
-        f += withWord($strSlice(word, init), options);
+        f.write(withWord($strSlice(word, init), options));
         break;
       }
     }
   }
-  return f;
+  return f.done();
 }
 
 export const kebabDisplay = { fmt: kebabDisplay_fmt };
@@ -134,18 +136,18 @@ function columnsDisplay_fmt(columns, options) {
 }
 
 function main() {
-  console.log(`${kebabDisplay_fmt(["Hello Big WORLD XMLHttpRequest"])}`);
-  console.log(`${titleDisplay_fmt(["the ßtraße of heck"])}`);
-  console.log(`${numberedDisplay_fmt(["one two three", 4])}`);
-  console.log(
+  $out(`${kebabDisplay_fmt(["Hello Big WORLD XMLHttpRequest"])}\n`);
+  $out(`${titleDisplay_fmt(["the ßtraße of heck"])}\n`);
+  $out(`${numberedDisplay_fmt(["one two three", 4])}\n`);
+  $out(
     `${columnsDisplay_fmt(["a bc"], { width: 4, align: "Right" })} ${columnsDisplay_fmt(["x y"], {
       width: 3,
       align: "Left",
-    })}.`,
+    })}.\n`,
   );
   // A case mapping shows the `char`s it hasn't given.
   const upper = $iter(Array.from("ß".toUpperCase()));
   $next(upper);
-  console.log(`[${"ǆ".toLowerCase()}] [${$restStr(upper)}]`);
+  $out(`[${"ǆ".toLowerCase()}] [${$restStr(upper)}]\n`);
 }
 //# sourceMappingURL=case.js.map

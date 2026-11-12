@@ -27,6 +27,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        // `print!` of what may print as it's formatted, or another call
+        // given its text (#1490).
+        if let Some(printed) = self.printing_call(state, known, &mut values, span, out)? {
+            return Ok(printed);
+        }
         let extend = self.recognition().extend_grows(def_id, generic_args) && arg_tys.len() == 2;
         let binding = matches!(values.get(1), Some(Value::Expr(e)) if crate::lower::iterators::binding_made(e));
         let fills = extend && self.extend_fills(arg_tys[0].peel_refs(), (arg_tys[1], binding));

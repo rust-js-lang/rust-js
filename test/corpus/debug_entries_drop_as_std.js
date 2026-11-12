@@ -6,11 +6,14 @@ import {
   $closing,
   $dropEach,
   $entriesShown,
+  $formatting,
   $given,
   $givenDrop,
   $iter,
   $iterator,
   $next,
+  $out,
+  $sink,
   $traitImpl,
 } from "@rust-js/std";
 
@@ -27,75 +30,91 @@ function dDebug_fmt(d) {
 }
 
 function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
+  $out(`drop ${d[0]}\n`);
 }
 
 function itIterator_next(it, IIterator, dropI, dropIItem) {
-  console.log("next");
+  $out("next\n");
   return IIterator.next(it[0]);
 }
 
 function itDrop_drop(it, dropI) {
-  console.log("drop it");
+  $out("drop it\n");
 }
 
 export const listDebug = { fmt: listDebug_fmt };
 function listDebug_fmt(list) {
-  return `[${$entriesShown(
-    list[0].values().map((n) => [n]),
-    (entry) => dDebug_fmt(entry),
-    dDrop_drop,
-  ).join(", ")}]`;
+  const f = $sink();
+  f.write(
+    `[${$entriesShown(
+      list[0].values().map((n) => [n]),
+      (entry) => dDebug_fmt(entry),
+      dDrop_drop,
+    ).join(", ")}]`,
+  );
+  return f.done();
 }
 
 export const ownedDebug = { fmt: ownedDebug_fmt };
 function ownedDebug_fmt(owned) {
-  return `{${$entriesShown($closing(Iterator.from(owned[0]()), $dropEach(dDrop_drop)), (entry) => dDebug_fmt(entry), dDrop_drop).join(", ")}}`;
+  const f = $sink();
+  f.write(
+    `{${$entriesShown($closing(Iterator.from(owned[0]()), $dropEach(dDrop_drop)), (entry) => dDebug_fmt(entry), dDrop_drop).join(", ")}}`,
+  );
+  return f.done();
 }
 
 export const steppedDebug = { fmt: steppedDebug_fmt };
 function steppedDebug_fmt(stepped) {
-  return `[${$entriesShown(
-    $closing(
-      $iterator(
-        stepped[0](),
-        (iterator) =>
-          itIterator_next(
-            iterator,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(dDrop_drop),
-            dDrop_drop,
-          ),
-        true,
-      ),
-      (it) => {
-        try {
-          itDrop_drop(it.of, $dropEach(dDrop_drop));
-        } finally {
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
+  const f = $sink();
+  f.write(
+    `[${$entriesShown(
+      $closing(
+        $iterator(
+          stepped[0](),
+          (iterator) =>
+            itIterator_next(
+              iterator,
+              { next: $next, advanceBy: $advanceSlice },
+              $dropEach(dDrop_drop),
+              dDrop_drop,
+            ),
+          true,
+        ),
+        (it) => {
+          try {
+            itDrop_drop(it.of, $dropEach(dDrop_drop));
+          } finally {
+            for (const item of it.of[0]) {
+              dDrop_drop(item);
+            }
           }
-        }
-      },
-    ),
-    (entry) => dDebug_fmt(entry),
-    dDrop_drop,
-  ).join(", ")}]`;
+        },
+      ),
+      (entry) => dDebug_fmt(entry),
+      dDrop_drop,
+    ).join(", ")}]`,
+  );
+  return f.done();
 }
 
 export const pairsDebug = { fmt: pairsDebug_fmt };
 function pairsDebug_fmt(pairs) {
-  return `{${$entriesShown(
-    $closing(Iterator.from(pairs[0]()), (vec) => {
-      for (const item of vec) {
-        dDrop_drop(item[1]);
-      }
-    }),
-    (entry) => `${entry[0]}: ${dDebug_fmt(entry[1])}`,
-    (value) => {
-      dDrop_drop(value[1]);
-    },
-  ).join(", ")}}`;
+  const f = $sink();
+  f.write(
+    `{${$entriesShown(
+      $closing(Iterator.from(pairs[0]()), (vec) => {
+        for (const item of vec) {
+          dDrop_drop(item[1]);
+        }
+      }),
+      (entry) => `${entry[0]}: ${dDebug_fmt(entry[1])}`,
+      (value) => {
+        dDrop_drop(value[1]);
+      },
+    ).join(", ")}}`,
+  );
+  return f.done();
 }
 
 const $listedDebug = new WeakMap();
@@ -111,17 +130,23 @@ export function listedDebug(IIterator, IItemDebug, dropF, dropI, dropIItem) {
   }));
 }
 function listedDebug_fmt(listed, IIterator, IItemDebug, dropF, dropI, dropIItem) {
-  return `[${$entriesShown($closing($given(listed[0](), IIterator, true), $givenDrop(dropI), false), (entry) => IItemDebug.fmt(entry), dropIItem).join(", ")}]`;
+  const f = $sink();
+  f.write(
+    `[${$entriesShown($closing($given(listed[0](), IIterator, true), $givenDrop(dropI), false), (entry) => IItemDebug.fmt(entry), dropIItem).join(", ")}]`,
+  );
+  return f.done();
 }
 
 function shown(value, Debug) {
+  let text;
   try {
-    const text = Debug.fmt(value);
-    console.log(`${text}`);
+    text = $formatting(() => Debug.fmt(value));
   } catch (error) {
     $catchable(error);
-    console.log("panicked");
+    $out("panicked\n");
+    return;
   }
+  $out(`${text}\n`);
 }
 
 function main() {

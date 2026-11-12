@@ -381,8 +381,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = match (&state.writer, state.locals.names[ret].is_empty()) {
                     // A closure's that writes its maker's string, nothing.
                     (Some(_), _) if state.writes_captured => None,
-                    // A writer's, the string it wrote.
-                    (Some((_, name)), _) => Some(Expr::var(name)),
+                    // A writer's, the string it wrote; of one that writes through
+                    // the line, what's left of it, `f.done()` (#1490).
+                    (Some((_, name)), _) => Some(match self.writes_through_a_sink(state) {
+                        true => Expr::call(Expr::member(Expr::var(name), "done"), Vec::new()),
+                        false => Expr::var(name),
+                    }),
                     (None, true) => None,
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
