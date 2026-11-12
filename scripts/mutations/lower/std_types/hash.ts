@@ -219,4 +219,12 @@ export const mutations: Mutation[] = [
     replace: "                for field in [\"align\", \"size\"] {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
   },
+  {
+    name: "hasher-mut-not-read-through",
+    breaks: "a `Hasher` method of a `&mut` to a `&mut` to std's hasher calls the cell's method, not the hasher's, and throws (#1488)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                    if !self.mut_ref_form(pointee).read_is_itself() {\n                        hasher = Expr::member(hasher, js::HELD);\n                    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
+  },
 ];

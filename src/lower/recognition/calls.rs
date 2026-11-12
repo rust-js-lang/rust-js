@@ -1030,18 +1030,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
-        if is_hasher(tcx, tr) && self.std_hasher(self_ty).is_some() {
-            return Some(HashOp::Own);
+        // A std hasher's own, or, of a `&mut` to one or a `&mut` to that,
+        // std's `impl Hasher for &mut H`'s, which forwards to what it points
+        // at: `h.finish()` of an `h: &mut DefaultHasher`, found by auto-ref
+        // as it takes `&self`, the hasher's own too, read through each
+        // `&mut` (`HashOp::Own`, #1488).
+        let mut pointee = self_ty;
+        while let ty::Ref(_, inner, ty::Mutability::Mut) = *pointee.kind() {
+            pointee = inner;
         }
-        // std's `impl Hasher for &mut H` of a std hasher's `&mut`, whose
-        // `finish`, of its `&self`, `h.finish()` of an `h: &mut
-        // DefaultHasher` finds: the hasher's own, as it forwards to it. Its
-        // writes, of a `&mut &mut`, aren't taken (#1488).
-        if is_hasher(tcx, tr)
-            && tcx.item_name(def_id).as_str() == "finish"
-            && let ty::Ref(_, pointee, ty::Mutability::Mut) = *self_ty.kind()
-            && self.std_hasher(pointee).is_some()
-        {
+        if is_hasher(tcx, tr) && self.std_hasher(pointee).is_some() {
             return Some(HashOp::Own);
         }
         // A crate's hasher's provided method that its impl doesn't write,

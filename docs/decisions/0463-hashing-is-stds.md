@@ -340,3 +340,16 @@ takes `finish` of a `&mut` to std's hasher as the hasher's own,
 function's `&mut`, a `let`'s, one whose hasher is replaced, a field's,
 `iter_mut()`'s, `as_mut()`'s and a `RefMut`'s) and mutation
 `hasher-mut-finish-unrecognised`.
+
+Then (2026-11-12): so is every method of a `&mut` to that `&mut`, or to one
+to it, `r.write_u8(1); r.finish()` of an `r: &mut &mut DefaultHasher`,
+which went by the same route through `$throughBox($throughBox($sipHasher))`
+and threw the same. The recogniser takes each `Hasher` method of a std
+hasher behind any number of `&mut`s as the hasher's own; its lowering reads
+the receiver, `&self`'s or `&mut self`'s by the method's signature, through
+each `&mut` whose form is a cell (`mut_ref_form`'s `read_is_itself`, the
+representation's answer): `r.value.finish()`, `r.value.value.writeU8(4)`.
+Of the hasher itself, and of one `&mut` to it, nothing is read, as before.
+`Box<H>`'s forwarding impl stays refused. Mutations
+`hasher-mut-unrecognised` and `hasher-mut-not-read-through` replace
+`hasher-mut-finish-unrecognised`.

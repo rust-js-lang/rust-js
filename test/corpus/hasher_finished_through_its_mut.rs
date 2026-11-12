@@ -3,12 +3,25 @@
 // forwards to it, through a function's `&mut`, a `let`'s, one whose hasher
 // is replaced, a field's, `iter_mut()`'s, `as_mut()`'s and a `RefMut`'s. It
 // threw, given the hasher where std's impl's dictionary read a box (#1488).
+// And each method of a `&mut` to that `&mut`, or to one to it, its own read
+// through each, which threw the same.
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 fn feed(h: &mut DefaultHasher) -> u64 {
     h.write_u8(1);
     h.finish()
+}
+
+fn twice(r: &mut &mut DefaultHasher) -> u64 {
+    r.write_u8(1);
+    r.write(&[2, 3]);
+    r.finish()
+}
+
+fn thrice(r: &mut &mut &mut DefaultHasher) -> u64 {
+    r.write_u8(4);
+    r.finish()
 }
 
 struct Holder {
@@ -51,4 +64,10 @@ fn main() {
     println!("{}", m.finish());
     drop(b);
     println!("{}", c.get_mut().finish());
+    let mut n = DefaultHasher::new();
+    let mut r = &mut n;
+    println!("{}", twice(&mut r));
+    let mut rr = &mut r;
+    println!("{}", thrice(&mut rr));
+    println!("{}", n.finish());
 }
