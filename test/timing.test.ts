@@ -1,10 +1,11 @@
 // The loop's timings (scripts/timing.ts): how a step's time is said
 // against its usual, and when it's slower.
 import { expect, test } from "bun:test";
-import { realpathSync } from "node:fs";
+import { mkdirSync, realpathSync } from "node:fs";
+import { join } from "node:path";
 
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
-import { elapsedSeconds, said, strays, type Stray } from "../scripts/strays";
+import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
 import { compared, median, shown, slower, type Timing } from "../scripts/timing";
 import { floorBytes } from "./bounded";
 import { fixture, root } from "./support";
@@ -57,6 +58,33 @@ test("a process the loop left running in a target is named, with how to stop it"
     process.kill(pid);
   }
   expect(said([])).toBeUndefined();
+});
+
+// A worktree beside the main checkout, `git worktree add ../x`, is one of
+// the repository's too: what the loop left in its `target/` is named from
+// any of them (#1449), where only the main checkout's were searched.
+test("a stray in a worktree outside the main checkout is named", async () => {
+  const dir = realpathSync(fixture("strays-repo"));
+  const [main, outside] = [join(dir, "main"), join(dir, "outside")];
+  mkdirSync(main);
+  const git = (cwd: string, ...args: string[]) => Bun.spawnSync(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+  git(main, "init", "-q");
+  git(main, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "start");
+  expect(git(main, "worktree", "add", "-q", "--detach", outside).exitCode).toBe(0);
+  expect(worktreeRoots(main)).toEqual([main, outside]);
+  mkdirSync(join(outside, "target"));
+  const shell = Bun.spawnSync(["sh", "-c", "sleep 30 > /dev/null 2>&1 & echo $!"], { cwd: join(outside, "target") });
+  const pid = Number(shell.stdout.toString().trim());
+  try {
+    let found: Stray[] = [];
+    for (let i = 0; i < 50 && !found.some((s) => s.pid === pid); i++) {
+      found = strays(main, 0);
+      if (!found.some((s) => s.pid === pid)) await Bun.sleep(100);
+    }
+    expect(found.find((s) => s.pid === pid)?.cwd).toBe(join(outside, "target"));
+  } finally {
+    process.kill(pid);
+  }
 });
 
 // check:fast's pool starts the longest job first by each job's last runs on

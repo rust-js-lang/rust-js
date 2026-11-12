@@ -8,7 +8,6 @@
 //
 //   bun scripts/strays.ts     each, by its PID, or nothing
 import { readlinkSync } from "node:fs";
-import { dirname, resolve } from "node:path";
 
 export type Stray = { pid: number; seconds: number; cwd: string; command: string };
 
@@ -21,11 +20,15 @@ export function elapsedSeconds(etime: string): number {
   return ((Number(days) * 24 + h) * 60 + m) * 60 + s;
 }
 
-/** The checkout every worktree of this repository is in: its common git
- * directory's parent. */
-function mainCheckout(cwd: string): string {
-  const common = Bun.spawnSync(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd }).stdout.toString().trim();
-  return dirname(resolve(cwd, common));
+/** Every worktree of the repository `cwd` is in, as git lists them: the
+ * main checkout, and each other wherever it is, inside the checkout or
+ * beside it (`git worktree add ../x`, #1449). */
+export function worktreeRoots(cwd: string): string[] {
+  const listed = Bun.spawnSync(["git", "worktree", "list", "--porcelain"], { cwd }).stdout.toString();
+  return listed
+    .split("\n")
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => line.slice("worktree ".length));
 }
 
 /** Each process's working directory, of the user's processes: `lsof`'s on
@@ -51,10 +54,11 @@ function workingDirectories(pids: number[]): Map<number, string> {
 }
 
 /** The processes parented by 1, running past `minimum` seconds, whose
- * working directory is in a `target/` of the checkout `cwd` is in or of
- * one of its worktrees: what the loop left behind. */
+ * working directory is in a `target/` of a worktree of the repository
+ * `cwd` is in, its main checkout's or another's: what the loop left
+ * behind. */
 export function strays(cwd = process.cwd(), minimum = 60 * 60): Stray[] {
-  const checkout = mainCheckout(cwd);
+  const roots = worktreeRoots(cwd);
   const listed = Bun.spawnSync(["ps", "-Ao", "pid=,ppid=,etime=,command="]).stdout.toString();
   const candidates: Omit<Stray, "cwd">[] = [];
   for (const line of listed.split("\n")) {
@@ -64,7 +68,8 @@ export function strays(cwd = process.cwd(), minimum = 60 * 60): Stray[] {
     if (seconds >= minimum) candidates.push({ pid: Number(match[1]), seconds, command: match[4] });
   }
   const cwds = workingDirectories(candidates.map((c) => c.pid));
-  const inTarget = (dir: string) => dir.startsWith(`${checkout}/`) && /(^|\/)target(\/|$)/.test(dir.slice(checkout.length));
+  const inTarget = (dir: string) =>
+    roots.some((root) => dir.startsWith(`${root}/`) && /(^|\/)target(\/|$)/.test(dir.slice(root.length)));
   return candidates.flatMap((c) => {
     const dir = cwds.get(c.pid);
     return dir !== undefined && inTarget(dir) ? [{ ...c, cwd: dir }] : [];
