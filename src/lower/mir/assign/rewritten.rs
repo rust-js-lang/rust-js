@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tcx,
                 span,
                 Refused::Memory(
-                    "a place whose address is taken, assigned whole where it may hold a value or not, or after it's moved out (#1484)",
+                    "a place whose address is taken, assigned whole where it may hold a value or not, or after it's moved out (#1500)",
                 ),
             )),
             Rewritten::Made => Ok(Some(value)),

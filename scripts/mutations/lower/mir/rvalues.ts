@@ -782,4 +782,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],
     snapshots: true,
   },
+  {
+    name: "call-lent-cell-pointer-let-through",
+    breaks: "a raw pointer to what a call lends as a cell made at each call, `o.as_mut()`'s, is let through, two pointers to one place differing (#1497)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        && let js::ExprKind::Call(callee, _) = &of.kind\n",
+    replace: "                        && let js::ExprKind::Call(callee, _) = &of.kind\n                        && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to what Option::as_mut lends"],
+  },
 ];

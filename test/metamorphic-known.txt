@@ -29,8 +29,5 @@ plain std loud-drop lock_poisoning.rs
 #1491 P2: a map of a map given to generic code's ExactSizeIterator throws 'it.len is not a function' (its inner map is JS's own)
 plain generic-instances counted_where_made_runs_each_part_once.rs
 
-#1497 P0: two pointers made through Option::as_mut() of a nested Option compare unequal (fresh accessor cell per lend)
-plain std option address_kept_when_assigned_again.rs
-
 #1490 P0: a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
 plain std library printed_while_a_line_is_formatted.rs

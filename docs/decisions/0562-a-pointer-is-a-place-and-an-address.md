@@ -1478,3 +1478,19 @@ Mutations reassigned-pointed-made-again, dropped-taken-for-moved,
 moved-written-over, field-pointers-unseen, inner-objects-unkept,
 inner-object-not-put-back, rewritten-not-mutated and
 key-one-handle-at-any-offset.
+
+## Amendment: a pointer to what a call lends as a cell made at each call is refused (#1497)
+
+`Option::as_mut()` lends an `Option` local's payload as an accessor cell on
+the variable, `{ get value() { return o; }, .. }`, made at each call and a
+place on no record. A raw pointer made of it was `$ptr(cell, "value", 0)`, a
+handle on that cell's own `value`, so two pointers to one place compared
+unequal where native wasm32 says equal. The refusal of a pointer through a
+`&mut`'s box asked whether the place read is the box's `value` by
+`same_path`, which a call that names no place, `$unwrap(..)`, never is;
+now what such a call lends is refused, naming #1502, which would give the
+lend a place handle as #1474 did. Case "Rust's behavior cannot be
+preserved" until then (ADR 0262). A diagnostics case and the mutation
+call-lent-cell-pointer-let-through; the metamorphic net's `option` rewrite
+of address_kept_when_assigned_again, which found it, is refused now.
+
