@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || ty.is_char()
             || Num::of(ty).is_some()
             || self.is_str_split(ty)
-            || self.recognition().str_search_runs_code(ty)
+            || self.recognition().search_runs_code(ty)
         {
             return None;
         }

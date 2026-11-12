@@ -136,3 +136,21 @@ case `str_searches_ask_a_closure_as_they_step` against native Rust in both
 builds; ten mutations, caught, and six of the eager helpers' re-anchored to
 the one implementation, caught. A slice's `split` family and `chunk_by`,
 whose predicate is always the program's, follow under #1501.
+
+Then (2026-11-12, #1501 part 2b): **a slice's searches by a predicate that
+runs code are std's iterators too.** `split`, `splitn`, `rsplit`, `rsplitn`,
+`split_inclusive`, `chunk_by` and their `_mut`s, of a closure or a function
+of the crate's (the predicate, the method's last type, `pattern_runs_code`),
+are `$lazySliceSplitBy` and `$lazyChunkBy` (`_mut`s over `$view`, ADR 0335):
+ports of std's `Split`, `SplitInclusive` (finished where its slice is
+empty), `GenericSplitN`, `RSplit` and `ChunkBy`, each asking the predicate
+as a piece is stepped, from either end, their hints std's, `ChunkBy`'s
+`last` its `next_back` (`source_writes`), as std's is; its `count` std's
+default of `next`, which asks each two in a row once, front to back, as
+std's own `count` does. `search_runs_code` and `search_knows_its_back` now
+answer of both a `str`'s searches and a slice's. A std predicate runs no
+code and keeps the array, `Array.from` of the same iterator. Two snapshots
+change, each a helper's name, `$lazySliceSplitBy` for `$sliceSplitBy`.
+Corpus case `slice_searches_ask_a_predicate_as_they_step` against native
+Rust in both builds; nine mutations, caught, and six of the eager helpers'
+re-anchored, caught.

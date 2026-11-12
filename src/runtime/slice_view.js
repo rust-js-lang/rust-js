@@ -123,6 +123,14 @@ function $chunkByMut(v, p) {
   return $chunkBy(v, p, $view);
 }
 
+function $lazySliceSplitByMut(v, p, n, inclusive, back) {
+  return $lazySliceSplitBy(v, p, n, inclusive, back, $view);
+}
+
+function $lazyChunkByMut(v, p) {
+  return $lazyChunkBy(v, p, $view);
+}
+
 function $splitChunkMut(v, n, last) {
   return $splitChunk(v, n, last, $view);
 }

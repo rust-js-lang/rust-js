@@ -3,18 +3,18 @@
 import {
   $assign,
   $at,
-  $chunkBy,
-  $chunkByMut,
   $chunksExactMut,
   $chunksMut,
   $index,
   $iter,
+  $lazyChunkBy,
+  $lazyChunkByMut,
+  $lazySliceSplitByMut,
   $mutAt,
   $rchunksMut,
   $reverseRange,
   $rotateLeft,
   $sliceSplitAt,
-  $sliceSplitByMut,
   $splitAtMut,
   $splitChunkMut,
   $splitEndMut,
@@ -119,7 +119,7 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   const words = [1, 0, 2, 3, 0, 4];
-  for (const part of $sliceSplitByMut(words, (x) => x === 0, undefined, false, false)) {
+  for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, false, false)) {
     part.reverse();
     const first = $mutAt(part, 0);
     if (first != null) {
@@ -127,19 +127,19 @@ function main() {
     }
   }
   console.log(`[${words.join(", ")}]`);
-  for (const part of $sliceSplitByMut(words, (x) => x === 0, 2, false, false)) {
+  for (const part of $lazySliceSplitByMut(words, (x) => x === 0, 2, false, false)) {
     const value = $index(part, 0);
     part[$at(part, 0)] = -value | 0;
   }
   console.log(`[${words.join(", ")}]`);
-  for (const part of $sliceSplitByMut(words, (x) => x === 0, undefined, true, false)) {
+  for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, true, false)) {
     part.sort((a, b) => a - b);
   }
   console.log(`[${words.join(", ")}]`);
-  for (const part of $sliceSplitByMut(words, (x) => x === 0, undefined, false, true)) {
+  for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, false, true)) {
     part[$at(part, 0)] = 1;
   }
-  for (const part of $sliceSplitByMut(words, (x) => x === 0, 2, false, true)) {
+  for (const part of $lazySliceSplitByMut(words, (x) => x === 0, 2, false, true)) {
     part.fill(2);
   }
   console.log(`[${words.join(", ")}]`);
@@ -178,13 +178,13 @@ function main() {
   console.log(`[${words.join(", ")}]`);
 
   const runs = [1, 1, 2, 3, 3, 3];
-  for (const run of $chunkByMut(runs, (a, b) => a === b)) {
+  for (const run of $lazyChunkByMut(runs, (a, b) => a === b)) {
     const n = run.length;
     run[$at(run, 0)] = n;
   }
   console.log(`[${runs.join(", ")}]`);
   console.log(
-    `[${Array.from($chunkBy(runs, (a, b) => a <= b))
+    `[${Array.from($lazyChunkBy(runs, (a, b) => a <= b))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

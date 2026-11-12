@@ -702,10 +702,11 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$recvItems` and `$tryRecvItems` (#1176), a `str`'s searches by a
 /// predicate that runs the program's code, asked as they're stepped,
 /// `$lazySplitBy`, `$lazyRsplitBy`, `$lazySplitTerminatorBy`,
-/// `$lazySplitInclusiveBy`, `$lazyMatchesBy` and `$lazyMatchIndicesBy`
-/// (#1501), and each of its generators,
+/// `$lazySplitInclusiveBy`, `$lazyMatchesBy` and `$lazyMatchIndicesBy`, and
+/// a slice's, `$lazySliceSplitBy`, `$lazyChunkBy` and their `_mut`s (#1501),
+/// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 52] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 56] = [
     "$stdIterator",
     "$chars",
     "$charIndices",
@@ -758,6 +759,10 @@ pub(crate) const ITERATOR_HELPERS: [&str; 52] = [
     "$lazySplitInclusiveBy",
     "$lazyMatchesBy",
     "$lazyMatchIndicesBy",
+    "$lazySliceSplitBy",
+    "$lazySliceSplitByMut",
+    "$lazyChunkBy",
+    "$lazyChunkByMut",
 ];
 
 /// What a binding's call made, `made`, of type `output`: of a `dyn

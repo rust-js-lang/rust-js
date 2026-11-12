@@ -179,12 +179,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether `ty` is a std source that writes `step` itself, not std's
-    /// default of its `next` (`own_source_steps`): `repeat_n`'s `count`.
+    /// default of its `next` (`own_source_steps`): `repeat_n`'s `count`; and
+    /// a slice's `chunk_by` by a predicate that runs code, `$lazyChunkBy`,
+    /// whose `last` is its `next_back`, as std's `ChunkBy::last` is (#1501).
     pub(in crate::lower) fn source_writes(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
-        let ty::Adt(adt, _) = self.reveal(ty).kind() else {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, _) = ty.kind() else {
             return false;
         };
         own_source_steps(std_path(self.tcx, adt.did())).is_some_and(|own| own.contains(&step))
+            || step == OwnStep::Last
+                && self.search_runs_code(ty)
+                && matches!(self.tcx.item_name(adt.did()).as_str(), "ChunkBy" | "ChunkByMut")
     }
 
     /// The source `at` of an adapter of type `ty`, of type arguments

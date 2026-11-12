@@ -677,7 +677,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // like, which has one wherever std's is double-ended (#1501).
         let by_its_type = self.steps_an_array(iter_ty)
             || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs())
-            || self.recognition().str_search_knows_its_back(iter_ty.peel_refs()) == Some(true);
+            || self.recognition().search_knows_its_back(iter_ty.peel_refs()) == Some(true);
         (by_its_type || structural() && !crate::lower::iterators::form_lacks_a_back(value))
             && !self.compiled_struct(iter_ty.peel_refs(), value)
     }

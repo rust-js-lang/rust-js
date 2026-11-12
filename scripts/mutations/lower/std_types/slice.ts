@@ -82,17 +82,16 @@ export const mutations: Mutation[] = [
     name: "split-by-mut-copies",
     breaks: "`split_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: '                    true => self.view_call("$sliceSplitByMut", list),',
-    replace: '                    true => helper("$sliceSplitBy", list),',
+    find: "                    (true, true) => self.view_call(\"$lazySliceSplitByMut\", list),\n",
+    replace: "                    (true, true) => helper(\"$lazySliceSplitBy\", list),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "chunk-by-mut-copies",
     breaks: "`chunk_by_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: 'SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),',
-    replace:
-      'SliceOp::ChunkBy { mutable: true } => helper("$chunkBy", vec![arg(), arg()]),',
+    find: "                    (true, true) => self.view_call(\"$lazyChunkByMut\", list),\n",
+    replace: "                    (true, true) => helper(\"$lazyChunkBy\", list),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
@@ -629,5 +628,13 @@ export const mutations: Mutation[] = [
     find: "                let clone = clone.filter(|clone| copy.as_ref() != Some(clone));\n",
     replace: "                let clone = None::<Expr>;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "slice-search-made-eager",
+    breaks: "a slice's search by a predicate that runs code is made the array of its pieces, `$sliceSplitBy`, the predicate asked of every item first (#1501)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        (generic_args.types().last()).is_some_and(|predicate| self.recognition().pattern_runs_code(predicate))\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
   },
 ];

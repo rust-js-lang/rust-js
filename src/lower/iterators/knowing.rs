@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::source_hint_kept(self.tcx, ty)
             // A `str`'s search by a pattern that runs code, a `$Steps` whose
             // hint is std's default, `(0, None)`, as std's is (#1501).
-            || self.recognition().str_search_runs_code(ty)
+            || self.recognition().search_runs_code(ty)
     }
 
     /// Whether `size_hint()` of an iterator of type `ty` is std's where the
@@ -264,7 +264,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // back say (`searches_whole`), so what's made of one only stepped
         // from its front is JS's own, `.map(f)`, as of a string's `chars()`
         // (#1501, #1186).
-        if let Some(double_ended) = self.recognition().str_search_knows_its_back(ty) {
+        if let Some(double_ended) = self.recognition().search_knows_its_back(ty) {
             return double_ended && (self.krate.searches_whole || self.stepped_from_its_back(ty));
         }
         self.double_ended_param(self.generics_fn(), ty)

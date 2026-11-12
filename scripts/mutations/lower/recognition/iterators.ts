@@ -697,4 +697,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "library_filter_map_of_a_boxed_iterator"],
   },
+  {
+    name: "slice-search-runs-no-code",
+    breaks: "a slice's search by a predicate that runs code is taken to run none, so it's the array of its pieces, the predicate asked of every item first (#1501)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            return args\n                .types()\n                .nth(1)\n                .is_some_and(|pattern| self.pattern_runs_code(pattern));\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
+  },
 ];

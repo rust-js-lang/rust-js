@@ -130,9 +130,11 @@ for (const [name, source, message, crate] of [
   // Of a `skip(n)` of a string's `chars()`, JS's own `drop(n)` of `$chars`,
   // which keeps no hint, where `chars()` itself is std's (#1316).
   ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().skip(1).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
-  // A slice's, whose hint's lower bound is 1 where JS counts (a string's is
-  // std's, #1180's (3)).
-  ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u32]) -> usize {\n    let w: Vec<&[u32]> = v.split(|x| *x == 0).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // A slice's split by a predicate of std's, the array of its pieces, whose
+  // hint's lower bound is 1 where JS counts (a string's is std's, #1180's
+  // (3)); one by a predicate that runs code is std's `Split`, its hint std's
+  // (#1501).
+  ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u8]) -> usize {\n    let w: Vec<&[u8]> = v.split(u8::is_ascii_whitespace).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's part that's neither exact-sized nor std's lower bound in JS, a
   // string's `chars()` skipped, which JS's own adapters know no hint of
   // (#1200, #1216).

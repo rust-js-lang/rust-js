@@ -675,6 +675,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::optional_args(Vec::new(), vec![clone, clone_from, drop])))
     }
 
+    /// Whether a slice's search's predicate, its method's last type, runs
+    /// the program's code (`pattern_runs_code`, #1501).
+    fn predicate_runs_code(&self, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        (generic_args.types().last()).is_some_and(|predicate| self.recognition().pattern_runs_code(predicate))
+    }
+
     /// A call of one of the views' helpers (ADR 0335).
     pub(in crate::lower) fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), list)
@@ -969,8 +975,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.view_call("$splitEndMut", list)
             }
-            SliceOp::ChunkBy { mutable: false } => helper("$chunkBy", vec![arg(), arg()]),
-            SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),
+            SliceOp::ChunkBy { mutable } => {
+                let list = vec![arg(), arg()];
+                match (mutable, self.predicate_runs_code(generic_args)) {
+                    (false, false) => helper("$chunkBy", list),
+                    (false, true) => helper("$lazyChunkBy", list),
+                    (true, false) => self.view_call("$chunkByMut", list),
+                    (true, true) => self.view_call("$lazyChunkByMut", list),
+                }
+            }
             SliceOp::SplitChunk { last, mutable } => {
                 let n = self.chunk_length(generic_args, span)?;
                 let list = vec![arg(), Expr::int(n as i128), Expr::bool(last)];
@@ -1094,9 +1107,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let limit = if limited { arg() } else { Expr::undefined() };
                 let predicate = arg();
                 let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
-                match mutable {
-                    false => helper("$sliceSplitBy", list),
-                    true => self.view_call("$sliceSplitByMut", list),
+                // Of a predicate that runs the program's code, std's iterator,
+                // asked as it's stepped (#1501); else the array of its pieces.
+                match (mutable, self.predicate_runs_code(generic_args)) {
+                    (false, false) => helper("$sliceSplitBy", list),
+                    (false, true) => helper("$lazySliceSplitBy", list),
+                    (true, false) => self.view_call("$sliceSplitByMut", list),
+                    (true, true) => self.view_call("$lazySliceSplitByMut", list),
                 }
             }
             // std's sorts the `(key, index)` pairs unstably, which is

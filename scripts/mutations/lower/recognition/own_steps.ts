@@ -360,4 +360,12 @@ export const mutations: Mutation[] = [
     replace: "        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack]",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_its_sources_own_count\\.rs$"],
   },
+  {
+    name: "chunk-by-last-by-its-front",
+    breaks: "a slice's `chunk_by(..).last()` by a predicate that runs code steps it from its front, where std's `ChunkBy::last` is its `next_back` (#1501)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            || step == OwnStep::Last\n                && self.search_runs_code(ty)\n",
+    replace: "            || false\n                && self.search_runs_code(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
+  },
 ];

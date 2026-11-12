@@ -308,31 +308,75 @@ function $rchunks(v, n, exact, cut = $part) {
   return chunks;
 }
 
-// `split(p)` of a slice: the pieces between the items `p` holds of, at most
-// `n`, each with its item where `inclusive`, and from the end where `back`.
-function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
-  if (n === 0) return [];
-  const parts = [];
-  if (back) {
-    let end = v.length;
-    for (let i = v.length - 1; i >= 0 && parts.length < n - 1; i--) {
-      if (p(v[i])) {
-        parts.push(cut(v, i + 1, end));
-        end = i;
-      }
-    }
-    parts.push(cut(v, 0, end));
-    return parts;
-  }
-  let start = 0;
-  for (let i = 0; i < v.length && parts.length < n - 1; i++) {
-    if (p(v[i])) {
-      parts.push(cut(v, start, inclusive ? i + 1 : i));
+// `split(p)` of a slice, as std's `Split` steps it: the pieces between the
+// items `p` holds of, each `cut` of it, `p` asked of each item as a piece is
+// stepped, from either end, the two meeting; `SplitInclusive`'s, `inclusive`,
+// each with its item, none of an empty slice; of `n`, `SplitN`'s count, the
+// last of its `n` what's left whole; `RSplit` and `RSplitN`'s, `back`,
+// stepped from the back. Its hint std's (slice/iter.rs, #1501).
+function $lazySliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
+  const done = { done: true, value: undefined };
+  const step = (value) => ({ done: false, value });
+  let [start, end] = [0, v.length];
+  // Flags, not a state: std's `Split`'s and `SplitInclusive`'s `finished`.
+  let finished = inclusive && v.length === 0;
+  const finish = () => {
+    if (finished) return done;
+    finished = true;
+    return step(cut(v, start, end));
+  };
+  const next = () => {
+    if (finished) return done;
+    for (let i = start; i < end; i++) {
+      if (!p(v[i])) continue;
+      const piece = cut(v, start, inclusive ? i + 1 : i);
       start = i + 1;
+      if (inclusive && start === end) finished = true;
+      return step(piece);
     }
-  }
-  if (!inclusive || start < v.length) parts.push(cut(v, start, v.length));
-  return parts;
+    if (!inclusive) return finish();
+    finished = true;
+    const piece = cut(v, start, end);
+    start = end;
+    return step(piece);
+  };
+  const nextBack = () => {
+    if (finished) return done;
+    // Of `SplitInclusive`, its last item ends the piece it's in: searched
+    // before it.
+    for (let i = (inclusive && end > start ? end - 1 : end) - 1; i >= start; i--) {
+      if (!p(v[i])) continue;
+      const piece = cut(v, i + 1, end);
+      end = inclusive ? i + 1 : i;
+      return step(piece);
+    }
+    if (!inclusive) return finish();
+    finished = true;
+    const piece = cut(v, start, end);
+    end = start;
+    return step(piece);
+  };
+  const [front, rear] = back ? [nextBack, next] : [next, nextBack];
+  let count = n;
+  const it = new $Steps(() => {
+    if (count === Infinity) return front();
+    if (count === 0) return done;
+    count--;
+    return count === 0 ? finish() : front();
+  });
+  const hint = () => (finished ? [0, 0] : [1, inclusive ? Math.max(1, end - start) : end - start + 1]);
+  it.sizeHint = () => {
+    const [lower, upper] = hint();
+    return count === Infinity ? [lower, upper] : [Math.min(count, lower), Math.min(count, upper)];
+  };
+  if (n === Infinity) it.back = rear;
+  return it;
+}
+
+// `split(p)` of a slice by a predicate that runs no code: the array of
+// `$lazySliceSplitBy`'s pieces.
+function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
+  return Array.from($lazySliceSplitBy(v, p, n, inclusive, back, cut));
 }
 
 // `s.split_off(..n)`, or `split_off(n..)` (`back`): what's left of `s` and
@@ -360,17 +404,39 @@ function $asChunks(v, n, back = false) {
   return back ? [$part(v, 0, rest), chunks] : [chunks, $part(v, v.length - rest)];
 }
 
-// `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
+// `chunk_by(p)`, as std's `ChunkBy` steps it: the runs of items `p` holds
+// of each two in a row of, each `cut` of it, `p` asked of each two as a run
+// is stepped, from either end; its hint std's; its `last` its back's, as
+// std's is (slice/iter.rs, #1501). Its `count` is std's default of its
+// `next`, which asks each two in a row once, from the front, as std's own
+// `count` does.
+function $lazyChunkBy(v, p, cut = $part) {
+  const done = { done: true, value: undefined };
+  let [start, end] = [0, v.length];
+  const it = new $Steps(() => {
+    if (start === end) return done;
+    let len = 1;
+    while (start + len < end && p(v[start + len - 1], v[start + len])) len++;
+    const run = cut(v, start, start + len);
+    start += len;
+    return { done: false, value: run };
+  });
+  it.back = () => {
+    if (start === end) return done;
+    let len = 1;
+    while (end - len > start && p(v[end - len - 1], v[end - len])) len++;
+    const run = cut(v, end - len, end);
+    end -= len;
+    return { done: false, value: run };
+  };
+  it.sizeHint = () => (start === end ? [0, 0] : [1, end - start]);
+  $forward(it, v, { last: () => it.back() });
+  return it;
+}
+
+// `chunk_by(p)` by a predicate that runs no code: the array of its runs.
 function $chunkBy(v, p, cut = $part) {
-  const runs = [];
-  let start = 0;
-  for (let i = 1; i <= v.length; i++) {
-    if (i === v.length || !p(v[i - 1], v[i])) {
-      runs.push(cut(v, start, i));
-      start = i;
-    }
-  }
-  return runs;
+  return Array.from($lazyChunkBy(v, p, cut));
 }
 
 // `split_first_chunk::<N>()`, or `split_last_chunk` (`last`): its first

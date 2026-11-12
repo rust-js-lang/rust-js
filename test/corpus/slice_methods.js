@@ -14,11 +14,11 @@ import {
   $index,
   $isSortedBy,
   $isSortedByKey,
+  $lazySliceSplitBy,
   $makeAsciiBytes,
   $partitionPoint,
   $rchunks,
   $repeatItems,
-  $sliceSplitBy,
   $sliceStartsWith,
   $sliceStrip,
   $sortByCachedKey,
@@ -106,27 +106,27 @@ function main() {
   );
   console.log(`[${$repeatItems([1, 2], 3, 4).join(", ")}]`);
   console.log(
-    `[${Array.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
+    `[${Array.from($lazySliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
+    `[${Array.from($lazySliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
+    `[${Array.from($lazySliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($sliceSplitBy(items, (x) => x === 4, undefined, false, true))
+    `[${Array.from($lazySliceSplitBy(items, (x) => x === 4, undefined, false, true))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
+    `[${Array.from($lazySliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
