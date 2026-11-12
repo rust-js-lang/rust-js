@@ -249,7 +249,8 @@ and collecting into one; `Map::clear` and `map::Entry::or_insert`;
 - What a crate compiles of another crate's itself, a generic function it
   gives a value to copy or drop that it takes nothing for, an impl that
   crate's JS hasn't, a destructor among them, a function that copies
-  what the crate changes in place, or one whose JS may give one function
+  what the crate changes in place, one whose `Rc` of what it's given the
+  crate counts otherwise (#1234), or one whose JS may give one function
   where Rust makes two, which the crate compares, is refused where it reads its
   library's private `static` or thread-local, or calls or reads a binding
   its library names by a path relative to its own file, or sets its
@@ -258,7 +259,9 @@ and collecting into one; `Map::clear` and `map::Entry::or_insert`;
   library does
   ([ADR 0914](../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
 - A crate that would share what a library it uses represents otherwise
-  is refused: counting an `Rc` of a type the library counts none of
+  is refused: counting an `Rc` of a type the library hands it and counts
+  none of, its own or one its generic function makes of what the crate
+  gives it, which the crate compiles its own of instead (#1234)
   ([ADR 0852](../decisions/0852-each-types-rcs-are-counted-apart.md)), or
   making a `dyn Fn` that may hold a value with a destructor where the
   library holds a `dyn Fn` whose drop nothing

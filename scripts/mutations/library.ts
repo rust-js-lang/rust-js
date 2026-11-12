@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/library.rs",
     find: "            counted_rcs,\n            with_this_arguments,\n            changed,\n            ref_cells,\n            identities: ",
     replace: "            counted_rcs: { let _ = counted_rcs; vec![RcShape { of: None, args: Vec::new() }] },\n            with_this_arguments,\n            changed,\n            ref_cells,\n            identities: ",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "library-libraries-unchecked",

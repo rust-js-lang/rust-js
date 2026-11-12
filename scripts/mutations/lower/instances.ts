@@ -280,16 +280,28 @@ export const mutations: Mutation[] = [
     name: "program-pub-rc-callers-unseen",
     breaks: "a program's `pub` trait's generic method counts every `Rc` beside it, as a library's does, though JS's values drop nothing and read no count: a neighbour's class constructor's `Rc<Self>` is then an `Rc::new` of a type parameter it may be, refused (#1112)",
     file: "src/lower/instances.rs",
-    find: "        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),\n",
-    replace: "        Fact::Counted { library } => !tcx.visibility(owner).is_public(),\n",
+    find: "            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
+    replace: "            !tcx.visibility(owner).is_public()\n",
     tests: ["test/neighbours.test.ts", "-t", "#1112"],
   },
   {
     name: "library-pub-rc-callers-seen",
-    breaks: "a library's `pub` generic takes its `Rc<T>` to be of what its own crate's calls give alone, though a consumer may give it a value that drops: left uncounted, the consumer's value is never dropped by the last clone (#1009, #1112)",
+    breaks: "a library's `pub` trait method, which a dictionary calls and no consumer compiles its own of, takes its `Rc<T>` to be of what its own crate's calls give alone (#1233's ground, #1234), though a consumer may give it a value that drops: left uncounted, the consumer's value is never dropped by the last clone (#1009, #1112)",
     file: "src/lower/instances.rs",
-    find: "        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),\n",
-    replace: "        Fact::Counted { library } => library || !library || !tcx.visibility(owner).is_public(),\n",
+    find: "            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
+    replace: "            !library || !tcx.visibility(owner).is_public() || true\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_rc_(of_what_its_consumer_drops|counted_through_a_traits_generic_method)$"],
+  },
+  {
+    name: "library-pub-compilable-rc-callers-unseen",
+    breaks: "a library's `pub` function a consumer can compile takes its callers as unseen, so its `Rc<T>` counts every `Rc` as before, and its contract a shape of every `Slot` (#1234)",
+    file: "src/lower/instances.rs",
+    find: "            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
+    replace: "            !library || !tcx.visibility(owner).is_public()\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library counts each type's Rcs apart"
+    ]
   },
 ];

@@ -74,6 +74,7 @@ m6-react's to see first (#1462).
 | `Library.eq_by_address` | summary | its types whose `==` is their address's | |
 | `Library.associated` | summary | each of its traits' associated types whose facts its dictionaries carry, `Size` and `Align` among them (ADR 0145, #1420) | |
 | `ParamFact::Unboxed` | closed-world | none of its crate's calls gives it what may look like `None`, so a `Some` of it is the value | compiles its own of the function (ADR 0051) |
+| `ParamFact::Counted` | closed-world | its JS counts an `Rc` of it, an `Rc` or `Weak` its MIR holds whose pointee holds it, as its crate's own calls decide | compiles its own of the function where it counts what it gives otherwise, or where two such pointees hold it (#1234) |
 | `Calling.nulled_params` | closed-world | each of its crate's calls gives these nullable parameters `null` or a value | gives `?? null` of what may be `undefined`; its use as a value is refused (ADR 0861) |
 | `Library.keeps_capacity` | closed-world | whether anything it compiles reads a `Vec`'s capacity, or has a reader of its own, which std's `read_to_end` shows it to (#1297) | keeps its own; compiles its own of a function of a library that keeps none (#1180) |
 | `Library.writers_take_options` | closed-world | whether any of its placeholders gives a `Formatter`'s options | compiles its own of each writer that takes fewer (#1026) |

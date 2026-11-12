@@ -49,6 +49,8 @@ struct Calls<'a, 'tcx> {
     clones_itself: &'a dyn Fn(Ty<'tcx>) -> bool,
     /// What may fail of the crate's writes (ADR 0187).
     failing: crate::lower::analysis::Failing<'a>,
+    /// The `Rc`s the crate counts (ADR 0852).
+    counted: &'a crate::lower::analysis::Counted<'tcx>,
 }
 
 /// The library functions the crate's bodies, its own and the instances it
@@ -89,6 +91,7 @@ pub(in crate::lower) fn needed<'tcx>(
         unboxed: given.unboxed,
         clones_itself: &clones_itself,
         failing,
+        counted,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     let mut may_drop: IndexMap<(DefId, u32), bool> = IndexMap::default();
@@ -198,13 +201,7 @@ pub(in crate::lower::instances) fn compiled_here(
     tcx: TyCtxt<'_>,
     id: DefId,
 ) -> bool {
-    !id.is_local()
-        && foreign.is_library(id.krate)
-        && matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
-        && tcx.trait_of_assoc(id).is_none()
-        && tcx.trait_impl_of_assoc(id).is_none()
-        && !crate::lower::bindings::is_binding(tcx, id)
-        && tcx.is_mir_available(id)
+    !id.is_local() && foreign.is_library(id.krate) && super::consumer_compiles(tcx, id) && tcx.is_mir_available(id)
 }
 
 /// Whether `caller`'s call of `callee`, of `args`, gives it a value to copy
@@ -266,7 +263,30 @@ fn gives_more<'tcx>(
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     }) || items_given_drops(calls, (caller, callee, args), &takes)
+        || counts_otherwise(calls, (caller, callee, args), &takes)
         || super::failing::fails_given(calls.tcx, calls.foreign, calls.failing, (caller, callee, args))
+}
+
+/// Whether a call gives `callee`, a library's function, a type an `Rc` of
+/// which the crate counts otherwise than its export's JS does
+/// (`ParamFact::Counted`, #1234): of each type parameter its `Rc`s hold,
+/// the crate counts one of them where the export counts none, or none where
+/// it counts one; or the export counts one of two or more, which one fact
+/// can't say each of.
+fn counts_otherwise<'tcx>(
+    calls: &Calls<'_, 'tcx>,
+    (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
+    takes: &dyn Fn(u32, crate::library::ParamFact) -> bool,
+) -> bool {
+    let tcx = calls.tcx;
+    let env = ty::TypingEnv::post_analysis(tcx, caller);
+    let counts = |pointee| calls.counted.counts(tcx, pointee);
+    (crate::lower::analysis::params_counted(tcx, callee, Some((args, env)), &counts).into_iter()).any(
+        |(index, (counted, pointees))| {
+            let exported = takes(index, crate::library::ParamFact::Counted);
+            counted != exported || (exported && pointees > 1)
+        },
+    )
 }
 
 /// Whether a call gives `callee`, a library's function, a std associated

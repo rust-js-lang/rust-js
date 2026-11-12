@@ -279,4 +279,40 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
+  {
+    name: "counts-otherwise-unasked",
+    breaks: "a consumer that counts what it gives a library's generic function otherwise than its export uses the library's JS, reading a counted `Rc` as the value or the value as one (#1234)",
+    file: "src/lower/instances/needed.rs",
+    find: "        || counts_otherwise(calls, (caller, callee, args), &takes)\n",
+    replace: "",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_counted_by_a_consumers_call|rc_counted_by_its_librarys_call)$"
+    ]
+  },
+  {
+    name: "counts-otherwise-one-way",
+    breaks: "only a consumer that counts what the export doesn't compiles its own, so one that counts none of what the export counts reads the library's counted JS as the value (#1234)",
+    file: "src/lower/instances/needed.rs",
+    find: "            counted != exported || (exported && pointees > 1)\n",
+    replace: "            (counted && !exported) || (exported && pointees > 1)\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_counted_by_its_librarys_call)$"
+    ]
+  },
+  {
+    name: "counts-otherwise-two-pointees-trusted",
+    breaks: "a consumer trusts one mark for two pointees of one parameter counted apart, `Rc<T>` and `Rc<Slot<T>>`, reading its counted `Rc<Foo>` as the library's uncounted (#1234)",
+    file: "src/lower/instances/needed.rs",
+    find: "            counted != exported || (exported && pointees > 1)\n",
+    replace: "            counted != exported\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_two_pointees_of_one_parameter)$"
+    ]
+  },
 ];

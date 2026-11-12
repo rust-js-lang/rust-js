@@ -449,3 +449,66 @@ counts what; `rc_in_an_impl_std_calls.rs`, generic impls of `Debug` and
 `Hash` std calls through an `Option`, a `Vec` and a `HashSet`, whose
 `Rc<T>`s stay counted, against native Rust. Mutations
 `program-pub-rc-callers-unseen` and `library-pub-rc-callers-seen`, caught.
+
+## Amendment: a library's `pub` function counts what its own calls give (2026-11-12, #1234)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept. A library's `pub` function took its callers as unseen, `Fact::Counted
+{ library: true }`'s wildcard, so a counted `Rc<T>` there was any `Rc`: the
+library counted every one, and its `counted_rcs` shape `Rc<T>` made each
+consumer count every `Rc` that may be a `T`.
+
+A library's function a consumer can compile, its own copy where its call
+gives more than the export takes (`instances::consumer_compiles`: a
+function, not a trait's method nor an impl's, which a dictionary calls, nor
+a binding), now counts what its crate's own calls give, as copies are
+(ADR 0914). Its export marks each type parameter whose `Rc` its JS counts,
+`ParamFact::Counted` (library ABI 31), from `rc_counts::params_counted`:
+of the `Rc` and `Weak` pointees its optimized MIR's locals hold, each that
+holds the parameter, whether it's counted: a closure's type holds what it
+shares with its caller, and an `Rc` its body alone makes crosses to no one,
+so a closure's body isn't read (a mutation reading none of it survived). A consumer
+compiles its own of the function (`needed::counts_otherwise`) where it
+counts one of them as the call instantiates it while the export counts
+none, or none while it counts one, in either direction: a `get<T>(r:
+&Rc<T>)` that reads no count still reads a counted `Rc` otherwise. One mark
+can't say each of two pointees of one parameter, `Rc<T>` and
+`Rc<Slot<T>>`, so where the export counts one of two or more, a consumer
+always compiles its own. A pointee of the function's type parameters is
+then no longer one the library hands its consumer counted or not
+(`Foreign::holds_rcs`); a concrete one, `Rc<Data>`, still is. The
+pipeline's restart with each new instance settles the consumer's counts
+with its copies in.
+
+A trait's method and an impl's keep the wildcard: a dictionary calls them,
+and no consumer compiles its own of one (#1233's ground).
+
+On the way: a copy compiled here is MIR alone, and `counted_rcs` read its
+count reads (#1332) but not its `Rc::ptr_eq` of an `Rc<dyn Fn>` nor its raw
+pointers to a `dyn Fn` (ADR 0959), which a body's THIR gives: latent while
+the library counted every `Rc`, wrong once it didn't (crate pair
+rc_fn_identity's `same`). `mir_identity_reads` reads them of its MIR, for
+`counted_rcs` and `reads_fn_identity` alike.
+
+Measured: the crate pairs' JS, a library and its consumer each, 152 pairs,
+`strong: 1` 39 to 40, `$rcClone` 29 to 30, `$rcDrop` 233 to 231, 531,815
+bytes to 531,784. Each `Rc` of a type the consumer doesn't count is no
+longer counted as it runs (rc_returned_by_a_librarys_generic_fn's `Plain`,
+ref_cells_counted's list), and a consumer carries its own copy where it
+counts otherwise; the corpus's 281 cases with an `Rc` built as a library
+are unchanged, their functions private or a program's.
+
+Tests: crate pairs rc_counted_by_a_consumers_call (the export counts no
+`T`, the consumer counts its `u32`'s, `get` included),
+rc_counted_by_its_librarys_call (the library's `count` reads a count, so
+its `peek` counts too; the consumer's `i8` not), rc_two_pointees_of_one_parameter
+(`Rc<Slot<T>>` counted beside `Rc<T>`) and
+rc_returned_by_a_librarys_generic_fn (a returned `Rc<T>`), each against
+native Rust, with types that copy themselves, so no copy compiles them
+first; rc_counted_by_its_library_alone now hands an uncounted `Note` beside
+its counted `Data`, which holds `contract-counts-unread` and
+`library-shape-any` once its generic pointees are decided by call; and the
+test of a library counting another library's `Rc`s refuses a trait
+method's too, whose callers stay unseen, which holds
+`library-rcs-of-own-calls-unsettled`; rc_per_type's and ref_cells_counted's
+assertions say the new contract and output.

@@ -106,12 +106,34 @@ fn identity_read<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<IdentityRead<'
     compares_fn_identity(tcx, def_id, args.types().next()).then(|| IdentityRead::Compared(args.type_at(0)))
 }
 
+/// What a body of MIR alone, a library's function the crate compiles
+/// itself, reads of a function's identity, as a body's THIR's expressions
+/// do (`identity_read`): its locals' raw pointers to a `dyn Fn`, and each
+/// `Rc::ptr_eq` of an `Rc<dyn Fn>` it calls (#1234).
+fn mir_identity_reads<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &'a rustc_middle::mir::Body<'tcx>,
+) -> impl Iterator<Item = IdentityRead<'tcx>> + 'a {
+    let locals = body.local_decls.iter().map(|decl| decl.ty);
+    let called = (body.basic_blocks.iter()).filter_map(move |data| match &data.terminator().kind {
+        rustc_middle::mir::TerminatorKind::Call { func, .. } => Some(func.ty(body, tcx)),
+        _ => None,
+    });
+    locals.chain(called).filter_map(move |ty| identity_read(tcx, ty))
+}
+
 /// Does the crate read a function's identity, as `counted_rcs` asks it
 /// (`identity_read`)? Then a library function whose JS may give one
 /// function where Rust makes two, which its library compared none of, is
 /// compiled here (ADR 0914, amended; #1052).
 pub(in crate::lower) fn reads_fn_identity<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
-    (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))
+    (all_bodies.iter()).any(|body| {
+        body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some())
+            || (body.root().is_none() && !is_std_crate(tcx, body.def_id))
+                .then_some(body.mir.as_ref())
+                .flatten()
+                .is_some_and(|mir| mir_identity_reads(tcx, &mir.body).next().is_some())
+    })
 }
 
 impl<'tcx> Counted<'tcx> {
@@ -402,6 +424,17 @@ pub(super) fn counted_rcs<'tcx>(
                         true => _ = of_params.insert((owner, erased(args.type_at(0)))),
                         false => _ = counted.insert(erased(args.type_at(0))),
                     }
+                }
+            }
+            // And what it reads of a function's identity, as a body's THIR's
+            // expressions do (#1234).
+            for read in mir_identity_reads(tcx, &mir.body) {
+                match read {
+                    IdentityRead::Pointed(pointee) => {
+                        points_at_functions = true;
+                        pointed.insert(erased(pointee));
+                    }
+                    IdentityRead::Compared(pointee) => _ = asked.insert(erased(pointee)),
                 }
             }
             for (from_owner, to_owner) in owners_made_others(tcx, &mir.body) {
@@ -902,4 +935,60 @@ fn owns_dropping_param<'tcx>(
         }
     }
     false
+}
+
+/// Each `Rc` or `Weak` pointee `id`'s MIR holds, a function of the crate's
+/// or of a library's: where its JS counts an `Rc` of a type parameter,
+/// which a library's export says (`ParamFact::Counted`) and its consumer's
+/// call checks (#1234). Its locals', whose closures' types hold what each
+/// closure shares with its caller, its captures and its signature; an `Rc`
+/// a closure's body alone makes crosses to no one. Its optimized MIR, the
+/// one both read; none of a constant's, which has none.
+fn rc_pointees_of<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> IndexSet<Ty<'tcx>> {
+    let mut pointees = IndexSet::default();
+    if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) || !tcx.is_mir_available(id) {
+        return pointees;
+    }
+    for decl in &tcx.optimized_mir(id).local_decls {
+        for part in decl.ty.walk().filter_map(|part| part.as_type()) {
+            if let Some(pointee) = rc_pointee(tcx, part).or_else(|| weak_pointee(tcx, part)) {
+                pointees.insert(tcx.erase_and_anonymize_regions(pointee));
+            }
+        }
+    }
+    pointees
+}
+
+/// Of `id`'s type parameters each of its `Rc` pointees holds
+/// (`rc_pointees_of`), by index: whether `counts` counts any of them, as
+/// `args` instantiate them, `None` of its own, and how many there are. A
+/// library's export marks each it counts `Counted`, and its consumer's
+/// call asks it of what it gives (#1234).
+pub(in crate::lower) fn params_counted<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    id: DefId,
+    args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>)>,
+    counts: &dyn Fn(Ty<'tcx>) -> bool,
+) -> IndexMap<u32, (bool, usize)> {
+    let pointees = rc_pointees_of(tcx, id);
+    let mut by_param: IndexMap<u32, (bool, usize)> = IndexMap::default();
+    for index in 0..tcx.generics_of(id).count() as u32 {
+        for &pointee in pointees
+            .iter()
+            .filter(|&&pointee| crate::lower::instances::holds_param(pointee, index))
+        {
+            let pointee = match args {
+                Some((args, env)) => {
+                    let given = ty::EarlyBinder::bind(tcx, pointee).instantiate(tcx, args);
+                    let erased = tcx.erase_and_anonymize_regions(given.skip_normalization());
+                    tcx.try_normalize_erasing_regions(env, given).unwrap_or(erased)
+                }
+                None => pointee,
+            };
+            let entry = by_param.entry(index).or_insert((false, 0));
+            entry.0 |= counts(pointee);
+            entry.1 += 1;
+        }
+    }
+    by_param
 }

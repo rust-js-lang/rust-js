@@ -79,8 +79,11 @@ use std::path::Path;
 /// `size_of::<Self::Item>()` reads (#1420). 30: a reader's dictionary's
 /// `readToString` is told a `String` proved fresh-empty, and
 /// `keeps_capacity` is also of a crate with a reader of its own, whose reads
-/// std's `read_to_end` makes of the capacity it reads into (#1297).
-pub const VERSION: u32 = 30;
+/// std's `read_to_end` makes of the capacity it reads into (#1297). 31: a
+/// `pub` function a consumer can compile decides its `Rc`s by its crate's
+/// own calls, each type parameter whose `Rc` its JS counts marked
+/// `Counted`, a consumer that counts otherwise compiling its own (#1234).
+pub const VERSION: u32 = 31;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -273,6 +276,10 @@ pub enum ParamFact {
     /// consumer's writer of a type it gives it shows its integers so where
     /// its options say (#1331).
     ShownHex,
+    /// Its JS counts an `Rc` of it: an `Rc` or `Weak` its MIR holds, whose
+    /// pointee holds it, is `{ value, strong, weak }`. A consumer whose call
+    /// counts what it gives otherwise compiles its own (#1234; library ABI 31).
+    Counted,
 }
 
 impl TypeParam {

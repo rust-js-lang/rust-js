@@ -95,6 +95,7 @@ use naming::{
 };
 pub(super) use plain_locals::{holds_a_value, module_statics, refuse_boxed_export};
 use rc_counts::counted_rcs;
+pub(in crate::lower) use rc_counts::params_counted;
 pub(super) use rc_counts::{Counted, Head, head};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;

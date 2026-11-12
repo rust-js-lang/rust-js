@@ -286,8 +286,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that holds a raw pointer to a `dyn Fn`, `ptr::addr_eq(&*first, &*second)`'s, is taken to read no closure's identity, so two closures of one scope method are one, and the comparison true where native gives false (#500)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    points_at_functions = true;\n",
-    replace: "",
+    find: "                Some(IdentityRead::Pointed(pointee)) => {\n                    points_at_functions = true;\n",
+    replace: "                Some(IdentityRead::Pointed(pointee)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
   },
   {
@@ -321,8 +321,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer that compares a library's `Rc<dyn Fn>`s or its boxes' addresses is taken to compare none, and calls its library's JS, which gives one function where Rust made two: `Rc::ptr_eq` and `ptr::addr_eq` `true` (#1052)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "    (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))\n",
-    replace: "    false && (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))\n",
+    find: "        body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some())\n",
+    replace: "        false && body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some())\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
@@ -544,8 +544,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a count a library's function the consumer compiles itself reads, `Rc::strong_count`, isn't seen, so its `Rc` of a `Copy` value isn't counted where nothing else counts it (#1332)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                {\n                    match args.type_at(0).has_non_region_param() {\n                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),\n                        false => _ = counted.insert(erased(args.type_at(0))),\n                    }\n                }\n            }\n            for (from_owner",
-    replace: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                    && false\n                {\n                    match args.type_at(0).has_non_region_param() {\n                        true => _ = of_params.insert((owner, erased(args.type_at(0)))),\n                        false => _ = counted.insert(erased(args.type_at(0))),\n                    }\n                }\n            }\n            for (from_owner",
+    find: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                {\n",
+    replace: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                    && false\n                {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_rc_counted_by_its_consumers_instance"],
   },
   {
@@ -555,5 +555,29 @@ export const mutations: Mutation[] = [
     find: "        own.chain(counted)\n",
     replace: "        own.chain(counted.filter(|_| false))\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_class_rc_made_by_its_generic_code$"],
+  },
+  {
+    name: "mir-identity-unread",
+    breaks: "a copy compiled here, MIR alone, compares `Rc<dyn Fn>`s it doesn't count, two `Rc::new`s of one function item one JS function, equal (#1234, ADR 0959)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    IdentityRead::Compared(pointee) => _ = asked.insert(erased(pointee)),\n                }\n            }\n            for (from_owner, to_owner)",
+    replace: "                    IdentityRead::Compared(_) => {}\n                }\n            }\n            for (from_owner, to_owner)",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_fn_identity)$"
+    ]
+  },
+  {
+    name: "rc-pointees-of-constants",
+    breaks: "a constant's MIR is read as optimized MIR, which rustc refuses, and every library with a generic constant crashes (#1234)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) || !tcx.is_mir_available(id) {\n",
+    replace: "    if !tcx.is_mir_available(id) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^class_methods.rs$"
+    ]
   },
 ];

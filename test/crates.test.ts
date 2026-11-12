@@ -342,7 +342,12 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
   expect(app).toContain("  const context = Dep.createContext(1);\n  console.log(`${Dep.useContext(context)} ${Dep.useContext(context)}`);\n  context.value = 2;\n  console.log(`${context.value} ${context === context}`);\n");
   expect(app).not.toContain("again");
   expect(app).toContain("console.log(`${a.value.value[0]} ${a.strong}`);");
-  expect(contract(out).counted_rcs).toEqual([{ of: expect.any(String), args: [{}] }]);
+  // Its `share`'s `Rc<Slot<T>>`, decided by its own calls, is no shape its
+  // consumers count every `Slot` by, but its parameter's mark, which a
+  // consumer that counts otherwise compiles its own by (#1234).
+  expect(contract(out).counted_rcs).toBeUndefined();
+  const share = contract(out).items.find((item: { export?: string }) => item.export === "share");
+  expect(share.params).toEqual([{ index: 0, marks: ["unboxed", "counted"] }]);
   expect(() => counting(out, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n"))
     .toThrow("this crate counts an `Rc<dep::Context<i32>>`");
   const shared = chain(triples, "rc_shared", ["dep", "mid", "app"]);
@@ -369,6 +374,14 @@ test("a library counts another library's Rcs as that library does, refusing what
   writeFileSync(own, `${readFileSync(join(triples, "rc_context_read_generically", "mid.rs"), "utf8")}\n${loud}${fresh}`);
   const dep = join(out, "dep");
   expect(() => run([compiler, own, "-o", join(out, "own", "lib.js"), "--library", "--manifest", join(out, "own", "lib.manifest.json"),
+    "--dependency", join(dep, "lib.manifest.json"), "--", "--crate-name", "mid", "--extern", `dep=${join(dep, "libdep.rmeta")}`, "-L", `dependency=${dep}`]))
+    .toThrow("this crate counts an `Rc<dep::Context<T>>`");
+  // And through a trait's method, whose callers stay unseen (#1233's
+  // ground): what its own call gives settles it, `given` (#1234).
+  const viaTrait = "pub struct Fresh;\n\npub trait ReadFresh {\n    fn read_fresh<T: Clone + 'static>(&self, value: T) -> T;\n}\n\nimpl ReadFresh for Fresh {\n    fn read_fresh<T: Clone + 'static>(&self, value: T) -> T {\n        let context = Rc::new(Context {\n            current_value: RefCell::new(value),\n            provider: std::cell::Cell::new(std::rc::Weak::new()),\n        });\n        read_context(&context)\n    }\n}\n\npub fn main() {\n    println!(\"{}\", Fresh.read_fresh(Loud(1)).0);\n}\n";
+  const ownTrait = join(out, "mid_reading_loud_by_trait.rs");
+  writeFileSync(ownTrait, `${readFileSync(join(triples, "rc_context_read_generically", "mid.rs"), "utf8")}\n${loud}${viaTrait}`);
+  expect(() => run([compiler, ownTrait, "-o", join(out, "own_trait", "lib.js"), "--library", "--manifest", join(out, "own_trait", "lib.manifest.json"),
     "--dependency", join(dep, "lib.manifest.json"), "--", "--crate-name", "mid", "--extern", `dep=${join(dep, "libdep.rmeta")}`, "-L", `dependency=${dep}`]))
     .toThrow("this crate counts an `Rc<dep::Context<T>>`");
 }, 300_000);
@@ -554,9 +567,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   expect([contract(counted).ref_cells.boxed, contract(counted).ref_cells.counted.length]).toEqual([[{}], 1]);
   const consumer = readFileSync(join(counted, "app", "lib.js"), "utf8");
   // Each momentary borrow checked alone (3901c815a), the library's held one
-  // found by the closure's.
-  expect(consumer).toContain("    $borrowMut(list.value).value.push(3);\n");
-  expect(consumer).toContain("        $borrowMut(list.value).value.push(n);\n");
+  // found by the closure's; its `Rc`, which the library's own calls don't
+  // count, is the cell itself (#1234).
+  expect(consumer).toContain("  $borrowMut(list).value.push(3);\n");
+  expect(consumer).toContain("      $borrowMut(list).value.push(n);\n");
 }, 300_000);
 
 // ADR 0863, amended (#445): a library's cell its consumer may share is

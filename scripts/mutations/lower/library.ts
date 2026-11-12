@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library.rs",
     find: "        (Some(of), Some((head, args))) => {\n            *of == head_key(tcx, &head)\n",
     replace: "        (Some(of), Some((head, args))) => {\n            true\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "instance-imported",
@@ -388,5 +388,29 @@ export const mutations: Mutation[] = [
     replace: "        (self.dependencies.libraries.values()).any(|library| library.keeps_capacity)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "export-rc-counted-unmarked",
+    breaks: "a library's export marks no type parameter whose `Rc` its JS counts, so a consumer that counts none of its `Bar`'s reads the library's counted JS as the value (#1234)",
+    file: "src/lower/library.rs",
+    find: "            param(&mut params, index).marks.insert(ParamFact::Counted);\n",
+    replace: "",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_counted_by_its_librarys_call)$"
+    ]
+  },
+  {
+    name: "generic-pointee-handed-by-library",
+    breaks: "a library's generic function's `Rc` of its type parameter is one it hands its consumer, so a consumer that counts what it gives it is refused, though it compiles its own (#1234)",
+    file: "src/lower/library.rs",
+    find: "            if decided_by_call && rustc_middle::ty::TypeVisitableExt::has_non_region_param(&pointee) {\n",
+    replace: "            if false && decided_by_call && rustc_middle::ty::TypeVisitableExt::has_non_region_param(&pointee) {\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "^two crates: (rc_counted_by_a_consumers_call)$"
+    ]
   },
 ];

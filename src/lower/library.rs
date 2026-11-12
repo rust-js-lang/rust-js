@@ -240,6 +240,14 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::NoDrop);
     }
+    // Each whose `Rc` its JS counts, as its crate's own calls decide it
+    // (#1234).
+    let counts = |pointee| contracts.counted.counts(tcx, pointee);
+    for (index, (counted, _)) in super::analysis::params_counted(tcx, id, None, &counts) {
+        if counted {
+            param(&mut params, index).marks.insert(ParamFact::Counted);
+        }
+    }
     for (&index, &shown) in contracts.shown_params.get(&id).into_iter().flatten() {
         let marks = &mut param(&mut params, index).marks;
         if shown.pretty {
@@ -905,12 +913,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         reached: &mut Reached<'tcx>,
     ) {
         let tcx = self.tcx;
+        // Of a function a consumer compiles its own of where it counts what
+        // it gives otherwise, a pointee of its type parameters is the crate's
+        // to count (`counts_otherwise`, #1234).
+        let decided_by_call = super::instances::consumer_compiles(tcx, of);
         for part in tys.iter().flat_map(|t| t.walk()).filter_map(|part| part.as_type()) {
             let Some(pointee) =
                 (super::recognition::rc_pointee(tcx, part)).or_else(|| super::recognition::weak_pointee(tcx, part))
             else {
                 continue;
             };
+            if decided_by_call && rustc_middle::ty::TypeVisitableExt::has_non_region_param(&pointee) {
+                continue;
+            }
             let pointee = rustc_middle::ty::EarlyBinder::bind(tcx, pointee).instantiate(tcx, args);
             let unnormalized = tcx.erase_and_anonymize_regions(pointee.skip_normalization());
             let env = rustc_middle::ty::TypingEnv::fully_monomorphized();

@@ -534,13 +534,17 @@ pub(in crate::lower) enum Fact<'f, 'a, 'tcx> {
     /// compiles its own for these, so a `pub` function's are any a
     /// consumer or JS may give (#1234).
     Shared,
-    /// An `Rc` counted (#1009): no caller compiles its own either, but what
-    /// JS gives drops nothing and reads no count (ADRs 0289, 0914), so only
-    /// a consumer's call, of a library's, gives what's counted. A program's
-    /// callers are its own calls: a `pub` function's, and a trait's method
-    /// std or a library calls by its dictionary, `Debug::fmt` of `{:?}`,
-    /// `Hash::hash` of a `HashSet`'s, given a type the program names where
-    /// it makes that dictionary (#1112).
+    /// An `Rc` counted (#1009): what JS gives drops nothing and reads no
+    /// count (ADRs 0289, 0914), so only a consumer's call, of a library's,
+    /// gives what's counted, and a consumer whose call counts what it gives
+    /// otherwise than the export (`ParamFact::Counted`) compiles its own, as
+    /// it does for a copy (`gives_more`, #1234): a library's function a
+    /// consumer can compile is seen by its own calls. A trait's method or an
+    /// impl's, which a dictionary calls, isn't (#1233). A program's callers
+    /// are its own calls: a `pub` function's, and a trait's method std or a
+    /// library calls by its dictionary, `Debug::fmt` of `{:?}`, `Hash::hash`
+    /// of a `HashSet`'s, given a type the program names where it makes that
+    /// dictionary (#1112).
     Counted { library: bool },
     /// What a caller makes knowing, its hint (#1236): each caller the crate
     /// sees marks what it gives, whatever others do, which nothing marks.
@@ -565,9 +569,22 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
                 && tcx.trait_impl_of_assoc(id).is_none()
         }
         Fact::Shared => !tcx.visibility(owner).is_public(),
-        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),
+        Fact::Counted { library } => {
+            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))
+        }
         Fact::Marked => true,
     }
+}
+
+/// Whether a consumer of `id`'s crate, a library, compiles its own of it
+/// where its call gives more than its export takes (ADR 0914): a function,
+/// not a trait's method nor an impl's, which a dictionary calls, nor a
+/// binding (`needed::compiled_here`, #1234).
+pub(in crate::lower) fn consumer_compiles(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+        && tcx.trait_of_assoc(id).is_none()
+        && tcx.trait_impl_of_assoc(id).is_none()
+        && !crate::lower::bindings::is_binding(tcx, id)
 }
 
 /// Of `items`, each type parameter `bounded` names that some caller gives
