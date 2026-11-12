@@ -1036,6 +1036,27 @@ pub fn walked_by(f: fn(f64, &dyn Fn(f64) -> f64, Marker, Option<u8>) -> f64) -> 
   expect(call("[m.walked(), m.walkedBy((...args) => args[1](args[0]) + args.length)].join()")).toBe("2,4\n");
 });
 
+// A handle that reads a place it doesn't record, `{ get value() { .. } }`
+// of a `&mut` std lent from inside its storage, is on no allocation it
+// says: its address is refused, never a made-up one (#1474). A box's
+// `{ value }` cell, its own allocation, and an object's handle have theirs.
+test("the address of a handle on no place it records is refused, not made up", () => {
+  const module = join(fixture("runtime-placeless-handle"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $addr, $ptrTo } = await import(${JSON.stringify(module)});
+const slot = { _0: 5 };
+const lent = { get value() { return slot._0; }, set value(v) { slot._0 = v; } };
+const said = (run) => { try { return typeof run(); } catch (e) { return e.message; } };
+console.log(said(() => $addr(lent, 4)));
+console.log(said(() => $addr({ value: 1 }, 4)));
+console.log(said(() => $addr($ptrTo({ a: 1 }), 4)));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe(
+    "rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1474)\nnumber\nnumber\n",
+  );
+});
+
 // An iterator's lifecycle, `$state`, `$closing`'s and std's compiled
 // struct's (ADR 1092 S7, #870): each move no Rust program makes is
 // rust-js's internal error, never a panic, which no `catch_unwind` and no

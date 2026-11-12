@@ -8173,11 +8173,18 @@ export function $emptyAt(addr, empty = []) {
 
 // A handle's byte offset in its allocation: a field's, its own, a tuple's
 // too, which JS holds as an array (#1081); an array's item's, its index
-// times the range's stride. `null`, a field's of a type its caller lays
-// out.
+// times the range's stride; an object's handle's, 0, its start; a `{ value }`
+// cell's, a box's, which is its own allocation, 0. `null`, a field's of a
+// type its caller lays out. A handle that reads a place it doesn't record,
+// `{ get value() { return slot._0; } }` of a `&mut` std lent from inside
+// its storage, is on no allocation it says: refused, never a made-up
+// address (#1474).
 export function $offsetIn(pointer, range) {
   if (pointer.bytes !== undefined) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
+  }
+  if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, "value")?.get !== undefined) {
+    throw $unsupported("rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1474)");
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
   const offset = $handleOffset(pointer);

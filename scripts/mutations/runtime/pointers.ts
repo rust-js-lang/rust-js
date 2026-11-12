@@ -739,4 +739,12 @@ export const mutations: Mutation[] = [
     replace: "  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count), whole.width);\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
   },
+  {
+    name: "placeless-handle-at-zero",
+    breaks: "a handle that reads a place it doesn't record, a `&mut` std lent from inside its storage, is given an address of its own, made up, where it's refused (#1474)",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, \"value\")?.get !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "handle on no place it records"],
+  },
 ];

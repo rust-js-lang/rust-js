@@ -1367,3 +1367,18 @@ case of a `get_mut` against native Rust in both builds; mutations
 lent-type-unnormalized, by-ref-lends-inside,
 generic-lend-of-any-instance, no-object-lend-refused and
 mut-lend-taken-for-shared, caught.
+
+## Amendment: a handle on no place it records has no address (#1474)
+
+`$offsetIn` gave 0 to a handle with no `of`, and its own fresh allocation
+as its address. That's right for a box's `{ value }` cell, which is its
+own allocation, but not for a handle the compiler makes of a `&mut` that
+std lends from inside its storage, `{ get value() { return slot._0; } }`.
+That handle reads a place it doesn't record, so its address would be made
+up. No program reaches one today: such lends are refused at compile time
+in a crate that asks an address (#1293, #1474). Now `$offsetIn` refuses
+a handle whose `value` is an accessor and that has no `of`, naming #1474,
+so a gap anywhere is loud, not wrong. Held by a runtime-package test (an
+accessor handle refused, a box and an object's handle given addresses)
+and the mutation placeless-handle-at-zero. Every corpus case that asks an
+address runs as before.
