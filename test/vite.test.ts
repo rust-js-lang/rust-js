@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createServer, build } from "vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
@@ -9,7 +9,7 @@ import { chromium } from "@playwright/test";
 import { buildCompiler, cargoApp, compiler, fixture, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 import { underLoad } from "../scripts/timing";
-import { browserDeadline, polled, seen, watcherSettled } from "./browser-waits";
+import { Trace, applied, browserDeadline, polled, seen, watcherSettled } from "./browser-waits";
 
 // A Vite app is Vite's alone, its plugins React's and Tailwind's, and its
 // Rust is compiled by `rust-js build`, its own process (ADR 0412): Vite
@@ -44,12 +44,27 @@ function rustJs(dir: string, args: string[] = [], env: Record<string, string> = 
   return { code: run.exitCode, output: run.stdout.toString() + run.stderr.toString() };
 }
 
-/** `file` written, then `rust-js build`, which must succeed. */
-function saved(dir: string, file: string, text: string) {
+/** `file` written, then `rust-js build`, in `dir`, which must succeed:
+ * the JS it wrote, each file's path, which a wait for the page's update
+ * writes again where Vite didn't apply it (`applied`, #1529). */
+function saved(dir: string, file: string, text: string, args: string[] = []): string[] {
+  const before = scripts(dir);
   writeFileSync(file, text);
-  const built = rustJs(dir);
+  const built = rustJs(dir, args);
   expect(built.output).toBe("");
   expect(built.code).toBe(0);
+  return [...scripts(dir)].filter(([path, time]) => before.get(path) !== time).map(([path]) => path);
+}
+
+/** Each JS file in `dir`, its own or a crate's, and its modification time:
+ * not Vite's, Cargo's or a package's. */
+function scripts(dir: string, found = new Map<string, number>()): Map<string, number> {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory() && ![".vite", "dist", "node_modules", "target"].includes(entry.name)) scripts(path, found);
+    else if (entry.isFile() && /\.jsx?$/.test(entry.name)) found.set(path, statSync(path).mtimeMs);
+  }
+  return found;
 }
 
 // Real Vite, real compiler, real React Fast Refresh. Isolated sources and
@@ -78,17 +93,16 @@ pub fn App() -> JSX::Element {
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    const trace = new Trace(server, page, dir);
     page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const button = page.getByRole("button");
     await seen(button.filter({ hasText: "Count 0" }));
     await button.click();
     await seen(button.filter({ hasText: "Count 1" }));
-    saved(dir, text, 'pub fn label() -> &\'static str { "Changed " }');
-    await seen(button.filter({ hasText: "Changed 1" }));
+    await applied(button.filter({ hasText: "Changed 1" }), saved(dir, text, 'pub fn label() -> &\'static str { "Changed " }'), trace);
 
-    saved(dir, app, source.replace("<button onClick", '<button className="updated" onClick'));
-    await seen(page.locator("button.updated"));
+    await applied(page.locator("button.updated"), saved(dir, app, source.replace("<button onClick", '<button className="updated" onClick')), trace);
     expect(await button.textContent()).toBe("Changed 1");
 
     // An error is rustc's, rust-js build's, and nothing is written: the page
@@ -98,21 +112,18 @@ pub fn App() -> JSX::Element {
     const broken = rustJs(dir);
     expect([broken.code, broken.output.includes("unclosed delimiter")]).toEqual([1, true]);
     expect(readFileSync(output, "utf8")).toBe(good);
-    saved(dir, app, source);
-    await seen(button.filter({ hasText: "Changed 1" }));
+    await applied(page.locator("button:not(.updated)", { hasText: "Changed 1" }), saved(dir, app, source), trace);
 
     // A module gone is an error too, and back, it's what the page shows.
     unlinkSync(text);
     expect(rustJs(dir).code).toBe(1);
-    saved(dir, text, 'pub fn label() -> &\'static str { "Restored " }');
-    await seen(button.filter({ hasText: "Restored 1" }));
+    await applied(button.filter({ hasText: "Restored 1" }), saved(dir, text, 'pub fn label() -> &\'static str { "Restored " }'), trace);
 
     // A declared module, added and edited before a build: the build is of
     // the latest source.
     writeFileSync(app, source.replace("mod text;", "mod text; mod extra;").replace("text::label()", "extra::label()"));
     writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "First " }');
-    saved(dir, join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }');
-    await seen(button.filter({ hasText: /Latest [01]/ }));
+    await applied(button.filter({ hasText: /Latest [01]/ }), saved(dir, join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }'), trace);
   } finally {
     await browser?.close();
     await server.close();
@@ -152,6 +163,7 @@ pub fn App() -> JSX::Element {
     const url = server.resolvedUrls.local[0];
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    const trace = new Trace(server, page, dir);
     page.setDefaultTimeout(browserDeadline());
     await page.goto(url);
     const button = page.getByRole("button");
@@ -164,8 +176,7 @@ pub fn App() -> JSX::Element {
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     // A class that's new to Tailwind: its CSS arrives, and the state stays.
-    saved(dir, join(dir, "src/App.rs"), app("font-bold underline"));
-    await seen(page.locator("button.underline"));
+    await applied(page.locator("button.underline"), saved(dir, join(dir, "src/App.rs"), app("font-bold underline")), trace);
     await page.waitForFunction(() => getComputedStyle(document.querySelector("button")!).textDecorationLine === "underline");
     expect(await button.textContent()).toBe("Count 1");
     expect(await page.evaluate(() => (window as any).sameDocument)).toBe(true);
@@ -310,6 +321,7 @@ thread_local! {
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    const trace = new Trace(server, page, dir);
     page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const theme = readFileSync(join(dir, "src/theme.js"), "utf8");
@@ -321,8 +333,7 @@ thread_local! {
     await seen(button.filter({ hasText: "Count 1" }));
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
-    saved(dir, join(dir, "src/App.rs"), app("Clicks"));
-    await seen(button.filter({ hasText: /^Clicks/ }));
+    await applied(button.filter({ hasText: /^Clicks/ }), saved(dir, join(dir, "src/App.rs"), app("Clicks")), trace);
     // The state, the context's value, and the page are all still there.
     expect(await button.textContent()).toBe("Clicks 1");
     expect(await button.getAttribute("class")).toBe("dark");
@@ -392,6 +403,7 @@ pub fn App() -> JSX::Element {
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    const trace = new Trace(server, page, web);
     page.setDefaultTimeout(browserDeadline());
     await page.goto(server.resolvedUrls.local[0]);
     const button = page.getByRole("button");
@@ -401,9 +413,7 @@ pub fn App() -> JSX::Element {
     await seen(button.filter({ hasText: "Count 1" }));
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
-    writeFileSync(models, 'pub fn label() -> &\'static str {\n    "Changed "\n}\n');
-    expect(rustJs(dir, ["--package", "ui"]).code).toBe(0);
-    await seen(button.filter({ hasText: "Changed 1" }));
+    await applied(button.filter({ hasText: "Changed 1" }), saved(dir, models, 'pub fn label() -> &\'static str {\n    "Changed "\n}\n', ["--package", "ui"]), trace);
     expect(await page.evaluate(() => (window as any).sameDocument)).toBe(true);
   } finally {
     await browser?.close();

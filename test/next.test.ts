@@ -6,7 +6,7 @@ import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 import { buildCompiler, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
-import { browserDeadline, seen } from "./browser-waits";
+import { browserDeadline, clicked, hydrated, seen } from "./browser-waits";
 
 const example = join(root, "examples/next");
 const cli = join(root, "tooling/cli.js");
@@ -1119,8 +1119,9 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     // shows a Dev Tools button too, sometimes before the first click.
     const button = page.getByRole("button", { name: /\d$/ });
     await seen(button.filter({ hasText: "Count 0" }));
-    await button.click();
-    await seen(button.filter({ hasText: "Count 1" }));
+    // Clicked once React has hydrated the server's HTML: a click before
+    // then is lost, `Count 0` after 60 s under load (#1529).
+    await clicked(button, button.filter({ hasText: "Count 1" }));
     // Next.js's Fast Refresh is live a while after the page loads, longer
     // under the suite's load, and an update before then is lost: a save
     // until one is shown, each another, as the same JS is no update. Each
@@ -1174,6 +1175,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     await page.goto(`http://localhost:${port}/about`);
     await seen(page.getByRole("heading", { name: "About, in Rust" }));
     await page.evaluate(() => ((window as any).loaded = true));
+    await hydrated(page.getByRole("link", { name: "Home" }));
     await page.getByRole("link", { name: "Home" }).click();
     await seen(button.filter({ hasText: "Taps 0" }));
     expect(await page.evaluate(() => (window as any).loaded)).toBe(true);
@@ -1184,6 +1186,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     await page.goto(`http://localhost:${port}/request`);
     await seen(page.getByText(/^dark \d+ live \d+$/));
     // The Server Action sets the cookie, and the route is rendered again.
+    await hydrated(page.getByRole("button", { name: "Lighten" }));
     await page.getByRole("button", { name: "Lighten" }).click();
     await seen(page.getByText(/^light \d+ live \d+$/));
 
