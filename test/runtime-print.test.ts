@@ -38,3 +38,29 @@ shown(seen.join("|") + "\\n");
     'out "a inner\\n"|err "err\\n"|out "b\\n"|out "open "\n',
   );
 });
+
+// What a writer prints as it formats inside a std value's `Debug` is
+// marked in its text and put back as the text reaches the line (#1521). A
+// mark is no lone surrogate and number alone: a JS string given through
+// interop may hold those, `\uDC000\uDC01`, and reaches the line as it is,
+// beside a print's mark that's put back.
+test("a JS string's lone surrogates reach the line as they are, beside a print's mark", () => {
+  const module = join(fixture("runtime-line-marks"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $out, $printing, $sink } = await import(${JSON.stringify(module)});
+const seen = [];
+const shown = process.stdout.write.bind(process.stdout);
+process.stdout.write = (text) => (seen.push(String(text)), true);
+$printing(() => {
+  $out("[");
+  const f = $sink();
+  $out("!");
+  f.write("a\\uDC000\\uDC01b\\uDC00");
+  $out(f.done());
+  $out("]\\n");
+});
+shown(JSON.stringify(seen.join("")) + "\\n");
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe('"[!a\\udc000\\udc01b\\udc00]\\n"\n');
+});

@@ -845,8 +845,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
         (cell_borrows.pointers(), &std_runs, &runs_settled),
     );
-    // Which writers may print as they format, through stdout's line (#1490).
-    let prints = prints::prints(&recognition, all_bodies, &runs);
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
         at_load: locals_at_load,
@@ -990,6 +988,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // lowering's drops give (ADR 0451).
     // Asked where `owner` is, as a type it gives may name its own type
     // parameters, whose drops are passed on as they are.
+    let may_run = runs;
     let runs = runs_settled;
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
@@ -1062,6 +1061,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
+    // Which writers may print as they format, through stdout's line (#1490),
+    // and which of their types' may stop part-way where a panic may be
+    // caught (#1521).
+    let prints = prints::prints(&recognition, all_bodies, &may_run, (&never_unwinding, &failing));
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function

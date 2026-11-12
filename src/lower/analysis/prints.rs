@@ -30,6 +30,10 @@ pub(in crate::lower) struct Prints {
     pub(in crate::lower) while_formatting: IndexSet<DefId>,
     /// The crate's types one of whose writers may print.
     pub(in crate::lower) types: IndexSet<DefId>,
+    /// Of those, the ones one of whose writers that print may stop
+    /// part-way, by a panic or an `Err`, in a program that may catch the
+    /// panic and print on (`stops_composed`, #1521).
+    pub(in crate::lower) stopping: IndexSet<DefId>,
 }
 
 impl Prints {
@@ -58,6 +62,22 @@ impl Prints {
                 })
     }
 
+    /// The type of the crate's whose writer may print and stop part-way,
+    /// shown inside `ty`, a value of std's whose `Debug` shows it among
+    /// other parts, `Vec<Loud>`'s, `Option<Loud>`'s or `(Loud, u8)`'s, where
+    /// a panic may be caught (#1521). Rust's stdout keeps what the parts
+    /// before it wrote, `[!D(1), !`, which the JS, making the parts' texts
+    /// whole before they reach the line, can't rebuild: refused, as #1496
+    /// decides what a line a panic stops keeps. Of a type of the crate's,
+    /// whose writer streams its parts through the line itself, none.
+    pub(in crate::lower) fn stops_composed<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
+        if self.stopping.is_empty() || ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
+            return None;
+        }
+        (ty.walk().filter_map(|part| part.as_type()))
+            .find(|part| part.ty_adt_def().is_some_and(|adt| self.stopping.contains(&adt.did())))
+    }
+
     /// Is `ty` a type of the crate's one of whose writers may print, or one
     /// made of one: not a type only a caller or a `dyn` says.
     pub(in crate::lower) fn shown_prints(&self, ty: ty::Ty<'_>) -> bool {
@@ -67,11 +87,14 @@ impl Prints {
 }
 
 /// The crate's writers that may print to stdout as they format, and what
-/// may run while one does.
+/// may run while one does; and the types of those that may stop part-way,
+/// those that may unwind, of all but `never_unwinding` (ADR 0902), or
+/// return an `Err`, `failing` (ADR 0187), where the crate catches a panic.
 pub(super) fn prints<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
+    (never_unwinding, failing): (&IndexSet<DefId>, &IndexSet<DefId>),
 ) -> Prints {
     let printing: IndexSet<DefId> = (all_bodies.iter())
         .filter(|body| prints_to_stdout(recognition, body))
@@ -126,6 +149,18 @@ pub(super) fn prints<'tcx>(
         )
     };
     found.types = found.writers.iter().filter_map(|&writer| type_of(writer)).collect();
+    if all_bodies.iter().any(|body| catches_unwinding(recognition, body)) {
+        found.stopping = (found.writers.iter())
+            .filter(|&writer| !never_unwinding.contains(writer) || failing.contains(writer))
+            // A `Debug`'s, which std's values show their parts by.
+            .filter(|&&writer| {
+                (tcx.trait_impl_of_assoc(writer).map(|imp| tcx.impl_trait_id(imp))).is_some_and(|of| {
+                    of == crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Debug)
+                })
+            })
+            .filter_map(|&writer| type_of(writer))
+            .collect();
+    }
     // A writer that shows a value of a type one of whose writers may print,
     // a derived `Debug` of a field's, which std's builders format through a
     // `&dyn Debug` what may run doesn't follow: it may print too, to a fixed
@@ -151,6 +186,21 @@ pub(super) fn prints<'tcx>(
             found.types.extend(type_of(writer));
         }
     }
+}
+
+/// Whether `body` calls `catch_unwind`, past which a program a panic
+/// stopped may print on (#1496, #1521).
+fn catches_unwinding<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> bool {
+    body.thir.exprs.iter().any(|expr| {
+        let ExprKind::Call { fun, .. } = expr.kind else {
+            return false;
+        };
+        let ty::FnDef(id, _) = *body.thir[fun].ty.kind() else {
+            return false;
+        };
+        crate::lower::recognition::unwind_op(recognition.tcx, id)
+            == Some(crate::lower::std_types::unwind::UnwindOp::Catch)
+    })
 }
 
 /// Whether `body` prints to stdout itself: `print!` or `println!`, or a

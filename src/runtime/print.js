@@ -36,7 +36,82 @@ let $lineHeld = "";
 // line, `$out`, of a `println!` (`$printing`), or apart from it, `undefined`,
 // of a `format!` made as one formats (`$formatting`).
 const $printFrames = [];
-function $out(text) {
+// The text of each writer formatting in a line, made before it's written
+// there (#1521): a `Vec`'s, an `Option`'s or a tuple's `Debug` is one
+// expression, `items.map(fmt).join(", ")`, made whole before the line's
+// next part, so a writer can't write to the line as it formats. What's
+// printed meanwhile goes into the innermost one, at that point, as a mark
+// (`$marked`), and is put back in its place as the text reaches the line
+// (`$unmarked`): the line's bytes are the ones Rust's `LineWriter` holds,
+// each print where it ran. A mark opens with a lone surrogate, which no
+// Rust string holds, and this run's own random key, so a JS string given
+// through interop, which may hold lone surrogates, isn't taken for one.
+const $captures = [];
+const $marks = new Map();
+let $markCount = 0;
+// The run's mark, `open`, and its patterns, made once a mark is first made.
+let $markForm;
+function $markOf() {
+  if ($markForm === undefined) {
+    const key = Array.from({ length: 8 }, () => String.fromCharCode(0xe000 + Math.floor(Math.random() * 0x1900)));
+    const open = `\uDC00${key.join("")}`;
+    $markForm = { open, pattern: new RegExp(`${open}(\\d+)\uDC01`, "g"), split: new RegExp(`(${open}\\d+\uDC01)`) };
+  }
+  return $markForm;
+}
+function $marked(text) {
+  const mark = $markCount++;
+  $marks.set(mark, `${text}`);
+  return `${$markOf().open}${mark}\uDC01`;
+}
+function $unmarked(text) {
+  if ($markForm === undefined || !text.includes($markForm.open)) return text;
+  return text.replace($markForm.pattern, (_, mark) => {
+    const printed = $marks.get(Number(mark));
+    $marks.delete(Number(mark));
+    return $unmarked(printed);
+  });
+}
+// `text` as std's `PadAdapter` writes it, `{:#?}`'s parts': four spaces
+// before each of its lines' first character, a blank line's too; a print's
+// mark at a line's start stays before them, as the print, made before its
+// writer writes the line, doesn't go through the adapter (#1521).
+function $padded(text) {
+  let padded = "";
+  let lineStart = true;
+  for (const [at, part] of text.split($markOf().split).entries()) {
+    if (at % 2 === 1) {
+      padded += part;
+      continue;
+    }
+    for (const line of part.split(/(?<=\n)/)) {
+      if (line === "") continue;
+      if (lineStart) padded += "    ";
+      padded += line;
+      lineStart = line.endsWith("\n");
+    }
+  }
+  return padded;
+}
+// The captures above `depth`, of writers a panic or an error left
+// unfinished, each's text after what it was opened in: what they wrote,
+// in the order they wrote it.
+function $closeAbove(depth) {
+  while ($captures.length > depth) {
+    const left = $captures.pop();
+    if ($captures.length > 0) $captures.at(-1).text += left.text;
+    else $toLine(left.text);
+  }
+}
+// Text for the line: printed where no line is formatted, as `print!`
+// prints, so a `format!`'s writer's print comes before what's printed
+// next (#1521); else held till its newline.
+function $toLine(text) {
+  text = $unmarked(`${text}`);
+  if ($printFrames.length === 0) {
+    $print(text);
+    return;
+  }
   $lineHeld += text;
   const end = $lineHeld.lastIndexOf("\n");
   if (end < 0) return;
@@ -44,15 +119,25 @@ function $out(text) {
   $lineHeld = $lineHeld.slice(end + 1);
   $print(lines);
 }
+// A part of a line, or what a writer prints as it formats: into the
+// innermost writer's text, as a mark, where one is formatting; else the
+// line's.
+function $out(text) {
+  if ($captures.length > 0) $captures.at(-1).text += $marked(text);
+  else $toLine(text);
+}
 // A `println!` whose formatting may print, `write` its pieces written
 // through the line. What's left unended, a `print!`'s or a panic's
 // part-way through, is written as `print!` writes it, once no line is
-// formatted, so what's printed after comes after it.
+// formatted, so what's printed after comes after it; and what a writer a
+// panic stopped wrote before it, in the line before it.
 function $printing(write) {
+  const depth = $captures.length;
   $printFrames.push($out);
   try {
     write();
   } finally {
+    $closeAbove(depth);
     $printFrames.pop();
     if ($printFrames.length === 0 && $lineHeld !== "") {
       const rest = $lineHeld;
@@ -61,17 +146,31 @@ function $printing(write) {
     }
   }
 }
-// What a writer that may print writes its text to: the line, as it formats
-// into it, so its text comes before what it prints after, and it gives back
-// nothing more; else a string of its own, which it gives back.
+// What a writer that may print writes its text to: in a line, a capture of
+// its own, its text given back by `done()`, with what it printed marked in
+// its place; else a string of its own, which it gives back.
 function $sink() {
-  if ($printFrames.at(-1) === $out) return { write: $out, done: () => "" };
-  let text = "";
+  if ($printFrames.at(-1) !== $out) {
+    let text = "";
+    return {
+      write: (more) => {
+        text += more;
+      },
+      done: () => text,
+    };
+  }
+  const capture = { text: "" };
+  const depth = $captures.push(capture);
   return {
     write: (more) => {
-      text += more;
+      $closeAbove(depth);
+      capture.text += more;
     },
-    done: () => text,
+    done: () => {
+      $closeAbove(depth);
+      if ($captures.at(-1) === capture) $captures.pop();
+      return capture.text;
+    },
   };
 }
 // A writer's text made as a line is formatted, for anything but that line,

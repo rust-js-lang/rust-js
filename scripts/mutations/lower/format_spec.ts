@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,\n",
     replace: "",
     tests: [
-      "test/runtime-package.test.ts",
+      "test/runtime-pointers.test.ts",
       "-t",
       "a pointer's address is shown",
     ],

@@ -35,6 +35,11 @@ for (const [name, source, message, crate] of [
   // A derived `Debug` of a value whose `Debug` may print as it's formatted,
   // shown whole before its text is written where Rust's print lands
   // between: refused, not written out of order (#1490, #1495).
+  // A std value's `Debug` of parts whose `Debug` may print and stop
+  // part-way, where a `catch_unwind` may catch the panic: the line keeps
+  // what the parts before it wrote, which the JS, making the parts' texts
+  // whole, can't rebuild (#1521, #1496).
+  ["a Vec's Debug of what may print and panic where it may be caught", "use std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: Vec<Loud>) -> bool { std::panic::catch_unwind(move || println!(\"{:?}\", v)).is_err() }", "`{:?}` of a `std::vec::Vec<Loud>` whose part `Loud`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1496)"],
   ["a derived Debug of what prints as it's formatted", "use std::fmt;\npub struct Loud;\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { println!(\"loud\"); write!(f, \"L\") } }\n#[derive(Debug)]\npub struct Holder { pub loud: Loud }\npub fn f(h: &Holder) { println!(\"{:?}\", h); }", "a derived `Debug` or a `Debug` builder's step of a `Loud`, whose `Debug` may print as it's formatted (#1495)"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],

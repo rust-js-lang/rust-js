@@ -282,9 +282,15 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   the writer writes its text through it, `const f = $sink()`. Standard
   error is written at once. Elsewhere a line is `console.log`'s. In a
   browser each line is `console.log`'s at its newline, and a line left
-  unended at the end of the program's task is written then. A derived
-  `Debug` of such a value is refused, #1495
-  ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).
+  unended at the end of the program's task is written then. Shown inside
+  a `Vec`'s, an `Option`'s, a tuple's or a map's `Debug`, `{:#?}`'s too,
+  each print lands between the value's brackets and commas where Rust's
+  does, `[!D(1), !D(3)]`, and a `format!` of one prints before the line
+  printed next. A derived `Debug` of such a value is refused, #1495; and so
+  is a std value's `Debug` of one whose writer may also stop part-way, by
+  a panic or an error, in a program with a `catch_unwind`, #1496
+  ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
+  amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](../decisions/0034-strings-and-chars.md)).

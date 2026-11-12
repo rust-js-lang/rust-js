@@ -30,6 +30,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
     fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.shown_through(value, ty);
+        // A part whose writer may print and stop part-way, where a panic may
+        // be caught, which a line keeps the parts before of (#1521).
+        if let Some(part) = self.krate.prints.stops_composed(ty) {
+            return Err(self.unsupported(
+                span,
+                &format!(
+                    "`{{:?}}` of a `{ty}` whose part `{part}`'s `Debug` may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1496)"
+                ),
+            ));
+        }
         // A raw pointer shows its address, which JS hasn't (ADR 0407), and
         // so does a function pointer.
         if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {

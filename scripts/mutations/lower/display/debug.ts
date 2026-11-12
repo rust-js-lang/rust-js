@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
     find: "        if self.recognition().is_type_id(ty) {\n            return Ok",
     replace: "        if false {\n            return Ok",
     tests: [
-      "test/runtime-package.test.ts",
+      "test/runtime-pointers.test.ts",
       "-t",
       "a pointer's address is shown",
     ],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n",
     replace: "        if self.is_handle_pointer(ty) {\n",
     tests: [
-      "test/runtime-package.test.ts",
+      "test/runtime-pointers.test.ts",
       "-t",
       "a pointer's address is shown",
     ],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     replace:
       '            return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));\n',
     tests: [
-      "test/runtime-package.test.ts",
+      "test/runtime-pointers.test.ts",
       "-t",
       "a pointer's address is shown",
     ],

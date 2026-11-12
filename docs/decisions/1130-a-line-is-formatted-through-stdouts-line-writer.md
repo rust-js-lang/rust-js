@@ -107,3 +107,71 @@ are off test/metamorphic-known.txt.
 - Placing the panic message relative to a partial line, in a stream that
   mixes stdout and stderr, isn't modelled: rust-js writes the partial line
   when `$printing` ends, where Rust writes it with the next newline.
+
+## Amendment: a writer's prints inside a std value's text (2026-11-12, #1521)
+
+A writer that prints, shown inside a std value's `Debug`, a `Vec`'s, an
+`Option`'s or a tuple's, wrote its text straight to the line through
+`$sink()`. But the JS makes the value's text as one expression,
+`v.map(dDebug_fmt).join(", ")`, before the line gets any of it. So each
+item's text reached the line before the brackets and commas around it,
+`vec [!D(1)!D(3)!D(5), , ]` where Rust writes `vec [!D(1), !D(3), !D(5)]`.
+And `$out` with no line formatted held a `format!`'s writer's prints for a
+line, so the `console.log` of the next line came first.
+
+The fix is in the runtime alone (src/runtime/print.js):
+
+- **In a line, a writer's sink is a capture.** `$sink()` opens one on a
+  stack and `done()` closes it, giving back the writer's text. A print
+  made while a capture is open, through `$out` (a writer's `print!`, or a
+  nested `println!`'s pieces), goes into the innermost capture as a mark
+  at that point. The printed text is kept in a table under the mark's
+  number. When no capture is open, `$out` puts each mark's text back in
+  its place, recursively, and the line gets exactly the bytes Rust's
+  `LineWriter` holds, each print where it ran.
+- **A mark is unforgeable.** It opens with a lone surrogate, which no Rust
+  string holds, followed by eight characters drawn at random once per run
+  (the lead's guard). A JS string given through interop may hold lone
+  surrogates, `\uDC000\uDC01`, and still reaches the line as it is.
+- **`{:#?}`'s indent goes where std's `PadAdapter` writes it.** `$pretty`
+  indents a part through `$padded`, which puts four spaces before each
+  line's first character of text. A mark at a line's start stays before
+  them, since the print, made before the writer's first write, doesn't go
+  through the adapter: `!    D(1),`.
+- **A writer a panic or an error stopped keeps what it wrote.** Its
+  capture, still open, is added after what it was opened in, by the next
+  write of the writer it was opened in or by `$printing`'s end. So a
+  writer that catches its part's panic writes on after the part's text,
+  and a line a caught panic stopped keeps the writer's text and prints.
+- **With no line formatted, `$out` prints at once,** as `print!` does.
+
+One shape can't be rebuilt at run time: a panic or an error part-way
+through a composed value, at the second item of a `Vec`. The first
+item's closed text and the separators live only in the JS expression.
+So a std value's `Debug` of a part whose writer prints and may stop
+part-way, in a crate that calls `catch_unwind`, is refused, naming #1496
+(`Prints::stops_composed`, the lead's decision). That writer is a
+`Debug` writer that may unwind (not `never_unwinding`) or may return an
+`Err` (`failing`). Without a `catch_unwind` the program ends on the
+panic, ADR 0262's difference 57. `never_unwinding` takes a writer's
+`write!` into its `Formatter` to possibly unwind, so a writer that
+prints and uses `write!` is refused there even when it can't panic. That
+is a refusal, never a wrong answer, and it's rare: a printing writer,
+shown in a std value, in a crate that catches panics.
+
+Corpus cases printing_writer_shown_in_std_values (the issue's `Vec`,
+`Option`, tuple and `format!`, `{:>8?}`, nested `Vec`s and arrays, a
+`BTreeMap`, `{:#?}` of each, a writer whose `println!` ends the line
+inside a part, and one showing a `Vec` inside its own text) and
+printing_writer_stopped_part_way_where_caught (a writer that prints and
+panics, alone or inside another's text, caught; one that catches its
+part's panic and writes on; one that never stops, in a `Vec`), each
+against native Rust in both builds. test/runtime-print.test.ts covers a
+JS string's lone surrogates beside a mark, and test/diagnostics.test.ts
+the refusal. Mutations `print-in-a-writer-unmarked`,
+`marks-reach-the-line`, `unframed-print-held`,
+`stopped-writers-text-lost`, `stopped-writers-text-folded-late`,
+`marks-forgeable`, `padded-print-after-the-indent`,
+`composed-stopping-writer-unrefused` and
+`composed-stopping-writer-refused-unasked`; `sink-never-the-line` and
+`pretty-not-indented` are refitted.
