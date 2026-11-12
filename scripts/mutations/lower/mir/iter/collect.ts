@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Result` of a collection of the crate's own is refused, though its `from_iter` is the crate's",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {\n",
+    find: "        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), (output, item), iter_ty, span)? {\n",
     replace: "        } else if let Some(made) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
   },
@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     name: "collect-into-param-refused",
     breaks: "`collect` into a type parameter, a `B: FromIterator`, is refused",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            && let Some(dictionary) = self.collected_evidence(output, item)\n",
-    replace: "            && let Some(dictionary) = None::<Expr>\n",
+    find: "        self.collected_evidence(output, item)\n    }\n",
+    replace: "        None::<Expr>\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
   },
   {
@@ -172,9 +172,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Result<U, E>` a bound says it's collected into is refused",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        if output.has_param()\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
-    replace:
-      "        if false\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
+    find: "        if !output.has_param() {\n            return None;\n        }\n",
+    replace: "        if !output.has_param() || true {\n            return None;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
   },
   {
@@ -719,5 +718,13 @@ export const mutations: Mutation[] = [
     find: "        self.collects_by_fold(collection) || self.is_map(collection)\n",
     replace: "        self.collects_by_fold(collection)\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_by_fold_drops_once.rs$"],
+  },
+  {
+    name: "try-processed-never",
+    breaks: "a fallible `collect()` into the crate's own `FromIterator` collects every value first and calls its `from_iter` only where none is a `None` or an `Err`, losing its effects and its value's drop (#1588)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            .then_some((collection, value, shunt)))\n",
+    replace: "            .then_some((collection, value, shunt)).filter(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
   },
 ];

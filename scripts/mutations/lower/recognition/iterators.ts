@@ -221,9 +221,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a fallible `collect` into the crate's own collection asks its `FromIterator` of the wrong item, and finds none",
     file: "src/lower/recognition/iterators.rs",
-    find: "            self.tcx.mk_args(&[collection.into(), item.into(), values.into()]),\n",
-    replace:
-      "            self.tcx.mk_args(&[collection.into(), values.into(), values.into()]),\n",
+    find: "            self.tcx.mk_args(&[collection.into(), item.into(), given.into()]),\n",
+    replace: "            self.tcx.mk_args(&[collection.into(), given.into(), given.into()]),\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
   },
   {

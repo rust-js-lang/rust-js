@@ -13,7 +13,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// for `I`, bound so here alone, and each fact `from_iter`'s declaration
     /// carries of what it's given (`std_method_facts`), its `IInPlace`, is
     /// the entry's parameter after the items, as generic code's call gives
-    /// it, so the call keeps its shape.
+    /// it, so the call keeps its shape; and, where it's std's `try_process`,
+    /// the drop of what's given after those, `dropI` (#1588).
     pub(super) fn collecting_entry(&mut self, output: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
         let tcx = self.tcx;
         let iterator = std_item(tcx, StdItem::Iterator);
@@ -22,7 +23,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Numbered past any body's own, so it's no parameter of this one.
         let param = Ty::new_param(tcx, 1 << 20, rustc_span::Symbol::intern("I"));
         let item_def = crate::lower::recognition::trait_method(tcx, iterator, "Item");
-        let bounds: [ty::Clause<'tcx>; 2] = [
+        // Sized, as a type parameter is unless it says otherwise, so a std
+        // struct of it, `GenericShunt<'_, I, R>`'s, is an iterator (#1588).
+        let sized = tcx.require_lang_item(crate::lower::traits::LangItem::Sized, span);
+        let bounds: [ty::Clause<'tcx>; 3] = [
+            ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),
             ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),
             ty::ProjectionPredicate {
                 projection_term: match *Ty::new_projection(tcx, ty::IsRigid::No, item_def, [param]).kind() {
@@ -47,10 +52,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (param, fact, Expr::var(&name))
             })
             .collect();
+        // Into an `Option` or a `Result` of a collection whose `from_iter`
+        // runs code, std's `try_process`, which gives it a `GenericShunt`
+        // of what's given, its to drop (#1588): what's given dropped as
+        // generic code's call gives it, the drop after its facts, `dropI`,
+        // which the shunt's drop glue calls.
         let made = self.with_given_facts(typing_env, given, |cx| {
-            cx.collected_into((Expr::var("items"), None), output, Some(item), Some(param), span)
+            let shunted = cx.try_processed_into(output, param)?.is_some();
+            let lent = shunted.then(|| cx.lend_drop_param("dropI".into(), param));
+            let made = cx.collected_into((Expr::var("items"), None), output, Some(item), Some(param), span);
+            if let Some(lent) = lent {
+                cx.return_drop_param(lent);
+            }
+            Ok::<_, rustc_span::ErrorGuaranteed>((made?, shunted))
         });
-        let made = made?;
+        let (made, shunted) = made?;
+        if shunted {
+            params.push("dropI".into());
+        }
         // What's left of what it's given closed where collecting it panics,
         // as std drops the iterator its collect holds as it unwinds (#1141):
         // the type parameter says nothing of what it holds, so it's closed,

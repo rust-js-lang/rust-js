@@ -622,23 +622,46 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `FromIterator::from_iter` and its arguments, `collection` made of
-    /// `item`s given an array of them, `[A; 0]`, an `IntoIterator<Item =
-    /// A>`: what `collect` into a collection of the crate's own calls, of
-    /// values made already, a fallible `collect`'s.
+    /// `item`s given `given`, an `IntoIterator<Item = A>`: what a fallible
+    /// `collect` into a collection of the crate's own calls, given std's
+    /// `GenericShunt` of what it steps (`generic_shunt`, #1588), or, of
+    /// values made already, an array of them, `[A; 0]`, where `given` is
+    /// `None`.
     pub(in crate::lower) fn values_from_iter(
         &self,
         collection: Ty<'tcx>,
         item: Ty<'tcx>,
+        given: Option<Ty<'tcx>>,
     ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
         let trait_id = self.tcx.get_diagnostic_item(sym::FromIterator)?;
         let from_iter = (self.tcx.associated_items(trait_id).in_definition_order())
             .find(|i| i.is_fn() && i.name().as_str() == "from_iter")?
             .def_id;
-        let values = Ty::new_array(self.tcx, item, 0);
+        let given = given.unwrap_or_else(|| Ty::new_array(self.tcx, item, 0));
         Some((
             from_iter,
-            self.tcx.mk_args(&[collection.into(), item.into(), values.into()]),
+            self.tcx.mk_args(&[collection.into(), item.into(), given.into()]),
         ))
+    }
+
+    /// std's `GenericShunt<'_, I, R>` of `iter`, what `try_process` gives
+    /// the `from_iter` of a `collect()` into `target`, an `Option` or a
+    /// `Result` of a collection: its residual `R` the target's with its
+    /// value `Infallible`, `Option<Infallible>` or `Result<Infallible, E>`
+    /// (#1588). `None` where std has none by that path.
+    pub(in crate::lower) fn generic_shunt(&self, iter: Ty<'tcx>, target: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let tcx = self.tcx;
+        let shunt = super::registry::by_path(tcx, StdCrate::Core, &["iter", "adapters", "GenericShunt"])?;
+        let infallible = super::registry::by_path(tcx, StdCrate::Core, &["convert", "Infallible"])?;
+        let ty::Adt(target_adt, target_args) = target.kind() else {
+            return None;
+        };
+        let infallible = Ty::new_adt(tcx, tcx.adt_def(infallible), ty::List::empty());
+        let mut residual_args: Vec<ty::GenericArg<'tcx>> = target_args.iter().collect();
+        *residual_args.first_mut()? = infallible.into();
+        let residual = Ty::new_adt(tcx, *target_adt, tcx.mk_args(&residual_args));
+        let args = tcx.mk_args(&[tcx.lifetimes.re_erased.into(), iter.into(), residual.into()]);
+        Some(Ty::new_adt(tcx, tcx.adt_def(shunt), args))
     }
 
     /// The method of std's iterator traits `def_id` is: `Iterator`'s,

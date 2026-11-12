@@ -509,3 +509,58 @@ so the `Some` is boxed where any such `Some` is:
 Held by the corpus case `collect_into_option_of_unit` and the mutations
 `collected-some-unboxed` and `collected-some-always-boxed`, the second of
 an `Option<Vec<_>>`, whose `Some` is the vector itself.
+
+## Amendment (2026-11-13, #1588): a `from_iter` that runs code is given std's `GenericShunt`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. A `collect()`
+into an `Option` or a `Result` of the crate's own collection collected
+every value first and called its `from_iter` only where none was a `None`
+or an `Err`: std's `Option<V>: FromIterator<Option<A>>` is `try_process`,
+which calls `V::from_iter` with a `GenericShunt` of the items, a step
+ending at the first `None` or `Err`, then drops what it made. So the
+crate's `from_iter` never ran on a `None` or an `Err`, its effects and
+its value's drop lost, and its steps never interleaved with the items'.
+
+Where that `from_iter` runs code, the crate's own or a dictionary's, the
+lowering asks `try_processed_into` and emits std's `try_process` as the
+runtime's `$tryProcessOptions(items, collect, drop, boxed, someBoxed)`
+or `$tryProcessResults(items, collect, drop, dropErr)`, one of each kind
+as `$collectOptions` and `$collectResults` are: `collect` is the `from_iter` of std's own instance, `I`
+std's `GenericShunt<'_, I, R>` (`generic_shunt`), its residual
+`Option<Infallible>` or `Result<Infallible, E>`, so what it's given
+carries `GenericShunt`'s facts and drop glue, `genericShunt.iter.return()`.
+The shunt is a `$Steps` with std's field, `iter`; stepped on past a
+`None` or an `Err` it goes on, as std's does, a later `Err` kept in place
+of the one before, dropped. What `collect` made is dropped where one was
+kept, and an `Err` kept where `collect` panics. The shunt is `from_iter`'s
+to drop, or keep: through generic code's `B: FromIterator`, std's
+`Option`'s or `Result`'s `fromIter` entry (`collecting_entry`) takes the
+drop of what it's given after its facts, `dropI`, as generic code's call
+gives it, for the shunt's drop glue to call, and the type parameter it
+stands for that by is `Sized`, as one is, or `GenericShunt` of it is no
+iterator and its `IntoIter` has no drop; the metamorphic net's
+`generic-instances` rewrite found it. `dropped_after` drops nothing of
+what a `collect()` gave it, where the build of std's bodies dropped a source after its
+`from_iter`, which had forgotten it. std's own collections keep
+`$collectOptions` and `$collectResults`, whose `from_iter` runs nothing
+of the crate's: their output is unchanged.
+
+std's `try_process`, `GenericShunt` and `Option`'s and `Result`'s
+`from_iter` compiled instead (ADR 0908) is #1592: their modules, a `Try`
+of a `Residual`'s `TryType` in std's generic code, and the stepped `I`
+of `GenericShunt` block it.
+
+Held by `test/corpus/fallible_collect_into_own_from_iter.rs` against
+native Rust in both builds: a `None` and an `Err` first, in the middle
+and last; items with a destructor left in the source, dropped as
+`from_iter`'s loop ends; a `from_iter` that panics after an `Err`, one
+that forgets what it's given, one that steps past a `None` and an `Err`;
+and generic code's `C`. `collect_fallible_into` and
+`collect_into_option_of_unit` re-blessed, their crate's and generic `C`'s
+collects `$tryProcessOptions`. Mutations: `try-process-made-kept`,
+`try-process-shunt-fieldless`, `try-process-err-kept-unwinding`,
+`try-process-err-replaced-kept` (`runtime/try_process.ts`),
+`try-processed-never` (`lower/mir/iter/collect.ts`) and
+`try-processed-dropped-after` (`lower/mir/iter.ts`),
+`try-processed-entry-given-no-drop` and `collecting-entry-param-unsized`
+(`lower/traits/dictionaries.ts`).

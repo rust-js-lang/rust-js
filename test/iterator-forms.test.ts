@@ -43,6 +43,7 @@ const few = [
   "repeat_n_drops_what_it_holds.rs",
   "cycle_drops_what_it_replaces.rs",
   "cycle_clone_or_drop_panics_drops_what_it_holds.rs",
+  "fallible_collect_into_own_from_iter.rs",
   // A generic flatten's items' constant size, of what's no array and of
   // an array of a const parameter's length (#813).
   "generic_flatten_of_vecs.rs",

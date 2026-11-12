@@ -2,7 +2,8 @@
 // `collect()` into a `Result` or an `Option` of a collection that isn't
 // an array, a map, a set, text or one of the crate's own: the first `Err`
 // or `None`, or all the values made into it, `$collectResults(items,
-// (values) => new Map(values))`, `Bag`'s by its own `from_iter`.
+// (values) => new Map(values))`; `Bag`'s by its own `from_iter`, given
+// std's `GenericShunt` of the items, `$tryProcessResults` (#1588).
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 fn parse_kv(s: &str) -> Result<BTreeMap<String, i64>, String> {
     s.split(';').filter(|p| !p.is_empty()).map(|pair| {

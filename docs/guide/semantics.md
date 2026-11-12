@@ -850,6 +850,11 @@ What's refused is in [the limitations](limitations.md).
   in place, by which a panic drops what's collected,
   `TFromIteratorD.fromIter(items, [4, 4])` of a `Vec`'s iterator
   ([1095](../decisions/1095-a-std-traits-generic-method-carries-what-its-declaration-says.md)).
+  A `collect()` of `Option`s or `Result`s into one gives its `from_iter`
+  std's `GenericShunt` of them, which a step ends at the first `None` or
+  `Err`, then drops what it made, as std's `try_process` does:
+  `$tryProcessOptions(items, bagFromIteratorI32_fromIter, bagDrop_drop)`
+  ([0036](../decisions/0036-iterators-and-sorting.md), amended).
   Given where any `IntoIterator` goes, to `v.extend(cart)` or generic code,
   it's refused: that code wouldn't call its `into_iter`. An iterator of the
   crate's runs from both ends by its own `next_back`, `rev()` included, and

@@ -782,6 +782,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(false);
         }
+        // A `collect()` into an `Option` or a `Result` of a collection whose
+        // `from_iter` runs code gives it the iterator, in std's
+        // `GenericShunt`, its to drop or keep, nothing after (#1588).
+        if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {
+            return Ok(false);
+        }
         // What the crate's own `fold` is called by: it takes the iterator
         // and drops it, so nothing's dropped after (#162). Not of an adapter
         // that holds a function with a destructor, which it doesn't drop.

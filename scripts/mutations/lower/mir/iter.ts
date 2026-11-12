@@ -941,4 +941,12 @@ export const mutations: Mutation[] = [
     replace: "        }\n        // Of a string's `char`s",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
   },
+  {
+    name: "try-processed-dropped-after",
+    breaks: "what a fallible `collect()` gives the crate's `from_iter` is dropped after it in the build of std's bodies, though that `from_iter` kept or forgot it (#1588)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
+    replace: "        if false && method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "fallible_collect_into_own_from_iter with std"],
+  },
 ];

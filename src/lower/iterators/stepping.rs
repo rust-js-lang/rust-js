@@ -63,6 +63,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `Option`'s `Some` of a collection that could look like `None`,
         // a `()`, is boxed (ADR 0051): what's collected made into it (#984).
         let boxed_some = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));
+        // Into a collection whose `from_iter` runs code, the crate's own or
+        // a dictionary's: std's `try_process`, that `from_iter` given a
+        // `GenericShunt` of the items, what it made dropped where a `None`
+        // or an `Err` ended it (#1588).
+        if let Some(iter_ty) = iter_ty
+            && let Some((collection, value, shunt)) = self.try_processed_into(target, iter_ty)?
+        {
+            return self.try_processed(items, (target, collection, value), (item, shunt), span);
+        }
         let into = match !boxed_some
             && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))
         {
@@ -150,6 +159,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]));
             Expr::call(Expr::helper("$collectResults"), list)
         })
+    }
+
+    /// `collect_fallible_items`' of a collection whose `from_iter` runs
+    /// code, `$tryProcessOptions(items, collect, drop, boxed, someBoxed)` or
+    /// `$tryProcessResults(items, collect, drop, dropErr)`: std's
+    /// `try_process`, which gives that `from_iter`,
+    /// `collect`, its `GenericShunt` of `items`, then drops what it made by
+    /// `drop` where a `None` or an `Err` ended it, and the `Err` it ended at
+    /// by `dropErr` where `from_iter` panics (#1588).
+    fn try_processed(
+        &mut self,
+        items: Expr,
+        (target, collection, value): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        (item, shunt): (Option<Ty<'tcx>>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        let given = self.fresh(Role::Iter);
+        let made = self.collected_into((Expr::var(&given), None), collection, Some(value), Some(shunt), span)?;
+        let collect = match made.kind {
+            js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if *v == given)) => {
+                *f
+            }
+            kind => Expr::arrow(
+                vec![given.into()],
+                vec![StmtKind::Return(Some(Expr { kind, ..made })).at(js::Span::NONE)],
+            ),
+        };
+        let result = self.recognition().is_result(target);
+        let drop = self.std_drop_function(collection, span)?;
+        let drop_err = match (result, target.kind()) {
+            (true, ty::Adt(_, args)) => self.std_drop_function(args.type_at(1), span)?,
+            _ => None,
+        };
+        let boxed = item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner)));
+        let some_boxed = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));
+        let mut args = vec![items, collect];
+        let optional = match result {
+            true => vec![(drop, Expr::undefined()), (drop_err, Expr::undefined())],
+            false => vec![
+                (drop, Expr::undefined()),
+                (boxed.then(|| Expr::bool(true)), Expr::bool(false)),
+                (some_boxed.then(|| Expr::bool(true)), Expr::bool(false)),
+            ],
+        };
+        let last = optional.iter().rposition(|(given, _)| given.is_some());
+        args.extend(
+            (optional.into_iter().enumerate())
+                .take_while(|&(at, _)| last.is_some_and(|last| at <= last))
+                .map(|(_, (given, unset))| given.unwrap_or(unset)),
+        );
+        Ok(Expr::call_helper(
+            match result {
+                true => "$tryProcessResults",
+                false => "$tryProcessOptions",
+            },
+            args,
+        ))
     }
 
     /// `$lent(it)`: a generic iterator lent as a `&mut`, which steps `it` and

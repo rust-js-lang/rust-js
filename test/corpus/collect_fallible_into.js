@@ -17,6 +17,8 @@ import {
   $sortedEntries,
   $sortedKeys,
   $splitOnce,
+  $tryProcessOptions,
+  $tryProcessResults,
   $unwrapOk,
 } from "@rust-js/std";
 
@@ -63,21 +65,21 @@ function bagFromIteratorI32_fromIter(it, IIntoIterVecCollect) {
 }
 
 function bag(words) {
-  return $collectResults(
+  return $tryProcessResults(
     words.values().map((w) => {
       const result = $parseInt(w, -2147483648, 2147483647);
       return result.TAG === "Err" ? { TAG: "Err", _0: `${w}: ${result._0}` } : result;
     }),
-    (values) => bagFromIteratorI32_fromIter(values, "fold"),
+    (iter) => bagFromIteratorI32_fromIter(iter, "next"),
   );
 }
 
 function main() {
-  const some = $collectOptions($iter([5, 4]), false, (values) =>
-    bagFromIteratorI32_fromIter(values, "fold"),
+  const some = $tryProcessOptions($iter([5, 4]), (iter) =>
+    bagFromIteratorI32_fromIter(iter, "next"),
   );
-  let none = $collectOptions($iter([5, undefined]), false, (values) =>
-    bagFromIteratorI32_fromIter(values, "fold"),
+  let none = $tryProcessOptions($iter([5, undefined]), (iter) =>
+    bagFromIteratorI32_fromIter(iter, "next"),
   );
   const value = bag(["3", "1", "2"]);
   const value$1 = bag(["1", "x"]);

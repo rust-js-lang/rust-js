@@ -572,9 +572,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Into what holds a type parameter that a bound says it's collected
         // into, a `B: FromIterator<A>` or a `Result<U, E>`'s: its
         // dictionary's `from_iter`, its caller's (ADRs 0445, 0476).
-        if output.has_param()
-            && let Some(item) = item
-            && let Some(dictionary) = self.collected_evidence(output, item)
+        if let Some(item) = item
+            && let Some(dictionary) = self.bound_from_iter(output, item)
         {
             let from_iterator = std_item(self.tcx, StdItem::FromIterator);
             let from_iter = crate::lower::bindings::trait_method_name(self.tcx, from_iterator, "from_iter");
@@ -693,7 +692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unwinding => (it, unwinding.is_some()),
             };
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it, unwinds, span)?
-        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
+        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), (output, item), iter_ty, span)? {
             made
         // Into `()`: each item stepped and dropped, as std's body,
         // `iter.for_each(|()| {})`, steps them.
@@ -967,19 +966,81 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `FromIterator<item>`'s `from_iter`, the function rust-js compiled.
     /// The `FromIterator<item>` evidence of what holds a type parameter,
     /// `output`, that generic code collects into (ADRs 0445, 0476).
+    /// Of a `collect()` of an `iter_ty` into `target`, an `Option` or a
+    /// `Result` of a collection whose `from_iter` runs code
+    /// (`runs_code_to_collect`): the collection, what each `Some` or `Ok`
+    /// holds, and std's `GenericShunt` of `iter_ty`, which `try_process`
+    /// gives that `from_iter`, whose it is to drop then (#1588). `None` of
+    /// another `collect()`.
+    pub(in crate::lower) fn try_processed_into(
+        &mut self,
+        target: Ty<'tcx>,
+        iter_ty: Ty<'tcx>,
+    ) -> R<Option<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)>> {
+        let ty::Adt(_, target_args) = target.kind() else {
+            return Ok(None);
+        };
+        if self.option_of(target).is_none() && !self.recognition().is_result(target) {
+            return Ok(None);
+        }
+        let payload = self.iterator_item(iter_ty).and_then(|item| match item.kind() {
+            ty::Adt(_, args) => args.types().next(),
+            _ => None,
+        });
+        let collection = target_args.type_at(0);
+        let (Some(value), Some(shunt)) = (payload, self.recognition().generic_shunt(iter_ty, target)) else {
+            return Ok(None);
+        };
+        Ok(self
+            .runs_code_to_collect((collection, value), shunt)?
+            .then_some((collection, value, shunt)))
+    }
+
+    /// Whether the `from_iter` that makes `output` of `item`s given a
+    /// `given` runs code a fallible `collect` must give its `GenericShunt`
+    /// as std's `try_process` does (#1588): the crate's own, or what a
+    /// bound's dictionary gives, its caller's; not std's, of values it
+    /// makes whatever it's given.
+    fn runs_code_to_collect(&mut self, (output, item): (Ty<'tcx>, Ty<'tcx>), given: Ty<'tcx>) -> R<bool> {
+        if self.bound_from_iter(output, item).is_some() {
+            return Ok(true);
+        }
+        let Some((from_iter, args)) = self.recognition().values_from_iter(output, item, Some(given)) else {
+            return Ok(false);
+        };
+        Ok(self
+            .resolve_instance(from_iter, args)?
+            .is_some_and(|i| self.is_rust_fn(i.def_id())))
+    }
+
+    /// The dictionary whose `from_iter` makes `output`, of `item`s, where
+    /// it holds a type parameter that a bound says it's collected into, a
+    /// `B: FromIterator<A>` or a `Result<U, E>`'s: its caller's (ADRs 0445,
+    /// 0476).
+    fn bound_from_iter(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Option<Expr> {
+        if !output.has_param() {
+            return None;
+        }
+        self.collected_evidence(output, item)
+    }
+
     fn collected_evidence(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Option<Expr> {
         let from_iterator = std_item(self.tcx, StdItem::FromIterator);
         self.evidence_for(ty::TraitRef::new(self.tcx, from_iterator, [output, item]))
     }
 
+    /// The crate's own `from_iter` of `output`, made of `item`s, called with
+    /// `items`, of type `given`, an array of values where it's `None`
+    /// (`values_from_iter`). `None` of another's.
     fn made_by_own_from_iter(
         &mut self,
         items: Expr,
-        output: Ty<'tcx>,
-        item: Option<Ty<'tcx>>,
+        (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
+        given: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Option<Expr>> {
-        let Some((from_iter, args)) = item.and_then(|item| self.recognition().values_from_iter(output, item)) else {
+        let Some((from_iter, args)) = item.and_then(|item| self.recognition().values_from_iter(output, item, given))
+        else {
             return Ok(None);
         };
         let Some(instance) = self

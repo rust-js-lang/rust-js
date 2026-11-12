@@ -9,6 +9,7 @@ import {
   $reserveHint,
   $some,
   $someValue,
+  $tryProcessOptions,
 } from "@rust-js/std";
 
 export function entry() {
@@ -20,7 +21,13 @@ function allDone(steps) {
 }
 
 function gathered(items, VFromIteratorT) {
-  return $collectOptions($iter(items), true, (values) => $some(VFromIteratorT.fromIter(values)));
+  return $tryProcessOptions(
+    $iter(items),
+    (iter) => VFromIteratorT.fromIter(iter, false),
+    undefined,
+    true,
+    true,
+  );
 }
 
 function main() {
