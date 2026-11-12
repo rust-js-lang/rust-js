@@ -68,3 +68,16 @@ answer. What's refused only split: a library's hand-written `Serialize` or `Dese
 `//@ native: wasm32` cases are (`serde/build.sh --rlib-wasm32`, the runner's `wasm32`): against it, it gives native's
 answer each way, where against a 64-bit oracle it was `different` by design.
 
+## The benchmark (#1542, #1532's S0)
+
+`bun scripts/serde-bench.ts` reproduces #1542's tables, the settings S2 and S5 are judged by fixed in it before any
+result is: `bench.rs`'s document at 4,000, 40,000 and 400,000 items (about 1, 10 and 96 MB), written and read as a
+`Doc` and as a `Value` by rust-js's JS on Bun and Node (`bench-harness.js`), by native serde_json built optimized,
+serde too (`bench-native.rs`, `serde/build.sh --rlib-release`), and by each engine's `JSON.parse` and
+`JSON.stringify`; then `bench-shapes.rs`'s shapes at those sizes, deep, wide, long strings and maps, typed and as a
+`Value` (`bench-shapes-harness.js`, `bench-shapes-native.rs`); then each of `size-programs.ts`' programs bundled,
+minified and gzipped, with its compile time. Each row cold, one operation in a fresh process, and warm, the best of
+five in one, each three times, every sample kept, peak memory by `/usr/bin/time -l` beside each runtime's with no
+work. `--quick` runs 1 and 10 MB once each. Raw samples and versions go to `target/serde-bench/results.json`, the
+tables to `target/serde-bench/tables.md`. Its baseline is measured on a quiet machine, not one under load.
+

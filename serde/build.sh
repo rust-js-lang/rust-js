@@ -9,12 +9,20 @@
 #   rustc --target=wasm32-wasip1 shared.rs $(serde/build.sh --rlib-wasm32)
 #                                                    # libraries, for a native build on wasm32, whose
 #                                                    # 32-bit usize is the JS's (#1532)
+#   rustc -O shared.rs $(serde/build.sh --rlib-release)
+#                                                    # libraries built optimized, for a native
+#                                                    # benchmark (#1542)
 set -euo pipefail
 cd "$(dirname "$0")"
 target=../target/serde
 if [ "${1:-}" = "--rlib" ]; then
   cargo build --quiet --locked --target-dir "$target"
   deps=$(cd "$target/debug/deps" && pwd)
+  latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
+  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps"
+elif [ "${1:-}" = "--rlib-release" ]; then
+  cargo build --quiet --locked --release --target-dir "$target"
+  deps=$(cd "$target/release/deps" && pwd)
   latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
   echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps"
 elif [ "${1:-}" = "--rlib-wasm32" ]; then
