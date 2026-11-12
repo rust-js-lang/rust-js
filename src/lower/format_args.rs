@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = values.next().expect("a write's text");
                 // To stdout, where a line may be formatted meanwhile: through
                 // the line, so it lands inside it (#1490).
-                if !error && let Some(through) = self.print_through_the_line(&text) {
+                if let Some(through) = self.print_through_the_line(&text, error) {
                     return through;
                 }
                 match without_newline(text) {
@@ -365,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = arg();
                 // To stdout, where a line may be formatted meanwhile: through
                 // the line, so it lands inside it (#1490).
-                match self.print_through_the_line(&text).filter(|_| !error) {
+                match self.print_through_the_line(&text, error) {
                     Some(through) => through,
                     None => match without_newline(text) {
                         // A write never fails (ADR 0132): it throws only where

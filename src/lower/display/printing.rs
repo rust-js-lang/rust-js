@@ -96,12 +96,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body
     }
 
-    /// A print to stdout of the body being lowered, `text`, where it may
-    /// run while a line is formatted: through the line, `$out(text)`, so it
-    /// lands inside it. `None` elsewhere.
-    pub(in crate::lower) fn print_through_the_line(&self, text: &Expr) -> Option<Expr> {
+    /// A print of the body being lowered, `text`, where it may run while a
+    /// line is formatted: to stdout, through the line, `$out(text)`, so it
+    /// lands inside it; to stderr, `error`, `$eprint(text)`, which first
+    /// writes what of stdout's line Rust's would have by then (#1490).
+    /// `None` elsewhere.
+    pub(in crate::lower) fn print_through_the_line(&self, text: &Expr, error: bool) -> Option<Expr> {
         self.runs_while_formatting()
-            .then(|| Expr::call_helper("$out", vec![text.clone()]))
+            .then(|| Expr::call_helper(if error { "$eprint" } else { "$out" }, vec![text.clone()]))
     }
 }
 

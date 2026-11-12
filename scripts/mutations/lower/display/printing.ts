@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "print-while-formatting-logged",
     breaks: "a print made while a line is formatted is `console.log`'s, not the line's, so it comes before the text formatted so far (#1490)",
     file: "src/lower/display/printing.rs",
-    find: "        self.runs_while_formatting()\n            .then(|| Expr::call_helper(\"$out\", vec![text.clone()]))\n",
-    replace: "        (false && self.runs_while_formatting())\n            .then(|| Expr::call_helper(\"$out\", vec![text.clone()]))\n",
+    find: "        self.runs_while_formatting()\n            .then(|| Expr::call_helper(if error { \"$eprint\" } else { \"$out\" }, vec![text.clone()]))\n",
+    replace: "        (false && self.runs_while_formatting())\n            .then(|| Expr::call_helper(if error { \"$eprint\" } else { \"$out\" }, vec![text.clone()]))\n",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
   {
@@ -17,5 +17,17 @@ export const mutations: Mutation[] = [
     find: "        match self.runs_while_formatting() {\n            true => Expr::call_helper(\n                \"$formatting\",",
     replace: "        match false {\n            true => Expr::call_helper(\n                \"$formatting\",",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
+  },
+  {
+    name: "stderr-while-formatting-logged",
+    breaks: "a print to stderr made while a line is formatted is `console.error`'s, so it comes before the stdout line a writer's print ended before it (#1490)",
+    file: "src/lower/display/printing.rs",
+    find: "        self.runs_while_formatting()\n            .then(|| Expr::call_helper(if error { \"$eprint\" } else { \"$out\" }, vec![text.clone()]))\n",
+    replace: "        (!error && self.runs_while_formatting())\n            .then(|| Expr::call_helper(if error { \"$eprint\" } else { \"$out\" }, vec![text.clone()]))\n",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "printed_while_a_line_is_formatted|stderr_between"
+    ]
   },
 ];

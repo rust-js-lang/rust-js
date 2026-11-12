@@ -3,6 +3,7 @@
 import {
   $catchUnwind,
   $debugList,
+  $eprint,
   $formatting,
   $live,
   $out,
@@ -21,7 +22,7 @@ function noisyDisplay_fmt(noisy) {
   const f = $sink();
   f.write("<");
   $out(`inside ${noisy[0]}\n`);
-  console.error(`err ${noisy[0]}`);
+  $eprint(`err ${noisy[0]}\n`);
   f.write(`${noisy[0]}>`);
   return f.done();
 }

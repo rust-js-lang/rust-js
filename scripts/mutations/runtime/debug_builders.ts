@@ -85,4 +85,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^failing_std_value_debug_keeps_what_was_written.rs$"],
   },
+  {
+    name: "pretty-part-written-ahead-unpadded",
+    breaks: "a `{:#?}` part's line written ahead of a write to standard error isn't through its adapter, so its text, padded, doesn't start with what was written (#1490)",
+    file: "src/runtime/debug_builders.js",
+    find: "      if (pretty) $padAt.set(depth, adapter);\n",
+    replace: "",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "stderr_between"
+    ]
+  },
 ];

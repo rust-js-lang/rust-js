@@ -7,6 +7,7 @@ function $eprint(text) {
   $write(text, 1);
 }
 function $write(text, error) {
+  if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
   if (stream?.write) {
     stream.write(text);
@@ -32,6 +33,13 @@ function $write(text, error) {
 // comes before the line it interrupts. Where there's no stream, each line is
 // `console.log`'s, and what's left unended at a task's end is written then.
 let $lineHeld = "";
+// Of a line formatted, the bytes written ahead of the text that holds
+// them, at a write to standard error (`$flushAhead`), which that text,
+// reaching the line, leaves out.
+let $lineAhead = "";
+// Of each `{:#?}` builder's step formatting now, the depth of the captures
+// whose text it writes through std's `PadAdapter`, and the adapter.
+const $padAt = new Map();
 // What each writer that may print, formatting now, writes its text to: the
 // line, `$out`, of a `println!` (`$printing`), or apart from it, `undefined`,
 // of a `format!` made as one formats (`$formatting`).
@@ -117,6 +125,13 @@ function $unfinishedAbove(depth) {
 // next (#1521); else held till its newline.
 function $toLine(text) {
   text = $unmarked(`${text}`);
+  // What's written ahead is of the open writers' text, which reaches the
+  // line whole, the outermost's, so it starts with it.
+  if ($lineAhead !== "") {
+    if (!text.startsWith($lineAhead)) throw new Error("rust-js: stdout's line was written ahead of other text");
+    text = text.slice($lineAhead.length);
+    $lineAhead = "";
+  }
   if ($printFrames.length === 0) {
     $print(text);
     return;
@@ -127,6 +142,37 @@ function $toLine(text) {
   const lines = $lineHeld.slice(0, end + 1);
   $lineHeld = $lineHeld.slice(end + 1);
   $print(lines);
+}
+// `text`'s prints put back in their places, as `$unmarked` puts them, each
+// kept for when the text reaches the line.
+function $unmarkedSoFar(text) {
+  if ($markForm === undefined || !text.includes($markForm.open)) return text;
+  return text.replace($markForm.pattern, (_, mark) => $unmarkedSoFar($marks.get(Number(mark))));
+}
+// Before a write to standard error, what std's stdout `LineWriter` holds
+// no longer, as Rust's would have written it by now: each line ended so far
+// of the line formatted, its text held and each open writer's so far, with
+// what it printed in its place and a `{:#?}` part through its adapter
+// (#1490). Written now, and left out when that text reaches the line.
+function $flushAhead() {
+  if ($printFrames.length === 0 || ($lineHeld === "" && $captures.length === 0)) return;
+  let open = "";
+  for (let depth = $captures.length - 1; depth >= 0; depth--) {
+    open = $captures[depth].text + open;
+    const adapter = $padAt.get(depth);
+    if (adapter !== undefined) open = $padded(open, { ...adapter });
+  }
+  let pending = $lineHeld + $unmarkedSoFar(open);
+  if ($lineAhead !== "") {
+    if (!pending.startsWith($lineAhead)) throw new Error("rust-js: stdout's line was written ahead of other text");
+    pending = pending.slice($lineAhead.length);
+  }
+  const end = pending.lastIndexOf("\n");
+  if (end < 0) return;
+  const ended = pending.slice(0, end + 1);
+  $lineAhead += ended.slice($lineHeld.length);
+  $lineHeld = "";
+  $print(ended);
 }
 // A part of a line, or what a writer prints as it formats: into the
 // innermost writer's text, as a mark, where one is formatting; else the
@@ -205,6 +251,7 @@ function $formatting(make) {
 // between two writes kept till its end comes.
 const $decoders = [];
 function $printBytes(bytes, error) {
+  if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
   if (stream?.write) stream.write(Uint8Array.from(bytes));
   else $write(($decoders[error] ??= new TextDecoder()).decode(Uint8Array.from(bytes), { stream: true }), error);

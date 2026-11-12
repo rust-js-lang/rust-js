@@ -4,10 +4,12 @@
 
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { runInNewContext } from "node:vm";
 
 import { machine, memoryBudget } from "../scripts/shard";
 import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
+import { helpersModule } from "./packages-of";
 import { compiler, contentDirectory, nativeBinary, root, run } from "./support";
 
 export const node = Bun.which("node");
@@ -345,20 +347,93 @@ export const agree = (a: Run, b: Run) =>
   same(a.outcome, b.outcome);
 
 /** The case at `file`'s output with standard error written into standard
- * output, natively and as JS under Node, as a terminal shows them: the
+ * output, as a terminal shows them, natively and as JS under Node: the
  * order of the two streams' writes, which runs that keep them apart can't
- * tell (#1490). Each its bytes, or what stopped it. */
-export function mergedStreams(file: string, dir: string, edition = "2024"): { native: string; js: string } {
+ * tell (#1490). And its lines as a browser's console shows them, where
+ * there's no stream: each stream's lines, `log` or `error`, in the order
+ * their newlines were written, natively (`linesInOrder`) and as JS run in
+ * a context with no `process`, what's left unended written at the end. */
+export function mergedStreams(
+  file: string,
+  dir: string,
+  edition = "2024",
+): { native: string; js: string; nativeLines: string[]; browserLines: string[] } {
   const source = nativeSource(file);
   const built = nativeBinary(source, contentDirectory(source), nativeFlags(edition), compileTimeout);
   if ("error" in built) throw new Error(built.error);
-  const merged = (cmd: string[]) =>
-    Bun.spawnSync(["sh", "-c", '"$0" "$@" 2>&1', ...cmd], { cwd: root, timeout: timeout * 3 }).stdout.toString();
-  const native = merged([built.binary, join(dir, "native.json")]);
+  const spawn = (cmd: string[]) => Bun.spawnSync(cmd, { cwd: root, timeout: timeout * 3 });
+  const merged = (cmd: string[]) => spawn(["sh", "-c", '"$0" "$@" 2>&1', ...cmd]).stdout.toString();
+  const nativeRun = [built.binary, join(dir, "native.json")];
+  const native = merged(nativeRun);
+  const apart = spawn(nativeRun);
+  const nativeLines = linesInOrder(native, apart.stdout.toString(), apart.stderr.toString());
   const compiled = compileJs(file, dir, edition);
   if (!("js" in compiled)) throw new Error(`rust-js can't compile it: ${JSON.stringify(compiled).slice(0, 400)}`);
   const outcome = join(dir, "node.json");
   const js = merged([node ?? "node", join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome]);
-  return { native, js };
+  return { native, js, nativeLines, browserLines: consoleLines(compiled.js) };
 }
 
+/** Of `merged`, the bytes of `out` and `err` interleaved, each stream's
+ * lines, `log ..` or `error ..`, in the order their newlines come, what's
+ * left unended of each after them: what a browser's console shows of a
+ * program whose streams are line buffered. Which bytes are whose is found
+ * by aligning the two with `merged`, any of the ways they interleave. */
+export function linesInOrder(merged: string, out: string, err: string): string[] {
+  // `can[i][j]`: whether `merged` from `i + j` on is `out` from `i` and
+  // `err` from `j` interleaved.
+  const can = Array.from({ length: out.length + 1 }, () => new Array<boolean>(err.length + 1).fill(false));
+  for (let i = out.length; i >= 0; i--) {
+    for (let j = err.length; j >= 0; j--) {
+      const at = i + j;
+      can[i][j] =
+        at === merged.length
+          ? i === out.length && j === err.length
+          : (i < out.length && out[i] === merged[at] && can[i + 1][j]) ||
+            (j < err.length && err[j] === merged[at] && can[i][j + 1]);
+    }
+  }
+  if (!can[0][0]) throw new Error("the merged output isn't the two streams' interleaved");
+  const lines: string[] = [];
+  const held = { log: "", error: "" };
+  const put = (stream: "log" | "error", c: string) => {
+    if (c !== "\n") held[stream] += c;
+    else {
+      lines.push(`${stream} ${held[stream]}`);
+      held[stream] = "";
+    }
+  };
+  let [i, j] = [0, 0];
+  while (i + j < merged.length) {
+    if (i < out.length && out[i] === merged[i + j] && can[i + 1][j]) put("log", out[i++]);
+    else put("error", err[j++]);
+  }
+  for (const stream of ["log", "error"] as const) if (held[stream] !== "") lines.push(`${stream} ${held[stream]}`);
+  return lines;
+}
+
+/** `js`, a case's, run as a browser runs it, with the runtime before it, in
+ * a context with no `process`: each line its console is given, `log ..` or
+ * `error ..`, what's left unended written as the task ends; a panic out of
+ * `main` ends it, as the native run's outcome says. */
+function consoleLines(js: string): string[] {
+  const lines: string[] = [];
+  const tasks: (() => void)[] = [];
+  const context = {
+    console: { log: (s: string) => lines.push(`log ${s}`), error: (s: string) => lines.push(`error ${s}`) },
+    queueMicrotask: (task: () => void) => tasks.push(task),
+    TextDecoder,
+  };
+  const runtime = readFileSync(helpersModule, "utf8").replace(/^export /gm, "");
+  const code = readFileSync(js, "utf8")
+    .replace(/^import \{[^}]*\} from "@rust-js\/std";$/m, "")
+    .replace(/^export /gm, "")
+    .replace(/^\/\/# sourceMappingURL=.*$/m, "");
+  try {
+    runInNewContext(`${runtime}\n${code}\nentry();`, context);
+  } catch {
+    // A panic out of `main`, which the native run's outcome says.
+  }
+  for (const task of tasks) task();
+  return lines;
+}

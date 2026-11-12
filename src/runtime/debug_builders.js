@@ -25,6 +25,8 @@ function $debugBuilder(f, pretty) {
       const adapter = { onNewline: true };
       const written = (text) => f.write(pretty ? $padded(text, adapter) : text);
       const depth = $captures.length;
+      // What's written ahead of its text pads it as it will be (#1490).
+      if (pretty) $padAt.set(depth, adapter);
       try {
         write(written);
       } catch (error) {
@@ -38,6 +40,8 @@ function $debugBuilder(f, pretty) {
         if (error.written) written(error.written);
         error.written = "";
         builder.result = error;
+      } finally {
+        if (pretty) $padAt.delete(depth);
       }
     },
     // The close, `close()`, unless a step failed; then its error.

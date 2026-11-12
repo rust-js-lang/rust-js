@@ -136,3 +136,62 @@ console.log(seen.join("|"));
     'err "S {\\n    a: 1,\\n    b: B\\n    b"|drop 1|drop 2|err "[B\\nb"|ok "(1,)"|ok "(\\n    1,\\n    ..\\n)"|ok "{\\n    k: v\\n    w,\\n    ..\\n}"|ok "E { .. }"\n',
   );
 });
+
+// A stdout line a writer's print ends is written there and then, as std's
+// `LineWriter` writes it, before a write to standard error the writer makes
+// after it; and left out when the writer's text reaches the line (#1490):
+// of a writer inside another, and of one that throws after it.
+test("stdout's line ended inside a writer is written ahead of standard error", () => {
+  const module = join(fixture("runtime-line-ahead"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $out, $printing, $sink, $eprint } = await import(${JSON.stringify(module)});
+const seen = [];
+const shown = process.stdout.write.bind(process.stdout);
+process.stdout.write = (text) => (seen.push("out " + JSON.stringify(String(text))), true);
+process.stderr.write = (text) => (seen.push("err " + JSON.stringify(String(text))), true);
+const noisy = (n) => {
+  const f = $sink();
+  f.write("<");
+  $out("in " + n + "\\n");
+  $eprint("err " + n + "\\n");
+  f.write(n + ">");
+  return f.done();
+};
+$printing(() => {
+  $out("a ");
+  $out(noisy(1));
+  $out(" b\\n");
+});
+$printing(() => {
+  $out("o[");
+  const outer = $sink();
+  outer.write("x");
+  outer.write(noisy(2));
+  $eprint("after\\n");
+  outer.write("]");
+  $out(outer.done());
+  $out("\\n");
+});
+try {
+  $printing(() => {
+    $out("p ");
+    const f = $sink();
+    f.write("<");
+    $out("in 3\\n");
+    $eprint("err 3\\n");
+    throw new Error("stopped");
+  });
+} catch {}
+$printing(() => $out(" then\\n"));
+shown(seen.join("|") + "\\n");
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe(
+    [
+      'out "a <in 1\\n"', 'err "err 1\\n"', 'out "1> b\\n"',
+      'out "o[x<in 2\\n"', 'err "err 2\\n"', 'err "after\\n"', 'out "2>]\\n"',
+      'out "p <in 3\\n"', 'err "err 3\\n"', 'out " then\\n"',
+    ].join("|") + "\n",
+  );
+});
+

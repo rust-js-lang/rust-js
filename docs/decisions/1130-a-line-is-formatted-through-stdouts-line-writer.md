@@ -462,7 +462,29 @@ panic after what was written. The order of the two streams' writes,
 which the corpus keeps apart and can't tell, is held by
 `test/stream-order.test.ts`: each case's output, stderr written into
 stdout, natively and as JS, the same (`mergedStreams`). Corpus case
-`eprinted_while_formatting`; mutation `eprint-made-whole`. What's left of
-#1490: a stdout line a writer's print completes is held with the writer's
-text, so a stderr write it makes after comes first; to be flushed ahead
-at each stderr write.
+`eprinted_while_formatting`; mutation `eprint-made-whole`.
+
+## Amendment (2026-11-13): stdout's ended lines before standard error
+
+A writer's text reaches stdout's line only once the writer's done (#1521's
+captures), so a stdout line a writer's print ended was held with it, and
+a write to standard error the writer made after came first: `err 1`
+before `a <inside 1`, where Rust's `LineWriter` had written that line.
+Now each write to standard error first writes what Rust's would have by
+then (`$flushAhead`, print.js): of the line formatted, its held text and
+each open writer's text so far, what it printed in its place and a
+`{:#?}` part through its `PadAdapter` (`$padAt`, which each pretty step
+sets), up to the last newline; and those bytes are left out when the
+writer's text reaches the line (`$lineAhead`), a writer that panics or
+fails after them too. A print to stderr in a body that may run while a
+line is formatted is `$eprint`, as one to stdout there is `$out`, by the
+same fact (`print_through_the_line`); `console.error` elsewhere. Held by
+`test/stream-order.test.ts` (`printed_while_a_line_is_formatted`,
+`stderr_between_a_writers_lines`, of nested writers, a caught panic and
+a writer's error, and `{:#?}`), by its browser comparison, each stream's
+lines in the order their newlines came natively, and by runtime-print's
+unit test; five mutations. A browser shows a `println!` after a
+`print!`'s part before it, #1599, which two cases' browser comparison
+lists. Left: a std value's `Debug`, made whole, `items.map(fmt)`, whose
+text before a print isn't known as it's made (B2, through the streamed
+builders).

@@ -130,4 +130,28 @@ export const mutations: Mutation[] = [
     replace: "    $printFrames.pop();\n  }\n}\n// Bytes written",
     tests: ["test/corpus.test.ts", "-t", "^format_made_apart_prints_before_the_next_line.rs$"],
   },
+  {
+    name: "stderr-flushes-nothing-ahead",
+    breaks: "a write to standard error made as a line is formatted writes none of stdout's line a writer's print ended, so it comes before it (#1490)",
+    file: "src/runtime/print.js",
+    find: "function $write(text, error) {\n  if (error) $flushAhead();\n",
+    replace: "function $write(text, error) {\n",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "printed_while_a_line_is_formatted|stderr_between"
+    ]
+  },
+  {
+    name: "line-ahead-written-again",
+    breaks: "the bytes of stdout's line written ahead of a write to standard error are written again when the writer's text reaches the line (#1490)",
+    file: "src/runtime/print.js",
+    find: "    text = text.slice($lineAhead.length);\n",
+    replace: "",
+    tests: [
+      "test/runtime-print.test.ts",
+      "-t",
+      "written ahead"
+    ]
+  },
 ];
