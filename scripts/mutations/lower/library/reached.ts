@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "mir-bodys-calls-unreached",
-    breaks: "a library's generic function the crate compiles itself, of MIR alone, reaches nothing it names: its `Rc<Vec<u8>>`, given its library's trait's generic method that counts it, is uncounted, `strong_count` `NaN` (#1217)",
-    file: "src/lower/library/reached.rs",
-    find: "            if body.root().is_none()\n                && let Some(mir) = &body.mir\n            {\n                let named",
-    replace: "            if false\n                && let Some(mir) = &body.mir\n            {\n                let named",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_rc_counted_through_a_traits_generic_method$"],
-  },
-  {
     name: "library-closure-unreached",
     breaks:
       "a library's `impl FnMut` of a value with a destructor, made a `dyn FnMut` by a crate that is a library itself, whose callers it can't see, is taken to drop nothing",

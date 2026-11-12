@@ -24,23 +24,6 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                     self.reach(part, None, &mut seen, &mut reached);
                 }
             }
-            // A library's function the crate compiles itself, of MIR alone
-            // (ADR 0914): what its locals hold and the functions it names
-            // reach, as its THIR's would, `by_default`'s `Rc<Vec<u8>>` given
-            // its library's trait's generic method, which counts it (#1217).
-            if body.root().is_none()
-                && let Some(mir) = &body.mir
-            {
-                let named = (crate::lower::instances::calls_of(body).into_iter()).map(|(callee, args, _)| {
-                    rustc_middle::ty::Ty::new_fn_def(self.tcx, callee, rustc_middle::ty::Binder::dummy(args))
-                });
-                let held = mir.body.local_decls.iter().map(|local| local.ty);
-                for ty in named.chain(held) {
-                    for part in ty.walk().filter_map(|part| part.as_type()) {
-                        self.reach(part, None, &mut seen, &mut reached);
-                    }
-                }
-            }
         }
         reached
     }

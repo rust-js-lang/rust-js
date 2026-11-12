@@ -1340,6 +1340,22 @@ already right (`library_traits_generic_method_facts_through_its_caller`).
 Held by the crate pair `library_rc_counted_through_a_traits_generic_method`
 and the mutation `mir-bodys-calls-unreached`.
 
+**Superseded (2026-11-13): one route.** Since #1234 (e11e8b73d) a library's
+generic method says which of its type parameters an `Rc` it holds counts
+(`ParamFact::Counted`, `rc_counts::params_counted`), and its caller's call
+asks it of what it gives: `keep`'s `T` is counted, so `by_default`'s
+`Rc<Vec<u8>>` is, by that route alone. `reached` walking a MIR-only body's
+locals and callees became a second route to the same answer, and its
+mutation survived. It's removed. With it and without it the JS is
+byte-identical: the corpus's every case, the 168 crate pairs' and triples'
+357 files and the crate corpus's 482, its build hashes aside. The pair
+above still gives native Rust's answer, and three more hold what a
+MIR-only body holds: `library_generic_rc_counted_by_its_library`, an
+`Rc` of the library's type it counts in its own code;
+`library_generic_private_guard_dropped`, a private type with a destructor;
+`library_generic_boxed_closure_dropped`, its closure boxed as a `dyn
+FnMut`.
+
 ## Amendment: a library's writer as a value is its import by the one rule (#1218)
 
 A library's writer given as a value, `quoted` as a `fn(&u32, &mut
