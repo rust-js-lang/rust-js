@@ -236,17 +236,6 @@ pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
     closed(e).map(|closed| (closed.it, closed.drop))
 }
 
-/// `read` of what `e` is, beneath its lending where `emit()` lent it, so
-/// it's lent still: `$lent(cell.value)` of `$lent(cell)`, `by_ref()`'s of a
-/// `&mut Box<I>`, read as the `&mut I` it holds (#1278); `read(e)` of
-/// another.
-pub(in crate::lower) fn read_beneath_lending(e: Expr, read: impl FnOnce(Expr) -> Expr) -> Expr {
-    match e.facts.has(Known::IterLent) {
-        true => IterValue::js(read(unlent(&e).clone())).lent().emit(),
-        false => read(e),
-    }
-}
-
 /// What `e`, a value `emit()` lent (`Known::IterLent`), `$lent(it)`, lends:
 /// `it`, made for this call alone, which no one else steps; or `e` itself.
 pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {

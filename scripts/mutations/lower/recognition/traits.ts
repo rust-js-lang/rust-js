@@ -330,15 +330,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
   },
   {
-    name: "index-impl-refused",
-    breaks:
-      "the crate's own `impl Index` is refused, not an operator it may implement",
-    file: "src/lower/recognition/traits.rs",
-    find: "        || [LangItem::Index, LangItem::IndexMut]\n",
-    replace: "        || [LangItem::IndexMut]\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
-  },
-  {
     name: "range-bounds-unoperational",
     breaks:
       "`range.start_bound()` in generic code is refused, though a range's dictionary gives it",

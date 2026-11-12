@@ -857,14 +857,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {
-    name: "box-receiver-cell-unread",
-    breaks: "a `&mut Box<I>` a variable holds, given `I`'s method, is given as the box's cell, not what it holds (#1278)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                given if self.mut_ref_form(boxed).read_is_itself() => given,\n",
-    replace: "                given => given,\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
-  },
-  {
     name: "fmt-through-the-trait-call",
     breaks: "a formatting trait's `fmt` of std's impl goes by the trait call, whose dictionary entry gives text and takes no `Formatter`, where no recogniser takes it (#1477)",
     file: "src/lower/mir/dispatch.rs",

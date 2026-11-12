@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^refcell_generic_borrow_meets_held.rs$",
+      "^cell_of_an_iterator_std_runs.rs$|^const_param_in_a_ref_cell.rs$",
     ],
   },
   {

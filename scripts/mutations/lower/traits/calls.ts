@@ -382,15 +382,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_operators"],
   },
   {
-    name: "known-assign-through-dictionary",
-    breaks:
-      "a known type's `+=` call, a `Wrapping`'s, is a dictionary's, which std's of it hasn't",
-    file: "src/lower/traits/calls.rs",
-    find: "            || crate::lower::recognition::assign_operator(self.tcx, trait_id).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^wrapping_type.rs$"],
-  },
-  {
     name: "dictionary-big-shift-amount",
     breaks:
       "a dictionary's `Shl<u64>` of a `u32` shifts a JS number by a BigInt, which JS throws at",

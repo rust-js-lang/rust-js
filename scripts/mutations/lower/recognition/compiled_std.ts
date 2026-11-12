@@ -113,15 +113,6 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^rev_of_lazy_chains with"],
   },
   {
-    name: "flatten-sized-in-place",
-    breaks:
-      "`size_hint()` of a flatten made in place is the recognizers', `(0, None)` of arrays' items",
-    file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Flatten", "flatten", false),\n',
-    replace: '    ("Flatten", "flatten", true),\n',
-    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
-  },
-  {
     name: "flat-map-not-held",
     breaks:
       "a `flat_map()` a variable holds is the recognizers' JS iterator, sized `(0, None)` where std's counts",

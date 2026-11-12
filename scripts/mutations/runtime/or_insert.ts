@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/or_insert.js",
     find: "    dropKey?.(key);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^or_insert_drops_the_key_given_where_one_is_there.rs$"],
   },
 ];

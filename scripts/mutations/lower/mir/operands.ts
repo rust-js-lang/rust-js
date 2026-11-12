@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
-    tests: ["test/corpus.test.ts", "-t", "byte_strings|statics"],
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
   },
   {
     name: "mir-out-of-order-fields-undeclared",

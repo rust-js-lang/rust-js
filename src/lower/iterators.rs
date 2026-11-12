@@ -22,9 +22,9 @@ pub(in crate::lower) use self::value::{
     closed_parts, count_bound, enumerated, enumerated_knowing, enumerated_of, form_lacks_a_back, held_by_its_owner,
     held_of, is_knowing, is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts, knows_its_back_by_form,
     knows_its_given_length, lazily_made, lent_string_iterator, made_knowing_its_back, made_knowing_its_length,
-    mapped_as_it_is, read_beneath_lending, repeating_n, repeating_n_parts, reversed_by, reversed_of,
-    source_mapped_as_it_is, stepped_by_ends, stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from,
-    stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back, was_made_knowing_its_length, zip_parts,
+    mapped_as_it_is, repeating_n, repeating_n_parts, reversed_by, reversed_of, source_mapped_as_it_is, stepped_by_ends,
+    stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from, stepped_range, stepped_value, steps,
+    unlent, was_made_knowing_its_back, was_made_knowing_its_length, zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
 

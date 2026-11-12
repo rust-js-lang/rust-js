@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
       "generic code's collect into a `Vec` of a type parameter's items grows by a size of 0, never full, so it asks the crate's hint its caller gives once, not again as it grows (#796)",
     file: "src/lower/iterators/hint_asks.rs",
     find: "(false, self.krate.keeps_capacity)) {\n            true => self.type_fact_value(item, TypeFact::Size, span),\n",
-    replace: "(false, self.krate.keeps_capacity)) {\n            true => Ok(self.room_item_size(item)),\n",
+    replace: "(false, self.krate.keeps_capacity)) {\n            true => Ok(Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
   {
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        self.grows_as_vec(output) && item.has_param() && (reaches_own || keeps_capacity && !trusted)\n",
     replace: "        self.grows_as_vec(output) && item.has_param() && (reaches_own || true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^heap_pop_of_a_param.rs$"],
     snapshots: true,
   },
   {
