@@ -12,7 +12,6 @@ different issue_1544
 different issue_1546
 different issue_1547
 different issue_1549
-different issue_1550
 different more_08
 different more_09
 different more_10
@@ -201,6 +200,7 @@ same ienum_15
 same issue_1536
 same issue_1543
 same issue_1545
+same issue_1550
 same manual_00
 same manual_01
 same manual_02

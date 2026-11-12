@@ -12,7 +12,6 @@ different issue_1544
 different issue_1546
 different issue_1547
 different issue_1549
-different issue_1550
 different std_17
 different stream_03
 different stream_04
@@ -257,6 +256,7 @@ same hashmap_single_and_sets
 same issue_1536
 same issue_1543
 same issue_1545
+same issue_1550
 same mapkey_00
 same mapkey_01
 same mapkey_02

@@ -250,9 +250,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call(reader("tuple"), reads))
             }
             // A generic one's, with the readers of its type's arguments.
-            ty::Adt(_, args) if let Some(deserialize) = self.deserialize_fn(ty) => {
+            ty::Adt(..) if let Some(deserialize) = self.deserialize_fn(ty) => {
                 let callee = self.codec_callee(deserialize);
-                let readers = args.types().map(|t| self.json_reader(t, span)).collect::<R<Vec<_>>>()?;
+                let readers = (self.codec_type_args(ty, false).into_iter())
+                    .map(|t| self.json_reader(t, span))
+                    .collect::<R<Vec<_>>>()?;
                 if readers.is_empty() {
                     return Ok(callee);
                 }

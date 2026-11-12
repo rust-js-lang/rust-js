@@ -1010,3 +1010,72 @@ pub fn report() -> String {
   // A `null`'s `visit_none` is given nothing.
   expect(readFileSync(join(dir, "cases.js"), "utf8")).toContain("none: () => maybeVisitorVisitor_visitNone(");
 });
+
+// A type's serde impl is the one rustc selects for its instance, not the
+// first impl of its type: `Wrap<String>` is written by its own impl where
+// `Wrap<u32>`'s was used, in either order they're written; and a generic
+// impl's codec is given the writer or reader of each of its own type
+// parameters, `T` of `impl<T> Serialize for Pair<String, T>`, not of each
+// of the type's arguments (#1550).
+test("serde: a type's codec is the impl rustc selects for its instance", async () => {
+  const dir = fixture("serde-selected-impls");
+  writeFileSync(join(dir, "cases.rs"), `use serde::{Deserialize, Deserializer, Serialize, Serializer};
+pub struct Wrap<T>(pub T);
+impl Serialize for Wrap<u32> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("number {}", self.0))
+    }
+}
+impl Serialize for Wrap<String> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("string {}", self.0))
+    }
+}
+impl<'de> Deserialize<'de> for Wrap<String> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Wrap(format!("read {}", String::deserialize(d)?)))
+    }
+}
+impl<'de> Deserialize<'de> for Wrap<u32> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Wrap(u32::deserialize(d)? + 100))
+    }
+}
+#[derive(Debug)]
+pub struct Pair<A, B>(pub A, pub B);
+impl<T: Serialize> Serialize for Pair<String, T> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        (&self.0, &self.1).serialize(s)
+    }
+}
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Pair<String, T> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let (a, b) = <(String, T)>::deserialize(d)?;
+        Ok(Pair(a, b))
+    }
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Holder { pub n: Wrap<u32>, pub s: Wrap<String>, pub p: Pair<String, u8> }
+impl std::fmt::Debug for Wrap<u32> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "W({})", self.0) }
+}
+impl std::fmt::Debug for Wrap<String> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "W({:?})", self.0) }
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    out.push_str(&format!("{:?}\\n", serde_json::to_string(&Wrap(7u32))));
+    out.push_str(&format!("{:?}\\n", serde_json::to_string(&Wrap("hello".to_string()))));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Wrap<u32>>("7")));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Wrap<String>>("\\"x\\"")));
+    out.push_str(&format!("{:?}\\n", serde_json::to_string(&Pair("a".to_string(), 3u8))));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Pair<String, u8>>("[\\"a\\",3]")));
+    let h = Holder { n: Wrap(1), s: Wrap("s".to_string()), p: Pair("b".to_string(), 2) };
+    out.push_str(&format!("{:?}\\n", serde_json::to_string(&h)));
+    out.push_str(&format!("{:?}\\n", serde_json::from_str::<Holder>("{\\"n\\":1,\\"s\\":\\"t\\",\\"p\\":[\\"c\\",4]}")));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

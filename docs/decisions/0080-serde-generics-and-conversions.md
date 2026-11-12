@@ -41,6 +41,17 @@ $fromJson(text, $json.with(pageDeserialize_deserialize, userDeserialize_deserial
   it's written through `$someValue`, and read into `$some`.
 - **`$json.with(deserialize, ..readers)`** is the reader of a generic type,
   given its arguments' readers.
+- **The impl is the one rustc selects for the instance** (amended,
+  #1550): `codec_impl` asks trait selection of serde's trait at the type,
+  so `Wrap<String>` is written by its own impl where `Wrap<u32>` has
+  another; it was the first impl of the type, whichever instance. And a
+  codec takes a writer or reader for each of its impl's type parameters
+  that's an argument of its self type, in that order
+  (`codec_type_params`), which is what its callers give it, those
+  parameters' types at the instance: `u8` of `Pair<String, u8>` for
+  `impl<T> Serialize for Pair<String, T>`, where each of the instance's
+  arguments was given, `String`'s first. Results change, so Rust's
+  behavior is kept (ADR 0262).
 
 **`Result<T, E>`** is written and read as serde's impl does, as an enum,
 `{"Ok": ..}` or `{"Err": ..}`.

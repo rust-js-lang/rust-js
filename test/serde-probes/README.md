@@ -49,7 +49,7 @@ first line naming the issue; the runner copies them into `p/` beside `drop_0N.rs
 | #1547 a custom `serialize_u128` past `to_value`'s range | `issue_1547.rs` | different |
 | #1548 (closed) an internally tagged payload's hand-written `Serialize` | `issue_1548.rs` | refused |
 | #1549 a custom option `Visitor` under `from_value` | `issue_1549.rs` | different |
-| #1550 a codec looked up without its generic arguments | `issue_1550.rs` | different |
+| #1550 (closed) a codec looked up without its generic arguments | `issue_1550.rs` | same |
 | #1552 a read that fails partway drops nothing | `issue_1552.rs` | refused |
 | #1554 `impl Drop` beside a hand-written `Deserialize` | `issue_1554.rs` | refused |
 
