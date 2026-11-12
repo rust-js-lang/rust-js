@@ -694,3 +694,17 @@ readers_of_the_crates_own_and_boxed, a crate's `BufRead` (`read_line`,
 Mutations: eight new, caught; `user-buf-read-refused` and
 `user-seek-refused` refitted, `own-reader-names-no-issue` removed with its
 family.
+
+## Amendment (2026-11-13): no second filter of what's given a dictionary
+
+Since #1297 and #1489 a crate's own `Read`, `BufRead` and `Seek` are
+lowered, each a dictionary, so `unlowered_trait` is `Future` alone. The
+analysis still dropped an impl of one from the dictionaries, `||` std's
+readers' (`is_std_reader_impl`), after `operational` had: and `Future`
+isn't `operational`, so that filter dropped nothing, and std's readers'
+disjunct could never hold. Its mutation, `own-reader-given-a-dictionary`,
+survived. The filter is removed with it; which impls are given a
+dictionary is `operational`'s alone. No output changes: every corpus case
+against its snapshot, the crate pairs and the crate corpus as before;
+`unlowered_helpers.rs`'s and `unlowered_impls.rs`'s `Future` are still
+never lowered.

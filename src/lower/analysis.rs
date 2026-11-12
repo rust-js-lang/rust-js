@@ -79,7 +79,7 @@ use super::bindings::{self, Export, is_binding};
 use super::traits;
 use super::{Body, FnInfo, module_path};
 use crate::lower::recognition::{
-    Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_std_reader_impl, is_unlowered_impl, known_derive,
+    Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
 pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, taken_by_value, writes_what_it_took};
 pub(super) use debug::{FormatCall, format_calls};
@@ -378,10 +378,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .filter(|&id| serde_impl(tcx, id).is_none())
         .filter(|&id| !is_js_object_deref(tcx, id))
-        // Nor a crate's own `BufRead` or `Seek`, never lowered (ADR 0425,
-        // #1489); std's `Chain`'s and `Take`'s are (#1156), and a crate's
-        // own `Read`, no longer `unlowered_trait`'s (#1297).
-        .filter(|&id| !is_unlowered_impl(tcx, id) || is_std_reader_impl(tcx, id))
         // A class's `Display`, its prototype's `toString` (#358).
         .filter(|&id| super::classes::displayed_class(tcx, id).is_none())
         .collect();
