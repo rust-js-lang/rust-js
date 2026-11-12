@@ -1130,7 +1130,8 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
             else {
                 unreachable!("the `if` `lazily_filled` matched")
             };
-            let test = (test.substitute(&|v| (v == read).then(|| Expr::var(&var)))).unwrap_or(test);
+            let test =
+                (test.substitute(&|v| (v == read).then(|| Expr::var(&var)))).expect("`lazily_filled` renames the test");
             stmts[i + 2].kind = match gives_read(&otherwise, &var, &read) {
                 true => StmtKind::If(test, then, None),
                 false => StmtKind::If(test.negated_test(), otherwise, None),
@@ -1159,10 +1160,14 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
     };
     // What's read named as the variable is, given apart: not a binding of
     // the program's own name, `fnNode`, which stays.
+    // Nor where a closure in the test reads it, which `substitute` can't
+    // rename, so the test would read a `const` no longer declared (#1525).
+    let renamed = test.substitute(&|v| (v == read).then(|| Expr::var(var))).is_some();
     let kept = !kin(var, read)
         || test.mentions_var(var)
         || js::mentions_in(other, read) > 0
-        || js::mentions_in(&stmts[i + 3..], read) > 0;
+        || js::mentions_in(&stmts[i + 3..], read) > 0
+        || !renamed;
     (!kept).then(|| (read.clone(), var.clone()))
 }
 

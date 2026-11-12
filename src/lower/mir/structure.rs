@@ -1141,7 +1141,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that variable, `fiber.owner` of `place.value` (`Made::handles`).
     fn handled_place(&self, place: Expr) -> Expr {
         let handles = &self.locals.mir.made.handles;
-        (place.substitute(&|v| handles.get(v).cloned())).unwrap_or(place)
+        // A place holds no closure, so `substitute` renames it; never left
+        // reading the variable, not its handle's place (#1525).
+        (place.substitute(&|v| handles.get(v).cloned())).expect("a place holds no closure")
     }
 }
 

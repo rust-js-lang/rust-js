@@ -1273,3 +1273,17 @@ test("trait selection is asked through `traits::select` alone", () => {
   );
   expect(callers).toEqual([]);
 });
+
+// `Expr::substitute` gives `None` where a closure inside reads a name it
+// replaces, and a caller that falls back to the expression unchanged may
+// leave a name no longer declared, or a placeholder never declared: a
+// dictionary's shared `seek` did (#1489). Each caller refuses, asserts that
+// it can't, or takes another form; none falls back (#1525).
+test("no caller of substitute falls back to the expression unrenamed", () => {
+  const falls = /\.substitute(?:_in_callbacks)?\([^;]*?\)\)?\s*\.unwrap_or(?:_else)?\(/s;
+  const rust = (dir: string) => files(dir).filter((file) => file.endsWith(".rs"));
+  expect(["src/lower.rs", ...rust("src/lower"), ...rust("src/js"), ...rust("src/prepare")].filter((file) => falls.test(read(file)))).toEqual([]);
+  // The test sees the fallback written as it was.
+  expect(falls.test("(target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target)")).toBe(true);
+});
+

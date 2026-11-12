@@ -839,7 +839,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {
             let compared = compared_with(&values[0])?;
-            return Some((compared.substitute(&|v| (v == HELD_SOME).then(|| subject.clone()))).unwrap_or(compared));
+            // `HELD_SOME` is mentioned once, outside any closure
+            // (`compared_with`); where it weren't, the combinator's own form,
+            // never the placeholder left undeclared (#1525).
+            return compared.substitute(&|v| (v == HELD_SOME).then(|| subject.clone()));
         }
         None
     }

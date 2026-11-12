@@ -217,9 +217,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let name = state.locals.names[place.local].clone();
                             self.flush(state, out)?;
                             let held = self.spill(Base::Named(&name), Expr::var(&name), out);
+                            // A place holds no closure, so `substitute` renames
+                            // it; else it's refused (#1525).
                             target
                                 .substitute(&|v| (v == name).then(|| held.clone()))
-                                .unwrap_or(target)
+                                .ok_or_else(|| {
+                                    self.unsupported(span, "a place a closure reads, which can't be renamed")
+                                })?
                         }
                         false => target,
                     };
@@ -280,7 +284,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if local {
                         let name = state.locals.names[place.local].clone();
                         let held = self.spill(Base::Named(&name), Expr::var(&name), out);
-                        target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target);
+                        // A place holds no closure, so `substitute` renames it;
+                        // else it's refused, never left reading the variable
+                        // the snapshot stands for (#1525).
+                        target = (target.substitute(&|v| (v == name).then(|| held.clone())))
+                            .ok_or_else(|| self.unsupported(span, "a place a closure reads, which can't be renamed"))?;
                     }
                     if within {
                         target = self.place_where_made(target, out);
