@@ -980,6 +980,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::recognition::tried_as_written(self.tcx, ty)
     }
 
+    /// A serde_json call (ADR 0083), its `Result`, where it gives one, as
+    /// the body uses it (`result_use`, #1545).
+    fn mir_json_call(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        operation: crate::lower::recognition::JsonCall<'tcx>,
+        values: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let exprs = values
+            .into_iter()
+            .map(|v| self.value_expr(v, span))
+            .collect::<R<Vec<_>>>()?;
+        let used = match state.called_into {
+            Some(into) => super::result_use::result_use(&self.recognition(), state.body, into),
+            None => super::result_use::ResultUse::Inspected,
+        };
+        Ok(Value::Expr(self.json_call_values(operation, exprs, used, span, out)?))
+    }
+
     fn mir_call_values_of(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -1000,11 +1021,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.check_call_takes(def_id, generic_args, span)?;
         // serde_json's `Value` and what makes one (ADR 0083).
         if let Some(operation) = self.recognition().json_call(def_id, generic_args) {
-            let exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            return Ok(Value::Expr(self.json_call_values(operation, exprs, span, out)?));
+            return self.mir_json_call(state, operation, values, span, out);
         }
         // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
         // of what they point at (ADR 0099), not the handles.

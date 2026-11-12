@@ -189,6 +189,13 @@ function $toJsonValue(value, write) {
     flat(v, writeFlat) {
       writeFlat(v, $jsonFlat(builder));
     },
+    // Where a protocol call began, and back to it where it failed: what
+    // it opened dropped, its key with it (#1545).
+    mark: () => stack.length,
+    rewind(depth) {
+      stack.length = depth;
+      if (depth > 0) delete stack[depth - 1].key;
+    },
   };
   try {
     write(value, builder);

@@ -723,6 +723,15 @@ serde's common attributes work, `rename`, `rename_all`, `tag`, `content`,
 ([the semantics](../semantics.md#the-javascript-boundary)); what's refused
 is in [the limitations](../limitations.md#serde).
 
+A hand-written `Serialize` or `Deserialize` is its body over serde_json's
+writer and reader, `s.serialize_str(x)` the writer's `s.string(x)`. A
+protocol call's `Result` the impl only gives on by `?`, or returns, is its
+error thrown, as a derived codec's; one it looks at, `match
+seq.serialize_element(&x)`, `is_err()`, `map_err`, a `let _ =`, is that
+`Result`, `$jsonTry(..)`'s, with what the writer wrote before the error
+kept as serde_json keeps it
+([ADR 0459](../../decisions/0459-hand-written-serde-impls.md)).
+
 ## Rust's `std`
 
 `std` isn't a crate an app adds: rust-js writes each of its types as the

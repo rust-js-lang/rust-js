@@ -48,6 +48,7 @@ mod queries;
 mod revealed;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
 pub(in crate::lower) use revealed::revealed;
+pub(in crate::lower) mod result_use;
 mod rvalues;
 mod scopes;
 mod std_calls;
@@ -460,6 +461,9 @@ struct State<'m, 'tcx> {
     flattened: Flattened,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: IndexMap<Local, (Expr, Ty<'tcx>)>,
+    /// Where the call being lowered stores what it gives, whose `Result`'s
+    /// use decides whether its error is thrown on (`result_use`, #1545).
+    called_into: Option<Place<'tcx>>,
     /// Each local holding an update's derived `Default` base, its fields'
     /// defaults, each read where its field is (`default_base_at`).
     defaults: IndexMap<Local, Vec<Expr>>,
@@ -943,6 +947,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             refs: Default::default(),
             copy_backs: Vec::new(),
             branches: Default::default(),
+            called_into: None,
             defaults: Default::default(),
             binding_var: false,
             flattened: Default::default(),

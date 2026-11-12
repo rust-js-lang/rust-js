@@ -149,7 +149,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/assign/rewritten.rs": ["body"],
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
   "src/lower/mir/closures.rs": ["at", "body", "in_place", "locals"],
-  "src/lower/mir/dispatch.rs": ["at", "body", "defaults", "flattened", "iter_locals", "locals"],
+  "src/lower/mir/dispatch.rs": ["at", "body", "called_into", "defaults", "flattened", "iter_locals", "locals"],
   "src/lower/mir/drops.rs": ["body", "branches", "locals", "pending"],
   "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
   "src/lower/mir/dispatch/known_calls.rs": ["at", "body"],
@@ -175,7 +175,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
   "src/lower/mir/std_calls/iterators.rs": ["at"],
   "src/lower/mir/stored.rs": ["at", "body", "pending"],
-  "src/lower/mir/structure.rs": ["at", "body", "commented", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["at", "body", "called_into", "commented", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
   "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
 };

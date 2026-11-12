@@ -6,6 +6,7 @@
 
 use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::display::Pretty;
+use crate::lower::mir::result_use::ResultUse;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::temporary_names::Role;
@@ -25,11 +26,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         operation: JsonCall<'tcx>,
         mut values: Vec<Expr>,
+        used: ResultUse,
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Expr> {
         match operation {
-            JsonCall::Serde(op, args) => self.serde_call(op, args, values, span, out),
+            JsonCall::Serde(op, args) => self.serde_call(op, args, values, used, span, out),
             JsonCall::ToValue(ty) => {
                 let value = values.remove(0);
                 // Of a string, a number, a `bool` or `()`, it can't fail: `Ok` of it.

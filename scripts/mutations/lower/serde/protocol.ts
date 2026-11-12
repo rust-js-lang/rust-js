@@ -43,9 +43,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`T::deserialize(d)` in a hand-written impl is what's read, not a `Result` of it, and `?` of it throws",
     file: "src/lower/serde/protocol.rs",
-    find: '            return Ok(Expr::call(Expr::helper("$jsonRead"), vec![values.remove(0), reader]));\n',
-    replace:
-      "            return Ok(Expr::call(reader, vec![values.remove(0)]));\n",
+    find: '            return Ok(Written::Value(Expr::call(\n                Expr::helper("$jsonRead"),\n                vec![values.remove(0), reader],\n            )));\n',
+    replace: "            return Ok(Written::Value(Expr::call(reader, vec![values.remove(0)])));\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
   },
   {
@@ -137,5 +136,21 @@ export const mutations: Mutation[] = [
     find: "                VisitorMethod::Unit | VisitorMethod::None => Vec::new(),\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "reads an option"],
+  },
+  {
+    name: "inspected-protocol-result-thrown",
+    breaks: "a protocol call whose `Result` an impl looks at, `match seq.serialize_element(&x)`, is written as one given on by `?`, its error thrown past the `Err` arm (#1545)",
+    file: "src/lower/serde/protocol.rs",
+    find: "        if reads || used == ResultUse::Propagated {\n",
+    replace: "        if true {\n",
+    tests: ["test/serde-protocol.test.ts"],
+  },
+  {
+    name: "inspected-protocol-writer-unrewound",
+    breaks: "a protocol call whose error an impl catches leaves its writer where it failed, so a `Value` built after it nests in the failed one (#1545)",
+    file: "src/lower/serde/protocol.rs",
+    find: "Expr::arrow(Vec::new(), steps), writer]",
+    replace: "Expr::arrow(Vec::new(), steps)]",
+    tests: ["test/serde-protocol.test.ts"],
   },
 ];

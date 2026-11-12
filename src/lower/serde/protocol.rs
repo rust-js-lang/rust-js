@@ -1,11 +1,14 @@
 //! serde's data model, of a hand-written `Serialize` (ADR 0459): its
 //! serializer is the JSON writer, `s.serialize_str(x)` is `s.string(x)`, and
 //! a struct, a sequence or a map it begins is the writer too, its fields and
-//! elements written in turn. Each call gives `Ok`, as serde_json's writing
-//! to a string does; an error thrown in it is the codec's, as a derived one's.
+//! elements written in turn. A call whose `Result` the impl only returns or
+//! gives on by `?` gives `Ok`, an error thrown in it the codec's, as a
+//! derived one's; one it looks at gives its `Result`, `$jsonTry(..)`, what
+//! was written before an error kept written (`result_use`, #1545).
 
 use crate::js::result;
 use crate::js::{Expr, StmtKind};
+use crate::lower::mir::result_use::ResultUse;
 use crate::lower::recognition::{
     SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };
@@ -16,24 +19,67 @@ use rustc_span::Span;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `op` of a hand-written impl, of its arguments' `values` and its call's
-    /// `args`: the writer's steps as statements, and what the call gives.
+    /// `args`, its `Result` `used` so: the writer's steps as statements, and
+    /// `Ok` of what the call gives; or, of one the impl looks at, the steps
+    /// run by `$jsonTry`, which gives `Ok` of it or the error they throw as
+    /// `Err` (#1545).
     pub(in crate::lower) fn serde_call(
+        &mut self,
+        op: SerdeOp,
+        args: ty::GenericArgsRef<'tcx>,
+        values: Vec<Expr>,
+        used: ResultUse,
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<Expr> {
+        let reads = matches!(
+            op,
+            SerdeOp::Custom | SerdeOp::Deserialize | SerdeOp::DeError(_) | SerdeOp::Next(_) | SerdeOp::Visit(_)
+        );
+        if reads || used == ResultUse::Propagated {
+            return self
+                .serde_step(op, args, values, span, out)
+                .map(|written| match written {
+                    Written::Steps(given, _) => result::ok(given),
+                    Written::Value(value) => value,
+                });
+        }
+        let mut steps = Vec::new();
+        let (given, writer) = match self.serde_step(op, args, values, span, &mut steps)? {
+            Written::Steps(given, writer) => (given, writer),
+            Written::Value(_) => unreachable!("a writer's step"),
+        };
+        if steps.is_empty() {
+            return Ok(result::ok(given));
+        }
+        steps.push(StmtKind::Return(Some(given)).at(crate::js::Span::NONE));
+        // The writer too, which an error takes back to where it began, as a
+        // `Value`'s builds the value it failed in apart and drops it.
+        Ok(Expr::call_helper(
+            "$jsonTry",
+            vec![Expr::arrow(Vec::new(), steps), writer],
+        ))
+    }
+
+    /// `serde_call`'s: a writer's steps written to `out`, and what the call
+    /// gives `Ok` of; or the value of a read, an error made or a step that
+    /// gives its own `Result`.
+    fn serde_step(
         &mut self,
         op: SerdeOp,
         args: ty::GenericArgsRef<'tcx>,
         mut values: Vec<Expr>,
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
-    ) -> R<Expr> {
+    ) -> R<Written> {
         let step = |json: &Expr, method: &str, given: Vec<Expr>| {
             StmtKind::Expr(Expr::call(Expr::member(json.clone(), method), given)).at(crate::js::Span::NONE)
         };
         // The method's own type parameter, a value's `T`, after its trait's `Self`.
         let own = |at: usize| args.type_at(at);
-        let done = result::ok(Expr::undefined());
         if op == SerdeOp::Custom {
             let message = self.display_string(values.remove(0), own(1), span)?;
-            return Ok(Expr::call(Expr::helper("$jsonError"), vec![message]));
+            return Ok(Written::Value(Expr::call(Expr::helper("$jsonError"), vec![message])));
         }
         // A compound's `serialize_field` and the rest take `&mut self`, a box
         // in generic code (ADR 0454): the writer in it.
@@ -41,10 +87,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // throws, `Err`.
         if op == SerdeOp::Deserialize {
             let reader = self.json_reader(args.type_at(0), span)?;
-            return Ok(Expr::call(Expr::helper("$jsonRead"), vec![values.remove(0), reader]));
+            return Ok(Written::Value(Expr::call(
+                Expr::helper("$jsonRead"),
+                vec![values.remove(0), reader],
+            )));
         }
         if let SerdeOp::DeError(error) = op {
-            return Ok(self.serde_error(error, values));
+            return Ok(Written::Value(self.serde_error(error, values)));
         }
         // `seq.next_element::<T>()` and a map's: of the access its `&mut
         // self`'s box holds (ADR 0454), each type after its own and the
@@ -52,7 +101,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let SerdeOp::Next(next) = op {
             let access = Expr::held(values.remove(0));
             let mut own = args.types().skip(1);
-            return self.serde_next(next, access, (own.next(), own.next()), span);
+            return self
+                .serde_next(next, access, (own.next(), own.next()), span)
+                .map(Written::Value);
         }
         if let SerdeOp::Visit(hint) = op {
             // The visitor is a hint's last argument, after `deserialize_struct`'s
@@ -60,7 +111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let visitor = values.pop().expect("a visitor");
             // Its visitor's type, after the deserializer's and its lifetime.
             let visitor_ty = args.types().nth(1).expect("`deserialize_*::<V>`");
-            return self.serde_visit(hint, values.remove(0), (visitor, visitor_ty), span, out);
+            return (self.serde_visit(hint, values.remove(0), (visitor, visitor_ty), span, out)).map(Written::Value);
         }
         let json = match op {
             SerdeOp::Element | SerdeOp::Field | SerdeOp::SkipField | SerdeOp::Entry | SerdeOp::Key | SerdeOp::Value => {
@@ -68,6 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => values.remove(0),
         };
+        let mut writer = json.clone();
         match op {
             SerdeOp::Write(scalar) => {
                 let method = match scalar {
@@ -118,7 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => "beginObject",
                 };
                 out.push(step(&json, method, Vec::new()));
-                return Ok(result::ok(json));
+                return Ok(Written::Steps(json, writer));
             }
             // `collect_seq::<I>(items)`, and `collect_map::<K, V, I>(entries)`.
             SerdeOp::CollectSeq => {
@@ -175,14 +227,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `v.serialize(s)`: the receiver is `v`, and the writer after it.
             SerdeOp::Serialize => {
-                let writer = values.remove(0);
+                writer = values.remove(0);
                 self.serde_write(json, args.type_at(0), &writer, span, out)?;
             }
             SerdeOp::Custom | SerdeOp::Deserialize | SerdeOp::Visit(_) | SerdeOp::DeError(_) | SerdeOp::Next(_) => {
                 unreachable!("made above")
             }
         }
-        Ok(done)
+        Ok(Written::Steps(Expr::undefined(), writer))
     }
 
     /// `value`, of type `ty`, written by `json`: the writer's steps, as a
@@ -360,4 +412,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         })
     }
+}
+
+/// What a serde call's step makes: a writer's steps, written, what the
+/// call gives `Ok` of and the writer; or a value, the call's own `Result`
+/// or error.
+enum Written {
+    Steps(Expr, Expr),
+    Value(Expr),
 }

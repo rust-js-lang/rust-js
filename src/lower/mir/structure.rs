@@ -750,6 +750,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })
                     .map(|local| (local, erased(self, state.body.local_decls[local].ty)))
                     .collect();
+                // What its `Result` is given to, which a call whose error
+                // the lowering throws asks (`result_use`, #1545).
+                state.called_into = Some(*destination);
                 let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
                     false => self.making_into((into, of), |cx| {

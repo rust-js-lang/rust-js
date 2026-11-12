@@ -61,8 +61,10 @@ function pointSerialize_serialize(point, s) {
    value }`; `collect_str`, what the value shows. A struct, a sequence, a
    tuple or a map it begins is the writer too, a field its key then its
    value, an element `element()` then it, an entry its key then its value,
-   and `end()` its bracket. Each gives `Ok`; a compound's `&mut self` is a
-   box in generic code (ADR 0454), the writer in it.
+   and `end()` its bracket. Each gives `Ok` where the impl gives it on by
+   `?` or returns it, else its `Result` (amended below, #1545); a
+   compound's `&mut self` is a box in generic code (ADR 0454), the writer
+   in it.
 3. **`T::deserialize(d)` is `$jsonRead(d, readT)`**: what the reader reads,
    `Ok`, or what it throws, `Err`, with the place serde_json found.
 4. **`S::Error::custom(msg)` and `D::Error::custom(msg)`** are an error of
@@ -229,3 +231,48 @@ refused as the type it is, as serde's `ContentDeserializer` refuses it.
   `EitherFirst`, and `First` read from a `Value`, all against native Rust.
 - The mutations are `hinted-content-peeked`, `hinted-text-unpeeked` and
   `json-content-map-left-over-kept`, put back.
+
+## Amendment: a protocol call's `Result` is what the impl does with it (2026-11-12, #1545)
+
+Each protocol call gave `Ok` and threw its error (decision 2, "Each gives
+`Ok`"): exact where the impl only gives the `Result` on by `?`, or returns
+it, and wrong where it looks at it. `match seq.serialize_element(&Bad) {
+Ok(()) => seq.end(), Err(_) => Err(custom("caught")) }` gave serde_json's
+`inner` where native Rust gives `caught`: the `Err` arm was never reached.
+Agent-fable's first rule for the protocol layer (#1532): a protocol call's
+`Result` is a control-flow fact, decided at its use site.
+
+- **One owner, `mir::result_use`** (`src/lower/mir/result_use.rs`), moved
+  from the writer's `given_on` (#1524), which a `write!` into a
+  `Formatter` asks too: a call's `Result` is `Propagated` where it's the
+  body's own result, or a local read once, by `?`'s `Try::branch`, in a
+  body whose own error type is the call's, so `?`'s `From` changes
+  nothing; else `Inspected`. A drop of it a cleanup makes isn't a look at
+  it. test/architecture-mir.test.ts holds the readers of `Try::branch` to
+  the files that do now, and that both ask `result_use`.
+- **`Propagated`, as before**: the steps, `Ok`, an error thrown. No `?`
+  code changes, so derived codecs and the corpus are byte for byte as
+  they were, the guide's `Order` too: #1532's cost gates.
+- **`Inspected`: `$jsonTry(() => { ..steps..; return v; }, writer)`**,
+  which gives `Ok(v)`, or `Err(e)` of the backend's `$JsonError` alone;
+  any other throw, a panic, goes on. And it takes the writer back to
+  where the call began (`mark`, `rewind`): the text's writer keeps what it
+  wrote, `[1,` of a failed element, as serde_json's keeps its bytes; a
+  `Value`'s drops what it opened of the value it failed in, as serde_json
+  builds each value apart and adds it once it's made. `$jsonRead`, of a
+  `T::deserialize(d)`, is `$jsonTry` of the read.
+- An error given on by `?` into another error type, `At<S::Error>` by its
+  `From`, is `Inspected`: the call's `Result`, then `?`'s conversion as
+  Rust writes it.
+
+Proof: test/serde-protocol.test.ts, against native serde_json through
+`to_string` and `to_value`: a `match` on `serialize_element`'s `Err`, an
+`is_err()` per element written on after, a nested impl's partial text
+kept, `map_err` of a struct's field, `let _ =` of a map's entry, a nested
+`serialize`'s `Result` matched, `?` through `From` into another error, and
+a panic under an inspected call, still a panic. Mutations
+`inspected-protocol-result-thrown`, `inspected-protocol-writer-unrewound`,
+`json-try-catches-panics`, `value-writer-unrewound`,
+`result-use-always-propagated`, `result-use-conversion-unasked`,
+`result-use-drop-taken-for-a-use`; `tried-write-result-held` and
+`last-write-result-held` moved to `result_use.rs`.

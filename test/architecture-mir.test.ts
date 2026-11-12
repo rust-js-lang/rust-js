@@ -23,3 +23,22 @@ test("a body's local is asked if the program named it by `mir::locals::user_vari
   expect(asking).toEqual([]);
   expect(read("src/lower/mir/locals.rs")).toContain("matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()");
 });
+
+// Whether a call's `Result` is only given on by `?`, so its error may be
+// thrown, is asked one way, `mir::result_use` (#1545, after #1524's
+// `given_on`): a `write!` into a `Formatter` and a serde protocol call ask
+// it. The files that read `?`'s `Try::branch` may only shrink; a new
+// reader of what a call's `Result` is given to asks `result_use`.
+test("what a call's Result is given to is asked of `mir::result_use` alone", () => {
+  const reading = ["src/lower.rs", ...files("src/lower")]
+    .filter((file) => file.endsWith(".rs") && read(file).includes("TryTraitBranch"));
+  expect(reading).toEqual([
+    "src/lower/analysis/fmt_failures.rs",
+    "src/lower/mir/dispatch.rs",
+    "src/lower/mir/patterns.rs",
+    "src/lower/mir/result_use.rs",
+    "src/lower/recognition/types.rs",
+  ]);
+  expect(["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs") && /fn given_on\b/.test(read(file)))).toEqual([]);
+  for (const file of ["src/lower/mir/writer.rs", "src/lower/mir/dispatch.rs"]) expect(read(file)).toContain("result_use(");
+});

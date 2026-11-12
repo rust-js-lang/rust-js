@@ -11563,16 +11563,28 @@ export function $jsonCodec(f) {
   };
 }
 
+// A serde protocol call whose `Result` a hand-written impl looks at: what
+// `run` gives, `Ok`, or the backend's error it throws, `Err`; any other
+// throw, a panic, goes on (#1545, ADR 0459). Of a call of a `writer`, an
+// error takes it back to where the call began, `rewind`: the text's
+// writer keeps what it wrote, as serde_json's keeps its bytes, and a
+// `Value`'s drops what it built of the value it failed in, as serde_json
+// builds each value apart and adds it only once it's made.
+export function $jsonTry(run, writer) {
+  const mark = writer?.mark?.();
+  try {
+    return { TAG: "Ok", _0: run() };
+  } catch (e) {
+    if (!(e instanceof $JsonError)) throw e;
+    writer?.rewind?.(mark);
+    return { TAG: "Err", _0: e };
+  }
+}
 // `T::deserialize(d)` in a hand-written `Deserialize`: what `read` reads
 // from the reader, `Ok`, or the error it throws, `Err`, which `?` gives on
 // with its place as serde_json found it (ADR 0459).
 export function $jsonRead(json, read) {
-  try {
-    return { TAG: "Ok", _0: read(json) };
-  } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: e };
-    throw e;
-  }
+  return $jsonTry(() => read(json));
 }
 
 // `d.deserialize_any(visitor)` and the other hints, of a hand-written
@@ -16803,6 +16815,13 @@ export function $toJsonValue(value, write) {
     endObject: () => put({ TAG: "Object", _0: stack.pop().entries }),
     flat(v, writeFlat) {
       writeFlat(v, $jsonFlat(builder));
+    },
+    // Where a protocol call began, and back to it where it failed: what
+    // it opened dropped, its key with it (#1545).
+    mark: () => stack.length,
+    rewind(depth) {
+      stack.length = depth;
+      if (depth > 0) delete stack[depth - 1].key;
     },
   };
   try {
