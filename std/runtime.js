@@ -4110,7 +4110,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
             ended = true;
             return step;
           }
-          inner = Iterator.from($innerOf(f(step.value, i++)));
+          inner = Iterator.from(f(step.value, i++));
         }
       },
       // Its source, then the inner it's in, in `FlattenCompat`'s field
@@ -4152,7 +4152,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       folded = this.tryFold(
         folded,
         (a, x) => {
-          inner = Iterator.from($innerOf(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind)));
+          inner = Iterator.from(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind));
           const made = $lent(inner).tryFold(a, g, broke, unwind);
           if (!broke(made)) inner = undefined;
           return made;
@@ -4277,13 +4277,6 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // held chain's `b` is its owner's to drop (#243); else its iterator.
 export function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
-}
-
-// What a flatten steps of each item of its source, `made`: of an array,
-// its `$iter`, which knows how many it has left, as a `Vec`'s `IntoIter`
-// does, so the flatten's hint is std's (#733); else what it is.
-export function $innerOf(made) {
-  return Array.isArray(made) ? $iter(made) : made;
 }
 
 // `it.filter(keep)` of items with a destructor, each it doesn't keep
@@ -19073,7 +19066,7 @@ export function $flatMap(it, f) {
           it.return?.();
           return outer;
         }
-        inner = $stepsOf($innerOf(f(outer.value)));
+        inner = $stepsOf(f(outer.value));
       }
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
@@ -19125,7 +19118,7 @@ export function $flatMap(it, f) {
     folded = $lent(it).tryFold(
       folded,
       (a, x) => {
-        inner = $stepsOf($innerOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind)));
+        inner = $stepsOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind));
         const made = $lent(inner).tryFold(a, g, broke, unwind);
         if (!broke(made)) inner = undefined;
         return made;

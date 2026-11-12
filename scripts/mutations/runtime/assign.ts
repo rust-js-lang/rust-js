@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/assign.js",
     find: "  if (target === value) return;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^pointer_read_written_back.rs$"],
+    tests: ["test/runtime-package.test.ts", "-t", "an object assigned itself keeps what it holds"],
   },
   {
     name: "assign-std-struct-methods",

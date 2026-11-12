@@ -1470,3 +1470,18 @@ gone with its mutation `knowing-of-items-kept`: no case of the corpus that
 reaches it, 1,108 of them, `fused_iterator.rs` among them, writes that
 shape now, each its snapshot without the rule. `knowing-unread` still holds
 what `$knowing` makes.
+
+## Amended (2026-11-12): a flatten's inner `Vec` is stepped as it is
+
+Since 289d64a10, a flatten whose hint is asked anywhere, by a collect,
+an `extend`, a `size_hint()` or generic code, is std's compiled struct.
+The runtime's `$Steps.flatMap` and `$flatMap` remain only where no hint
+is asked. So `$innerOf`, which stepped an inner `Vec` as `$iter` so that
+`$flatHint` knew what it had left, changed no output: mutation
+`flatten-inner-uncounted` survived nightly 43157393762, and probes of a
+crate iterator's flatten, with `size_hint()` asked directly, through
+generic code and through a `Box<dyn Iterator>`, each compile to std's
+`iterator_flatten`. It is gone with its mutation. An inner array is
+stepped as JS's array iterator, which gives the same items.
+`steps-flat-map-unfused` is held by `flatten_from_both_ends`, whose
+`Flaky(0).flatten()` the runtime still steps.

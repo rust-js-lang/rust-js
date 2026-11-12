@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        let endless = trusted && self.recognition().endless_by_type(iter_ty);\n",
     replace: "        let endless = trusted && self.recognition().endless_by_type(iter_ty) && false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(asked_length_overflow|collect_of_what_has_no_end_by_its_hint).rs$"],
   },
   {
     name: "endless-once-collect-unchecked",

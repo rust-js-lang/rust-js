@@ -37,10 +37,11 @@ export const mutations: Mutation[] = [
   {
     name: "c-string-error-kind-not-known",
     breaks:
-      "a clone or `==` of a `FromVecWithNulError` is refused, the kind it holds not known as a C string's error's part (#1157)",
+      "a clone of a `FromVecWithNulError` copies the kind it holds as a field of its own, `{ ...e, errorKind: e.errorKind, bytes: .. }`, the kind not known as a C string's error's part, which a clone shares (#1157)",
     file: "src/lower/recognition/c_strs.rs",
     find: "                && tcx.item_name(adt.did()).as_str() == \"FromBytesWithNulErrorKind\")\n",
     replace: "                && tcx.item_name(adt.did()).as_str() == \"FromBytesWithNulError\")\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+    snapshots: true,
   },
 ];

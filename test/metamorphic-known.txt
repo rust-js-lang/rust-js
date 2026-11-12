@@ -26,5 +26,13 @@ plain std loud lock_poisoning.rs
 plain std loud-call lock_poisoning.rs
 plain std loud-drop lock_poisoning.rs
 
+#1490 P0 (needs the user's decision): a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
+plain std loud debug_hex_of_values_a_writer_makes.rs
+plain std loud-call debug_hex_of_values_a_writer_makes.rs
+plain std loud-drop debug_hex_of_values_a_writer_makes.rs
+plain std loud pretty_debug_of_values_a_writer_makes.rs
+plain loud-call pretty_debug_of_values_a_writer_makes.rs
+plain std loud-drop pretty_debug_of_values_a_writer_makes.rs
+
 #1491 P2: a map of a map given to generic code's ExactSizeIterator throws 'it.len is not a function' (its inner map is JS's own)
 plain generic-instances counted_where_made_runs_each_part_once.rs

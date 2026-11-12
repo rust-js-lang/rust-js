@@ -19,7 +19,10 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/debug.rs",
     find: "                        &ty::FnDef(made_by, _) => is_debug_argument(tcx, made_by),",
     replace: "                        &ty::FnDef(_, _) => false,",
-    tests: ["test/corpus.test.ts", "-t", "pretty_debug_derived"],
+    // A type a writer makes, not shown pretty itself nor a field of one
+    // that is, is shown pretty by the crate's answer alone (#1331's
+    // types shown pretty don't reach it).
+    tests: ["test/corpus.test.ts", "-t", "^(pretty_debug_derived|pretty_debug_of_values_a_writer_makes).rs$"],
   },
   {
     name: "library-options-unapplied",
@@ -57,7 +60,9 @@ export const mutations: Mutation[] = [
     find: "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some()))\n",
     replace:
       "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some() && false))\n",
-    tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
+    // A type a writer makes, not shown in hex itself nor a field of one
+    // that is, is shown in hex by the crate's answer alone.
+    tests: ["test/corpus.test.ts", "-t", "^(debug_hex_composite|debug_hex_of_values_a_writer_makes).rs$"],
   },
   {
     name: "formatter-options-never-read",

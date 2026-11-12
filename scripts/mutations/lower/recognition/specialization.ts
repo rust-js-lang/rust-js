@@ -9,11 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/specialization.rs",
     find: "    let [(imp, params)] = &impls[..] else {\n",
     replace: "    let [(imp, params), _] = &impls[..] else {\n",
-    tests: [
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^copied_default_own_params with",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^copied_clone_of_its_own.rs$"],
   },
   {
     name: "never-returning-default-picked",

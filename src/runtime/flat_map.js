@@ -25,7 +25,7 @@ function $flatMap(it, f) {
           it.return?.();
           return outer;
         }
-        inner = $stepsOf($innerOf(f(outer.value)));
+        inner = $stepsOf(f(outer.value));
       }
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
@@ -77,7 +77,7 @@ function $flatMap(it, f) {
     folded = $lent(it).tryFold(
       folded,
       (a, x) => {
-        inner = $stepsOf($innerOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind)));
+        inner = $stepsOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind));
         const made = $lent(inner).tryFold(a, g, broke, unwind);
         if (!broke(made)) inner = undefined;
         return made;

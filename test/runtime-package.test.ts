@@ -1055,6 +1055,27 @@ console.log($ptr(cell, "value", 0) === cell);
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("true 4\nfalse\n");
 });
 
+// `*r = v` in place, `$assign(r, v)`, of a value that is `r` itself, as a
+// box given back unreplaced is (ADR 0147): nothing changes, where clearing
+// `r` first would empty what it fills `r` from. No program the compiler
+// is given passes `$assign` its own target today, a raw pointer's read
+// taken apart first since ab23e8221, so the guard is held here.
+test("an object assigned itself keeps what it holds", () => {
+  // The runtime the compiler prints, so a mutation of it is the one run.
+  const module = join(fixture("runtime-assign-itself"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $assign } = await import(${JSON.stringify(module)});
+const items = [1, 2];
+const map = new Map([[1, 10], [2, 20]]);
+const set = new Set([3, 4, 5]);
+const fields = { a: 1, b: 2 };
+for (const held of [items, map, set, fields]) $assign(held, held);
+console.log(items.join(), map.size, set.size, JSON.stringify(fields));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe('1,2 2 3 {"a":1,"b":2}\n');
+});
+
 // A handle that reads a place it doesn't record, `{ get value() { .. } }`
 // of a `&mut` std lent from inside its storage, is on no allocation it
 // says: its address is refused, never a made-up one (#1474). A box's

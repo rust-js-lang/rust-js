@@ -97,7 +97,9 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "          if (ended) return { done: true, value: undefined };\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+    // A flatten of the crate's own iterator that gives `None` and then more,
+    // `Flaky`, stepped on past its end where no hint is asked: the runtime's.
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends.rs$"],
   },
   {
     name: "some-by-next",
@@ -474,14 +476,6 @@ export const mutations: Mutation[] = [
     find: "    taken.sizeHint = () => $takeHint(this, n);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(size_hint_of_adapters|capacity_exact_size_adapters).rs$"],
-  },
-  {
-    name: "flatten-inner-uncounted",
-    breaks: "a flatten's inner `Vec` is stepped as JS's array iterator, whose hint is `(0, None)`, so a `flat_map()` collected into a `Vec` asks room by none of what it has left (#733)",
-    file: "src/runtime/steps.js",
-    find: "  return Array.isArray(made) ? $iter(made) : made;\n",
-    replace: "  return made;\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
   {
     name: "unwinds-drops-nothing",
