@@ -13,7 +13,6 @@ mod clones;
 pub(super) use clones::{Clones, kept_captures};
 mod constants;
 mod names;
-use names::variable_name;
 mod negations;
 mod present_breaks;
 

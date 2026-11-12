@@ -3,6 +3,7 @@
 //! by concept, as a file is at most 1500 lines.
 
 use super::*;
+use crate::lower::temporary_names::{self, Role};
 
 /// `_4`, a temporary MIR holds still, read more than once: named after
 /// what it holds, the field it reads, `routes` of `tree.routes` or
@@ -48,7 +49,9 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             && let ExprKind::Var(v) = &object.kind
             && is_temporary(v)
         {
-            given.entry(v.clone()).or_insert_with(|| "receiver".to_string());
+            given
+                .entry(v.clone())
+                .or_insert_with(|| Role::Receiver.word().to_string());
         }
         if let ExprKind::Jsx(jsx) = &e.kind {
             for prop in &jsx.props {
@@ -64,7 +67,9 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 if let ExprKind::Var(v) = &child.kind
                     && (is_temporary(v) || is_held_arg(v))
                 {
-                    given.entry(v.clone()).or_insert_with(|| "children".to_string());
+                    given
+                        .entry(v.clone())
+                        .or_insert_with(|| Role::Children.word().to_string());
                 }
             }
         }
@@ -75,8 +80,8 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             match &stmt.kind {
                 StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
                     let any = match is_held_arg(name) {
-                        true => "arg",
-                        false => "value",
+                        true => Role::Arg,
+                        false => Role::Value,
                     };
                     let names = match (given.get(name), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
@@ -93,9 +98,13 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 }
                 // Held in a `try` that assigns it, `let _arg; try { _arg = .. }`,
                 // as what it's given as is: `arg`.
-                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), "arg")),
+                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),
                 StmtKind::Let(name, _) if is_temporary(name) => {
-                    renames.push((name.clone(), suggested.get(name).cloned().unwrap_or_default(), "tmp"));
+                    renames.push((
+                        name.clone(),
+                        suggested.get(name).cloned().unwrap_or_default(),
+                        Role::BranchSet,
+                    ));
                 }
                 _ => {}
             }
@@ -111,13 +120,8 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         at += 1;
     });
     renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));
-    for (from, names, any) in renames {
-        // The first name of what it holds no other has, else what any is
-        // named, `value`, `arg` or `tmp`, given apart where it must be.
-        let base = (names.into_iter())
-            .find(|name| !taken.contains(name))
-            .unwrap_or_else(|| any.to_string());
-        let to = crate::names::fresh_in(&mut taken, &base);
+    for (from, names, role) in renames {
+        let to = temporary_names::pick(names, role, &mut taken);
         // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
         js::outside_shadows(body, &from, |body| {
             js::statement_lists(body, &mut |list| {

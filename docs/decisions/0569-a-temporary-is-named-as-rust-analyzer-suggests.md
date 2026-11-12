@@ -318,3 +318,19 @@ Held by the corpus case `temporaries_beside_items_written_in_the_body.rs`
 (a function's body, a closure's and a block's), and mutations
 `temporary-takes-a-name-items-read` (`tidy/bindings.ts`) and
 `items-written-in-a-closure-unseen` (`mir/closures.ts`).
+
+## Amendment (2026-11-12, #890 step 1): one owner of the rule
+
+The rule was spelled in three files: `mir/hints/names.rs` (the call's name,
+the held type's name, the casing), `mir/hints/calls.rs` (the call's name
+again, for a value read in place, `held_as`) and tidy's
+`readable_temporaries` (the fallback words and the pick). It is now
+`temporary_names.rs`'s: `call_name` and `call_suggestion`, `held_type_name`,
+`suggested` (a suggestion as a JS variable), `pick` (the first no other name
+has, else the role's word given apart) and `Role`, the closed set of a
+temporary's role words, `value`, `arg`, `tmp`, `receiver`, `children`. Each
+of the three asks it; an architecture test holds that none spells the rule
+itself. No output changes. #890's next steps give lowering's `spill` a
+`Role` in place of its word, carry what made a value on `js::Expr` as
+`made_by` in place of `held_as` (the coordinator's decision), and name
+spilled temporaries where MIR's are, by this rule.

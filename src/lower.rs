@@ -87,6 +87,7 @@ pub mod std_coverage;
 mod std_impls;
 mod std_types;
 mod support;
+mod temporary_names;
 mod traits;
 mod unions;
 mod untagged;

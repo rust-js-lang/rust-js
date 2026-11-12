@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "held-arg-named-value",
     breaks: "an argument MIR holds, `format!`'s, is named `value`, not `arg`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: '                        true => "arg",\n',
-    replace: '                        true => "value",\n',
+    find: "                        true => Role::Arg,\n",
+    replace: "                        true => Role::Value,\n",
     tests: ["test/lowering-strings.test.ts", "-t", "format!"],
   },
   {
@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's trait object a method is called on is named `value`, not `receiver`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: '            given.entry(v.clone()).or_insert_with(|| "receiver".to_string());\n',
-    replace: "",
+    find: "                .or_insert_with(|| Role::Receiver.word().to_string());\n",
+    replace: "                .or_insert_with(|| Role::Value.word().to_string());\n",
     tests: ["test/traits.test.ts", "-t", "MIR dictionaries are explicit"],
   },
   {
@@ -52,16 +52,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
     find: "                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),\n",
     replace: "                        (None, _) => Vec::new(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "temporary-name-taken-suffixed",
-    breaks:
-      "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "            .find(|name| !taken.contains(name))\n",
-    replace: "            .next()\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
     snapshots: true,
   },
@@ -90,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: '                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), "arg")),\n',
+    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,

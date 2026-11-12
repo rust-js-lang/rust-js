@@ -57,9 +57,14 @@ impl<'tcx> FnCx<'_, 'tcx> {
         (self.calls_named_in_source(mir_body).into_iter())
             .filter(|&(_, def_id)| !optional(def_id))
             .filter_map(|(local, def_id)| {
-                let name = variable_name(&crate::lower::camel_case(&self.call_name(def_id)?));
-                let read = read(def_id);
-                (crate::names::js_ident(&name) == name).then_some((local, js::Held { name, read }))
+                let name = crate::lower::temporary_names::call_suggestion(tcx, def_id)?;
+                Some((
+                    local,
+                    js::Held {
+                        name,
+                        read: read(def_id),
+                    },
+                ))
             })
             .collect()
     }

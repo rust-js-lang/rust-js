@@ -29,8 +29,8 @@ export const mutations: Mutation[] = [
     name: "binding-read-names-its-subject",
     breaks: "a binding read as a property, `get G`, names the subject held after it over the closure's parameter that binds it, `const g = ReactSharedInternals.G`, as if it were a call (#784)",
     file: "src/lower/mir/hints/calls.rs",
-    find: "                let read = read(def_id);\n",
-    replace: "                let read = false;\n",
+    find: "                        read: read(def_id),\n",
+    replace: "                        read: false,\n",
     tests: ["test/lowering-moves.test.ts", "-t", "getter's Option a closure binds is named by its parameter"],
   },
 ];
