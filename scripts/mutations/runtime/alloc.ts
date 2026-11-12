@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/alloc.js",
     find: "  if (pointer?.bytes !== undefined && (pointer.width !== 1 || pointer.signed !== false || pointer.stride !== 1)) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
   },
   {
     name: "vec-from-raw-untruncated",

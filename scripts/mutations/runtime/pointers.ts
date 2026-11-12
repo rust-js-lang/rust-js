@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  else if (used !== use) {\n",
     replace: "  else if (false) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
   },
   {
     name: "allocation-items-past-start",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "    if (view.at !== 0) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
     replace: "    if (false) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
-    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
   },
   {
     name: "byte-slice-its-bytes",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: " && pointer.width === 1 && pointer.signed === false) {\n",
     replace: " && pointer.width === 1) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
   },
   {
     name: "tuple-field-at-index-times-stride",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: " || pointer.addr !== undefined || pointer.offset !== undefined) {\n",
     replace: " || pointer.addr !== undefined) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a tuple's field's pointer"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "a tuple's field's pointer"],
   },
   {
     name: "tuple-field-pointers-distance",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: " || p.offset !== undefined || q.offset !== undefined) {\n",
     replace: ") {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a tuple's field's pointer"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "a tuple's field's pointer"],
   },
   {
     name: "field-of-an-item-its-objects-own-address",
@@ -745,7 +745,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, \"value\")?.get !== undefined) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "handle on no place it records"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "handle on no place it records"],
   },
   {
     name: "handle-of-a-handle-own-place",
@@ -753,7 +753,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "    return object;\n  }\n",
     replace: "  }\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer to a place handle's value is that handle"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "a pointer to a place handle's value is that handle"],
   },
   {
     name: "key-one-handle-at-any-offset",
@@ -761,7 +761,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (handle !== undefined && typeof offset === \"number\" && typeof handle.offset === \"number\" && handle.offset !== offset) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a key at another offset is another place's handle"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "a key at another offset is another place's handle"],
   },
   {
     name: "lent-from-records-nothing",
@@ -777,6 +777,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "    pointer.at === \"value\" &&\n",
     replace: "    false &&\n",
-    tests: ["test/runtime-package.test.ts", "-t", "the address through a handle on no place it records is refused"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "the address through a handle on no place it records is refused"],
   },
 ];

@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "                Offset::LaidOutByCaller => args.push(Expr::null()),\n                Offset::Unsaid => {}\n",
     replace: "                Offset::LaidOutByCaller | Offset::Unsaid => {}\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a tuple's field's pointer"],
+    tests: ["test/runtime-pointers.test.ts", "-t", "a tuple's field's pointer"],
   },
   {
     name: "rc-as-ptr-of-a-held-rc-its-slot",
