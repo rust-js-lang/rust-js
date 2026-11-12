@@ -9,6 +9,10 @@ beforeAll(buildCompiler, 600_000);
 for (const [name, source, message, crate] of [
   ["size_hint of a filter_map of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter_map(|x| x.checked_sub(1)).size_hint() }", "`size_hint()` of a `std::iter::FilterMap<I, "],
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
+  // A `&mut` to a number std lends from inside its receiver is a handle,
+  // whose place no record says, in a crate that asks that type's address:
+  // refused, where a shared one is a copy (#1293).
+  ["a get_mut of a number lent beside its address", "use std::cell::OnceCell;\npub fn f(o: &mut OnceCell<u32>, n: u32) -> usize { let at = &raw const n as usize; *o.get_mut().unwrap() += 1; at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1293)"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.

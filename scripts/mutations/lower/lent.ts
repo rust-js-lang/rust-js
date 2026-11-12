@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "by-ref-lends-inside",
     breaks: "`by_ref()`'s `&mut Self`, its receiver itself, is taken for what it lends from inside it, refused in a crate that asks an address (#1293)",
     file: "src/lower/lent.rs",
-    find: "lent != receiver && addressable(lent)",
-    replace: "addressable(lent)",
+    find: "lent != receiver && addressable((lent, shared))",
+    replace: "addressable((lent, shared))",
     tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
   },
   {
@@ -138,5 +138,21 @@ export const mutations: Mutation[] = [
     find: "            true => stored\n",
     replace: "            true => true || stored\n",
     tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
+  },
+  {
+    name: "no-object-lend-refused",
+    breaks: "a shared lend of a value that holds no JS object, a `OnceCell<Option<u8>>`'s, is refused in a crate that asks that type's address, though it's a copy no pointer is made of (#1293)",
+    file: "src/lower/lent.rs",
+    find: " && !(shared && self.holds_no_object(lent))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_lends_beside_an_address.rs$"],
+  },
+  {
+    name: "mut-lend-taken-for-shared",
+    breaks: "a `&mut` to a number std lends, a handle whose place no record says, is let through as a shared one's copy, in a crate that asks that type's address (#1293)",
+    file: "src/lower/lent.rs",
+    find: "lent.push((given(pointee), mutability.is_not()))",
+    replace: "lent.push((given(pointee), true))",
+    tests: ["test/diagnostics.test.ts", "-t", "get_mut of a number lent beside its address"],
   },
 ];

@@ -1351,11 +1351,19 @@ Now the lent type is normalized in the caller's typing environment. In
 generic code it's each instance its callers give (`instances_of`), and
 it's refused where any one may be asked; where they can't all be seen,
 it stays refused. A lend of the receiver itself, `by_ref()`'s `&mut
-Self`, is nothing from inside it. The refusal still holds where the lent
-type is one whose address the crate asks: a `OnceCell<Option<u8>>`'s
-`get` beside a pointer to an `Option<u8>`, a `Peekable`'s `peek` of a
-`u32` beside a pointer to one. Telling those apart needs where the lent
-reference goes, or a model of where the receiver keeps it; #1293 stays
-open for them. Corpus case std_lends_beside_an_address against native
-Rust in both builds; mutations lent-type-unnormalized,
-by-ref-lends-inside and generic-lend-of-any-instance, caught.
+Self`, is nothing from inside it. And a shared lend of a value that holds
+no JS object, a number, a `bool`, a `char` or an `Option` of one, is a
+copy: a pointer or `{:p}` made of it is refused where it's made, at
+compile time or as generic code runs, so its address is never a wrong
+one. That's a `OnceCell<Option<u8>>`'s `get` beside a pointer to an
+`Option<u8>`, or a `Peekable`'s `peek` of a `u32` beside a pointer to one.
+
+Still refused: a `&mut` to a number, which JS lends as a handle whose
+place no record says (`OnceCell::get_mut`, `Peekable::peek_mut`, a
+`Result`'s `as_mut`), and a lent object of a type whose address the crate
+asks, which needs a record of where its receiver keeps it. #1293 stays
+open for those. Corpus case std_lends_beside_an_address and a diagnostics
+case of a `get_mut` against native Rust in both builds; mutations
+lent-type-unnormalized, by-ref-lends-inside,
+generic-lend-of-any-instance, no-object-lend-refused and
+mut-lend-taken-for-shared, caught.

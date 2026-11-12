@@ -3,12 +3,17 @@
 // what it lends may be asked, the lent type as the call's arguments make it
 // and normalized, `<PathBuf as Deref>::Target` a `Path`, `<Split<char> as
 // Iterator>::Item` a `&str`; of generic code, each instance its callers
-// give; and `by_ref()` lends its receiver itself, nothing inside it.
+// give; `by_ref()` lends its receiver itself, nothing inside it; and a
+// shared lend of a value that holds no JS object, a `OnceCell<Option<u8>>`'s,
+// a `Peekable`'s `u32`, is a copy no pointer is made of, though the crate
+// asks those types' addresses.
+use std::cell::OnceCell;
 use std::path::{Path, PathBuf};
 
 struct Inner {
     a: u8,
     b: u32,
+    maybe: Option<u8>,
 }
 
 struct Outer {
@@ -55,10 +60,27 @@ fn longer<T: Clone + AsRef<str>>(slot: &mut Result<T, String>, extra: T) -> Opti
 }
 
 fn main() {
-    let outer = Outer { tag: 1, inner: Inner { a: 2, b: 3 } };
+    let outer = Outer {
+        tag: 1,
+        inner: Inner { a: 2, b: 3, maybe: Some(4) },
+    };
     let base = &raw const outer as usize;
     let field = &raw const outer.inner.b as usize;
-    println!("{} {} {}", field - base < 16, outer.tag, outer.inner.a);
+    let maybe = &raw const outer.inner.maybe as usize;
+    println!("{} {} {} {}", field - base < 16, maybe - base < 16, outer.tag, outer.inner.a);
+
+    let cell: OnceCell<Option<u8>> = OnceCell::new();
+    println!("{:?}", cell.get());
+    println!("{:?} {:?}", cell.get_or_init(|| Some(9)), cell.get());
+    let mut counts = [3u32, 0, 5].into_iter().peekable();
+    let mut kept = Vec::new();
+    while let Some(&next) = counts.peek() {
+        counts.next();
+        if next > 0 {
+            kept.push(next);
+        }
+    }
+    println!("{kept:?}");
     let mut items = vec![5u32, 6, 7].into_iter();
     let at = &raw const items as usize;
     let firsts: Vec<u32> = items.by_ref().take(2).collect();

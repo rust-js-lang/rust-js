@@ -4,6 +4,7 @@ import {
   $addr,
   $byteLen,
   $debugStr,
+  $getOrInit,
   $iter,
   $lent,
   $next,
@@ -11,6 +12,7 @@ import {
   $peek,
   $ptr,
   $ptrTo,
+  $someValue,
   $stored,
   $throughBox,
   iterator_peekable,
@@ -75,23 +77,50 @@ function longer(slot, extra, TAsRefStr) {
 
 function main() {
   const stringAsRef = { asRef: (value) => value };
-  const outer = { tag: 1, inner: { a: 2, b: 3 } };
+  const outer = {
+    tag: 1,
+    inner: { a: 2, b: 3, maybe: 4 },
+  };
   const base = $addr($ptrTo(outer), 12);
   $stored($ptr(outer, "inner", 0));
   const field = $addr($ptr(outer.inner, "b", 0, outer, 0), 4);
   $stored($ptr(outer, "inner", 0));
-  console.log(`${(field - base) >>> 0 < 16} ${outer.tag} ${outer.inner.a}`);
+  $stored($ptr(outer.inner, "maybe", 5), undefined, 1);
+  const maybe = $addr($ptr(outer.inner, "maybe", 5, outer, 5), 2);
+  $stored($ptr(outer, "inner", 0));
+  console.log(
+    `${(field - base) >>> 0 < 16} ${(maybe - base) >>> 0 < 16} ${outer.tag} ${outer.inner.a}`,
+  );
+
+  const cell = {};
+  console.log(
+    `${cell.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(cell.value))})`}`,
+  );
+  const getOrInit = $getOrInit(cell, () => 9);
+  console.log(
+    `${getOrInit == null ? "None" : `Some(${getOrInit})`} ${cell.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(cell.value))})`}`,
+  );
+  const counts = iterator_peekable($iter([3, 0, 5]));
+  const kept = [];
+  let next;
+  while ((next = $peek(counts)) != null) {
+    $next(counts);
+    if (next > 0) {
+      kept.push(next);
+    }
+  }
+  console.log(`[${kept.join(", ")}]`);
   const items = $iter([5, 6, 7]);
   const at = $addr($ptrTo(items), 16);
   const firsts = Array.from($lent(items).take(2));
-  const next = $next(items);
+  const value = $next(items);
   const arg = $addr($ptrTo(items), 16) === at;
-  console.log(`[${firsts.join(", ")}] ${next == null ? "None" : `Some(${next})`} ${arg}`);
+  console.log(`[${firsts.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${arg}`);
 
-  const value = extensionOf("a/b.txt");
-  const value$1 = extensionOf("c");
+  const value$1 = extensionOf("a/b.txt");
+  const value$2 = extensionOf("c");
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
+    `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
   );
   console.log(
     `[${wordsUntilBlank("one two  three")
@@ -104,20 +133,20 @@ function main() {
   );
 
   const parsed = { TAG: "Ok", _0: "kept" };
-  const value$2 = { TAG: "Err", _0: "no" };
+  const value$3 = { TAG: "Err", _0: "no" };
   console.log(
-    `${parsed.TAG === "Ok" ? `Ok(${$debugStr(parsed._0)})` : `Err(${$debugStr(parsed._0)})`} ${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : `Err(${$debugStr(value$2._0)})`}`,
+    `${parsed.TAG === "Ok" ? `Ok(${$debugStr(parsed._0)})` : `Err(${$debugStr(parsed._0)})`} ${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : `Err(${$debugStr(value$3._0)})`}`,
   );
   const slot = { TAG: "Ok", _0: "ab" };
-  const value$3 = longer(slot, "abc", stringAsRef);
-  const value$4 = longer(slot, "x", stringAsRef);
+  const value$4 = longer(slot, "abc", stringAsRef);
+  const value$5 = longer(slot, "x", stringAsRef);
   console.log(
-    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
+    `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
   );
   let failed = { TAG: "Err", _0: "bad" };
-  const value$5 = longer(failed, "y", stringAsRef);
+  const value$6 = longer(failed, "y", stringAsRef);
   console.log(
-    `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${failed.TAG === "Ok" ? `Ok(${$debugStr(failed._0)})` : `Err(${$debugStr(failed._0)})`}`,
+    `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${failed.TAG === "Ok" ? `Ok(${$debugStr(failed._0)})` : `Err(${$debugStr(failed._0)})`}`,
   );
   failed = { TAG: "Ok", _0: "z" };
   console.log(

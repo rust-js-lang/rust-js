@@ -225,15 +225,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         // Of the receiver itself, `by_ref()`'s `&mut Self`, nothing inside it;
-        // of what generic code lends, each instance its callers give (#1293).
+        // of what generic code lends, each instance its callers give; and
+        // lent shared, a value that holds no JS object, a number's, an
+        // `Option` of one, which is a copy no pointer is made of, refused
+        // where one would be (#1293).
         let owner = tcx.typeck_root_def_id(self.item);
-        let addressable = |lent: Ty<'tcx>| match lent.has_non_region_param() {
-            false => stored.addressable(tcx, lent),
-            true => stored
-                .instances(tcx, lent, owner)
-                .is_none_or(|instances| instances.into_iter().any(|lent| stored.addressable(tcx, lent))),
+        let addressable = |(lent, shared): (Ty<'tcx>, bool)| {
+            let asked = |lent: Ty<'tcx>| stored.addressable(tcx, lent) && !(shared && self.holds_no_object(lent));
+            match lent.has_non_region_param() {
+                false => asked(lent),
+                true => stored
+                    .instances(tcx, lent, owner)
+                    .is_none_or(|instances| instances.into_iter().any(asked)),
+            }
         };
-        let Some(lent) = lent.into_iter().find(|&lent| lent != receiver && addressable(lent)) else {
+        let Some((lent, _)) = lent
+            .into_iter()
+            .find(|&(lent, shared)| lent != receiver && addressable((lent, shared)))
+        else {
             return Ok(());
         };
         let what = format!("`{}` in a crate that asks an address (#1293)", tcx.def_path_str(def_id));
@@ -246,11 +255,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(refuse(tcx, span, Refused::Because(&what, &why)))
     }
 
+    /// Whether a value of `ty` holds no JS object: a number, a `bool`, a
+    /// `char`, `()`, or an `Option` of one, whose JS is a copy, which no
+    /// pointer can be made of but at its place (#1293).
+    fn holds_no_object(&self, ty: Ty<'tcx>) -> bool {
+        match self.option_of(ty) {
+            Some(payload) => self.holds_no_object(payload),
+            None => ty.is_numeric() || ty.is_bool() || ty.is_char() || ty.is_unit(),
+        }
+    }
+
     /// Of a function whose first argument is a reference to its receiver
     /// and whose output holds that reference's lifetime, `RefCell::borrow`,
     /// `Option::as_ref`, `OnceCell::get`: the receiver's type, and what it
     /// lends, each type a reference of that lifetime, or a raw pointer, in
-    /// the output refers to; a guard's, `Ref<'_, T>`, its `T`. `None` of
+    /// the output refers to, and whether it's lent shared, `&T`, not `&mut`,
+    /// a pointer, or what a type of that lifetime holds; a guard's,
+    /// `Ref<'_, T>`, its `T`. `None` of
     /// another, `Cell::set`. Its lifetime and its raw pointers are the
     /// function's own, as its signature declares them, not ones of what its
     /// caller gives: a `skip_while` given a `&mut` iterator, `Self` a
@@ -261,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn lent_from_receiver(
         &self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
-    ) -> Option<(Ty<'tcx>, Vec<Ty<'tcx>>)> {
+    ) -> Option<(Ty<'tcx>, Vec<(Ty<'tcx>, bool)>)> {
         let tcx = self.tcx;
         if !matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) {
             return None;
@@ -291,12 +312,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let Some(ty) = part.as_type() else { continue };
             if let Some((pointee, _)) = raw_pointee(tcx, ty) {
-                lent.push(given(pointee));
+                lent.push((given(pointee), false));
                 continue;
             }
             match *ty.kind() {
-                ty::Ref(r, pointee, _) if r == region => lent.push(given(pointee)),
-                ty::Adt(_, args) if args.regions().any(|r| r == region) => lent.extend(args.types().map(given)),
+                ty::Ref(r, pointee, mutability) if r == region => lent.push((given(pointee), mutability.is_not())),
+                ty::Adt(_, args) if args.regions().any(|r| r == region) => {
+                    lent.extend(args.types().map(|ty| (given(ty), false)));
+                }
                 _ => {}
             }
         }
