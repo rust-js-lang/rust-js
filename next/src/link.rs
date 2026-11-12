@@ -8,7 +8,7 @@ use react::attributes::AnchorHTMLAttributes;
 use react::webapi::HTMLAnchorElement;
 use react::{JSX, ReactNode, Ref};
 
-/// `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
+/// `<Link href="/about">{"About"}</Link>`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/link#default")]
 pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element {
     unreachable!()

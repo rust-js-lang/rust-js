@@ -186,7 +186,7 @@ pub fn Home() -> JSX::Element {
     jsx! {
         <main>
             <h1>{"Hello, Next.js"}</h1>
-            <Link href="/about" {..Default::default()}>{"About"}</Link>
+            <Link href="/about">{"About"}</Link>
         </main>
     }
 }

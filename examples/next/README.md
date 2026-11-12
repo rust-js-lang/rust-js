@@ -34,7 +34,7 @@ Rust compiles to, `rust-js build --check`, and stops if it isn't.
 - **Next.js's components and hooks are the `next` crate's**: `Image`, `Link`,
   and `next/navigation`'s `use_router`, `use_pathname` and
   `use_search_params`. A component's optional props are `None` unless given:
-  `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
+  `<Link href="/about">{"About"}</Link>`.
 - **`app/page.jsx` is committed**, as ReScript recommends for its JS: a diff
   shows what a change did to the output. Its source map isn't.
 - **rust-js runs with the Rust release it's built with**, rustup's: if it

@@ -4,6 +4,12 @@ Status: Accepted. Builds on [0203](0203-component-props-as-written.md),
 [0204](0204-flattened-props.md), [0205](0205-flattened-chains.md) and
 [0212](0212-props-defaults.md).
 
+> **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
+> left-out optional prop is `None`, so the `{..Default::default()}` in this
+> decision's examples is no longer needed; it's written only to give a base
+> of one's own. The current form is in the guide's
+> [Optional props](../guide/react/components.md#optional-props).
+
 Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
 
 ## Context

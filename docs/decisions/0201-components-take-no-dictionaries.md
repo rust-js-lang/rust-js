@@ -3,6 +3,12 @@
 Status: Accepted. Extends [0199](0199-components-take-no-drops.md) and
 [0192](0192-next.md).
 
+> **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
+> left-out optional prop is `None`, so the `{..Default::default()}` in this
+> decision's examples is no longer needed; it's written only to give a base
+> of one's own. The current form is in the guide's
+> [Optional props](../guide/react/components.md#optional-props).
+
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
 ## Context

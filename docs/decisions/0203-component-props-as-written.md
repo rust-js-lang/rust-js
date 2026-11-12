@@ -5,6 +5,12 @@ Amended by [0674](0674-a-struct-literals-fields-are-in-the-order-written.md):
 the props struct's object lists them in this order, so JSX takes them as
 it lists them.
 
+> **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
+> left-out optional prop is `None`, so the `{..Default::default()}` in this
+> decision's examples is no longer needed; it's written only to give a base
+> of one's own. The current form is in the guide's
+> [Optional props](../guide/react/components.md#optional-props).
+
 Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
 
 ## Context
