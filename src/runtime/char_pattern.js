@@ -60,11 +60,26 @@ function $matchIndicesBy(s, test, rev = false) {
 }
 
 // `s.split_once(p)`: what's before its first match and after it, or
-// `None`; `rsplit_once`'s, `last`, of its last.
+// `None`; `rsplit_once`'s, `last`, of its last. Searched as std's `find`
+// and `rfind` search: `p` asked of each `char` from its front, or from its
+// back, until it holds, never of one past it (#1501).
 function $splitOnceBy(s, test, last = false) {
-  const found = $charMatches(s, test);
-  const at = last ? found[found.length - 1] : found[0];
-  return at === undefined ? undefined : [s.slice(0, at.unit), s.slice(at.unit + at.c.length)];
+  const split = (unit, c) => [s.slice(0, unit), s.slice(unit + c.length)];
+  if (!last) {
+    let unit = 0;
+    for (const c of s) {
+      if (test(c)) return split(unit, c);
+      unit += c.length;
+    }
+    return undefined;
+  }
+  const chars = Array.from(s);
+  let unit = s.length;
+  for (let k = chars.length - 1; k >= 0; k--) {
+    unit -= chars[k].length;
+    if (test(chars[k])) return split(unit, chars[k]);
+  }
+  return undefined;
 }
 
 // `s.strip_prefix(p)`: what's after its first `char`, where `p` holds of it,

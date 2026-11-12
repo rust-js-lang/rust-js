@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "split-once-by-first",
     breaks: "`rsplit_once(p)` splits at the first match",
     file: "src/runtime/char_pattern.js",
-    find: "  const at = last ? found[found.length - 1] : found[0];\n",
-    replace: "  const at = found[0];\n",
+    find: "  if (!last) {\n",
+    replace: "  if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
   },
   {
@@ -57,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "    if (count < n && test(c)) {\n",
     replace: "    if (test(c)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
+  },
+  {
+    name: "split-once-asks-every-char",
+    breaks: "`split_once` and `rsplit_once` by a closure ask it of every `char`, front to back, where std's `find` and `rfind` stop at the first that holds, from the front or from the back (#1501)",
+    file: "src/runtime/char_pattern.js",
+    find: "  if (!last) {\n    let unit = 0;\n",
+    replace: "  if (true) {\n    const found = $charMatches(s, test);\n    const at = last ? found[found.length - 1] : found[0];\n    return at === undefined ? undefined : split(at.unit, at.c);\n  }\n  if (!last) {\n    let unit = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_split_once_by_a_closure_searches_as_std.rs$"],
   },
 ];

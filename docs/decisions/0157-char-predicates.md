@@ -92,3 +92,16 @@ were refused of one. Each is a `…By` op of `TextOp`, as `split`'s and
 in UTF-8 bytes. A set of `char`s is the predicate of being one of them,
 as before. Held by `test/corpus/char_patterns.rs` against native Rust.
 
+
+## Amendment (2026-11-12, #1501): a closure is asked as std's searcher asks it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. A closure pattern may print, panic or count its calls,
+so which `char`s it's asked of, in what order, is the program's to see.
+`split_once` asked it of every `char`, and `rsplit_once` searched from the
+front, where std's `find` and `rfind` ask each `char` from the front, or
+from the back, and stop at the first that holds. `$splitOnceBy` now
+searches so. The iterators of a closure pattern, `split` and its kin,
+`matches`, `match_indices`, follow in their own commit under #1501. Corpus
+case `str_split_once_by_a_closure_searches_as_std`; mutation
+`split-once-asks-every-char`.
