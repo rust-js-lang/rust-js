@@ -416,3 +416,21 @@ it committed. Held by `btree_clone_panics_in_a_later_edge.rs`, of counted
 keys, plain ones built in bulk or one by one, and a set's, against native
 Rust; a lowering test of both forms (`lowering-std-unwinds.test.ts`); and
 the mutation `tree-of-nodes-unasked-of-a-clone`.
+
+## Amendment (2026-11-12, #1333): a B-tree set's algebra is one form
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; readability, one
+form per construct. Since #1219, a B-tree set's `union` and `difference`
+were the lazy `$treeSetAlgebra` in a crate that reads a `Vec`'s capacity
+and the eager `$setAlgebra(a, b, op, cmp)`, its items sorted, elsewhere:
+two forms of one construct. Now every B-tree set's algebra, `union`,
+`intersection`, `difference`, `symmetric_difference` and their operators
+(`&a | &b`), is `$treeSetAlgebra(a, b, op, cmp)`, std's lazy merge, its
+order and its hint std's, in every crate; a `.collect()` of one is
+`Array.from(..)`, as any collect is. `$setAlgebra` is left a hash set's
+`intersection`, `difference` and `symmetric_difference` alone, without its
+`union` (`$hashSetUnion`'s, #1219) or its sort. Five snapshots changed,
+each read; mutations `tree-set-algebra-unseen` and `set-operator-items`
+refitted, `set-union-spread` moved to `intersection`'s set,
+`tree-merge-eager-where-capacity-read` and `set-algebra-unsorted` retired
+with the forms they held.

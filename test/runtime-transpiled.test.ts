@@ -54,8 +54,9 @@ test("the runtime's helpers answer the same through Babel's loose transforms", a
     ["$debug", [new Set([1, 2])]],
     ["$eq", [{ a: 1 }, { a: 1, b: undefined }]],
     ["$eq", [{ a: 1 }, { a: 2 }]],
-    ["$setAlgebra", [new Set([1, 2]), new Set([2, 3]), "union"]],
-    ["$setAlgebra", [new Set([1, 2]), new Set([2, 3]), "symmetric_difference"]],
+    ["$setAlgebra", [new Set([1, 2]), new Set([2, 3]), "intersection"]],
+    ["$setAlgebra", [new Set([1, 2]), new Set([2, 3]), "difference"]],
+    ["$setAlgebra", [new Set([1, 2]), new Set([2, 3]), "symmetric"]],
   ];
   for (const [name, args] of cases) {
     const answer = (helpers: Record<string, (...args: unknown[]) => unknown>) => {

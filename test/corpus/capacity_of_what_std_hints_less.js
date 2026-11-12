@@ -29,6 +29,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeRange,
+  $treeSetAlgebra,
   $zipEnds,
   iterator_peekable,
 } from "@rust-js/std";
@@ -125,12 +126,11 @@ function ranges(n) {
   const rkv = $grownVec($roomForHint(rk, 4, false), (grown) => Array.from(grown));
   const rkc = $grownVec($roomForHint(rk2.drop(3), 4, false), (grown) => Array.from(grown));
   const i = $grownVec(
-    $roomForHint($iter($setAlgebra(b, c, "intersection", $cmp), true), 4, false),
+    $roomForHint($treeSetAlgebra(b, c, "intersection", $cmp), 4, false),
     (grown) => Array.from(grown),
   );
-  const s = $grownVec(
-    $roomForHint($iter($setAlgebra(b, c, "symmetric", $cmp), true), 4, false),
-    (grown) => Array.from(grown),
+  const s = $grownVec($roomForHint($treeSetAlgebra(b, c, "symmetric", $cmp), 4, false), (grown) =>
+    Array.from(grown),
   );
   const hd = $grownVec(
     $roomForHint($iter($setAlgebra(h, g, "difference"), true), 4, false),

@@ -780,17 +780,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 map_ops("$setReplace", with_drops(vec![arg(), arg()], vec![drop]))
             }
-            // Of items whose order can be seen, std's own lazy iterators,
-            // which ask `cmp` what std's ask as they're stepped (#943); of
-            // others, its items, which no one sees asked. And a `union` or a
-            // `difference` of a crate that reads a `Vec`'s capacity, whose
-            // hint, which a collect grows one by, is its merge's as it's
-            // stepped (#1219).
-            MapOp::Algebra(name)
-                if seen_items
-                    || self.krate.keeps_capacity && cmp.is_some() && matches!(name, "union" | "difference") =>
-            {
-                let cmp = cmp.expect("a B-tree's order");
+            // A B-tree set's algebra, std's lazy merge of the two, its order
+            // and its hint std's, whatever the crate reads (#943, #1219): one
+            // form, in every crate (#1333).
+            MapOp::Algebra(name) if let Some(cmp) = cmp.clone() => {
                 map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp])
             }
             // A set of its own class, its receiver's, of the algebra's items
@@ -819,21 +812,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false if name == "union" && cmp.is_none() => {
                         Expr::new_(class, vec![cloned(map_ops("$hashSetUnion", vec![arg(), arg()]))])
                     }
-                    false => {
-                        let mut list = vec![arg(), arg(), Expr::str(name)];
-                        list.extend(cmp);
-                        Expr::new_(class, vec![cloned(map_ops("$setAlgebra", list))])
+                    // Of a B-tree's, its algebra std's merge, as its method's is (#1333).
+                    false if let Some(cmp) = cmp.clone() => {
+                        let items = map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp]);
+                        Expr::new_(class, vec![cloned(items)])
                     }
+                    false => Expr::new_(
+                        class,
+                        vec![cloned(map_ops("$setAlgebra", vec![arg(), arg(), Expr::str(name)]))],
+                    ),
                 }
             }
             // A hash set's `union`, lazy as std's is, the larger's items
             // first, its hint the chain's of it (#1219).
             MapOp::Algebra("union") if cmp.is_none() => map_ops("$hashSetUnion", vec![arg(), arg()]),
-            MapOp::Algebra(name) => {
-                let mut list = vec![arg(), arg(), Expr::str(name)];
-                list.extend(cmp);
-                map_ops("$setAlgebra", list)
-            }
+            // A hash set's `intersection`, `difference` or
+            // `symmetric_difference`: its items.
+            MapOp::Algebra(name) => map_ops("$setAlgebra", vec![arg(), arg(), Expr::str(name)]),
             MapOp::Subset { superset } if seen_items => {
                 let cmp = self.cmp_fn(types[0], false, span)?;
                 map_ops("$treeIsSubset", vec![arg(), arg(), Expr::bool(superset), cmp])

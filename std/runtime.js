@@ -9993,19 +9993,13 @@ export function $merging(items, drop, dropKey, step) {
   firstKey();
 }
 
-// A set's `union`, `intersection`, `difference` or `symmetric_difference`:
-// its items, a B-tree's sorted by `cmp`.
-export function $setAlgebra(a, b, op, cmp) {
+// A hash set's `intersection`, `difference` or `symmetric_difference`: its
+// items. A B-tree's algebra is `$treeSetAlgebra`'s, a hash set's `union`
+// `$hashSetUnion`'s (#1333).
+export function $setAlgebra(a, b, op) {
   const only = (x, y) => Array.from(x).filter((item) => !y.has(item));
-  const items =
-    op === "union"
-      ? Array.from(a).concat(only(b, a))
-      : op === "intersection"
-        ? Array.from(a).filter((item) => b.has(item))
-        : op === "difference"
-          ? only(a, b)
-          : only(a, b).concat(only(b, a));
-  return cmp ? items.sort(cmp) : items;
+  if (op === "intersection") return Array.from(a).filter((item) => b.has(item));
+  return op === "difference" ? only(a, b) : only(a, b).concat(only(b, a));
 }
 
 // `a.union(&b)` of two hash sets as std steps it, lazy, its hint what a

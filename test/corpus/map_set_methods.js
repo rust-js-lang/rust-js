@@ -31,6 +31,7 @@ import {
   $treeAppend,
   $treeEnd,
   $treeRange,
+  $treeSetAlgebra,
   $treeSplitOff,
 } from "@rust-js/std";
 
@@ -241,7 +242,7 @@ function main() {
   );
   const other = new $BTreeSet([1, 4, 9]);
   console.log(
-    `[${$setAlgebra(set, other, "union", $cmp).join(", ")}] [${$setAlgebra(set, other, "symmetric", $cmp).join(", ")}]`,
+    `[${Array.from($treeSetAlgebra(set, other, "union", $cmp)).join(", ")}] [${Array.from($treeSetAlgebra(set, other, "symmetric", $cmp)).join(", ")}]`,
   );
   const upper = $treeSplitOff(set, 5, $cmp, true);
   console.log(

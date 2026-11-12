@@ -22,7 +22,6 @@ import {
   $partialEq,
   $partialOrd,
   $remove,
-  $setAlgebra,
   $sortedEntries,
   $sortedKeys,
   $storedKey,
@@ -30,6 +29,7 @@ import {
   $treeFrom,
   $treeFromSorted,
   $treeRange,
+  $treeSetAlgebra,
 } from "@rust-js/std";
 
 export function entry() {
@@ -179,9 +179,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${$setAlgebra(queue, more, "union", taskOrd_cmp)
-      .map((t) => t.id)
-      .join(", ")}]`,
+    `[${Array.from($treeSetAlgebra(queue, more, "union", taskOrd_cmp).map((t) => t.id)).join(", ")}]`,
   );
 
   console.log(

@@ -356,8 +356,8 @@ export const mutations: Mutation[] = [
     name: "set-operator-items",
     breaks: "`&a - &b` of sets is an array of the items, not a set",
     file: "src/lower/std_types/map.rs",
-    find: '                        Expr::new_(class, vec![cloned(map_ops("$setAlgebra", list))])\n',
-    replace: '                        cloned(map_ops("$setAlgebra", list))\n',
+    find: "                        Expr::new_(class, vec![cloned(items)])\n",
+    replace: "                        cloned(items)\n",
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
   },
   {
@@ -582,10 +582,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tree-set-algebra-unseen",
-    breaks: "a B-tree set's algebra of items whose order can be seen is its items sorted and searched by `has`, asking `cmp` other calls than std's lazy iterators (#943)",
+    breaks: "a B-tree set's algebra is a hash set's eager items, unsorted, asking `cmp` none of std's lazy merge's calls (#943, #1333)",
     file: "src/lower/std_types/map.rs",
-    find: "                if seen_items\n                    || self.krate",
-    replace: "                if seen_items && false\n                    || self.krate",
+    find: "            MapOp::Algebra(name) if let Some(cmp) = cmp.clone() => {\n",
+    replace: "            MapOp::Algebra(name) if let Some(cmp) = cmp.clone().filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
   },
   {
@@ -691,14 +691,6 @@ export const mutations: Mutation[] = [
     find: "        \"insert_entry\" if vacant || entry => MapOp::InsertEntry { vacant },\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
-  },
-  {
-    name: "tree-merge-eager-where-capacity-read",
-    breaks: "a B-tree set's `difference` or `union` collected in a crate that reads a `Vec`'s capacity is the eager array, which keeps none of the merge's hint, so its capacity is another (#1219)",
-    file: "src/lower/std_types/map.rs",
-    find: "|| self.krate.keeps_capacity && cmp.is_some() && matches!(name, \"union\" | \"difference\")",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
   },
   {
     name: "hash-union-eager",

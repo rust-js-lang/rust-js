@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
   {
-    name: "set-algebra-unsorted",
-    breaks: "a B-tree set's `union` isn't in order",
-    file: "src/runtime/map_ops.js",
-    find: "  return cmp ? items.sort(cmp) : items;\n",
-    replace: "  return items;\n",
-    tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
-  },
-  {
     name: "is-subset-superset-same",
     breaks: "`is_superset` asks `is_subset`",
     file: "src/runtime/map_ops.js",
@@ -288,10 +280,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-union-spread",
-    breaks: "a set's `union` spreads the set, which Babel's loose spread keeps whole, one item (ADR 0919)",
+    breaks: "a hash set's `intersection` spreads the set, which Babel's loose spread keeps whole, one item (ADR 0919)",
     file: "src/runtime/map_ops.js",
-    find: "? Array.from(a).concat(only(b, a))",
-    replace: "? [...a, ...only(b, a)]",
+    find: "  if (op === \"intersection\") return Array.from(a).filter((item) => b.has(item));\n",
+    replace: "  if (op === \"intersection\") return [...a].filter((item) => b.has(item));\n",
     tests: ["test/runtime-transpiled.test.ts"],
   },
   {
