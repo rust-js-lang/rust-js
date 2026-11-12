@@ -3,6 +3,7 @@
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
+use crate::lower::lent::Lent;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
@@ -69,7 +70,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             LazyOp::ForceMut => {
                 let force = Expr::call(Expr::var(force), vec![lazy.clone()]);
                 out.push(StmtKind::Expr(force).at(self.js_span(span)));
-                return Ok(Some(lazy));
+                // In a crate that asks an address, a handle on its place in the
+                // cell, past its state's tag (#1474).
+                let place = self.lent_place((lazy.clone(), tys[0].peel_refs()), Lent::LazyCell, None);
+                return Ok(Some(place.unwrap_or(lazy)));
             }
             LazyOp::GetMut if self.mut_ref_form(item).is_cell() => lazy.clone(),
             LazyOp::Get if self.boxed_payload(item) => self.some(Expr::held(lazy.clone())),

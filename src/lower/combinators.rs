@@ -16,6 +16,7 @@ use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::lower::lent::Lent;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -679,21 +680,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::ResultFlatten => Expr::cond(tag(true), inside(), subject),
             Comb::ResultIter => self.result_items(subject.clone(), subject_ty.peel_refs()),
             Comb::ResultIterMut | Comb::ResultAsMut => {
-                let ty::Adt(_, sides) = subject_ty.peel_refs().kind() else {
-                    return Err(self.unsupported(span, "this `Result`"));
-                };
-                let (ok_ty, err_ty) = (sides.type_at(0), sides.type_at(1));
-                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();
-                let part = |boxed: bool| if boxed { Expr::handle(inside()) } else { inside() };
-                let ok = part(boxed(ok_ty));
-                match comb {
-                    Comb::ResultIterMut => Expr::cond(tag(true), Expr::array(vec![ok]), Expr::array(Vec::new())),
-                    // Of objects, the `Result` itself, as `as_ref()`'s is.
-                    _ if !boxed(ok_ty) && !boxed(err_ty) => subject,
-                    // Of both, a handle on `r._0` whichever it is.
-                    _ if boxed(ok_ty) && boxed(err_ty) => result::tagged(result::tag(subject.clone()), ok),
-                    _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty)))),
-                }
+                self.result_lent_mut(comb, subject, subject_ty.peel_refs(), span)?
             }
             // `Ok(None)` is `None`, `Ok(Some(x))` `Some(Ok(x))`, `Err(e)` `Some(Err(e))`.
             Comb::ResultTranspose => {
@@ -1244,5 +1231,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn truncated(&mut self, front: bool, given: Vec<Expr>, (ty, span): (Ty<'tcx>, Span)) -> R<Expr> {
         let name = if front { "$retainBack" } else { "$truncate" };
         Ok(Expr::call_helper(name, self.dropping(given, ty, span)?))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A `Result`'s `as_mut()` or `iter_mut()`, `comb`, of `subject`, its
+    /// JS, of type `result_ty`: of objects, the `Result` itself, as
+    /// `as_ref()`'s is; of what a `&mut` boxes, a handle on `r._0`, and in a
+    /// crate that asks an address, one on its place in the `Result`, at its
+    /// variant's offset (`lent_place`, #1474).
+    fn result_lent_mut(&self, comb: Comb, subject: Expr, result_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty::Adt(_, sides) = result_ty.kind() else {
+            return Err(self.unsupported(span, "this `Result`"));
+        };
+        let (ok_ty, err_ty) = (sides.type_at(0), sides.type_at(1));
+        let tag = |ok: bool| result::is(subject.clone(), ok);
+        let inside = || result::held(subject.clone());
+        let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();
+        let handle = |lent: Lent, ok: Option<Expr>| {
+            self.lent_place((subject.clone(), result_ty), lent, ok)
+                .unwrap_or_else(|| Expr::handle(inside()))
+        };
+        let part = |boxed: bool, lent: Lent| if boxed { handle(lent, None) } else { inside() };
+        let ok = part(boxed(ok_ty), Lent::Ok);
+        Ok(match comb {
+            Comb::ResultIterMut => Expr::cond(tag(true), Expr::array(vec![ok]), Expr::array(Vec::new())),
+            _ if !boxed(ok_ty) && !boxed(err_ty) => subject,
+            // Of both, a handle on `r._0` whichever it is.
+            _ if boxed(ok_ty) && boxed(err_ty) => {
+                result::tagged(result::tag(subject.clone()), handle(Lent::Ok, Some(tag(true))))
+            }
+            _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty), Lent::Err))),
+        })
     }
 }

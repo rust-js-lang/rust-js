@@ -49,17 +49,7 @@ function firstTwoThenRest(items) {
 }
 
 function longer(slot, extra, TAsRefStr) {
-  const value = {
-    TAG: slot.TAG,
-    _0: {
-      get value() {
-        return slot._0;
-      },
-      set value(value) {
-        slot._0 = value;
-      },
-    },
-  };
+  const value = { TAG: slot.TAG, _0: $ptr(slot, "_0", 4) };
   if (value.TAG === "Ok") {
     if (
       $byteLen($throughBox(TAsRefStr, { asRef: [1] }).asRef(value._0)) <

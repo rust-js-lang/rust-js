@@ -799,6 +799,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if Self::rooted_from(*place).is_some() {
                     self.read_more_than_once(state, *place, out)?;
                 }
+                // Of what a `&mut` std lent from inside its receiver refers to,
+                // a handle on its place there: that handle, read or written
+                // through (#1474).
+                if let [PlaceElem::Deref] = place.projection.as_slice()
+                    && self.placed_by_lend(state.body, place.local)
+                {
+                    return self.read_local_value(state, place.local, out);
+                }
                 let target = self.mir_place(state, *place, span, out)?;
                 // Only read through, of what a reference or box refers to:
                 // where it is matters to nothing (`Pointed::read_only`).

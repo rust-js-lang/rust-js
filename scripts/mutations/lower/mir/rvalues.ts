@@ -773,4 +773,13 @@ export const mutations: Mutation[] = [
     replace: "                    self.cast(v, from, *to, span)?\n",
     tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
   },
+  {
+    name: "placed-lend-pointer-refused",
+    breaks: "a raw pointer made of a `&mut` std lent as a handle on its place is refused as a box of a copy's, or wraps the handle (#1474)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && self.placed_by_lend(state.body, place.local)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],
+    snapshots: true,
+  },
 ];

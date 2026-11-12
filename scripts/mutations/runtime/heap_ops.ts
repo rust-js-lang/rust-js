@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
+  {
+    name: "heap-top-handle-placeless",
+    breaks: "a heap's top's handle is an accessor on no place it records, whose address is refused (#1474)",
+    file: "src/runtime/heap_ops.js",
+    find: "  return $ptr(heap, 0);\n",
+    replace: "  return { get value() { return heap[0]; }, set value(value) { heap[0] = value; } };\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],
+  },
 ];

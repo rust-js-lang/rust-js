@@ -3,6 +3,7 @@
 //! `mir_iter_std_call`'s, apart.
 
 use super::*;
+use crate::lower::lent::Lent;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An iterator's call `mir_iter_call` leaves: a combinator, a step
@@ -228,6 +229,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             StepOp::Peek => Expr::call_helper("$peek", vec![it]),
                             // A handle on a number or text, else the item itself.
                             StepOp::PeekMut => match this.iterator_item(arg_tys[0].peel_refs()) {
+                                // In a crate that asks an address, a handle on its
+                                // place in the `Peekable`, past its two `Option`s'
+                                // tags, where no `$some` box is between (#1474).
+                                Some(item)
+                                    if this.mut_ref_form(item).is_cell()
+                                        && !this.boxed_lent(arg_tys[0].peel_refs(), Lent::Peekable) =>
+                                {
+                                    let it = match it.reads_same() {
+                                        true => it,
+                                        false => this.spill("peekable", it, out),
+                                    };
+                                    let peekable = arg_tys[0].peel_refs();
+                                    match this.lent_place((it.clone(), peekable), Lent::Peekable, None) {
+                                        Some(place) => {
+                                            let peeked = Expr::call_helper("$peek", vec![it]);
+                                            Expr::cond(
+                                                Expr::bin(Op::Eq, peeked, Expr::undefined()),
+                                                Expr::undefined(),
+                                                place,
+                                            )
+                                        }
+                                        None => Expr::call_helper("$peekCell", vec![it]),
+                                    }
+                                }
                                 Some(item) if this.mut_ref_form(item).is_cell() => {
                                     Expr::call_helper("$peekCell", vec![it])
                                 }

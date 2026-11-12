@@ -21,7 +21,7 @@ plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.r
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 
-#1474 P2: a &mut to a number std lends from inside its storage is refused in a crate that asks addresses: its handle has no place
+#1478 P2: generic code's &mut lent from std's storage is refused where its instances keep the payload at different offsets: needs an offset type fact
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
 
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address

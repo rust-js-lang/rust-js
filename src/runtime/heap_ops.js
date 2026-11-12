@@ -75,14 +75,9 @@ function $peekMutTop(guard, handle) {
   guard.changed = true;
   const heap = guard.heap;
   if (!handle) return heap[0];
-  return {
-    get value() {
-      return heap[0];
-    },
-    set value(value) {
-      heap[0] = value;
-    },
-  };
+  // A handle on the heap's first item, where its buffer's allocation is,
+  // which a pointer made of it reads (#1474).
+  return $ptr(heap, 0);
 }
 
 function $peekMutDrop(guard) {

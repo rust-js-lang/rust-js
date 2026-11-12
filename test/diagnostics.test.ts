@@ -9,10 +9,20 @@ beforeAll(buildCompiler, 600_000);
 for (const [name, source, message, crate] of [
   ["size_hint of a filter_map of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter_map(|x| x.checked_sub(1)).size_hint() }", "`size_hint()` of a `std::iter::FilterMap<I, "],
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
-  // A `&mut` to a number std lends from inside its receiver is a handle,
-  // whose place no record says, in a crate that asks that type's address:
-  // refused, where a shared one is a copy (#1293).
-  ["a get_mut of a number lent beside its address", "use std::cell::OnceCell;\npub fn f(o: &mut OnceCell<u32>, n: u32) -> usize { let at = &raw const n as usize; *o.get_mut().unwrap() += 1; at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1474)"],
+  // A library that asks no address holds what its generic code lends from
+  // std's storage as no handle on its place, so a raw pointer it makes of
+  // one, for a consumer that may ask its address, is refused where it's
+  // made, never an address made up (#1474).
+  ["a raw pointer to a &mut lent from std's storage, asking no address", "pub fn once_ptr<T>(c: &mut std::cell::OnceCell<T>) -> *mut T { match c.get_mut() { Some(x) => x as *mut T, None => std::ptr::null_mut() } }", "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy"],
+  // A `&mut` to a number std lends in generic code whose instances keep it
+  // at different offsets, `Result<u8, u16>`'s at 1 and `Result<u16, u8>`'s
+  // at 2, in a crate that asks that type's address: one JS can't be both, so
+  // refused, never let through as a shared one's copy (#1478).
+  ["a generic as_mut of numbers its instances keep at different offsets", "pub fn bump<T: Copy + std::ops::AddAssign + From<u8>, E>(r: &mut Result<T, E>) { if let Ok(x) = r.as_mut() { *x += T::from(1) } }\npub fn f(a: &mut Result<u8, u16>, b: &mut Result<u16, u8>, m: u8, n: u16) -> usize { let at = &raw const m as usize + &raw const n as usize; bump(a); bump(b); at }", "`std::result::Result::<T, E>::as_mut` in a crate that asks an address (#1478)"],
+  // An object std lends from inside its receiver, in a crate that asks
+  // that type's address, is no record's: refused (#1475), where a `&mut` to
+  // a number is a handle on its place (#1474).
+  ["a get_mut of an object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<P>, p: P) -> usize { let at = &raw const p as usize; o.get_mut().unwrap().0 += 1; at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1475)"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.

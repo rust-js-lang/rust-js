@@ -1398,3 +1398,34 @@ since its caller's handle carries no offset (#1471); once that is filled,
 it runs as native. Held by a runtime-package test (a field's handle's
 `value` is the handle, at its offset; a `{ value }` cell's isn't) and the
 mutation handle-of-a-handle-own-place.
+
+## Amendment: a `&mut` std lends from its storage is a handle on its place (#1474)
+
+What std's `OnceCell::get_mut`, `LazyCell::force_mut`, `Result::as_mut`
+and `iter_mut`, and `Peekable::peek_mut` lend of a number, a `&mut` JS
+held as an accessor cell, had no place, so its address was refused (the
+guard above). In a crate that asks an address, each is now a handle on the
+property JS keeps it in, at the offset rustc's layout gives it in its
+receiver: `$ptr(cell, "value", at)`, `$ptr(peekable, "peeked", at)`,
+`$ptr(r, "_0", at)`. The offset is the receiver's layout's own
+(`lent_offset`, src/lower/lent.rs): a `OnceCell`'s `inner.value` past
+its `Option`'s tag or in its niche, a `LazyCell`'s state's `Init`
+payload, a `Peekable`'s item past both its `Option`s, a `Result`'s
+variant's field. In generic code, the offset every instance gives, and a
+refusal (#1478) where they differ. A `BinaryHeap`'s `PeekMut` is a handle
+on its buffer's first item, `$ptr(heap, 0)`. A raw pointer made of such a
+handle is the handle (`placed_by_lend`, src/lower/mir/rvalues.rs), not a
+handle on its `value`.
+
+These are new runtime handles on std's storage, so per #1458 their proof
+is named: the corpus case
+`address_of_a_mut_std_lends_from_its_storage`, run natively on wasm32,
+sweeps each lend over payloads a number of each width, a `bool`, a
+`NonZeroU32` and a reference, whose `Option`s use a tag or a niche, and a
+`Result` whose variant changes (the old pointer's offset, and a new
+`as_mut`'s; reading through the old one is undefined behaviour). A
+library that asks no address still refuses such a pointer where it's made
+(a diagnostics case). Lent objects stay refused (#1475). Mutations
+once-cell-lent-at-its-option, lazy-cell-lent-at-its-state,
+peekable-lent-past-one-option, result-err-lent-at-ok, lend-never-placed,
+placed-lend-pointer-refused and heap-top-handle-placeless, each caught.

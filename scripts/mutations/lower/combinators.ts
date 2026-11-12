@@ -308,16 +308,16 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of a `Result` of a number gives the number, not a handle",
     file: "src/lower/combinators.rs",
-    find: "                let part = |boxed: bool| if boxed { Expr::handle(inside()) } else { inside() };\n",
-    replace: "                let part = |_: bool| inside();\n",
+    find: "        let part = |boxed: bool, lent: Lent| if boxed { handle(lent, None) } else { inside() };\n",
+    replace: "        let part = |_: bool, _: Lent| inside();\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "result-as-mut-tag-ok",
     breaks: "`as_mut()` of a `Result` of numbers is always `Ok`",
     file: "src/lower/combinators.rs",
-    find: "                    _ if boxed(ok_ty) && boxed(err_ty) => result::tagged(result::tag(subject.clone()), ok),\n",
-    replace: "                    _ if boxed(ok_ty) && boxed(err_ty) => result::ok(ok),\n",
+    find: "                result::tagged(result::tag(subject.clone()), handle(Lent::Ok, Some(tag(true))))\n",
+    replace: "                result::ok(handle(Lent::Ok, Some(tag(true))))\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
@@ -325,8 +325,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of a `Result` of a number and an object is always `Err`",
     file: "src/lower/combinators.rs",
-    find: "                    _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty)))),\n",
-    replace: "                    _ => result::err(part(boxed(err_ty))),\n",
+    find: "            _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty), Lent::Err))),\n",
+    replace: "            _ => result::err(part(boxed(err_ty), Lent::Err)),\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
@@ -838,8 +838,8 @@ export const mutations: Mutation[] = [
     name: "result-as-mut-generic-unboxed",
     breaks: "`Result::as_mut` in generic code gives a type parameter's `&mut` the value, which generic code writes as a box, `x.value = v`: JS throws (#1007)",
     file: "src/lower/combinators.rs",
-    find: "                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();\n",
-    replace: "                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell() && !self.is_unknown(ty);\n",
+    find: "        let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();\n",
+    replace: "        let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell() && !self.is_unknown(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
   {
