@@ -724,10 +724,11 @@ export function seeded(targetDir: string): string {
 }
 
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,
- * as metadata for rust-js or as libraries for a native build. */
+ * as metadata for rust-js, as libraries for a native build, or for one on
+ * wasm32-wasip1, whose 32-bit `usize` is the JS's. */
 const serdeFlags: Record<string, string[]> = {};
-export function buildSerde(kind: "rmeta" | "rlib" = "rmeta"): string[] {
-  serdeFlags[kind] ??= run(["serde/build.sh", ...(kind === "rlib" ? ["--rlib"] : [])]).trim().split(/\s+/);
+export function buildSerde(kind: "rmeta" | "rlib" | "rlib-wasm32" = "rmeta"): string[] {
+  serdeFlags[kind] ??= run(["serde/build.sh", ...(kind === "rmeta" ? [] : [`--${kind}`])]).trim().split(/\s+/);
   return serdeFlags[kind];
 }
 

@@ -4,7 +4,6 @@ compiler-panic stream_01
 compiler-panic stream_02
 compiler-panic stream_and_raw
 different std_17
-different std_29
 different stream_03
 different stream_04
 different vconv_16
@@ -312,6 +311,7 @@ same std_14
 same std_24
 same std_25
 same std_26
+same std_29
 same str_read_escapes
 same str_write_escapes
 same struct_kinds

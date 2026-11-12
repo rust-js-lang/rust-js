@@ -85,7 +85,25 @@ async function make(): Promise<string[]> {
 const ran = (r: { stdout: string; stderr: string; code: number | null; timedOut: boolean }) =>
   `${r.stdout}${r.stderr}exit ${r.timedOut ? "timeout" : r.code}\n`;
 
-const flags = { native: buildSerde("rlib"), js: buildSerde() };
+const flags = { native: buildSerde("rlib"), wasm32: buildSerde("rlib-wasm32"), js: buildSerde() };
+
+// The programs whose answer is `usize`'s width, 32 bits in JS: their native
+// build is for wasm32, as the corpus's `//@ native: wasm32` cases are, run
+// by test/wasi-run.ts. `std_29` writes `1usize` and reads 2^32 as a `usize`.
+const wasm32 = new Set(["std_29"]);
+
+/** `name`'s native build of `source`, given rustc's `args` besides, into
+ * `binary`: for the host, or for wasm32 where `wasm32` names it. */
+async function nativeBuild(name: string, source: string, binary: string, args: string[] = []) {
+  const target = wasm32.has(name) ? ["--target=wasm32-wasip1", ...flags.wasm32] : flags.native;
+  return exec(["rustc", ...rustc, ...target, ...args, source, "-o", binary], root, 300_000);
+}
+
+/** `name`'s native `binary` run. */
+async function nativeRun(name: string, binary: string) {
+  const run = wasm32.has(name) ? [process.execPath, join(root, "test", "wasi-run.ts"), binary, `${binary}.outcome`] : [binary];
+  return ran(await exec(run, work, 20_000));
+}
 const rustc = ["--edition=2024", "-A", "warnings"];
 const both = (outcome: Outcome): Record<Engine, Outcome> => ({ bun: outcome, node: outcome });
 
@@ -108,9 +126,9 @@ async function runs(runner: string, expected: string, out: string): Promise<Reco
 async function probe(name: string): Promise<Outcomes> {
   const source = join(programs, `${name}.rs`);
   const binary = join(work, "bin", name);
-  const native = await exec(["rustc", ...rustc, ...flags.native, source, "-o", binary], root, 300_000);
+  const native = await nativeBuild(name, source, binary);
   if (native.code !== 0) return { program: both("native-invalid"), library: both("native-invalid"), split: both("native-invalid") };
-  const expected = ran(await exec([binary], work, 20_000));
+  const expected = await nativeRun(name, binary);
   writeFileSync(join(work, "out", `${name}.native`), expected);
   return { program: await asProgram(name, source, expected), library: await asLibrary(name, source, expected), split: await asSplit(name, source) };
 }
@@ -156,12 +174,10 @@ async function asSplit(name: string, source: string): Promise<Record<Engine, Out
   writeFileSync(program, made.program);
   const rlib = join(dir, "native", `lib${libraryCrate}.rlib`);
   const binary = join(dir, "native", "program");
-  const lib = await exec(["rustc", ...rustc, ...flags.native, "--crate-type=rlib", `--crate-name=${libraryCrate}`, library, "-o", rlib], root, 300_000);
-  const app = lib.code === 0
-    ? await exec(["rustc", ...rustc, ...flags.native, "--extern", `${libraryCrate}=${rlib}`, program, "-o", binary], root, 300_000)
-    : lib;
+  const lib = await nativeBuild(name, library, rlib, ["--crate-type=rlib", `--crate-name=${libraryCrate}`]);
+  const app = lib.code === 0 ? await nativeBuild(name, program, binary, ["--extern", `${libraryCrate}=${rlib}`]) : lib;
   if (app.code !== 0) return both("native-invalid");
-  const expected = ran(await exec([binary], work, 20_000));
+  const expected = await nativeRun(name, binary);
   const manifest = join(dir, libraryCrate, "lib.manifest.json");
   const rmeta = join(dir, `lib${libraryCrate}.rmeta`);
   const producer = await exec([compiler, library, "-o", join(dir, libraryCrate, "lib.js"), "--library", "--manifest", manifest,

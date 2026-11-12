@@ -59,3 +59,8 @@ none `unsplit`. No program gives native's answer as a program and another answer
 only as a library or split: 62 (63 split) by #1554's refusal, met by the header's generic `deserialize_with` helper
 `down`, which a library compiles generically; the nine `ienum_*` by #1559; split, a library's hand-written
 `Serialize` or `Deserialize`, #1560; and `chk_04` panics the compiler as a library, #1558.
+
+`std_29`'s answer is `usize`'s width, 32 bits in JS, so its native build is for wasm32-wasip1, as the corpus's
+`//@ native: wasm32` cases are (`serde/build.sh --rlib-wasm32`, the runner's `wasm32`): against it, it gives native's
+answer each way, where against a 64-bit oracle it was `different` by design.
+

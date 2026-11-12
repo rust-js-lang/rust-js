@@ -6,6 +6,9 @@
 #
 #   rust-js shared.rs -- $(serde/build.sh)           # metadata, for rust-js's target (ADR 0090)
 #   rustc shared.rs $(serde/build.sh --rlib)         # libraries, for a native build
+#   rustc --target=wasm32-wasip1 shared.rs $(serde/build.sh --rlib-wasm32)
+#                                                    # libraries, for a native build on wasm32, whose
+#                                                    # 32-bit usize is the JS's (#1532)
 set -euo pipefail
 cd "$(dirname "$0")"
 target=../target/serde
@@ -14,6 +17,13 @@ if [ "${1:-}" = "--rlib" ]; then
   deps=$(cd "$target/debug/deps" && pwd)
   latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
   echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps"
+elif [ "${1:-}" = "--rlib-wasm32" ]; then
+  # Natively on wasm32; serde_derive, a procedural macro, runs on the host.
+  cargo build --quiet --locked --target-dir "$target" --target wasm32-wasip1
+  deps=$(cd "$target/wasm32-wasip1/debug/deps" && pwd)
+  host=$(cd "$target/debug/deps" && pwd)
+  latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
+  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps -L dependency=$host"
 else
   # For the target; serde_derive, a procedural macro, runs on the host.
   cargo build --quiet --locked --target-dir "$target" --target wasm32-unknown-unknown
