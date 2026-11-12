@@ -175,3 +175,22 @@ the refusal. Mutations `print-in-a-writer-unmarked`,
 `composed-stopping-writer-unrefused` and
 `composed-stopping-writer-refused-unasked`; `sink-never-the-line` and
 `pretty-not-indented` are refitted.
+
+## Amendment: a failing writer's text written into a `String` (2026-11-12, #1520)
+
+A writer that prints and returns `Err`, given to `write!` into a
+`String`, threw std's `to_string` panic instead of returning the `Err`.
+A `format_args!` whose formatting may print is `Value::Printing`, which
+`printing_call` turns into a text that may fail, `$writeTry`'s, only where
+it's the call's first argument. A `write!`'s text comes after the place
+it writes to, so the failure was dropped. Now it's found wherever it is
+among the arguments. And the text, made apart from the line in a body
+that runs while a line is formatted, is made apart value by value,
+`buf += "<"; buf += $formatting(() => refusedDisplay_fmt())`, so the text
+before the piece that fails is written, as ADR 0187 writes it.
+
+Corpus case printing_writer_refused_into_a_string (the issue's program; a
+writer that prints and succeeds, its `Ok`; and a writer that writes both
+into a `String` of its own as it's shown in a line) against native Rust
+in both builds. Mutations `printing-text-of-a-write-unseen` and
+`printing-text-made-apart-whole`.

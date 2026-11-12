@@ -773,9 +773,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call given a `format_args!`'s text whose formatting may print
     /// (#1490): `print!`'s or `println!`'s, each piece written through
-    /// stdout's line as it's made, `$printing(..)`; another's, `format!`'s
-    /// or `eprint!`'s, given the text made apart from the line, as a text
-    /// that may fail where it may (ADR 0187). `None` of another call.
+    /// stdout's line as it's made, `$printing(..)`; another's, `format!`'s,
+    /// `eprint!`'s or a `write!`'s into a `String`, given the text made
+    /// apart from the line, as a text that may fail where it may (ADR
+    /// 0187), wherever among its arguments it's given, a `write!`'s after
+    /// the text it writes to (#1520). `None` of another call.
     pub(super) fn printing_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -784,8 +786,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Value<'tcx>>> {
-        let Some(Value::Printing(text, fails)) = values.first() else {
+        let Some(at) = values.iter().position(|value| matches!(value, Value::Printing(..))) else {
             return Ok(None);
+        };
+        let Value::Printing(text, fails) = &values[at] else {
+            unreachable!("found above")
         };
         let (text, fails) = (text.clone(), *fails);
         if known == (Std::Print { error: false }) {
@@ -796,8 +801,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.js_span(span),
             ))));
         }
-        let apart = self.made_apart_from_the_line(text);
-        values[0] = match fails {
+        // Of what may fail, written piece by piece, each value made apart
+        // from the line, so the text before the one that fails is written,
+        // `<` of `write!(buf, "<{}>", refused)` (ADR 0187, #1520).
+        let mut text = text;
+        let apart = match (fails, &mut text.kind) {
+            (true, js::ExprKind::Template(_, values, _)) => {
+                for value in values.iter_mut() {
+                    *value = self.made_apart_from_the_line(std::mem::replace(value, Expr::undefined()));
+                }
+                text
+            }
+            _ => self.made_apart_from_the_line(text),
+        };
+        values[at] = match fails {
             true => Value::Fmt(Std::FmtNew, self.tcx.types.unit, apart),
             false => Value::Expr(apart),
         };

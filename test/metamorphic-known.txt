@@ -28,6 +28,7 @@ plain std loud-drop lock_poisoning.rs
 
 #1490 P0: a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
 plain std library printed_while_a_line_is_formatted.rs
+plain std library printing_writer_refused_into_a_string.rs
 plain std library printing_writer_shown_in_std_values.rs
 plain std library printing_writer_stopped_part_way_where_caught.rs
 

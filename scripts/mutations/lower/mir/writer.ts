@@ -331,4 +331,20 @@ export const mutations: Mutation[] = [
     replace: "        match false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what prints"],
   },
+  {
+    name: "printing-text-of-a-write-unseen",
+    breaks: "a `write!` into a `String` of a writer that prints and returns `Err` takes it as `Ok`, so std's `to_string` panic is thrown instead of the `Err` given back (#1520)",
+    file: "src/lower/mir/writer.rs",
+    find: "        let Some(at) = values.iter().position(|value| matches!(value, Value::Printing(..))) else {\n",
+    replace: "        let Some(at) = values.first().filter(|value| matches!(value, Value::Printing(..))).map(|_| 0) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_writer_refused_into_a_string.rs$"],
+  },
+  {
+    name: "printing-text-made-apart-whole",
+    breaks: "a failing `write!`'s text made apart from the line is made whole, so the text before the piece that fails, `<` of `\"<{}>\"`, isn't written (#1520)",
+    file: "src/lower/mir/writer.rs",
+    find: "            (true, js::ExprKind::Template(_, values, _)) => {\n",
+    replace: "            (true, js::ExprKind::Template(_, values, _)) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_writer_refused_into_a_string.rs$"],
+  },
 ];
