@@ -68,6 +68,21 @@ export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
   }
 }
 
+/** `cmd` run so it goes with this process (#1444). A command runs as the
+ * leader of a group of its own, so a deadline stops what it started too
+ * (`stopGroup`), but then a SIGKILL of this process, or of its group, a
+ * `timeout -s KILL` or an agent's stopped task, never reaches it: a
+ * compile that never ended ran on for two hours, reparented to launchd.
+ * A watcher in its group, its output elsewhere, so it holds no pipe of
+ * ours open, asks each second whether this process is alive, and once it
+ * isn't, kills the group; the command itself is `exec`'d, the group's
+ * leader, its pid, exit code and signal its own. The watcher goes with the
+ * group, as `stopGroup` stops it once the command ends. */
+export function guarded(cmd: string[]): string[] {
+  const watch = '( while kill -0 "$0" 2>/dev/null; do sleep 1; done; kill -9 -$$ ) </dev/null >/dev/null 2>&1 & exec "$@"';
+  return ["/bin/sh", "-c", watch, String(process.pid), ...cmd];
+}
+
 /** `cmd`, stopped after `timeout` ms or `maxBuffer` bytes of output, with
  * this process's environment and `env`, which a change to `process.env`
  * wouldn't give it; a setting that's `undefined` in `env` is left out. */
@@ -77,7 +92,7 @@ export function runSync(cmd: string[], cwd: string, timeout: number, env: Record
 
 /** `runSync`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
 function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>): Exit {
-  const p = Bun.spawnSync(cmd, {
+  const p = Bun.spawnSync(guarded(cmd), {
     cwd,
     stdout: "pipe",
     stderr: "pipe",
@@ -132,7 +147,7 @@ export function processTree(pid: number): { pid: number; bytes: number; command:
 
 /** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
 async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>, memoryCap?: number): Promise<Exit> {
-  const p = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
+  const p = Bun.spawn(guarded(cmd), { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
   let timedOut = false;
   let overflowed = false;
   let overgrown = false;

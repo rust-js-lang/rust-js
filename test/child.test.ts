@@ -152,3 +152,22 @@ test("a run that holds more than its memory cap is stopped, its children too", a
   expect([p.overgrown, p.timedOut, Date.now() - started < 30_000]).toEqual([true, false, true]);
   expect(processTree(process.pid).length).toBeGreaterThan(0);
 }, underLoad(60_000));
+
+// A run's command goes with the process that ran it: one SIGKILLed, by a
+// `timeout -s KILL` or an agent's stopped task, left a compile running in
+// its own group, reparented to launchd, for two hours (#1444).
+test("a run's command is stopped when the process that ran it is killed", async () => {
+  // A duration no other process sleeps, 30 s at most, so one this test
+  // leaves, failing, ends by itself.
+  const marker = `29.${process.pid % 1000}${Date.now() % 1000}`;
+  const runner = `import { runSync } from ${JSON.stringify(import.meta.dir + "/child.ts")}; runSync(["sleep", "${marker}"], ".", 60_000);`;
+  const left = () => Bun.spawnSync(["pgrep", "-f", `^sleep ${marker}$`]).stdout.toString().trim();
+  const parent = Bun.spawn([process.execPath, "-e", runner]);
+  for (let i = 0; i < 100 && left() === ""; i++) await Bun.sleep(50);
+  expect(left()).not.toBe("");
+  parent.kill("SIGKILL");
+  await parent.exited;
+  for (let i = 0; i < 60 && left() !== ""; i++) await Bun.sleep(100);
+  expect(left()).toBe("");
+}, underLoad(30_000));
+
