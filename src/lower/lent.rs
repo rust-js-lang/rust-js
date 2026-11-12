@@ -239,13 +239,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_none_or(|instances| instances.into_iter().any(asked)),
             }
         };
-        let Some((lent, _)) = lent
+        let Some((lent, shared)) = lent
             .into_iter()
             .find(|&(lent, shared)| lent != receiver && addressable((lent, shared)))
         else {
             return Ok(());
         };
-        let what = format!("`{}` in a crate that asks an address (#1293)", tcx.def_path_str(def_id));
+        // A `&mut` to a number, a handle whose place no record says, is
+        // #1474's; an object, which no record says is inside the receiver,
+        // #1475's.
+        let issue = if !shared && self.holds_no_object(lent) {
+            1474
+        } else {
+            1475
+        };
+        let what = format!(
+            "`{}` in a crate that asks an address (#{issue})",
+            tcx.def_path_str(def_id)
+        );
         let why = format!(
             "it lends `{lent}` from inside its `{receiver}`, whose storage JS keeps apart from it, so its address \
              wouldn't be in the `{receiver}`'s; take what it holds out by value, keep it where rust-js \

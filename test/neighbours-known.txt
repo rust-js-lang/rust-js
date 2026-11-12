@@ -21,7 +21,7 @@ plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.r
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 
-#1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address, where they lend a `&mut` to a number, a handle whose place no record says: a generic `Result::as_mut`'s, `OnceCell::get_mut`'s, `Peekable::peek_mut`'s
+#1474 P2: a &mut to a number std lends from inside its storage is refused in a crate that asks addresses: its handle has no place
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
 
 #1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address

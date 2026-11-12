@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "lent.push((given(pointee), true))",
     tests: ["test/diagnostics.test.ts", "-t", "get_mut of a number lent beside its address"],
   },
+  {
+    name: "lend-refusal-names-one-issue",
+    breaks: "a lent object's refusal names #1474, a `&mut` to a number's, where it's #1475's, a record of where its receiver keeps it",
+    file: "src/lower/lent.rs",
+    find: "        let issue = if !shared && self.holds_no_object(lent) {\n",
+    replace: "        let issue = if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_lent_by_a_once_cell_refused.rs$"],
+  },
 ];

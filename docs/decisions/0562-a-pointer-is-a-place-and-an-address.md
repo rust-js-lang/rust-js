@@ -1361,8 +1361,9 @@ one. That's a `OnceCell<Option<u8>>`'s `get` beside a pointer to an
 Still refused: a `&mut` to a number, which JS lends as a handle whose
 place no record says (`OnceCell::get_mut`, `Peekable::peek_mut`, a
 `Result`'s `as_mut`), and a lent object of a type whose address the crate
-asks, which needs a record of where its receiver keeps it. #1293 stays
-open for those. Corpus case std_lends_beside_an_address and a diagnostics
+asks, which needs a record of where its receiver keeps it. The first
+is #1474's, the second #1475's, and the refusal names the one it is; #1293 is closed with 11 of its 13 pairs
+running as native Rust and one moved to #1295. Corpus case std_lends_beside_an_address and a diagnostics
 case of a `get_mut` against native Rust in both builds; mutations
 lent-type-unnormalized, by-ref-lends-inside,
 generic-lend-of-any-instance, no-object-lend-refused and
