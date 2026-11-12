@@ -231,4 +231,33 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_drops_what_it_holds.rs$"],
     snapshots: true,
   },
+  {
+    name: "cycle-maker-uncompiled",
+    breaks:
+      "std's `Iterator::cycle` isn't compiled, so the build of std's bodies makes the runtime's `$cycleOf` and pits nothing against it (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: '    ("Iterator", "cycle"),\n',
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "cycle-maker-called-plain",
+    breaks:
+      "the plain build calls std's compiled `cycle`, not the runtime's `$cycleOf`, though `Cycle` is compiled as its meaning alone (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: '    ("Cycle", "cycle", false),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "cycle-compiled-in-every-build",
+    breaks:
+      "`Cycle` is compiled for every build, so the plain build makes std's struct of `it.cycle()`, not the runtime's `$cycleOf(it)` (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: '    "Cycle",\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
+    snapshots: true,
+  },
 ];

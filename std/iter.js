@@ -93,6 +93,21 @@ export const StepBy = {
   },
 };
 
+export const Cycle = {
+  new(iter, IClone, dropI) {
+    let orig;
+    try {
+      orig = IClone.clone(iter);
+    } catch (error) {
+      $cleanup(() => {
+        dropI?.(iter);
+      }, error);
+      throw error;
+    }
+    return { orig, iter };
+  },
+};
+
 export const RepeatNInner = {
   new(element, count, dropT) {
     const value = count === 0 ? undefined : count;
@@ -889,6 +904,8 @@ const $chainABDebug = new WeakMap();
 const $zipClone = new WeakMap();
 const $repeatNClone = new WeakMap();
 const $repeatNDebug = new WeakMap();
+const $cycleClone = new WeakMap();
+const $cycleDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -9163,6 +9180,309 @@ export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
     : `RepeatN { count: ${$formatted(String(count), options, true)}, element: ${element == null ? "None" : options?.alternate ? $pretty("Some(", [ADebug.fmt($someValue(element), options)], ")") : `Some(${ADebug.fmt($someValue(element), options)})`} }`;
 }
 
+export function cycleIterator_next(cycle, IClone, IIterator = { next: $next }, dropI, dropIItem) {
+  const next = IIterator.next(cycle.iter);
+  if (next == null) {
+    let tmp;
+    try {
+      tmp = IClone.clone(cycle.orig);
+    } catch (error) {
+      $cleanup(() => {
+        if (next != null) {
+          dropIItem?.($someValue(next));
+        }
+      }, error);
+      throw error;
+    }
+    try {
+      dropI?.(cycle.iter);
+    } catch (error) {
+      $cleanup(() => {
+        cycle.iter = tmp;
+        if (next != null) {
+          dropIItem?.($someValue(next));
+        }
+      }, error);
+      throw error;
+    }
+    cycle.iter = tmp;
+    let y;
+    try {
+      y = IIterator.next(cycle.iter);
+    } catch (error) {
+      $cleanup(() => {
+        if (next != null) {
+          dropIItem?.($someValue(next));
+        }
+      }, error);
+      throw error;
+    }
+    return y;
+  }
+  return next;
+}
+
+export function cycleIterator_sizeHint(
+  cycle,
+  IClone,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
+  const sz = $sizeHint(cycle.orig, IIterator);
+  if (sz[0] === 0) {
+    if (sz[1] === 0) {
+      return sz;
+    }
+    return [0, undefined];
+  }
+  return [4294967295, undefined];
+}
+
+export function cycleIterator_tryFold(
+  cycle,
+  acc,
+  f,
+  IClone,
+  IIterator = { next: $next },
+  RTry,
+  dropI,
+  dropAcc,
+  dropF,
+  dropR,
+  dropIItem,
+) {
+  const FromResidual = RTry.FromResidual();
+  let tmp$1 = false;
+  let tmp;
+  try {
+    tmp = RTry.branch(
+      $tryFoldInto($given(cycle.iter, IIterator, true), acc, (a, b) => f(a, b), RTry, dropAcc),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      dropF?.(f);
+    }, error);
+    throw error;
+  }
+  let result;
+  if (tmp.TAG === "Continue") {
+    const value = tmp._0;
+    tmp$1 = true;
+    acc = value;
+    let tmp$2;
+    try {
+      tmp$2 = IClone.clone(cycle.orig);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+        dropAcc?.(acc);
+      }, error);
+      throw error;
+    }
+    try {
+      dropI?.(cycle.iter);
+    } catch (error) {
+      $cleanup(() => {
+        cycle.iter = tmp$2;
+        dropF?.(f);
+        dropAcc?.(acc);
+      }, error);
+      throw error;
+    }
+    cycle.iter = tmp$2;
+    let isEmpty = true;
+    tmp$1 = false;
+    let tmp$3;
+    try {
+      tmp$3 = RTry.branch(
+        $tryFoldInto(
+          $given(cycle.iter, IIterator, true),
+          acc,
+          (acc, x) => {
+            isEmpty = false;
+            return f(acc, x);
+          },
+          RTry,
+          dropAcc,
+        ),
+      );
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      }, error);
+      throw error;
+    }
+    if (tmp$3.TAG === "Continue") {
+      const value = tmp$3._0;
+      tmp$1 = true;
+      acc = value;
+      if (isEmpty) {
+        tmp$1 = false;
+        try {
+          result = RTry.fromOutput(acc);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          }, error);
+          throw error;
+        }
+      } else {
+        while (true) {
+          let tmp;
+          try {
+            tmp = IClone.clone(cycle.orig);
+          } catch (error) {
+            $cleanup(() => {
+              dropF?.(f);
+              if (tmp$1) {
+                dropAcc?.(acc);
+              }
+            }, error);
+            throw error;
+          }
+          try {
+            dropI?.(cycle.iter);
+          } catch (error) {
+            $cleanup(() => {
+              cycle.iter = tmp;
+              dropF?.(f);
+              if (tmp$1) {
+                dropAcc?.(acc);
+              }
+            }, error);
+            throw error;
+          }
+          cycle.iter = tmp;
+          tmp$1 = false;
+          let tmp$2;
+          try {
+            tmp$2 = RTry.branch(
+              $tryFoldInto(
+                $given(cycle.iter, IIterator, true),
+                acc,
+                (a, b) => f(a, b),
+                RTry,
+                dropAcc,
+              ),
+            );
+          } catch (error) {
+            $cleanup(() => {
+              dropF?.(f);
+            }, error);
+            throw error;
+          }
+          if (tmp$2.TAG === "Continue") {
+            const value = tmp$2._0;
+            tmp$1 = true;
+            acc = value;
+          } else {
+            try {
+              result = FromResidual.fromResidual(tmp$2._0);
+            } catch (error) {
+              $cleanup(() => {
+                dropF?.(f);
+              }, error);
+              throw error;
+            }
+            break;
+          }
+        }
+      }
+    } else {
+      try {
+        result = FromResidual.fromResidual(tmp$3._0);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        }, error);
+        throw error;
+      }
+    }
+  } else {
+    try {
+      result = FromResidual.fromResidual(tmp._0);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      }, error);
+      throw error;
+    }
+  }
+  try {
+    dropF?.(f);
+  } catch (error) {
+    $cleanup(() => {
+      if (tmp$1) {
+        dropAcc?.(acc);
+      }
+    }, error);
+    throw error;
+  }
+  return result;
+}
+
+export function cycleIterator_advanceBy(
+  cycle,
+  n,
+  IClone,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
+  const advanceBy = $advanceBy($lent($given(cycle.iter, IIterator, true)), n, dropIItem);
+  if (advanceBy.TAG === "Ok") {
+    return { TAG: "Ok" };
+  }
+  const rem = advanceBy._0;
+  n = rem;
+  while (n > 0) {
+    const value = IClone.clone(cycle.orig);
+    try {
+      dropI?.(cycle.iter);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        cycle.iter = value;
+      }
+    }
+    const e = $advanceBy($lent($given(cycle.iter, IIterator, true)), n, dropIItem);
+    if (e.TAG === "Ok") {
+      return { TAG: "Ok" };
+    }
+    const rem = e._0;
+    if (rem === n) {
+      return e;
+    }
+    n = rem;
+  }
+  const option = n === 0 ? undefined : n;
+  return option != null ? { TAG: "Err", _0: option } : { TAG: "Ok" };
+}
+
+export function cycleClone_clone(cycle, IClone, dropI) {
+  const value = IClone.clone(cycle.orig);
+  let result;
+  try {
+    result = $stdIterator({ orig: value, iter: IClone.clone(cycle.iter) }, cycle.$steps);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(value);
+    }, error);
+    throw error;
+  }
+  return result;
+}
+
+export function cycleDebug_fmt(cycle, options, IDebug) {
+  const shown = IDebug.fmt(cycle.orig, options);
+  const shown$1 = IDebug.fmt(cycle.iter, options);
+  return options?.alternate
+    ? $pretty("Cycle {", [`orig: ${shown}`, `iter: ${shown$1}`], "}")
+    : `Cycle { orig: ${shown}, iter: ${shown$1} }`;
+}
+
 export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -10944,6 +11264,52 @@ export function iterator_zip(
           dropSelfItem,
           dropUItem,
         );
+}
+
+export function iterator_cycle(
+  self,
+  SelfIterator = { next: $next },
+  SelfClone,
+  dropSelf,
+  dropSelfItem,
+) {
+  return $stdIterator(Cycle.new(self, SelfClone, dropSelf), {
+    next(iterator) {
+      return cycleIterator_next(iterator, SelfClone, SelfIterator, dropSelf, dropSelfItem);
+    },
+    hint(iterator) {
+      return cycleIterator_sizeHint(iterator, SelfClone, SelfIterator, dropSelf, dropSelfItem);
+    },
+    advance(iterator, n) {
+      return cycleIterator_advanceBy(iterator, n, SelfClone, SelfIterator, dropSelf, dropSelfItem);
+    },
+    tryFold(iterator, init, f, broke, unwind, ends) {
+      return cycleIterator_tryFold(
+        iterator,
+        init,
+        f,
+        SelfClone,
+        SelfIterator,
+        $tryOf(broke),
+        dropSelf,
+        unwind,
+        ends,
+        undefined,
+        dropSelfItem,
+      );
+    },
+    close(iterator) {
+      try {
+        dropSelf?.(iterator.orig);
+      } catch (error) {
+        $cleanup(() => {
+          dropSelf?.(iterator.iter);
+        }, error);
+        throw error;
+      }
+      dropSelf?.(iterator.iter);
+    },
+  });
 }
 
 export function trustedRandomAccessNoCoerce_size(
@@ -14821,6 +15187,23 @@ export function repeatNDebug(ADebug, dropA) {
     $drop(repeatN) {
       repeatN.return();
     },
+  }));
+}
+
+export function cycleClone(IClone, dropI) {
+  return $traitImpl($cycleClone, [IClone, dropI], () => ({
+    clone(arg0) {
+      return cycleClone_clone(arg0, IClone, dropI);
+    },
+    $drop(cycle) {
+      cycle.return();
+    },
+  }));
+}
+
+export function cycleDebug(IDebug) {
+  return $traitImpl($cycleDebug, [IDebug], () => ({
+    fmt: (arg0, arg1) => cycleDebug_fmt(arg0, arg1, IDebug),
   }));
 }
 //# sourceMappingURL=iter.js.map

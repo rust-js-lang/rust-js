@@ -33,7 +33,7 @@ const why = {
   consumers: "an `Iterator` method std provides, whose default body std's build lowers as the plain build does: it compiles std's adapter structs, not the consumers",
   iterators: "a std iterator whose struct std's build doesn't compile, a slice's search",
   "js-own": "a std iterator stepped as JS's own iteration by decision, an array's, a string's `Chars`, any JS iterator's step: its ADR beside it (#1458)",
-  "to-pit": "a plain std struct whose body std's build doesn't compile yet, each to be pitted in turn (#1458): `Cycle`, `DecodeUtf16`",
+  "to-pit": "a plain std struct whose body std's build doesn't compile yet, each to be pitted in turn (#1458): `DecodeUtf16`",
   memory: "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it",
   ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile",
   collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
@@ -46,6 +46,7 @@ const why = {
  * only where both builds import it. */
 export const pitted: string[] = [
   "$repeatingN",
+  "$cycleOf",
   "$closing",
   "$collectDropping",
   "$consume",
@@ -125,7 +126,6 @@ export const shared: Record<string, keyof typeof why> = {
   "$copyWithin": "collections",
   "$count": "consumers",
   "$clone": "glue",
-  "$cycleOf": "to-pit",
   "$debugDuration": "format",
   "$debugF64": "format",
   "$debugList": "format",

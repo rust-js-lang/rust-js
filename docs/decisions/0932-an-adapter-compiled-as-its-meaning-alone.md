@@ -187,3 +187,27 @@ re-anchored.
 
 The plain build refuses `clone()` of a `RepeatN`, as it did before, and
 the case leaves it out; the build of std's bodies compiles it.
+
+## Amendment (2026-11-13, #1458): `Cycle`
+
+`Cycle` is compiled as its meaning alone, as `Filter` is: `Iterator::cycle`
+is among the provided methods compiled and `HELD_COMPILED`'s makers, and
+`Cycle` among `MEANING_ONLY`'s. In the build of std's bodies, `it.cycle()`
+is std's compiled `cycle` and `Cycle`; every other build makes the
+runtime's `$cycleOf(it, ..)`, as before, byte-identical: no readability
+change. Each of `Cycle`'s methods std writes is compiled: `next`,
+`size_hint`, `try_fold`, `advance_by`, `clone` and `Debug`'s `fmt`.
+
+`test/corpus/cycle_drops_what_it_replaces.rs` cycles the crate's own
+iterator with a destructor, whose replacement at each end drops the one
+replaced, through `take`, `nth`, `skip` and `position`, `try_fold`, `zip`,
+an empty one, and a slice's and a range's, against native Rust
+(`wasm32`'s `usize`) in both builds; `test/iterator-forms.test.ts` runs it
+in the build of std's bodies. The twin net, over the conformance and
+consumers tables, pits `$cycleOf` against std's `Cycle`. Mutations:
+`cycle-maker-uncompiled`, `cycle-maker-called-plain` and
+`cycle-compiled-in-every-build` (`lower/recognition/compiled_std.ts`).
+
+The plain build refuses `cycle()` of a `Vec`'s or an array's items with a
+destructor, as it did before, and the case leaves it out; the build of
+std's bodies compiles it.

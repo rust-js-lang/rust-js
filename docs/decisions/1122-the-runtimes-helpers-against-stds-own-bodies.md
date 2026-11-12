@@ -108,3 +108,7 @@ std's bodies (ADR 0932, amended). `$repeating` is `memory` (#1569):
 can't lower. `$repeat` was listed `to-pit` by
 mistake: it's `vec![item; count]`, `Vec::from_elem`, a collection's, not
 `Repeat`'s, so it's `collections`.
+
+`$cycleOf` is pitted now, std's `Cycle` compiled in the build of std's
+bodies (ADR 0932, amended); `DecodeUtf16`'s `$decodeUtf16` is the last
+`to-pit`.

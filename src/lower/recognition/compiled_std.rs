@@ -259,6 +259,12 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("RepeatN", Some("DoubleEndedIterator"), "try_rfold"),
     ("RepeatN", Some("Clone"), "clone"),
     ("RepeatN", Some("Debug"), "fmt"),
+    ("Cycle", Some("Iterator"), "next"),
+    ("Cycle", Some("Iterator"), "size_hint"),
+    ("Cycle", Some("Iterator"), "try_fold"),
+    ("Cycle", Some("Iterator"), "advance_by"),
+    ("Cycle", Some("Clone"), "clone"),
+    ("Cycle", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -285,6 +291,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "step_by"),
     ("Iterator", "chain"),
     ("Iterator", "zip"),
+    ("Iterator", "cycle"),
     // What std's zip by index asks the length of its sides by (ADR 0975).
     ("TrustedRandomAccessNoCoerce", "size"),
 ];
@@ -388,15 +395,18 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("StepBy", "step_by", false),
     ("Chain", "chain", false),
     ("Zip", "zip", false),
+    ("Cycle", "cycle", false),
 ];
 
-/// Of those, the adapters std's struct is the meaning of alone, on their way
-/// to being held as it (ADR 0932): compiled into `@rust-js/std` and std's
-/// struct in the build of std's structs alone, the differential build (ADR
-/// 0908), and what the recognizers make wherever the crate makes one in
-/// any other, as before it was compiled.
+/// Of those, and of the plain structs a free function makes
+/// (`COMPILED_STD_FNS`), `repeat_n`'s, the ones std's struct is the meaning
+/// of alone, on their way to being held as it (ADR 0932): compiled into
+/// `@rust-js/std` and std's struct in the build of std's structs alone, the
+/// differential build (ADR 0908), and what the recognizers make wherever
+/// the crate makes one in any other, as before it was compiled.
 const MEANING_ONLY: &[&str] = &[
     "RepeatN",
+    "Cycle",
     "Filter",
     "FilterMap",
     "TakeWhile",

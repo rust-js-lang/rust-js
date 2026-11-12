@@ -1661,6 +1661,186 @@
         ]
       },
       {
+        "key": "core::iter::adapters::cycle::{impl#3}",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#3}::clone",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#4}",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleDebug",
+        "member": null
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#4}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleDebug_fmt",
+        "member": null
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#1}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#1}::next",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#1}::size_hint",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cycle::{impl#1}::try_fold",
+        "rust_path": "rust_js_std::<core::iter::Cycle<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "cycleIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::enumerate::{impl#12}",
         "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::clone::Clone>",
         "module": [
@@ -12559,6 +12739,24 @@
         ]
       },
       {
+        "key": "core::iter::adapters::cycle::{impl#0}::new",
+        "rust_path": "rust_js_std::core::iter::Cycle::<I>::new",
+        "module": [
+          "iter"
+        ],
+        "export": "Cycle",
+        "member": "new",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::inspect::{impl#2}::do_inspect",
         "rust_path": "rust_js_std::core::iter::Inspect::<I, F>::do_inspect",
         "module": [
@@ -12677,6 +12875,33 @@
             "index": 2,
             "marks": [
               "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::iterator::Iterator::cycle",
+        "rust_path": "rust_js_std::core::iter::Iterator::cycle",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_cycle",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
             ]
           }
         ]
@@ -13856,6 +14081,9 @@
       "core::iter::adapters::copied::{impl#1}",
       "core::iter::adapters::copied::{impl#2}",
       "core::iter::adapters::copied::{impl#3}",
+      "core::iter::adapters::cycle::{impl#1}",
+      "core::iter::adapters::cycle::{impl#3}",
+      "core::iter::adapters::cycle::{impl#4}",
       "core::iter::adapters::enumerate::{impl#12}",
       "core::iter::adapters::enumerate::{impl#13}",
       "core::iter::adapters::enumerate::{impl#1}",
@@ -14008,6 +14236,7 @@
       "exports": [
         "Inspect",
         "StepBy",
+        "Cycle",
         "RepeatNInner",
         "FlattenCompat",
         "Zip",
@@ -14266,6 +14495,12 @@
         "repeatNDoubleEndedIterator_tryRfold",
         "repeatNClone_clone",
         "repeatNDebug_fmt",
+        "cycleIterator_next",
+        "cycleIterator_sizeHint",
+        "cycleIterator_tryFold",
+        "cycleIterator_advanceBy",
+        "cycleClone_clone",
+        "cycleDebug_fmt",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -14287,6 +14522,7 @@
         "iterator_stepBy",
         "iterator_chain",
         "iterator_zip",
+        "iterator_cycle",
         "trustedRandomAccessNoCoerce_size",
         "repeatN",
         "iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked",
@@ -14386,7 +14622,9 @@
         "chainABDebug",
         "zipClone",
         "repeatNClone",
-        "repeatNDebug"
+        "repeatNDebug",
+        "cycleClone",
+        "cycleDebug"
       ],
       "links": [
         {
@@ -14464,7 +14702,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "5d355ce9293c666e"
+      "hash": "0f7ed2c6272f6c6f"
     },
     {
       "file": "iter.js.map",
