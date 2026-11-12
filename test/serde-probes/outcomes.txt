@@ -7,8 +7,12 @@ compiler-panic stream_00
 compiler-panic stream_01
 compiler-panic stream_02
 compiler-panic stream_and_raw
-different drop_03
 different ienum_04
+different issue_1544
+different issue_1546
+different issue_1547
+different issue_1549
+different issue_1550
 different more_08
 different more_09
 different more_10
@@ -45,6 +49,7 @@ refused chk_06
 refused collections_std
 refused drop_00
 refused drop_02
+refused drop_03
 refused enum_internal
 refused errapi_02
 refused errapi_03
@@ -58,6 +63,9 @@ refused ienum_06
 refused ienum_07
 refused ienum_08
 refused ienum_09
+refused issue_1548
+refused issue_1552
+refused issue_1554
 refused map_keys_read
 refused map_keys_write
 refused mapkey_04
@@ -191,6 +199,9 @@ same ienum_12
 same ienum_13
 same ienum_14
 same ienum_15
+same issue_1536
+same issue_1543
+same issue_1545
 same manual_00
 same manual_01
 same manual_02

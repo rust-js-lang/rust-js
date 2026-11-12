@@ -57,7 +57,7 @@ async function make(): Promise<string[]> {
     const made = await exec([process.execPath, file], work, 60_000);
     if (made.code !== 0) throw new Error(`${file} failed:\n${made.stderr}`);
   }
-  for (const file of readdirSync(probes).filter((f) => /^drop_\d+\.rs$/.test(f))) {
+  for (const file of readdirSync(probes).filter((f) => /^(drop|issue)_\d+\.rs$/.test(f))) {
     copyFileSync(join(probes, file), join(programs, file));
   }
   return readdirSync(programs).filter((f) => f.endsWith(".rs")).map((f) => f.slice(0, -3)).sort();

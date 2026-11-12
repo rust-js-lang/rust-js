@@ -27,5 +27,25 @@ baseline, as `run-one.sh` does one. It prints the source of each program whose o
 that gave native Rust's answer no longer does. Name programs to run only those; `--record` writes this run's Bun
 outcomes to `outcomes.txt`. It runs as many programs at once as `atOnce` says of tests.
 
-`outcomes.txt` at #1543's fix, Bun 1.4.4 and Node 24, the same on both: 242 same, 90 refused, 9 compiler panics,
-14 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since #1543). Of the review's 28 `different`, 12 now give native Rust's answer and `pos_19` is refused.
+`outcomes.txt` at 069058dab, Bun 1.4.4 and Node 24, the same on both, of the generated 358: 242 same, 91 refused,
+9 compiler panics, 13 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since
+#1543, and `drop_03`, a read that fails partway, is refused since 069058dab). Of the review's 28 `different`, 13 now
+give native Rust's answer and `pos_19` and `drop_03` are refused.
+
+Each issue the independent review filed is a probe of its own, `issue_<n>.rs`, its repro as the issue gives it, its
+first line naming the issue; the runner copies them into `p/` beside `drop_0N.rs`. Their outcomes, of the baseline:
+
+| Issue | Probe | Outcome |
+|---|---|---|
+| #1536 (closed; its flatten comment) | `issue_1536.rs` | same |
+| #1543 (closed) a stateful `skip_serializing_if` | `issue_1543.rs` | same |
+| #1544 `expecting` run on a successful read | `issue_1544.rs` | different |
+| #1545 (closed) a nested serialization `Err` uncaught | `issue_1545.rs` | same |
+| #1546 `from_value` calls `visit_str` | `issue_1546.rs` | different |
+| #1547 a custom `serialize_u128` past `to_value`'s range | `issue_1547.rs` | different |
+| #1548 (closed) an internally tagged payload's hand-written `Serialize` | `issue_1548.rs` | refused |
+| #1549 a custom option `Visitor` under `from_value` | `issue_1549.rs` | different |
+| #1550 a codec looked up without its generic arguments | `issue_1550.rs` | different |
+| #1552 a read that fails partway drops nothing | `issue_1552.rs` | refused |
+| #1554 `impl Drop` beside a hand-written `Deserialize` | `issue_1554.rs` | refused |
+
