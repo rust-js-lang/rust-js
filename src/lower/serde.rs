@@ -714,11 +714,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `#[serde(transparent)]` and a newtype `struct Id(u32)`: the field itself.
             if container.transparent || (variant.ctor_kind() == Some(CtorKind::Fn) && fields.len() == 1) {
                 let written = self.written_field(variant, &fields)?;
-                let (field, field_ty) = written
+                let (field, value, field_ty) = written
                     .into_iter()
                     .next()
                     .ok_or_else(|| self.unsupported(span, "this struct"))?;
-                return self.write_json(field, json, field_ty, span, out);
+                // By its own writer, where it names one (#1536).
+                let codec = self.field_codec(field, &self.serde_attrs(field)?, true, span)?;
+                return self.write_field(codec, value, json, field_ty, span, out);
             }
             return match variant.ctor_kind() {
                 Some(CtorKind::Const) => {
@@ -798,13 +800,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// The fields that aren't skipped, as `(value, type)`: for a
+    /// The fields that aren't skipped, as `(field, value, type)`: for a
     /// `#[serde(transparent)]` struct, the one that's written.
-    fn written_field(&self, variant: &ty::VariantDef, fields: &[(Expr, Ty<'tcx>)]) -> R<Vec<(Expr, Ty<'tcx>)>> {
+    fn written_field(&self, variant: &ty::VariantDef, fields: &[(Expr, Ty<'tcx>)]) -> R<Vec<(DefId, Expr, Ty<'tcx>)>> {
         let mut written = Vec::new();
         for (field, (value, ty)) in variant.fields.iter().zip(fields) {
             if !self.serde_attrs(field.did)?.skip_serializing {
-                written.push((value.clone(), *ty));
+                written.push((field.did, value.clone(), *ty));
             }
         }
         Ok(written)
@@ -874,11 +876,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(i, field)| (self.project(value.clone(), ty, i), self.field_ty(field, args)))
             .collect();
         if attrs.transparent || (variant.ctor_kind() == Some(CtorKind::Fn) && fields.len() == 1) {
-            let (value, ty) = self
+            let (field, value, ty) = self
                 .written_field(variant, &fields)?
                 .into_iter()
                 .next()
                 .ok_or_else(|| self.unsupported(span, "an internally tagged newtype variant of this"))?;
+            // Its own writer would be given serde's tagged serializer, which
+            // this doesn't make (#1536).
+            if self.serde_attrs(field)?.serialize_with.is_some() {
+                return Err(self.unsupported(
+                    span,
+                    "an internally tagged newtype variant whose field has its own writer",
+                ));
+            }
             return self.write_internal_fields(value, json, ty, span, out);
         }
         match variant.ctor_kind() {
@@ -915,7 +925,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = Vec::new();
             // `#[serde(flatten)]`: its entries, among these.
             if attrs.flatten {
-                let writer = self.json_writer(*ty, span)?;
+                // Its own writer, where it names one, given the entries' (#1536).
+                let writer = match codec {
+                    Some(codec) => codec,
+                    None => self.json_writer(*ty, span)?,
+                };
                 self.emit(json, "flat", vec![value.clone(), writer], &mut body);
             } else {
                 self.emit(json, "key", vec![Expr::str(name)], &mut body);
@@ -989,6 +1003,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &format!("`#[serde({name} = ..)]` of this field")));
         };
         Ok(Some(Expr::call(Expr::helper("$jsonCodec"), vec![self.fn_ref(f)])))
+    }
+
+    /// A newtype variant's own writer, or reader: `#[serde(with = ..)]`,
+    /// `serialize_with` or `deserialize_with` on the variant, which serde
+    /// gives its one field, or else on its field (`field_codec`). On a
+    /// variant of no field or of more, refused: serde gives it all of them,
+    /// which this doesn't (#1536).
+    fn newtype_variant_codec(&mut self, variant: &ty::VariantDef, serialize: bool, span: Span) -> R<Option<Expr>> {
+        let attrs = self.serde_attrs(variant.def_id)?;
+        let own = if serialize {
+            attrs.serialize_with
+        } else {
+            attrs.deserialize_with
+        };
+        match (variant.ctor_kind(), variant.fields.len()) {
+            (Some(CtorKind::Fn), 1) => match own {
+                Some(_) => self.field_codec(variant.def_id, &attrs, serialize, span),
+                None => {
+                    let field = variant.fields.iter().next().expect("a field").did;
+                    let field_attrs = self.serde_attrs(field)?;
+                    self.field_codec(field, &field_attrs, serialize, span)
+                }
+            },
+            _ => match own {
+                Some(name) => Err(self.unsupported(
+                    span,
+                    &format!("`#[serde({name} = ..)]` on a variant that isn't a newtype"),
+                )),
+                None => Ok(None),
+            },
+        }
     }
 
     /// A field's `value` written: by its own writer (`field_codec`), or as
@@ -1087,6 +1132,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<()> {
         let kind = variant.ctor_kind();
+        // A newtype variant's writer: the variant's own, `#[serde(with)]` on
+        // it, or its field's (#1536).
+        let codec = self.newtype_variant_codec(variant, true, span)?;
+        if codec.is_some() && matches!(tagging, Tagging::Internal(_)) {
+            return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer"));
+        }
         // The variant's content, without its tag.
         let content = |this: &mut Self, out: &mut Vec<Stmt>| -> R<()> {
             match kind {
@@ -1095,7 +1146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(())
                 }
                 Some(CtorKind::Fn) if fields.len() == 1 => {
-                    this.write_json(fields[0].0.clone(), json, fields[0].1, span, out)
+                    this.write_field(codec.clone(), fields[0].0.clone(), json, fields[0].1, span, out)
                 }
                 Some(CtorKind::Fn) => {
                     this.emit(json, "beginTuple", Vec::new(), out);

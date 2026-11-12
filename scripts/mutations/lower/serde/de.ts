@@ -54,4 +54,40 @@ export const mutations: Mutation[] = [
       "container default gives each missing"
     ]
   },
+  {
+    name: "newtype-struct-reader-unasked",
+    breaks: "a newtype struct's field that names its own reader is read as its type is, `\"3\"` refused (#1536)",
+    file: "src/lower/serde/de.rs",
+    find: "                let read = self.field_reader(field.did, &attrs, self.field_ty(field, args), span)?;\n",
+    replace: "                let read = self.json_reader(self.field_ty(field, args), span)?;\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "flatten-reader-unasked",
+    breaks: "a flattened field's own reader is dropped, its type's entries read (#1536)",
+    file: "src/lower/serde/de.rs",
+    find: "                flattened.push(self.field_reader(field.did, &attrs, field_ty, span)?);\n",
+    replace: "                flattened.push(self.json_reader(field_ty, span)?);\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "newtype-variant-reader-unasked",
+    breaks: "a newtype variant's own reader, or its field's, is dropped: `{\"A\":\"7\"}` refused (#1536)",
+    file: "src/lower/serde/de.rs",
+    find: "                    let read = match codec {\n                        Some(codec) => codec,\n",
+    replace: "                    let read = match codec {\n                        Some(_) => self.json_reader(field_ty, span)?,\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
 ];

@@ -435,6 +435,14 @@ for (const [name, source, message, crate] of [
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],
   ["unsupported Value method", 'pub fn f(v: &serde_json::Value) -> bool { v.pointer("/name").is_some() }', "`Value::pointer`", "serde"],
   ["assigning to a Value's key", 'pub fn f() -> String { let mut v = serde_json::json!({}); v["k"] = serde_json::json!(1); v.to_string() }', "`std::ops::IndexMut::index_mut`", "serde"],
+  // A variant's own writer is given all its fields, a newtype's its one,
+  // which is used; of a variant of no field or more, refused, never ignored;
+  // and of an internally tagged newtype, serde's tagged serializer, which
+  // isn't made (#1536).
+  ["a tuple variant's own writer", 'pub fn w<S: serde::Serializer>(a: &u32, b: &u32, s: S) -> Result<S::Ok, S::Error> { s.serialize_u32(a + b) }\n#[derive(serde::Serialize)] pub enum E { #[serde(serialize_with = "w")] A(u32, u32) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "on a variant that isn't a newtype", "serde"],
+  ["an internally tagged newtype variant's own writer", 'pub fn w<S: serde::Serializer>(a: &u32, s: S) -> Result<S::Ok, S::Error> { s.serialize_u32(*a) }\n#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E { A(#[serde(serialize_with = "w")] u32) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "internally tagged newtype variant with its own writer", "serde"],
+  ["a tuple variant's own reader", 'pub fn r<\'de, D: serde::Deserializer<\'de>>(d: D) -> Result<(u32, u32), D::Error> { serde::Deserialize::deserialize(d) }\n#[derive(serde::Deserialize)] pub enum E { #[serde(deserialize_with = "r")] A(u32, u32) }\npub fn f(s: &str) -> bool { serde_json::from_str::<E>(s).is_ok() }', "on a variant that isn't a newtype", "serde"],
+  ["an internally tagged newtype struct's field's own writer", 'pub fn w<S: serde::Serializer>(a: &u32, s: S) -> Result<S::Ok, S::Error> { s.serialize_u32(*a) }\n#[derive(serde::Serialize)] pub struct N(#[serde(serialize_with = "w")] u32);\n#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E { A(N) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "whose field has its own writer", "serde"],
   // A JSON object's keys are strings: serde_json refuses a struct's (ADR 0121).
   ["a map keyed by a struct in JSON", '#[derive(PartialEq, Eq, Hash, serde::Serialize)] pub struct P { pub x: u32 }\npub fn f(m: &std::collections::HashMap<P, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // What else of serde_json's isn't written yet (#171).

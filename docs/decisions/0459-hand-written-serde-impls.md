@@ -173,6 +173,21 @@ path looked for is the one that isn't a desugaring's. The serde test of
 a field's own functions writes and reads them, and their errors, against
 native serde_json.
 
+**Amended (#1536): at each position, used or refused, never ignored.**
+The places that wrote or read a field on its own never asked
+`field_codec`, so serde_json wrote and read another JSON with no error: a
+newtype struct's field and a `transparent` one's, a newtype variant's in
+each tagging, a flattened field's, which is given the entries (`flat`'s
+writer, the flattened reader), and the attribute on a variant itself,
+which serde gives a newtype variant's one field (`newtype_variant_codec`).
+On a variant of no field or of more, serde gives the function all of
+them, which isn't made, so it's refused; so is a writer of an internally
+tagged newtype variant's field, or of the newtype struct it holds, which
+serde gives its tagged serializer. Results change, so Rust's behavior is
+kept or the program refused (ADR 0262). `test/serde.test.ts` writes and
+reads each position against native serde_json; `test/diagnostics.test.ts`
+holds the refusals; a mutation drops each read.
+
 ## Amendment: collections, variants and an option
 
 - **`collect_seq(items)` and `collect_map(entries)`** are

@@ -104,4 +104,88 @@ export const mutations: Mutation[] = [
     replace: "                false => return None,\n",
     tests: ["test/serde.test.ts", "-t", "under -C incremental"],
   },
+  {
+    name: "newtype-struct-writer-unasked",
+    breaks: "a newtype struct's or a `transparent` one's field that names its own writer is written as its type is, `3` for `\"3\"` (#1536)",
+    file: "src/lower/serde.rs",
+    find: "                let codec = self.field_codec(field, &self.serde_attrs(field)?, true, span)?;\n",
+    replace: "                let codec = None;\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "flatten-writer-unasked",
+    breaks: "a flattened field's own writer is dropped: its type's entries are written, `{\"source\":7}` for `{\"wire\":7}` (#1536)",
+    file: "src/lower/serde.rs",
+    find: "                let writer = match codec {\n                    Some(codec) => codec,\n",
+    replace: "                let writer = match codec {\n                    Some(_) => self.json_writer(*ty, span)?,\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "newtype-variant-writer-unasked",
+    breaks: "a newtype variant's own writer, or its field's, is dropped: `{\"A\":7}` for `{\"A\":\"7\"}` (#1536)",
+    file: "src/lower/serde.rs",
+    find: "                    this.write_field(codec.clone(), fields[0].0.clone(), json, fields[0].1, span, out)\n",
+    replace: "                    this.write_field(None, fields[0].0.clone(), json, fields[0].1, span, out)\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "variant-own-codec-unasked",
+    breaks: "`#[serde(with)]` on a newtype variant is ignored, only its field's asked (#1536)",
+    file: "src/lower/serde.rs",
+    find: "                Some(_) => self.field_codec(variant.def_id, &attrs, serialize, span),\n",
+    replace: "                Some(_) => Ok(None),\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "own writer and reader are used"
+    ]
+  },
+  {
+    name: "variant-own-codec-ignored-elsewhere",
+    breaks: "`#[serde(with)]` on a variant of no field or of more is ignored, not refused (#1536)",
+    file: "src/lower/serde.rs",
+    find: "            _ => match own {\n",
+    replace: "            _ => match None::<&str> {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "own writer|own reader"
+    ]
+  },
+  {
+    name: "internal-newtype-variant-writer-ignored",
+    breaks: "an internally tagged newtype variant whose field names its own writer is written as its type is, not refused (#1536)",
+    file: "src/lower/serde.rs",
+    find: "        if codec.is_some() && matches!(tagging, Tagging::Internal(_)) {\n",
+    replace: "        if false && codec.is_some() && matches!(tagging, Tagging::Internal(_)) {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "own writer|own reader"
+    ]
+  },
+  {
+    name: "internal-newtype-struct-writer-ignored",
+    breaks: "an internally tagged newtype variant of a newtype struct whose field names its own writer is written as its type is, not refused (#1536)",
+    file: "src/lower/serde.rs",
+    find: "            if self.serde_attrs(field)?.serialize_with.is_some() {\n",
+    replace: "            if false {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "own writer|own reader"
+    ]
+  },
 ];

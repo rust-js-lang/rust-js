@@ -1155,3 +1155,112 @@ pub fn report() -> String {
   expect((await compiled(dir)).report()).toBe(expected);
 });
 
+// `#[serde(with = "..")]`, `serialize_with` and `deserialize_with` are
+// honoured wherever a field is written or read on its own: a newtype
+// struct's, a `transparent` one's, a newtype variant's in each tagging, a
+// flattened one's, and a newtype variant's own. Each was ignored, the JSON
+// its type's, with no error (#1536).
+test("serde: a field's own writer and reader are used at each position", async () => {
+  const dir = fixture("serde-with-positions");
+  writeFileSync(join(dir, "cases.rs"), `use serde::{Deserialize, Deserializer, Serialize, Serializer};
+pub mod txt {
+    use serde::{Deserialize, Deserializer, Serializer};
+    pub fn serialize<S: Serializer>(n: &i32, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&n.to_string())
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<i32, D::Error> {
+        String::deserialize(d)?.parse().map_err(serde::de::Error::custom)
+    }
+}
+pub fn doubled<S: Serializer>(n: &i32, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_i32(n * 2)
+}
+pub fn halved<'de, D: Deserializer<'de>>(d: D) -> Result<i32, D::Error> {
+    Ok(i32::deserialize(d)? / 2)
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub enum OnVariant { #[serde(with = "txt")] A(i32), B(i32) }
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t", content = "c")]
+pub enum OnVariantAdjacent { #[serde(with = "txt")] A(i32), B(i32) }
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum OnVariantUntagged { #[serde(with = "txt")] A(i32), B(bool) }
+#[derive(Serialize, Deserialize, Debug)]
+pub enum OnNewtypeVariantField { A(#[serde(with = "txt")] i32), B(#[serde(serialize_with = "doubled", deserialize_with = "halved")] i32) }
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t", content = "c")]
+pub enum OnFieldAdjacent { A(#[serde(with = "txt")] i32) }
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum OnFieldUntagged { A(#[serde(with = "txt")] i32) }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OnNewtypeStructField(#[serde(with = "txt")] pub i32);
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OnNewtypeStructFieldApart(#[serde(serialize_with = "doubled", deserialize_with = "halved")] pub i32);
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(transparent)]
+pub struct OnTransparentField { #[serde(with = "txt")] pub v: i32 }
+#[derive(Serialize, Debug)]
+pub struct Payload { pub source: u32 }
+pub fn wire<S: Serializer>(p: &Payload, s: S) -> Result<S::Ok, S::Error> {
+    use serde::ser::SerializeStruct;
+    let mut st = s.serialize_struct("Payload", 1)?;
+    st.serialize_field("wire", &p.source)?;
+    st.end()
+}
+#[derive(Serialize, Debug)]
+pub struct Outer { pub n: u32, #[serde(flatten, serialize_with = "wire")] pub payload: Payload }
+#[derive(Deserialize)]
+struct Wire { wire: u32 }
+pub fn unwire<'de, D: Deserializer<'de>>(d: D) -> Result<Payload, D::Error> {
+    Ok(Payload { source: Wire::deserialize(d)?.wire })
+}
+#[derive(Deserialize, Debug)]
+pub struct Inner { pub n: u32, #[serde(flatten, deserialize_with = "unwire")] pub payload: Payload }
+macro_rules! read {
+    ($out:ident, $ty:ty, $text:expr) => {
+        $out.push_str(&format!("{:?}\\n", serde_json::from_str::<$ty>($text).map_err(|e| e.to_string())));
+    };
+}
+macro_rules! write {
+    ($out:ident, $value:expr) => {
+        $out.push_str(&format!("{:?}\\n", serde_json::to_string(&$value).map_err(|e| e.to_string())));
+    };
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    write!(out, OnVariant::A(7));
+    write!(out, OnVariant::B(7));
+    read!(out, OnVariant, r#"{"A":"7"}"#);
+    read!(out, OnVariant, r#"{"A":7}"#);
+    write!(out, OnVariantAdjacent::A(7));
+    read!(out, OnVariantAdjacent, r#"{"t":"A","c":"7"}"#);
+    write!(out, OnVariantUntagged::A(7));
+    read!(out, OnVariantUntagged, r#""7""#);
+    read!(out, OnVariantUntagged, r#"true"#);
+    write!(out, OnNewtypeVariantField::A(7));
+    write!(out, OnNewtypeVariantField::B(7));
+    read!(out, OnNewtypeVariantField, r#"{"A":"7"}"#);
+    read!(out, OnNewtypeVariantField, r#"{"B":14}"#);
+    write!(out, OnFieldAdjacent::A(7));
+    read!(out, OnFieldAdjacent, r#"{"t":"A","c":"7"}"#);
+    write!(out, OnFieldUntagged::A(7));
+    read!(out, OnFieldUntagged, r#""7""#);
+    write!(out, OnNewtypeStructField(3));
+    read!(out, OnNewtypeStructField, r#""3""#);
+    read!(out, OnNewtypeStructField, r#"3"#);
+    write!(out, OnNewtypeStructFieldApart(3));
+    read!(out, OnNewtypeStructFieldApart, r#"6"#);
+    write!(out, OnTransparentField { v: 1 });
+    read!(out, OnTransparentField, r#""1""#);
+    write!(out, Outer { n: 1, payload: Payload { source: 7 } });
+    read!(out, Inner, r#"{"n":1,"wire":7}"#);
+    read!(out, Inner, r#"{"n":1,"source":7}"#);
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

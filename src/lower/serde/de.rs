@@ -282,10 +282,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A newtype is what it holds (`visit_newtype_struct`).
             Some(CtorKind::Fn) if variant.fields.len() == 1 => {
                 let field = variant.fields.iter().next().expect("a field");
-                if self.serde_attrs(field.did)?.skip_deserializing {
+                let attrs = self.serde_attrs(field.did)?;
+                if attrs.skip_deserializing {
                     return Err(self.unsupported(span, "a newtype struct whose field is skipped"));
                 }
-                let read = self.json_reader(self.field_ty(field, args), span)?;
+                // By its own reader, where it names one (#1536).
+                let read = self.field_reader(field.did, &attrs, self.field_ty(field, args), span)?;
                 let value = Expr::call(read, vec![Expr::var(json)]);
                 Ok(self.construct(adt, variant, args, vec![value]))
             }
@@ -374,7 +376,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let attrs = self.serde_attrs(field.did)?;
             let field_ty = self.field_ty(field, args);
             if attrs.flatten && !attrs.skip_deserializing {
-                flattened.push(self.json_reader(field_ty, span)?);
+                // Its own reader, where it names one, given the entries (#1536).
+                flattened.push(self.field_reader(field.did, &attrs, field_ty, span)?);
                 let param = self.fresh(Base::Named(&keys[i]));
                 items.push(Expr::var(&param));
                 flat_params.push(param);
@@ -727,6 +730,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(format!("{kind} {type_name}::{}", variant.name)),
             )
         };
+        // A newtype's own reader, the variant's or its field's; refused on
+        // another variant, never ignored (#1536).
+        let codec = self.newtype_variant_codec(variant, false, span)?;
         // A unit variant's check that it holds nothing.
         let unit = {
             let expected = Expr::str(format!("unit variant {type_name}::{}", variant.name));
@@ -752,7 +758,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     vec![unit, ret(self.construct(adt, variant, args, vec![value]))]
                 } else {
-                    let read = self.field_reader(field.did, &attrs, field_ty, span)?;
+                    let read = match codec {
+                        Some(codec) => codec,
+                        None => self.json_reader(field_ty, span)?,
+                    };
                     let value = match form {
                         Form::External => method("newtype", vec![read]),
                         _ => Expr::call(read, vec![Expr::var(content)]),
