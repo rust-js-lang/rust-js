@@ -690,3 +690,17 @@ compiles and runs as native in the crate corpus. Mutations `capacity-item-size-o
 The room std checks of a `reserve` or `with_capacity` of such items (ADR
 0774) is still of their count alone here, as ADR 0774 decided for items
 whose size a type parameter gives; #1432 reopens that.
+
+## Amendment: a `String`'s bytes keep no capacity (2026-11-12, #1261)
+
+A `Vec` of a `String`'s bytes, `s.into_bytes()`, `s.into_boxed_bytes()` or
+`Vec::from(s)`, has std's capacity the `String`'s, its growth's
+(`with_capacity`, `push_str`'s amortized doubling, `shrink_to_fit`). A JS
+string is an immutable primitive: no `WeakMap` keys it and it carries no
+state, so its capacity can't be kept, as `String::capacity()` is refused
+at compile time already. Carrying one would change how every string is
+held, for a capacity read: the user's decision, through m6-react, is
+won't-fix (ADR 0262's fourth case). Its bytes' `Vec` stays not known,
+`$untracked`, and `capacity()` of it refuses, naming #1261, the issue
+that explains it, since #1180 closed; never another number. The guide's
+limitations list it.

@@ -548,3 +548,18 @@ pub fn taken(n: usize) -> usize {
   expect(body("chained")).toContain("$roomFor(Math.max(n - 0, 0) + 2, 32);");
   expect(body("taken")).not.toContain("$roomFor");
 });
+
+// A \`String\`'s bytes keep no capacity, a JS string carrying none: their
+// \`capacity()\` is refused, naming #1261, the issue that explains it.
+test("a String's bytes refuse their capacity, naming #1261", async () => {
+  const dir = fixture("capacity-string-bytes");
+  writeFileSync(join(dir, "lib.rs"), `pub fn bytes() -> usize {
+    let mut s = String::with_capacity(2);
+    s.push_str("hello");
+    s.into_bytes().capacity()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.bytes()).toThrow("a string's bytes, whose capacity a JS string doesn't carry (#1261)");
+});

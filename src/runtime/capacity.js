@@ -17,7 +17,7 @@ function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
   const kept = $capacities.get(v);
   if (kept === $unknownCapacity) {
-    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, items whose size no caller gives, one generic code grew by an iterator whose JS hint isn't std's (#1180), or one a `Chain`'s or a `Take`'s std-default `read_to_end` grew past its room (#1340)");
+    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, whose capacity a JS string doesn't carry (#1261), items whose size no caller gives, one generic code grew by an iterator whose JS hint isn't std's (#1180), or one a `Chain`'s or a `Take`'s std-default `read_to_end` grew past its room (#1340)");
   }
   return Math.max(v.length, kept ?? 0);
 }
