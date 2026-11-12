@@ -340,4 +340,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::int(i128::from(at * 0)));\n",
     tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
   },
+  {
+    name: "type-name-marks-params-alone",
+    breaks: "`type_name` of a type holding an associated type only a caller knows marks its type parameters alone, so `Cow<[I::Item]>` is named `[!]` and `Option<I::Item>` crashes the compiler (#1603)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "        if !self.cx.is_unknown(t) {\n",
+    replace: "        if !matches!(t.kind(), ty::Param(_)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_name_of_an_associated_type_within.rs$"],
+  },
 ];

@@ -113,8 +113,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`size_of::<A::Item>()` isn't carried by `A: Array`'s dictionary, and is refused",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                self.carried.insert((assoc, fact));\n",
-    replace: "                let _ = (assoc, fact);\n",
+    find: "            self.carried.insert((assoc, fact));\n",
+    replace: "            let _ = (assoc, fact);\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
   {
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     name: "super-item-slot-unasked",
     breaks: "a generic function's `size_of::<I::Item>()` doesn't ask its slot, so it's refused (#990)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                    None => _ = self.asked.insert((caller, index, fact)),\n",
+    find: "                None => _ = self.asked.insert((caller, index, fact)),\n",
     replace: "                    None => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^size_of_an_iterators_item.rs$"],
   },
@@ -513,5 +513,13 @@ export const mutations: Mutation[] = [
     find: "            let Some(instances) = &instances else { return true };\n",
     replace: "            let Some(instances) = &instances else { return false };\n",
     tests: ["test/crates.test.ts","-t","two crates: lend_offset_a_consumer_gives"],
+  },
+  {
+    name: "type-name-of-an-alias-unasked",
+    breaks: "a type's name asks no name of an associated type only a caller knows in it, `Option<I::Item>`'s `IItemName`, so its `type_name` is refused (#1603)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        ty::Alias(..) if is_unknown_where(tcx, part, typing_env) => {\n",
+    replace: "                        ty::Alias(..) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_name_of_an_associated_type_within.rs$"],
   },
 ];

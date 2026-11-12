@@ -506,22 +506,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// The name of `of`, a type that holds type parameters, `Cow<'_, T>`:
-    /// rustc's, which names a parameter `_`, so each is put in as a type no
-    /// program names, `[!; 4000000000]` and up, by its index, and the name
-    /// given for it, `TName`, put where its text is.
+    /// The name of `of`, a type that holds types only a caller knows,
+    /// `Cow<'_, T>` or `Option<I::Item>`: rustc's, which names a parameter
+    /// `_` and can't normalize an associated type of one, so each such type,
+    /// a type parameter or an associated type `is_unknown` says is one
+    /// (#1603), is put in as a type no program names, `[!; 4000000000]` and
+    /// up, and the name given for it, `TName` or its dictionary's, put
+    /// where its text is.
     fn name_of_generic(&self, of: Ty<'tcx>, span: Span) -> R<Expr> {
         const BASE: u64 = 4_000_000_000;
+        let mut marker = UnknownMarker {
+            cx: self,
+            unknown: Vec::new(),
+        };
+        let marked = of.fold_with(&mut marker);
+        let unknown = marker.unknown;
         let tcx = self.tcx;
-        let marked = of.fold_with(&mut ty::BottomUpFolder {
-            tcx,
-            ty_op: |t: Ty<'tcx>| match t.kind() {
-                ty::Param(param) => Ty::new_array(tcx, tcx.types.never, BASE + u64::from(param.index)),
-                _ => t,
-            },
-            lt_op: |r| r,
-            ct_op: |c| c,
-        });
         let marked = tcx.normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(marked));
         let name = rustc_const_eval::util::type_name(tcx, marked);
         let mut text = name.as_str();
@@ -529,10 +529,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         while let Some(at) = text.find("[!; ") {
             let rest = &text[at + 4..];
             let digits = rest.find(']').expect("an array's length");
-            let index = rest[..digits].parse::<u64>().expect("a marked parameter") - BASE;
+            let at_unknown = rest[..digits].parse::<u64>().expect("a marked type") - BASE;
             parts.push(Expr::str(&text[..at]));
-            let name = self.given_type_fact(index as u32, TypeFact::Name);
-            parts.push(name.ok_or_else(|| self.unsupported(span, "`type_name` of a type parameter"))?);
+            let part = unknown[at_unknown as usize];
+            let name = match part.kind() {
+                ty::Param(param) => self.given_type_fact(param.index, TypeFact::Name),
+                _ => self.known_fact_of(part, TypeFact::Name),
+            };
+            parts.push(name.ok_or_else(|| self.unsupported(span, &format!("`type_name` of `{part}`")))?);
             text = &rest[digits + 1..];
         }
         parts.push(Expr::str(text));
@@ -621,5 +625,34 @@ pub(in crate::lower) fn int_as(n: Expr, from: Num, to: Num) -> Expr {
         (false, true) => Expr::call(Expr::var("BigInt"), vec![n]),
         (true, false) => Expr::call(Expr::var("Number"), vec![n]),
         _ => n,
+    }
+}
+
+/// `name_of_generic`'s: each type only a caller knows in a type, outermost
+/// first, put in as `[!; 4000000000 + i]`, `unknown[i]` the type it stands
+/// for.
+struct UnknownMarker<'c, 'a, 'tcx> {
+    cx: &'c FnCx<'a, 'tcx>,
+    unknown: Vec<Ty<'tcx>>,
+}
+
+impl<'tcx> ty::TypeFolder<ty::TyCtxt<'tcx>> for UnknownMarker<'_, '_, 'tcx> {
+    fn cx(&self) -> ty::TyCtxt<'tcx> {
+        self.cx.tcx
+    }
+
+    fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
+        if !self.cx.is_unknown(t) {
+            return ty::TypeSuperFoldable::super_fold_with(t, self);
+        }
+        let at = match self.unknown.iter().position(|&known| known == t) {
+            Some(at) => at,
+            None => {
+                self.unknown.push(t);
+                self.unknown.len() - 1
+            }
+        };
+        let tcx = self.cx.tcx;
+        Ty::new_array(tcx, tcx.types.never, 4_000_000_000 + at as u64)
     }
 }

@@ -616,3 +616,33 @@ asks the built `Result<U, E>`'s layout of the impl's makers, and a panic
 part-way through it, in place, dropping what it collected before what's
 left, against native Rust in both builds; the mutation is caught.
 `built-layout-unrelayed` is refitted to the relay without gates.
+
+## Amendment: the name of a type holding an associated type a caller knows (2026-11-13, #1603)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`type_name` of a type that holds type parameters, `Cow<'_, T>`, is rustc's
+name with each parameter's given name in its place. It marked `ty::Param`
+alone, and the analysis asked the name of each `ty::Param` in it alone. An
+associated type of a parameter, `I::Item`, stayed in, of a marker: in a
+slice it was named `!`, `alloc::borrow::Cow<'_, [!]>`, and in an `Option`
+normalizing `<[!; N] as Iterator>::Item` crashed the compiler (P0, found
+by the `ty::Param` audit of #1590 and #1595).
+
+Each type `is_unknown` says only a caller knows, outermost first, is now
+marked (`UnknownMarker`): a type parameter's name is its slot's, `TName`,
+and an associated type's what `known_fact_of` gives, its slot's,
+`IItemName`, or its trait's dictionary's, `SSource.ItemName`. The analysis
+asks the same of each such part, an associated type's as one asked
+directly is (`ask_of_alias`), and not of the parameters inside it. One
+that is a type here, `<Vec<u8> as IntoIterator>::Item`, is its type.
+
+`type_name_of_an_associated_type_within.rs` holds `Option<I::Item>` of a
+std iterator and a string's, `Cow<[I::Item]>`, a tuple of a parameter and
+an associated type, the crate's own trait's, a known one and a nested
+one, against native Rust in both builds; its metamorphic rewrites pass.
+No other snapshot changes. Mutations `type-name-marks-params-alone`
+(`std_types/number/generic.ts`) and `type-name-of-an-alias-unasked`
+(`analysis/type_facts.ts`), caught.
+

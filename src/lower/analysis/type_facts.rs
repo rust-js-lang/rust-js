@@ -6,9 +6,9 @@
 use super::iterator_steps::{body_aggregates, body_fn_defs};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
-    StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, map_of_param, phantom_named,
-    pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item, trait_method,
-    tree_built_entries, type_facts, unstable_sort_items,
+    StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, is_unknown_where,
+    map_of_param, phantom_named, pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item,
+    trait_method, tree_built_entries, type_facts, unstable_sort_items,
 };
 use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl, slot_index as slot_of};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -902,6 +902,35 @@ impl<'tcx> Asking<'tcx> {
         }
     }
 
+    /// What `caller` asks of `of` by asking `fact` of it: of a trait's
+    /// associated type its dictionaries carry, that; of a std associated
+    /// type of a type parameter, `<I as Iterator>::Item`, one of its slots:
+    /// its caller's, as a map's keys' class is (ADR 0466); of a trait's
+    /// default's `Self`'s, what its dictionaries carry (#990). A slot only
+    /// where it's `measured`: a size of a sized one, a name of any.
+    fn ask_of_alias(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        caller: DefId,
+        (of, measured): (ty::Ty<'tcx>, bool),
+        fact: TypeFact,
+    ) {
+        if let Some(assoc) = carried_by(foreign, of) {
+            self.carried.insert((assoc, fact));
+            return;
+        }
+        if measured
+            && matches!(of.kind(), ty::Alias(..))
+            && let Some(index) = slot_of(tcx, foreign, caller, of)
+        {
+            match default_super_item(tcx, caller, of) {
+                Some((trait_id, assoc)) => self.ask_of_impls(tcx, foreign, (trait_id, caller), assoc, fact),
+                None => _ = self.asked.insert((caller, index, fact)),
+            }
+        }
+    }
+
     /// `caller` asks `asked`.
     fn ask(&mut self, caller: DefId, each: Asked<'tcx>) {
         ask((&mut self.asked, &mut self.built, &mut self.carried), caller, each);
@@ -939,34 +968,29 @@ impl<'tcx> Asking<'tcx> {
             {
                 self.asked.insert((caller, param.index, fact));
             }
-            // Of a type that holds them, `Cow<'_, T>`: its name, each one's.
+            // Of a type that holds them, `Cow<'_, T>` or `Option<I::Item>`:
+            // its name, each one's, a type parameter's or an associated
+            // type's only a caller knows, as `name_of_generic` names them
+            // (#1603).
             if fact == TypeFact::Name
                 && let Some(of) = args.types().last()
-                && !matches!(of.kind(), ty::Param(_))
+                && !is_unknown_where(tcx, of, typing_env)
             {
-                for part in of.walk().filter_map(|part| part.as_type()) {
-                    if let ty::Param(param) = part.kind() {
-                        self.asked.insert((caller, param.index, fact));
+                let mut parts = of.walk();
+                while let Some(part) = parts.next() {
+                    let Some(part) = part.as_type() else { continue };
+                    match part.kind() {
+                        ty::Param(param) => _ = self.asked.insert((caller, param.index, fact)),
+                        ty::Alias(..) if is_unknown_where(tcx, part, typing_env) => {
+                            parts.skip_current_subtree();
+                            self.ask_of_alias(tcx, foreign, caller, (part, true), fact);
+                        }
+                        _ => {}
                     }
                 }
             }
-            if let Some(assoc) = args.types().last().and_then(|of| carried_by(foreign, of)) {
-                self.carried.insert((assoc, fact));
-            }
-            // Of a std associated type of a type parameter, `<I as
-            // Iterator>::Item`, one of its slots: its caller's, as a map's
-            // keys' class is (ADR 0466); of a trait's default's `Self`'s,
-            // what its dictionaries carry (#990).
-            if let Some(of) = args.types().last()
-                && matches!(of.kind(), ty::Alias(..))
-                && carried_by(foreign, of).is_none()
-                && measured(of)
-                && let Some(index) = slot_of(tcx, foreign, caller, of)
-            {
-                match default_super_item(tcx, caller, of) {
-                    Some((trait_id, assoc)) => self.ask_of_impls(tcx, foreign, (trait_id, caller), assoc, fact),
-                    None => _ = self.asked.insert((caller, index, fact)),
-                }
+            if let Some(of) = args.types().last() {
+                self.ask_of_alias(tcx, foreign, caller, (of, measured(of)), fact);
             }
             // A flatten's items' constant size, of `I::Item`, a std
             // associated type of its caller's parameter (ADR 0899).
