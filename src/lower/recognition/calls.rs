@@ -1033,6 +1033,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if is_hasher(tcx, tr) && self.std_hasher(self_ty).is_some() {
             return Some(HashOp::Own);
         }
+        // std's `impl Hasher for &mut H` of a std hasher's `&mut`, whose
+        // `finish`, of its `&self`, `h.finish()` of an `h: &mut
+        // DefaultHasher` finds: the hasher's own, as it forwards to it. Its
+        // writes, of a `&mut &mut`, aren't taken (#1488).
+        if is_hasher(tcx, tr)
+            && tcx.item_name(def_id).as_str() == "finish"
+            && let ty::Ref(_, pointee, ty::Mutability::Mut) = *self_ty.kind()
+            && self.std_hasher(pointee).is_some()
+        {
+            return Some(HashOp::Own);
+        }
         // A crate's hasher's provided method that its impl doesn't write,
         // `count.write_i32(n)`: its dictionary's, std's over its own.
         if is_hasher(tcx, tr) && self.left_to_std(def_id, self_ty) {

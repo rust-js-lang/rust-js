@@ -727,4 +727,12 @@ export const mutations: Mutation[] = [
     replace: "        self.classified(def_id, args)\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a std function's call without its recogniser is refused"],
   },
+  {
+    name: "hasher-mut-finish-unrecognised",
+    breaks: "`finish()` of an `h: &mut DefaultHasher`, std's `impl Hasher for &mut H`'s, goes by the trait's route, which gives its dictionary the hasher where it reads a box, and throws (#1488)",
+    file: "src/lower/recognition/calls.rs",
+    find: "            && tcx.item_name(def_id).as_str() == \"finish\"\n",
+    replace: "            && tcx.item_name(def_id).as_str() == \"finished\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
+  },
 ];

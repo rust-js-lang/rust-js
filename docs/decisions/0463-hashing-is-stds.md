@@ -324,3 +324,19 @@ it the hasher too, so `&mut DefaultHasher` given by value threw the same.
 methods; the corpus case `generic_hasher_given_a_std_hasher` (by value,
 `&mut`, `&`, `Box`, `&mut &mut` and a `BuildHasherDefault`'s, against
 wasm32's native Rust) and mutation `sip-finish-of-its-cell` hold it.
+
+## Amendment (2026-11-12, #1488): `finish` of a `&mut` std hasher is its own
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. `h.finish()` of an `h: &mut DefaultHasher` is std's
+`impl<H: Hasher> Hasher for &mut H`'s `finish`, found by auto-ref, as it
+takes `&self`, where `h.write_u8(1)` is the hasher's own. No recogniser
+took it of that `Self`, so it went by the trait call's route,
+`$throughBox($sipHasher, ..).finish(h)`, which reads a box where concrete
+code's `&mut` to an object is the object, and threw. The recogniser now
+takes `finish` of a `&mut` to std's hasher as the hasher's own,
+`h.finish()`, as std's impl forwards to it. That impl's writes, of a `&mut
+&mut`, stay refused. Corpus case `hasher_finished_through_its_mut` (a
+function's `&mut`, a `let`'s, one whose hasher is replaced, a field's,
+`iter_mut()`'s, `as_mut()`'s and a `RefMut`'s) and mutation
+`hasher-mut-finish-unrecognised`.
