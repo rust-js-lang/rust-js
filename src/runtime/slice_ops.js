@@ -31,12 +31,14 @@ function $fill(v, x, clone, cloneFrom, drop) {
 }
 
 // `v.fill_with(f)`: each item `f()`'s, made before the one it replaces is
-// dropped, `drop`, as `*item = f()` drops it (ADR 0507).
+// dropped, `drop`, as `*item = f()` drops it (ADR 0507); written first,
+// as an assignment writes it though that drop panics (#1598).
 function $fillWith(v, f, drop) {
   for (let i = 0; i < v.length; i++) {
     const made = f();
-    drop?.(v[i]);
+    const old = v[i];
     v[i] = made;
+    drop?.(old);
   }
 }
 
