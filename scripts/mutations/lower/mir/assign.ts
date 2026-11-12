@@ -1026,4 +1026,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
   },
+  {
+    name: "part-alias-takes-a-pending-call",
+    breaks: "a `&mut` to part of a call's `&mut` result, `&mut *f(headers)`, is tried as an alias of a steady place by reading the call's pending value, which is thrown away when it isn't one: the call and its effects are lost and its MIR local read undeclared (#1580)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()\n            && !pending_of(state, target.local)\n",
+    replace: "            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()\n",
+    tests: ["test/corpus.test.ts", "-t", "^reborrow_of_a_calls_mut_result.rs$"],
+  },
 ];

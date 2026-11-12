@@ -146,6 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && !target.projection.is_empty()
             && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()
+            && !pending_of(state, target.local)
         {
             let part = self.mir_place(state, *target, span, out)?;
             if steady_place(&part) {
@@ -1286,4 +1287,11 @@ fn refers_to_a_variant_field(state: &State<'_, '_>) -> bool {
         }) if matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Shared, from)
             if matches!(from.projection.as_slice(), [.., PlaceElem::Downcast(..), PlaceElem::Field(..)]))
     )
+}
+
+/// Whether `local` holds a value made and not yet written, a call's
+/// `_3 = same(r)`: reading it takes that value, so a read that may be
+/// thrown away, a place tried as an alias, would lose the call (#1580).
+fn pending_of(state: &State<'_, '_>, local: Local) -> bool {
+    state.pending.iter().any(|(l, _)| *l == local)
 }
