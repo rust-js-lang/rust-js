@@ -1600,7 +1600,9 @@ handed to a binding holds, even where JS gives it back
 
 A `drop` that panics while another panic unwinds aborts the process, as
 Rust does: std's `thread caused non-unwinding panic. aborting.` to stderr,
-then exit 134. What runs as a panic unwinds and may throw is
+then exit 134. So does a panic out of a function whose ABI can't unwind,
+`extern "C"`'s, `catch_unwind` around it or not; one of `extern
+"C-unwind"` unwinds as any panic does (#1582). What runs as a panic unwinds and may throw is
 `$cleanup(() => { .. })`'s, and a drop that may panic is no `finally`'s but
 a `catch`'s and run again after the `try`, and an early `return` out of
 its scope drops it where it leaves, `drop(guard); return result;`, never a

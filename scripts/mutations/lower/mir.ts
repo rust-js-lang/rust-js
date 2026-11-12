@@ -486,4 +486,21 @@ export const mutations: Mutation[] = [
     replace: "        self.locals.mir.in_place_sources = names;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
+  {
+    name: "extern-c-panic-unwinds",
+    breaks: "a panic out of an `extern \"C\"` function unwinds as any panic does, and `catch_unwind` catches it, where Rust aborts (#1582)",
+    file: "src/lower/mir.rs",
+    find: "        ) && !self.krate.never_unwinding.contains(&def_id)\n",
+    replace: "        ) && false\n",
+    tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
+  },
+  {
+    name: "extern-c-wrapped-where-nothing-panics",
+    breaks: "an `extern \"C\"` function that can't panic is wrapped in a `try` that aborts, where it reads as the source does (#1582)",
+    file: "src/lower/mir.rs",
+    find: "        ) && !self.krate.never_unwinding.contains(&def_id)\n",
+    replace: "        )\n",
+    tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
+    snapshots: true,
+  },
 ];

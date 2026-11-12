@@ -31,6 +31,7 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
     "src/lower/format_args.rs": "a formatting failure caught, no drop",
     "src/lower/display/printing.rs": "a formatting failure caught as a line is printed through stdout's, no drop (#1490)",
     "src/lower/mir/given_arguments.rs": "what an `Arguments` given on made before its writer failed, no drop (#1565)",
+    "src/lower/mir.rs": "a panic out of a function whose ABI can't unwind, `extern \"C\"`'s, aborted, no drop (#1582)",
   };
   // `StmtKind::TryCatch(..)` made, `.at(..)` after its arguments: not a
   // pattern, which never is.
@@ -47,7 +48,7 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
   const found = ["src/lower.rs", ...files("src/lower")]
     .filter((file) => file.endsWith(".rs") && !file.startsWith("src/lower/mir/tidy"))
     .filter((file) => constructions(read(file)) > 0);
-  expect(found).toEqual(Object.keys(made).sort());
+  expect([...found].sort()).toEqual(Object.keys(made).sort());
   expect(constructions("let s = StmtKind::TryCatch(body, Some(e), h).at(span);")).toBe(1);
   expect(constructions("StmtKind::TryCatch(inner, Some(error), handler) if ok => {}")).toBe(0);
   // What std's bodies compile to: each catch that throws on what it caught

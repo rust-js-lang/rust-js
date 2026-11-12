@@ -574,6 +574,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let evidence = self.evidence_params(def_id);
         let mut out = Vec::new();
         let (mut params, is_async) = self.mir_signature(body, mir, &mut out)?;
+        // A function whose ABI can't unwind, `extern "C"`'s: a panic out of
+        // it aborts the process, as Rust's does, past any `catch_unwind`
+        // (#1582).
+        if matches!(
+            self.tcx.def_kind(def_id),
+            rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+        ) && !rustc_middle::ty::layout::fn_can_unwind(
+            self.tcx,
+            Some(def_id),
+            self.tcx.fn_sig(def_id).skip_binder().abi(),
+        ) && !self.krate.never_unwinding.contains(&def_id)
+        {
+            let thrown = Expr::call_helper("$cannotUnwind", vec![Expr::var("error")]);
+            out = vec![
+                js::StmtKind::TryCatch(
+                    out,
+                    Some("error".into()),
+                    vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)],
+                )
+                .at(js::Span::NONE),
+            ];
+        }
         // A C-variadic one's last parameter gathers the rest, which nothing
         // can come after (ADR 0428).
         if super::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {

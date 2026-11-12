@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_error_drops_as_a_return.rs$"],
   },
+  {
+    name: "cannot-unwind-goes-on",
+    breaks: "`$cannotUnwind` gives back the panic, which unwinds on, where Rust aborts (#1582)",
+    file: "src/runtime/unwind.js",
+    find: "  return $abort(e, undefined, \"panic in a function that cannot unwind\");\n",
+    replace: "  return e;\n",
+    tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
+  },
 ];

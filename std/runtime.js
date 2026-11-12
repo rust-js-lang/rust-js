@@ -20582,6 +20582,14 @@ export function $overflowed(cause) {
 export let $aborted = false;
 export let $abortSaid;
 export class $Abort extends Error {}
+// A panic out of a function whose ABI can't unwind, `extern "C"`'s: the
+// process aborts, as Rust's does, past any `catch_unwind` (#1582). What
+// ends the program on its own, an exit or a refusal, goes on as it is.
+export function $cannotUnwind(e) {
+  if ($endsTheProgram(e) || e instanceof $Unsupported) return e;
+  return $abort(e, undefined, "panic in a function that cannot unwind");
+}
+
 export function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup") {
   if (cause instanceof $Abort) {
     $abortEnds();
