@@ -18,9 +18,10 @@ src/lower/analysis/may_run.rs	1
 src/lower/analysis/mutation.rs	1
 src/lower/analysis/rc_counts.rs	2
 src/lower/analysis/stored_places.rs	1
-src/lower/analysis/type_facts.rs	13
+src/lower/analysis/type_facts.rs	12
 src/lower/analysis/type_facts/carried.rs	1
 src/lower/analysis/type_facts/collects.rs	1
+src/lower/analysis/type_facts/relay.rs	1
 src/lower/analysis/unwinding.rs	7
 src/lower/analysis/validation.rs	2
 src/lower/binding_calls.rs	1
