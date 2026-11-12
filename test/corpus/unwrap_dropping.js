@@ -29,33 +29,23 @@ let message = "no impl";
 let calls = 0;
 
 function enqueueTask(task) {
-  let task$1$live = true;
   if (enqueueTaskImpl == null) {
     $cleanup(() => {
-      if (task$1$live) {
-        $dispose(task);
-      }
+      $dispose(task);
     });
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
-  const value = enqueueTaskImpl;
-  task$1$live = false;
-  value(task);
+  enqueueTaskImpl(task);
 }
 
 function expected(task) {
-  let task$1$live = true;
   if (enqueueTaskImpl == null) {
     $cleanup(() => {
-      if (task$1$live) {
-        $dispose(task);
-      }
+      $dispose(task);
     });
     throw new Error("no impl given");
   }
-  const value = enqueueTaskImpl;
-  task$1$live = false;
-  value(task);
+  enqueueTaskImpl(task);
 }
 
 function readFirst(task) {

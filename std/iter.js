@@ -74,11 +74,13 @@ export const Inspect = {
 export const StepBy = {
   new(iter, step, dropI) {
     if (step === 0) {
-      dropI?.(iter);
+      $cleanup(() => {
+        dropI?.(iter);
+      });
       throw new Error("assertion failed: step != 0");
     }
-    iter = tSpecRangeSetupT_setup(iter, step, dropI);
-    return { iter, stepMinusOne: (step - 1) >>> 0, firstTake: true };
+    const iter$1 = tSpecRangeSetupT_setup(iter, step, dropI);
+    return { iter: iter$1, stepMinusOne: (step - 1) >>> 0, firstTake: true };
   },
   nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem) {
     const n = (stepBy.stepMinusOne + 1) >>> 0;

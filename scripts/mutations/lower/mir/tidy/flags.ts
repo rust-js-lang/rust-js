@@ -86,4 +86,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "flattened-panic-drops-unguarded",
+    breaks: "a panic's `try` of its own `throw`, flattened, leaves its drops outside `$cleanup`: `thread::panicking()` is `false` in them, and one that panics doesn't abort (#1606)",
+    file: "src/lower/mir/tidy/flags.rs",
+    find: "                    let mut unwound = crate::lower::drops::cleanup(dropping.to_vec(), None, *span);\n",
+    replace: "                    let mut unwound = dropping.to_vec();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(drops_unwinding_out_of_a_closure_see_the_panic|drop_panicking_as_a_closure_unwinds_aborts).rs$"],
+  },
+  {
+    name: "cleanup-flags-unsettled",
+    breaks: "a drop flag tested in a cleanup's `$cleanup(() => { .. })` isn't settled where it's known, so a cleanup keeps a flag MIR's shared cleanup tests, `task$live` (#1606)",
+    file: "src/lower/mir/tidy/flags.rs",
+    find: "                if let Some(drops) = crate::lower::drops::cleanup_drops(call) {\n",
+    replace: "                if let Some(drops) = crate::lower::drops::cleanup_drops(call).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+    snapshots: true,
+  },
 ];

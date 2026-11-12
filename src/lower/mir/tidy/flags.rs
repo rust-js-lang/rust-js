@@ -286,7 +286,9 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
                     && js::mentions_in(dropping, error) == 0
                     && made_of_values(panic)
                 {
-                    let mut unwound = dropping.to_vec();
+                    // The drops guarded as any cleanup is, as they run while
+                    // the panic unwinds (#1606).
+                    let mut unwound = crate::lower::drops::cleanup(dropping.to_vec(), None, *span);
                     unwound.push(StmtKind::Throw(panic.clone()).at(*span));
                     let count = unwound.len();
                     stmts.splice(i..=i, unwound);
@@ -331,6 +333,14 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
                 forget(&mut entry, body, flags);
                 settle(finally, &mut entry, flags);
                 forget(known, &stmts[i..=i], flags);
+            }
+            // A cleanup's drops, `$cleanup(() => { .. })`, which run there
+            // and then, as a panic unwinds (#1606).
+            StmtKind::Expr(call) => {
+                if let Some(drops) = crate::lower::drops::cleanup_drops(call) {
+                    settle(drops, &mut known.clone(), flags);
+                    forget(known, &stmts[i..=i], flags);
+                }
             }
             _ => {}
         }

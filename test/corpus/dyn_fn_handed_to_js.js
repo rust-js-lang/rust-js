@@ -47,7 +47,9 @@ function enqueueTask(task, host) {
         const posted$1 = (posted + 1) >>> 0;
         posted = posted$1;
         if (posted$1 > 2) {
-          $dispose(callback);
+          $cleanup(() => {
+            $dispose(callback);
+          });
           throw new Error(`no port for post ${posted$1}`);
         }
         (() => {
@@ -57,7 +59,9 @@ function enqueueTask(task, host) {
     }
   }
   if (host === "") {
-    $dispose(task);
+    $cleanup(() => {
+      $dispose(task);
+    });
     throw new Error("no host");
   }
   if (enqueueTaskImpl != null) {

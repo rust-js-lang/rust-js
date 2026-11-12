@@ -52,10 +52,8 @@ function main() {
     }, error);
     throw error;
   }
-  if (tmp.TAG !== "Ok") {
-    const back$1 = tmp._0;
-    const back = back$1;
-    try {
+  if (tmp.TAG === "Ok") {
+    $cleanup(() => {
       if (tmp.TAG !== "Err") {
         if (tmp.TAG === "Ok") {
           $rcDrop(tmp._0);
@@ -66,66 +64,71 @@ function main() {
           });
         }
       }
-    } catch (error) {
-      $cleanup(() => {
-        $rcDrop(back, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-        $rcDrop(other, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }, error);
-      throw error;
-    }
-    let result;
-    let found;
-    try {
-      result =
-        back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
-      if (result.TAG === "Ok") {
-        found = result._0;
-      } else {
-        found = undefined;
-        $rcDrop(result._0, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-    } catch (error) {
-      $cleanup(() => {
-        $rcDrop(other, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }, error);
-      throw error;
-    }
-    if (found == null) {
-      $cleanup(() => {
-        $rcDrop(other, (value) => {
-          value.impl.$drop?.(value.value);
-        });
+      $rcDrop(other, (value) => {
+        value.impl.$drop?.(value.value);
       });
-      throw new Error("called `Option::unwrap()` on a `None` value");
-    }
-    console.log(`${found.value[0]} ${found.strong}`);
-    $rcDrop(found, loudDrop_drop);
-    console.log(`${other.strong}`);
-    $rcDrop(other, (value) => {
-      value.impl.$drop?.(value.value);
     });
-    console.log("end");
-  } else {
+    throw new Error("internal error: entered unreachable code");
+  }
+  const back$1 = tmp._0;
+  const back = back$1;
+  try {
     if (tmp.TAG !== "Err") {
-      $rcDrop(tmp._0);
+      if (tmp.TAG === "Ok") {
+        $rcDrop(tmp._0);
+      }
       if (tmp.TAG === "Err") {
         $rcDrop(tmp._0, (value) => {
           value.impl.$drop?.(value.value);
         });
       }
     }
-    $rcDrop(other, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw new Error("internal error: entered unreachable code");
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(back, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+      $rcDrop(other, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    }, error);
+    throw error;
   }
+  let result;
+  let found;
+  try {
+    result =
+      back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
+    if (result.TAG === "Ok") {
+      found = result._0;
+    } else {
+      found = undefined;
+      $rcDrop(result._0, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(other, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    }, error);
+    throw error;
+  }
+  if (found == null) {
+    $cleanup(() => {
+      $rcDrop(other, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    });
+    throw new Error("called `Option::unwrap()` on a `None` value");
+  }
+  console.log(`${found.value[0]} ${found.strong}`);
+  $rcDrop(found, loudDrop_drop);
+  console.log(`${other.strong}`);
+  $rcDrop(other, (value) => {
+    value.impl.$drop?.(value.value);
+  });
+  console.log("end");
 }
 //# sourceMappingURL=case.js.map

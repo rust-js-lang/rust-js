@@ -579,11 +579,13 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
         const back = pair[1];
         console.log(`back arm ${back.length}`);
         if (back.length >= (at * 2) >>> 0) {
-          $dropItems(back, (item) => {
-            dropIItem?.(item);
-          });
-          $dropItems(pair[0], (item) => {
-            dropIItem?.(item);
+          $cleanup(() => {
+            $dropItems(back, (item) => {
+              dropIItem?.(item);
+            });
+            $dropItems(pair[0], (item) => {
+              dropIItem?.(item);
+            });
           });
           throw new Error(`boom at ${at}`);
         }

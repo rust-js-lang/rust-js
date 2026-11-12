@@ -41,7 +41,9 @@ function heldAll(
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => {
     n = (n + 1) >>> 0;
     if (n >= 3) {
-      dropHItem?.(i);
+      $cleanup(() => {
+        dropHItem?.(i);
+      });
       throw new Error(`at ${n}`);
     }
     return {

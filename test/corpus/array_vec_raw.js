@@ -91,7 +91,9 @@ const Stack = {
   push(stack, value, CAP, TSize, dropT) {
     let value$live = true;
     if (stack.len >= CAP) {
-      dropT?.(value);
+      $cleanup(() => {
+        dropT?.(value);
+      });
       throw new Error("assertion failed: self.len < CAP");
     }
     let tmp;

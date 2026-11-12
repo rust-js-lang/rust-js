@@ -652,6 +652,22 @@ pub(in crate::lower) fn unseen(stmts: &[Stmt]) -> bool {
     })
 }
 
+/// Of a cleanup as `cleanup` writes it, `$cleanup(() => { .. }, ..)`, its
+/// drops, which run there and then, as a panic unwinds: what tidy reads
+/// as it reads any statements in place (#1606).
+pub(in crate::lower) fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>> {
+    let js::ExprKind::Call(callee, args) = &mut call.kind else {
+        return None;
+    };
+    if callee.helper_name() != Some("$cleanup") {
+        return None;
+    }
+    match args.first_mut().map(|run| &mut run.kind) {
+        Some(js::ExprKind::Arrow(params, drops)) if params.is_empty() => Some(drops),
+        _ => None,
+    }
+}
+
 /// Whether `stmts` are a cleanup as `cleanup` leaves it, of what's caught
 /// and thrown on: what can't throw and runs nothing a program sees, or one
 /// `$cleanup(..)`.
