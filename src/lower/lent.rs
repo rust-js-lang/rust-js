@@ -224,7 +224,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !is_std_crate(tcx, adt.did()) || self.lends_known(receiver) {
             return Ok(());
         }
-        let Some(lent) = lent.into_iter().find(|&lent| stored.addressable(tcx, lent)) else {
+        // Of the receiver itself, `by_ref()`'s `&mut Self`, nothing inside it;
+        // of what generic code lends, each instance its callers give (#1293).
+        let owner = tcx.typeck_root_def_id(self.item);
+        let addressable = |lent: Ty<'tcx>| match lent.has_non_region_param() {
+            false => stored.addressable(tcx, lent),
+            true => stored
+                .instances(tcx, lent, owner)
+                .is_none_or(|instances| instances.into_iter().any(|lent| stored.addressable(tcx, lent))),
+        };
+        let Some(lent) = lent.into_iter().find(|&lent| lent != receiver && addressable(lent)) else {
             return Ok(());
         };
         let what = format!("`{}` in a crate that asks an address (#1293)", tcx.def_path_str(def_id));
@@ -263,12 +272,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         // A type of the signature as the caller's `args` make it, its own
-        // lifetimes erased.
+        // lifetimes erased, and normalized where the caller's bounds say
+        // what it is: `<PathBuf as Deref>::Target` is `Path`, which isn't
+        // an unknown type that may be any recorded one (#1293).
         let given = |ty: Ty<'tcx>| {
             let ty = ty::EarlyBinder::bind(tcx, ty)
                 .instantiate(tcx, args)
                 .skip_normalization();
-            tcx.instantiate_bound_regions_with_erased(ty::Binder::bind_with_vars(ty, declared.bound_vars()))
+            let ty = tcx.instantiate_bound_regions_with_erased(ty::Binder::bind_with_vars(ty, declared.bound_vars()));
+            tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                .unwrap_or(ty)
         };
         let mut lent = Vec::new();
         let mut holds = false;

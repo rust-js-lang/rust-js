@@ -21,20 +21,11 @@ plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.r
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 
-#1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address
+#1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address, where what they lend is a type it asks the address of: a `OnceCell`'s, a `Peekable`'s, a generic `Result::as_mut`'s
 plain std once_cells.rs beside module_text_truth.rs tagged_pointers.rs
 plain std once_cell_fields.rs beside drop_unit_guard.rs user_fmt_traits.rs
-plain std iter_next_back.rs beside address_of_a_tuple_field.rs
 plain std own_fold_through_adapters.rs beside pointer_addresses.rs
-plain std option_result_methods.rs beside bytes_through_pointers.rs
-plain std adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs beside collect_fallible.rs consumer_closure_dropped_first.rs
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
-plain std path_keys.rs beside address_of_a_tuple_item_asked_first.rs
-plain std nth_passes_a_slice_or_each.rs beside address_of_an_item_moved_in_its_vec.rs
-plain std path_methods.rs beside adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs
-plain std loop_exits.rs beside address_of_a_nested_field.rs
-plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
-plain std iterator_consumed_by_extend_unzip_partition_eq.rs beside bytes_through_pointers.rs
 
 #1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address
 plain std btree_given_in_order.rs beside address_of_a_field_where_its_object_is_stored.rs
@@ -45,5 +36,6 @@ plain std deque_range_mut.rs beside address_of_an_item_std_lends.rs
 plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_cast.rs
 
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
+plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs

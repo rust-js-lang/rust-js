@@ -1334,3 +1334,28 @@ addresses run in a 384 MB heap (`test/lowering.test.ts`). Corpus case
 addresses_of_short_lived_allocations covers live allocations that never
 overlap, an over-aligned type's alignment, an address made a pointer
 again, and a loop of short-lived ones, against native Rust.
+
+## Amendment: a lend refused only where its type's address may be asked (#1293)
+
+A crate that asks an address refuses std's call that lends from inside
+its receiver where rust-js doesn't know where the receiver keeps what it
+lends, if an address of the lent type may be asked. The lent type was
+the signature's, instantiated but not normalized, so
+`<PathBuf as Deref>::Target` stayed an alias, which may be any recorded
+type. A `Path`'s deref, a `Peekable<Split<char>>`'s `peek` of a `&str`, a
+`Result::as_deref` and `by_ref()` were refused in any crate that asked
+an address of anything: 8 of the neighbour shuffle's 13 pairs under
+#1293.
+
+Now the lent type is normalized in the caller's typing environment. In
+generic code it's each instance its callers give (`instances_of`), and
+it's refused where any one may be asked; where they can't all be seen,
+it stays refused. A lend of the receiver itself, `by_ref()`'s `&mut
+Self`, is nothing from inside it. The refusal still holds where the lent
+type is one whose address the crate asks: a `OnceCell<Option<u8>>`'s
+`get` beside a pointer to an `Option<u8>`, a `Peekable`'s `peek` of a
+`u32` beside a pointer to one. Telling those apart needs where the lent
+reference goes, or a model of where the receiver keeps it; #1293 stays
+open for them. Corpus case std_lends_beside_an_address against native
+Rust in both builds; mutations lent-type-unnormalized,
+by-ref-lends-inside and generic-lend-of-any-instance, caught.

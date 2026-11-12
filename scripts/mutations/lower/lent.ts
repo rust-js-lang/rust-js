@@ -115,4 +115,28 @@ export const mutations: Mutation[] = [
     replace: "        let mut given = vec![handle, Expr::undefined()];\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
   },
+  {
+    name: "lent-type-unnormalized",
+    breaks: "a lend's type is left unnormalized, `<PathBuf as Deref>::Target`, an unknown type that may be any recorded one, so a `Path`'s deref in a crate that asks an address is refused (#1293)",
+    file: "src/lower/lent.rs",
+    find: "            tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n                .unwrap_or(ty)\n",
+    replace: "            ty\n",
+    tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
+  },
+  {
+    name: "by-ref-lends-inside",
+    breaks: "`by_ref()`'s `&mut Self`, its receiver itself, is taken for what it lends from inside it, refused in a crate that asks an address (#1293)",
+    file: "src/lower/lent.rs",
+    find: "lent != receiver && addressable(lent)",
+    replace: "addressable(lent)",
+    tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
+  },
+  {
+    name: "generic-lend-of-any-instance",
+    breaks: "what generic code lends is taken to be of any type, refused in a crate that asks an address though none of its instances' addresses is asked (#1293)",
+    file: "src/lower/lent.rs",
+    find: "            true => stored\n",
+    replace: "            true => true || stored\n",
+    tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
+  },
 ];
