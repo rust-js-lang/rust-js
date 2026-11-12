@@ -145,11 +145,12 @@ export function processTree(pid: number): { pid: number; bytes: number; command:
   return tree;
 }
 
-/** What each of `pids` holds, in bytes, where it's more than its
- * resident set: on macOS, its physical footprint, which counts the pages
- * the memory compressor holds of it, as `ps`' `rss` doesn't. Under memory
- * pressure the compressor takes most of what a process holds, 400 MB of
- * ones seen as 10 MB resident, so a watch of `rss` alone let a variant
+/** What each of `pids` holds, in bytes, on macOS: its physical footprint,
+ * which counts the pages the memory compressor holds of it, as `ps`'
+ * `rss` doesn't, the measure the system's memory pressure takes and
+ * test/memory-watch.rs's `proc_pid_rusage` reads of a native run (#1515).
+ * Under memory pressure the compressor takes most of what a process holds,
+ * 400 MB of ones seen as 10 MB resident, so a watch of `rss` let a variant
  * past its share (#1499). One `footprint` of them all, by pid alone, a
  * process gone by then left out. Elsewhere, none: `rss` is it. */
 export function footprints(pids: number[]): Map<number, number> {
@@ -162,11 +163,12 @@ export function footprints(pids: number[]): Map<number, number> {
 }
 
 /** What `tree`, a process and what it started (`processTree`), holds
- * together, in bytes: each its resident set or, where it's more, its
- * footprint (`footprints`). The one measure of what a run holds, which a
- * memory cap stops it by and a part's peak is. */
+ * together, in bytes: each its footprint (`footprints`), or its resident
+ * set where none is read, off macOS or of one gone. The one measure of
+ * what a run holds, which a memory cap stops it by and a part's peak is,
+ * memory-watch's of a native run (#1515). */
 export function treeBytes(tree: { pid: number; bytes: number }[], held: Map<number, number> = footprints(tree.map(({ pid }) => pid))): number {
-  return tree.reduce((sum, { pid, bytes }) => sum + Math.max(bytes, held.get(pid) ?? 0), 0);
+  return tree.reduce((sum, { pid, bytes }) => sum + (held.get(pid) ?? bytes), 0);
 }
 
 /** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
