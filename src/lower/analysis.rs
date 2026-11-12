@@ -1059,11 +1059,20 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
-    let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
+    let unwinding::Found {
+        never_unwinding,
+        quiet: quiet_fns,
+        never_but_through_whats_shown,
+    } = unwinding::found(tcx, &recognition, all_bodies, &runs);
     // Which writers may print as they format, through stdout's line (#1490),
     // and which of their types' may stop part-way where a panic may be
     // caught (#1521).
-    let prints = prints::prints(&recognition, all_bodies, &may_run, (&never_unwinding, &failing));
+    let prints = prints::prints(
+        &recognition,
+        all_bodies,
+        &may_run,
+        (&never_but_through_whats_shown, &failing),
+    );
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function

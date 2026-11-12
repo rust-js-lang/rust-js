@@ -289,9 +289,11 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
   does, `[!D(1), !D(3)]`, `Holder { grid: !Grid(1), n: 5 }`, and a
   `format!` of one prints before the line printed next; a `write!` into a
   `String` of one that returns `Err` gives the `Err` back, the text before
-  it written. Any of those of one whose writer may also stop part-way, by
-  a panic or an error, in a program with a `catch_unwind`, is refused,
-  #1530
+  it written. In a program with a `catch_unwind`, a writer that may
+  panic writes through the line too, so what it wrote before its panic
+  stays, `x half`; elsewhere that line is lost, difference 57. Any of
+  those of one whose writer may stop part-way, by a panic or an error, in
+  a program with a `catch_unwind`, is refused, #1530
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
   amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
@@ -2281,3 +2283,10 @@ React and JSX are [their own pages](README.md#react).
     unspecified, changing between compilers, so no program can rely on
     them; equal `TypeId`s still hash equal (ADR 0262's "none" row, #1447;
     [ADR 0463](../decisions/0463-hashing-is-stds.md)).
+57. A `Display` or `Debug` that panics part-way through a `println!`'s
+    line loses what that line had written, `x half` of `println!("x {}
+    y", halfway)`, in a program that catches no panic: Rust's stdout keeps
+    it in its line buffer and writes it as the program ends. In a program
+    with a `catch_unwind`, which may print after it, it's kept and written
+    as Rust writes it (ADR 0262, the user's decision, 2026-11-12, #1496;
+    [ADR 1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).

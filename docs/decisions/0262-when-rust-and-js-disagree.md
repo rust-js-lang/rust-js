@@ -432,6 +432,17 @@ react.dev's TopNav passes the same closure instead.
   consumer's destructor in a `dyn Error` a library drops is rare, and a
   value not dropped is a leak, which safe Rust may do too. Listed in the
   guide's differences (`semantics.md`, 53).
+- **A writer that panics part-way through a `println!`'s line, in a
+  program that catches no panic, loses what that line had written**, the
+  second case's, which the user decided (2026-11-12, #1496, ADR 1130,
+  amended): Rust's stdout keeps `x half` in its line buffer and writes it
+  as the panicking program ends; the JS builds the line whole and loses
+  it. Only the last line of a program that's ending on a panic differs,
+  and only where its writer panics part-way, so it's rare, and harmless:
+  the program has failed by then. Where a `catch_unwind` may catch the
+  panic and the program prints on, the writer writes through stdout's
+  line, as one that prints does, and the line is Rust's. Listed in the
+  guide's differences (`semantics.md`, 57).
 
 ## Amendment: the stack's depth
 

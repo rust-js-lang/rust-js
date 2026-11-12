@@ -16,29 +16,61 @@ use rustc_span::def_id::DefId;
 
 mod eager_futures;
 
-/// `never_unwinding`'s, and `quiet`'s; and, of what's quiet, each future
-/// whose running as it's made would be seen, refused (#965).
+/// What `found` finds of a crate's functions and closures.
+pub(super) struct Found {
+    /// `never_unwinding`'s.
+    pub(super) never_unwinding: IndexSet<DefId>,
+    /// `quiet`'s.
+    pub(super) quiet: IndexSet<DefId>,
+    /// Those that never unwind but through what their formatting shows
+    /// (`Unwinding::ButThroughWhatsShown`, #1496, #1530).
+    pub(super) never_but_through_whats_shown: IndexSet<DefId>,
+}
+
+/// `never_unwinding`'s, of both kinds, and `quiet`'s; and, of what's quiet,
+/// each future whose running as it's made would be seen, refused (#965).
 pub(super) fn found<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
-) -> (IndexSet<DefId>, IndexSet<DefId>) {
+) -> Found {
     let quiet = quiet(tcx, recognition, bodies, runs);
     eager_futures::refuse_where_eagerness_shows(tcx, recognition, bodies, &quiet, runs);
-    (never_unwinding(tcx, recognition, bodies, runs), quiet)
+    Found {
+        never_unwinding: never_unwinding(tcx, recognition, bodies, runs, Unwinding::AtAll),
+        quiet,
+        never_but_through_whats_shown: never_unwinding(tcx, recognition, bodies, runs, Unwinding::ButThroughWhatsShown),
+    }
 }
 
-/// The crate's functions and closures that never unwind: of no type parameters, no
-/// binding nor trait's method a dictionary may call another impl of, each
-/// whose every way on can't panic (`steps_on`), each call of another of
-/// these or of std's that can't. Found from the most, each that may taken
-/// out until none is.
-pub(super) fn never_unwinding<'tcx>(
+/// Which unwinding `never_unwinding` asks after.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Unwinding {
+    /// Any: what never unwinds, whatever it's given.
+    AtAll,
+    /// Any but through what its formatting shows (#1496, #1530): std's
+    /// formatting, a `Formatter`'s writes and builders, an `Arguments` of
+    /// any value, a `Debug` or `Display` call of one, is taken to go on, as
+    /// it unwinds only through what it runs of the crate's, a shown value's
+    /// writer, an iterator a builder's `entries` steps, a crate's
+    /// `fmt::Write`, which `prints` follows by what may run and by the
+    /// shown value's type, or through the `Formatter`'s destination, which
+    /// is stdout's line where it asks.
+    ButThroughWhatsShown,
+}
+
+/// The crate's functions and closures that never unwind, as `unwinding`
+/// asks: of no type parameters, no binding nor trait's method a dictionary
+/// may call another impl of, each whose every way on can't panic
+/// (`steps_on`), each call of another of these or of std's that can't.
+/// Found from the most, each that may taken out until none is.
+fn never_unwinding<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
+    unwinding: Unwinding,
 ) -> IndexSet<DefId> {
     // Each one's `Drop`s that drop nothing, of what JS drops nothing of or
     // of what's moved out by then (`mir::dead_drops`, #717).
@@ -60,10 +92,14 @@ pub(super) fn never_unwinding<'tcx>(
     loop {
         let unwinding: Vec<DefId> = (candidates.iter())
             .filter(|(id, mir, dead)| {
+                // Of formatting's, an exhaustive `match`'s impossible branch,
+                // a derived `Debug`'s of an enum, never runs.
+                let unreachable = unwinding == Unwinding::ButThroughWhatsShown;
                 never.contains(id)
-                    && !steps_on((mir, dead, false), &mut |callee, args, _| {
+                    && !steps_on((mir, dead, unreachable), &mut |callee, args, _| {
                         never.contains(&callee)
                             || std_never_unwinds((tcx, recognition), (callee, args), &|ty| runs(ty, *id))
+                            || (unwinding == Unwinding::ButThroughWhatsShown && formats(tcx, callee))
                     })
             })
             .map(|&(id, ..)| id)
@@ -720,6 +756,13 @@ fn std_never_unwinds<'tcx>(
         _ if name == "take" && of_an_option(tcx, recognition, callee) => true,
         _ => false,
     }
+}
+
+/// Whether `callee` is std's formatting, which unwinds only through what
+/// it runs of the crate's or where it writes
+/// (`Unwinding::ButThroughWhatsShown`).
+fn formats(tcx: TyCtxt<'_>, callee: DefId) -> bool {
+    crate::lower::recognition::is_std_formatting(tcx, callee)
 }
 
 /// Whether `method` is a `Cell`'s own, or a thread-local `Cell`'s,

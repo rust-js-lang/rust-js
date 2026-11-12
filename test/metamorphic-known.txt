@@ -27,11 +27,13 @@ plain std loud-call lock_poisoning.rs
 plain std loud-drop lock_poisoning.rs
 
 #1490 P0: a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
+plain std library panic_part_way_through_a_line_kept_where_caught.rs
 plain std library printed_while_a_line_is_formatted.rs
 plain std library printing_writer_shown_by_derived_debugs_and_builders.rs
 plain std library printing_writer_refused_into_a_string.rs
 plain std library printing_writer_shown_in_std_values.rs
 plain std library printing_writer_stopped_part_way_where_caught.rs
+plain std library stopping_writers_where_a_panic_is_caught.rs
 plain std library write_result_kept_by_a_writer.rs
 
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics

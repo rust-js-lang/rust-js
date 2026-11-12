@@ -5,8 +5,9 @@
 import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { node } from "./programs";
+import { compileJs, node, runJs, runNative, runtimes } from "./programs";
 import { buildCompiler, compiler, fixture, run } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -64,3 +65,36 @@ shown(JSON.stringify(seen.join("")) + "\\n");
 `;
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe('"[!a\\udc000\\udc01b\\udc00]\\n"\n');
 });
+
+// The guide's difference 57, the user's decision (#1496, ADR 0262): a
+// writer that panics part-way through a `println!`'s line, in a program
+// that catches no panic, loses what that line had written, `x half`,
+// which native Rust's stdout writes as the program ends. Where a
+// `catch_unwind` may catch it, it's kept (corpus case
+// panic_part_way_through_a_line_kept_where_caught).
+test("a line a writer's panic cuts short is lost where no panic is caught: difference 57", () => {
+  const dir = fixture("runtime-line-cut-short");
+  const file = join(dir, "case.rs");
+  writeFileSync(
+    file,
+    `use std::fmt;
+struct Halfway;
+impl fmt::Display for Halfway {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "half")?;
+        panic!("in the middle");
+    }
+}
+fn main() {
+    println!("x {} y", Halfway);
+}
+`,
+  );
+  const native = runNative(file, dir);
+  if (typeof native === "string") throw new Error(native);
+  const js = compileJs(file, dir, "2024", false);
+  if ("error" in js) throw new Error(js.error);
+  const ran = runJs(runtimes[0][1], js.js, dir, "case");
+  expect([native.stdout, native.outcome]).toEqual(["x half", { panic: "in the middle" }]);
+  expect([ran.stdout, ran.outcome]).toEqual(["", { panic: "in the middle" }]);
+}, underLoad(120_000));

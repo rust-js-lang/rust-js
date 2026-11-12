@@ -98,10 +98,9 @@ are off test/metamorphic-known.txt.
 
 ## Consequences
 
-- A writer that panics part-way through a line but prints nothing still
-  loses what it wrote before the panic, where Rust's line buffer keeps
-  it. Covering that means treating "may panic" like "may print", which
-  reaches most writers: #1496 asks the user.
+- A writer that panics part-way through a line but prints nothing loses
+  what it wrote before the panic, where Rust's line buffer keeps it, only
+  in a program that catches no panic (amended below, #1496).
 - A library's writer that prints, shown by a consumer's `println!`, is
   shown as before, its string whole. No contract fact says it prints.
 - Placing the panic message relative to a partial line, in a stream that
@@ -262,3 +261,70 @@ open, overtook it, `format L1` then `<1>stepped 2` where Rust's
 leaves held as its last frame ends, as `$printing` does. Corpus case
 format_made_apart_prints_before_the_next_line against native Rust in
 both builds; mutation `formatting-held-print-unwritten`.
+
+## Amendment (2026-11-12, #1496): a writer that may panic, where it may be caught, writes through the line
+
+A writer that panicked part-way through a `println!`'s line lost what it
+had written: `println!("x {} y", halfway)` caught, then `println!("caught
+{}", ..)`, printed `caught true` where native Rust prints `x halfcaught
+true`, its stdout's `LineWriter` keeping `x half`. The user decided:
+preserve it where it's caught. In a program that calls `catch_unwind`
+(`prints.rs`'s `catches_unwinding`), a writer that may stop part-way is
+one `prints` lists as it lists one that may print. It writes through
+stdout's line (`$sink`), and its `println!` is `$printing`'s, so what it
+wrote before its panic stays in the line, as Rust's does. A panic hook,
+which could print after a panic too, is refused (`panic::set_hook`). In a
+program that catches no panic, it ends on the panic, and the line it had
+begun is lost, where Rust writes it as the program ends: ADR 0262's
+second case, which the user decided, listed in its Consequences and the
+guide's differences (`semantics.md`, 57).
+
+**Which writers may stop, less coarsely.** `never_unwinding` (ADR 0902)
+takes any `write!` into a `Formatter` to unwind, so every writer would
+have streamed, and every std value's `Debug` of a derived `Debug` been
+refused (#1530) in a crate that catches a panic. Now `prints` asks
+`unwinding.rs`'s second answer, what never unwinds but through what its
+formatting shows (`Unwinding::ButThroughWhatsShown`): std's formatting,
+a `Formatter`'s writes and builders, an `Arguments` of any value and a
+`Debug` or `Display` call of one, is taken to go on. What it shows and
+runs `prints` follows (`stopping`): a body stops where it may unwind so,
+returns an `Err` (`failing`), shows a value of a type one of whose
+writers stops, or of what can't be known (a type parameter's, a `dyn`'s
+read from a place), or runs what does
+(`may_run`: a shown value's writer, the iterator a builder's `entries`
+steps, a crate's `fmt::Write`), or what can't be followed, to a fixed
+point. An exhaustive `match`'s impossible branch, a derived `Debug`'s of
+an enum, never runs. Another crate's writer is taken not to stop: it's
+shown whole, as a library's that prints is (#1490's). A derived `Debug` of numbers and strings, and a
+`Display` that only writes, don't stop: they're shown as before, and a
+`Vec` of them isn't refused. The `Formatter`'s own destination, stdout's
+line where this asks, never panics; a crate's `fmt::Write` that does is
+outside a line. ADR 0902's `never_unwinding` itself is unchanged.
+
+**Only a writer that may write into a line.** What a writer wrote before
+its panic matters only in stdout's line: in a `format!`, the `String` is
+never given. So of those that may stop, only a writer that may run in a
+line streams, and only its type is refused in a composed `Debug`
+(`in_a_line`): a type a print shows (each `fmt::rt::Argument` under a
+`print!`'s or `println!`'s arguments, `println!("{:?}", v)`'s `Vec<Loud>`'s
+`Loud`), and to a fixed point what such a writer may run or shows. All
+writers where a print shows, or such a writer shows, what can't be known.
+So `debug_entries_drop_as_std`, whose writers that may panic are shown
+only in a `format!` under a `catch_unwind`, is as it was; of the whole
+corpus only `never_unwinding_calls`' snapshot changes, its `Bad`, shown
+by a `println!` that may be caught, now written through the line.
+A library's writer that may panic, shown by a consumer's `println!` that
+catches it, is shown whole, as one that prints is: no contract fact says
+it may (the metamorphic net's `library` rewrite, listed with #1490's).
+
+Proof: corpus case `panic_part_way_through_a_line_kept_where_caught`,
+against native Rust in both builds: a writer that panics after writing,
+one before writing, one inside another's `write!`, a `Debug`, a
+`print!`'s, one that makes a `format!`, and a `to_string()`, each caught;
+and `stopping_writers_where_a_panic_is_caught`, both against native
+Rust in both builds: a derived `Debug` of
+numbers in a `Vec` and an `Option`, `{:#?}` too, and a `Display` that only
+writes, shown as before in a crate that catches, and one that may panic
+by an index, kept. test/runtime-print.test.ts shows the decided
+difference: a line cut short where nothing catches the panic lacks the
+partial line native Rust writes at exit.

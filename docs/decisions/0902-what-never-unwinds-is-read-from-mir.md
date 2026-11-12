@@ -281,3 +281,19 @@ may unwind; the issue says so, unbisected), so it survived. Without the mark, 73
 the corpus's snapshots change, a call that can't panic moved into a
 `try`; it names `never_unwinding_calls`, the case this decision's
 Consequences hold it with, `greet("ann", 1)` inside a `try` without it.
+
+## Amendment: what never unwinds but through what its formatting shows (2026-11-12, #1496)
+
+`found` gives a second answer beside `never_unwinding`, for `prints`
+(ADR 1130): what never unwinds but through what its formatting shows
+(`Unwinding::ButThroughWhatsShown`). It's found the same way, but a call
+of std's formatting goes on: a `Formatter`'s writes and builders, an
+`Arguments` of any value, `format`, and a `Debug` or `Display` call of
+any value. What such a call runs of the crate's, a shown value's writer,
+the iterator a builder's `entries` steps, a crate's `fmt::Write`, `prints`
+follows by what may run (`may_run`) and by the shown value's type, and
+what can't be followed stops. So a `write!` into a `Formatter` no longer makes a writer one that may
+stop part-way where a panic may be caught. `never_unwinding` itself, which
+drops' `finally`s and `Known::NeverThrows` read, is unchanged: a
+`Formatter`'s destination may be a crate's `fmt::Write` that panics.
+Mutation `formatting-unwinding-unseen`.

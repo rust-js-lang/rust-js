@@ -774,7 +774,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Refused: a value of `ty`, whose `Debug` may print and stop part-way
+    /// Refused: a value of `ty`, whose `Debug` may stop part-way
     /// where a panic may be caught, shown by a derived `Debug` or a
     /// builder's step of a writer that writes through the line, which makes
     /// its text whole before the writer's own reaches the line, so what the
@@ -795,7 +795,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Err(self.unsupported(
             span,
-            &format!("a derived `Debug` or a `Debug` builder's step of a {shown} may print and stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what was written before it (#1530)"),
+            &format!("a derived `Debug` or a `Debug` builder's step of a {shown} may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what was written before it (#1530)"),
         ))
     }
 }

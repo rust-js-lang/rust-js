@@ -297,6 +297,19 @@ pub(crate) fn is_fmt_method(tcx: TyCtxt<'_>, id: DefId) -> bool {
         })
 }
 
+/// Is `id` std's formatting, an item of `std::fmt`: a `Formatter`'s
+/// method, a builder's, `Arguments`', `rt::Argument`'s, `format`, a
+/// formatting trait's method (#1496).
+pub(in crate::lower) fn is_std_formatting(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id).starts_with("std::fmt::")
+}
+
+/// Is `id` a `fmt::rt::Argument`'s constructor, which a `format_args!`
+/// makes of each value it shows, the value's type its own (#1496).
+pub(in crate::lower) fn is_fmt_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id).starts_with("std::fmt::rt::Argument")
+}
+
 /// Is `id` one of core's `OTHER_FMT_TRAITS`?
 pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     of_std_crate(tcx, id, StdCrate::Core)
