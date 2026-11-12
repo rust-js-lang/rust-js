@@ -351,6 +351,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::arrow(vec!["items".into()], body),
             )]));
         }
+        // std's `Sum` or `Product` of a `Wrapping` or a `Saturating`, of
+        // itself or of a reference to it, `{ sum(items) }`: its own `+` or
+        // `*` folded from its `[0]` or `[1]`, as std's `iter.fold(Wrapping(0),
+        // |a, b| a + b)` is, wrapping or saturating each step (#1445).
+        if let Some(name) = crate::lower::recognition::accumulation(self.tcx, tr.def_id)
+            && let Some(newtype) = self.recognition().int_newtype(ty)
+            && let Some(num) = Num::of(newtype.0)
+            && !self.has_user_impl(tr.def_id, ty)
+        {
+            let (op, start) = match name == "sum" {
+                true => (rustc_middle::mir::BinOp::Add, 0),
+                false => (rustc_middle::mir::BinOp::Mul, 1),
+            };
+            let (a, b) = (self.fresh("a"), self.fresh("b"));
+            let mut step = Vec::new();
+            let item = Some((Expr::index(Expr::var(&b), Expr::int(0)), newtype.0));
+            let total = self.newtype_result(Ok(op), Expr::var(&a), item, newtype, span, &mut step)?;
+            step.push(StmtKind::Return(Some(total)).at(js::Span::NONE));
+            let f = Expr::arrow(vec![a.into(), b.into()], step);
+            let items = self.js_iterator(Expr::var("items"));
+            let made = Expr::array(vec![Expr::call(
+                Expr::member(items, "reduce"),
+                vec![f, num.literal(start)],
+            )]);
+            let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
+            return Ok(Expr::object(vec![Prop::Field(
+                name.into(),
+                Expr::arrow(vec!["items".into()], body),
+            )]));
+        }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
         if crate::lower::recognition::is_extend(self.tcx, tr.def_id)
             && let Some(dictionary) = self.extend_dictionary(ty, tr.args.type_at(1), span)?

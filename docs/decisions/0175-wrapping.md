@@ -166,3 +166,18 @@ Both builds. Mutations `saturating-unrecognized`,
 `std-fields-struct-default-refused`. #1289's refusals that named #1434 are
 gone: `open_call` no longer needs a call's generic arguments, and the map's
 refusal is a `Pin`'s (#1435) alone.
+
+## Amendment (2026-11-12, #1445): `sum()` and `product()` of either
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted.
+std's `Sum` and `Product` of a `Wrapping`, and of a `Saturating` of an
+unsigned integer, the only ones std has, are `iter.fold(Wrapping(0), |a, b|
+a + b)` and its `Wrapping(1)` and `*`, of each and of references to each.
+Their dictionary (traits/dictionaries.rs, beside a number's, ADR 0476) is
+that fold, each step the newtype's own operator from the one table,
+`newtype_result`: `[Iterator.from(items).reduce((a, b) => (a + b[0]) & 255,
+0)]`, `Math.min(a + b[0], 255)` of a `Saturating<u8>`. Held by corpus case
+`newtype_sums_and_products.rs` against native wasm32, each width, in place
+and in generic code, by value and by reference, empty and past each bound,
+both builds; mutations `newtype-sum-refused`, `newtype-product-adds`,
+`newtype-sum-from-one`. The refusal's #1445 tag is gone with it.

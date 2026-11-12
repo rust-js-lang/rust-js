@@ -836,10 +836,7 @@ function freePort(): Promise<number> {
 }
 
 function command(dir: string, args: string[]) {
-  // Its watcher polls, `WATCHPACK_POLLING`, as the vite tests' servers do
-  // (`polled`): macOS's file system events run tens of seconds late under
-  // load, a save heard after the deadline (#1429).
-  return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1", WATCHPACK_POLLING: "true" } });
+  return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
 }
 function rustJs(dir: string, args: string[], env: Record<string, string> = {}) {
   return spawn(process.execPath, [cli, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, ...env } });

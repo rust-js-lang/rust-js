@@ -23,32 +23,16 @@ pub(crate) enum OpenCall {
     /// `Rc::pin` and `Arc::pin`, and a read through a `Pin` of a pointer
     /// other than a reference or a `Box` (#1448).
     PinRead,
-    /// The `Sum` or `Product` of a `Wrapping` or a `Saturating` (#1445).
-    NewtypeSum,
     /// The `Hash` of a std type rust-js doesn't write, a `Duration`'s (#1447).
     StdHash,
 }
 
 /// The open issue's family the missing impl of trait `trait_id` for
-/// `self_ty` is of, if one is: the `Sum` or `Product` of a `Wrapping` or a
-/// `Saturating` (#1445); the `Hash` of another std type, which rust-js
-/// doesn't write (#1447).
+/// `self_ty` is of, if one is: the `Hash` of a std type rust-js doesn't
+/// write (#1447).
 pub(crate) fn open_evidence(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: ty::Ty<'_>) -> Option<OpenCall> {
-    if is_std_def(tcx, trait_id, StdItem::Hash)
-        && matches!(self_ty.kind(), ty::Adt(adt, _) if super::std_crates::is_std_crate(tcx, adt.did()))
-    {
-        return Some(OpenCall::StdHash);
-    }
-    let sum = ["Sum", "Product"]
-        .iter()
-        .any(|name| tcx.is_diagnostic_item(rustc_span::Symbol::intern(name), trait_id))
-        || matches!(
-            tcx.def_path_str(trait_id).as_str(),
-            "std::iter::Sum" | "std::iter::Product"
-        );
-    let newtype = matches!(self_ty.kind(), ty::Adt(adt, _)
-        if is_std_def(tcx, adt.did(), StdItem::Wrapping) || is_std_def(tcx, adt.did(), StdItem::Saturating));
-    (sum && newtype).then_some(OpenCall::NewtypeSum)
+    let std_type = matches!(self_ty.kind(), ty::Adt(adt, _) if super::std_crates::is_std_crate(tcx, adt.did()));
+    (is_std_def(tcx, trait_id, StdItem::Hash) && std_type).then_some(OpenCall::StdHash)
 }
 
 /// The open issue's family `id`, a refused call, is of, if one is.

@@ -803,4 +803,28 @@ export const mutations: Mutation[] = [
     replace: "                Ok(_) => (vec![\"a\".into(), \"b\".into()], Some((Expr::var(\"b\"), self.tcx.types.u8))),\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_ops_by_its_number_and_past_its_range.rs$"],
   },
+  {
+    name: "newtype-sum-refused",
+    breaks: "the `sum()` of `Wrapping`s or `Saturating`s has no dictionary, refused (#1445)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && let Some(newtype) = self.recognition().int_newtype(ty)\n            && let Some(num) = Num::of(newtype.0)\n",
+    replace: "            && let Some(newtype) = self.recognition().int_newtype(ty).filter(|_| false)\n            && let Some(num) = Num::of(newtype.0)\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_sums_and_products.rs$"],
+  },
+  {
+    name: "newtype-product-adds",
+    breaks: "a `Wrapping`'s `product()` adds, from its one (#1445)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                false => (rustc_middle::mir::BinOp::Mul, 1),\n",
+    replace: "                false => (rustc_middle::mir::BinOp::Add, 1),\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_sums_and_products.rs$"],
+  },
+  {
+    name: "newtype-sum-from-one",
+    breaks: "a `Wrapping`'s `sum()` starts from one, an empty one's `1` (#1445)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                true => (rustc_middle::mir::BinOp::Add, 0),\n",
+    replace: "                true => (rustc_middle::mir::BinOp::Add, 1),\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_sums_and_products.rs$"],
+  },
 ];

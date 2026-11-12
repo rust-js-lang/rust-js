@@ -41,9 +41,8 @@ for (const [name, source, message, crate] of [
   // has (ADR 1126).
   ["a thread's spawn", "pub fn f() -> u32 { std::thread::spawn(|| 5).join().unwrap() }", "does not support calling `std::thread::spawn` (ADR 1126) yet"],
   // What's open names its issue: a std type's `Hash` rust-js doesn't write, in a key
-  // whose `Hash` runs code (#1447); a `Wrapping`'s `sum()` (#1445); `Rc::pin` (#1448).
+  // whose `Hash` runs code (#1447); `Rc::pin` (#1448).
   ["a set of a Duration beside a key whose Hash runs code", "#[derive(PartialEq, Eq)] pub struct K(u32);\nimpl std::hash::Hash for K { fn hash<H: std::hash::Hasher>(&self, h: &mut H) { println!(\"hash\"); self.0.hash(h) } }\npub fn f(k: K) -> usize { std::collections::HashSet::from([(std::time::Duration::from_secs(1), k)]).len() }", "implementation evidence for `<std::time::Duration as std::hash::Hash>` (#1447) yet"],
-  ["a sum of Wrappings", "pub fn f(v: Vec<std::num::Wrapping<u8>>) -> std::num::Wrapping<u8> { v.into_iter().sum() }", "as std::iter::Sum>` (#1445) yet"],
   ["an Rc's pin", "pub fn f() -> u8 { *std::rc::Rc::pin(5u8) }", "calling `std::rc::Rc::<T>::pin` (#1448) yet"],
   ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
   // A `pub use` of what has JS but no module of rust-js's to be re-exported
