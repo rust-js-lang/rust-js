@@ -218,3 +218,18 @@ the other error itself, which no caller caught: a P0, found by #1403's case.
 Held by `io_error_drops_what_it_holds.rs` and
 `io_unit_result_question_converts_its_error.rs` against native Rust in both
 builds, and by mutations.
+
+## Amendment: what `?` of a write's result made holds nothing, dropped by its variants too
+
+`drop_place` gave nothing to drop of what `?` of a write's result made,
+its `ControlFlow` and its `Break`'s residual (#1403), but a drop of one
+some of whose variants had moved, rustc's `open_drop_for_multivariant`
+(`open_drop_variants`), tested its variants of the write's value,
+`undefined`: `if (undefined.TAG === "Err") {}`, which a later pass of tidy
+took away as it does nothing, so the finished JS was right and tidy's
+first stage threw where Rust prints (nightly 43133510260's tidy stages,
+corpus case io_error_drops_what_it_holds, whose `io::Error` holds what
+drops). `mir_drop` now asks `write_branch` (`mir/drops.rs`) once, of
+every drop it lowers, before the elaboration's ways split: whole, as a
+flag says, or a variant's parts at a time. The push's tidy stages run
+that case; mutation `write-branch-dropped`, refitted to that one place.

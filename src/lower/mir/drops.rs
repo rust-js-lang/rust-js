@@ -530,6 +530,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {
             return Ok(());
         }
+        // What `?` of a write's result made, which holds nothing to drop,
+        // whole, as a flag says or a variant's parts at a time.
+        if self.write_branch(state, place) {
+            return Ok(());
+        }
         match drops.move_data.rev_lookup.find(place.as_ref()) {
             LookupResult::Exact(path) => self.elaborate_drop(state, block, (place, path), cleanup, span, out),
             // Behind a pointer, which borrowck says is there.
@@ -835,15 +840,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<()> {
         let ty = place.ty(&state.body.local_decls, self.tcx).ty;
-        // What `?` of a write's result made, its `ControlFlow`, and its
-        // `Break`'s residual: its `Err` is thrown on, where a write may fail,
-        // or never made, where none may (`tried_write`), so it holds nothing
-        // to drop, and its value is the write's, never a `{ TAG }` (#1403).
-        if (state.branches.get(&place.local)).is_some_and(|&(_, tried)| self.is_write_result(tried)) {
-            return Ok(());
-        }
         let value = self.mir_place(state, place, span, out)?;
         self.drop_value(value, ty, span, out)
+    }
+
+    /// Whether `place` is what `?` of a write's result made, its
+    /// `ControlFlow`, or its `Break`'s residual: its `Err` is thrown on,
+    /// where a write may fail, or never made, where none may
+    /// (`tried_write`), so it holds nothing to drop, whole or a variant's
+    /// parts at a time, and its value is the write's, never a `{ TAG }`
+    /// (#1403): `undefined.TAG` where its parts were dropped by their
+    /// variants (nightly 43133510260's tidy stages). Asked once, of each
+    /// drop `mir_drop` lowers, before the elaboration's ways split.
+    fn write_branch(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        (state.branches.get(&place.local)).is_some_and(|&(_, tried)| self.is_write_result(tried))
     }
 
     /// What a panic drops as it unwinds from a terminator: its cleanup

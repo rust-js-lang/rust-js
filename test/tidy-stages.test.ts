@@ -54,6 +54,10 @@ const few = [
   // A `for` over a text escape, stepped by `$next` until `for…of` is made.
   "escape_iterators.rs",
   "interpreter.rs",
+  // `?` of a write's result whose `io::Error` holds what drops: its
+  // `ControlFlow` dropped by its variants holds nothing, never a test of
+  // `undefined.TAG` that tidy's first stage left (nightly 43133510260).
+  "io_error_drops_what_it_holds.rs",
   "labeled_blocks.rs",
   // A value cell's clones, no JS, in a tuple: of them alone, none; beside
   // what isn't one, `undefined` in their place, never an undeclared

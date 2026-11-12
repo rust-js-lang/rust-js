@@ -407,8 +407,8 @@ export const mutations: Mutation[] = [
     name: "write-branch-dropped",
     breaks: "the `ControlFlow` `?` of a write's result makes is dropped as a `{ TAG }`, which a write's result never is, so `check(n)?` of an `io::Result<()>` reads `undefined.TAG` and throws, where io errors may drop",
     file: "src/lower/mir/drops.rs",
-    find: "        if (state.branches.get(&place.local)).is_some_and(|&(_, tried)| self.is_write_result(tried)) {\n",
+    find: "        if self.write_branch(state, place) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+    tests: ["test/tidy-stages.test.ts", "-t", "io_error_drops_what_it_holds"],
   },
 ];
