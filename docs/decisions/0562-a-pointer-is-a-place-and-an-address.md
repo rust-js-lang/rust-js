@@ -1542,3 +1542,19 @@ takes that place's offset (`made_once_of`, src/lower/pointers/lending.rs):
 `$ptr(s, "n", 4)`. #1479's program runs as native Rust does. Corpus case
 address_of_a_field_given_to_generic_code, mutation
 reborrowed-field-offset-unsaid.
+
+## Amendment: the address through a handle on no place is refused (#1519)
+
+A `&mut dyn` of a number is a pair, `{ impl, get value() { return s.n; },
+.. }`, an accessor on no place it records. A raw pointer made through it,
+`&mut *x as *mut T` of what its method gives back, was `$ptr(x, "value",
+0)`, a handle on the pair object's own `value`, whose address was a fresh
+allocation's: 64 where native wasm32 gives 4. The guard of #1474 refused a
+handle with an accessor `value` and no `of`; this one's `of` is the pair.
+Now `$offsetIn` refuses a handle on the `value` of an object whose `value`
+is an accessor and that's no place handle itself, naming #1519, which stays
+open to give the pair its place's handle. Reads and writes through it are
+the place's, as before. A runtime-package test, mutation
+address-through-a-pair-made-up; the metamorphic net's `dyn-ref` rewrite of
+address_of_a_field_given_to_generic_code, which found it, listed under
+#1519.

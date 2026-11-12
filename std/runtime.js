@@ -8414,13 +8414,24 @@ export function $emptyAt(addr, empty = []) {
 // type its caller lays out. A handle that reads a place it doesn't record,
 // `{ get value() { return slot._0; } }` of a `&mut` std lent from inside
 // its storage, is on no allocation it says: refused, never a made-up
-// address (#1474, #1513).
+// address (#1474, #1513); and a handle on one's own `value` (#1519).
 export function $offsetIn(pointer, range) {
   if (pointer.bytes !== undefined) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
   }
   if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, "value")?.get !== undefined) {
     throw $unsupported("rust-js does not support the address of a `&mut` std lends from inside its storage, a handle on no place it records (#1513)");
+  }
+  // And a handle on such a handle's own `value`, or on a `&mut dyn`'s pair's,
+  // `{ impl, get value() { return s.n; } }`: no place either (#1519).
+  if (
+    pointer.at === "value" &&
+    pointer.of !== null &&
+    typeof pointer.of === "object" &&
+    $places.get(pointer.of.of)?.get(pointer.of.at) !== pointer.of &&
+    Object.getOwnPropertyDescriptor(pointer.of, "value")?.get !== undefined
+  ) {
+    throw $unsupported("rust-js does not support the address of what a `&mut` refers to through a handle on no place it records, a `&mut dyn`'s (#1519)");
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
   const offset = $handleOffset(pointer);

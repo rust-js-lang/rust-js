@@ -1103,6 +1103,27 @@ console.log(typeof lengthless.back, typeof lengthless.len, known.back().value, k
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined undefined 2 1\n");
 });
 
+// A handle on what an accessor handle refers to, a `&mut dyn`'s pair's
+// `value`, `{ impl, get value() { .. } }`: no place, its address refused,
+// never a made-up one (#1519); reads and writes through it still the place's.
+// A place handle's `value` is the handle (#1479), its address the field's.
+test("the address through a handle on no place it records is refused", () => {
+  const module = join(fixture("runtime-handle-through-a-pair"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $addr, $ptr, $ptrTo } = await import(${JSON.stringify(module)});
+const s = { a: 0, n: 2 };
+const pair = { impl: {}, get value() { return s.n; }, set value(v) { s.n = v; } };
+const through = $ptr(pair, "value", 0);
+through.value = 5;
+let refused = "";
+try { $addr(through, 4); } catch (error) { refused = error.message.includes("#1519") ? "refused" : error.message; }
+const field = $ptr(s, "n", 4);
+console.log(s.n, refused, $addr($ptr(field, "value", 0), 4) - $addr($ptrTo(s), 8));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("5 refused 4\n");
+});
+
 // One key, two places: an `Ok`'s `_0` at 1 and, once the `Result` is
 // written over with an `Err`, its `_0` at 2 (#1484). Each its own handle,
 // at its own offset; the same offset the same handle, and a handle given

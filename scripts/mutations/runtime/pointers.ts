@@ -771,4 +771,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
   },
+  {
+    name: "address-through-a-pair-made-up",
+    breaks: "a handle on a `&mut dyn`'s pair's `value`, an accessor on no place, has the pair's address, made up (#1519)",
+    file: "src/runtime/pointers.js",
+    find: "    pointer.at === \"value\" &&\n",
+    replace: "    false &&\n",
+    tests: ["test/runtime-package.test.ts", "-t", "the address through a handle on no place it records is refused"],
+  },
 ];
