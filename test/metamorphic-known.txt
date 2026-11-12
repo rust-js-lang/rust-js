@@ -34,6 +34,7 @@ plain std library printing_builder_written_step_by_step.rs
 plain std library printing_derived_debug_stopped_part_way.rs
 plain std library printing_std_value_stopped_part_way.rs
 plain std library stderr_between_a_writers_lines.rs
+plain std library stderr_inside_a_std_values_debug.rs
 plain std library std_value_of_quiet_stopping_parts_where_caught.rs
 plain std library printing_writer_shown_by_derived_debugs_and_builders.rs
 plain std library printing_writer_refused_into_a_string.rs

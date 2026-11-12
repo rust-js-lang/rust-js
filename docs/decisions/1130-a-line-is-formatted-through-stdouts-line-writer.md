@@ -485,6 +485,22 @@ a writer's error, and `{:#?}`), by its browser comparison, each stream's
 lines in the order their newlines came natively, and by runtime-print's
 unit test; five mutations. A browser shows a `println!` after a
 `print!`'s part before it, #1599, which two cases' browser comparison
-lists. Left: a std value's `Debug`, made whole, `items.map(fmt)`, whose
-text before a print isn't known as it's made (B2, through the streamed
-builders).
+lists.
+
+## Amendment (2026-11-13): a std value's `Debug` beside standard error
+
+A std value's `Debug`, a `Vec`'s, an `Option`'s or a tuple's, is made
+whole, `items.map(fmt).join(", ")`, so its text before an item's print
+isn't known when a write to stderr comes, and the bytes written ahead
+missed `list [N`. Where a write to stderr may run while a line is
+formatted (`prints_to(.., true)` of a body in `while_formatting`), the
+types whose `Debug` may print join `Prints::stopping`, so such a value's
+`Debug` is written piece by piece through std's builders' model
+(`$composed`, #1561), as one whose part may stop is: one owner,
+`stops_composed`, no second check. `writes_stdout` is `writes_stream`, of
+either stream. Output where no stderr write may run inside formatting is
+unchanged. Corpus case `stderr_inside_a_std_values_debug`, against
+native merged and in a browser's order; mutation
+`std-debug-whole-beside-stderr`. The `library` rewrites of #1490's cases
+stay listed: a crate whose writers are a library's doesn't see them print
+(the cross-crate rest).

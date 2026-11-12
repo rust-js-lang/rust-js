@@ -44,7 +44,10 @@ pub(in crate::lower) struct Prints {
     pub(in crate::lower) types: IndexSet<DefId>,
     /// Of those, the ones one of whose writers that print may stop
     /// part-way, by a panic or an `Err`, in a program that may catch the
-    /// panic and print on (`stops_shown`, #1521, #1530).
+    /// panic and print on (`stops_shown`, #1521, #1530); and where a write
+    /// to stderr may run while a line is formatted, the ones whose `Debug`
+    /// may print, which a std value's `Debug` writes piece by piece too
+    /// (#1490).
     pub(in crate::lower) stopping: IndexSet<DefId>,
 }
 
@@ -145,7 +148,7 @@ fn printing_writers<'tcx>(
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
 ) -> Prints {
     let printing: IndexSet<DefId> = (all_bodies.iter())
-        .filter(|body| prints_to_stdout(recognition, body))
+        .filter(|body| prints_to(recognition, body, false))
         .map(|body| body.def_id)
         .collect();
     let mut found = Prints::default();
@@ -246,7 +249,7 @@ fn printing_writers<'tcx>(
             .map(|body| body.def_id)
             .collect();
         if more.is_empty() {
-            return found;
+            break;
         }
         for writer in more {
             found.through_sink.insert(writer);
@@ -255,6 +258,22 @@ fn printing_writers<'tcx>(
             found.types.extend(type_of(writer));
         }
     }
+    // Where a write to stderr may run while a line is formatted, a std
+    // value's `Debug` of a type whose `Debug` may print is written piece by
+    // piece too, as one that may stop is: what of the line Rust's stdout
+    // had written by that write is known only of a writer that writes as it
+    // goes (#1490).
+    let stderr_while_formatting = (all_bodies.iter())
+        .any(|body| found.while_formatting.contains(&body.def_id) && prints_to(recognition, body, true));
+    if stderr_while_formatting {
+        let debug = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Debug);
+        let printing_debug = (found.through_sink.iter())
+            .filter(|&&writer| (tcx.trait_impl_of_assoc(writer).map(|imp| tcx.impl_trait_id(imp))) == Some(debug))
+            .filter_map(|&writer| type_of(writer))
+            .collect::<Vec<_>>();
+        found.stopping.extend(printing_debug);
+    }
+    found
 }
 
 /// Of the crate's bodies, where it catches a panic, those that may stop
@@ -325,7 +344,7 @@ fn in_a_line<'tcx>(
             let ty::FnDef(id, generics) = *body.thir[fun].ty.kind() else {
                 continue;
             };
-            if recognition.writes_stdout(id, generics.skip_binder()) {
+            if recognition.writes_stream(id, generics.skip_binder(), false) {
                 let mut found = ShownByArguments {
                     thir: &body.thir,
                     tcx,
@@ -454,9 +473,10 @@ fn catches_unwinding<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx
     })
 }
 
-/// Whether `body` prints to stdout itself: `print!` or `println!`, or a
-/// write to `io::stdout()`.
-fn prints_to_stdout<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> bool {
+/// Whether `body` prints to stdout itself, or of `error`, to stderr:
+/// `print!` or `eprint!` and their lines, or a write to `io::stdout()` or
+/// `io::stderr()`.
+fn prints_to<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
     body.thir.exprs.iter().any(|expr| {
         let ExprKind::Call { fun, .. } = expr.kind else {
             return false;
@@ -464,6 +484,6 @@ fn prints_to_stdout<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>
         let ty::FnDef(id, args) = *body.thir[fun].ty.kind() else {
             return false;
         };
-        recognition.writes_stdout(id, args.skip_binder())
+        recognition.writes_stream(id, args.skip_binder(), error)
     })
 }

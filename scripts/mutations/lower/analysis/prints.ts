@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "writer-showing-a-printing-type-unseen",
     breaks: "a writer that shows a value whose writer prints, through std's `&dyn Debug`, isn't taken to print, so a derived `Debug` of it builds its text whole and the field's print comes before the line (#1495)",
     file: "src/lower/analysis/prints.rs",
-    find: "        if more.is_empty() {\n            return found;\n",
-    replace: "        if true || more.is_empty() {\n            return found;\n",
+    find: "        if more.is_empty() {\n            break;\n",
+    replace: "        if true || more.is_empty() {\n            break;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_by_derived_debugs_and_builders.rs$"],
   },
   {
@@ -124,5 +124,17 @@ export const mutations: Mutation[] = [
     find: ".filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
     replace: ".filter(|body| false && failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
     tests: ["test/corpus.test.ts", "-t", "^failing_debug_part_keeps_what_was_written\\.rs$"],
+  },
+  {
+    name: "std-debug-whole-beside-stderr",
+    breaks: "a std value's `Debug` of an item whose `Debug` prints is made whole where a write to stderr may run while a line is formatted, so the stdout bytes before it, `list [N`, aren't known when it's written, and come after it (#1490)",
+    file: "src/lower/analysis/prints.rs",
+    find: "    if stderr_while_formatting {\n",
+    replace: "    if false && stderr_while_formatting {\n",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "stderr_inside"
+    ]
   },
 ];

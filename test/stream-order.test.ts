@@ -20,6 +20,7 @@ const cases = [
   "printed_while_a_line_is_formatted.rs",
   "eprinted_while_formatting.rs",
   "stderr_between_a_writers_lines.rs",
+  "stderr_inside_a_std_values_debug.rs",
 ];
 
 for (const name of cases) {
