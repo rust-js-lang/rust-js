@@ -298,6 +298,9 @@ export const mutations: Mutation[] = [
     find: "                    && self.is_handle_pointer(decls[place.local].ty)\n",
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+    // Its JS, `$ptr(p, "value", 0)` for `p`; the runtime gives the same
+    // place of it since #1479, so the snapshot holds it.
+    snapshots: true,
   },
   {
     name: "pointer-of-reference-refused",

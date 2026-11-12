@@ -65,6 +65,12 @@ function longer(slot, extra, TAsRefStr) {
   e.value += "!";
 }
 
+// Generic code's shared lend of what holds no JS object in each instance
+// its callers give, a `u32`: a copy, let through by its instances.
+function firstSet(cell) {
+  return cell.value;
+}
+
 function main() {
   const stringAsRef = { asRef: (value) => value };
   const outer = {
@@ -142,5 +148,8 @@ function main() {
   console.log(
     `${failed.TAG === "Ok" ? `Ok(${$debugStr(failed._0)})` : `Err(${$debugStr(failed._0)})`}`,
   );
+  const counted = { value: 7 };
+  const value$7 = firstSet(counted);
+  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
 }
 //# sourceMappingURL=case.js.map

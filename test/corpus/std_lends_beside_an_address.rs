@@ -59,6 +59,12 @@ fn longer<T: Clone + AsRef<str>>(slot: &mut Result<T, String>, extra: T) -> Opti
     }
 }
 
+// Generic code's shared lend of what holds no JS object in each instance
+// its callers give, a `u32`: a copy, let through by its instances.
+fn first_set<T: Copy>(cell: &OnceCell<T>) -> Option<T> {
+    cell.get().copied()
+}
+
 fn main() {
     let outer = Outer {
         tag: 1,
@@ -99,4 +105,7 @@ fn main() {
     println!("{:?} {failed:?}", longer(&mut failed, String::from("y")));
     failed = Ok(String::from("z"));
     println!("{failed:?}");
+    let counted: OnceCell<u32> = OnceCell::new();
+    let _ = counted.set(7);
+    println!("{:?}", first_set(&counted));
 }
