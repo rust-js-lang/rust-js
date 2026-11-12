@@ -181,12 +181,13 @@ export const mutations: Mutation[] = [
   {
     name: "take-of-owned-unclosed",
     breaks:
-      "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped",
+      "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped, but each item left in its source dropped by hand, `for (const item of iter.iter)`, where closing it, `iter.return()`, drops the same: since the one `Take` keeps its source as `iter` (#830), only how it reads",
     file: "src/lower/recognition/iterators.rs",
     find: "        if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {\n",
     replace:
       "        if let Some(held) = self.owned_items(source).filter(|_| false).or_else(|| self.closed_on_drop(source)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    snapshots: true,
   },
   {
     name: "heap-into-iter-passed-as-slice",
