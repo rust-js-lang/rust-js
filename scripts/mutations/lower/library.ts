@@ -355,11 +355,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library.rs",
     find: "                true => reached.counted_rcs.push(pointee),\n",
     replace: "                true => {}\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: rc_per_type|three crates: rc_generic",
-    ],
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "instance-writers-take-nothing",

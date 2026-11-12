@@ -193,11 +193,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-public-callers-seen",
-    breaks: "a `pub` generic function's `Rc<T>` counts only what the crate's own calls give it, though JS or a consumer may give it any type, whose `Rc` is then uncounted there (#1009)",
+    breaks: "a `pub` generic function's adapter of what it's given is taken to be made of what its own crate's calls give alone, though a consumer may give it another, whose hint it then doesn't ask as std does (`Fact::Shared`, #1236)",
     file: "src/lower/instances.rs",
     find: "        Fact::Shared => !tcx.visibility(owner).is_public(),\n",
     replace: "        Fact::Shared => true,\n",
-    tests: ["test/crates.test.ts", "-t", "counts each type"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_adapter_made_in_generic_code_asked_its_hint$"],
   },
   {
     name: "promoted-fn-ref-unseen",
@@ -278,11 +278,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "program-pub-rc-callers-unseen",
-    breaks: "a program's `pub` trait's generic method counts every `Rc` beside it, as a library's does, though JS's values drop nothing and read no count: a neighbour's class constructor's `Rc<Self>` is then an `Rc::new` of a type parameter it may be, refused (#1112)",
+    breaks: "a program's `pub` generic counts every `Rc` beside it, as a library's does, though JS's values drop nothing and read no count: a neighbour's untagged enum of a `RefCell` then holds an `Rc` counted, which it can't tell apart, and the two run otherwise than native Rust together (#1112, #1060's neighbours)",
     file: "src/lower/instances.rs",
     find: "            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
     replace: "            !tcx.visibility(owner).is_public()\n",
-    tests: ["test/neighbours.test.ts", "-t", "#1112"],
+    tests: ["test/neighbours.test.ts", "-t", "#1060"],
   },
   {
     name: "library-pub-rc-callers-seen",

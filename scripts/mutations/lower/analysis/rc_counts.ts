@@ -537,7 +537,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    owned_dropping(tcx, (env, &given), decl.ty, &mut owned_seen, &mut counted);\n",
     replace: "                    _ = (&given, &owned_seen);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_rc_shared_by_its_consumers_instance"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_(rc_shared_by_its_consumers_instance|iterator_held_in_a_place)$"],
   },
   {
     name: "instance-rc-counts-unread",
