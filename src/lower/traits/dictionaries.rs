@@ -778,9 +778,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))
         {
+            // Through a counted `Rc`, what it points at (#1503).
+            let (inside, _) = self.through_boxes(Expr::var("value"), ty.peel_refs());
             let same = Expr::arrow(
                 vec!["value".into()],
-                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field(
                 bindings::trait_method_name(self.tcx, tr.def_id, "as_ref"),
@@ -816,8 +818,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `Borrow` where it's the same JS value: a value as itself, text
         // as a `str`, a `Vec` as a slice (ADR 0167). Of a `&mut`, which
         // generic code holds as its box, `$cellOf(parser)` or a number's
-        // cell, what the box holds (`Form::Box`, #1414).
-        let in_box = self.held_in_generic_box(ty);
+        // cell, what the box holds (`Form::Box`, #1414); through a counted
+        // `Rc`, what it points at (#1503).
+        let in_box = |value: Expr| {
+            self.through_boxes(self.held_in_generic_box(ty)(value), ty.peel_refs())
+                .0
+        };
         if is_std_def(self.tcx, tr.def_id, StdItem::Borrow)
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))

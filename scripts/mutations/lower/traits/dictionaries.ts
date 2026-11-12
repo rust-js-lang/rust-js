@@ -145,8 +145,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`shout("hi")` of an `S: AsRef<str>` has no dictionary for a `&str`\'s',
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))\n        {\n            let same",
-    replace: "            && false\n        {\n            let same",
+    find: "            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))\n        {\n            // Through a counted",
+    replace: "            && false\n        {\n            // Through a counted",
     tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
   },
   {
@@ -853,6 +853,30 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "^read_of_a_crates_own_reader.rs$"
+    ]
+  },
+  {
+    name: "as-ref-of-a-counted-rc-is-the-rc",
+    breaks: "generic code's `T: AsRef<str>` of a counted `Rc<str>` is given the `Rc`, `{ value, strong, weak }`, not what it points at, and `t.as_ref().to_uppercase()` throws (#1503)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let (inside, _) = self.through_boxes(Expr::var(\"value\"), ty.peel_refs());\n",
+    replace: "            let inside = Expr::var(\"value\");\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^generic_borrow_of_a_counted_rc.rs$"
+    ]
+  },
+  {
+    name: "borrow-of-a-counted-rc-is-the-rc",
+    breaks: "generic code's `K: Borrow<str>` of a counted `Rc<str>` is given the `Rc`, not what it points at, and `k.borrow().len()` is 0 (#1503)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        let in_box = |value: Expr| {\n            self.through_boxes(self.held_in_generic_box(ty)(value), ty.peel_refs())\n                .0\n        };\n",
+    replace: "        let in_box = self.held_in_generic_box(ty);\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^generic_borrow_of_a_counted_rc.rs$"
     ]
   },
 ];
