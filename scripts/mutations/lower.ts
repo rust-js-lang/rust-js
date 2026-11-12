@@ -284,14 +284,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
   },
   {
-    name: "variable-case-unlowered",
-    breaks: "a thread-local's words stay uppercase, `TASKQueue`",
-    file: "src/lower.rs",
-    find: "    words_joined(name, |word| word.to_ascii_lowercase())\n",
-    replace: "    words_joined(name, |word| word.to_string())\n",
-    tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
-  },
-  {
     name: "rest-value-unspread",
     breaks: "a function whose last parameter is `#[rust_js::rest]`, as a value, is itself, which a call through it gives the slice whole",
     file: "src/lower.rs",

@@ -277,6 +277,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Concept | Owner | What the others ask |
 |---|---|---|
 | MIR variable facts | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
+| A name's case as JS writes it: a Rust name camelCase, a thread-local's `SCREAMING_SNAKE` one too, a hyphenated key's variable, a module's namespace (ADRs 0038, 0573) | `casing.rs` | `camel_case`, `variable_case`, `unhyphenated`, `namespace_name`, `upper_first`, `lower_first` |
 | Drop behavior and placement | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
 | A function's drop slots: their numbering, its type parameters, then its associated types, then the types built of them; a body given its drops keyed by each slot's type (ADR 0421, amended, #887) | `traits/drop_params.rs`; `drops/scopes.rs` | `drop_slot`, `slot_index`, `item_slot`, `slot_item`; `give_drop_param`, `given_drop`, `lend_drop_param` |
 | JS iterator versus array representation | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` |

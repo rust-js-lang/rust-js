@@ -1166,9 +1166,9 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
 // program sees in its JSON, and is its own.
 test("a snake_case name is made camelCase by camel_case alone", () => {
   const splits = /\.split\('_'\)|\bch == '_'/;
-  const others = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower.rs" && file !== "src/lower/serde.rs");
+  const others = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower/casing.rs" && file !== "src/lower/serde.rs");
   expect(others.filter((file) => splits.test(read(file)))).toEqual([]);
-  expect(read("src/lower.rs")).toMatch(/fn camel_case\(name: &str\) -> String \{[^]*?\.split\('_'\)/);
+  expect(read("src/lower/casing.rs")).toMatch(/fn camel_case\(name: &str\) -> String \{[^]*?\.split\('_'\)/);
 });
 
 // A JS key the compiler or the runtime writes is camelCase, as every Rust
