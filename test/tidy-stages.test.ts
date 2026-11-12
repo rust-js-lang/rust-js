@@ -143,24 +143,8 @@ function forgettable(): string[] {
  * made of one. A list that only shrinks: a name leaves it with its fix. */
 const unrecognizedDiffers: Record<string, string> = Object.fromEntries(
   [
-    "std::hash::Hasher::write",
-    "std::hash::Hasher::write_u8",
-    "std::hash::Hasher::write_u32",
-    "std::hash::Hasher::write_u64",
-    "std::hash::Hasher::write_i64",
-    "std::hash::Hasher::write_usize",
-    "std::io::Read::read",
-    "std::io::Read::read_exact",
-    "std::io::Read::read_to_end",
-    "std::io::BufRead::fill_buf",
-    "std::io::BufRead::consume",
-    "std::io::Seek::seek",
-    "std::io::Seek::seek_relative",
-    "std::io::Seek::stream_position",
     "std::borrow::Borrow::borrow",
-    "std::borrow::BorrowMut::borrow_mut",
     "std::convert::AsRef::as_ref",
-    "std::convert::AsMut::as_mut",
     "std::iter::IntoIterator::into_iter",
     "std::fmt::Debug::fmt",
   ].map((path) => [path, "#1477"]),
@@ -400,9 +384,28 @@ test("a std function's call without its recogniser is refused, and what a compil
   expect(without.kind).toBe("rejected");
   expect(without.error).toContain(`rust-js does not support calling \`${sqrt}\` yet`);
   expect(readFileSync(listed, "utf8").split("\n")).not.toContain(sqrt);
-  const named = variants([], [], ["std::hash::Hasher::write", sqrt]).map((variant) => variant.name);
+  const named = variants([], [], ["std::fmt::Debug::fmt", sqrt]).map((variant) => variant.name);
   expect(named).toContain(`without the recogniser of ${sqrt}`);
-  expect(named).not.toContain("without the recogniser of std::hash::Hasher::write");
+  expect(named).not.toContain("without the recogniser of std::fmt::Debug::fmt");
+});
+
+// A trait's method of std's impl, of a type known where it's called, that
+// takes a `&mut` is refused without its recogniser too: it went by the trait
+// call generic code makes, to a dictionary that reads a `&mut` as generic
+// code's box, where the type known here gives its object, and ran otherwise:
+// a `Hasher`'s writes, a `BorrowMut`'s and a reader's (#1487, #1477).
+test("a known type's call that gives std's dictionary a &mut is refused without its recogniser", async () => {
+  buildCompiler();
+  for (const [name, path] of [
+    ["hash_hashers.rs", "std::hash::Hasher::write"],
+    ["borrow_mut_of_a_vec_as_a_slice.rs", "std::borrow::BorrowMut::borrow_mut"],
+    ["io_buf_reader.rs", "std::io::Read::read"],
+  ]) {
+    const without = await compile(join(corpus, name), caseDir(name), "2024", ["--without-recognizer", path]);
+    if ("js" in without) throw new Error(`${path} left out, ${name} still compiled`);
+    expect(without.kind).toBe("rejected");
+    expect(without.error).toContain(`rust-js does not support calling \`${path}\``);
+  }
 });
 
 // A name that's no case is the test above's to report.

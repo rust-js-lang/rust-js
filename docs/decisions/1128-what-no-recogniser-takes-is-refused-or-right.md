@@ -42,7 +42,8 @@ the call falls to a route built for generic code, which hands the trait's
 JS a receiver in generic code's form, or calls it as Rust declares it,
 where the JS takes another shape (#1477). No build is wrong by it: probes
 of each of those traits' methods over std's types, with their recognisers,
-agree with native Rust or are refused.
+agree with native Rust or are refused. (Those probes were too few: programs
+later found three that ordinary Rust reaches, the amendment below.)
 
 ## Decision
 
@@ -89,3 +90,49 @@ Rust does.**
   body, or a dictionary's, already serves in a recogniser's place.
 - Mutations: `recogniser-never-left-out` (`left` withholds none),
   `recognised-unrecorded`, `classify-past-what-is-left-out`.
+
+## Amendment: a known type's call that gives std's dictionary a `&mut` is never the trait call's (2026-11-12, #1487)
+
+"No build is wrong by it" was wrong. 195 one-probe programs of the 21
+functions, each called on every receiver std implements it for and compared
+with native Rust, found three that ordinary Rust reaches with no flag:
+#1486 (`as_ref()` through a `&mut` to text gave its cell), #1487
+(`m.borrow_mut()` of std's `BorrowMut<T> for T` read `m.value` and threw)
+and #1488 (`h.finish()` of an `h: &mut DefaultHasher` threw). The net says
+which functions have a wrong fallback; only programs say whether one is
+reached.
+
+#1487's was the mechanism itself. A std dictionary's entry is written for
+generic code, where a `&mut` is a box, `{ value }` (`MutRefForm`'s
+`GenericBox`); a type known where it's called gives a `&mut` to an object
+as the object. The trait call's arm in `mir/dispatch.rs` kept a place's
+`&mut`, a number's, from std's dictionary (`gives_ref`), and let an
+object's through. Now `gives_a_mut` (`mir/assign/boxed_args.rs`) says it
+of the arguments' types too: a call whose receiver is no `dyn`, given any
+`&mut`, isn't std's dictionary's. It's its recogniser's, or refused ("does
+not support calling .."). A `dyn`'s dictionary is its own, a type
+parameter's its caller's, and an impl rust-js compiled, the crate's or a
+library's, takes the crate's forms, as before: `f.write_str(..)` of a
+library's own `impl fmt::Write` is its dictionary's still, which
+`test/crates.test.ts`'s `library_own_methods_through_its_dictionary` holds.
+
+A first cut asked `read_only_generically` instead, every trait whose
+dictionary only generic code reads. The crate corpus refused it: `a * b`
+of known types in rust_decimal and chrono goes by an operator's
+dictionary, rightly, as a value's form is the same in both. The form that
+differs is the `&mut`'s, so the rule is of it.
+
+Over the corpus's 2,307 cases no call took that arm with a `&mut`, so no
+snapshot changes; what changes is what a missed shape does.
+`unrecognizedDiffers` shrinks from 20 functions to 4: `Hasher`'s six
+writes, `BorrowMut::borrow_mut`, `AsMut::as_mut`, and `Read`'s, `BufRead`'s
+and `Seek`'s eight are refused without their recognisers. The 4 left take
+no `&mut` of a known type: `Borrow::borrow`, `AsRef::as_ref` and
+`IntoIterator::into_iter`, and `Debug::fmt` of a type parameter (#1477).
+
+`test/tidy-stages.test.ts` holds a `Hasher`'s, a `BorrowMut`'s and a
+reader's refused without their recognisers. Mutations
+`known-receivers-mut-given-to-stds-dictionary`,
+`dyns-mut-kept-from-its-own-dictionary` and
+`librarys-mut-kept-from-its-own-dictionary`
+(`lower/mir/assign/boxed_args.ts`).

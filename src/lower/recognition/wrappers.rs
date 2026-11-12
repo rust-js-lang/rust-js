@@ -401,10 +401,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // And `v.borrow_mut()` of std's `BorrowMut`, a sequence as a slice
             // or text as a `str`, as `as_mut()` is, its dictionary's the
             // same (ADR 0483): not generic code's box of it.
+            // And of a value as itself, std's `BorrowMut<T> for T`: the `&mut`
+            // it's given (#1487).
             || (is_std_def(tcx, trait_, StdItem::BorrowMut)
                 && tcx.item_name(method).as_str() == "borrow_mut"
                 && !known_by_bounds(ty.peel_refs())
-                && self.views_as_itself(ty, args.type_at(1)))
+                && (self.views_as_itself(ty, args.type_at(1))
+                    || tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(args.type_at(1))))
     }
 
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a

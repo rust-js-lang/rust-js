@@ -1152,7 +1152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let rust_impl = self.calls_rust_impl(def_id, generic_args, span)?;
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.
-        let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
+        let gives_ref = self.gives_a_mut((def_id, generic_args), &values, &arg_tys)?;
         // Not a binding's, a default method's `get ruleId` called through a
         // generic's bound, or a `Duplex`'s `as_ref()` (`is_binding_of`): below.
         // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor std's own written in place

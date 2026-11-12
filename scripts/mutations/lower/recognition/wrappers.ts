@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "borrow-mut-of-a-value-as-itself-unrecognised",
+    breaks: "`m.borrow_mut()` of std's `BorrowMut<T> for T`, a `Vec`'s `&mut` to itself, is no recogniser's: refused, where it read generic code's box of it, `m.value`, and threw (#1487)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "                && (self.views_as_itself(ty, args.type_at(1))\n                    || tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(args.type_at(1))))\n",
+    replace: "                && self.views_as_itself(ty, args.type_at(1)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrow_mut_of_a_value_as_itself.rs$"],
+  },
+  {
     name: "owned-cell-seen-shallow",
     breaks:
       "a closure that took a `Box<Cell<_>>` is its own clone, which shares the cell a clone of the box copies: `1 2` where native prints `1 1` (#989)",

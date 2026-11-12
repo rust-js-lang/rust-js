@@ -3,6 +3,30 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "librarys-mut-kept-from-its-own-dictionary",
+    breaks: "`f.write_str(..)` of a library's own `impl fmt::Write` is refused, its `&mut` taken for one std's dictionary would read as a box, where the library's dictionary takes the crate's forms (#1487)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))\n",
+    replace: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && given.iter().any(a_mut)))\n",
+    tests: ["test/crates.test.ts", "-t", "library_own_methods_through_its_dictionary"],
+  },
+  {
+    name: "known-receivers-mut-given-to-stds-dictionary",
+    breaks: "a `Hasher`'s `write` of a type known where it's called, its recogniser left out, goes by the trait call generic code makes, to a dictionary that reads its `&mut self` as a box: JS that runs otherwise, where it's refused (#1487)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))\n",
+    replace: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))))\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "is refused without its recogniser"],
+  },
+  {
+    name: "dyns-mut-kept-from-its-own-dictionary",
+    breaks: "`h.write_u16(1)` of an `h: &mut dyn Hasher` is refused, its `&mut` taken for a known type's, where the `dyn`'s dictionary is its own (#1487)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))\n",
+    replace: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!compiled && given.iter().any(a_mut)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
+  },
+  {
     name: "mir-borrowed-result-given-value",
     breaks:
       "a `&mut` whose borrow a call's result holds is given the number, not a handle on its place",

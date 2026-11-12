@@ -7,6 +7,29 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether a trait method's call of `def_id` gives a `&mut` std's
+    /// dictionary can't take as it's given. One of `values` is a place's, a
+    /// number's or text's, which std's own lowering takes as its place. Or
+    /// one of `given`, their types, is a `&mut`, of a receiver that's no
+    /// `dyn` and an impl that's std's: a std dictionary's entry reads a
+    /// `&mut` as generic code's box, where a type known here has its
+    /// object, `m.borrow_mut()` of a `Vec` read as `m.value` (#1487). Such
+    /// a call is its recogniser's, or refused. A `dyn`'s dictionary is its
+    /// own, given as the `dyn` holds it, and an impl rust-js compiled, a
+    /// library's, takes the crate's forms.
+    pub(in crate::lower::mir) fn gives_a_mut(
+        &self,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        values: &[Value<'tcx>],
+        given: &[Ty<'tcx>],
+    ) -> R<bool> {
+        let of_dyn = (given.first()).is_some_and(|me| matches!(me.peel_refs().kind(), ty::Dynamic(..)));
+        let a_mut = |ty: &Ty<'tcx>| matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
+        let compiled = (self.resolve_self_instance(def_id, generic_args)?)
+            .is_some_and(|resolved| self.krate.foreign.compiled_by_rust_js(resolved.def_id()));
+        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))
+    }
+
     pub(in crate::lower::mir) fn boxed_args(
         &mut self,
         state: &mut State<'_, 'tcx>,
