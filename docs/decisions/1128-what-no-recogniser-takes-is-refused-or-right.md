@@ -152,3 +152,15 @@ test holds the refusal, mutation fmt-through-the-trait-call. And
 corpus cases that call it runs as native Rust does or is refused (agent-fable's
 sweep of 16 pairs, rerun here). `AsRef::as_ref` leaves with #1518, and
 `IntoIterator::into_iter` with its adaptation by the parameter.
+
+And `IntoIterator::into_iter` leaves it: what generic code bounded by
+`IntoIterator` steps is adapted by what it's given, its type, not by the
+recogniser's answer. A `&mut` to a sequence, an array, a slice or a
+`Vec`-like, is a handle on each item, `$mutItems(v)`, where no recogniser
+answers `into_iter` of it (`ref_into_iter`); a `&mut Result`, `iter_mut()`'s
+handle, never its shared `iter()`'s value (`iterable_items`). Without the
+recogniser, `iterables_given_to_generics` gave the array itself, whose
+items generic code wrote as boxes, and `result_given_as_items` lost the
+write through its item. A tidy-stages test holds both; mutations
+mut-sequence-adapted-by-its-recogniser and mut-result-given-its-shared-items.
+`AsRef::as_ref` is the list's one left, under #1518.

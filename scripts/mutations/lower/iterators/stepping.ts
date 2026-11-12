@@ -462,4 +462,20 @@ export const mutations: Mutation[] = [
     replace: "        )\n",
     tests: ["test/corpus.test.ts", "-t", "^(copied_clone_of_its_own|lazy_iterator_clone|generic_copied_cloned).rs$"],
   },
+  {
+    name: "mut-sequence-adapted-by-its-recogniser",
+    breaks: "a `&mut` to a sequence given to an `IntoIterator` bound is given as it is where no recogniser of `into_iter` answers, not a handle on each item (#1477)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            None if mutability == ty::Mutability::Mut && sequence(pointee) => Std::Same,\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts","-t","adapted by its type, without into_iter's recogniser"],
+  },
+  {
+    name: "mut-result-given-its-shared-items",
+    breaks: "a `&mut Result` given to an `IntoIterator` bound gives its value, not a handle on it, where no recogniser answers (#1477)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                true => crate::lower::combinators::Comb::ResultIterMut,\n",
+    replace: "                true => crate::lower::combinators::Comb::ResultIter,\n",
+    tests: ["test/tidy-stages.test.ts","-t","adapted by its type, without into_iter's recogniser"],
+  },
 ];

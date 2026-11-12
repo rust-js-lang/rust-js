@@ -257,8 +257,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let into_iter_trait = std_item(self.tcx, StdItem::IntoIterator);
         let args = self.tcx.mk_args(&[ty.into()]);
         let into_iter = crate::lower::recognition::trait_method(self.tcx, into_iter_trait, "into_iter");
-        let Some(known) = self.recognition().classify(into_iter, args) else {
-            return Ok(None);
+        // Of a `&mut` to a sequence, a handle on each item, the type's to
+        // say, not the recogniser's: what generic code steps is adapted by
+        // what it's given, so a call no recogniser answers still gives the
+        // handles (#1477).
+        let sequence = |ty: ty::Ty<'tcx>| {
+            let ty = ty.boxed_ty().unwrap_or(ty);
+            ty.is_array() || ty.is_slice() || self.is_vec_like(ty)
+        };
+        let known = match self.recognition().classify(into_iter, args) {
+            Some(known) => known,
+            None if mutability == ty::Mutability::Mut && sequence(pointee) => Std::Same,
+            None => return Ok(None),
         };
         let into_iter_ty = crate::lower::recognition::trait_method(self.tcx, into_iter_trait, "IntoIter");
         let output = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, args);
@@ -421,15 +431,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(items);
         }
+        let by_mut = matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
         let ty = ty.peel_refs();
         if let Some(item) = self.option_of(ty) {
             return Ok(self.option_items(value, item, out));
         }
         // A `Result`'s, its `Ok` value, as its `into_iter()` gives it (ADR
-        // 0923).
+        // 0923); of a `&mut` to one, a handle on it, `iter_mut()`'s, the
+        // type's to say where no recogniser answered above (#1477).
         if self.recognition().is_std_type(ty, StdItem::Result) {
             let none = ty::List::empty();
-            let comb = crate::lower::combinators::Comb::ResultIter;
+            let comb = match by_mut {
+                true => crate::lower::combinators::Comb::ResultIterMut,
+                false => crate::lower::combinators::Comb::ResultIter,
+            };
             return self.comb_values(comb, (vec![value], &[ty]), false, none, span, out);
         }
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {

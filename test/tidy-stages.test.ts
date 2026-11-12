@@ -141,12 +141,10 @@ function forgettable(): string[] {
  * refusal nor right, with the issue each waits on: a trait's method of a
  * concrete receiver handed to generic code's route (#1477). No variant is
  * made of one. A list that only shrinks: a name leaves it with its fix. */
-const unrecognizedDiffers: Record<string, string> = Object.fromEntries(
-  [
-    "std::convert::AsRef::as_ref",
-    "std::iter::IntoIterator::into_iter",
-  ].map((path) => [path, "#1477"]),
-);
+const unrecognizedDiffers: Record<string, string> = {
+  // A counted `Rc`'s `as_ref()` through generic code, `Box<Rc<str>>`'s.
+  "std::convert::AsRef::as_ref": "#1518",
+};
 
 /** A way to compile a program: its name, and rust-js's flags for it. */
 type Variant = { name: string; flags: string[] };
@@ -418,6 +416,24 @@ test("a formatting trait's fmt is refused without its recogniser, never the trai
   if ("js" in without) throw new Error(`${path} left out, ${name} still compiled`);
   expect(without.kind).toBe("rejected");
   expect(without.error).toContain(`rust-js does not support calling \`${path}\``);
+});
+
+// What generic code bounded by `IntoIterator` steps is adapted by what it's
+// given, its type, not by the recogniser of `into_iter`: a `&mut` to a
+// sequence a handle on each item, `$mutItems(v)`, a `&mut Result`
+// `iter_mut()`'s handle, each without that recogniser too (#1477).
+test("a &mut given to an IntoIterator bound is adapted by its type, without into_iter's recogniser", async () => {
+  buildCompiler();
+  for (const name of ["iterables_given_to_generics.rs", "result_given_as_items.rs"]) {
+    const file = join(corpus, name);
+    const want = directives(readFileSync(file, "utf8"));
+    if (typeof want === "string" || want.kind === "compile-fail" || want.kind === "ignore-rust-js") throw new Error(`${name}: no run`);
+    const dir = caseDir(name);
+    const native = runNative(file, dir, want.edition, want.native);
+    if (typeof native === "string") throw new Error(native);
+    const only = "without the recogniser of std::iter::IntoIterator::into_iter";
+    expect((await differences(file, dir, want.edition, native, only)).join("\n\n")).toBe("");
+  }
 });
 
 // A name that's no case is the test above's to report.
