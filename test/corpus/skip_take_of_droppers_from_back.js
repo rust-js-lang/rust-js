@@ -20,6 +20,7 @@ import {
   $nextBack,
   $nthDropping,
   $rev,
+  $roomForHint,
   $sizeHint,
   $skipping,
   $taking,
@@ -55,9 +56,13 @@ function dDrop_drop(d) {
   console.log(`drop d${d[0]}`);
 }
 
-function ds(make, dropT) {
+function ds(make, TSize, dropT) {
   return $collectDropping(
-    $lazyRange(1, 6).map((item) => make(item)),
+    $roomForHint(
+      $lazyRange(1, 6).map((item) => make(item)),
+      TSize,
+      true,
+    ),
     dropT,
     true,
   );
@@ -67,7 +72,7 @@ function inPlace() {
   console.log(
     `${$rev(
       $skipping(
-        $closing($iter(ds((value) => [value], pDrop_drop)), $dropEach(pDrop_drop)),
+        $closing($iter(ds((value) => [value], 4, pDrop_drop)), $dropEach(pDrop_drop)),
         1,
         pDrop_drop,
       ),
@@ -82,7 +87,7 @@ function inPlace() {
   console.log(
     `${$rev(
       $taking(
-        $closing($iter(ds((value) => [value], pDrop_drop)), $dropEach(pDrop_drop)),
+        $closing($iter(ds((value) => [value], 4, pDrop_drop)), $dropEach(pDrop_drop)),
         3,
         pDrop_drop,
       ),
@@ -97,7 +102,7 @@ function inPlace() {
   const rev = $held(
     $rev(
       $taking(
-        $closing($iter(ds((value) => [value], pDrop_drop)), $dropEach(pDrop_drop)),
+        $closing($iter(ds((value) => [value], 4, pDrop_drop)), $dropEach(pDrop_drop)),
         3,
         pDrop_drop,
       ),
@@ -122,7 +127,7 @@ function inPlace() {
   const value = $held(
     $rev(
       $skipping(
-        $closing($iter(ds((value) => [value], pDrop_drop)), $dropEach(pDrop_drop)),
+        $closing($iter(ds((value) => [value], 4, pDrop_drop)), $dropEach(pDrop_drop)),
         2,
         pDrop_drop,
       ),
@@ -152,7 +157,7 @@ function chainSides() {
   let skip;
   try {
     skip = $skipping(
-      $closing($iter(ds((value) => [value], cDrop_drop)), $dropEach(cDrop_drop)),
+      $closing($iter(ds((value) => [value], 4, cDrop_drop)), $dropEach(cDrop_drop)),
       1,
       cDrop_drop,
     );
@@ -181,7 +186,7 @@ function chainSides() {
   let take;
   try {
     take = $taking(
-      $closing($iter(ds((value) => [value], cDrop_drop)), $dropEach(cDrop_drop)),
+      $closing($iter(ds((value) => [value], 4, cDrop_drop)), $dropEach(cDrop_drop)),
       2,
       cDrop_drop,
     );
@@ -210,7 +215,7 @@ function chainSides() {
   let tmp;
   try {
     tmp = $taking(
-      $closing($iter(ds((value) => [value], cDrop_drop)), $dropEach(cDrop_drop)),
+      $closing($iter(ds((value) => [value], 4, cDrop_drop)), $dropEach(cDrop_drop)),
       3,
       cDrop_drop,
     );
@@ -248,7 +253,7 @@ function chainSides() {
   let tmp$1;
   try {
     tmp$1 = $skipping(
-      $closing($iter(ds((value) => [value], cDrop_drop)), $dropEach(cDrop_drop)),
+      $closing($iter(ds((value) => [value], 4, cDrop_drop)), $dropEach(cDrop_drop)),
       3,
       cDrop_drop,
     );
@@ -278,7 +283,7 @@ function chainSides() {
 function held() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
   let held = $skipping(
-    $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
+    $closing($iter(ds((value) => [value], 4, dDrop_drop)), $dropEach(dDrop_drop)),
     1,
     dDrop_drop,
   );
@@ -292,7 +297,7 @@ function held() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   held = $taking(
-    $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
+    $closing($iter(ds((value) => [value], 4, dDrop_drop)), $dropEach(dDrop_drop)),
     3,
     dDrop_drop,
   );
@@ -307,7 +312,7 @@ function held() {
   );
   let it = $held(
     iterator_skip(
-      $iter(ds((value) => [value], dDrop_drop)),
+      $iter(ds((value) => [value], 4, dDrop_drop)),
       2,
       { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
@@ -385,7 +390,7 @@ function held() {
   );
   it = $held(
     iterator_take(
-      $iter(ds((value) => [value], dDrop_drop)),
+      $iter(ds((value) => [value], 4, dDrop_drop)),
       4,
       { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
@@ -480,7 +485,7 @@ function held() {
     }
   }
   held = $taking(
-    $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
+    $closing($iter(ds((value) => [value], 4, dDrop_drop)), $dropEach(dDrop_drop)),
     4,
     dDrop_drop,
   );
@@ -502,7 +507,7 @@ function held() {
     }
   }
   held = $skipping(
-    $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
+    $closing($iter(ds((value) => [value], 4, dDrop_drop)), $dropEach(dDrop_drop)),
     1,
     dDrop_drop,
   );
@@ -519,7 +524,7 @@ function held() {
   let r = $held(
     iterator_rev(
       iterator_take(
-        $iter(ds((value) => [value], dDrop_drop)),
+        $iter(ds((value) => [value], 4, dDrop_drop)),
         3,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
@@ -615,7 +620,7 @@ function held() {
   r = $held(
     iterator_rev(
       iterator_skip(
-        $iter(ds((value) => [value], dDrop_drop)),
+        $iter(ds((value) => [value], 4, dDrop_drop)),
         1,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),

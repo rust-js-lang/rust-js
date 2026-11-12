@@ -408,3 +408,41 @@ snapshots changed, a generic function given its `TSize`; and a copied
 default's `reserve` of `Vec<Option<Self::Item>>`, std's capacity 4. A
 `reserve` of items whose size isn't given grows to a capacity not known,
 never as if they had none.
+
+## Amendment: a generic collect counted by the program asks its items' size (2026-11-12, #1436)
+
+A generic `collect()` into a `Vec` of a type parameter's items checked its
+room by their count alone, #1432's last case. Std's `SpecFromIter` reserves
+a `TrustedLen`'s upper bound first, so a count past `isize::MAX` bytes
+panics `capacity overflow` (ADR 0262's third case).
+
+- **One answer of which collects check room upfront,
+  `Recognition::counted_by_program`**: a `TrustedLen` whose count is the
+  program's, a range's, a `repeat_n`'s, a `take(n)`'s of an endless one or
+  of one counted so, a range's `step_by`, through adapters that keep it
+  (`length_kept_source`), or a chain or a zip of such. Not of a
+  collection's items, whose room is the guide's other difference (a
+  collect whose length is a collection's), nor a `filter`'s, nor into a
+  `Result` through std's `GenericShunt`, whose lower bound is none.
+- **The analysis asks `Room` of these alone** (`room_asked`), and **the
+  lowering reads it at each**: where nothing else checks its room, a zip's,
+  a chain's, a held map's or a map of a range `counted_range` doesn't take,
+  its collect asks the room its hint asks, `$roomForHint(it, TSize, true)`.
+  So no generic function takes a `TSize` it doesn't read, which
+  test/architecture-generic-facts.test.ts holds of every corpus snapshot
+  (#1443 lists six older ones).
+- **Of items of a type known here**, the same shapes, a zip's, a chain's, a
+  held map's of a range, a `take(n)` of a range, still check no room:
+  they'd need to know a count that surely fits, `(0..4).rev()`'s, so as not
+  to check it (#1441).
+
+Tests: corpus case `collect_room_of_generic_items` (each shape past
+`isize::MAX` bytes on wasm32 and native both and within it, of items with
+a destructor too, and a collection's items', a filter's and a `Result`'s
+taking no `TSize`), against native Rust in each build; vec-capacity.test.ts's
+signatures of a counted, a collection's and a filter's collect; 2 corpus
+snapshots changed, a generic collect of a map of a range given its
+`TSize`. Mutations `counted-by-program-of-anything`,
+`counted-by-program-not-of-zip`, `counted-by-program-not-of-a-finite-take`,
+`collect-counted-by-program-unroomed`, `collect-room-left-to-any-mapped-range`
+and `collect-room-unasked`, caught.

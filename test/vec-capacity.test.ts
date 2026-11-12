@@ -497,3 +497,28 @@ pub fn reserved() -> usize {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.reserved()).toBe(4);
 });
+
+// Which generic collects take their items' size, \`TSize\`: one counted by
+// the program, whose room check reads it, and no other, so nothing gains a
+// parameter it never reads (\`counted_by_program\`, #1436).
+test("only a collect counted by the program takes its items' size", () => {
+  const dir = fixture("collect-room-signatures");
+  writeFileSync(join(dir, "lib.rs"), `pub fn counted<T: Copy>(x: T, n: usize) -> usize {
+    (0..n).zip(0..n).map(|_| x).collect::<Vec<T>>().len()
+}
+
+pub fn of_items<T: Copy>(x: T, items: &[u8]) -> usize {
+    items.iter().map(|_| x).collect::<Vec<T>>().len()
+}
+
+pub fn filtered<T: Copy>(x: T, n: usize) -> usize {
+    (0..n).filter(|i| i % 2 == 0).map(|_| x).collect::<Vec<T>>().len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function counted(x, n, TSize) {");
+  expect(js).toContain("$roomForHint(");
+  expect(js).toContain("export function ofItems(x, items) {");
+  expect(js).toContain("export function filtered(x, n) {");
+});

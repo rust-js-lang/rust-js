@@ -636,7 +636,7 @@ export const mutations: Mutation[] = [
     breaks: "generic code's `$collectVec` is `$untracked` wherever its caller may collect it in place, so `capacity()` of one its caller gives by fold or by `next` throws #1180's refusal, where std's is known (#1263)",
     file: "src/lower/mir/iter/collect.rs",
     find: "            return Ok(Expr::call_helper(\"$collectVec\", args));\n",
-    replace: "            return Ok(self.untracked_where_in_place(Expr::call_helper(\"$collectVec\", args), output, iter_ty, Some(item)));\n",
+    replace: "            return self.untracked_where_in_place((Expr::call_helper(\"$collectVec\", args), None), (output, iter_ty, Some(item)), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
   },
   {
@@ -662,5 +662,21 @@ export const mutations: Mutation[] = [
     find: "        } else if self.recognition().is_path(output)\n",
     replace: "        } else if self.recognition().is_path_like(output)\n",
     tests: ["test/diagnostics.test.ts", "-t", "OsStrings into an OsString"],
+  },
+  {
+    name: "collect-counted-by-program-unroomed",
+    breaks: "a generic collect counted by the program that nothing else checks, a zip's, a chain's, a held map's of a range, asks no room by its hint, so its `TSize` is unread and it runs on where std panics `capacity overflow` (#1436)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    && self.recognition().counted_by_program(iter_ty)\n                    && self.range_kind(iter_ty).is_none()\n",
+    replace: "                    && false\n                    && self.range_kind(iter_ty).is_none()\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
+  },
+  {
+    name: "collect-room-left-to-any-mapped-range",
+    breaks: "a generic collect of a map of a range `counted_range` doesn't take, `(1..n).map(f)`, is left to it, so it checks no room (#1436)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                        && self.counted_range_parts(&it, iter_ty, item).is_some())\n",
+    replace: "                        && self.mapped_range(&it, iter_ty, item).is_some())\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
   },
 ];

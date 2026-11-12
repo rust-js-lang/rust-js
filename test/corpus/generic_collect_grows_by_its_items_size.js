@@ -19,7 +19,7 @@ import {
   $vecCollectWay,
 } from "@rust-js/std";
 
-const endlessU32 = () => endless({ default: () => 0 });
+const endlessU32 = () => endless({ default: () => 0 }, 4);
 
 export function entry() {
   main();
@@ -138,11 +138,11 @@ function sortedMap(it, KOrd, KTreeMap, IVecCollect, KVSize, KVStableSort) {
  * Of what has no end, whose room std asks first and can't give: a
  * `capacity overflow`, of no size asked, as its hint is std's own.
  */
-function endless(TDefault) {
+function endless(TDefault, TSize) {
   return Array.from(
     $roomForHint(
       $iterator({ start: 0 }, $rangeFromStep(0, 4294967295)).map(() => TDefault.default()),
-      0,
+      TSize,
       true,
     ),
   ).length;

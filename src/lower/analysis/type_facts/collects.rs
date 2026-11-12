@@ -212,10 +212,10 @@ fn grown_asked<'tcx>(
 
 /// In any crate, of a call that checks std's room for items by their bytes
 /// (ADR 0774), a `with_capacity`, a `reserve`, a `vec![x; n]`, a `resize`
-/// or a slice's `repeat` (`checks_room_of_first`): their size, `Room`,
-/// which its caller gives where rustc can't lay them out here, `T`'s
-/// (#1432). Not of a collect, whose room std asks only as its hint says,
-/// which the lowering decides as it collects (#1436).
+/// or a slice's `repeat` (`checks_room_of_first`, #1432), or a collect into
+/// a collection std grows as a `Vec` of what's counted by the program
+/// (`counted_by_program`, #1436): their size, `Room`, which its caller
+/// gives where rustc can't lay them out here, `T`'s.
 fn room_asked<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -223,11 +223,22 @@ fn room_asked<'tcx>(
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<Asked<'tcx>> {
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
-    (crate::lower::recognition::checks_room_of_first(tcx, callee)
-        .then(|| args.types().next())
-        .flatten())
-    .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None))
-    .into_iter()
+    // Its types as the lowering asks them, its opaque ones revealed.
+    let revealed = crate::lower::recognition::Recognition {
+        typing_env: typing_env.with_post_analysis_normalized(tcx),
+        ..*recognition
+    };
+    let item = match crate::lower::recognition::checks_room_of_first(tcx, callee) {
+        true => args.types().next(),
+        false => crate::lower::recognition::collected_items(tcx, typing_env, callee, args)
+            .filter(|&(iter, output, _, shunted)| {
+                !shunted && revealed.grows_as_vec(output) && revealed.counted_by_program(iter)
+            })
+            .map(|(_, _, dest, _)| dest),
+    };
+    (item
+        .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None))
+        .into_iter())
     .collect()
 }
 

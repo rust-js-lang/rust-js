@@ -359,18 +359,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `(0..n).map(f)` collected, of one arrow `f`: `Array.from({ length: n
-    /// }, (_, i) => ..)`, as a person makes `n` items, room for them asked
-    /// first, `$roomFor(n, size)`, as `$range` would (ADR 0774, amended),
-    /// in `made` (#361). `None` of another, `mapped_range`'s.
-    pub(super) fn counted_range(
+    /// What `counted_range` makes its array of, `(0..n).map(f)`'s `n`,
+    /// `f`'s parameters and body: `None` of another, which it leaves as it
+    /// is, and which asks the room its hint asks where it must (#1436).
+    pub(super) fn counted_range_parts<'e>(
         &mut self,
-        it: &Expr,
+        it: &'e Expr,
         iter_ty: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
-        span: Span,
-        made: &mut Vec<Stmt>,
-    ) -> Option<Expr> {
+    ) -> Option<(&'e Expr, &'e [js::Pattern], &'e Vec<Stmt>)> {
         let js::ExprKind::Call(callee, args) = &it.kind else {
             return None;
         };
@@ -387,9 +384,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         self.mapped_range(it, iter_ty, item)?;
-        let count = match range.end.reads_same() {
-            true => range.end.clone(),
-            false => self.spill("n", range.end.clone(), made),
+        Some((range.end, params, body))
+    }
+
+    /// `(0..n).map(f)` collected, of one arrow `f`: `Array.from({ length: n
+    /// }, (_, i) => ..)`, as a person makes `n` items, room for them asked
+    /// first, `$roomFor(n, size)`, as `$range` would (ADR 0774, amended),
+    /// in `made` (#361). `None` of another, `mapped_range`'s.
+    pub(super) fn counted_range(
+        &mut self,
+        it: &Expr,
+        iter_ty: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> Option<Expr> {
+        let (end, params, body) = self.counted_range_parts(it, iter_ty, item)?;
+        let count = match end.reads_same() {
+            true => end.clone(),
+            false => self.spill("n", end.clone(), made),
         };
         if let Some(size) = item.and_then(|item| self.room_size_of(&count, item)) {
             self.room_for((None, count.clone()), size, span, made);

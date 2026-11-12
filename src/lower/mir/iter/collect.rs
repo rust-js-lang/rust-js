@@ -146,7 +146,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let by_hint = match &count {
             Some(Ok(_)) => room.is_some(),
             Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,
-            None => false,
+            // Of a type parameter's items, of one counted by the program it
+            // doesn't read, a zip's, a chain's or a held map's of a range,
+            // the room its hint asks by their size, `TSize`, which std's
+            // `SpecFromIter` reserves of a `TrustedLen` first
+            // (`counted_by_program`, #1436); not of a range's own or a map's
+            // made in place, `counted_range`'s. Of items of a type known
+            // here, where its count surely fits, as it isn't yet, #1441.
+            None => {
+                item.is_some_and(|item| self.layout(item).is_none())
+                    && self.is_vec_like(output)
+                    && self.recognition().counted_by_program(iter_ty)
+                    && self.range_kind(iter_ty).is_none()
+                    && !(self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
+                        && self.counted_range_parts(&it, iter_ty, item).is_some())
+            }
         };
         let it = match room {
             // Of a count it reads, of one that drops nothing, as a panic

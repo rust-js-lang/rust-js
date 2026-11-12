@@ -263,4 +263,28 @@ export const mutations: Mutation[] = [
     replace: "            self.lower_bound_is_stds(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
   },
+  {
+    name: "counted-by-program-of-anything",
+    breaks: "every `TrustedLen` collect, a collection's items' too, is taken as counted by the program, so a generic one of a slice's items takes a `TSize` it never reads (#1436)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        (zipped_sources(self.tcx, ty).or_else(|| chained_sources(self.tcx, ty)))\n            .is_some_and(|(a, b)| self.count_of_program(a) && self.count_of_program(b))\n",
+    replace: "        true\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "only a collect counted by the program"],
+  },
+  {
+    name: "counted-by-program-not-of-zip",
+    breaks: "a zip of ranges isn't counted by the program, so a generic collect of one checks no room and runs on where std panics `capacity overflow` (#1436)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        (zipped_sources(self.tcx, ty).or_else(|| chained_sources(self.tcx, ty)))\n",
+    replace: "        (chained_sources(self.tcx, ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
+  },
+  {
+    name: "counted-by-program-not-of-a-finite-take",
+    breaks: "a `take(n)` of a range isn't counted by the program, so a generic collect of one checks no room (#1441)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            return self.endless_by_type(source) || self.count_of_program(source);\n",
+    replace: "            return self.endless_by_type(source);\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
+  },
 ];

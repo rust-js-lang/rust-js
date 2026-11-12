@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     replace: "        .then(|| revealed.grown_vec_item(callee, args))\n        .flatten()\n        .filter(|item| matches!(item.kind(), ty::Param(_)));\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
   },
+  {
+    name: "collect-room-unasked",
+    breaks: "a generic collect counted by the program asks its caller no `Room`, so its room is checked by its count alone and no `capacity overflow` panics where std's does (#1436)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "                !shunted && revealed.grows_as_vec(output) && revealed.counted_by_program(iter)\n",
+    replace: "                false\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
+  },
 ];

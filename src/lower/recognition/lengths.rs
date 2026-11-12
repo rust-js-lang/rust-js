@@ -176,6 +176,43 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether a `collect()` into a `Vec` of an iterator of type `ty` checks
+    /// std's room upfront by a count the program gives (ADR 0774): a
+    /// `TrustedLen` whose count is a range's, a `repeat_n`'s, a `take(n)`'s of
+    /// an endless one or of one counted so, a range's `step_by`, through
+    /// adapters that keep it, or
+    /// a chain or a zip of such; not a collection's items', whose room
+    /// fits where they are (the guide's differences). The one answer of
+    /// which generic collects ask their items' size, `Room` (#1436): the
+    /// analysis asks it of these, and their lowering's room checks read it
+    /// (`room_item_size`), so no other collect takes a `TSize`.
+    pub(in crate::lower) fn counted_by_program(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        is_trusted_len(self.tcx, self.typing_env, ty) && self.count_of_program(ty)
+    }
+
+    /// Whether the count of an iterator of type `ty` is the program's
+    /// (`counted_by_program`).
+    fn count_of_program(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if self.range_kind(ty).is_some() || is_repeat_n(self.tcx, ty) || self.endless_by_type(ty) {
+            return true;
+        }
+        // A `take(n)`'s of an endless one, `n`, or of one counted so, the
+        // smaller (#1441).
+        if let Some((source, false)) = counted_source(self.tcx, ty) {
+            return self.endless_by_type(source) || self.count_of_program(source);
+        }
+        if let Some(source) = stepped_by_source(self.tcx, ty) {
+            return self.range_kind(self.reveal(source.peel_refs())).is_some();
+        }
+        if let Some(source) = length_kept_source(self.tcx, ty) {
+            return self.count_of_program(source);
+        }
+        (zipped_sources(self.tcx, ty).or_else(|| chained_sources(self.tcx, ty)))
+            .is_some_and(|(a, b)| self.count_of_program(a) && self.count_of_program(b))
+    }
+
     /// Whether an iterator of type `ty` has no end its type knows: a
     /// `RangeFrom` or a `repeat()`, through std's adapters that keep each
     /// item, or a chain or a zip of such. Of a `TrustedLen` one, `collect()`

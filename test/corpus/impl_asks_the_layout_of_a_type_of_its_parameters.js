@@ -15,6 +15,7 @@ import {
   $partialOrd,
   $pop,
   $ptr,
+  $roomFor,
   $roomForHint,
   $sortedEntries,
   $strictlyEqual,
@@ -49,8 +50,8 @@ function u32Arbitrary_arbitrary(n) {
 
 const $vecArbitrary = new WeakMap();
 
-export function vecArbitrary(AArbitrary) {
-  return $traitImpl($vecArbitrary, [AArbitrary], () => ({
+export function vecArbitrary(AArbitrary, ASize) {
+  return $traitImpl($vecArbitrary, [AArbitrary, ASize], () => ({
     Clone: () => ({
       clone(value) {
         return value.map((item) => AArbitrary.Clone().clone(item));
@@ -67,11 +68,12 @@ export function vecArbitrary(AArbitrary) {
         );
       },
     }),
-    arbitrary: (arg0) => vecArbitrary_arbitrary(arg0, AArbitrary),
+    arbitrary: (arg0) => vecArbitrary_arbitrary(arg0, AArbitrary, ASize),
     shrink: (arg0) => vecArbitrary_shrink(arg0, AArbitrary),
   }));
 }
-function vecArbitrary_arbitrary(n, AArbitrary) {
+function vecArbitrary_arbitrary(n, AArbitrary, ASize) {
+  $roomFor(n, ASize);
   return Array.from({ length: n }, (_, arg0) => AArbitrary.arbitrary(arg0));
 }
 function vecArbitrary_shrink(vec, AArbitrary) {
@@ -144,7 +146,7 @@ function bTreeMapArbitrary_arbitrary(
   KVSize,
   KVStableSort,
 ) {
-  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary));
+  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary), KVSize);
   return $treeFromSorted(new KTreeMap(), $iter(vec), KOrd, KVStableSort, KVSize);
 }
 
@@ -182,10 +184,11 @@ export function hashMapArbitrary(
   SDefault,
   SClone,
   KMap,
+  KVSize,
 ) {
   return $traitImpl(
     $hashMapArbitrary,
-    [KArbitrary, KPartialEq, KHash, VArbitrary, SDefault, SClone, KMap],
+    [KArbitrary, KPartialEq, KHash, VArbitrary, SDefault, SClone, KMap, KVSize],
     () => ({
       Clone: () => ({
         clone(value) {
@@ -213,6 +216,7 @@ export function hashMapArbitrary(
           SDefault,
           SClone,
           KMap,
+          KVSize,
         ),
       shrink: (arg0) =>
         hashMapArbitrary_shrink(
@@ -224,6 +228,7 @@ export function hashMapArbitrary(
           SDefault,
           SClone,
           KMap,
+          KVSize,
         ),
     }),
   );
@@ -237,8 +242,9 @@ function hashMapArbitrary_arbitrary(
   SDefault,
   SClone,
   KMap,
+  KVSize,
 ) {
-  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary));
+  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary), KVSize);
   return new KMap(vec);
 }
 
@@ -251,6 +257,7 @@ function hashMapArbitrary_shrink(
   SDefault,
   SClone,
   KMap,
+  KVSize,
 ) {
   const vec = Array.from(
     new KMap(
@@ -271,7 +278,7 @@ export function made(n, AArbitrary) {
 }
 
 function main() {
-  const VecArbitrary = vecArbitrary(u32Arbitrary);
+  const VecArbitrary = vecArbitrary(u32Arbitrary, 4);
   const _u32__u32_Arbitrary = _A__B_Arbitrary(u32Arbitrary, u32Arbitrary);
   const m = made(
     3,
@@ -328,6 +335,7 @@ function main() {
       { default: () => undefined },
       { clone: (value) => value },
       Map,
+      12,
     ),
   );
   const pairs = Array.from(h);
