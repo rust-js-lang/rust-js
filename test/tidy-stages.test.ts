@@ -141,10 +141,7 @@ function forgettable(): string[] {
  * refusal nor right, with the issue each waits on: a trait's method of a
  * concrete receiver handed to generic code's route (#1477). No variant is
  * made of one. A list that only shrinks: a name leaves it with its fix. */
-const unrecognizedDiffers: Record<string, string> = {
-  // A counted `Rc`'s `as_ref()` through generic code, `Box<Rc<str>>`'s.
-  "std::convert::AsRef::as_ref": "#1518",
-};
+const unrecognizedDiffers: Record<string, string> = {};
 
 /** A way to compile a program: its name, and rust-js's flags for it. */
 type Variant = { name: string; flags: string[] };
@@ -380,9 +377,8 @@ test("a std function's call without its recogniser is refused, and what a compil
   expect(without.kind).toBe("rejected");
   expect(without.error).toContain(`rust-js does not support calling \`${sqrt}\` yet`);
   expect(readFileSync(listed, "utf8").split("\n")).not.toContain(sqrt);
-  const named = variants([], [], ["std::convert::AsRef::as_ref", sqrt]).map((variant) => variant.name);
+  const named = variants([], [], [sqrt]).map((variant) => variant.name);
   expect(named).toContain(`without the recogniser of ${sqrt}`);
-  expect(named).not.toContain("without the recogniser of std::convert::AsRef::as_ref");
 });
 
 // A trait's method of std's impl, of a type known where it's called, that

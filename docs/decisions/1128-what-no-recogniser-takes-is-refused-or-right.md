@@ -164,3 +164,7 @@ items generic code wrote as boxes, and `result_given_as_items` lost the
 write through its item. A tidy-stages test holds both; mutations
 mut-sequence-adapted-by-its-recogniser and mut-result-given-its-shared-items.
 `AsRef::as_ref` is the list's one left, under #1518.
+
+And `AsRef::as_ref` leaves it, after #1518's fix (84c533ca2): without its
+recogniser each of the 143 corpus cases that call it runs as native Rust
+does or is refused. The list is empty.
