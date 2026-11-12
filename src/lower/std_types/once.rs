@@ -4,7 +4,7 @@
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, result};
 use crate::lower::calls::Call;
-use crate::lower::lent::Lent;
+use crate::lower::recognition::Lend;
 use crate::lower::recognition::Std;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
@@ -58,7 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // In a crate that asks an address, a handle on its place in the
                 // cell, past its `Option`'s tag (#1474).
-                let lent = (self.lent_place((cell.clone(), tys[0].peel_refs()), Lent::OnceCell, None))
+                let lent = (self.lent_place((cell.clone(), tys[0].peel_refs()), Lend::OnceCell, None))
                     .unwrap_or_else(|| cell.clone());
                 Expr::cond(
                     Expr::bin(Op::LooseEq, Expr::held(cell.clone()), Expr::null()),

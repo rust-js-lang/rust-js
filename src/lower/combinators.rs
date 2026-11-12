@@ -16,7 +16,7 @@ use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
-use crate::lower::lent::Lent;
+use crate::lower::recognition::Lend;
 use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -1249,20 +1249,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tag = |ok: bool| result::is(subject.clone(), ok);
         let inside = || result::held(subject.clone());
         let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();
-        let handle = |lent: Lent, ok: Option<Expr>| {
+        let handle = |lent: Lend, ok: Option<Expr>| {
             self.lent_place((subject.clone(), result_ty), lent, ok)
                 .unwrap_or_else(|| Expr::handle(inside()))
         };
-        let part = |boxed: bool, lent: Lent| if boxed { handle(lent, None) } else { inside() };
-        let ok = part(boxed(ok_ty), Lent::Ok);
+        let part = |boxed: bool, lent: Lend| if boxed { handle(lent, None) } else { inside() };
+        let ok = part(boxed(ok_ty), Lend::Ok);
         Ok(match comb {
             Comb::ResultIterMut => Expr::cond(tag(true), Expr::array(vec![ok]), Expr::array(Vec::new())),
             _ if !boxed(ok_ty) && !boxed(err_ty) => subject,
             // Of both, a handle on `r._0` whichever it is.
             _ if boxed(ok_ty) && boxed(err_ty) => {
-                result::tagged(result::tag(subject.clone()), handle(Lent::Ok, Some(tag(true))))
+                result::tagged(result::tag(subject.clone()), handle(Lend::Ok, Some(tag(true))))
             }
-            _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty), Lent::Err))),
+            _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty), Lend::Err))),
         })
     }
 }

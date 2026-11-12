@@ -28,6 +28,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_peekable(ty)
     }
 
+    /// `ty`'s layout for wasm32, `Recognition::laid_out`'s.
+    pub(super) fn layout(&self, ty: Ty<'tcx>) -> Option<rustc_middle::ty::layout::TyAndLayout<'tcx>> {
+        self.recognition().laid_out(ty)
+    }
+
+    /// The byte offset of field `field` of variant `variant` of `ty`, an
+    /// enum, rustc's layout of that variant; `None` of a type its caller
+    /// lays out.
+    pub(super) fn variant_field_offset(
+        &self,
+        ty: Ty<'tcx>,
+        variant: rustc_abi::VariantIdx,
+        field: rustc_abi::FieldIdx,
+    ) -> Option<u64> {
+        self.recognition().variant_field_offset(ty, variant, field)
+    }
+
     /// `std::cmp::Reverse`, which has no diagnostic item of its own.
     pub(super) fn is_reverse(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_reverse(ty)

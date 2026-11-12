@@ -3,7 +3,7 @@
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
-use crate::lower::lent::Lent;
+use crate::lower::recognition::Lend;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Expr(force).at(self.js_span(span)));
                 // In a crate that asks an address, a handle on its place in the
                 // cell, past its state's tag (#1474).
-                let place = self.lent_place((lazy.clone(), tys[0].peel_refs()), Lent::LazyCell, None);
+                let place = self.lent_place((lazy.clone(), tys[0].peel_refs()), Lend::LazyCell, None);
                 return Ok(Some(place.unwrap_or(lazy)));
             }
             LazyOp::GetMut if self.mut_ref_form(item).is_cell() => lazy.clone(),

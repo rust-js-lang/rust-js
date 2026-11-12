@@ -3,6 +3,34 @@
 
 use super::*;
 
+/// What std lends a `&mut` to from inside its receiver's storage, of which
+/// the receiver's own place is known (#1474): a `OnceCell`'s value, a
+/// `LazyCell`'s, a `Peekable`'s item it peeked at, and a `Result`'s `Ok` or
+/// `Err` payload; and the type fact of its offset there (#1478).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub(crate) enum Lend {
+    OnceCell,
+    LazyCell,
+    Peekable,
+    Ok,
+    Err,
+}
+
+impl Lend {
+    /// Every one.
+    pub(crate) const ALL: [Lend; 5] = [Lend::OnceCell, Lend::LazyCell, Lend::Peekable, Lend::Ok, Lend::Err];
+
+    /// The property of the receiver's JS that holds it: a cell's `value`, a
+    /// `Peekable`'s `peeked`, a `Result`'s `_0`.
+    pub(crate) fn key(self) -> &'static str {
+        match self {
+            Lend::OnceCell | Lend::LazyCell => "value",
+            Lend::Peekable => "peeked",
+            Lend::Ok | Lend::Err => "_0",
+        }
+    }
+}
+
 /// What `size_of`, `align_of` and `type_name` tell of a type (ADR 0145).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub(crate) enum TypeFact {
@@ -72,11 +100,16 @@ pub(crate) enum TypeFact {
     /// dictionary doesn't carry (#934), its growth then not kept and its
     /// room counted alone (#1260).
     Room,
+    /// Of a receiver built of type parameters, `Result<T, E>`, the byte
+    /// offset in it of what std lends a `&mut` to from inside it, rustc's
+    /// layout of the caller's instance: asked where generic code's instances
+    /// keep it at different offsets (#1478).
+    LentOffset(Lend),
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 23] = [
+    pub(crate) const ALL: [TypeFact; 28] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -100,6 +133,11 @@ impl TypeFact {
         TypeFact::VecCollect,
         TypeFact::Instance,
         TypeFact::Room,
+        TypeFact::LentOffset(Lend::ALL[0]),
+        TypeFact::LentOffset(Lend::ALL[1]),
+        TypeFact::LentOffset(Lend::ALL[2]),
+        TypeFact::LentOffset(Lend::ALL[3]),
+        TypeFact::LentOffset(Lend::ALL[4]),
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -126,6 +164,7 @@ impl TypeFact {
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
             TypeFact::Eq => "whether it's `Eq`, which std's `==` of two `Rc`s of it asks",
             TypeFact::LengthFirst => "whether `eq` compares its length first",
+            TypeFact::LentOffset(_) => "the offset of what std lends a `&mut` to from inside it",
         }
     }
 
@@ -171,6 +210,11 @@ impl TypeFact {
             TypeFact::InPlace => "InPlace",
             TypeFact::Eq => "Eq",
             TypeFact::LengthFirst => "LengthFirst",
+            TypeFact::LentOffset(Lend::OnceCell) => "OnceCellOffset",
+            TypeFact::LentOffset(Lend::LazyCell) => "LazyCellOffset",
+            TypeFact::LentOffset(Lend::Peekable) => "PeekableOffset",
+            TypeFact::LentOffset(Lend::Ok) => "OkOffset",
+            TypeFact::LentOffset(Lend::Err) => "ErrOffset",
         }
     }
 

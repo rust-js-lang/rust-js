@@ -3,7 +3,7 @@
 //! `mir_iter_std_call`'s, apart.
 
 use super::*;
-use crate::lower::lent::Lent;
+use crate::lower::recognition::Lend;
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -247,15 +247,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 // `$some` box is between (#1474).
                                 Some(item) if this.mut_ref_form(item).is_cell() => {
                                     let peekable = arg_tys[0].peel_refs();
-                                    let placed = !this.boxed_lent(peekable, Lent::Peekable)
-                                        && this.lent_place((it.clone(), peekable), Lent::Peekable, None).is_some();
+                                    let placed = !this.boxed_lent(peekable, Lend::Peekable)
+                                        && this.lent_place((it.clone(), peekable), Lend::Peekable, None).is_some();
                                     match placed {
                                         true => {
                                             let it = match it.reads_same() {
                                                 true => it,
                                                 false => this.spill(Role::Peekable, it, out),
                                             };
-                                            let place = (this.lent_place((it.clone(), peekable), Lent::Peekable, None))
+                                            let place = (this.lent_place((it.clone(), peekable), Lend::Peekable, None))
                                                 .expect("placed");
                                             let peeked = Expr::call_helper("$peek", vec![it]);
                                             Expr::cond(

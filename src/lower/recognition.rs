@@ -26,6 +26,7 @@ mod own_steps;
 pub(in crate::lower) use chars::{TextIter, reaches_text_iter};
 pub(in crate::lower) use lengths::EqSide;
 pub(in crate::lower) use own_steps::{OwnStep, Reach};
+mod lends;
 mod owners;
 pub(super) mod registry;
 mod serde;

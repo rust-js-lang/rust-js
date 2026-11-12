@@ -3,15 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "layout-in-function-environment",
-    breaks:
-      "`size_of_val` of a generic `async fn`'s future is laid out in the function's environment, where 1.98 finds it too generic, and is refused",
-    file: "src/lower/plain.rs",
-    find: "            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(ty))\n",
-    replace: "            .layout_of(self.typing_env.as_query_input(ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "future_sizes"],
-  },
-  {
     name: "zeroed-bool-zero",
     breaks: "a zeroed `bool` is `0`, not `false`",
     file: "src/lower/plain.rs",

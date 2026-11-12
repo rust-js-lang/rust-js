@@ -8,8 +8,7 @@
 
 use crate::lower::temporary_names::Role;
 use rustc_abi::VariantIdx;
-use rustc_middle::ty::layout::TyAndLayout;
-use rustc_middle::ty::{self, Ty, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
 use super::calls::Call;
@@ -35,20 +34,6 @@ struct Read<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `ty`'s layout for wasm32, the target rust-js checks programs for (ADR
-    /// 0090): what `size_of`, `align_of` and plain data's offsets are. Of a
-    /// type without parameters, as codegen asks: 1.98 finds an `async fn`'s
-    /// future too generic to lay out otherwise (ADR 0109).
-    /// None of a type with a type parameter, which its caller lays out.
-    pub(in crate::lower) fn layout(&self, ty: Ty<'tcx>) -> Option<TyAndLayout<'tcx>> {
-        if ty.has_param() {
-            return None;
-        }
-        self.tcx
-            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(ty))
-            .ok()
-    }
-
     /// `std::mem::transmute::<A, B>(a)`, `transmute_unchecked`: `None` if
     /// `known` is another.
     pub(in crate::lower) fn transmute_call(

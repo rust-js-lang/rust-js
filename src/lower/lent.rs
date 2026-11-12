@@ -8,7 +8,7 @@
 
 use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::pointers::{Offset, raw_pointee};
-use crate::lower::recognition::{StdItem, is_std_crate, is_vec_like_def};
+use crate::lower::recognition::{Lend, StdItem, is_std_crate, is_vec_like_def};
 use crate::lower::refusal::{Refused, refuse};
 use crate::lower::representation::property_of_cell;
 use crate::lower::temporary_names::Role;
@@ -17,7 +17,6 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::PlaceTy;
-use rustc_middle::ty::layout::LayoutCx;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -260,7 +259,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let issue = match !shared && self.mut_ref_form(lent).is_cell() {
             // Of generic code, whose instances keep it at different offsets,
             // #1478's, a fact its callers would give.
-            true if self.lends_mut_of(def_id, receiver).is_some() && receiver.has_non_region_param() => 1478,
+            true if self.recognition().lends_mut_of(def_id, receiver).is_some() && receiver.has_non_region_param() => {
+                1478
+            }
             true => 1513,
             false => 1513,
         };
@@ -554,20 +555,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Within::At(0)
     }
 
-    /// The byte offset of field `field` of variant `variant` of `ty`, an
-    /// enum, rustc's layout of that variant; `None` of a type its caller
-    /// lays out.
-    pub(in crate::lower) fn variant_field_offset(
-        &self,
-        ty: Ty<'tcx>,
-        variant: VariantIdx,
-        field: FieldIdx,
-    ) -> Option<u64> {
-        let layout = self.layout(ty)?;
-        let cx = LayoutCx::new(self.tcx, ty::TypingEnv::fully_monomorphized());
-        Some(layout.for_variant(&cx, variant).fields.offset(field.as_usize()).bytes())
-    }
-
     /// The byte offset of `field` of a place of type `ty`, a struct's, a
     /// tuple's or a variant's, rustc's layout; `None` of a type its caller
     /// lays out.
@@ -582,6 +569,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// fields to a value of no fields, and where: the sum of each field's
     /// offset in its own type, rustc's layout.
     fn along(&self, mut ty: Ty<'tcx>, path: Option<&[&str]>) -> Option<(Ty<'tcx>, u64)> {
+        if let Some(path) = path {
+            return self.recognition().field_path(ty, path);
+        }
         let mut at = 0;
         let mut step = 0;
         loop {
@@ -608,74 +598,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// What std lends a `&mut` to from inside its receiver's storage, of which
-/// the receiver's own place is known (#1474): a `OnceCell`'s value, a
-/// `LazyCell`'s, a `Peekable`'s item it peeked at, and a `Result`'s `Ok` or
-/// `Err` payload.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Lent {
-    OnceCell,
-    LazyCell,
-    Peekable,
-    Ok,
-    Err,
-}
-
-impl Lent {
-    /// The property of the receiver's JS that holds it: a cell's `value`, a
-    /// `Peekable`'s `peeked`, a `Result`'s `_0`.
-    fn key(self) -> &'static str {
-        match self {
-            Lent::OnceCell | Lent::LazyCell => "value",
-            Lent::Peekable => "peeked",
-            Lent::Ok | Lent::Err => "_0",
-        }
-    }
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// What std's `def_id` lends a `&mut` to from inside a `receiver`, where
-    /// the lowering makes its place a handle the pointer machinery reads
-    /// (`lent_place`): a `OnceCell`'s `get_mut`, a `LazyCell`'s `force_mut`,
-    /// a `Peekable`'s `peek_mut`, a `Result`'s `as_mut`, of either variant,
-    /// and its `iter_mut`, of its `Ok`. `None` of another call.
-    pub(in crate::lower) fn lends_mut_of(&self, def_id: DefId, receiver: Ty<'tcx>) -> Option<&'static [Lent]> {
-        let name = self.tcx.item_name(def_id);
-        let result = self.is_std_type(receiver, StdItem::Result);
-        match name.as_str() {
-            "get_mut"
-                if self.is_std_type(receiver, StdItem::OnceCell) && !self.recognition().is_lock_cell(receiver) =>
-            {
-                Some(&[Lent::OnceCell])
-            }
-            "force_mut"
-                if self.is_std_type(receiver, StdItem::LazyCell) && !self.recognition().is_lock_cell(receiver) =>
-            {
-                Some(&[Lent::LazyCell])
-            }
-            "peek_mut" if self.is_peekable(receiver) => Some(&[Lent::Peekable]),
-            "as_mut" if result => Some(&[Lent::Ok, Lent::Err]),
-            "iter_mut" if result => Some(&[Lent::Ok]),
-            _ => None,
-        }
-    }
-
     /// Which of a `receiver`'s slots std's `def_id` lends an object from,
     /// shared or `&mut`, which JS gives as the object: a `OnceCell`'s value,
     /// `get`'s, `get_or_init`'s and `get_mut`'s; a `LazyCell`'s, `force`'s and
     /// `force_mut`'s; a `Peekable`'s peeked item, `peek`'s and `peek_mut`'s;
     /// a `Result`'s payload, `as_ref`'s and `as_mut`'s, its `Ok`'s or its
     /// `Err`'s. The one catalog of what #1475 records.
-    pub(in crate::lower) fn lends_object_of(&self, def_id: DefId, receiver: Ty<'tcx>) -> Option<&'static [Lent]> {
+    pub(in crate::lower) fn lends_object_of(&self, def_id: DefId, receiver: Ty<'tcx>) -> Option<&'static [Lend]> {
         let name = self.tcx.item_name(def_id);
         let lock = self.recognition().is_lock_cell(receiver);
         match name.as_str() {
             "get" | "get_or_init" | "get_mut" if self.is_std_type(receiver, StdItem::OnceCell) && !lock => {
-                Some(&[Lent::OnceCell])
+                Some(&[Lend::OnceCell])
             }
-            "force" | "force_mut" if self.is_std_type(receiver, StdItem::LazyCell) && !lock => Some(&[Lent::LazyCell]),
-            "peek" | "peek_mut" if self.is_peekable(receiver) => Some(&[Lent::Peekable]),
-            "as_ref" | "as_mut" if self.is_std_type(receiver, StdItem::Result) => Some(&[Lent::Ok, Lent::Err]),
+            "force" | "force_mut" if self.is_std_type(receiver, StdItem::LazyCell) && !lock => Some(&[Lend::LazyCell]),
+            "peek" | "peek_mut" if self.is_peekable(receiver) => Some(&[Lend::Peekable]),
+            "as_ref" | "as_mut" if self.is_std_type(receiver, StdItem::Result) => Some(&[Lend::Ok, Lend::Err]),
             _ => None,
         }
     }
@@ -690,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 lents.iter().all(|&l| {
                     self.lent_offset(receiver, l).is_some()
                         && self.lent_within(receiver, l).is_some()
-                        && !(matches!(l, Lent::OnceCell | Lent::Peekable) && self.boxed_lent(receiver, l))
+                        && !(matches!(l, Lend::OnceCell | Lend::Peekable) && self.boxed_lent(receiver, l))
                 })
             })
     }
@@ -700,7 +639,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one past its tag; a payload that holds no object, a number's, nothing
     /// to record, at 0. None of one elsewhere, an allocation of its own, or
     /// not known.
-    fn lent_within(&self, receiver: Ty<'tcx>, lent: Lent) -> Option<u64> {
+    fn lent_within(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<u64> {
         let payload = self.lent_payload_in(receiver, lent)?;
         if self.holds_no_object(payload) {
             return Some(0);
@@ -748,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let held = values[0].clone();
         // Of each slot, or of a `Result`'s two by its variant where they differ.
-        let by_slot = |of: &dyn Fn(Lent) -> u64| match lents {
+        let by_slot = |of: &dyn Fn(Lend) -> u64| match lents {
             [one] => Expr::int(i128::from(of(*one))),
             [ok, err] if of(*ok) == of(*err) => Expr::int(i128::from(of(*ok))),
             [ok, err] => Expr::cond(
@@ -780,10 +719,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().peek_mut_of(receiver).is_some() {
             return true;
         }
-        self.lends_mut_of(def_id, receiver).is_some_and(|lents| {
+        self.recognition().lends_mut_of(def_id, receiver).is_some_and(|lents| {
             !lents
                 .iter()
-                .any(|&l| matches!(l, Lent::OnceCell | Lent::Peekable) && self.boxed_lent(receiver, l))
+                .any(|&l| matches!(l, Lend::OnceCell | Lend::Peekable) && self.boxed_lent(receiver, l))
                 && lents.iter().all(|&l| self.lent_offset(receiver, l).is_some())
         })
     }
@@ -844,7 +783,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// like `None` is (ADR 0051): of generic code's, in any instance its
     /// callers give, or where they can't all be seen. A handle on the slot
     /// would read the box.
-    pub(in crate::lower) fn boxed_lent(&self, receiver: Ty<'tcx>, lent: Lent) -> bool {
+    pub(in crate::lower) fn boxed_lent(&self, receiver: Ty<'tcx>, lent: Lend) -> bool {
         let boxed = |receiver: Ty<'tcx>| {
             self.lent_payload_in(receiver, lent)
                 .is_none_or(|t| self.boxed_payload(t))
@@ -859,14 +798,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a receiver of type `receiver` lends of `lent`, its type there:
     /// a `OnceCell`'s or a `Peekable`'s payload past its `Option`s.
-    fn lent_payload_in(&self, receiver: Ty<'tcx>, lent: Lent) -> Option<Ty<'tcx>> {
+    fn lent_payload_in(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<Ty<'tcx>> {
         let held = match lent {
-            Lent::OnceCell => self.option_of(self.along(receiver, Some(&["inner", "value"]))?.0)?,
-            Lent::Peekable => self.option_of(self.option_of(self.along(receiver, Some(&["peeked"]))?.0)?)?,
+            Lend::OnceCell => self.option_of(self.along(receiver, Some(&["inner", "value"]))?.0)?,
+            Lend::Peekable => self.option_of(self.option_of(self.along(receiver, Some(&["peeked"]))?.0)?)?,
             // Its `T`, and a `Result`'s side.
-            Lent::LazyCell | Lent::Ok | Lent::Err => {
+            Lend::LazyCell | Lend::Ok | Lend::Err => {
                 let ty::Adt(_, args) = receiver.kind() else { return None };
-                args.type_at(usize::from(lent == Lent::Err))
+                args.type_at(usize::from(lent == Lend::Err))
             }
         };
         // As the instance says it is, `u32` of an `IntoIter<u32, 2>`'s `Item`.
@@ -884,46 +823,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variant's offset (#1474). Of generic code's receiver, the one each
     /// instance its callers give shares; `None` where they differ, or where
     /// a layout isn't known.
-    pub(in crate::lower) fn lent_offset(&self, receiver: Ty<'tcx>, lent: Lent) -> Option<u64> {
+    pub(in crate::lower) fn lent_offset(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<u64> {
         if !receiver.has_non_region_param() {
-            return self.lent_offset_in(receiver, lent);
+            return self.recognition().lend_offset(receiver, lent);
         }
         let owner = self.tcx.typeck_root_def_id(self.item);
         let instances = self.krate.stored_places.instances(self.tcx, receiver, owner)?;
         let mut offsets = instances
             .into_iter()
-            .map(|instance| self.lent_offset_in(instance, lent));
+            .map(|instance| self.recognition().lend_offset(instance, lent));
         let first = offsets.next()??;
         offsets.all(|offset| offset == Some(first)).then_some(first)
-    }
-
-    fn lent_offset_in(&self, receiver: Ty<'tcx>, lent: Lent) -> Option<u64> {
-        let some = |option: Ty<'tcx>| self.variant_field_offset(option, VariantIdx::from_u32(1), FieldIdx::ZERO);
-        match lent {
-            Lent::OnceCell => {
-                let (option, at) = self.along(receiver, Some(&["inner", "value"]))?;
-                Some(at + some(option)?)
-            }
-            Lent::LazyCell => {
-                let (state, at) = self.along(receiver, Some(&["state", "value"]))?;
-                let ty::Adt(adt, _) = state.kind() else {
-                    return None;
-                };
-                let init = adt
-                    .variants()
-                    .iter_enumerated()
-                    .find(|(_, v)| v.name.as_str() == "Init")?
-                    .0;
-                Some(at + self.variant_field_offset(state, init, FieldIdx::ZERO)?)
-            }
-            Lent::Peekable => {
-                let (outer, at) = self.along(receiver, Some(&["peeked"]))?;
-                let inner = self.option_of(outer)?;
-                Some(at + some(outer)? + some(inner)?)
-            }
-            Lent::Ok => self.variant_field_offset(receiver, VariantIdx::from_u32(0), FieldIdx::ZERO),
-            Lent::Err => self.variant_field_offset(receiver, VariantIdx::from_u32(1), FieldIdx::ZERO),
-        }
     }
 
     /// Of a `&mut` std lends from inside `receiver`, of type `receiver_ty`,
@@ -936,16 +846,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn lent_place(
         &self,
         (receiver, receiver_ty): (Expr, Ty<'tcx>),
-        lent: Lent,
+        lent: Lend,
         ok: Option<Expr>,
     ) -> Option<Expr> {
         if !self.krate.stored_places.asks() {
             return None;
         }
-        let at = |lent: Lent| self.lent_offset(receiver_ty, lent);
+        let at = |lent: Lend| self.lent_offset(receiver_ty, lent);
         // Of both variants at one offset, that offset, no test.
         let offset = match ok {
-            Some(ok) => match (at(Lent::Ok)?, at(Lent::Err)?) {
+            Some(ok) => match (at(Lend::Ok)?, at(Lend::Err)?) {
                 (ok_at, err_at) if ok_at == err_at => Expr::int(i128::from(ok_at)),
                 (ok_at, err_at) => Expr::cond(ok, Expr::int(i128::from(ok_at)), Expr::int(i128::from(err_at))),
             },
