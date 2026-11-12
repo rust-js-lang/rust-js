@@ -343,43 +343,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A `Wrapping`'s operator's value, `[a[0] op rhs]`, of its type, read
-    /// the same each time, and the operand.
+    /// the same each time, and the operand, of its type.
     pub(in crate::lower) fn wrapping_value(
         &mut self,
         op: Result<BinOp, UnOp>,
         wrapping: Ty<'tcx>,
         target: Expr,
-        rhs: Option<Expr>,
+        rhs: Option<(Expr, Ty<'tcx>)>,
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
-        self.num(inner, span)?;
-        let result = match op {
-            Err(op) => self.unary(op, Expr::index(target, Expr::int(0)), inner, span)?,
-            Ok(op) => {
-                let rhs = rhs.expect("a binary operator's operand");
-                self.wrapping_result(op, Expr::index(target, Expr::int(0)), rhs, inner, span)?
-            }
-        };
+        let result = self.wrapping_result(op, Expr::index(target, Expr::int(0)), rhs, inner, span, out)?;
         Ok(Expr::array(vec![result]))
     }
 
     /// `a op rhs` of a `Wrapping`'s number `a`, its `inner`: the result's
-    /// number. `rhs` is another `Wrapping`, or a shift's `usize` amount,
-    /// which the number's shift masks to its width, as `wrapping_shl` does.
+    /// number, as std's impl writes it, the method of its number it calls
+    /// (`wrapping_method`), `wrapping_div` of `/`, or the number's own
+    /// operator. `rhs` is another `Wrapping`, its number read, or what an
+    /// `op=` or a shift takes as it is, a `T` or a `usize` (#1439).
     pub(in crate::lower) fn wrapping_result(
         &mut self,
-        op: BinOp,
+        op: Result<BinOp, UnOp>,
         a: Expr,
-        rhs: Expr,
+        rhs: Option<(Expr, Ty<'tcx>)>,
         inner: Ty<'tcx>,
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let rhs = match op {
-            BinOp::Shl | BinOp::Shr => rhs,
-            _ => Expr::index(rhs, Expr::int(0)),
-        };
-        self.binary(op, a, rhs, None, inner, span)
+        self.num(inner, span)?;
+        let rhs = rhs.map(|(rhs, ty)| match self.recognition().wrapping_of(ty.peel_refs()) {
+            Some(_) => Expr::index(rhs, Expr::int(0)),
+            None => rhs,
+        });
+        let values: Vec<Expr> = std::iter::once(a).chain(rhs).collect();
+        if let Some(method) = self.recognition().wrapping_method(op, inner.is_signed()) {
+            return self.number_call(method, values, inner, span, out);
+        }
+        let mut values = values.into_iter();
+        let a = values.next().expect("the `Wrapping`'s number");
+        match op {
+            Ok(op) => self.binary(
+                op,
+                a,
+                values.next().expect("a binary operator's operand"),
+                None,
+                inner,
+                span,
+            ),
+            Err(op) => self.unary(op, a, inner, span),
+        }
     }
 
     /// A number's method written the same of a number and of a BigInt: a

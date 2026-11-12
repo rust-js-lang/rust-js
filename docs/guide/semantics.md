@@ -47,7 +47,7 @@ table](../../ROADMAP.md) lists the larger missing pieces.
 | `i64` `u64` `i128` `u128` | BigInt, `5n` | exact, wrapped with `BigInt.asIntN` to 64 or 128 bits ([0086](../decisions/0086-64-bit-integers.md), [0171](../decisions/0171-128-bit-integers.md)) |
 | `NonZero<T>` | its number; `new` of `0` is `None` | ([0177](../decisions/0177-nonzero.md)) |
 | `Duration` | its nanoseconds, a BigInt; `{:?}` is std's, `1.5s` | ([0188](../decisions/0188-duration.md)) |
-| `Wrapping<T>` | `[x]`, its number's arithmetic wrapped, shown as its number | ([0175](../decisions/0175-wrapping.md)) |
+| `Wrapping<T>` | `[x]`, its number's arithmetic wrapped as std's impls write it, `w += 1` by its number too, a signed one's `/` and `%` `wrapping_div` and `wrapping_rem`, shown as its number | ([0175](../decisions/0175-wrapping.md)) |
 | `f64` | number | |
 | `f32` | number, each result rounded by `Math.fround` | printed with its own shortest digits ([0122](../decisions/0122-f32.md)) |
 | `bool` | boolean | |

@@ -455,4 +455,12 @@ export const mutations: Mutation[] = [
     replace: "                helper(\"$overflowingEuclid\", vec![a, b, min, Expr::bool(!div)])\n",
     tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
   },
+  {
+    name: "wrapping-rhs-always-indexed",
+    breaks: "an `op=` of a `Wrapping` by its number reads `1[0]`, `undefined`, as if it were a `Wrapping` (#1439)",
+    file: "src/lower/std_types/number.rs",
+    find: "        let rhs = rhs.map(|(rhs, ty)| match self.recognition().wrapping_of(ty.peel_refs()) {\n",
+    replace: "        let rhs = rhs.map(|(rhs, ty)| match Some(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^wrapping_ops_by_its_number_and_past_its_range.rs$"],
+  },
 ];

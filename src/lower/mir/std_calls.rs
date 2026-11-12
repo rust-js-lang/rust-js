@@ -1166,7 +1166,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let rhs = values.next().map(|v| this.value_expr(v, span)).transpose()?;
                     this.flush(state, out)?;
-                    let value = this.wrapping_value(op, arg_tys[0].peel_refs(), target.clone(), rhs, span)?;
+                    let rhs = rhs.map(|rhs| (rhs, arg_tys[1]));
+                    let value = this.wrapping_value(op, arg_tys[0].peel_refs(), target.clone(), rhs, span, out)?;
                     if !assign {
                         value
                     } else {

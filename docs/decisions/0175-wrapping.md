@@ -82,3 +82,37 @@ operand. Only a variable the program wrote that holds a `&mut`, `r` of
 - `wrapping_assigned_through_a_ref.js` now reads `b0 = [..]`, where it
   was `$assign(b0, ..)`.
 - The mutation is `wrapping-op-assign-written-through`.
+
+## Amendment (2026-11-12, #1439, #1440): each operator as std's impl writes it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. Two wrong answers:
+
+- **An `op=` by its number read it as a `Wrapping` (#1439, P0).** std has
+  `AddAssign<T> for Wrapping<T>`, and so for each operator, `w += 1u8`; the
+  right side was read as `[x]`, `w = [(w[0] + 10[0]) & 255]`, `undefined`,
+  so `Wrapping(250u8) += 10` was `0` where Rust's is `4`. The right side is
+  now read as `[x][0]` only where its type is a `Wrapping`: another
+  `Wrapping`'s, not its number's, nor a shift's `usize`.
+- **A signed one's `/` and `%` panicked at `MIN / -1` (#1440, P1).** std's
+  impls are `wrapping_div` and `wrapping_rem`, `MIN` and `0`; rust-js wrote
+  the number's own operator, which panics there. By zero, each panics as
+  std's does.
+
+**Each operator is the method of its number std's impl calls**, one table,
+`wrapping_method` (recognition/wrappers.rs): `wrapping_add`, `_sub`, `_mul`,
+`_shl` and `_shr`; a signed number's `wrapping_div` and `wrapping_rem`,
+`$wrappingDiv(a[0], b[0], -128)`; `wrapping_neg`. An unsigned one's `/` and
+`%` are its number's, which those methods are, `$div(a[0], b[0]) & 255` as
+before; a bit operation and `!` are the number's own. `wrapping_result`
+(std_types/number.rs) lowers each by `number_call`, the method's own
+lowering, for an operator, an `op=`, and generic code's dictionary alike.
+
+Held by corpus case `wrapping_ops_by_its_number_and_past_its_range.rs`:
+every operator and every `op=`, by a `Wrapping` and by its number, at each
+width from `u8` to `i128`, past each bound, by zero, `MIN / -1` and `MIN %
+-1`, and generic code's `/` and `%`, against native Rust in both builds
+(`usize` and `isize` left out, a target's width). Mutations
+`wrapping-signed-div-plain`, `wrapping-signed-rem-plain`,
+`wrapping-unsigned-div-a-helper`, `wrapping-rhs-always-indexed`,
+`wrapping-dictionary-rhs-unread`.

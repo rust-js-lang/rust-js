@@ -12,6 +12,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// The method of its number std's impl of a `Wrapping`'s operator `op`
+    /// calls, of a number `signed` or not: `wrapping_div` of `/`,
+    /// `wrapping_rem` of `%` of a signed one, `MIN / -1` its `MIN`;
+    /// `wrapping_neg` of `-`. `None` where it's the number's own operator, a
+    /// bit operation's, `!`'s, or an unsigned one's `/` and `%`, which
+    /// `wrapping_div` and `wrapping_rem` are (ADR 0175, #1440).
+    pub(in crate::lower) fn wrapping_method(&self, op: Result<BinOp, UnOp>, signed: bool) -> Option<NumOp> {
+        match op {
+            Ok(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl | BinOp::Shr)) => Some(NumOp::Wrapping(op)),
+            Ok(BinOp::Div) if signed => Some(NumOp::WrappingDiv),
+            Ok(BinOp::Rem) if signed => Some(NumOp::WrappingRem),
+            Err(UnOp::Neg) => Some(NumOp::WrappingNeg),
+            _ => None,
+        }
+    }
+
     /// A `OnceLock` or `LazyLock`, std's, not a `OnceCell` or `LazyCell`,
     /// `core`'s: their reentrant inits differ (ADRs 0317, 0318).
     pub(in crate::lower) fn is_lock_cell(&self, ty: Ty<'tcx>) -> bool {

@@ -823,14 +823,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())
         {
             let a = Expr::index(Expr::var("a"), Expr::int(0));
-            let (params, value) = match op {
-                Ok(op) => (
-                    vec!["a".into(), "b".into()],
-                    self.wrapping_result(op, a, Expr::var("b"), inner, span)?,
-                ),
-                Err(op) => (vec!["a".into()], self.unary(op, a, inner, span)?),
+            let mut body = Vec::new();
+            let (params, rhs) = match op {
+                Ok(_) => (vec!["a".into(), "b".into()], Some((Expr::var("b"), tr.args.type_at(1)))),
+                Err(_) => (vec!["a".into()], None),
             };
-            let body = vec![StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE)];
+            let value = self.wrapping_result(op, a, rhs, inner, span, &mut body)?;
+            body.push(StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE));
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(params, body),
