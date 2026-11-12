@@ -9,6 +9,7 @@ import {
   $fieldCell,
   $lock,
   $lockRead,
+  $poison,
   $ptr,
   $ptrAdd,
   $ptrAt,
@@ -257,12 +258,11 @@ function main() {
         $unborrow(value$2);
       }
     } catch (error) {
-      $cleanup(() => {
-        $unlock(value$4);
-      }, error);
+      $poison(value$4);
       throw error;
+    } finally {
+      $unborrow(value$4);
     }
-    $unlock(value$4);
   } finally {
     $unborrow(borrow);
   }

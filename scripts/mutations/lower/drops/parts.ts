@@ -368,4 +368,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Dynamic(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
+  {
+    name: "scoped-guard-poison-unmarked",
+    breaks: "a lock's guard's scope's `catch` releases it, `$unborrow`, and marks no poison, so a panic through it doesn't poison its lock (#1438)",
+    file: "src/lower/drops/parts.rs",
+    find: "        (part(\"$poison\"), part(\"$unborrow\"))\n",
+    replace: "        (part(\"$unborrow\"), part(\"$unborrow\"))\n",
+    tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
+  },
 ];

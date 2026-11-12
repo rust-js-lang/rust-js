@@ -257,7 +257,11 @@ function $lockHeld(cell, mutable) {
     $setBorrows(cell, (cell.borrows ?? 0) + 1);
   } else {
     $setBorrows(cell, -1);
-    if ($panicking()) $lockedUnwinding.add(cell);
+    if ($panicking()) {
+      $lockedUnwinding.add(cell);
+    } else {
+      $lockedUnwinding.delete(cell);
+    }
   }
   return cell;
 }
@@ -289,6 +293,13 @@ function $unlock(cell) {
     $poisonedLocks.add(cell);
   }
   $unborrow(cell);
+}
+
+// A lock's guard held by a scope whose `try` a panic unwinds, its `catch`:
+// its lock poisoned where no panic unwound as it was taken; the scope's
+// `finally` releases it (`$unborrow`, #1438).
+function $poison(cell) {
+  if (!$lockedUnwinding.has(cell)) $poisonedLocks.add(cell);
 }
 
 // A lock's `is_poisoned()` and `clear_poison()`.

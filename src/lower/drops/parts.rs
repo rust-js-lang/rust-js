@@ -605,6 +605,32 @@ pub(in crate::lower) fn finally_holds(dropped: &[Stmt]) -> bool {
     !may_throw(dropped) && !asks_unwinding(dropped)
 }
 
+/// Of a lock's guard's drop, `$unlock(guard)`, what a scope's `try` runs of
+/// it instead: `$poison(guard)` in its `catch`, which only a throw runs,
+/// so a panic unwinds there, and `$unborrow(guard)` in its `finally`, the
+/// release on every way out (#1438). Neither throws, nor runs what a
+/// program sees as a stack overflow aborts, `$unborrow`'s way. The one
+/// reader of `$unlock`'s form, which `drop_in` makes.
+pub(in crate::lower) fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt)> {
+    let StmtKind::Expr(call) = &drop.kind else {
+        return None;
+    };
+    let js::ExprKind::Call(callee, given) = &call.kind else {
+        return None;
+    };
+    let [guard] = given.as_slice() else {
+        return None;
+    };
+    (callee.helper_name() == Some("$unlock")).then(|| {
+        let part = |helper| {
+            let mut call = Expr::call_helper(helper, vec![guard.clone()]);
+            call.facts = call.facts.with(js::Known::Unseen);
+            StmtKind::Expr(call).at(drop.span)
+        };
+        (part("$poison"), part("$unborrow"))
+    })
+}
+
 /// Whether `stmts` call a helper that asks whether a panic unwinds, which
 /// only `$cleanup` tells (`runtime::asks_unwinding`).
 fn asks_unwinding(stmts: &[Stmt]) -> bool {

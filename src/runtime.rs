@@ -473,8 +473,10 @@ const NEVER_THROW: &[&str] = &[
     // A `RefCell` guard's drop: its count, one less (ADR 0328), which a
     // cleanup runs as a panic unwinds unguarded (#847).
     "$unborrow",
-    // A lock's guard's drop, which poisons it as a panic unwinds (#1438).
+    // A lock's guard's drop, which poisons it as a panic unwinds, and its
+    // poison marked as one does (#1438).
     "$unlock",
+    "$poison",
 ];
 
 /// The helpers that ask whether a panic unwinds, which only a cleanup a

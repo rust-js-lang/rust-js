@@ -41,12 +41,13 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
-        // Of a drop no `finally` holds, as it asks whether a panic unwinds,
-        // a lock's guard's (#1438): one `catch` of a run of more than one
-        // statement, each way out dropping it as it did, and the drop at its
-        // end.
+        // Of a lock's guard, whose drop asks whether a panic unwinds, which
+        // a `finally` can't tell: its poison marked in a `catch`, which only
+        // a throw runs, and its release the `finally`'s (#1438).
         let run = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end]));
-        if let Some(end) = run.filter(|&end| end > i + 1 || finally_holds(&stmts[end])) {
+        let parts = |end: usize| crate::lower::drops::poisoned_and_released(&stmts[end]);
+        if let Some(end) = run.filter(|&end| finally_holds(&stmts[end]) || parts(end).is_some()) {
+            let marked = parts(end);
             let drop = stmts[end].clone();
             // A guard's `let` past each statement before the run, and what
             // their blocks hold: the run's, not an earlier value's.
@@ -54,8 +55,7 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
             js::each_list(&stmts[..i], &mut |list| {
                 written = (list.iter().filter_map(written_at)).fold(written, u32::max);
             });
-            let finally = finally_holds(&drop);
-            let mut body = unwound(stmts.drain(i..end).collect(), &drop, finally);
+            let mut body = unwound(stmts.drain(i..end).collect(), &drop);
             // From where its first statement is, as the Rust has nothing of
             // its own there, a guard's `let` printing nothing, to its drop:
             // what's before it, a blank line or a comment, is before the
@@ -82,15 +82,17 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
             let hoisted = hoist_read_after(&mut body, &rest);
             stmts.extend(hoisted);
             i = stmts.len();
-            if finally {
-                stmts.push(StmtKind::Try(body, vec![drop]).at(span));
-            } else {
-                let thrown = StmtKind::Throw(Expr::var("error")).at(span);
-                let handler = vec![drop.clone(), thrown];
-                stmts.push(StmtKind::TryCatch(body, Some("error".into()), handler).at(span));
-                stmts.push(drop);
-                i = stmts.len();
-            }
+            let (body, drop) = match marked {
+                None => (body, drop),
+                Some((poisoned, released)) => {
+                    let handler = vec![poisoned, StmtKind::Throw(Expr::var("error")).at(span)];
+                    (
+                        vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(span)],
+                        released,
+                    )
+                }
+            };
+            stmts.push(StmtKind::Try(body, vec![drop]).at(span));
             stmts.extend(rest);
             scoped = true;
             continue;
@@ -211,14 +213,17 @@ fn written_at(stmt: &Stmt) -> Option<u32> {
 /// is made, as the original does (ADR 0588). Of an `e` the same whenever
 /// it's made, a constant or a function, `noop` (`Expr::is_fixed`), which
 /// the drop can't change: `try { .. } finally { .. } return e;`, as a
-/// person writes it, after (ADR 0693, amended).
+/// person writes it, after (ADR 0693, amended). Through a lock's guard's
+/// `catch`, which marks its poison, too (#1438).
 pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         let found = match (&stmts[i].kind, &stmts[i + 1].kind, &stmts[i + 2].kind) {
             (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => {
+                let (body, handler) = scope_body(body);
                 matches!(&value.kind, ExprKind::Var(v) if v == name)
                     && js::mentions_in(finally, name) == 0
+                    && js::mentions_in(handler, name) == 0
                     && body.last().is_some_and(|last| {
                         let mut returned = last.clone();
                         given_returned(&mut returned, name)
@@ -234,6 +239,15 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             let StmtKind::Try(body, _) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
+            let body = match body.as_mut_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::TryCatch(inner, ..),
+                        ..
+                    },
+                ] => inner,
+                _ => body,
+            };
             let mut last = body.pop().expect("matched");
             match last.kind {
                 StmtKind::Assign(_, value) if value.is_fixed() => {
@@ -246,6 +260,20 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             }
         }
         i += 1;
+    }
+}
+
+/// A scope's `try` body and the `catch` it holds, where it holds one: a
+/// lock's guard's, which marks its poison (`scoped_runs`, #1438).
+fn scope_body(body: &[Stmt]) -> (&[Stmt], &[Stmt]) {
+    match body {
+        [
+            Stmt {
+                kind: StmtKind::TryCatch(inner, _, handler),
+                ..
+            },
+        ] => (inner, handler),
+        _ => (body, &[]),
     }
 }
 
@@ -403,17 +431,14 @@ impl<'a> Run<'a> {
 /// `stmts` of a run `Run::covers`, in a `finally` that drops `drop`: each
 /// `catch`'s drop of it gone, and a `catch` that only throws again with
 /// it; and the drop before each way out, which the `finally` runs, `const
-/// v = e; drop; return v;` given as it's made, `return e;`. In one
-/// `catch` that drops it, where no `finally` holds it (`finally` false),
-/// each way out drops it still.
-fn unwound(stmts: Vec<Stmt>, drop: &Stmt, finally: bool) -> Vec<Stmt> {
+/// v = e; drop; return v;` given as it's made, `return e;`.
+fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
     let all = stmts.clone();
     let mut out: Vec<Stmt> = Vec::new();
     let mut stmts = stmts.into_iter().peekable();
     while let Some(stmt) = stmts.next() {
         let leaves = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
-        if finally
-            && alike(&stmt, drop)
+        if alike(&stmt, drop)
             && stmts.peek().is_some_and(leaves)
             && let Some(mut leaving) = stmts.next()
         {
@@ -447,15 +472,13 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt, finally: bool) -> Vec<Stmt> {
                 }
                 StmtKind::TryCatch(inner, Some(error), handler)
             }
-            StmtKind::If(test, a, b) => {
-                StmtKind::If(test, unwound(a, drop, finally), b.map(|b| unwound(b, drop, finally)))
-            }
+            StmtKind::If(test, a, b) => StmtKind::If(test, unwound(a, drop), b.map(|b| unwound(b, drop))),
             StmtKind::While { label, cond, body } => StmtKind::While {
                 label,
                 cond,
-                body: unwound(body, drop, finally),
+                body: unwound(body, drop),
             },
-            StmtKind::Labeled(label, body) => StmtKind::Labeled(label, unwound(body, drop, finally)),
+            StmtKind::Labeled(label, body) => StmtKind::Labeled(label, unwound(body, drop)),
             kind => kind,
         };
         out.push(Stmt { kind, ..stmt });

@@ -255,8 +255,8 @@ export const mutations: Mutation[] = [
     name: "lock-taken-unwinding-poisons",
     breaks: "a guard taken in a drop a panic runs poisons its lock as it's dropped, where std's records that a panic unwound as it was taken (#1438)",
     file: "src/runtime/borrow.js",
-    find: "    if ($panicking()) $lockedUnwinding.add(cell);\n",
-    replace: "",
+    find: "    if ($panicking()) {\n      $lockedUnwinding.add(cell);\n    } else {\n",
+    replace: "    if (false) {\n    } else {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
   },
   {
@@ -321,6 +321,22 @@ export const mutations: Mutation[] = [
     file: "src/runtime/borrow.js",
     find: "poisoned: ${$poisonedLocks.has(cell)}",
     replace: "poisoned: false",
+    tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
+  },
+  {
+    name: "poison-marks-nothing",
+    breaks: "a lock's guard's scope's `catch` marks no poison as a panic unwinds through it (#1438)",
+    file: "src/runtime/borrow.js",
+    find: "  if (!$lockedUnwinding.has(cell)) $poisonedLocks.add(cell);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
+  },
+  {
+    name: "locked-unwinding-kept",
+    breaks: "a lock once taken as a panic unwound stays so, and a later guard of it taken outside one poisons nothing as a panic unwinds through it (#1438)",
+    file: "src/runtime/borrow.js",
+    find: "    } else {\n      $lockedUnwinding.delete(cell);\n    }\n",
+    replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
   },
 ];

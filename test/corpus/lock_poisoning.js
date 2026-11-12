@@ -6,16 +6,21 @@ import {
   $checked,
   $cleanup,
   $clearPoison,
+  $debugParseError,
   $debugStr,
   $forceLock,
   $getOrInitLock,
   $index,
   $isPoisoned,
+  $iter,
   $lock,
   $lockRead,
   $locked,
   $lockedValue,
+  $next,
   $panicMessage,
+  $parseInt,
+  $poison,
   $showLocked,
   $tryLock,
   $unborrow,
@@ -48,36 +53,30 @@ function message(payload) {
 
 function pick(items, i) {
   const held = $lock(items);
-  let result;
   try {
-    result = ($index(held.value, i) + 1) >>> 0;
+    return ($index(held.value, i) + 1) >>> 0;
   } catch (error) {
-    $cleanup(() => {
-      $unlock(held);
-    }, error);
+    $poison(held);
     throw error;
+  } finally {
+    $unborrow(held);
   }
-  $unlock(held);
-  return result;
 }
 
 function bumpTwice(count, by) {
   const held = $lock(count);
-  let result;
   try {
     const value = $unwrap($checked(held.value + by, 0, 4294967295), "too many");
     held.value = value;
     const value$1 = $unwrap($checked(held.value + by, 0, 4294967295), "too many");
     held.value = value$1;
-    result = held.value;
+    return held.value;
   } catch (error) {
-    $cleanup(() => {
-      $unlock(held);
-    }, error);
+    $poison(held);
     throw error;
+  } finally {
+    $unborrow(held);
   }
-  $unlock(held);
-  return result;
 }
 
 function slot(table, i) {
@@ -95,26 +94,72 @@ function slot(table, i) {
 
 function firstOver(items, floor) {
   const held = $lock(items);
-  let result;
   try {
     const iter = held.value.values();
     let item;
     while ((item = iter.next().value) != null) {
       if ($unwrap($checked(item - floor, 0, 4294967295), "below zero") > 0) {
-        result = item;
-        $unlock(held);
-        return result;
+        return item;
       }
     }
-    result = undefined;
   } catch (error) {
-    $cleanup(() => {
-      $unlock(held);
-    }, error);
+    $poison(held);
     throw error;
+  } finally {
+    $unborrow(held);
   }
-  $unlock(held);
-  return result;
+}
+
+function parsedTotal(items) {
+  const held = $lock(items);
+  let total = 0;
+  try {
+    const iter = held.value.values();
+    let item;
+    while ((item = iter.next().value) != null) {
+      const result = $parseInt(item, 0, 4294967295);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      total = (total + result._0) >>> 0;
+      continue;
+    }
+    return { TAG: "Ok", _0: total };
+  } catch (error) {
+    $poison(held);
+    throw error;
+  } finally {
+    $unborrow(held);
+  }
+}
+
+function evensUntil(items, stop) {
+  const found = [];
+  let iter;
+  for (let round = 0; round < 3; round++) {
+    const held = $lock(items);
+    try {
+      if (round !== 1) {
+        iter = $iter(held.value);
+        let item;
+        while ((item = $next(iter)) != null) {
+          if (item === stop) {
+            break;
+          }
+          if (item % 2 === 0) {
+            found.push($unwrap($checked(item * (round + 1), 0, 4294967295), "too big"));
+          }
+        }
+        continue;
+      }
+    } catch (error) {
+      $poison(held);
+      throw error;
+    } finally {
+      $unborrow(held);
+    }
+  }
+  return found;
 }
 
 function main() {
@@ -124,35 +169,41 @@ function main() {
       throw new Error("relocked");
     } catch (error) {
       $cleanup(() => {
-        // Taken as a panic unwinds: its drop poisons nothing.
-        const held = $lock(count);
+        let held = $lock(count);
         held.value = (held.value + 1) >>> 0;
         $unlock(held);
+        held = $lock(count);
+        try {
+          const value = $unwrap($checked(held.value + 1, 0, 4294967295), "too many");
+          held.value = value;
+        } catch (error) {
+          $poison(held);
+          throw error;
+        } finally {
+          $unborrow(held);
+        }
       }, error);
       throw error;
     }
   });
-  const isErr = caught.TAG === "Err";
-  const isPoisoned = $isPoisoned(count);
-  const value = $lock(count);
-  console.log(`relocked ${isErr} ${isPoisoned} ${value.value}`);
-  $unlock(value);
-
+  const relocked = [caught.TAG === "Err", $isPoisoned(count)];
+  // Then taken outside a panic, though one was once taken in one.
   console.log(`bumped ${bumpTwice(count, 3)}`);
   caught = $catchUnwind(() => bumpTwice(count, 4294967295));
   const mapErr = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  const arg = $isPoisoned(count);
   console.log(
-    `${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${$debugStr(mapErr._0)})`} ${$isPoisoned(count)}`,
+    `relocked (${relocked[0]}, ${relocked[1]}) ${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${$debugStr(mapErr._0)})`} ${arg}`,
   );
   const result = $locked(count, true);
   function map(held) {
     $unlock(held);
     return held.value;
   }
-  const value$1 = result.TAG === "Ok" ? { TAG: "Ok", _0: map(result._0) } : result;
-  console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : "Err(PoisonError { .. })"}`);
-  if (value$1.TAG === "Err") {
-    $unlock(value$1._0.data);
+  const value = result.TAG === "Ok" ? { TAG: "Ok", _0: map(result._0) } : result;
+  console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : "Err(PoisonError { .. })"}`);
+  if (value.TAG === "Err") {
+    $unlock(value._0.data);
   }
   const lock = $locked(count, true);
   let lock$0$live = true;
@@ -236,19 +287,19 @@ function main() {
     $unlock(value);
     return value.value;
   });
-  const value$2 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
-  console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`);
+  const value$1 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`);
   caught = $catchUnwind(() => {
     const value = $lock(count);
     $unlock(value);
     return value.value;
   });
-  const value$3 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
-  console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`}`);
+  const value$2 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`);
   const result$1 = $locked(count, true);
-  const value$4 = result$1.TAG === "Ok" ? result$1._0 : result$1._0.data;
-  const recovered = value$4.value;
-  $unlock(value$4);
+  const value$3 = result$1.TAG === "Ok" ? result$1._0 : result$1._0.data;
+  const recovered = value$3.value;
+  $unlock(value$3);
   console.log(`${recovered} ${$showLocked(count, (value) => String(value), "Mutex", true)}`);
   $clearPoison(count);
   console.log(
@@ -258,30 +309,69 @@ function main() {
   const items = { value: [1, 2, 3] };
   console.log(`${pick(items, 1)}`);
   caught = $catchUnwind(() => pick(items, 7));
-  const value$5 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  const value$4 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugStr(value$5._0)})`} ${$isPoisoned(items)}`,
+    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugStr(value$4._0)})`} ${$isPoisoned(items)}`,
   );
   $clearPoison(items);
+  const value$5 = firstOver(items, 1);
   const value$6 = firstOver(items, 1);
-  const value$7 = firstOver(items, 1);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
   caught = $catchUnwind(() => firstOver(items, 2));
-  const value$8 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  const value$7 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
   console.log(
-    `${value$8.TAG === "Ok" ? `Ok(${value$8._0 == null ? "None" : `Some(${value$8._0})`})` : `Err(${$debugStr(value$8._0)})`} ${$isPoisoned(items)}`,
+    `${value$7.TAG === "Ok" ? `Ok(${value$7._0 == null ? "None" : `Some(${value$7._0})`})` : `Err(${$debugStr(value$7._0)})`} ${$isPoisoned(items)}`,
   );
   $clearPoison(items);
-  const value$9 = firstOver(items, 0);
-  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
+  const value$8 = firstOver(items, 0);
+  console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
+
+  const words = { value: ["1", "2"] };
+  const value$9 = parsedTotal(words);
+  console.log(
+    `${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugParseError(value$9._0, "ParseIntError")})`}`,
+  );
+  const value$10 = $lock(words);
+  try {
+    value$10.value.push("x");
+  } catch (error) {
+    $poison(value$10);
+    throw error;
+  } finally {
+    $unborrow(value$10);
+  }
+  const value$11 = parsedTotal(words);
+  console.log(
+    `${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${$debugStr(value$11._0)})`} ${$isPoisoned(words)}`,
+  );
+  const isErr = parsedTotal(words).TAG === "Err";
+  const value$12 = $lock(words);
+  console.log(`${isErr} ${value$12.value.length}`);
+  $unlock(value$12);
+  const numbers = { value: [2, 3, 4, 5, 6] };
+  console.log(`[${evensUntil(numbers, 5).join(", ")}] [${evensUntil(numbers, 9).join(", ")}]`);
+  const value$13 = $lock(numbers);
+  try {
+    value$13.value.push(4294967294);
+  } catch (error) {
+    $poison(value$13);
+    throw error;
+  } finally {
+    $unborrow(value$13);
+  }
+  caught = $catchUnwind(() => evensUntil(numbers, 9));
+  const value$14 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  console.log(
+    `${value$14.TAG === "Ok" ? `Ok([${value$14._0.join(", ")}])` : `Err(${$debugStr(value$14._0)})`} ${$isPoisoned(numbers)}`,
+  );
 
   const table = { value: [10, 20] };
   caught = $catchUnwind(() => slot(table, 5));
-  const value$10 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
+  const value$15 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
   console.log(
-    `${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${$debugStr(value$10._0)})`} ${$isPoisoned(table)}`,
+    `${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugStr(value$15._0)})`} ${$isPoisoned(table)}`,
   );
 
   const list = { value: [1, 2] };
@@ -304,24 +394,23 @@ function main() {
   } catch (error) {
     $catchable(error);
   }
-  const value$11 = $isPoisoned(list);
-  const value$12 = $lockRead(list);
+  const isPoisoned = $isPoisoned(list);
+  const value$16 = $lockRead(list);
   try {
-    console.log(`read ${value$11} [${value$12.value.join(", ")}]`);
+    console.log(`read ${isPoisoned} [${value$16.value.join(", ")}]`);
   } finally {
-    $unborrow(value$12);
+    $unborrow(value$16);
   }
   try {
     const value = $lock(list);
     try {
       value.value.push(3);
     } catch (error) {
-      $cleanup(() => {
-        $unlock(value);
-      }, error);
+      $poison(value);
       throw error;
+    } finally {
+      $unborrow(value);
     }
-    $unlock(value);
     throw new Error("after a write");
   } catch (error) {
     $catchable(error);
@@ -387,9 +476,9 @@ function main() {
     $catchable(error);
   }
   const result$4 = $lockedValue(name);
-  const value$13 = result$4.TAG === "Err" ? { TAG: "Err", _0: result$4._0.data } : result$4;
+  const value$17 = result$4.TAG === "Err" ? { TAG: "Err", _0: result$4._0.data } : result$4;
   console.log(
-    `${value$13.TAG === "Ok" ? `Ok(${$debugStr(value$13._0)})` : `Err(${$debugStr(value$13._0)})`}`,
+    `${value$17.TAG === "Ok" ? `Ok(${$debugStr(value$17._0)})` : `Err(${$debugStr(value$17._0)})`}`,
   );
 
   const once = {};
@@ -398,9 +487,9 @@ function main() {
       throw new Error("not yet");
     }),
   );
-  const value$14 = once.value;
+  const value$18 = once.value;
   console.log(
-    `${caught.TAG === "Err"} ${value$14 == null ? "None" : `Some(${value$14})`} ${$getOrInitLock(once, () => 7)}`,
+    `${caught.TAG === "Err"} ${value$18 == null ? "None" : `Some(${value$18})`} ${$getOrInitLock(once, () => 7)}`,
   );
   for (let i = 0; i < 2; i++) {
     const caught = $catchUnwind(() => $forceLock(TABLE).length);

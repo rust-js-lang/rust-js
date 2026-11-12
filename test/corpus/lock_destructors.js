@@ -5,6 +5,7 @@ import {
   $live,
   $lock,
   $lockRead,
+  $poison,
   $rcClone,
   $rcDrop,
   $unborrow,
@@ -49,12 +50,11 @@ function main() {
     try {
       value.value.push(["c"]);
     } catch (error) {
-      $cleanup(() => {
-        $unlock(value);
-      }, error);
+      $poison(value);
       throw error;
+    } finally {
+      $unborrow(value);
     }
-    $unlock(value);
     const value$1 = $lockRead(l);
     console.log(`${value$1.value.length} held`);
     $unborrow(value$1);

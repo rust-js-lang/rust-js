@@ -2,10 +2,10 @@
 
 import {
   $byteLen,
-  $cleanup,
   $debugStr,
   $lock,
   $lockRead,
+  $poison,
   $tryLock,
   $unborrow,
   $unlock,
@@ -53,12 +53,11 @@ function main() {
       }
     }
   } catch (error) {
-    $cleanup(() => {
-      $unlock(g);
-    }, error);
+    $poison(g);
     throw error;
+  } finally {
+    $unborrow(g);
   }
-  $unlock(g);
   const value = $tryLock(m, true);
   if (value.TAG === "Ok") {
     console.log(`${value._0.value}`);
@@ -116,12 +115,11 @@ function main() {
       $unborrow(e._0.data);
     }
   } catch (error) {
-    $cleanup(() => {
-      $unlock(w);
-    }, error);
+    $poison(w);
     throw error;
+  } finally {
+    $unborrow(w);
   }
-  $unlock(w);
   const value$2 = $lockRead(l);
   console.log(`${value$2.value}`);
   $unborrow(value$2);

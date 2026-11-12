@@ -134,13 +134,17 @@ that calls an exported function again, or a drop a panic runs: there
   as std's records `thread::panicking()` as it's taken; a reading guard
   never does. The runtime keeps which locks are poisoned in a `WeakSet`,
   so a lock is still `{ value }`.
-- **Only a cleanup a panic runs knows one unwinds** (`$cleanup`, ADR
-  1126): a `finally` runs either way. So a drop that asks, `$unlock` or
-  `thread::panicking()`, is in no `finally` (`drops::finally_holds`): a
-  guard's scope is one `try { .. } catch (error) { $cleanup(() =>
-  $unlock(g), error); throw error; }` and the `$unlock(g)` after it, where
-  it was `try { .. } finally { $unborrow(g); }`; and a failed bounds
-  check's drops run in `$cleanup` before it throws.
+- **A `finally` runs either way, so it can't tell that a panic unwinds;
+  a `catch` can.** A drop that asks, `$unlock` or `thread::panicking()`,
+  is in no `finally` (`drops::finally_holds`). A guard's scope keeps its
+  one `finally`, which releases it on every way out, `return`, `break`,
+  `continue` and `?` too, and a `catch` marks its poison:
+  `try { .. } catch (error) { $poison(g); throw error; } finally {
+  $unborrow(g); }` (`drops::poisoned_and_released`, `$unlock`'s parts).
+  Elsewhere `$unlock` asks `$cleanup`, which runs what a panic drops: a
+  failed bounds check's drops run in it before it throws. A guard taken
+  as a panic unwinds is marked so as it's taken, and its drop poisons
+  nothing.
 - **A `LazyLock` whose init panics is poisoned for good**, each later use
   panicking `LazyLock instance has previously been poisoned`, as std's; it
   was refused as an init that used itself. A `OnceLock`'s init that panics

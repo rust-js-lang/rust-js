@@ -35,7 +35,7 @@ mod inlined;
 mod parts;
 pub(in crate::lower) use parts::{
     aborting_finally, catches_unwind, cleanup, dropped_after, dropped_unwinding, each_dropped, finally_holds,
-    is_aborting, is_cleanup, live_guarded, may_throw, unseen,
+    is_aborting, is_cleanup, live_guarded, may_throw, poisoned_and_released, unseen,
 };
 mod ref_cells;
 mod scopes;

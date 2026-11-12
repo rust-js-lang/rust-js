@@ -13,6 +13,7 @@ import {
   $lockRead,
   $next,
   $panicking,
+  $poison,
   $rcClone,
   $rcDrop,
   $recvItems,
@@ -43,22 +44,20 @@ function main() {
       try {
         value.value.push(2);
       } catch (error) {
-        $cleanup(() => {
-          $unlock(value);
-        }, error);
+        $poison(value);
         throw error;
+      } finally {
+        $unborrow(value);
       }
-      $unlock(value);
       const value$1 = $lock(shared.value);
       try {
         console.log(`[${value$1.value.join(", ")}] ${shared.strong}`);
       } catch (error) {
-        $cleanup(() => {
-          $unlock(value$1);
-        }, error);
+        $poison(value$1);
         throw error;
+      } finally {
+        $unborrow(value$1);
       }
-      $unlock(value$1);
       const held = $tryLock(shared.value, true);
       console.log(`${held.TAG === "Ok"}`);
       let held$live = false;

@@ -2,12 +2,12 @@
 
 import {
   $byteLen,
-  $cleanup,
   $debugStr,
   $displayF64,
   $index,
   $lock,
   $lockRead,
+  $poison,
   $unborrow,
   $unlock,
   $unpoisoned,
@@ -23,27 +23,23 @@ function record(stats, name) {
   try {
     s.value.names.push(name);
   } catch (error) {
-    $cleanup(() => {
-      $unlock(s);
-    }, error);
+    $poison(s);
     throw error;
+  } finally {
+    $unborrow(s);
   }
-  $unlock(s);
 }
 
 function total(shared, f) {
   const value = $lock(shared);
-  let result;
   try {
-    result = f(value.value);
+    return f(value.value);
   } catch (error) {
-    $cleanup(() => {
-      $unlock(value);
-    }, error);
+    $poison(value);
     throw error;
+  } finally {
+    $unborrow(value);
   }
-  $unlock(value);
-  return result;
 }
 
 function main() {
@@ -57,12 +53,11 @@ function main() {
   try {
     console.log(`${hits} [${value$1.value.names.map((item) => $debugStr(item)).join(", ")}]`);
   } catch (error) {
-    $cleanup(() => {
-      $unlock(value$1);
-    }, error);
+    $poison(value$1);
     throw error;
+  } finally {
+    $unborrow(value$1);
   }
-  $unlock(value$1);
 
   const count = { value: 5 };
   const value$2 = $lock(count);
@@ -81,12 +76,11 @@ function main() {
   try {
     value$5.value.push(3);
   } catch (error) {
-    $cleanup(() => {
-      $unlock(value$5);
-    }, error);
+    $poison(value$5);
     throw error;
+  } finally {
+    $unborrow(value$5);
   }
-  $unlock(value$5);
   const value$6 = $lockRead(config);
   const len = value$6.value.length;
   $unborrow(value$6);

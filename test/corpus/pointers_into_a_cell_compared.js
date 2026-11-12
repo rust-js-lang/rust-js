@@ -4,6 +4,7 @@ import {
   $borrow,
   $cleanup,
   $lock,
+  $poison,
   $ptr,
   $ptrAdd,
   $ptrEq,
@@ -119,12 +120,11 @@ function main() {
           `${pDebug_fmt($borrow(cell))} ${o == null ? "None" : `Some(${pDebug_fmt(o)})`} ${counter.count}`,
         );
       } catch (error) {
-        $cleanup(() => {
-          $unlock(tmp$1);
-        }, error);
+        $poison(tmp$1);
         throw error;
+      } finally {
+        $unborrow(tmp$1);
       }
-      $unlock(tmp$1);
     } finally {
       $unborrow(tmp);
     }
