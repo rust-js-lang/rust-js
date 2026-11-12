@@ -3,11 +3,12 @@
 import {
   $capacity,
   $extend,
+  $foldToArray,
   $grownBy,
   $grownVec,
   $iter,
-  $lazyRange,
   $next,
+  $rangeNext,
   $roomForHint,
   iterator_flatMap,
 } from "@rust-js/std";
@@ -92,7 +93,21 @@ function main() {
     ),
   );
   console.log(`[${q.join(", ")}]`);
-  const plain = Array.from($lazyRange(0, 3).flatMap((n) => [n, n]));
+  const plain = $foldToArray(
+    $roomForHint(
+      iterator_flatMap(
+        { start: 0, end: 3 },
+        (n) => [n, n],
+        { next: $rangeNext },
+        itemsIntoIterator,
+        true,
+        2,
+        false,
+      ),
+      4,
+      true,
+    ),
+  );
   const arg = $capacity(plain, 4);
   console.log(`[${plain.join(", ")}] ${arg}`);
 }

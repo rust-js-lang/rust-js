@@ -10,20 +10,30 @@ import {
   $cycleOf,
   $debugStr,
   $extend,
-  $flattenEnds,
+  $foldOf,
   $grownBy,
   $grownVec,
   $iter,
   $iterator,
-  $lazyRange,
+  $knowing,
   $lazyZip,
   $mapEnds,
   $next,
+  $nextBack,
   $rangeNext,
   $repeating,
   $rev,
   $roomForHint,
   $successors,
+  $tryOf,
+  flatMapDoubleEndedIterator_nextBack,
+  flatMapDoubleEndedIterator_tryRfold,
+  iterator_flatMap,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -36,6 +46,44 @@ function counterIterator_next(counter) {
 }
 
 function main() {
+  const mapIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({
+      next: $next,
+      fold: $foldOf,
+      getUnchecked: mapIterator___iteratorGetUnchecked,
+    }),
+  };
+  const doubleEndedIterator = {
+    next_back: mapDoubleEndedIterator_nextBack,
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
   const powers = $grownVec(
     $roomForHint(
       $successors(1n, (n) => $bigChecked(n * 3n, 0n, 18446744073709551615n)).take(5),
@@ -65,7 +113,50 @@ function main() {
   const rows = [[1, 2], [3], [4, 5, 6]];
   const back = $grownVec(
     $roomForHint(
-      $rev($flattenEnds($iter(rows), (row) => $mapEnds($iter(row), (x) => (x + 1) | 0))),
+      $rev(
+        $knowing(
+          iterator_flatMap(
+            $iter(rows),
+            (row) => iterator_map($iter(row), (x) => (x + 1) | 0),
+            { next: $next },
+            mapIntoIterator,
+            true,
+            undefined,
+            false,
+          ),
+          (iterator) =>
+            flatMapDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $next },
+              { next_back: $nextBack },
+              mapIntoIterator,
+              doubleEndedIterator,
+              true,
+              false,
+            ),
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            flatMapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              mapIntoIterator,
+              doubleEndedIterator,
+              $tryOf(broke),
+              true,
+              false,
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
+      ),
       4,
       false,
     ),
@@ -76,10 +167,23 @@ function main() {
   const bytes = [1, 2, 3];
   const taken = $grownVec(
     $roomForHint(
-      bytes
-        .values()
-        .flatMap((b) => $lazyRange(0, b).map((i) => (i * b) & 255))
-        .take(4),
+      iterator_flatMap(
+        $iter(bytes),
+        (b) => iterator_map({ start: 0, end: b }, (i) => (i * b) & 255, { next: $rangeNext }),
+        { next: $next },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({
+            next: $next,
+            fold: $foldOf,
+            getUnchecked: (iterator, i) =>
+              mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+          }),
+        },
+        true,
+        undefined,
+        false,
+      ).take(4),
       1,
       false,
     ),

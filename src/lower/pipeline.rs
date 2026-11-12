@@ -75,7 +75,8 @@ pub fn lower_crate<'tcx>(
     // decides it (#1327).
     let ground = super::analysis::ground(tcx, all_bodies, dependencies, (library, std_bodies), instances);
     for bodies in [&mut *all_bodies, &mut *initializers] {
-        super::body_queries::decide_in_place(ground.recognition(tcx), bodies, &ground.cloned, std_iterators);
+        let facts = (&ground.cloned, ground.keeps_capacity());
+        super::body_queries::decide_in_place(ground.recognition(tcx), bodies, facts, std_iterators);
     }
     let (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]) = (all_bodies, initializers);
     let AnalyzedCrate {

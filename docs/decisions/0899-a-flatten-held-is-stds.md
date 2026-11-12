@@ -480,3 +480,59 @@ and lost the `OneShot` a flatten of an impl's `option::IntoIter` hints by,
 `collect_of_an_impls_own_associated_type.rs` and
 `flatten_of_a_traits_one_shot_items_hinted.rs` against native Rust;
 mutation `impl-carried-built-type-unasked`.
+
+## Amendment (2026-11-12, #1528): held where a `Vec` it grows keeps its capacity
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept (P0).
+
+#1327 said a capacity the crate reads "is std's already, by the growth
+that #1180 keeps". It wasn't, of a flatten. std's `Vec` asks room for its
+iterator's hint's lower bound, which of a flatten is what's left of the
+inner iterator it's in; JS's own `flatMap` has no hint, so its lower
+bound read 0. `let mut fm = v.iter().flat_map(|&x| vec![x; 12]);
+fm.next(); let rest: Vec<u32> = fm.collect();` gave a capacity of 64
+where native Rust gives 46, a `flatten()` stepped twice 64 for 44, a
+`skip(3)` of one 64 for 42, one collected at once 16 for 20. Only the
+plain build was wrong; in the build of std's iterator structs a flatten is
+always std's. `refuse_unkept_lower_bound` didn't refuse it, as
+`lower_bound_is_stds` answers yes of what isn't an array's iterator.
+
+Of a crate that keeps capacities (`Ground::keeps_capacity`, now the one
+answer, which the analysis read twice as `asks_capacity ||
+foreign.keeps_capacity()`), a collect or an extend that grows a `Vec`
+sees its iterator's hint: `hint_asks.rs`' `grows_vec_by`, beside
+`vec_grown_by`, says what a call is given at an index is the iterator it
+grows a `Vec` by, a `collect()`'s receiver or an `extend`'s iterable. It
+seeds `in_place_adapters`' `wanted` as `collect_hint_seen` does, so a
+flatten given there, or under an adapter given there, `skip(3)`, is held,
+std's struct. A variable a `let` binds a flatten to, or an adapter of
+one, `flat_map(f).rev()`, read only where it's stepped as a JS iterator,
+was made in place whatever stepped it; one such step that sees its hint
+now keeps it from being made in place (`hint_seen`), and so the flatten
+it holds, given to an adapter held. The JS is std's struct's,
+`iterator_flatMap(..)`, as of a flatten whose `size_hint()` is asked
+(#1323): longer, and correct. Of a crate that reads no capacity, a
+flatten is made in place as it was.
+
+The rule holds a flatten whatever its source, as none made in place
+knows std's lower bound once it's stepped: a range's, whose `$Steps`
+`flatMap` asks `$flatHint` of an inner iterator that's JS's own array
+iterator, gave 64 for 46 too, and so did a `rev()` of one, `$flattenEnds`.
+Two snapshots changed so, each flatten collected where its capacity is
+read now held: `flatten_collected_where_its_hint_is_seen`'s range
+`flat_map` and `vec_grown_by_iterators_whose_hint_is_stds`' `rev()` of a
+`flat_map`, both collected before they're stepped, which matched native
+Rust as they were.
+
+`test/corpus/flat_map_collected_where_capacity_is_read.rs` holds a
+`flat_map` stepped then collected, a `flatten` stepped twice, a `skip(3)`
+of one, one collected at once, a `Vec`'s `extend`, a range's, a `rev()`
+of one a `let` holds and inners of different lengths, against native
+Rust in both builds; the compiler before this change gives 64, 64, 64,
+16, 64 and 64. Mutations: `capacity-growth-hint-unseen`,
+`held-flatten-hint-unseen` and `held-flatten-by-its-own-type-alone`
+(`lower/body_queries/in_place.ts`), `grows-vec-by-collect-at-its-iterable`
+(`lower/iterators/hint_asks.ts`); `local-adapter-held` and
+`collect-hint-seen-made-in-place` re-anchored. Left as it was: cloning a
+`FlatMap` is refused in both builds, before and after.

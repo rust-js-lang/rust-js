@@ -387,4 +387,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },
+  {
+    name: "grows-vec-by-collect-at-its-iterable",
+    breaks:
+      "a `collect()`'s receiver isn't taken for what it grows a `Vec` by, so a `flat_map` collected in a crate that reads capacities is JS's own `flatMap`, of no hint: a capacity of 64 where native Rust's is 46 (#1528)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            true => 0,\n            false => 1,\n",
+    replace: "            true => 1,\n            false => 1,\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+  },
 ];

@@ -13,6 +13,9 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+/// A call's callee, its generic arguments and the index of what it's given.
+type Called<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, usize);
+
 /// Which of `HELD_COMPILED`'s adapters each body makes in place, decided
 /// once the crate's `Recognition` exists, before anything reads it
 /// (`InPlace`): of each body, `in_place_adapters` given what the crate's
@@ -26,11 +29,14 @@ use rustc_span::def_id::DefId;
 /// where it reaches a `size_hint` of the crate's own or a library's
 /// (`collect_hint_seen`): a flatten given one there is held, std's struct,
 /// which knows its items' constant size, which its callers or its trait's
-/// dictionaries give (#1327, #1341). Of the build of std's iterator structs, none (ADR 0908).
+/// dictionaries give (#1327, #1341); and of a crate that keeps capacities,
+/// a `Vec`'s collect or extend, whose capacity is its iterator's hint's
+/// lower bound, which JS's own `flatMap` hasn't (`grows_vec_by`, #1528). Of
+/// the build of std's iterator structs, none (ADR 0908).
 pub(in crate::lower) fn decide<'tcx>(
     recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &mut [crate::lower::Body<'tcx>],
-    cloned: &crate::lower::analysis::Cloned<'tcx>,
+    (cloned, keeps_capacity): (&crate::lower::analysis::Cloned<'tcx>, bool),
     std_iterators: bool,
 ) {
     let tcx = recognition.tcx;
@@ -45,7 +51,10 @@ pub(in crate::lower) fn decide<'tcx>(
         let owner = body.def_id;
         let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
         let cloned_apart = |ty| crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner);
-        let observed = |at: (DefId, usize), given: ty::Ty<'tcx>| recognition.collect_hint_seen(at, given);
+        let observed = |(callee, args, index): Called<'tcx>, given: ty::Ty<'tcx>| {
+            recognition.collect_hint_seen((callee, index), given)
+                || keeps_capacity && recognition.grows_vec_by((callee, args, index), made_in.1)
+        };
         let hint_lost = |made: ty::Ty<'tcx>| recognition.in_place_hint_lost(made);
         in_place_adapters(
             tcx,
@@ -102,7 +111,7 @@ pub(super) fn in_place_adapters<'tcx>(
     cloned_apart: impl Fn(ty::Ty<'tcx>) -> bool,
     (hint_asked, observed, hint_lost): (
         &IndexSet<DefId>,
-        &impl Fn((DefId, usize), ty::Ty<'tcx>) -> bool,
+        &impl Fn(Called<'tcx>, ty::Ty<'tcx>) -> bool,
         &impl Fn(ty::Ty<'tcx>) -> bool,
     ),
 ) -> IndexSet<Span> {
@@ -176,6 +185,67 @@ pub(super) fn in_place_adapters<'tcx>(
         let made = tcx.fn_sig(maker).instantiate_identity().skip_binder().output();
         crate::lower::recognition::flattened_source(tcx, made).is_some()
     };
+    // A variable a `let` binds one to, `let mut it = s.chars().enumerate()`,
+    // read only where `Iterator`'s methods step it as a JS iterator, `next()`,
+    // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
+    // `drop`, never given anywhere else: nothing tells what it is, so it's
+    // what the recognizers make of it too, `s.entries()`.
+    let made: IndexMap<LocalVarId, Span> = (thir.stmts.iter())
+        .filter_map(|stmt| match stmt.kind {
+            thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                else_block: None,
+                ..
+            } => match (&pattern.kind, &thir[strip(thir, init)].kind, thir[strip(thir, init)].ty) {
+                (
+                    &PatKind::Binding {
+                        var,
+                        mode: BindingMode(ByRef::No, _),
+                        subpattern: None,
+                        ..
+                    },
+                    &ExprKind::Call { fun, fn_span, .. },
+                    made,
+                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
+                    Some((var, fn_span))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    // A variable that holds a flatten, or an adapter of one, `rev()`'s,
+    // read where its hint is asked, `let mut it = v.iter().flat_map(f);
+    // it.next(); it.collect()` of a crate that keeps capacities
+    // (`observed`): the variable isn't made in place, so neither is the
+    // flatten it holds, std's struct, as one given there at once is (#1528).
+    let holds_flatten = |held: ty::Ty<'tcx>| {
+        (held.peel_refs().walk().filter_map(|part| part.as_type()))
+            .any(|part| crate::lower::recognition::flattened_source(tcx, part).is_some())
+    };
+    let mut hint_seen: IndexSet<LocalVarId> = IndexSet::default();
+    for e in thir.exprs.indices() {
+        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
+            continue;
+        };
+        let Some((callee, generic_args)) = crate::lower::fn_def(thir[fun].ty) else {
+            continue;
+        };
+        for (index, &arg) in args.iter().enumerate() {
+            let arg = match thir[strip(thir, arg)].kind {
+                ExprKind::Borrow { arg, .. } => strip(thir, arg),
+                _ => strip(thir, arg),
+            };
+            if let ExprKind::VarRef { id } = thir[arg].kind
+                && made.contains_key(&id)
+                && holds_flatten(thir[arg].ty)
+                && observed((callee, generic_args, index), thir[arg].ty)
+            {
+                hint_seen.insert(id);
+            }
+        }
+    }
     // What's given where its hint is asked: to `size_hint()`, to a function
     // of the crate's that asks the hint of what it's given (`asked_of_own`,
     // the hint's owner's), or to a library's, whose body, which the crate
@@ -199,7 +269,7 @@ pub(super) fn in_place_adapters<'tcx>(
             else {
                 continue;
             };
-            let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+            let Some((callee, generic_args)) = crate::lower::fn_def(thir[fun].ty) else {
                 continue;
             };
             let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
@@ -213,7 +283,7 @@ pub(super) fn in_place_adapters<'tcx>(
                     continue;
                 };
                 let asks = match inputs.get(index) {
-                    _ if observed((callee, index), thir[arg].ty) => true,
+                    _ if observed((callee, generic_args, index), thir[arg].ty) => true,
                     _ if adapts && index == 0 => wanted.contains(&at),
                     Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),
                     None => false,
@@ -286,36 +356,6 @@ pub(super) fn in_place_adapters<'tcx>(
     {
         found.insert(fn_span);
     }
-    // A variable a `let` binds one to, `let mut it = s.chars().enumerate()`,
-    // read only where `Iterator`'s methods step it as a JS iterator, `next()`,
-    // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
-    // `drop`, never given anywhere else: nothing tells what it is, so it's
-    // what the recognizers make of it too, `s.entries()`.
-    let made: IndexMap<LocalVarId, Span> = (thir.stmts.iter())
-        .filter_map(|stmt| match stmt.kind {
-            thir::StmtKind::Let {
-                ref pattern,
-                initializer: Some(init),
-                else_block: None,
-                ..
-            } => match (&pattern.kind, &thir[strip(thir, init)].kind, thir[strip(thir, init)].ty) {
-                (
-                    &PatKind::Binding {
-                        var,
-                        mode: BindingMode(ByRef::No, _),
-                        subpattern: None,
-                        ..
-                    },
-                    &ExprKind::Call { fun, fn_span, .. },
-                    made,
-                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
-                    Some((var, fn_span))
-                }
-                _ => None,
-            },
-            _ => None,
-        })
-        .collect();
 
     let mut reads: IndexMap<LocalVarId, usize> = IndexMap::default();
     for e in thir.exprs.iter() {
@@ -407,6 +447,7 @@ pub(super) fn in_place_adapters<'tcx>(
             let of = made_of.get(&var).map_or(&[][..], Vec::as_slice);
             let all = uses.len() + of.len();
             if !found.contains(&at)
+                && !hint_seen.contains(&var)
                 && all > 0
                 && reads.get(&var) == Some(&all)
                 && of.iter().all(|maker| found.contains(maker))

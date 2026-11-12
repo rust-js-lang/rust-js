@@ -27,6 +27,14 @@ pub(in crate::lower) struct Ground<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Ground<'a, 'tcx> {
+    /// Whether a `Vec`'s capacity is kept as std grows it: the crate asks
+    /// it, or a library it uses does, which what the crate gives it may be
+    /// asked (ADR 0419). The one answer, read before the bodies are told
+    /// which adapters each makes in place (#1528) and by the analysis.
+    pub(in crate::lower) fn keeps_capacity(&self) -> bool {
+        self.asks_capacity || self.foreign.keeps_capacity()
+    }
+
     /// The crate's `Recognition`, of its trait impls and libraries.
     pub(in crate::lower) fn recognition(&self, tcx: TyCtxt<'tcx>) -> Recognition<'_, 'tcx> {
         Recognition {

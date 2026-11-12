@@ -94,6 +94,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .map(|iterable| crate::lower::recognition::iterator_type_of(self.tcx, typing_env, iterable))
     }
 
+    /// Whether what a call of `callee` is given at `index` is the iterator
+    /// it grows a `Vec` by (`vec_grown_by`): a `collect()`'s receiver, an
+    /// `extend`'s iterable. Of a crate that keeps capacities, the program
+    /// sees that iterator's hint, whose lower bound is the room std asks
+    /// (#1528).
+    pub(in crate::lower) fn grows_vec_by(
+        &self,
+        (callee, args, index): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>, usize),
+        typing_env: ty::TypingEnv<'tcx>,
+    ) -> bool {
+        let iterator = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator);
+        let at = match callee == crate::lower::recognition::trait_method(self.tcx, iterator, "collect") {
+            true => 0,
+            false => 1,
+        };
+        index == at && self.vec_grown_by(callee, args, typing_env).is_some()
+    }
+
     /// Whether `def_id` is an `extend` std's collection asks its hint of as
     /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
     pub(in crate::lower) fn extend_grows(

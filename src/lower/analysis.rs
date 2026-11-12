@@ -303,6 +303,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // libraries and its trait impls (`ground.rs`), made before the bodies
     // were told which adapters each makes in place.
     let all_bodies = ground.harness.left_out(tcx, all_bodies);
+    let keeps_capacity = ground.keeps_capacity();
     let Ground {
         harness: ground::Harness { markers, .. },
         writer_facts,
@@ -731,8 +732,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     scopes.retain(|s| !counted.counts(tcx, tcx.type_of(s.adt).instantiate_identity().skip_normalization()));
     // What it steps from its back (ADR 0545, #814, #851), and of an array's
     // items with a destructor, which its native forms don't step.
-    // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
-    let keeps_capacity = asks_capacity || foreign.keeps_capacity();
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
     let mut back_stepped = back_stepped::of_crate(
         tcx,
@@ -1048,7 +1047,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         drops: &items_drop,
         taken: &drop_params,
     };
-    let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
+    let kept = (item_drops, keeps_capacity);
     let facts = type_fact_params(
         tcx,
         all_bodies,

@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     "name": "local-adapter-held",
     "breaks": "an `enumerate()` a variable holds that only `next()` steps is std's struct, not `entries()`",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            if !found.contains(&at)\n                && all > 0\n",
-    "replace": "            if false\n                && all > 0\n",
+    "find": "            if !found.contains(&at)\n                && !hint_seen.contains(&var)\n",
+    "replace": "            if false\n                && !hint_seen.contains(&var)\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "collect-hint-seen-made-in-place",
     breaks: "a flatten collected where the program sees the hint std's collect asks is made in place, JS's own `flatMap`, which knows no items' constant size: its source's printing `size_hint` asked three times where std asks once (#1327)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "                    _ if observed((callee, index), thir[arg].ty) => true,\n",
+    find: "                    _ if observed((callee, generic_args, index), thir[arg].ty) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
   },
@@ -286,5 +286,32 @@ export const mutations: Mutation[] = [
     find: "        if callee == into_iter && !at.is_desugaring(rustc_span::DesugaringKind::ForLoop) {\n",
     replace: "        if callee == into_iter && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(into_iter_of_a_map_given_on|adapter_shown_and_cloned_generically).rs$"],
+  },
+  {
+    name: "capacity-growth-hint-unseen",
+    breaks:
+      "a `flat_map` a `Vec` grows by in a crate that reads capacities is made in place, JS's own `flatMap`, which has no hint, so the `Vec`'s capacity is 64 where native Rust's is 46 (#1528)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                || keeps_capacity && recognition.grows_vec_by((callee, args, index), made_in.1)\n",
+    replace: "                || false && recognition.grows_vec_by((callee, args, index), made_in.1)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "held-flatten-hint-unseen",
+    breaks:
+      "a `flat_map` a `let` holds, stepped, then collected into a `Vec` in a crate that reads capacities, is made in place, JS's own `flatMap`, which has no hint, so the `Vec`'s capacity is 64 where native Rust's is 46 (#1528)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                && !hint_seen.contains(&var)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "held-flatten-by-its-own-type-alone",
+    breaks:
+      "a `rev()` of a `flat_map` a `let` holds, stepped, then collected into a `Vec` in a crate that reads capacities, is made in place, `$rev` of JS's own `flatMap`, which has no hint: a capacity of 64 where native Rust's is 46 (#1528)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "        (held.peel_refs().walk().filter_map(|part| part.as_type()))\n",
+    replace: "        [held.peel_refs()].into_iter()\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
   },
 ];
