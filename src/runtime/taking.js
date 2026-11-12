@@ -1,12 +1,17 @@
-// `it.take(n)` explicit, Rust's `Take` (ADR 0542): what it steps, `iter`,
-// and how many it has left to take, `n`, kept, which a clone reads. Its
-// back is the last of those it has left, the ones past it dropped by
-// `drop` where items have a destructor, as Rust's `next_back` steps its
-// source's `nth_back`; its length the fewer of its source's and `n`.
+// `it.take(n)` explicit, Rust's `Take` (ADR 0542), the one `Take`: a
+// `$Steps`' `take(n)` is it too (#830). What it steps, `iter`, and how many
+// it has left to take, `n`, kept, which a clone reads. Of a source that
+// knows its length, its back is the last of those it has left, the ones
+// past it dropped by `drop` where items have a destructor, as Rust's
+// `next_back` steps its source's `nth_back`; its length the fewer of its
+// source's and `n`.
 function $taking(iter, n, drop) {
+  const done = { done: true, value: undefined };
   const taking = new $Steps(
     () => {
-      if (taking.n === 0) return { done: true, value: undefined };
+      // At its limit, what it steps is done with, unless it's held, whose
+      // owner drops it (ADR 0570, #206).
+      if (taking.n === 0) return taking.held ? done : $closed(taking.iter);
       taking.n--;
       return taking.iter.next();
     },
@@ -16,15 +21,17 @@ function $taking(iter, n, drop) {
   taking.n = n;
   // Std's `Take::size_hint`, of what it has left to take.
   taking.sizeHint = () => $takeHint(taking.iter, taking.n);
-  // Std's `Take::next_back`: its source's `nth_back` past what it won't
-  // give, the crate's own where it reaches it (#220).
-  taking.back = () => {
-    if (taking.n === 0) return { done: true, value: undefined };
-    const past = Math.max(taking.iter.len() - taking.n, 0);
-    taking.n--;
-    return $nthBackOf(taking.iter, past, drop);
-  };
-  taking.len = () => Math.min(taking.iter.len(), taking.n);
+  if (iter.len !== undefined) {
+    // Std's `Take::next_back`: its source's `nth_back` past what it won't
+    // give, the crate's own where it reaches it (#220).
+    taking.back = () => {
+      if (taking.n === 0) return done;
+      const past = Math.max(taking.iter.len() - taking.n, 0);
+      taking.n--;
+      return $nthBackOf(taking.iter, past, drop);
+    };
+    taking.len = () => Math.min(taking.iter.len(), taking.n);
+  }
   // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
   // as many as it has left, which drops what it passes itself where it
   // can, a reversed `Vec`'s as one slice, front to back, else each by
@@ -57,11 +64,48 @@ function $taking(iter, n, drop) {
       taking.n = 0;
       if (!step.done) dropItem?.(step.value);
     }
-    return { done: true, value: undefined };
+    // Past its end, what it steps done with, unless it's held (#242).
+    return taking.held ? done : $closed(taking.iter);
+  };
+  // Std's `Take::try_fold`: its source's, stopped once it's taken `n`;
+  // asked again there, or stopped there by its limit, not by what it gave,
+  // which its caller still steps, its source done with, as its `next`
+  // closes it (ADR 0570, #225, #242). Not closed at its limit, `kept`, by
+  // its fold, which closes it after what drops with its `f` (#710).
+  const tryFoldOf = (init, g, broke, unwind, kept, ends) => {
+    if (taking.n === 0) {
+      if (!taking.held && !kept) $closed(taking.iter);
+      return init;
+    }
+    let full = false;
+    let stopped = false;
+    const folded = taking.iter.tryFold(
+      init,
+      (a, x) => {
+        taking.n--;
+        full = taking.n === 0;
+        return g(a, x);
+      },
+      (a) => (stopped = broke(a)) || full,
+      unwind,
+      ends,
+    );
+    if (full && !stopped && !taking.held && !kept) $closed(taking.iter);
+    return folded;
+  };
+  const tryFold = (init, g, broke, unwind, ends) => tryFoldOf(init, g, broke, unwind, false, ends);
+  // Std's `Take::fold`: its `try_fold`, never stopped, so a `Skip`'s inside
+  // asks its source's `nth(n - 1)`, then its source dropped with it (#213),
+  // after what drops with `g`, `ends` (#710).
+  const fold = (init, g, unwind, ends) => {
+    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true), ends);
+    $closedAfter(ends, () => $closed(taking.iter));
+    return folded;
   };
   $ownsAs(taking, iter, "nth");
   if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
-  $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === "function" ? nth : undefined });
+  const of = (name, step) => (typeof iter[name] === "function" ? step : undefined);
+  $forward(taking, iter, { advanceBy, count, nth: of("nth", nth), tryFold: of("tryFold", tryFold), fold: of("tryFold", fold) });
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {

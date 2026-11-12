@@ -238,3 +238,37 @@ a chain's `rfold` does (`back_kept`'s per-type set, #814). Held by
 `take(n).rev()`: `advance_back_by` drops `D(5)`, then `nth_back`'s `D(4)`
 is dropped. First bad commit afdd70519; it ran as native from 892d78a8f
 on. Held by `take_rev_trims_from_the_back_in_each_holder.rs`, both builds.
+
+## Amendment (2026-11-12, #830): one `Take`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; one authority. The
+runtime had two `Take`s, each with its own copy of std's: `$Steps`' `take(n)`
+(`nth`, `try_fold`, `fold`, and its source closed at its limit unless held)
+and `$taking` (the back steps, `nth_back`, `rfold`, `try_rfold`, and no close
+at its limit), chosen by whether a take must know its back or length. As
+#735 did for `Skip`, `$taking` is now the one `Take`, with every step of
+both, and `$Steps.prototype.take(n)` is `$taking(this, n)`.
+
+- **Its limit closes its source unless it's held**, `$Steps`' rule ([ADR
+  0570](0570-a-closing-source-is-dropped-when-done.md)): a chain stepped to
+  its end is done with. `$taking` made unheld had left its source to its
+  consumer's close at the chain's end, which is the same moment for each
+  consumer that runs to the end; probes of both forms with droppers
+  through `map`, `count`, `nth`, `fold`, `try_fold`, `enumerate`, `rev`,
+  `zip` and a `for` agree with native Rust either way.
+- **`try_fold` and `fold` are its source's**, stopped at its limit, where
+  the source has a `try_fold`, as std's `Take` calls its source's.
+- **Its back and length exist only of a source that knows its length.**
+  `$Steps`' `take` had none, and `$taking` was only ever made of a source
+  that knows it. Rust steps a `Take` from its back only where its source
+  is `DoubleEndedIterator + ExactSizeIterator`, so no valid program reaches
+  the difference; the guard keeps a take of a lengthless source from
+  claiming a back, held as `$assign`'s guard is, by test/runtime-package's
+  "a take of a source that doesn't know its length has no back", and
+  mutation `take-back-of-a-lengthless-source`.
+
+Every mutation of the two moved to `taking.js`'s list, re-anchored; the
+pairs that became one (`nth` of its own, `nth` past its end's drop) are
+one, with both cases. The corpus, the iterator matrix's, conformance
+table's and panic points' `take` cases agree with native Rust in both
+builds.

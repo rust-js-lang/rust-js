@@ -290,99 +290,10 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     flat.sizeHint = () => $flatHint(inner, ended ? undefined : this);
     return flat;
   }
-  // Std's `Take`: each of its `n` steps steps its source, a `None` too.
+  // Std's `Take`, JS's name for it: the one `Take`, `$taking`'s, of its
+  // items, which nothing here drops (#830).
   take(n) {
-    const taken = new $Steps(
-      () => {
-        // At its limit, what it steps is done with, unless it's held,
-        // whose owner drops it (ADR 0570, #206).
-        if (n === 0) return taken.held ? { done: true, value: undefined } : this.return();
-        n--;
-        return this.next();
-      },
-      () => this.return(),
-    );
-    taken.from = [this];
-    // Its `nth` drops what it passes over itself where its source's does, a
-    // reversed `Vec`'s, as one slice, by each item's drop, its source's or
-    // the one it's given (#261, #286).
-    $ownsAs(taken, this, "nth");
-    if (this.ownNth && this.dropItem !== undefined) taken.dropItem = this.dropItem;
-    // Its `nth(k)`, std's: its source's, where it has more than `k` left;
-    // else its source's past what it has left, and done.
-    const nth = (k, drop = taken.dropItem) => {
-      if (n > k) {
-        n -= k + 1;
-        return this.nth(k, drop);
-      }
-      // Past its end, its source's `nth(n - 1)`, whose item std's `Take::nth`
-      // drops, where its source says how (#261).
-      if (n > 0) {
-        const step = this.nth(n - 1, drop);
-        if (!step.done) drop?.(step.value);
-      }
-      n = 0;
-      // Past its end, what it steps done with, unless it's held, whose
-      // owner drops it (#242).
-      return taken.held ? { done: true, value: undefined } : this.return();
-    };
-    // Its `try_fold`, std's: its source's, stopped once it's taken `n`;
-    // asked again there, or stopped there by its limit, not by what it
-    // gave, which its caller still steps, its source done with, as its
-    // `next` closes it (ADR 0570, #225, #242).
-    // Not closed at its limit, `kept`, by its fold, which closes it after
-    // what drops with its `f` (#710).
-    const tryFoldOf = (init, g, broke, unwind, kept, ends) => {
-      if (n === 0) {
-        if (!taken.held && !kept) this.return();
-        return init;
-      }
-      let full = false;
-      let stopped = false;
-      const folded = this.tryFold(
-        init,
-        (a, x) => {
-          n--;
-          full = n === 0;
-          return g(a, x);
-        },
-        (a) => (stopped = broke(a)) || full,
-        unwind,
-        ends,
-      );
-      if (full && !stopped && !taken.held && !kept) this.return();
-      return folded;
-    };
-    const tryFold = (init, g, broke, unwind, ends) => tryFoldOf(init, g, broke, unwind, false, ends);
-    // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
-    // inside asks its source's `nth(n - 1)`, then its source dropped with it
-    // (#213), after what drops with `g`, `ends` (#710).
-    const fold = (init, g, unwind, ends) => {
-      const folded = $consumed(this, () => tryFoldOf(init, g, () => false, unwind, true), ends);
-      $closedAfter(ends, () => this.return());
-      return folded;
-    };
-    // Its `advance_by(m)` and `count`, std's: its source advanced, by as
-    // many as it has left, which asks no `nth` (#213).
-    const advanceBy = (m, drop) => {
-      const min = Math.min(n, m);
-      const advanced = min - this.advanceBy(min, drop);
-      n -= advanced;
-      return m - advanced;
-    };
-    // Closed though its source's step throws, a panic, as `count(self)`
-    // drops what it took as it unwinds (#647).
-    const count = (drop) => {
-      const k = n;
-      n = 0;
-      const counted = k === 0 ? 0 : $consumed(this, () => k - this.advanceBy(k, drop));
-      this.return();
-      return counted;
-    };
-    $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
-    // Std's `Take::size_hint`, of what it has left to take.
-    taken.sizeHint = () => $takeHint(this, n);
-    return taken;
+    return $taking(this, n);
   }
   // Std's `Skip`, JS's name for it: the one `Skip`, `$skipping`'s, of its
   // items, which nothing here drops (#735).

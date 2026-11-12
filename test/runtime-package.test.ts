@@ -1076,6 +1076,22 @@ console.log(items.join(), map.size, set.size, JSON.stringify(fields));
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe('1,2 2 3 {"a":1,"b":2}\n');
 });
 
+// The one `Take`, `$taking`, has a back and a length only of a source that
+// knows its length: Rust steps a `Take` from its back only of an
+// `ExactSizeIterator`, so no program the compiler is given asks a back of
+// one that doesn't, and the guard is held here (#830).
+test("a take of a source that doesn't know its length has no back", () => {
+  const module = join(fixture("runtime-take-lengthless"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $taking, $iter } = await import(${JSON.stringify(module)});
+const lengthless = $taking([1, 2, 3].values(), 2);
+const known = $taking($iter([1, 2, 3]), 2);
+console.log(typeof lengthless.back, typeof lengthless.len, known.back().value, known.len());
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined undefined 2 1\n");
+});
+
 // A handle that reads a place it doesn't record, `{ get value() { .. } }`
 // of a `&mut` std lent from inside its storage, is on no allocation it
 // says: its address is refused, never a made-up one (#1474). A box's
