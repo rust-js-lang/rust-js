@@ -1264,3 +1264,87 @@ pub fn report() -> String {
   expect((await compiled(dir)).report()).toBe(expected);
 });
 
+// A crate's own `skip_serializing_if` predicate is called as serde_derive
+// calls it: once for each field to count what's written,
+// `serialize_struct(name, len)`, before any is, then again as each is; once
+// only where a field is flattened, `serialize_map(None)`. A predicate that
+// answers differently the second time changes the JSON, `{}` where it was
+// `{"n":7}` (#1543). Each call is logged, so its order is held too.
+test("serde: a skip predicate is called as serde_derive calls it", async () => {
+  const dir = fixture("serde-skip-counts");
+  writeFileSync(join(dir, "cases.rs"), `use serde::{Serialize, Serializer};
+use std::cell::{Cell, RefCell};
+thread_local! {
+    static ASKED: Cell<bool> = const { Cell::new(false) };
+    static LOG: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+fn note(s: String) {
+    LOG.with(|l| l.borrow_mut().push(s));
+}
+pub fn once(_: &u32) -> bool {
+    ASKED.with(|x| x.replace(true))
+}
+pub fn logged(n: &u32) -> bool {
+    note(format!("skip {n}"));
+    *n == 0
+}
+pub fn shown<S: Serializer>(n: &u32, s: S) -> Result<S::Ok, S::Error> {
+    note(format!("write {n}"));
+    s.serialize_u32(*n)
+}
+#[derive(Serialize)]
+pub struct Data { #[serde(skip_serializing_if = "once")] pub n: u32 }
+#[derive(Serialize)]
+pub struct Two {
+    #[serde(skip_serializing_if = "logged")] pub a: u32,
+    #[serde(serialize_with = "shown")] pub w: u32,
+    #[serde(skip_serializing_if = "logged", serialize_with = "shown")] pub b: u32,
+    #[serde(skip_serializing_if = "Option::is_none")] pub o: Option<u32>,
+}
+#[derive(Serialize)]
+pub struct Pair(#[serde(skip_serializing_if = "logged")] pub u32, #[serde(skip_serializing_if = "logged")] pub u32);
+#[derive(Serialize)]
+pub struct Rest { pub r: u32 }
+#[derive(Serialize)]
+pub struct Flat { #[serde(skip_serializing_if = "logged")] pub a: u32, #[serde(flatten)] pub rest: Rest }
+#[derive(Serialize)]
+pub struct Inner { #[serde(skip_serializing_if = "logged")] pub i: u32, #[serde(skip_serializing_if = "logged")] pub j: u32 }
+#[derive(Serialize)]
+pub enum External { S { #[serde(skip_serializing_if = "logged")] a: u32, #[serde(skip_serializing_if = "logged")] b: u32 }, T(#[serde(skip_serializing_if = "logged")] u32, u32) }
+#[derive(Serialize)]
+#[serde(tag = "t")]
+pub enum Internal { S { #[serde(skip_serializing_if = "logged")] a: u32, #[serde(skip_serializing_if = "logged")] b: u32 }, N(Inner) }
+#[derive(Serialize)]
+#[serde(tag = "t", content = "c")]
+pub enum Adjacent { S { #[serde(skip_serializing_if = "logged")] a: u32, #[serde(skip_serializing_if = "logged")] b: u32 }, T(#[serde(skip_serializing_if = "logged")] u32, u32) }
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Untagged { S { #[serde(skip_serializing_if = "logged")] a: u32, #[serde(skip_serializing_if = "logged")] b: u32 } }
+macro_rules! write {
+    ($out:ident, $value:expr) => {
+        let json = serde_json::to_string(&$value).map_err(|e| e.to_string());
+        let log = LOG.with(|l| l.borrow_mut().drain(..).collect::<Vec<_>>().join(", "));
+        $out.push_str(&format!("{:?} [{}]\\n", json, log));
+    };
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    write!(out, Data { n: 7 });
+    write!(out, Two { a: 1, w: 2, b: 0, o: None });
+    write!(out, Two { a: 0, w: 2, b: 3, o: Some(4) });
+    write!(out, Pair(0, 5));
+    write!(out, Flat { a: 1, rest: Rest { r: 2 } });
+    write!(out, External::S { a: 1, b: 0 });
+    write!(out, External::T(0, 2));
+    write!(out, Internal::S { a: 1, b: 2 });
+    write!(out, Internal::N(Inner { i: 0, j: 3 }));
+    write!(out, Adjacent::S { a: 0, b: 2 });
+    write!(out, Adjacent::T(1, 2));
+    write!(out, Untagged::S { a: 1, b: 0 });
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

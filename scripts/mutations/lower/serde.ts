@@ -188,4 +188,63 @@ export const mutations: Mutation[] = [
       "own writer|own reader"
     ]
   },
+  {
+    name: "skip-count-uncalled",
+    breaks: "a crate's own skip predicate is called once, as a field's written, not first to count what's written: one that answers differently the second time writes `{\"n\":7}` for `{}` (#1543)",
+    file: "src/lower/serde.rs",
+    find: "            counts.push(StmtKind::Expr(test).at(js::Span::NONE));\n",
+    replace: "            let _ = test;\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "skip predicate is called as"
+    ]
+  },
+  {
+    name: "skip-count-flattened",
+    breaks: "a struct with a flattened field counts its fields' skip predicates, which serde's `serialize_map(None)` doesn't (#1543)",
+    file: "src/lower/serde.rs",
+    find: "        Ok(if flattened { Vec::new() } else { counts })\n",
+    replace: "        Ok(counts)\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "skip predicate is called as"
+    ]
+  },
+  {
+    name: "skip-count-of-a-variant-unwritten",
+    breaks: "a tuple or struct variant, other than adjacently tagged, doesn't count its skip predicates (#1543)",
+    file: "src/lower/serde.rs",
+    find: "        if !adjacent {\n            out.extend(counts.iter().cloned());\n",
+    replace: "        if false {\n            out.extend(counts.iter().cloned());\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "skip predicate is called as"
+    ]
+  },
+  {
+    name: "skip-count-of-an-internal-newtype-unwritten",
+    breaks: "an internally tagged newtype variant's struct doesn't count its skip predicates (#1543)",
+    file: "src/lower/serde.rs",
+    find: "                let counts = self.skip_counts(variant, &fields, span)?;\n                out.extend(counts);\n                out.extend(opening);\n",
+    replace: "                out.extend(opening);\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "skip predicate is called as"
+    ]
+  },
+  {
+    name: "skip-count-of-std-made",
+    breaks: "std's skip predicates, which only ask what they're given, are counted too, a statement of no effect where the guide's `Order` has none (#1543)",
+    file: "src/lower/serde.rs",
+    find: "            if (self.resolved_skip(field.did)).is_some_and(|f| self.recognition().skip_predicate(f, *ty).is_some()) {\n",
+    replace: "            if false {\n",
+    tests: [
+      "test/docs.test.ts"
+    ],
+    snapshots: true
+  },
 ];

@@ -728,12 +728,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(())
                 }
                 Some(CtorKind::Fn) => {
+                    let counts = self.skip_counts(variant, &fields, span)?;
+                    out.extend(counts);
                     self.emit(json, "beginTupleStruct", Vec::new(), out);
                     self.write_tuple_fields(json, variant, &fields, span, out)?;
                     self.emit(json, "endArray", Vec::new(), out);
                     Ok(())
                 }
                 None => {
+                    let counts = self.skip_counts(variant, &fields, span)?;
+                    out.extend(counts);
                     self.emit(json, "beginObject", Vec::new(), out);
                     self.write_struct_tag(json, adt, &container, out);
                     self.write_fields(json, variant, &fields, container.rename_all, span, out)?;
@@ -857,6 +861,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value: Expr,
         json: &str,
         ty: Ty<'tcx>,
+        opening: Vec<Stmt>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
@@ -889,16 +894,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     "an internally tagged newtype variant whose field has its own writer",
                 ));
             }
-            return self.write_internal_fields(value, json, ty, span, out);
+            return self.write_internal_fields(value, json, ty, opening, span, out);
         }
         match variant.ctor_kind() {
+            // The struct counts what it writes before the tagged serializer
+            // opens it, `{"t":"A"` (`skip_counts`).
             None => {
+                let counts = self.skip_counts(variant, &fields, span)?;
+                out.extend(counts);
+                out.extend(opening);
                 self.write_struct_tag(json, adt, &attrs, out);
                 self.write_fields(json, variant, &fields, attrs.rename_all, span, out)
             }
-            Some(CtorKind::Const) => Ok(()),
+            Some(CtorKind::Const) => {
+                out.extend(opening);
+                Ok(())
+            }
             Some(CtorKind::Fn) => Err(self.unsupported(span, "an internally tagged tuple struct")),
         }
+    }
+
+    /// serde_derive's count of what a struct, a tuple struct or a variant of
+    /// them writes, `serialize_struct(name, len)`: each `skip_serializing_if`
+    /// predicate called before any field is written, then again as each is,
+    /// as statements, in its fields' order. A crate's own predicate may
+    /// answer each call differently, or show it; std's (`skip_predicate`)
+    /// only asks what it's given, so its count is nothing. None where a field
+    /// is flattened: serde then writes a map of no length,
+    /// `serialize_map(None)` (#1543).
+    fn skip_counts(&mut self, variant: &ty::VariantDef, fields: &[(Expr, Ty<'tcx>)], span: Span) -> R<Vec<Stmt>> {
+        let mut counts = Vec::new();
+        let mut flattened = false;
+        for (field, (value, ty)) in variant.fields.iter().zip(fields) {
+            let attrs = self.serde_attrs(field.did)?;
+            flattened |= attrs.flatten;
+            let Some(path) = attrs.skip_serializing_if.filter(|_| !attrs.skip_serializing) else {
+                continue;
+            };
+            if (self.resolved_skip(field.did)).is_some_and(|f| self.recognition().skip_predicate(f, *ty).is_some()) {
+                continue;
+            }
+            let test = self.skip_test(field.did, &path, value.clone(), *ty, span)?;
+            counts.push(StmtKind::Expr(test).at(js::Span::NONE));
+        }
+        Ok(if flattened { Vec::new() } else { counts })
     }
 
     /// A struct's (or a struct variant's) fields, inside its `{ .. }`.
@@ -1138,6 +1177,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if codec.is_some() && matches!(tagging, Tagging::Internal(_)) {
             return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer"));
         }
+        // A tuple or struct variant's count of what it writes: before it's
+        // opened, or adjacently tagged, before its content, which serde
+        // writes as a struct of its own (`skip_counts`).
+        let counts = match kind {
+            Some(CtorKind::Fn) if fields.len() == 1 => Vec::new(),
+            Some(CtorKind::Const) => Vec::new(),
+            _ => self.skip_counts(variant, fields, span)?,
+        };
+        let adjacent = matches!(tagging, Tagging::Adjacent(..));
         // The variant's content, without its tag.
         let content = |this: &mut Self, out: &mut Vec<Stmt>| -> R<()> {
             match kind {
@@ -1149,12 +1197,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.write_field(codec.clone(), fields[0].0.clone(), json, fields[0].1, span, out)
                 }
                 Some(CtorKind::Fn) => {
+                    if adjacent {
+                        out.extend(counts.iter().cloned());
+                    }
                     this.emit(json, "beginTuple", Vec::new(), out);
                     this.write_tuple_fields(json, variant, fields, span, out)?;
                     this.emit(json, "endArray", Vec::new(), out);
                     Ok(())
                 }
                 None => {
+                    if adjacent {
+                        out.extend(counts.iter().cloned());
+                    }
                     this.emit(json, "beginObject", Vec::new(), out);
                     this.write_fields(json, variant, fields, fields_rule, span, out)?;
                     this.emit(json, "endObject", Vec::new(), out);
@@ -1162,6 +1216,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         };
+        if !adjacent {
+            out.extend(counts.iter().cloned());
+        }
         match tagging {
             Tagging::External if kind == Some(CtorKind::Const) => {
                 self.emit(json, "variant", vec![Expr::str(name)], out);
@@ -1184,18 +1241,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "endObject", Vec::new(), out);
             }
             Tagging::Internal(tag) => {
-                self.emit(json, "beginObject", Vec::new(), out);
-                self.emit(json, "key", vec![Expr::str(tag.as_str())], out);
-                self.emit(json, "string", vec![Expr::str(name)], out);
+                let mut opening = Vec::new();
+                self.emit(json, "beginObject", Vec::new(), &mut opening);
+                self.emit(json, "key", vec![Expr::str(tag.as_str())], &mut opening);
+                self.emit(json, "string", vec![Expr::str(name)], &mut opening);
                 match kind {
-                    Some(CtorKind::Const) => {}
-                    None => self.write_fields(json, variant, fields, fields_rule, span, out)?,
-                    // A newtype variant of a struct: the struct's fields, beside the tag.
+                    Some(CtorKind::Const) | None => out.extend(opening),
+                    // A newtype variant of a struct: the struct's fields, beside
+                    // the tag, opened after the struct's count.
                     Some(CtorKind::Fn) if fields.len() == 1 => {
                         let (inner, inner_ty) = fields[0].clone();
-                        self.write_internal_fields(inner, json, inner_ty, span, out)?;
+                        self.write_internal_fields(inner, json, inner_ty, opening, span, out)?;
                     }
                     Some(CtorKind::Fn) => return Err(self.unsupported(span, "an internally tagged tuple variant")),
+                }
+                if kind.is_none() {
+                    self.write_fields(json, variant, fields, fields_rule, span, out)?;
                 }
                 self.emit(json, "endObject", Vec::new(), out);
             }

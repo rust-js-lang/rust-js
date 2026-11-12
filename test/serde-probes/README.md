@@ -27,5 +27,5 @@ baseline, as `run-one.sh` does one. It prints the source of each program whose o
 that gave native Rust's answer no longer does. Name programs to run only those; `--record` writes this run's Bun
 outcomes to `outcomes.txt`. It runs as many programs at once as `atOnce` says of tests.
 
-`outcomes.txt` at `6dd1ef3a1`, Bun 1.4.4 and Node 24, the same on both: 241 same, 90 refused, 9 compiler panics,
-15 different, 3 native-invalid. Of the review's 28 `different`, 12 now give native Rust's answer and `pos_19` is refused.
+`outcomes.txt` at #1543's fix, Bun 1.4.4 and Node 24, the same on both: 242 same, 90 refused, 9 compiler panics,
+14 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since #1543). Of the review's 28 `different`, 12 now give native Rust's answer and `pos_19` is refused.

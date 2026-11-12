@@ -84,6 +84,15 @@ $toJson(order, orderSerialize_serialize, false);
 - Field skips apply to tuple structs and tuple variants as well as named
   fields. Custom skip predicates use rustc's resolved function from the
   derive, preserving module scope and import aliases.
+  Each is called as serde_derive calls it (amended, #1543): a struct, a
+  tuple struct or a variant of them counts what it writes first,
+  `serialize_struct(name, len)`, calling each field's predicate in turn
+  before any field is written, then again as each is; once only where a
+  field is flattened, which serde writes as a map of no length. A crate's
+  own predicate may answer the second call differently, so the JSON
+  depends on it (ADR 0262: results change, so Rust's behavior is kept);
+  std's (`Option::is_none`, `is_empty`) only ask what they're given, so
+  their count is nothing and `Order` is written as before.
 - A variant's `untagged` overrides its container's tagging. Named structs
   include their own `tag` and serialized type name. Internally tagged
   newtype variants unwrap transparent/newtype payloads before writing fields.
