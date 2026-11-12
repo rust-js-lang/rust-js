@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
   },
+  {
+    name: "rewritten-not-mutated",
+    breaks: "an object kept inside a place written over, `$assign(t.r, value.r)`, isn't changed in place, so a `Copy` value read from it shares the object the write changes (#1484)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                for place in std::iter::once(written).chain(kept) {\n",
+    replace: "                for place in std::iter::once(written).chain(kept.into_iter().take(0)) {\n",
+    tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
+  },
 ];

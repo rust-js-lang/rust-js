@@ -19,6 +19,10 @@ for (const [name, source, message, crate] of [
   // at 2, in a crate that asks that type's address: one JS can't be both, so
   // refused, never let through as a shared one's copy (#1478).
   ["a generic as_mut of numbers its instances keep at different offsets", "pub fn bump<T: Copy + std::ops::AddAssign + From<u8>, E>(r: &mut Result<T, E>) { if let Ok(x) = r.as_mut() { *x += T::from(1) } }\npub fn f(a: &mut Result<u8, u16>, b: &mut Result<u16, u8>, m: u8, n: u16) -> usize { let at = &raw const m as usize + &raw const n as usize; bump(a); bump(b); at }", "`std::result::Result::<T, E>::as_mut` in a crate that asks an address (#1478)"],
+  // A local whose address is taken, moved out and assigned again: the
+  // value moved holds its object, so the write can't be over it, and
+  // another object would be at another address (#1484).
+  ["a local whose address is taken, moved out and assigned again", "pub struct N(u8);\npub fn f() -> (usize, usize, u8) { let mut m = N(1); let at = &raw const m as usize; let kept = m; m = N(2); (at, &raw const m as usize, kept.0 + m.0) }", "a place whose address is taken, assigned whole where it may hold a value or not, or after it's moved out (#1484)"],
   // An object std lends from inside its receiver, in a crate that asks
   // that type's address, is no record's: refused (#1475), where a `&mut` to
   // a number is a handle on its place (#1474).

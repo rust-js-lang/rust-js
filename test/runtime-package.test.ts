@@ -1092,6 +1092,25 @@ console.log(typeof lengthless.back, typeof lengthless.len, known.back().value, k
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined undefined 2 1\n");
 });
 
+// One key, two places: an `Ok`'s `_0` at 1 and, once the `Result` is
+// written over with an `Err`, its `_0` at 2 (#1484). Each its own handle,
+// at its own offset; the same offset the same handle, and a handle given
+// none the one there is.
+test("a key at another offset is another place's handle", () => {
+  const module = join(fixture("runtime-key-at-another-offset"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $addr, $assign, $ptr, $ptrTo } = await import(${JSON.stringify(module)});
+const r = { TAG: "Ok", _0: 5 };
+const base = $addr($ptrTo(r), 4);
+const ok = $ptr(r, "_0", 1);
+$assign(r, { TAG: "Err", _0: 6 });
+const err = $ptr(r, "_0", 2);
+console.log(err === ok, $addr(ok, 1) - base, $addr(err, 2) - base, $ptr(r, "_0", 2) === err, $ptr(r, "_0") === ok, err.value);
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("false 1 2 true true 6\n");
+});
+
 // A handle that reads a place it doesn't record, `{ get value() { .. } }`
 // of a `&mut` std lent from inside its storage, is on no allocation it
 // says: its address is refused, never a made-up one (#1474). A box's

@@ -6,6 +6,7 @@ use crate::lower::aggregates::Given;
 use crate::lower::generic_facts::Form;
 
 mod boxed_args;
+mod rewritten;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_assign(
@@ -633,6 +634,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.cuts.insert(place.local, (test, cut, variant));
             return Ok(());
         }
+        // A local or a field a raw pointer is taken to or into, an object
+        // written whole again: written over what it holds, `$assign(p, v)`
+        // (#1484, `rewritten.rs`).
+        let Some(value) = self.rewritten_write(state, place, value, span, out)? else {
+            return Ok(());
+        };
         // A strip's cut given to a local read once: read there, `stack =
         // stack.slice(29)`.
         if place.projection.is_empty()

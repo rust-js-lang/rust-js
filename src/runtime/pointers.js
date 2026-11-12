@@ -36,25 +36,37 @@ function $ptr(object, key, offset, root, at) {
   }
   let handles = $places.get(object);
   if (handles === undefined) $places.set(object, (handles = new Map()));
+  const made = () => ({
+    of: object,
+    at: key,
+    offset,
+    root,
+    rootAt: at,
+    get value() {
+      return $slot(object, key);
+    },
+    set value(value) {
+      object[key] = value;
+    },
+  });
   let handle = handles.get(key);
+  // The key of another variant, at another offset, `r._0` of an `Ok` and
+  // then of an `Err` the object was written over with: another place, a
+  // handle of its own (#1484).
+  if (handle !== undefined && typeof offset === "number" && typeof handle.offset === "number" && handle.offset !== offset) {
+    handle.others ??= new Map();
+    const other = handle.others.get(offset);
+    if (other !== undefined) return other;
+    const placed = made();
+    handle.others.set(offset, placed);
+    return placed;
+  }
   if (handle !== undefined && root !== undefined && (handle.root === undefined || !$rooted(handle))) {
     handle.root = root;
     handle.rootAt = at;
   }
   if (handle === undefined) {
-    handle = {
-      of: object,
-      at: key,
-      offset,
-      root,
-      rootAt: at,
-      get value() {
-        return $slot(object, key);
-      },
-      set value(value) {
-        object[key] = value;
-      },
-    };
+    handle = made();
     handles.set(key, handle);
   }
   return handle;

@@ -1429,3 +1429,52 @@ library that asks no address still refuses such a pointer where it's made
 once-cell-lent-at-its-option, lazy-cell-lent-at-its-state,
 peekable-lent-past-one-option, result-err-lent-at-ok, lend-never-placed,
 placed-lend-pointer-refused and heap-top-handle-placeless, each caught.
+
+## Amendment: a place assigned whole again is written over (#1484)
+
+A local's address is its place's, the same however often it's assigned.
+JS's `p = v`, of a value JS holds as an object (a struct, a tuple, an
+array, an enum), makes the variable another object, and an object's
+pointer, `$ptrTo(p)`, is by the object: the pointer taken before read the
+old value at the old address, where native wasm32 reads the new one at
+the same. The same of a field, `s.f = v` after `&raw const s.f`, and of a
+whole whose field a pointer is into, `s = S { .. }` after `&raw const
+s.f.b`.
+
+Now each place a raw pointer is taken to or into, a local, a field of one
+or an array's item, `a[0].f` (an index matching any, as which one it is
+isn't known here; a write over one that isn't is still Rust's), written
+whole after its first write, is written over what it holds,
+`$assign(p, v)`, so its object, the place its pointers are of, stays the
+one it is. An object inside it a pointer is into is written over first and
+put back in the value, deepest first, `$assign(s.f, value.f); value.f =
+s.f; $assign(s, value);`, as `$assign` is shallow. A local's first write
+makes it. What a `Drop` left, rustc's drop before a value with drop glue is
+assigned, is written over: the old value drops at the assignment, as in
+Rust. A place that may hold a value or not there, or holds none after a
+move out with a pointer to it made, is refused: written over, it would
+change the value moved, and made, it would be another address. Only
+bodies that take such a pointer change: one owner, `rewritten_places`
+(src/lower/pointers.rs), says which writes, which the lowering writes and
+the crate's analysis of what changes in place reads, of the place and each
+object kept inside it, so a `Copy` value read out of one is copied (ADR
+0052). A raw pointer's pointee is counted already; an object it's inside,
+`t.r` of `&raw const t.r.1`, wasn't. An `Option` or a `Box` local,
+whose pointer is a cell's already, is unchanged.
+
+Written over, one object holds, in turn, places Rust keeps apart: an
+`Ok`'s `_0` at offset 1 and an `Err`'s `_0` at 2 of a `Result<u8, u16>`,
+one key. `$ptr` gave the handle it had made of the key, at the first
+offset; now a key at another offset is another place, a handle of its own,
+and a handle given no offset the one there is (src/runtime/pointers.js;
+a runtime-package test, mutation key-one-handle-at-any-offset).
+
+Case "results change" (ADR 0262). Proved by the corpus case
+address_kept_when_assigned_again, run natively on wasm32, which reads
+through each old pointer after each write: a struct, a tuple, an array, a
+`Result`, a field, a whole a pointer is into, a call's result, a loop, a
+value with drop glue and a `Vec`; and a diagnostics case of the refusal.
+Mutations reassigned-pointed-made-again, dropped-taken-for-moved,
+moved-written-over, field-pointers-unseen, inner-objects-unkept,
+inner-object-not-put-back, rewritten-not-mutated and
+key-one-handle-at-any-offset.

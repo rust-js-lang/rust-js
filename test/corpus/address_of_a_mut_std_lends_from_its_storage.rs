@@ -58,10 +58,8 @@ macro_rules! sweep {
                 let base = &raw const r as usize;
                 let ok = ok_ptr(&mut r) as usize - base;
                 // A new `as_mut` once its variant's changed, at the new
-                // variant's offset, from where `r` is now: a local assigned
-                // again keeps its address in Rust, not yet in JS (#1484).
+                // variant's offset, of the same place (#1484).
                 r = Err($w);
-                let base = &raw const r as usize;
                 let err = err_ptr(&mut r) as usize - base;
                 println!("{} result ok {ok} err {err}", stringify!($name));
                 let mut c: OnceCell<$t> = OnceCell::new();

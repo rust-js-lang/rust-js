@@ -755,4 +755,12 @@ export const mutations: Mutation[] = [
     replace: "  }\n",
     tests: ["test/runtime-package.test.ts", "-t", "a pointer to a place handle's value is that handle"],
   },
+  {
+    name: "key-one-handle-at-any-offset",
+    breaks: "a key's handle at one offset is given for the key at another, the `Err`'s `_0` at the `Ok`'s offset once the `Result` is written over (#1484)",
+    file: "src/runtime/pointers.js",
+    find: "  if (handle !== undefined && typeof offset === \"number\" && typeof handle.offset === \"number\" && handle.offset !== offset) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a key at another offset is another place's handle"],
+  },
 ];

@@ -25,8 +25,10 @@ mod casts;
 mod catalog;
 mod into_copies;
 mod lending;
+mod rewritten;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;
+pub(in crate::lower) use rewritten::{Rewritten, rewritten_places, within_items};
 
 /// A pointer into what JS may hold a copy of, a slice's or a constant's,
 /// whose place isn't the one it's a copy of: refused, in these words.
@@ -266,7 +268,7 @@ pub(super) struct Pointed {
 }
 
 /// `lent_copies`, each reference a call gives that's a copy in JS, `s.as_bytes()`'s.
-fn pointed_locals(body: &mir::Body<'_>, lent_copies: IndexSet<Local>) -> Pointed {
+pub(super) fn pointed_locals_of(body: &mir::Body<'_>, lent_copies: IndexSet<Local>) -> Pointed {
     let mut refs: IndexMap<Local, Option<Local>> = IndexMap::default();
     let mut taken = Vec::new();
     let mut borrowed = IndexSet::default();
@@ -391,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `body` takes raw pointers to, of what isn't an object, whose
     /// pointer is the object's: its cells.
     pub(super) fn pointed_locals(&self, body: &mir::Body<'tcx>) -> Pointed {
-        let mut pointed = pointed_locals(body, self.lent_copies(body));
+        let mut pointed = pointed_locals_of(body, self.lent_copies(body));
         pointed.locals.retain(|&local| {
             let ty = body.local_decls[local].ty;
             !self.is_object(ty) || self.mut_ref_form(ty).is_cell()

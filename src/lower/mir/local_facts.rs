@@ -32,6 +32,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
     /// whose `value` is the place it points to (ADR 0407).
     pointed: crate::lower::pointers::Pointed,
+    /// How each whole write of a local a raw pointer is taken to, an object
+    /// assigned whole again, is written (#1484).
+    rewritten: IndexMap<mir::Location, (crate::lower::pointers::Rewritten, Vec<mir::Place<'tcx>>)>,
     /// Where each range or constant pattern is, `2..=5` or `1.0`, whose
     /// tests MIR writes bound or constant first, `2 <= k`, `1 == kind`.
     tested: Vec<Span>,
@@ -184,6 +187,13 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 
     pub(super) fn pointed(&self) -> &crate::lower::pointers::Pointed {
         &self.pointed
+    }
+
+    pub(super) fn rewritten(
+        &self,
+        at: mir::Location,
+    ) -> Option<&(crate::lower::pointers::Rewritten, Vec<mir::Place<'tcx>>)> {
+        self.rewritten.get(&at)
     }
 
     pub(super) fn tested(&self) -> &[Span] {
@@ -467,6 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter_map(|(local, rest)| rest.then_some(local))
                 .collect(),
             pointed: self.pointed_locals(body),
+            rewritten: self.rewritten_writes(body),
             tested: self.tested_patterns(),
             jumps: self.written_jumps(),
             payloads: self.mir_payloads(body, locals),

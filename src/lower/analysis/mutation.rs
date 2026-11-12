@@ -20,6 +20,22 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
     let mut mutated = IndexSet::default();
     for body in all_bodies {
         custom_mir_writes(tcx, body, &mut mutated);
+        // A place a raw pointer is taken to or into, written whole again,
+        // which is written over what it holds, `$assign(p, v)`, and each
+        // object inside it a pointer is into (#1484): changed in place, so a
+        // copy of it is made where one is read. A pointer's pointee is
+        // already, below; an object it's inside isn't.
+        if let Some(mir) = &body.mir {
+            for (_, written, kept) in crate::lower::pointers::rewritten_places(tcx, &mir.body) {
+                // And each object inside it kept, written over first.
+                for place in std::iter::once(written).chain(kept) {
+                    let ty = place.ty(&mir.body.local_decls, tcx).ty;
+                    if object_like(tcx, ty) {
+                        mutated.insert(ty);
+                    }
+                }
+            }
+        }
         // A `let`'s pattern's too, `let (a, _) = &mut t;`, and a closure's
         // or a function's parameter's, `|(a, b)|` of `iter_mut()`'s items,
         // `for_each(|(a, b)| *a += 1)` as a `for` loop's pattern (#1076).
