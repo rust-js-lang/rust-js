@@ -730,7 +730,11 @@ error thrown, as a derived codec's; one it looks at, `match
 seq.serialize_element(&x)`, `is_err()`, `map_err`, a `let _ =`, is that
 `Result`, `$jsonTry(..)`'s, with what the writer wrote before the error
 kept as serde_json keeps it
-([ADR 0459](../../decisions/0459-hand-written-serde-impls.md)).
+([ADR 0459](../../decisions/0459-hand-written-serde-impls.md)). Its
+`serialize_u128` and `serialize_i128` are each serializer's own: text
+writes the digits, a `Value` holds one that fits in an `i64` or a `u64`
+and else is serde_json's `number out of range`, and a flattened one is
+serde's `u128 is not supported`.
 
 ## Rust's `std`
 

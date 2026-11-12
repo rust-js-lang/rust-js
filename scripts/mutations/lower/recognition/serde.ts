@@ -54,4 +54,12 @@ export const mutations: Mutation[] = [
     replace: "            _ => SerdeOp::Field,\n",
     tests: ["test/serde.test.ts", "-t", "collects and writes variants"],
   },
+  {
+    name: "serde-u128-width-lost",
+    breaks: "`serialize_u128` is taken as a narrower integer's, so a `Value` of `u128::MAX` is an impossible `Number`, not serde_json's `number out of range` (#1547)",
+    file: "src/lower/recognition/serde.rs",
+    find: '            "serialize_u128" => SerdeOp::Write(SerdeScalar::Int { wide: Some("u128") }),\n',
+    replace: '            "serialize_u128" => SerdeOp::Write(SerdeScalar::Int { wide: None }),\n',
+    tests: ["test/serde-protocol.test.ts", "-t", "a 128-bit integer is written by each serializer"],
+  },
 ];

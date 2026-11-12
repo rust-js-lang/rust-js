@@ -22,4 +22,12 @@ export const mutations: Mutation[] = [
       "TaggedSerializer writes it"
     ]
   },
+  {
+    name: "flat-wide-int-said-as-integer",
+    breaks: "a flattened 128-bit integer says flatten's `can only flatten structs and maps (got an integer)`, not serde's default `u128 is not supported`, which its flattening serializer doesn't override (#1547)",
+    file: "src/runtime/to_json.js",
+    find: "      if (wide !== undefined && depth === 0) throw $jsonError(`${wide} is not supported`);\n",
+    replace: "",
+    tests: ["test/serde-protocol.test.ts", "-t", "a 128-bit integer is written by each serializer"],
+  },
 ];

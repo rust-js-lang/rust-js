@@ -9,6 +9,12 @@
 function $jsonInt(n) {
   return { kind: n < 0 ? "i" : "u", value: n };
 }
+// A 128-bit one's, serde_json's `serialize_i128` and `serialize_u128` of its
+// value serializer: an error unless it fits in an `i64` or a `u64` (#1547).
+function $jsonWideInt(n) {
+  if (n < -9223372036854775808n || n > 18446744073709551615n) throw $jsonError("number out of range");
+  return $jsonInt(n);
+}
 function $jsonFloat(x) {
   return Number.isFinite(x) ? { TAG: "Number", _0: { kind: "f", value: x } } : "Null";
 }
@@ -171,7 +177,7 @@ function $toJsonValue(value, write) {
   const builder = {
     null: () => put("Null"),
     bool: (b) => put({ TAG: "Bool", _0: b }),
-    int: (n) => put({ TAG: "Number", _0: $jsonInt(n) }),
+    int: (n, wide) => put({ TAG: "Number", _0: wide === undefined ? $jsonInt(n) : $jsonWideInt(n) }),
     number: (x) => put($jsonFloat(x)),
     char: string,
     string,

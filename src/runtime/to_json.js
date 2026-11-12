@@ -20,6 +20,7 @@ function $jsonWriter(pretty) {
     text: "",
     null() { this.text += "null"; },
     bool(b) { this.text += String(b); },
+    // A 128-bit one's, `wide`, `"i128"` or `"u128"`, its digits too.
     int(n) { this.text += String(n); },
     // An `f32`'s, `single`, with its own digits, as serde_json writes it (ADR 0122).
     number(x, single) { this.text += single ? $jsonF32(x) : $jsonNumber(x); },
@@ -63,7 +64,13 @@ function $jsonFlat(into, within) {
   const flat = {
     null() { if (depth > 0) into.null(); },
     bool(b) { top("a boolean"); into.bool(b); },
-    int(n) { top("an integer"); into.int(n); },
+    // A 128-bit one, which serde's own serializers don't override: its
+    // default's error.
+    int(n, wide) {
+      if (wide !== undefined && depth === 0) throw $jsonError(`${wide} is not supported`);
+      top("an integer");
+      into.int(n, wide);
+    },
     number(x, single) { top("a float"); into.number(x, single); },
     char(c) { top("a char"); into.char(c); },
     string(s) { top("a string"); into.string(s); },

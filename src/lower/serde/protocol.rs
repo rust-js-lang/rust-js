@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SerdeOp::Write(scalar) => {
                 let method = match scalar {
                     SerdeScalar::Bool => "bool",
-                    SerdeScalar::Int => "int",
+                    SerdeScalar::Int { .. } => "int",
                     SerdeScalar::Float { .. } => "number",
                     SerdeScalar::Char => "char",
                     SerdeScalar::Str => "string",
@@ -136,8 +136,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     SerdeScalar::Null => Vec::new(),
                     _ => vec![values.remove(0)],
                 };
-                if scalar == (SerdeScalar::Float { single: true }) {
-                    given.push(Expr::bool(true));
+                // A 128-bit integer, by its type's name, and an `f32`, which a
+                // writer tells apart.
+                match scalar {
+                    SerdeScalar::Int { wide: Some(wide) } => given.push(Expr::str(wide)),
+                    SerdeScalar::Float { single: true } => given.push(Expr::bool(true)),
+                    _ => {}
                 }
                 out.push(step(&json, method, given));
             }

@@ -351,3 +351,37 @@ mapping: `json-visit-owned-as-str`, `json-visit-borrowed-as-str`,
 `json-borrowed-str-of-escape` and `json-visit-copied-as-borrowed`
 refitted.
 
+## Amendment: a 128-bit integer is written by each serializer's own rule (2026-11-13, #1547)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Recognition took `serialize_i128` and `serialize_u128` as any other
+integer's, `SerdeScalar::Int`, the writer's `int(n)`, and a `Value`'s
+writer holds any BigInt. So `serde_json::to_value` of an impl that writes
+`u128::MAX` was `Ok(Number(340282366920938463463374607431768211455))`, a
+`Number` serde_json can't make, where native gives `Err(Error("number out
+of range", line: 0, column: 0))` (P0, both builds). The text and `Value`
+serializers aren't one: each has its own rule for a width.
+
+Now the scalar keeps its width, `SerdeScalar::Int { wide }`, `Some("i128")`
+or `Some("u128")` of a 128-bit one, and its writer is told it,
+`s.int(n, "u128")`, as an `f32` is told `single`. Each writer is serde's:
+
+| Writer | A 128-bit integer |
+|---|---|
+| text, `$jsonWriter` | its digits, as before |
+| a `Value`, `$toJsonValue` | `$jsonWideInt`: a `Number` where it fits in an `i64` or a `u64`, else `number out of range` |
+| flattened or internally tagged, `$jsonFlat`, at its top | serde's default, which these don't override: `u128 is not supported`, `i128 is not supported` |
+| within a flattened map | the object's own writer's |
+
+A derived field of 128 bits stays refused, read and written ([ADR
+0171](0171-128-bit-integers.md)). The serde-protocol test `a 128-bit
+integer is written by each serializer's own rule` holds both ends of
+each width, `u64::MAX` and one past, `i64::MIN` and one past, a failed
+element asked and written on after, a sequence, an untagged enum and the
+flattened cases, to text and to a `Value`, against native serde_json.
+Mutations `value-wide-int-unchecked`, `value-wide-int-signed-range`
+(`json_value.ts`), `flat-wide-int-said-as-integer` (`to_json.ts`),
+`serde-u128-width-lost` (recognition) and `serde-wide-int-ungiven`
+(protocol), caught.

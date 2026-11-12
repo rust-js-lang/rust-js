@@ -119,7 +119,12 @@ pub(in crate::lower) enum SerdeError {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(in crate::lower) enum SerdeScalar {
     Bool,
-    Int,
+    /// An integer: of 128 bits, `wide`, `i128` or `u128`, which a `Value`
+    /// holds only where it fits in an `i64` or a `u64`, and serde's own
+    /// serializers refuse by its name.
+    Int {
+        wide: Option<&'static str>,
+    },
     Float {
         single: bool,
     },
@@ -275,10 +280,10 @@ pub(in crate::lower) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Serde
         ("MapAccess", "next_entry") => SerdeOp::Next(SerdeNext::Entry),
         ("Serializer", name) => match name {
             "serialize_bool" => SerdeOp::Write(SerdeScalar::Bool),
-            "serialize_i8" | "serialize_i16" | "serialize_i32" | "serialize_i64" | "serialize_i128"
-            | "serialize_u8" | "serialize_u16" | "serialize_u32" | "serialize_u64" | "serialize_u128" => {
-                SerdeOp::Write(SerdeScalar::Int)
-            }
+            "serialize_i8" | "serialize_i16" | "serialize_i32" | "serialize_i64" | "serialize_u8" | "serialize_u16"
+            | "serialize_u32" | "serialize_u64" => SerdeOp::Write(SerdeScalar::Int { wide: None }),
+            "serialize_i128" => SerdeOp::Write(SerdeScalar::Int { wide: Some("i128") }),
+            "serialize_u128" => SerdeOp::Write(SerdeScalar::Int { wide: Some("u128") }),
             "serialize_f32" => SerdeOp::Write(SerdeScalar::Float { single: true }),
             "serialize_f64" => SerdeOp::Write(SerdeScalar::Float { single: false }),
             "serialize_char" => SerdeOp::Write(SerdeScalar::Char),

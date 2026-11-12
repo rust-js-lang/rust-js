@@ -14777,6 +14777,7 @@ export function $jsonWriter(pretty) {
     text: "",
     null() { this.text += "null"; },
     bool(b) { this.text += String(b); },
+    // A 128-bit one's, `wide`, `"i128"` or `"u128"`, its digits too.
     int(n) { this.text += String(n); },
     // An `f32`'s, `single`, with its own digits, as serde_json writes it (ADR 0122).
     number(x, single) { this.text += single ? $jsonF32(x) : $jsonNumber(x); },
@@ -14820,7 +14821,13 @@ export function $jsonFlat(into, within) {
   const flat = {
     null() { if (depth > 0) into.null(); },
     bool(b) { top("a boolean"); into.bool(b); },
-    int(n) { top("an integer"); into.int(n); },
+    // A 128-bit one, which serde's own serializers don't override: its
+    // default's error.
+    int(n, wide) {
+      if (wide !== undefined && depth === 0) throw $jsonError(`${wide} is not supported`);
+      top("an integer");
+      into.int(n, wide);
+    },
     number(x, single) { top("a float"); into.number(x, single); },
     char(c) { top("a char"); into.char(c); },
     string(s) { top("a string"); into.string(s); },
@@ -16944,6 +16951,12 @@ export function $fromJson(text, read) {
 export function $jsonInt(n) {
   return { kind: n < 0 ? "i" : "u", value: n };
 }
+// A 128-bit one's, serde_json's `serialize_i128` and `serialize_u128` of its
+// value serializer: an error unless it fits in an `i64` or a `u64` (#1547).
+export function $jsonWideInt(n) {
+  if (n < -9223372036854775808n || n > 18446744073709551615n) throw $jsonError("number out of range");
+  return $jsonInt(n);
+}
 export function $jsonFloat(x) {
   return Number.isFinite(x) ? { TAG: "Number", _0: { kind: "f", value: x } } : "Null";
 }
@@ -17106,7 +17119,7 @@ export function $toJsonValue(value, write) {
   const builder = {
     null: () => put("Null"),
     bool: (b) => put({ TAG: "Bool", _0: b }),
-    int: (n) => put({ TAG: "Number", _0: $jsonInt(n) }),
+    int: (n, wide) => put({ TAG: "Number", _0: wide === undefined ? $jsonInt(n) : $jsonWideInt(n) }),
     number: (x) => put($jsonFloat(x)),
     char: string,
     string,

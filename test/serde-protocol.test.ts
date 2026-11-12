@@ -482,3 +482,131 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A 128-bit integer a hand-written impl writes, `serialize_u128` or
+// `serialize_i128`, by each serializer's own rule (#1547): text writes its
+// digits; a `Value` holds it only where it fits in an `i64` or a `u64`,
+// else it's serde_json's "number out of range"; and serde's flattening and
+// tagging serializers, which don't override the trait's default, give its
+// "u128 is not supported". Within a flattened map it's the object's writer's.
+test("serde: a 128-bit integer is written by each serializer's own rule", async () => {
+  const dir = fixture("serde-protocol-128-bit");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::ser::SerializeSeq;
+use serde::{Serialize, Serializer};
+
+/// Writes itself by 'serialize_u128'.
+pub struct Wide(pub u128);
+
+impl Serialize for Wide {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_u128(self.0)
+    }
+}
+
+/// Writes itself by 'serialize_i128'.
+pub struct Signed(pub i128);
+
+impl Serialize for Signed {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_i128(self.0)
+    }
+}
+
+/// A sequence of both, an error asked and written on after.
+pub struct Both(pub u128, pub i128);
+
+impl Serialize for Both {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut seq = s.serialize_seq(None)?;
+        let wide = seq.serialize_element(&Wide(self.0)).is_err();
+        seq.serialize_element(&Signed(self.1))?;
+        seq.serialize_element(&wide)?;
+        seq.end()
+    }
+}
+
+/// The 64-bit ones, beside.
+pub struct Narrow(pub u64, pub i64);
+
+impl Serialize for Narrow {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut seq = s.serialize_seq(Some(2))?;
+        seq.serialize_element(&self.0)?;
+        seq.serialize_element(&self.1)?;
+        seq.end()
+    }
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Either {
+    W(Wide),
+}
+
+#[derive(Serialize)]
+pub struct Flat {
+    #[serde(flatten)]
+    w: Wide,
+}
+
+#[derive(Serialize)]
+pub struct FlatSigned {
+    #[serde(flatten)]
+    s: Signed,
+}
+
+/// A map of one, flattened: its value written by the object's own writer.
+pub struct InMap(pub u128);
+
+impl Serialize for InMap {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = s.serialize_map(None)?;
+        map.serialize_entry("w", &Wide(self.0))?;
+        map.end()
+    }
+}
+
+#[derive(Serialize)]
+pub struct FlatMap {
+    a: u8,
+    #[serde(flatten)]
+    m: InMap,
+}
+
+fn both<T: Serialize>(value: &T) -> String {
+    format!("{:?}; {:?}", serde_json::to_string(value), serde_json::to_value(value))
+}
+
+pub fn report() -> String {
+    [
+        both(&Wide(u128::MAX)),
+        both(&Wide(u64::MAX as u128)),
+        both(&Wide(u64::MAX as u128 + 1)),
+        both(&Wide(0)),
+        both(&Signed(i128::MIN)),
+        both(&Signed(i128::MAX)),
+        both(&Signed(i64::MIN as i128)),
+        both(&Signed(i64::MIN as i128 - 1)),
+        both(&Signed(-5)),
+        both(&Signed(5)),
+        both(&Signed(u64::MAX as i128)),
+        both(&Signed(u64::MAX as i128 + 1)),
+        both(&Both(u128::MAX, -1)),
+        both(&Both(1, i128::MAX)),
+        both(&Narrow(u64::MAX, i64::MIN)),
+        both(&vec![Wide(1), Wide(u128::MAX)]),
+        both(&Either::W(Wide(u128::MAX))),
+        both(&Either::W(Wide(3))),
+        both(&Flat { w: Wide(3) }),
+        both(&FlatSigned { s: Signed(-3) }),
+        both(&FlatMap { a: 1, m: InMap(3) }),
+        both(&FlatMap { a: 1, m: InMap(u128::MAX) }),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

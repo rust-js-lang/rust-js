@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "serde-f32-as-f64",
     breaks: "`serialize_f32(0.1)` writes its `f64` digits, 0.10000000149011612",
     file: "src/lower/serde/protocol.rs",
-    find: "                    given.push(Expr::bool(true));\n",
+    find: "                    SerdeScalar::Float { single: true } => given.push(Expr::bool(true)),\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "hand-written Serialize"],
   },
@@ -169,5 +169,13 @@ export const mutations: Mutation[] = [
     find: "                (VisitorMethod::String, SerdeHint::Any | SerdeHint::Str) => \"string\",\n",
     replace: "",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
+  },
+  {
+    name: "serde-wide-int-ungiven",
+    breaks: "a 128-bit integer's writer isn't told its width, so a `Value` holds `u128::MAX` and a flattened one says `got an integer` (#1547)",
+    file: "src/lower/serde/protocol.rs",
+    find: "                    SerdeScalar::Int { wide: Some(wide) } => given.push(Expr::str(wide)),\n",
+    replace: "",
+    tests: ["test/serde-protocol.test.ts", "-t", "a 128-bit integer is written by each serializer"],
   },
 ];
