@@ -193,6 +193,8 @@ function main() {
   const vecIntoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: loudDrop_drop,
+    $dropIntoIter: $dropEach(loudDrop_drop),
   };
   const value = $iter(louds(10, 3));
   let tmp;
@@ -984,7 +986,18 @@ function main() {
       chain(
         value$2,
         tmp$7,
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: countdownIterator_next };
+          },
+          $dropItem: loudDrop_drop,
+          $dropIntoIter(countdown) {
+            loudDrop_drop(countdown._tag);
+          },
+        },
         vecIntoIterator,
         $dropEach(loudDrop_drop),
         loudDrop_drop,

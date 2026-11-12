@@ -213,6 +213,8 @@ function main() {
   const intoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
   };
   const first = firstOf([[1], [2], [3]], [4, 4], dDrop_drop, $dropEach(dDrop_drop));
   try {

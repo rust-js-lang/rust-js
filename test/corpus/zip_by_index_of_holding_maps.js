@@ -114,22 +114,29 @@ function main() {
           ),
       },
       {
-        intoIter: (items) => items,
-        IntoIterIterator: () => ({
-          next: $next,
-          fold: $foldOf,
-          getUnchecked: (iterator, i) =>
-            mapIterator___iteratorGetUnchecked(
-              iterator,
-              i,
-              { next: $next },
-              undefined,
-              undefined,
-              (value) => {
-                console.log(`drop ${gb[0]}`);
-              },
-            ),
-        }),
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return {
+            next: $next,
+            fold: $foldOf,
+            getUnchecked: (iterator, i) =>
+              mapIterator___iteratorGetUnchecked(
+                iterator,
+                i,
+                { next: $next },
+                undefined,
+                undefined,
+                (value) => {
+                  console.log(`drop ${gb[0]}`);
+                },
+              ),
+          };
+        },
+        $dropIntoIter(map) {
+          map.return();
+        },
       },
       true,
       true,

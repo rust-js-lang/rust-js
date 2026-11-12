@@ -175,7 +175,11 @@ function main() {
       [2],
       [1],
       { next: countdownIterator_next },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+      {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: countdownIterator_next }),
+        $dropIntoIter: countdownDrop_drop,
+      },
       countdownDrop_drop,
       countdownDrop_drop,
       undefined,

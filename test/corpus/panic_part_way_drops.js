@@ -704,6 +704,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       false,
       false,
@@ -919,7 +921,7 @@ function main() {
     const x = $collectDropping(
       $closing($iter(ds({ start: 70, end: 74 })), $dropEach(dDrop_drop))
         .map((d) => {
-          let d$75$live = true;
+          let d$76$live = true;
           try {
             boom(d, 72);
           } catch (error) {
@@ -932,10 +934,10 @@ function main() {
           if (d[0] === 71) {
             result = undefined;
           } else {
-            d$75$live = false;
+            d$76$live = false;
             result = [d, 1n];
           }
-          if (d$75$live) {
+          if (d$76$live) {
             dDrop_drop(d);
           }
           return result;
@@ -1121,7 +1123,17 @@ function main() {
       value,
       map,
       { next: $next, fold: $foldOf },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: $next, fold: $foldOf };
+        },
+        $dropIntoIter(map) {
+          map.return();
+        },
+      },
       false,
       false,
       true,

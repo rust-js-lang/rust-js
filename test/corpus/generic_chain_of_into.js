@@ -60,7 +60,17 @@ function main() {
       chain(
         value,
         tmp,
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: countdownIterator_next };
+          },
+          $dropIntoIter(countdown) {
+            console.log(`drop ${countdown._tag[0]}`);
+          },
+        },
         { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
         (countdown) => {
           console.log(`drop ${countdown._tag[0]}`);

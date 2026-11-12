@@ -740,7 +740,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }
         props.extend(self.dictionary_drop(tr.self_ty(), span)?);
-        props.extend(self.item_drops(tr, span)?);
+        props.extend(self.item_drops(tr, false, span)?);
         props.extend(self.item_facts(tr, span)?);
         let object = match is_hasher(self.tcx, tr.def_id) {
             true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),

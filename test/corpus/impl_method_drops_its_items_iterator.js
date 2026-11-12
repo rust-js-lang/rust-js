@@ -98,6 +98,8 @@ function main() {
   const intoIterator = {
     intoIter: (items) => $iter(items == null ? [] : [items]),
     IntoIterIterator: () => ({ next: $next }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
   };
   console.log(
     `${wrapperKeeping_held(

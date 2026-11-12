@@ -268,6 +268,8 @@ function main() {
   const intoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: loudDrop_drop,
+    $dropIntoIter: $dropEach(loudDrop_drop),
   };
   let groups = [[[1], [2]], [], [[3]]];
   const got = firsts(

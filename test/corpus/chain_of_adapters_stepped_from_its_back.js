@@ -161,6 +161,8 @@ function main() {
     {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: dDrop_drop,
+      $dropIntoIter: $dropEach(dDrop_drop),
     },
     (filter) => {
       filter.return();
@@ -227,7 +229,18 @@ function main() {
       value$4,
       tmp$4,
       { next: $next, fold: $foldOf },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: $next, fold: $foldOf };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(map) {
+          map.return();
+        },
+      },
       (inspect) => {
         inspect.return();
       },

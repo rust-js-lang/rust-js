@@ -161,6 +161,8 @@ export function chained() {
     {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: loudDrop_drop,
+      $dropIntoIter: $dropEach(loudDrop_drop),
     },
     (rev) => {
       rev.return();
@@ -196,6 +198,8 @@ export function flattened() {
     {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: loudDrop_drop,
+      $dropIntoIter: $dropEach(loudDrop_drop),
     },
     true,
     undefined,

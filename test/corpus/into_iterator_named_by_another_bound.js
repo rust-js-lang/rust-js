@@ -255,6 +255,8 @@ function main() {
   const vecIntoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: loudDrop_drop,
+    $dropIntoIter: $dropEach(loudDrop_drop),
   };
   const v = [1, 2, 3];
   console.log(
@@ -320,7 +322,18 @@ function main() {
       value$2,
       tmp,
       vecIntoIterator,
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: $next };
+        },
+        $dropItem: loudDrop_drop,
+        $dropIntoIter(filter) {
+          filter.return();
+        },
+      },
       $partialEq({ eq: $eq }),
       VecIsVec,
       tIsT((filter) => {
@@ -346,6 +359,8 @@ function main() {
     {
       intoIter: (items) => items,
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: fragileDrop_drop,
+      $dropIntoIter: $dropEach(fragileDrop_drop),
     },
     tIsT($dropEach(fragileDrop_drop)),
     $dropEach(fragileDrop_drop),

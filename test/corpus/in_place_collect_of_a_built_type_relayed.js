@@ -82,8 +82,18 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
   const value = held(
     options,
     {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
+      intoIter(items) {
+        return $iter(items == null ? [] : [items]);
+      },
+      IntoIterIterator() {
+        return { next: $next };
+      },
+      $dropItem: dropT,
+      $dropIntoIter(intoIter) {
+        $dropItems(intoIter, (item) => {
+          dropT?.(item);
+        });
+      },
     },
     JInPlace,
     HeldSize,
@@ -416,6 +426,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       (intoIter) => {
         for (const item of intoIter) {
@@ -443,6 +455,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       undefined,
       $dropEach(dDrop_drop),
@@ -491,6 +505,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       [16, 8],
       16,
@@ -557,6 +573,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
     $dropItems(heldAll, (item) => {
@@ -606,6 +624,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
     $dropItems(heldAll, (item) => {
@@ -640,6 +660,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
     let result;

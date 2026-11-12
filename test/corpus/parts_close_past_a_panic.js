@@ -117,6 +117,8 @@ function chained(v, w) {
     {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: dDrop_drop,
+      $dropIntoIter: $dropEach(dDrop_drop),
     },
     $dropEach(dDrop_drop),
     $dropEach(dDrop_drop),
@@ -195,6 +197,8 @@ function main() {
     const intoIterator = {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: dDrop_drop,
+      $dropIntoIter: $dropEach(dDrop_drop),
     };
     const it = $held(
       iterator_flatten(

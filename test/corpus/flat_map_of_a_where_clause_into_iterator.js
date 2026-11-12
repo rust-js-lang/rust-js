@@ -131,6 +131,8 @@ function main() {
   const intoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
   };
   let tmp$1;
   const value = ds([1]);

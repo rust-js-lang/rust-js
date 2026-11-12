@@ -51,8 +51,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a dictionary doesn't carry its type's drop, so a `dyn` of a value with a destructor never drops it",
     file: "src/lower/traits/impls.rs",
-    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
-    replace: "        props.extend(self.item_drops(tr, span)?);\n",
+    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, false, span)?);\n",
+    replace: "        props.extend(self.item_drops(tr, false, span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
@@ -199,9 +199,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's dictionary has no drop for its associated types, so generic code holding one drops nothing",
     file: "src/lower/traits/impls.rs",
-    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
-    replace:
-      "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
+    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, false, span)?);\n",
+    replace: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
   {

@@ -49,7 +49,11 @@ function main() {
         [3, "x"],
         [1, "y"],
         { next: ownIterator_next },
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: ownIterator_next }) },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({ next: ownIterator_next }),
+          $dropIntoIter: ownDrop_drop,
+        },
         ownDrop_drop,
         ownDrop_drop,
         undefined,

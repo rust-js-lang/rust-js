@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn`'s dictionary has no drop for the associated type its type names, so generic code given one drops nothing",
     file: "src/lower/traits/dictionaries.rs",
-    find: "        }\n        props.extend(self.item_drops(tr, span)?);\n        Ok(Expr::object(props))\n",
+    find: "        }\n        props.extend(self.item_drops(tr, false, span)?);\n        Ok(Expr::object(props))\n",
     replace: "        }\n        Ok(Expr::object(props))\n",
     tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
@@ -494,9 +494,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
     file: "src/lower/traits/dictionaries.rs",
-    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, span)?);\n        Ok(Expr::object(props))\n",
-    replace:
-      "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
+    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, false, span)?);\n        Ok(Expr::object(props))\n",
+    replace: "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
   {
@@ -878,5 +877,21 @@ export const mutations: Mutation[] = [
       "-t",
       "^generic_borrow_of_a_counted_rc.rs$"
     ]
+  },
+  {
+    name: "into-iterator-dictionary-drops-nothing",
+    breaks: "std's `IntoIterator` dictionary of a type known here carries no drops of its associated types, so std's compiled `Flatten` never drops an inner iterator it replaces (#1510)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        steps.extend(self.item_drops(tr, as_it_is, span)?);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
+  },
+  {
+    name: "into-iterator-as-it-is-dropped-as-made",
+    breaks: "std's `IntoIterator` dictionary that gives what it makes as it is drops it as a JS iterator made of it, its `of`, which the value itself hasn't (#1510)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let steps = self.made_steps(tr, true, span)?;\n",
+    replace: "            let steps = self.made_steps(tr, false, span)?;\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
   },
 ];

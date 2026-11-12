@@ -130,6 +130,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       [16, 8],
       16,
@@ -189,6 +191,8 @@ function main() {
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       [16, 8],
       16,
@@ -215,6 +219,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       [12, 4],
       16,
@@ -276,6 +282,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       [12, 4],
       16,
@@ -302,6 +310,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       undefined,
       16,

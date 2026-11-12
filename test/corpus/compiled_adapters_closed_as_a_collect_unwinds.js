@@ -159,6 +159,8 @@ function main() {
         {
           intoIter: (items) => $iter(items),
           IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+          $dropItem: dDrop_drop,
+          $dropIntoIter: $dropEach(dDrop_drop),
         },
         false,
         false,

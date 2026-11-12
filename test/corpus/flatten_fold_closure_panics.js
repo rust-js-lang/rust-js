@@ -98,6 +98,8 @@ function main() {
     const vecIntoIterator = {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      $dropItem: dDrop_drop,
+      $dropIntoIter: $dropEach(dDrop_drop),
     };
     const it = $held(
       iterator_flatMap(

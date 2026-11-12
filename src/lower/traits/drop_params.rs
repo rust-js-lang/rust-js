@@ -531,12 +531,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A dictionary's drops of its associated types, `$dropOffset`, which
     /// generic code holding one of them runs, as it can't name the type
     /// (ADR 0178): the impl's, or what a `dyn` names, `dyn Zone<Offset = T>`.
-    pub(super) fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+    /// Of a dictionary that gives what it makes as it is, `as_it_is`, std's
+    /// `IntoIterator` of a type known here (ADR 0552), the value itself.
+    pub(super) fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, as_it_is: bool, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
         for (item, item_ty) in self.item_types(tr) {
             // Of one generic code has as the JS iterator the dictionary made
             // of it, what it was made of (#978).
-            let iterated = self.item_made_js_iterator(item, item_ty);
+            let iterated = !as_it_is && self.item_made_js_iterator(item, item_ty);
             if self.drops(item_ty) == Drops::Runs
                 && let Some(drop) = self.held_drop_function(item_ty, iterated, span)?
             {

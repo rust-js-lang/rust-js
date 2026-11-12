@@ -121,7 +121,17 @@ function main() {
           tmp,
           tmp$1,
           { next: $next, fold: $foldOf },
-          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
+          {
+            intoIter(items) {
+              return items;
+            },
+            IntoIterIterator() {
+              return { next: $next, fold: $foldOf };
+            },
+            $dropIntoIter(map) {
+              map.return();
+            },
+          },
           false,
           false,
           true,

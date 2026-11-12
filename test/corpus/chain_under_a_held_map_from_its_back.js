@@ -175,7 +175,11 @@ function main() {
         [2, "e"],
         [1, "f"],
         { next: ownIterator_next },
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: ownIterator_next }) },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({ next: ownIterator_next }),
+          $dropIntoIter: ownDrop_drop,
+        },
         ownDrop_drop,
         ownDrop_drop,
         undefined,

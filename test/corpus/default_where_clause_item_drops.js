@@ -309,6 +309,8 @@ function heldThrough(iter, dropI) {
   ).heldAll(iter, {
     intoIter: (items) => $iter(items == null ? [] : [items]),
     IntoIterIterator: () => ({ next: $next }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
   });
 }
 
@@ -327,6 +329,8 @@ function main() {
   const intoIterator = {
     intoIter: (items) => $iter(items == null ? [] : [items]),
     IntoIterIterator: () => ({ next: $next }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
   };
   const r = $catchUnwind(() => {
     const wides = Array.from(
@@ -431,6 +435,8 @@ function main() {
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        $dropItem: dDrop_drop,
+        $dropIntoIter: $dropEach(dDrop_drop),
       },
       (intoIter) => {
         for (const item of intoIter) {

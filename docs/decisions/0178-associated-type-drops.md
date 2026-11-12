@@ -122,3 +122,21 @@ neighbours net, `associated_iterator_of_stds_struct_from_its_back.rs`
 beside `compiled_adapters_closed_as_a_collect_unwinds.rs` in the build of
 std's structs, whose neighbour made the drop asked (#1319), runs as native
 Rust, its line off `test/neighbours-known.txt`.
+
+## Amendment (2026-11-12, #1510): std's `IntoIterator` dictionaries carry them too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. Every impl's dictionary carried its associated types'
+drops, `$dropIntoIter`, but std's own `IntoIterator` dictionaries, built by
+`made_steps`, didn't. Generic code holding what one makes drops it by that
+entry: std's compiled `Flatten`, in `Option::insert` of its next inner
+iterator, dropped the one it ran out by `$dropIntoIter?.(..)`, which was
+undefined, so `vec![c("a1"), c("a2")].into_iter().flatten().nth(4)` in the
+std build never dropped `a1` where native Rust drops it before `Some(1)`.
+`made_steps` now adds `item_drops`, of the value itself where the
+dictionary gives what it makes as it is (ADR 0552, `as_it_is`), else as
+before. 27 snapshots' dictionaries gain `$dropItem` and `$dropIntoIter`
+where those types drop. Corpus case `flatten_nth_drops_each_inner_it_runs_out`
+against native Rust in both builds, and in iterator-forms' few; mutations
+`into-iterator-dictionary-drops-nothing` and
+`into-iterator-as-it-is-dropped-as-made`.

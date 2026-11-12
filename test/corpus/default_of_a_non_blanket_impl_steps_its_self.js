@@ -418,6 +418,8 @@ function main() {
     ).held([$iter([[6n], undefined])], {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
+      $dropItem: dDrop_drop,
+      $dropIntoIter: $dropEach(dDrop_drop),
     })}`,
   );
   const value$2 = $iter([[7n]]);
