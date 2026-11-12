@@ -42,13 +42,11 @@ plain std library write_result_kept_by_a_writer.rs
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
 
 #1565 P0: a format_args! given to a function is formatted where it's made: its writers' prints and panics come before the callee's code
+plain std loud failing_debug_part_keeps_what_was_written.rs
+plain std loud-drop failing_debug_part_keeps_what_was_written.rs
 plain std loud printing_builder_written_step_by_step.rs
 plain std loud-drop printing_builder_written_step_by_step.rs
 plain std loud-step printing_builder_written_step_by_step.rs
 plain std loud printing_derived_debug_stopped_part_way.rs
 plain std loud-call printing_derived_debug_stopped_part_way.rs
 plain std loud-drop printing_derived_debug_stopped_part_way.rs
-
-#1566 P0: a write's Err thrown through a scope that drops runs its drops as unwinding: a panic in such a drop aborts
-plain std loud failing_debug_part_keeps_what_was_written.rs
-plain std loud-drop failing_debug_part_keeps_what_was_written.rs

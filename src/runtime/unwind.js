@@ -118,7 +118,14 @@ function $unwindsOnTold(e) {
 // browser, which `$abort` can't end, nothing more runs as it unwinds. Of
 // what unwinds, `e`, where it's given: none of it of what ends the program
 // (`$endsTheProgram`), and of a stack overflow, Rust's abort first (#1193).
+// A write's `Err`, thrown in JS (ADR 0187), is returned in Rust, not unwound:
+// its drops are an ordinary scope's end, `thread::panicking()` false in them,
+// and their panic an ordinary one, which goes on in its place (#1566).
 function $cleanup(run, e) {
+  if (e instanceof $WriteError) {
+    run();
+    return;
+  }
   if (!$live()) return;
   if (e !== undefined) {
     if ($endsTheProgram(e)) return;

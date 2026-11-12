@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
   },
+  {
+    name: "write-error-drops-unwinding",
+    breaks: "a write's `Err` thrown through a scope that drops runs its drops as a panic's cleanup, `thread::panicking()` true in them and their panic an abort (#1566)",
+    file: "src/runtime/unwind.js",
+    find: "  if (e instanceof $WriteError) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_error_drops_as_a_return.rs$"],
+  },
 ];

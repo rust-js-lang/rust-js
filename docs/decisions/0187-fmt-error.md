@@ -302,3 +302,20 @@ builder's `entry`, `field` (with `finish_non_exhaustive`), map `entry` and
 `entries`, each with the failing part at every place, in `{:?}` and
 `{:#?}`. Mutations `dyn-formatted-unseen`, `builder-entries-unseen` and
 `failing-builders-not-through-a-sink`.
+
+## Amendment: a write's `Err` drops what it leaves as a return (2026-11-13, #1566)
+
+A write's `Err` is thrown in JS. Where it passes a scope whose locals
+drop, the lowering's cleanup ran their drops through `$cleanup`, as a
+panic's unwinding does. So `thread::panicking()` was `true` in them, and
+a panic in one aborted the program. In Rust, the `Err` is returned, not
+unwound: those drops are an ordinary scope's end, and their panic is an
+ordinary panic, which a `catch_unwind` catches. The metamorphic net's
+`loud` rewrite of `failing_debug_part_keeps_what_was_written` found it.
+Results change, so Rust's behavior is kept (ADR 0262). **`$cleanup` of a
+`$WriteError` runs the drops as ordinary ones**, its depth unchanged, and
+their panic goes on in place of the error. Corpus case
+`write_error_drops_as_a_return` runs against native Rust in both builds:
+a writer's local dropped after a builder's `Err`, one whose drop panics
+(caught), and `entries` of what drops. Mutation
+`write-error-drops-unwinding`.
