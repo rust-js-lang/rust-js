@@ -1,0 +1,31 @@
+# serde / serde_json probes for rust-js#1532
+
+One-statement programs compared with native serde_json, and the benchmark of rust-js#1542.
+
+- `probes-1.ts` … `probes-5.ts`: run each with `bun` in an empty directory; they write `p/<name>.rs`. Deterministic.
+  (`probes-4.ts` and `probes-5.ts` read the shared header out of `probes-3.ts`.) `drop_0N.rs` go in `p/` as they are.
+- `run-one.sh <name>`: compiles one natively (the pinned serde) and with rust-js, runs both, writes `out/`.
+  `ls p | sed 's/\.rs$//' | xargs -P 6 -n 1 ./run-one.sh`
+- `outcomes-at-f3f4bfd25.txt`: what each gave at that commit, Bun 1.4.4: `same`, `refused`, `compiler-panic`,
+  `different` (a wrong answer or a runtime throw) or `native-invalid` (my mistake; rustc rejects it).
+  `std_29` is `different` by design: `usize` is 32 bits here.
+- `bench.rs`, `bench-harness.js`: the document of #1542. Compile `bench.rs` with rust-js to `bench.js` beside the
+  harness; `bun bench-harness.js <items> emit`, then `<items> <write|read|readValue|writeValue|parse|stringify> <reps>`
+  under `/usr/bin/time -l` for peak memory. 4,000 items are about 1 MB.
+- `size-programs.ts`: the programs of the bundle-size table (0, 1, 10 and 50 types; write only, read only, both).
+
+Not covered here, and covered by the independent review's issues: stateful callbacks, drops, error recovery in
+hand-written impls.
+
+## In the repository (#1532, S0)
+
+These files are the review's as written above, kept unchanged, with `outcomes-at-f3f4bfd25.txt` its record of that commit.
+`bun scripts/serde-probes.ts` (after `cargo build`) is the one bounded command that reproduces the baseline:
+it makes `p/` with the generators in `target/serde-probes/`, builds each program natively with the pinned serde
+(`serde/Cargo.lock`) and with rust-js, runs both on Bun and on Node, and compares each with `outcomes.txt`, the
+baseline, as `run-one.sh` does one. It prints the source of each program whose outcome changed, and fails where one
+that gave native Rust's answer no longer does. Name programs to run only those; `--record` writes this run's Bun
+outcomes to `outcomes.txt`. It runs as many programs at once as `atOnce` says of tests.
+
+`outcomes.txt` at `6dd1ef3a1`, Bun 1.4.4 and Node 24, the same on both: 241 same, 90 refused, 9 compiler panics,
+15 different, 3 native-invalid. Of the review's 28 `different`, 12 now give native Rust's answer and `pos_19` is refused.
