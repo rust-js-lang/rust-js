@@ -284,7 +284,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         let first = Some(Expr::bool(true));
-        if (self.is_map(output) && !self.is_sorted(output)) || self.is_std_type(output, StdItem::LinkedList) {
+        if self.recognition().extends_as_each_comes(output) {
             return Ok(first);
         }
         let Some(iter_ty) = iter_ty else {

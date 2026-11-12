@@ -73,18 +73,10 @@ test("a Room size is undefined only of #934's case, by room_value", () => {
 // A generic function takes only the size facts it reads: a collect's
 // \`Room\` is asked only of one counted by the program, whose room check
 // reads it (\`counted_by_program\`, #1436), so no function gains a \`TSize\`
-// it never reads. Each corpus snapshot's functions are scanned; those
-// listed are #1443's, which predate the rule, and the list only shrinks.
+// it never reads. Each corpus snapshot's functions are scanned; the one
+// listed is #1443's, which predates the rule, and the list only shrinks.
 test("a generic function takes no size fact it doesn't read", () => {
-  const known = [
-    "from_iter_holds_what_generic_code_gives.js collected IItemSize",
-    "impl_asks_the_layout_of_a_type_of_its_parameters.js hashMapArbitrary_shrink KVSize",
-    "in_place_collect_of_a_built_type_relayed.js listed HeldSize",
-    "iterator_held_in_a_place_dropped_with_it.js collected IItemSize",
-    "own_iterator_collected_by_generic_code_into_own_from_iterator.js collected IItemSize",
-    "own_iterator_holding_a_closure_dropped_by_generic_code.js collected IItemSize",
-    "vec_collect_as_its_caller_knows.js built IItemSize",
-  ];
+  const known = ["impl_asks_the_layout_of_a_type_of_its_parameters.js hashMapArbitrary_shrink KVSize"];
   const unread = files("test/corpus").filter((file) => file.endsWith(".js")).flatMap((file) => {
     const text = read(file);
     return [...text.matchAll(/^(?:export )?function (\w+)\(([^)]*)\) \{\n([\s\S]*?)^\}/gm)].flatMap(([, name, params, body]) =>

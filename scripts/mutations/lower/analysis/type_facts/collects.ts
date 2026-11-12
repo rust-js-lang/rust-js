@@ -180,4 +180,20 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },
+  {
+    name: "in-place-asked-of-a-bounds-collect",
+    breaks: "a collect a `B: FromIterator` bound's dictionary makes asks its caller the items' in-place layout, `IItemSize` and `IItemAlign`, which nothing reads (#1443)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        || collected_through_a_bound(tcx, typing_env, output)\n",
+    replace: "",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "asks no in-place layout"],
+  },
+  {
+    name: "in-place-asked-of-a-linked-list",
+    breaks: "a collect into a `LinkedList`, which std extends as each item comes, asks its caller the items' in-place layout, which nothing reads (#1443)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        || recognition.extends_as_each_comes(output)\n",
+    replace: "",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "asks no in-place layout"],
+  },
 ];

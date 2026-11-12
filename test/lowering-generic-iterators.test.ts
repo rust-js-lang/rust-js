@@ -258,3 +258,36 @@ test("an iterator that doesn't know its back is never stepped as an empty array"
   expect(() => $iter({ next: () => ({ done: true }) })).toThrow(TypeError);
   expect([...$iter([1, 2])]).toEqual([1, 2]);
 });
+
+// A generic collect of items with a destructor asks its caller their
+// in-place layout only where its lowering reads it, a \`Vec\` it collects
+// itself: not one a \`B: FromIterator\` bound's dictionary collects, nor one
+// into a \`LinkedList\`, which std extends as each item comes (#1443).
+test("a generic collect asks no in-place layout it doesn't read", () => {
+  const dir = fixture("collect-in-place-unread");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::LinkedList;
+
+pub struct Loud(pub u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+
+pub fn gathered<I: Iterator, B: FromIterator<I::Item>>(it: I) -> B {
+    it.collect()
+}
+
+pub fn listed<I: Iterator>(it: I) -> LinkedList<I::Item> {
+    it.collect()
+}
+
+pub fn both() -> usize {
+    let v: Vec<Loud> = gathered(vec![Loud(1)].into_iter());
+    v.len() + listed(vec![Loud(2)].into_iter()).len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function gathered(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {");
+  expect(js).toContain("export function listed(it, dropI, dropIItem) {");
+});

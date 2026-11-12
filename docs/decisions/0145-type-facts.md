@@ -547,3 +547,32 @@ Case C of ADR 0262. Corpus case
 `HashMap` made of a `Vec` of pairs, and a nested one) checks it against
 native Rust in both builds. Mutation `impl-method-built-layout-unlifted`
 is caught.
+
+## Amendment: a fact is asked only where its lowering reads it (2026-11-12, #1443)
+
+A generic collect of items with a destructor asked its caller the items'
+in-place layout, `IInPlace`, `IItemSize` and `IItemAlign`
+(`in_place_asked`), which only a collect the lowering makes itself into a
+`Vec` reads (`rest_dropped_first`, `caller_in_place`). Two never read
+them, and took parameters they never used:
+
+- a collect a `B: FromIterator` bound's dictionary makes, whose
+  `from_iter` collects it as it does (`collected_through_a_bound`, as
+  `collected_evidence` finds the caller's bound);
+- a collect into a collection std extends as each item comes, a hash
+  table's or a `LinkedList`'s, which collects nothing in place
+  (`Recognition::extends_as_each_comes`, now the one answer of the
+  lowering's `rest_dropped_first` and the analysis).
+
+So `collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI)` and
+`listed(it, dropI, ..)` take no more; an impl's dictionary carried an
+associated type's `OutSize` nothing read either. test/architecture-generic-facts.test.ts
+scans every corpus snapshot for a size fact a function takes and doesn't
+read; one is left, quickcheck's `HashMap` `shrink`'s `KVSize`, which the
+relay of an impl's lifted facts asks (#1443, open).
+
+Tests: test/lowering-generic-iterators.test.ts's signatures of a bound's
+collect and a `LinkedList`'s; 8 corpus snapshots changed, each a
+parameter or a carried fact fewer. Mutations
+`in-place-asked-of-a-bounds-collect` and `in-place-asked-of-a-linked-list`,
+caught.

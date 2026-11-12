@@ -211,7 +211,7 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
   return [sum];
 }
 
-function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     ITrustedLen,
@@ -233,8 +233,6 @@ function main() {
     summedFromIteratorU32(0),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -246,8 +244,6 @@ function main() {
     summedFromIteratorU32(1),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -259,8 +255,6 @@ function main() {
     summedFromIteratorU32(2),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -272,8 +266,6 @@ function main() {
     summedFromIteratorU32(3),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -285,8 +277,6 @@ function main() {
     summedFromIteratorU32(4),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -298,8 +288,6 @@ function main() {
     summedFromIteratorU32(5),
     false,
     undefined,
-    4,
-    4,
     (filter) => {
       filter.return();
     },

@@ -129,7 +129,7 @@ function parted(make, IIterator, dropI) {
   }
 }
 
-function listed(it, IInPlace, dropI) {
+function listed(it, dropI) {
   const l = $collectDropping($folded($closing(Iterator.from(it), dropI, false)), dDrop_drop, true);
   try {
     console.log(`[${l.map((item) => dDebug_fmt(item)).join(", ")}]`);
@@ -393,7 +393,6 @@ function main() {
           ),
         true,
       ),
-      undefined,
       (it) => {
         try {
           stepsDrop_drop(it.of, $dropEach(dDrop_drop));
@@ -418,7 +417,6 @@ function main() {
           ),
         true,
       ),
-      undefined,
       (it) => {
         try {
           stepsDrop_drop(it.of, $dropEach(dDrop_drop));

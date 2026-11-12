@@ -107,7 +107,7 @@ function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   dropIIntoIter?.(it);
 }
 
-function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     ITrustedLen,
@@ -153,8 +153,6 @@ function main() {
     summedFromIteratorU32,
     false,
     undefined,
-    4,
-    4,
     (it) => {
       loudDrop_drop(it.of._loud);
     },
@@ -165,8 +163,6 @@ function main() {
     firstFromIteratorU32,
     false,
     undefined,
-    4,
-    4,
     (it) => {
       loudDrop_drop(it.of._loud);
     },
@@ -182,7 +178,7 @@ function main() {
     },
   );
   console.log(`${sum$1}`);
-  const [sum$2] = collected($iter([4, 5]), summedFromIteratorU32, true, [4, 4], 4, 4);
+  const [sum$2] = collected($iter([4, 5]), summedFromIteratorU32, true, [4, 4]);
   console.log(`${sum$2}`);
   const refused = $catchUnwind(() => {
     collected(
@@ -190,8 +186,6 @@ function main() {
       refusedFromIteratorU32,
       false,
       undefined,
-      4,
-      4,
       (it) => {
         loudDrop_drop(it.of._loud);
       },

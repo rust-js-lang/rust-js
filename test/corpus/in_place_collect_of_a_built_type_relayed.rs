@@ -48,8 +48,8 @@ fn ranged<T: Clone>(t: T) -> usize {
 }
 
 /// Into a `LinkedList`, which std extends as each item comes, asking no
-/// room: its items' layout is asked as a `Vec`'s in place would be, and
-/// given only where the source's `IInPlace` is, never read.
+/// room and collecting nothing in place: nothing of its items' layout is
+/// asked (#1443).
 fn listed<H>(iters: H) -> LinkedList<Held<<H::Item as IntoIterator>::IntoIter>>
 where
     H: Iterator,

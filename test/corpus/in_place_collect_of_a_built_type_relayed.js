@@ -137,10 +137,10 @@ function ranged(t, HeldSize, HeldAlign) {
 
 /**
  * Into a `LinkedList`, which std extends as each item comes, asking no
- * room: its items' layout is asked as a `Vec`'s in place would be, and
- * given only where the source's `IInPlace` is, never read.
+ * room and collecting nothing in place: nothing of its items' layout is
+ * asked (#1443).
  */
-function listed(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
+function listed(iters, HItemIntoIterator, dropH, dropHItemIntoIter) {
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
     iter: $held(HItemIntoIterator.intoIter(i)),
   }));
@@ -416,9 +416,6 @@ function main() {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
       },
-      [16, 8],
-      16,
-      8,
       (intoIter) => {
         for (const item of intoIter) {
           if (item != null) {
@@ -446,9 +443,6 @@ function main() {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
       },
-      undefined,
-      undefined,
-      undefined,
       undefined,
       $dropEach(dDrop_drop),
     );

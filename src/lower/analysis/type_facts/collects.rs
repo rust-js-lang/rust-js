@@ -52,7 +52,7 @@ pub(super) fn collect_asks<'tcx>(
                 (this, TypeFact::VecCollect),
                 &None,
             )),
-            None => in_place_asked(tcx, foreign, typing_env, drops, owner, (callee, args)),
+            None => in_place_asked(recognition, typing_env, drops, owner, (callee, args)),
         };
         asked.extend(grown_asked(
             recognition,
@@ -128,18 +128,23 @@ pub(super) fn collect_asks<'tcx>(
 /// (#737). As the lowering's `rest_dropped_first` asks, both of
 /// `recognition::in_place_source`.
 fn in_place_asked<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     drops: ItemDrops<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<Asked<'tcx>> {
     use crate::lower::recognition::{InPlaceSource, collected_items, fits_in_place, held_facts, in_place_source};
-    let Some((iter, _, dest, _)) = collected_items(tcx, typing_env, callee, args) else {
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let Some((iter, output, dest, _)) = collected_items(tcx, typing_env, callee, args) else {
         return Vec::new();
     };
-    if !drops.drop(typing_env, caller, dest) {
+    // Nor of one a bound's dictionary collects, nor one std extends as each
+    // item comes, whose in-place layout nothing reads (#1443).
+    if !drops.drop(typing_env, caller, dest)
+        || collected_through_a_bound(tcx, typing_env, output)
+        || recognition.extends_as_each_comes(output)
+    {
         return Vec::new();
     }
     match in_place_source(tcx, typing_env, iter) {
@@ -164,6 +169,20 @@ fn in_place_asked<'tcx>(
         }
     }
     asked
+}
+
+/// Whether a collect into `output` is its caller's bound's, a `B:
+/// FromIterator<A>` the caller is given, whose dictionary's `from_iter` the
+/// lowering calls (`collected_evidence`), which collects it as it does, so
+/// nothing of its in-place layout is read here (#1443).
+fn collected_through_a_bound<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, output: ty::Ty<'tcx>) -> bool {
+    let from_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::FromIterator);
+    output.has_param()
+        && (typing_env.param_env.caller_bounds().iter()).any(|clause| {
+            clause
+                .as_trait_clause()
+                .is_some_and(|bound| bound.def_id() == from_iterator && bound.skip_binder().self_ty() == output)
+        })
 }
 
 /// What a collect std grows as a `Vec`, `collect()` or `from_iter`, of

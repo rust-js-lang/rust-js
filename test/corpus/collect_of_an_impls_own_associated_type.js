@@ -24,31 +24,25 @@ export function entry() {
   main();
 }
 
-const $mapOkCallResult = new Map();
+const $mapOkCallResult = new WeakMap();
 
-function mapOkCallResult(ResultSize, ResultAlign, dropF, dropT, dropU, dropE) {
-  return $traitImpl(
-    $mapOkCallResult,
-    [ResultSize, ResultAlign, dropF, dropT, dropU, dropE],
-    () => ({
-      call(arg0, arg1) {
-        return mapOkCallResult_call(arg0.value, arg1, dropF, dropT, dropU, dropE);
-      },
-      $drop(mapOk) {
-        dropF?.(mapOk[0]);
-      },
-      $dropOut(result) {
-        if (result.TAG === "Ok") {
-          dropU?.(result._0);
-        }
-        if (result.TAG === "Err") {
-          dropE?.(result._0);
-        }
-      },
-      OutSize: ResultSize,
-      OutAlign: ResultAlign,
-    }),
-  );
+function mapOkCallResult(dropF, dropT, dropU, dropE) {
+  return $traitImpl($mapOkCallResult, [dropF, dropT, dropU, dropE], () => ({
+    call(arg0, arg1) {
+      return mapOkCallResult_call(arg0.value, arg1, dropF, dropT, dropU, dropE);
+    },
+    $drop(mapOk) {
+      dropF?.(mapOk[0]);
+    },
+    $dropOut(result) {
+      if (result.TAG === "Ok") {
+        dropU?.(result._0);
+      }
+      if (result.TAG === "Err") {
+        dropE?.(result._0);
+      }
+    },
+  }));
 }
 function mapOkCallResult_call(mapOk, t, dropF, dropT, dropU, dropE) {
   return t.TAG === "Ok" ? { TAG: "Ok", _0: mapOk[0](t._0) } : t;
@@ -142,7 +136,7 @@ function main() {
       f: [(x) => (x * 10) >>> 0],
     },
     { next: $next },
-    mapOkCallResult(12, 4),
+    mapOkCallResult(),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>
@@ -169,7 +163,7 @@ function main() {
       f: [(value) => [value]],
     },
     { next: $next },
-    mapOkCallResult(8, 4, undefined, undefined, loudDrop_drop),
+    mapOkCallResult(undefined, undefined, loudDrop_drop),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () =>

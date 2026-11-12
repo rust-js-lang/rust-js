@@ -36,7 +36,7 @@ function even(l) {
   return l[0] % 2 === 0;
 }
 
-function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     ITrustedLen,
@@ -159,8 +159,6 @@ function main() {
     },
     false,
     undefined,
-    2,
-    1,
     (it) => {
       it.of[0].return();
     },

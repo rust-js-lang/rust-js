@@ -50,7 +50,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function built(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
+function built(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     ITrustedLen,
@@ -118,8 +118,6 @@ function kept(it, JInPlace, dropJ) {
     },
     false,
     JInPlace,
-    4,
-    4,
     (filter) => {
       filter.return();
     },
@@ -197,9 +195,6 @@ function main() {
         ),
     },
     true,
-    undefined,
-    4,
-    4,
   );
   shown("into a B", v);
   // Of items that drop: what it collected, dropped as a panic unwinds.
@@ -223,9 +218,6 @@ function main() {
           ),
       },
       true,
-      undefined,
-      4,
-      4,
     );
     for (const item of v) {
       loudDrop_drop(item);

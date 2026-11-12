@@ -298,6 +298,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_some())
     }
 
+    /// Whether std extends a collection of type `ty` as each item comes,
+    /// a hash map's or a set's, or a `LinkedList`'s, never collecting it as
+    /// a `Vec` first: so what's left of a collect a panic stops is dropped
+    /// before what it collected, and nothing is collected in place. The one
+    /// answer of the lowering's `rest_dropped_first` and the analysis's
+    /// `in_place_asked` (#1443).
+    pub(in crate::lower) fn extends_as_each_comes(&self, ty: Ty<'tcx>) -> bool {
+        (self.is_map(ty) && !self.is_sorted(ty)) || self.is_std_type(ty, StdItem::LinkedList)
+    }
+
     pub(in crate::lower) fn is_map(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         [StdItem::HashMap, StdItem::HashSet, StdItem::BTreeMap, StdItem::BTreeSet]

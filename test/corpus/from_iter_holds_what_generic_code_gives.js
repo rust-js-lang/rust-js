@@ -57,7 +57,7 @@ function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
   return result;
 }
 
-function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     ITrustedLen,
@@ -82,8 +82,6 @@ function main() {
     sumFromIterator_u32__u32_,
     false,
     undefined,
-    8,
-    4,
     (zip) => {
       zip.return();
     },
@@ -96,8 +94,6 @@ function main() {
     sumFromIterator_u32__u32_,
     false,
     undefined,
-    8,
-    4,
     (map) => {
       map.return();
     },
