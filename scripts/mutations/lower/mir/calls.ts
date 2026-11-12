@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
     file: "src/lower/mir/calls.rs",
-    find: "                form.storage().written(self.any_given_to_js(value, ty), nulled)\n",
+    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
     replace: "                form.storage().written(value, nulled)\n",
     tests: [
       "test/corpus.test.ts",
@@ -132,8 +132,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                form.storage().written(self.any_given_to_js(value, ty), nulled)\n",
-    replace: "                form.storage().written(self.any_given_to_js(value, ty), false)\n",
+    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
+    replace: "                form.storage().written(self.any_given_to_js(value, ty, true), false)\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -779,5 +779,30 @@ export const mutations: Mutation[] = [
     find: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()) {\n",
     replace: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
+  {
+    name: "nullable-any-given-as-optional",
+    breaks: "a nullable parameter's `Option<&dyn Any>` is given as an optional one's, `?.value`, its `None` `undefined` (#1581)",
+    file: "src/lower/mir/calls.rs",
+    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
+    replace: "                form.storage().written(self.any_given_to_js(value, ty, false), nulled)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_mapped_to_a_nullable_parameter.rs$"
+    ]
+  },
+  {
+    name: "any-none-made-null-unsaid",
+    breaks: "a nullable parameter's `Option<&dyn Any>`, made `null` for `None` already, is written `?? null` again, which would make a `Some` of what's `undefined` `null` (#1581)",
+    file: "src/lower/mir/calls.rs",
+    find: "                let nulled = nulled || self.any_none_made_null(ty);\n",
+    replace: "                let nulled = nulled;\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_mapped_to_a_nullable_parameter.rs$"
+    ],
+    snapshots: true
   },
 ];

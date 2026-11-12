@@ -898,7 +898,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
                 && form == crate::lower::representation::NoneForm::Null =>
             {
-                form.storage().written(self.any_given_to_js(value, ty), nulled)
+                let nulled = nulled || self.any_none_made_null(ty);
+                form.storage().written(self.any_given_to_js(value, ty, true), nulled)
             }
             // Entries written where they're given of such a value, an
             // `Option` of what never looks like `None`: each `null` for
@@ -911,14 +912,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ) == crate::lower::representation::NoneForm::Null
                 && self.entries_of_options(ty) =>
             {
-                self.nulled_entries(self.any_given_to_js(value, ty))
+                self.nulled_entries(self.any_given_to_js(value, ty, true))
             }
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing
             // and gives no function is its value, `useState(0)` (ADR 0593).
             () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),
             // A `&dyn Any` given to JS is its value (ADR 0331).
-            () => self.any_given_to_js(value, ty),
+            () => self.any_given_to_js(value, ty, false),
         };
         // A callback JS calls once that only passes on what it's given is
         // the function it passes on to, `p.then(ping)` (ADR 0262's

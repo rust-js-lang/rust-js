@@ -202,3 +202,19 @@ only takes gives its optional nullable member's null" (`body`, `signal`
 and `relatedTarget`, each of the three, in Node, and a read telling them
 apart) and `test/webapi-bindings.test.ts`'s "the webapi crate is what its
 generator writes".
+
+## Amendment (2026-11-13, #1581): a `dyn Any`'s `None` stays `null`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. A `&dyn Any` is given to JS as its value (ADR 0331), and an
+`Option` of one by `?.value`, which makes its `None`, `null`, `undefined`:
+right for a parameter that takes `None` as `undefined`, wrong for a
+nullable one, whose `null` the binding was then never given, where the
+pair wasn't made at the call, `frames.map(|f| { noted(); f as &dyn Any })`.
+`any_given_to_js` is told which `None` its parameter takes: for `null`,
+`o == null ? null : o.value` of what reads the same twice, else
+`(f() ?? { value: null }).value`, read once; never `?.value ?? null`,
+which would make a `Some` of what's `undefined`, a unit struct's, `null`
+too; and the write adds no `?? null` of its own (`any_none_made_null`).
+Corpus case `any_mapped_to_a_nullable_parameter` against native Rust in
+both builds; three mutations.

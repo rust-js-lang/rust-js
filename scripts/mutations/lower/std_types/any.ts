@@ -129,8 +129,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<&dyn IntoX>` passed on to JS is its pair, not its value",
     file: "src/lower/std_types/any.rs",
-    find: "                _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),\n",
-    replace: "                _ => made(&value).unwrap_or(value),\n",
+    find: "                    false => Expr::optional_member(value, js::HELD),\n",
+    replace: "                    false => value,\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
   },
   {
@@ -205,5 +205,17 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::optional_call(Expr::member(dictionary, type_id), Vec::new()));\n",
     replace: "            return Ok(Expr::call(Expr::member(dictionary, type_id), Vec::new()));\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
+  },
+  {
+    name: "any-none-null-unasked",
+    breaks: "an `Option<&dyn Any>` given to a nullable parameter is unwrapped by `?.value`, which makes its `None` `undefined` where the parameter takes `null` (#1581)",
+    file: "src/lower/std_types/any.rs",
+    find: "                _ => made(&value).unwrap_or_else(|| match none_null {\n",
+    replace: "                _ => made(&value).unwrap_or_else(|| match false {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_mapped_to_a_nullable_parameter.rs$"
+    ]
   },
 ];

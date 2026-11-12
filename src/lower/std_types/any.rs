@@ -177,11 +177,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::member(any, type_id), Vec::new()))
     }
 
+    /// Whether `any_given_to_js` of a `ty` with `none_null` gives a `None`
+    /// as `null` itself, an `Option` of what JS is given the value of, so
+    /// a nullable parameter's write adds no `?? null` (#1581).
+    pub(in crate::lower) fn any_none_made_null(&self, ty: Ty<'tcx>) -> bool {
+        (self.option_of(ty.peel_refs())).is_some_and(|inner| self.given_as_value(inner.peel_refs()))
+    }
+
     /// `value`, a `ty`, as JS is given it: a `dyn`'s value where its trait is
     /// nothing to JS, `Any`, which a binding takes as any JS value, or a
     /// marker of no methods, a union's, `&dyn IntoNumberOrStr` (ADR 0443),
     /// and of an `Option` of one, of each in a slice, an array or a `Vec`.
-    pub(in crate::lower) fn any_given_to_js(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
+    /// An `Option`'s `None` is given as it is, or, `none_null`, as a
+    /// nullable parameter takes it, `null`: never `?.value`'s `undefined`
+    /// there, nor a `?? null` that would make a `Some` of what's
+    /// `undefined`, a unit struct's, `null` too (#1581).
+    pub(in crate::lower) fn any_given_to_js(&self, value: Expr, ty: Ty<'tcx>, none_null: bool) -> Expr {
         let pointee = ty.peel_refs();
         // A pair made here, `{ value: v, impl }`: `v`; of each of a
         // conditional's values, `o != null ? { value: o, impl } : null`, an
@@ -211,7 +222,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return match value.kind {
                 js::ExprKind::Undefined | js::ExprKind::Null => value,
-                _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),
+                _ => made(&value).unwrap_or_else(|| match none_null {
+                    false => Expr::optional_member(value, js::HELD),
+                    // `o == null ? null : o.value`, of what reads the same
+                    // twice; else read once, `(f() ?? { value: null }).value`.
+                    true if value.reads_same() => Expr::cond(
+                        Expr::bin(js::Op::LooseEq, value.clone(), Expr::null()),
+                        Expr::null(),
+                        Expr::held(value),
+                    ),
+                    true => {
+                        // What's `null` for `None` already, `f() ?? null`, is `f()`.
+                        let value = match value.kind {
+                            js::ExprKind::Binary(js::Op::Coalesce, read, none)
+                                if matches!(none.kind, js::ExprKind::Null) =>
+                            {
+                                *read
+                            }
+                            _ => value,
+                        };
+                        Expr::held(Expr::bin(
+                            js::Op::Coalesce,
+                            value,
+                            Expr::object(vec![Prop::Field(js::HELD.into(), Expr::null())]),
+                        ))
+                    }
+                }),
             };
         }
         let item = match *pointee.kind() {
@@ -222,7 +258,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match item {
             Some(item) if self.given_as_value(item.peel_refs()) => {
                 if let js::ExprKind::Array(items) = &value.kind {
-                    return Expr::array(items.iter().map(|i| self.any_given_to_js(i.clone(), item)).collect());
+                    return Expr::array(
+                        (items.iter())
+                            .map(|i| self.any_given_to_js(i.clone(), item, none_null))
+                            .collect(),
+                    );
                 }
                 let each = Expr::arrow(
                     vec!["item".into()],
