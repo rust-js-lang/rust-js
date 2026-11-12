@@ -367,4 +367,13 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|&id| false && tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)\n",
     tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
   },
+  {
+    name: "drops-any-unexported",
+    breaks:
+      "a library's contract says none of its values drops, so its consumer, none of whose own does, gives the library's generic impl's method it compiles no drops: `drop Up 3` never printed (#1591)",
+    file: "src/lower/library/exports.rs",
+    find: "        drops_any: *drops_any,\n",
+    replace: "        drops_any: { let _ = drops_any; false },\n",
+    tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
+  },
 ];

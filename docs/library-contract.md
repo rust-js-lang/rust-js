@@ -87,6 +87,7 @@ m6-react's to see first (#1462).
 | `Library.makes_dropping_errors` | closed-world | whether it makes a `dyn Error` of a value that drops | its `dyn Error`s and `io::Error`s carry a drop (ADR 0462) |
 | `Library.makes_dropping_fn_dyns` | closed-world | whether it makes a `dyn Fn` holding a value that drops | a `dyn Fn` it's handed carries a drop (ADR 0626) |
 | `Library.makes_dropping_iterators` | closed-world | whether it boxes a `dyn Iterator` of a value that drops | its `Box<dyn Iterator>` carries a drop (ADR 0521) |
+| `Library.drops_any` | closed-world | whether any of its own values drops something: a destructor, a counted `Rc`'s count or a guard's borrow; a manifest without it reads as true | gives generic code drops though none of its own values drops, as the library's generic impls' methods it compiles may be given the library's (ADR 0451, amended, #1591) |
 | `Library.dictionary_consts` | closed-world | a program's: the trait constants its own generic code reads, which its dictionaries carry | one that reads another is refused (#597) |
 | `Library.dyns_drop_nothing` | closed-world | a program's: its own traits whose `dyn`s drop nothing | one that makes a `dyn` of what drops is refused (#597) |
 | `Library.counted_rcs` | closed-world | what the `Rc`s it counts point at | counts each as it does (ADR 0852) |

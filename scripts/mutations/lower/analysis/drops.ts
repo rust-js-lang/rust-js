@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !drops_any {",
+    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
     replace: "    if false {",
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
     snapshots: true,
@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !drops_any {",
-    replace: "    if !drops_any {",
+    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
+    replace: "    if !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
     tests: ["test/crates.test.ts", "-t", "impl_drops"],
   },
   {
@@ -146,5 +146,14 @@ export const mutations: Mutation[] = [
     find: "            if crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
     replace: "            if false && crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "libraries-drop-unasked",
+    breaks:
+      "a consumer none of whose own values drops gives generic code no drops, though a library's own code gives the library's generic impl's method it compiles, `Bag`'s `extend`, a value that drops: `drop Up 3` never printed (#1591)",
+    file: "src/lower/analysis/drops.rs",
+    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {\n",
+    replace: "    if !library && !drops_any(all_bodies, &runs) {\n",
+    tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
   },
 ];

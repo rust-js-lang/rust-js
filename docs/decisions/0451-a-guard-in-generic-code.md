@@ -175,3 +175,41 @@ prints `(199, 3)`, in both builds; Rustlantis's seeds 1909 and 2471 were
 it of custom MIR. What's flushed at a loop's header is now written before
 the loop, where Rust makes it: `const value = 200 - 1;` then `while
 (true)`. Case C of ADR 0262.
+
+## Amendment: a consumer's drop-free shortcut asks its libraries too (#1591)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Decision 2's "a crate none of whose values' drop runs anything gives
+none" held of the crate's own values alone. A consumer compiles a
+library's generic impls' methods itself, `Bag`'s `Extend::extend`, and the
+library's own generic code calls them through the dictionary the consumer
+gives, `up(Bag(vec![]))` calling `c.extend(Up { n: 0 })`, with the
+library's values. A consumer none of whose own values drops gave that
+method no drop of `T::IntoIter`, so its `for` loop never dropped `Up`:
+`drop Up 3` never printed (P0, both builds; found by the metamorphic
+net's `library` rewrite of #1511's case, which moves every item but `main`
+into a library).
+
+Now:
+- A library's contract says whether any of its own values drops,
+  `Library.drops_any`, `drops.rs`' own answer, `drops_any`, the one
+  decision (ADR 1129; contract version 32). A manifest without it reads
+  as `true`, never as drop-free.
+- A consumer takes the shortcut only where none of its own values drops
+  and no library under it, each of which it's told of, says one does
+  (`Foreign::libraries_drop`). A consumer of drop-free libraries is as
+  it was: no corpus case's JS, no crate pair's and no crate of the crate
+  corpus changes.
+
+Crate pair `library_extend_drops_the_crates_iterator`, a library's own
+iterator given to its own `Bag` by its generic code, and triple
+`library_extend_given_a_middle_crates_iterator`, a drop-free library's
+`Bag` extended by a middle library's generic code with its `Up`, each
+against native Rust. Mutations `libraries-drop-unasked` (`drops.ts`),
+`drops-any-unexported` (`library/exports.ts`) and
+`drops-any-missing-drop-free` (`library.ts`, by the unit test
+`a_contract_without_drops_any_may_drop`), caught;
+`drops-without-destructors` and `library-drops-skipped` refitted.
+

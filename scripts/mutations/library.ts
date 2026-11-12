@@ -199,4 +199,13 @@ export const mutations: Mutation[] = [
     replace: "m.module == named.module);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
   },
+  {
+    name: "drops-any-missing-drop-free",
+    breaks:
+      "a contract a compiler wrote before `drops_any` reads as a library none of whose values drops, so its consumer gives generic code no drops (#1591)",
+    file: "src/library.rs",
+    find: "    #[serde(default = \"made_before\")]\n    pub drops_any: bool,\n",
+    replace: "    #[serde(default)]\n    pub drops_any: bool,\n",
+    unitTests: "library::tests::a_contract_without_drops_any_may_drop",
+  },
 ];

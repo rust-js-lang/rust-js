@@ -10,6 +10,19 @@ use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
+/// Whether any value of the crate's drops something when it's dropped, a
+/// destructor, a counted `Rc`'s count or a guard's borrow, as `runs` says
+/// (ADR 0451): a library's contract says it of its own (#1591).
+pub(super) fn drops_any<'tcx>(all_bodies: &[&Body<'tcx>], runs: impl Fn(Ty<'tcx>, DefId) -> bool) -> bool {
+    let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
+    all_bodies.iter().any(|body| {
+        body.thir
+            .exprs
+            .iter()
+            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id))
+    })
+}
+
 /// The type parameters of the crate's own generic functions that a caller
 /// gives a value with a destructor (ADR 0098), directly or through a
 /// generic function of its own: those functions drop a `T` through a drop
@@ -27,15 +40,10 @@ pub(super) fn drop_params<'tcx>(
     // A crate none of whose values drops anything, a destructor, a counted
     // `Rc`'s count or a guard's borrow, and none of a library's consumers,
     // gives generic code nothing to drop: what's below would give drops
-    // nothing calls (ADR 0451).
-    let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
-    let drops_any = all_bodies.iter().any(|body| {
-        body.thir
-            .exprs
-            .iter()
-            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id))
-    });
-    if !library && !drops_any {
+    // nothing calls (ADR 0451). Nor do its libraries' values: the generic
+    // impls' methods of a library's it compiles are given that library's
+    // own, `Extend::extend` of its `Bag` given its `Up` by its `up` (#1591).
+    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {
         return IndexMap::default();
     }
     // A trait impl's methods are called through its dictionary, or resolved

@@ -202,6 +202,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
     pub drop_params: IndexMap<DefId, Vec<u32>>,
+    /// Whether any of its own values drops: a library's contract says it,
+    /// and a consumer, told of every library under it, asks each (ADR 0451,
+    /// amended, #1591).
+    pub drops_any: bool,
     /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
     pub copied: IndexSet<(DefId, u32)>,
     /// The type parameters whose `Clone` bound takes its dictionary (ADR
@@ -986,6 +990,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let may_run = runs;
     let runs = runs_settled;
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
+    let drops_any = drops::drops_any(all_bodies, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     // The functions JS calls, whose JS takes their type parameters as JS
@@ -1124,6 +1129,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         changed_vecs,
         stored_places,
         drop_params,
+        drops_any,
         copied,
         clones,
         unboxed,

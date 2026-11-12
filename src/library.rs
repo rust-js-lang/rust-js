@@ -83,7 +83,10 @@ use std::path::Path;
 /// `pub` function a consumer can compile decides its `Rc`s by its crate's
 /// own calls, each type parameter whose `Rc` its JS counts marked
 /// `Counted`, a consumer that counts otherwise compiling its own (#1234).
-pub const VERSION: u32 = 31;
+/// 32: `drops_any`, whether any of its own values drops,
+/// so a consumer none of whose own does still gives the generic impls'
+/// methods of the library's it compiles their drops (#1591).
+pub const VERSION: u32 = 32;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -433,6 +436,14 @@ pub struct Library {
     /// then carry a drop.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub makes_dropping_iterators: bool,
+    /// Whether any of its own values drops something, a destructor, a
+    /// counted `Rc`'s count or a guard's borrow (ADR 0451, amended, #1591):
+    /// a consumer's generic code, which compiles the library's generic
+    /// impls' methods, may then be given one, though none of the consumer's
+    /// own drops. A consumer is told of every library under it, so asks each.
+    /// A library a compiler wrote before is taken to.
+    #[serde(default = "made_before")]
+    pub drops_any: bool,
     /// A program's, `--tested`'s: the keys of the trait constants its
     /// dictionaries carry, those its own generic code reads, as `rust-js
     /// build` writes them (ADRs 0106, 1076, amended, #597). A consumer that
@@ -745,6 +756,8 @@ pub struct Exports {
     pub makes_dropping_fn_dyns: bool,
     /// Whether it boxes what drops a `dyn Iterator` (ADR 0521, #1420).
     pub makes_dropping_iterators: bool,
+    /// Whether any of its own values drops (ADR 0451, amended, #1591).
+    pub drops_any: bool,
     /// A program's dictionaries' constants, by key; None of a library's,
     /// which carry every one (#597).
     pub dictionary_consts: Option<IndexSet<String>>,
@@ -852,6 +865,7 @@ impl Exports {
             reads_formatter_options,
             merges_identities,
             makes_dropping_iterators,
+            drops_any,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,
@@ -890,6 +904,7 @@ impl Exports {
             reads_formatter_options: reads_formatter_options.into_iter().collect(),
             merges_identities: merges_identities.into_iter().collect(),
             makes_dropping_iterators,
+            drops_any,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,
@@ -1164,4 +1179,21 @@ impl Dependencies {
 /// it to say.
 pub fn refusal(metadata: &std::path::Path) -> std::path::PathBuf {
     metadata.with_extension("rust-js-refused")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A contract a compiler wrote before `drops_any` reads as a library
+    /// whose values may drop, never as one whose don't (#1591): a consumer
+    /// then gives the generic impls' methods it compiles their drops.
+    #[test]
+    fn a_contract_without_drops_any_may_drop() {
+        let mut manifest: serde_json::Value = serde_json::from_str(STD_MANIFEST).expect("std's manifest");
+        let library = manifest["library"].as_object_mut().expect("its contract");
+        library.remove("drops_any");
+        let library: Library = serde_json::from_value(manifest["library"].take()).expect("a contract");
+        assert!(library.drops_any);
+    }
 }

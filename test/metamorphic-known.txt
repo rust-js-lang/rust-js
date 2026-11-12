@@ -62,9 +62,3 @@ plain std loud-drop drop_guard_restores_taken_fields.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
-
-#1590 P0: generic code's for_each of an iterator whose own fold drops it drops it again after
-plain std for-each extend_through_a_dictionary_drops_its_iterator.rs
-
-#1591 P0: a library's own Extend, called through a dictionary from generic library code, never drops the crate iterator it's given
-plain std library extend_through_a_dictionary_drops_its_iterator.rs
