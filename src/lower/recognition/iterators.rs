@@ -744,6 +744,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };
+        // Not a search of a `str` by a predicate that runs the program's
+        // code, a JS iterator asking it as it's stepped (#1501).
+        if self.str_search_runs_code(ty) {
+            return false;
+        }
         let path = std_path(self.tcx, adt.did());
         let krate = std_crate(self.tcx, adt.did().krate);
         matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))
@@ -804,10 +809,52 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     .any(|name| path == format!("std::collections::{name}")))
     }
 
+    /// Whether `ty` is one of a `str`'s searches, `split` and its kin,
+    /// `matches` and `match_indices`, by a pattern that runs the program's
+    /// code (`pattern_runs_code`): std's iterator, which asks it as it's
+    /// stepped, `$lazySplitBy` and the like, not the array of what it finds
+    /// (#1501).
+    pub(in crate::lower) fn str_search_runs_code(&self, ty: Ty<'tcx>) -> bool {
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        of_std_crate(self.tcx, adt.did(), StdCrate::Core)
+            && std_path(self.tcx, adt.did()).starts_with("std::str::")
+            && matches!(
+                self.tcx.item_name(adt.did()).as_str(),
+                "Split"
+                    | "SplitN"
+                    | "RSplit"
+                    | "RSplitN"
+                    | "SplitTerminator"
+                    | "RSplitTerminator"
+                    | "SplitInclusive"
+                    | "Matches"
+                    | "RMatches"
+                    | "MatchIndices"
+                    | "RMatchIndices"
+            )
+            && args
+                .types()
+                .next()
+                .is_some_and(|pattern| self.pattern_runs_code(pattern))
+    }
+
+    /// Of a `str`'s search by a pattern that runs code (`str_search_runs_code`),
+    /// whether it knows its back as std's does, double-ended: every one but
+    /// `splitn`'s and `rsplitn`'s. `None` of another type.
+    pub(in crate::lower) fn str_search_knows_its_back(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        self.str_search_runs_code(ty)
+            .then(|| !matches!(self.tcx.item_name(adt.did()).as_str(), "SplitN" | "RSplitN"))
+    }
+
+    /// Whether `ty` is a `str`'s `split`, the array of its pieces: of a
+    /// pattern that runs no code, as a search by one that does is std's
+    /// iterator (`str_search_runs_code`, #1501).
     pub(in crate::lower) fn is_str_split(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Split"
             && std_path(self.tcx, adt.did()).contains("str::"))
+            && !self.str_search_runs_code(ty)
     }
 
     /// Whether `ty`'s `IntoIterator` is std's of every iterator, `impl<I:

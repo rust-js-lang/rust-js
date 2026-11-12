@@ -550,4 +550,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
   },
+  {
+    name: "closure-pattern-runs-no-code",
+    breaks: "a closure pattern is taken to run no code, so a `str`'s search by it is the array of what it finds, asking it of every `char` before the first piece (#1501)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Closure(..) | ty::FnPtr(..) => true,\n",
+    replace: "            ty::Closure(..) => false,\n            ty::FnPtr(..) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
+  {
+    name: "crate-fn-pattern-runs-no-code",
+    breaks: "a function of the crate's as a pattern is taken to run no code, as std's are, so its search asks it of every `char` first (#1501)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::FnDef(def_id, _) => !self.is_std(*def_id),\n",
+    replace: "            ty::FnDef(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
 ];

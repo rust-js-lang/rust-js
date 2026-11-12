@@ -510,4 +510,12 @@ export const mutations: Mutation[] = [
     replace: "            StringEdit::Retain if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
+  {
+    name: "closure-search-made-eager",
+    breaks: "a `str`'s search by a pattern that runs code is made the array of what it finds, `$splitBy`, its predicate asked of every `char` first (#1501)",
+    file: "src/lower/std_types/text.rs",
+    find: "if runs_code { lazy } else { eager }",
+    replace: "if runs_code { eager } else { eager }",
+    tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
 ];

@@ -326,6 +326,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// A pattern that's a predicate running the program's code, a closure,
+    /// a function not std's, or one known only as a pointer: which `char`s
+    /// it's asked of, and when, the program can see, so its searches are
+    /// std's, asked as they're stepped (#1501). A `char`, a `&str`, a set of
+    /// `char`s and std's own predicates run none.
+    pub(in crate::lower) fn pattern_runs_code(&self, pattern: Ty<'tcx>) -> bool {
+        match pattern.peel_refs().kind() {
+            ty::Closure(..) | ty::FnPtr(..) => true,
+            ty::FnDef(def_id, _) => !self.is_std(*def_id),
+            _ => false,
+        }
+    }
+
     pub(in crate::lower) fn is_set(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         self.is_std_type(ty, StdItem::HashSet) || self.is_std_type(ty, StdItem::BTreeSet)

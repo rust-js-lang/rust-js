@@ -878,4 +878,20 @@ export const mutations: Mutation[] = [
     replace: "            (false, true) => \"\",\n",
     tests: ["test/diagnostics.test.ts", "-t", "a dyn Iterator's size_hint"],
   },
+  {
+    name: "closure-search-back-unknown",
+    breaks: "a `str`'s search by a pattern that runs code isn't known to know its back, so its `next_back()` is refused (#1501)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if let Some(double_ended) = self.recognition().str_search_knows_its_back(ty) {\n",
+    replace: "        if let Some(double_ended) = None::<bool> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
+  {
+    name: "closure-search-hint-unknown",
+    breaks: "a `str`'s search by a pattern that runs code isn't known to know its hint, so its `size_hint()` is refused (#1501)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.recognition().str_search_runs_code(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
 ];

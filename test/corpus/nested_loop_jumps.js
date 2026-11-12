@@ -3,9 +3,9 @@
 import {
   $charIndices,
   $debugStr,
+  $lazySplitBy,
   $next,
   $peek,
-  $splitBy,
   $strSlice,
   iterator_peekable,
 } from "@rust-js/std";
@@ -55,7 +55,7 @@ function trailing(s) {
 
 function splitWords(s) {
   const words = [];
-  for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
+  for (const word of $lazySplitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
     const charIndices = iterator_peekable($charIndices(word));
     let init = 0;
     let mode = "Boundary";

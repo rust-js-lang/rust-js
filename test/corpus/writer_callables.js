@@ -5,12 +5,12 @@ import {
   $chars,
   $formatted,
   $iter,
+  $lazySplitBy,
   $next,
   $out,
   $peek,
   $restStr,
   $sink,
-  $splitBy,
   $strSlice,
   iterator_peekable,
 } from "@rust-js/std";
@@ -43,7 +43,7 @@ function capitalize(s, options) {
 function transform(s, withWord, boundary, options) {
   const f = $sink();
   let firstWord = true;
-  for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
+  for (const word of $lazySplitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
     const charIndices = iterator_peekable($charIndices(word));
     let init = 0;
     let mode = "Boundary";

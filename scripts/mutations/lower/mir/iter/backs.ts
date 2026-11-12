@@ -834,8 +834,8 @@ export const mutations: Mutation[] = [
     name: "back-as-front-variable-backless",
     breaks: "`next_back()` of a `repeat_n` a variable holds is refused (#1139)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs());\n",
-    replace: ";\n",
+    find: "            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs())\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
   {

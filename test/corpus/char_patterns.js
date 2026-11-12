@@ -2,10 +2,13 @@
 
 import {
   $debugStr,
+  $lazyMatchIndicesBy,
+  $lazyRsplitBy,
+  $lazySplitInclusiveBy,
+  $lazySplitTerminatorBy,
   $matchIndicesBy,
   $replaceBy,
   $rsplitBy,
-  $splitInclusiveBy,
   $splitOnceBy,
   $splitTerminatorBy,
   $stripBy,
@@ -20,7 +23,7 @@ function main() {
   const s = "a1é2,b3;🦀4";
   const digit = (c) => /^[0-9]$/.test(c);
   console.log(
-    `[${Array.from($rsplitBy(s, digit))
+    `[${Array.from($lazyRsplitBy(s, digit))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -30,7 +33,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rsplitBy(s, digit, 0))
+    `[${Array.from($lazyRsplitBy(s, digit, 0))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -40,7 +43,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($splitTerminatorBy("x,y,", (c) => c === ","))
+    `[${Array.from($lazySplitTerminatorBy("x,y,", (c) => c === ","))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -50,7 +53,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($splitInclusiveBy(s, digit))
+    `[${Array.from($lazySplitInclusiveBy(s, digit))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -60,7 +63,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($matchIndicesBy(s, (c) => !(c.charCodeAt(0) < 128), true))
+    `[${Array.from($lazyMatchIndicesBy(s, (c) => !(c.charCodeAt(0) < 128), true))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
@@ -81,8 +84,8 @@ function main() {
   );
   console.log(`${$replaceBy(s, digit, "#")} ${$replaceBy(s, (c) => /^[0-9]$/.test(c), "", 2)}`);
   console.log(`${$replaceBy("hello world", (c) => /^\p{White_Space}$/u.test(c), "_")}`);
-  console.log(`${Iterator.from($splitTerminatorBy("", digit)).reduce((n) => n + 1, 0)}`);
-  console.log(`${Iterator.from($splitInclusiveBy("", digit)).reduce((n) => n + 1, 0)}`);
+  console.log(`${$lazySplitTerminatorBy("", digit).reduce((n) => n + 1, 0)}`);
+  console.log(`${$lazySplitInclusiveBy("", digit).reduce((n) => n + 1, 0)}`);
   const stripPrefix = $stripBy("1", digit);
   const value$4 = $stripBy("ab", digit);
   console.log(

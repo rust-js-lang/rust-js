@@ -40,6 +40,9 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// Whether the crate asks a `Chars` its rest, its `Debug` or a `dyn` of
     /// it (#1186).
     pub(in crate::lower) chars_whole: bool,
+    /// Whether the crate asks a `str`'s search by a pattern that runs code
+    /// its back, its `Debug` or a `dyn` of it (#1501).
+    pub(in crate::lower) searches_whole: bool,
     /// The trait constants generic code reads (ADR 0106).
     pub(in crate::lower) generic_consts: &'a IndexSet<DefId>,
     pub(in crate::lower) changed_vecs: &'a IndexSet<Ty<'tcx>>,

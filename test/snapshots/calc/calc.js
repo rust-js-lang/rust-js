@@ -13,10 +13,10 @@ import {
   $debugF64,
   $debugStr,
   $filterEnds,
+  $lazySplitBy,
   $mapEnds,
   $orInsert,
   $parseF64,
-  $splitBy,
   $unwrap,
 } from "@rust-js/std";
 
@@ -153,9 +153,9 @@ function eval$(src) {
 
 export function wordFreq(text) {
   const m = new Map();
-  for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))
-    .values()
-    .filter((w) => w !== "")) {
+  for (const w of $lazySplitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c)).filter(
+    (w) => w !== "",
+  )) {
     const key = w.toLowerCase();
     const current = $orInsert(m, key, 0);
     m.set(key, (current + 1) >>> 0);
@@ -207,7 +207,7 @@ export function report() {
   out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1], "'")}))`}\n`;
   const s = "hello world";
   const length = s.split("o").length;
-  const collect = $splitBy(s, (c) => c === "l");
+  const collect = Array.from($lazySplitBy(s, (c) => c === "l"));
   const value$2 = Array.from(s).toReversed().join("");
   out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${$filterEnds($chars(s), (c) => "aeiou".includes(c)).reduce((n) => n + 1, 0)}\n`;
   return out;

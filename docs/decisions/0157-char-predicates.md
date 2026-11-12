@@ -105,3 +105,34 @@ searches so. The iterators of a closure pattern, `split` and its kin,
 `matches`, `match_indices`, follow in their own commit under #1501. Corpus
 case `str_split_once_by_a_closure_searches_as_std`; mutation
 `split-once-asks-every-char`.
+
+Then (2026-11-12, #1501 part 2): **a `str`'s searches by a pattern that runs
+code are std's iterators, asked as they're stepped.** `split`, `splitn`,
+`rsplit`, `rsplitn`, `split_terminator`, `rsplit_terminator`,
+`split_inclusive`, `matches`, `rmatches`, `match_indices` and
+`rmatch_indices` of a closure, a function of the crate's or a function
+pointer (`recognition::pattern_runs_code`, keyed on the pattern's type, the
+coordinator's call) are `$lazySplitBy` and the like: JS iterators that ask
+the pattern of each `char` as a piece is stepped, from the front or from
+the back, the two ends meeting, as std's `CharPredicateSearcher` and
+`SplitInternal` do (`allow_trailing_empty`, `finished`, the inclusive steps,
+`SplitN`'s count), its hint std's default, `(0, None)`. Its form has a back
+wherever std's is double-ended, so its own `next_back()` steps it
+(`has_a_back`); what's made of one, a `map`, is made knowing its back only
+where the crate asks a search whole, its back, its `Debug`, a `dyn` of one
+(`searches_whole`, the rule `chars_whole` is for a `Chars`, one walk of
+`analysis/chars_asked.rs` asked of each kind, `TextIter`), else JS's own,
+`.map(f)`, as of a string's `chars()`. They were the array of what the search
+found, the pattern asked of every `char` before the first piece: a printing
+closure printed out of order, a `take(1)` asked it of the whole string, and
+a panic came before any piece. A `char`, a `&str`, a set of `char`s and
+std's own predicates run no code: their searches stay the array, now
+`Array.from` of the same iterator, so one implementation answers both, and
+their output is unchanged. Five corpus snapshots and two examples' change: `Iterator.from(..)` and
+`.values()` of a closure's search are the iterator itself, a `for` steps it
+as it did, and a `collect` of one, `splitn_by`'s, `calc`'s and `text`'s, is
+`Array.from($lazySplitBy(..))`. Corpus
+case `str_searches_ask_a_closure_as_they_step` against native Rust in both
+builds; ten mutations, caught, and six of the eager helpers' re-anchored to
+the one implementation, caught. A slice's `split` family and `chunk_by`,
+whose predicate is always the program's, follow under #1501.

@@ -672,9 +672,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not std's compiled struct, which has a back only given it,
         // `$knowing`'s (#856), as `knows_its_back_beneath` says.
         // An array's, or a `repeat_n`'s, whose back steps are its front
-        // steps (#1139), by its type, as its runtime form has them.
+        // steps (#1139), by its type, as its runtime form has them; and a
+        // `str`'s search by a pattern that runs code, `$lazySplitBy` and the
+        // like, which has one wherever std's is double-ended (#1501).
         let by_its_type = self.steps_an_array(iter_ty)
-            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs());
+            || crate::lower::recognition::steps_back_as_front(self.tcx, iter_ty.peel_refs())
+            || self.recognition().str_search_knows_its_back(iter_ty.peel_refs()) == Some(true);
         (by_its_type || structural() && !crate::lower::iterators::form_lacks_a_back(value))
             && !self.compiled_struct(iter_ty.peel_refs(), value)
     }

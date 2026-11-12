@@ -399,6 +399,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             1
         };
+        // Of a pattern that runs the program's code, its search asked as it's
+        // stepped, std's iterator, `$lazySplitBy` (#1501); else the array of
+        // what it finds, which reads the same.
+        let runs_code = tys
+            .get(at)
+            .is_some_and(|&pattern| self.recognition().pattern_runs_code(pattern));
+        let lazy = |eager: &'static str, lazy: &'static str| if runs_code { lazy } else { eager };
         if matches!(
             op,
             TextOp::SplitBy
@@ -474,13 +481,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if upper { "toUpperCase" } else { "toLowerCase" },
                 Vec::new(),
             )),
-            TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
+            TextOp::SplitBy => Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![arg(), arg()]),
             TextOp::RsplitBy(limited) => {
                 let s = arg();
                 let n = limited.then(&mut arg);
                 let mut list = vec![s, arg()];
                 list.extend(n);
-                call("$rsplitBy", list)
+                call(lazy("$rsplitBy", "$lazyRsplitBy"), list)
             }
             TextOp::SplitTerminatorBy(rev)
             | TextOp::MatchIndicesBy(rev)
@@ -491,14 +498,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(true));
                 }
                 let helper = match op {
-                    TextOp::SplitTerminatorBy(_) => "$splitTerminatorBy",
-                    TextOp::MatchIndicesBy(_) => "$matchIndicesBy",
+                    TextOp::SplitTerminatorBy(_) => lazy("$splitTerminatorBy", "$lazySplitTerminatorBy"),
+                    TextOp::MatchIndicesBy(_) => lazy("$matchIndicesBy", "$lazyMatchIndicesBy"),
                     TextOp::SplitOnceBy(_) => "$splitOnceBy",
                     _ => "$stripBy",
                 };
                 call(helper, list)
             }
-            TextOp::SplitInclusiveBy => call("$splitInclusiveBy", vec![arg(), arg()]),
+            TextOp::SplitInclusiveBy => call(lazy("$splitInclusiveBy", "$lazySplitInclusiveBy"), vec![arg(), arg()]),
             TextOp::ReplaceBy(limited) => {
                 let mut list = vec![arg(), arg(), arg()];
                 if limited {
@@ -511,11 +518,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if rev {
                     list.push(Expr::bool(true));
                 }
-                Expr::call(Expr::helper("$matchesBy"), list)
+                Expr::call(Expr::helper(lazy("$matchesBy", "$lazyMatchesBy")), list)
             }
             TextOp::SplitNBy => {
                 let (s, n, matches) = (arg(), arg(), arg());
-                Expr::call(Expr::helper("$splitBy"), vec![s, matches, n])
+                Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![s, matches, n])
             }
             TextOp::ContainsBy => {
                 let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]);

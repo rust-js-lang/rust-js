@@ -1,4 +1,5 @@
-//! Whether the crate asks a string's `Chars` more than its steps from its
+//! Whether the crate asks a string's `Chars`, or a `str`'s search by a
+//! pattern that runs code (#1501), more than its steps from its
 //! front, or its back, which the lowering asks of each value (#1186): its
 //! rest, `as_str()`, its hint, its `Debug`, a `dyn` of it, whose methods
 //! no JS shows, or what code it doesn't see asks. A `Chars` is JS's own
@@ -9,21 +10,22 @@
 //! MIR (#1325).
 
 use crate::lower::Body;
-use crate::lower::recognition::{Recognition, reaches_str_chars};
+use crate::lower::recognition::{Recognition, TextIter, reaches_text_iter};
 use rustc_middle::mir::{self, CastKind, Rvalue, TerminatorKind};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 
 /// Whether `all_bodies` ask a `Chars` more than its front's steps: a call
-/// that does (`Recognition::asks_chars_whole`), or a `dyn` made of what
+/// that does (`Recognition::asks_whole`), or a `dyn` made of what
 /// holds one; of a crate that keeps capacities, a `Vec` grown by what holds
 /// one, whose hint std grows it by (`vec_grown_by`, #1316). Of a `library`, too, where a function another crate may call
 /// gives or takes what holds one, which that crate may ask anything.
-pub(super) fn asks_chars_whole<'tcx>(
+pub(super) fn asks_whole<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, keeps_capacity): (bool, bool),
+    kind: TextIter,
 ) -> bool {
     all_bodies.iter().any(|body| {
         let thir = &body.thir;
@@ -42,10 +44,14 @@ pub(super) fn asks_chars_whole<'tcx>(
                     let mut seen = Vec::new();
                     sig.inputs_and_output
                         .iter()
-                        .any(|ty| reaches_str_chars(recognition, ty, &mut seen))
+                        .any(|ty| reaches_text_iter(recognition, kind, ty, &mut seen))
                 }
         };
-        let mir_asks = !body.def_id.is_local() && body.mir.as_ref().is_some_and(|mir| mir_asks(recognition, &mir.body));
+        let mir_asks = !body.def_id.is_local()
+            && body
+                .mir
+                .as_ref()
+                .is_some_and(|mir| mir_asks(recognition, &mir.body, kind));
         crosses
             || mir_asks
             || thir.exprs.iter().any(|expr| match expr.kind {
@@ -53,12 +59,12 @@ pub(super) fn asks_chars_whole<'tcx>(
                     cast: ty::adjustment::PointerCoercion::Unsize,
                     source,
                     ..
-                } => recognition.holds_str_chars(thir[source].ty),
+                } => recognition.holds_text_iter(kind, thir[source].ty),
                 ExprKind::ZstLiteral { .. } => crate::lower::fn_def(expr.ty).is_some_and(|(callee, args)| {
-                    recognition.asks_chars_whole(callee, args)
+                    recognition.asks_whole(kind, callee, args)
                         || keeps_capacity
                             && (recognition.vec_grown_by(callee, args, ty::TypingEnv::post_analysis(tcx, body.def_id)))
-                                .is_some_and(|grown| recognition.holds_str_chars(grown))
+                                .is_some_and(|grown| recognition.holds_text_iter(kind, grown))
                 }),
                 _ => false,
             })
@@ -66,19 +72,19 @@ pub(super) fn asks_chars_whole<'tcx>(
 }
 
 /// Whether `body`, another crate's MIR the crate compiles, asks a `Chars`
-/// more than its front's steps, as `asks_chars_whole` asks a THIR: a call
+/// more than its front's steps, as `asks_whole` asks a THIR: a call
 /// that does, or a `dyn` made of what holds one.
-fn mir_asks<'tcx>(recognition: Recognition<'_, 'tcx>, body: &mir::Body<'tcx>) -> bool {
+fn mir_asks<'tcx>(recognition: Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, kind: TextIter) -> bool {
     body.basic_blocks.iter().any(|data| {
         let calls = matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
-            if func.const_fn_def().is_some_and(|(callee, args)| recognition.asks_chars_whole(callee, args)));
+            if func.const_fn_def().is_some_and(|(callee, args)| recognition.asks_whole(kind, callee, args)));
         calls
             || data.statements.iter().any(|statement| {
                 matches!(statement.kind.as_assign(), Some((_, Rvalue::Cast(
                     CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _),
                     operand,
                     _,
-                ))) if recognition.holds_str_chars(operand.ty(body, recognition.tcx)))
+                ))) if recognition.holds_text_iter(kind, operand.ty(body, recognition.tcx)))
             })
     })
 }

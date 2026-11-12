@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "chars-dyn-unseen",
     breaks: "a `Chars` made a `dyn DoubleEndedIterator` is JS's own string iterator, whose `next_back()` its dictionary can't step",
     file: "src/lower/analysis/chars_asked.rs",
-    find: "                } => recognition.holds_str_chars(thir[source].ty),\n",
-    replace: "                } => false && recognition.holds_str_chars(thir[source].ty),\n",
+    find: "                } => recognition.holds_text_iter(kind, thir[source].ty),\n",
+    replace: "                } => false && recognition.holds_text_iter(kind, thir[source].ty),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
   },
   {

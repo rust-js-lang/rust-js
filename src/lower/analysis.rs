@@ -191,6 +191,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// makes a `dyn` of one, so each is `$chars(s)`, not JS's own string
     /// iterator (#1186).
     pub chars_whole: bool,
+    /// Whether the crate asks a `str`'s search by a pattern that runs code
+    /// its back, its `Debug`, or makes a `dyn` of one, so what's made of
+    /// each is made knowing its back (#1501).
+    pub searches_whole: bool,
     pub changed_vecs: IndexSet<Ty<'tcx>>,
     /// The types whose objects say where they're stored (#1113).
     pub stored_places: StoredPlaces<'tcx>,
@@ -741,7 +745,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // by the makers of what's stepped from its back (#1236).
     let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, keeps_capacity);
     back_stepped.typed.extend(hint_asked.knowing);
-    let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, (library, keeps_capacity));
+    let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
+    let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);
+    let searches_whole = asks_whole(crate::lower::recognition::TextIter::Search);
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).
@@ -1106,6 +1112,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         back_stepped,
         hinted: hint_asked.hinted,
         chars_whole,
+        searches_whole,
         changed_vecs,
         stored_places,
         drop_params,

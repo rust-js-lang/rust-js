@@ -699,9 +699,13 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// (`$decodeUtf16`, #1151), a string's `chars()` the crate steps from
 /// its back or asks its rest, and every `char_indices()`, `$chars` and
 /// `$charIndices` (#1186), a channel's `iter()` and `try_iter()`,
-/// `$recvItems` and `$tryRecvItems` (#1176), and each of its generators,
+/// `$recvItems` and `$tryRecvItems` (#1176), a `str`'s searches by a
+/// predicate that runs the program's code, asked as they're stepped,
+/// `$lazySplitBy`, `$lazyRsplitBy`, `$lazySplitTerminatorBy`,
+/// `$lazySplitInclusiveBy`, `$lazyMatchesBy` and `$lazyMatchIndicesBy`
+/// (#1501), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 46] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 52] = [
     "$stdIterator",
     "$chars",
     "$charIndices",
@@ -748,6 +752,12 @@ pub(crate) const ITERATOR_HELPERS: [&str; 46] = [
     "$decodeUtf16",
     "$recvItems",
     "$tryRecvItems",
+    "$lazySplitBy",
+    "$lazyRsplitBy",
+    "$lazySplitTerminatorBy",
+    "$lazySplitInclusiveBy",
+    "$lazyMatchesBy",
+    "$lazyMatchIndicesBy",
 ];
 
 /// What a binding's call made, `made`, of type `output`: of a `dyn
