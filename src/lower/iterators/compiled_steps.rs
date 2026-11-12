@@ -569,6 +569,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.iterator_given_as_it_is(ty) {
             return None;
         }
+        // A `Box<I>`'s, `I`'s, of what std's `Box<I>` passes on (#1611).
+        if let Some(inner) = ty.boxed_ty() {
+            return Some(self.boxed_iterator_dictionary(trait_id, self.iterator_evidence(inner, trait_id)?));
+        }
         self.evidence_for(ty::TraitRef::new(self.tcx, trait_id, [ty]))
     }
 }

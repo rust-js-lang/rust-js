@@ -367,4 +367,12 @@ export const mutations: Mutation[] = [
     replace: "                    if crate::lower::traits::is_lowered_impl(foreign, imp) && false {\n                        pass_on(&mut passed, imp, impl_args);\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
+  {
+    name: "box-step-of-its-param-unrecorded",
+    breaks: "a `Box<I>` stepped isn't a step of its `I`, so generic code is given no dictionary of `I` and steps its value as a JS iterator (#1611)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                let self_ty = crate::lower::recognition::iterator_held(self_ty);\n",
+    replace: "                let self_ty = self_ty.peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

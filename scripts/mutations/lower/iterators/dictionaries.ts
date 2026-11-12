@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "                    || self.knows_its_length(ty) =>\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
+  {
+    name: "box-dictionary-passes-folds",
+    breaks: "a `Box<I>`'s dictionary of `I`'s passes on `I`'s own `count` and `fold`, which std's `Box<I>` never calls (#1611)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        let passed: Vec<String> = (crate::lower::recognition::BOX_PASSES_ON.iter())\n",
+    replace: "        let passed: Vec<String> = ([\"next\", \"size_hint\", \"nth\", \"last\", \"count\", \"fold\"].iter())\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

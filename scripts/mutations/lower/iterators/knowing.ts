@@ -894,4 +894,12 @@ export const mutations: Mutation[] = [
     replace: "        self.array_source(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "box-param-not-held-as-it-is",
+    breaks: "generic code's `Box<I>` of an `I` held as it is is stepped as a JS iterator its caller's value isn't, `count()` of its fields (#1611)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || ty.boxed_ty().is_some_and(|inner| self.iterator_given_as_it_is(inner))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

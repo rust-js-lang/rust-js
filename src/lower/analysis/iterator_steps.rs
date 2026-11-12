@@ -321,7 +321,9 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             if !by.is_empty()
                 && let Some(self_ty) = args.types().next()
             {
-                let self_ty = self_ty.peel_refs();
+                // Through a reference or a `Box`, what it steps, a `Box<I>`'s
+                // `I` (`iterator_held`, #1611).
+                let self_ty = crate::lower::recognition::iterator_held(self_ty);
                 // Another iterator it's given, `chain(other)`'s, stepped
                 // with it.
                 for given in args.types().skip(1) {

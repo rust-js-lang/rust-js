@@ -264,4 +264,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "box-param-evidence-unmade",
+    breaks: "generic code's `Box<I>` of an `I` held as it is has no dictionary, so it's stepped as a JS iterator its caller's value isn't (#1611)",
+    file: "src/lower/iterators/compiled_steps.rs",
+    find: "        if let Some(inner) = ty.boxed_ty() {\n",
+    replace: "        if let Some(inner) = ty.boxed_ty().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
 ];

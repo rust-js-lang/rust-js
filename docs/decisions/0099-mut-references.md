@@ -767,3 +767,29 @@ native Rust in both builds, every other snapshot unchanged; mutations
 `box-iterator-not-held`, `box-param-not-given-a-js-iterator` and
 `box-param-held-as-it-is`; `box-iterator-defaults-not-passed-through` and
 `given-as-it-is-not-in-input` re-anchored.
+
+## Amendment (2026-11-13, #1611): generic code's `Box<I>` of an `I` held as it is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. Of generic
+code's `Box<I>` whose `I` it holds as it is with its dictionary, as an
+`impl Is<Box<I>>` gives it (#966's shape), a default, `count()`, was
+passed on to `I`'s, its caller's dictionary's own `count`; and the
+analysis, which found no step of `I` through the box, gave it no
+dictionary, so its value was stepped as a JS iterator it isn't, `count()`
+of `Up(0, 3)` its two fields, `2` where native Rust gives `3`.
+
+A step of a `Box<I>` is a step of its `I`, as the analysis now reads it
+(`iterator_held`); a `Box<I>` of an `I` held as it is is held as it is
+too (`iterator_given_as_it_is`), stepped by `I`'s dictionary limited to
+what std's `Box<I>` passes on (`iterator_evidence`,
+`boxed_iterator_dictionary`, `BOX_PASSES_ON`): `$given(b, { next:
+IIterator.next, sizeHint: IIterator.sizeHint, nth: IIterator.nth, last:
+IIterator.last })`; and `passed_through_box` passes no default on to a
+type parameter, whose caller's dictionary may carry the crate's own.
+Held by `test/corpus/boxed_iterator_steps_as_std_box_does.rs`, its
+`impl Is<Box<I>>` calls, against native Rust in both builds, and the
+metamorphic net's `impl-owned` rewrite of it, off
+`test/metamorphic-known.txt`; mutations `box-param-default-passed-through`,
+`box-param-evidence-unmade`, `box-param-not-held-as-it-is`,
+`box-step-of-its-param-unrecorded` and `box-dictionary-passes-folds`; 2
+re-anchored.

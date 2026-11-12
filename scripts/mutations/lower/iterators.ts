@@ -445,10 +445,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "box-param-held-as-it-is",
-    breaks: "generic code's `Box<I>` is taken for a value holding `I`, given as it is, though its body steps it as a JS iterator (#1601)",
+    breaks: "generic code's `Box<I>` is taken for a value holding `I`, given as it is with `I`'s dictionary, where it's given as a JS iterator, the box of it, stepped as std's `Box<I>` steps it: right, as #1611's box dictionary steps it, and read less plainly (#1601)",
     file: "src/lower/iterators.rs",
     find: "(inputs.iter()).any(|&input| !itself(crate::lower::recognition::iterator_held(input)) && has(input));\n",
     replace: "(inputs.iter()).any(|&input| !itself(input.peel_refs()) && has(input));\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+    snapshots: true,
   },
 ];

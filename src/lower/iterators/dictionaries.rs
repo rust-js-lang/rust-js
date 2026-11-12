@@ -377,6 +377,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         entries_passed_on(of, passed)
     }
 
+    /// A dictionary of `trait_id`, `Iterator` or one of its extensions, of a
+    /// `Box<I>`, of `I`'s, `of`: what std's impl for a `Box<I>` passes on
+    /// to `I`'s, `BOX_PASSES_ON`'s, its other steps the trait's defaults,
+    /// by `next`, never the crate's own of them a caller's dictionary may
+    /// carry, its `fold` or `count` (#1611).
+    pub(in crate::lower) fn boxed_iterator_dictionary(&self, trait_id: DefId, of: Expr) -> Expr {
+        let entry = (!crate::lower::recognition::is_std_def(self.tcx, trait_id, StdItem::Iterator))
+            .then(|| crate::lower::recognition::extension_entry(self.tcx, trait_id));
+        let declares = |name: &str| {
+            (self.tcx.associated_items(trait_id).in_definition_order())
+                .any(|item| item.is_fn() && item.name().as_str() == name)
+        };
+        let passed: Vec<String> = (crate::lower::recognition::BOX_PASSES_ON.iter())
+            .filter(|&&name| declares(name))
+            .map(|&name| match entry {
+                Some(entry) if declares(entry) && name == entry => entry.to_string(),
+                _ => crate::lower::bindings::trait_method_name(self.tcx, trait_id, name),
+            })
+            .collect();
+        entries_passed_on(of, passed)
+    }
+
     /// An extension's dictionary of a `&mut I`, of `I`'s, `of`: what std's
     /// impl for it passes on to its `I`, `next_back`, `nth_back` and
     /// `try_rfold` of a `DoubleEndedIterator`, `len` of an

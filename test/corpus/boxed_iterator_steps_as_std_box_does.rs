@@ -4,7 +4,9 @@
 // and `next_back` and `nth_back` (alloc/src/boxed/iter.rs): its `fold`,
 // `count`, `sum` and `max` are the trait's defaults, stepped by `next`,
 // never the iterator's own of them (#1601). Of generic code's `Box<I>`
-// too, given the box of it as a JS iterator stepped so.
+// too, given the box of it as a JS iterator stepped so; and of one an
+// `impl Is<Box<I>>` gives, its `I` held as it is, by its dictionary's
+// steps a `Box` passes on alone (#1611).
 struct Up(u32, u32);
 
 impl Iterator for Up {
@@ -59,6 +61,24 @@ fn boxed_last<I: Iterator<Item = u32>>(b: Box<I>) -> Option<u32> {
     b.last()
 }
 
+trait Is<T> {
+    fn is(self) -> T;
+}
+
+impl<T> Is<T> for T {
+    fn is(self) -> T {
+        self
+    }
+}
+
+fn counted_through<I: Iterator<Item = u32>>(b: impl Is<Box<I>>) -> usize {
+    b.is().count()
+}
+
+fn last_through<I: Iterator<Item = u32>>(b: impl Is<Box<I>>) -> Option<u32> {
+    b.is().last()
+}
+
 fn main() {
     println!("{}", Box::new(Up(0, 3)).sum::<u32>());
     println!("{}", Box::new(Up(0, 3)).count());
@@ -69,6 +89,8 @@ fn main() {
     println!("{:?}", Box::new(Up(0, 3)).size_hint());
     println!("{}", boxed_count(Box::new(Up(0, 3))));
     println!("{:?}", boxed_last(Box::new(Up(0, 3))));
+    println!("{}", counted_through(Box::new(Up(0, 3))));
+    println!("{:?}", last_through(Box::new(Up(0, 3))));
     let mut b = Box::new(Up(0, 4));
     println!("{:?} {:?}", b.next(), b.nth(1));
     println!("{}", b.by_ref().count());

@@ -24,6 +24,7 @@
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
+//! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `src/lower/generic_facts.rs boxed_steps_given` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
@@ -544,6 +545,19 @@ pub(in crate::lower) fn holds_type_parameter(ty: Ty<'_>, index: u32) -> bool {
     ty.walk()
         .filter_map(|part| part.as_type())
         .any(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
+}
+
+/// Whether `ty`, what a `Box<I>` holds, is stepped by a dictionary its
+/// caller gives, which may carry the crate's own steps, `fold` or `count`,
+/// that std's `Box<I>` never calls: a type only its bounds know, a type
+/// parameter or an associated type of one (#1611). No default of the box
+/// passes on to it (`passed_through_box`).
+pub(in crate::lower) fn boxed_steps_given<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+) -> bool {
+    crate::lower::recognition::is_unknown_where(tcx, ty, typing_env)
 }
 
 /// Whether a caller gives function `DefId`'s type parameter of an index
