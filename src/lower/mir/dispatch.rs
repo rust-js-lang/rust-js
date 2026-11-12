@@ -1159,7 +1159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (`Std::never_through_a_trait_call`); nor std's `clone_from`, `*dest = source.clone()` written in place,
         // where the crate's impl isn't known to have its own.
         if !known.is_some_and(Std::never_through_a_trait_call)
-            && (rust_impl || known != Some(Std::CloneFrom))
+            && (rust_impl || self.std_trait_call(known, def_id))
             && !self.is_binding_of(def_id, generic_args)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
@@ -1284,5 +1284,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::InstanceKind::Item(item) if bindings::is_binding(tcx, item) => Some((item, instance.args)),
             _ => None,
         }
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether std's impl of `def_id`, `known` as it's recognised, may go by
+    /// the trait call: not `clone_from`, written in place where the crate's
+    /// impl isn't known to have its own; nor a formatting trait's `fmt`,
+    /// whose dictionary's entry gives the value's text, no `Formatter`, so
+    /// what no recogniser takes is refused, never that call (#1477).
+    fn std_trait_call(&self, known: Option<Std>, def_id: rustc_span::def_id::DefId) -> bool {
+        known != Some(Std::CloneFrom) && !crate::lower::recognition::is_fmt_method(self.tcx, def_id)
     }
 }

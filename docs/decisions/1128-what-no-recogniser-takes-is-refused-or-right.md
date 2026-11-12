@@ -136,3 +136,19 @@ reader's refused without their recognisers. Mutations
 `dyns-mut-kept-from-its-own-dictionary` and
 `librarys-mut-kept-from-its-own-dictionary`
 (`lower/mir/assign/boxed_args.ts`).
+
+## Amendment: a formatting trait's `fmt` is never the trait call's, and `Borrow::borrow` is right without its recogniser (2026-11-12, #1477)
+
+A formatting trait's `fmt`, `Display`'s, `Debug`'s, `LowerHex`'s and the
+others', of an impl rust-js didn't compile, is never routed through the
+trait call: its dictionary's entry takes the value and gives its text, with
+no `Formatter`, so without its recogniser `fmt_to_held_formatter.rs` wrote
+into the held formatter's place what it gave back. One condition beside
+#1487's (`is_fmt_method`, src/lower/recognition/fmt.rs) sends what no
+recogniser takes to the refusal; a crate's own impl is its trait call as
+before. `std::fmt::Debug::fmt` leaves `unrecognizedDiffers`; a tidy-stages
+test holds the refusal, mutation fmt-through-the-trait-call. And
+`Borrow::borrow` leaves it too: without its recogniser, each of the 14
+corpus cases that call it runs as native Rust does or is refused (agent-fable's
+sweep of 16 pairs, rerun here). `AsRef::as_ref` leaves with #1518, and
+`IntoIterator::into_iter` with its adaptation by the parameter.

@@ -387,8 +387,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `clone_from` is asked of a `Clone` dictionary, which has only `clone`, and refused",
     file: "src/lower/mir/dispatch.rs",
-    find: "            && (rust_impl || known != Some(Std::CloneFrom))\n",
-    replace: "",
+    find: "        known != Some(Std::CloneFrom) && !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    replace: "        !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
   {
@@ -864,5 +864,13 @@ export const mutations: Mutation[] = [
     find: "                given if self.mut_ref_form(boxed).read_is_itself() => given,\n",
     replace: "                given => given,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
+  },
+  {
+    name: "fmt-through-the-trait-call",
+    breaks: "a formatting trait's `fmt` of std's impl goes by the trait call, whose dictionary entry gives text and takes no `Formatter`, where no recogniser takes it (#1477)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        known != Some(Std::CloneFrom) && !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    replace: "        known != Some(Std::CloneFrom)\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "a formatting trait's fmt is refused without its recogniser"],
   },
 ];

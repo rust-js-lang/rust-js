@@ -143,10 +143,8 @@ function forgettable(): string[] {
  * made of one. A list that only shrinks: a name leaves it with its fix. */
 const unrecognizedDiffers: Record<string, string> = Object.fromEntries(
   [
-    "std::borrow::Borrow::borrow",
     "std::convert::AsRef::as_ref",
     "std::iter::IntoIterator::into_iter",
-    "std::fmt::Debug::fmt",
   ].map((path) => [path, "#1477"]),
 );
 
@@ -384,9 +382,9 @@ test("a std function's call without its recogniser is refused, and what a compil
   expect(without.kind).toBe("rejected");
   expect(without.error).toContain(`rust-js does not support calling \`${sqrt}\` yet`);
   expect(readFileSync(listed, "utf8").split("\n")).not.toContain(sqrt);
-  const named = variants([], [], ["std::fmt::Debug::fmt", sqrt]).map((variant) => variant.name);
+  const named = variants([], [], ["std::convert::AsRef::as_ref", sqrt]).map((variant) => variant.name);
   expect(named).toContain(`without the recogniser of ${sqrt}`);
-  expect(named).not.toContain("without the recogniser of std::fmt::Debug::fmt");
+  expect(named).not.toContain("without the recogniser of std::convert::AsRef::as_ref");
 });
 
 // A trait's method of std's impl, of a type known where it's called, that
@@ -406,6 +404,20 @@ test("a known type's call that gives std's dictionary a &mut is refused without 
     expect(without.kind).toBe("rejected");
     expect(without.error).toContain(`rust-js does not support calling \`${path}\``);
   }
+});
+
+// A formatting trait's `fmt` of std's impl is never the trait call: its
+// dictionary's entry gives the value's text, no `Formatter`, so what no
+// recogniser takes is refused, never that call, which wrote into the held
+// formatter's place what it gave back (#1477).
+test("a formatting trait's fmt is refused without its recogniser, never the trait call", async () => {
+  buildCompiler();
+  const name = "fmt_to_held_formatter.rs";
+  const path = "std::fmt::Debug::fmt";
+  const without = await compile(join(corpus, name), caseDir(name), "2024", ["--without-recognizer", path]);
+  if ("js" in without) throw new Error(`${path} left out, ${name} still compiled`);
+  expect(without.kind).toBe("rejected");
+  expect(without.error).toContain(`rust-js does not support calling \`${path}\``);
 });
 
 // A name that's no case is the test above's to report.
