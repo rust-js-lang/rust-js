@@ -601,6 +601,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Ok(Value::DynDebug(from, *to, value));
                         }
                         let made = self.unsize_trait(from, *to, value, span, out)?;
+                        let made = self.dyn_with_place(state, operand, from, made, span, out)?;
                         // A closure lent as a `&dyn Fn`, as one as a `fn`:
                         // the function of the crate's it only adapts with
                         // what it's given, so captures nothing, React's

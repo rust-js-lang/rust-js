@@ -14,6 +14,11 @@ const $items = new WeakMap();
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
+  // What a `&mut dyn`'s pair of a place JS can't share refers to, its `value`:
+  // the place's handle it was made with, `$withPlace`'s (#1519).
+  if (key === "value" && !offset && root === undefined && object !== null && typeof object === "object" && object.$place !== undefined) {
+    return object.$place;
+  }
   // What a place's handle refers to, its `value`, at its start: that
   // handle, the same place, never a place of the handle object's own, which
   // would be an address made up (#1474).
@@ -340,6 +345,13 @@ function $lentFrom(receiver, key, offset, within, lent) {
   return lent;
 }
 
+// A `&mut dyn`'s pair of a place JS can't share, in a crate that asks an
+// address: given that place's handle, which a pointer through it is (#1519).
+function $withPlace(pair, place) {
+  Object.defineProperty(pair, "$place", { value: place });
+  return pair;
+}
+
 function $storedValue(cell, offset, within) {
   $contents.set(cell, offset);
   const value = cell.value;
@@ -523,7 +535,7 @@ function $offsetIn(pointer, range) {
     $places.get(pointer.of.of)?.get(pointer.of.at) !== pointer.of &&
     Object.getOwnPropertyDescriptor(pointer.of, "value")?.get !== undefined
   ) {
-    throw $unsupported("rust-js does not support the address of what a `&mut` refers to through a handle on no place it records, a `&mut dyn`'s (#1519)");
+    throw $unsupported("rust-js does not support the address of what a `&mut` refers to through a handle on no place it records, a `&mut dyn`'s (#1527)");
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
   const offset = $handleOffset(pointer);

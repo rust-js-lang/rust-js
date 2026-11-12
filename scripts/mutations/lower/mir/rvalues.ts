@@ -809,4 +809,12 @@ export const mutations: Mutation[] = [
     replace: "                    [PlaceElem::Deref] => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_given_to_generic_code.rs$"],
   },
+  {
+    name: "dyn-pair-without-its-place",
+    breaks: "a `&mut dyn` of a field is made without the field's handle, so a pointer through it is refused, or made up (#1519)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        let made = self.dyn_with_place(state, operand, from, made, span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^address_of_a_field_given_to_generic_code.rs$"],
+  },
 ];

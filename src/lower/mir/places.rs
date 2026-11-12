@@ -558,3 +558,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Values ──────────────────────────────────────────────────────────
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `made`, a `&mut dyn` made of `operand`, a `&mut` of type `from` to a
+    /// place JS can't share, a number's, made once of that place, `&mut s.n`:
+    /// in a crate that asks an address, the pair given the place's handle,
+    /// `$withPlace(pair, $ptr(s, "n", 4))`, which a pointer through it is,
+    /// never a handle on the pair's own `value` (#1519).
+    pub(super) fn dyn_with_place(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        operand: &Operand<'tcx>,
+        from: Ty<'tcx>,
+        made: Expr,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let ty::Ref(_, pointee, ty::Mutability::Mut) = *from.kind() else {
+            return Ok(made);
+        };
+        if !self.krate.stored_places.asks() || !self.mut_ref_form(pointee).is_cell() {
+            return Ok(made);
+        }
+        let Some(mut place) = (operand.place().and_then(|place| place.as_local()))
+            .and_then(|local| crate::lower::pointers::made_once_of(state.body, local))
+        else {
+            return Ok(made);
+        };
+        // Through each reborrow, `&mut *r` of `r = &mut s.n`, to the place.
+        while let [PlaceElem::Deref] = place.projection.as_slice()
+            && let Some(of) = crate::lower::pointers::made_once_of(state.body, place.local)
+        {
+            place = of;
+        }
+        let target = self.mir_place(state, place, span, out)?;
+        let offset = self.field_offset(place, &state.body.local_decls);
+        let handle = self.pointer_to(target, pointee, offset, span)?;
+        Ok(Expr::call_helper("$withPlace", vec![made, handle]))
+    }
+}

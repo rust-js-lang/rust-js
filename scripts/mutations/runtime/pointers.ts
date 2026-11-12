@@ -779,4 +779,12 @@ export const mutations: Mutation[] = [
     replace: "    false &&\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "the address through a handle on no place it records is refused"],
   },
+  {
+    name: "pair-place-unread",
+    breaks: "a pointer through a `&mut dyn`'s pair made with its place's handle is a handle on the pair's own `value` (#1519)",
+    file: "src/runtime/pointers.js",
+    find: "  if (key === \"value\" && !offset && root === undefined && object !== null && typeof object === \"object\" && object.$place !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_a_field_given_to_generic_code.rs$"],
+  },
 ];

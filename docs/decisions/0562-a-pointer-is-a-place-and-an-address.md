@@ -1558,3 +1558,14 @@ the place's, as before. A runtime-package test, mutation
 address-through-a-pair-made-up; the metamorphic net's `dyn-ref` rewrite of
 address_of_a_field_given_to_generic_code, which found it, listed under
 #1519.
+
+Since then the pair is given its place's handle where it's made, in a crate
+that asks an address: a `&mut dyn` made of a `&mut` to a place JS can't
+share, a reference made once of the place through any reborrows, is
+`$withPlace(pair, $ptr(s, "n", 4))` (`dyn_with_place`, src/lower/mir/places.rs),
+and `$ptr(pair, "value", 0)` is that handle, so #1519's program runs as
+native Rust does. The refusal stays for a pair made of a `&mut` traced to
+no place, a parameter's box or one read out of a field, naming #1527.
+Mutations dyn-pair-without-its-place and pair-place-unread; the corpus
+case address_of_a_field_given_to_generic_code's `&mut dyn` section, and the
+`dyn-ref` rewrite off metamorphic-known.txt.

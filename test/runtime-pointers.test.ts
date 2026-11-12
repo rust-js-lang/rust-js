@@ -238,7 +238,7 @@ const pair = { impl: {}, get value() { return s.n; }, set value(v) { s.n = v; } 
 const through = $ptr(pair, "value", 0);
 through.value = 5;
 let refused = "";
-try { $addr(through, 4); } catch (error) { refused = error.message.includes("#1519") ? "refused" : error.message; }
+try { $addr(through, 4); } catch (error) { refused = error.message.includes("#1527") ? "refused" : error.message; }
 const field = $ptr(s, "n", 4);
 console.log(s.n, refused, $addr($ptr(field, "value", 0), 4) - $addr($ptrTo(s), 8));
 `;

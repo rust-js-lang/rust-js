@@ -36,5 +36,3 @@ plain std library write_result_kept_by_a_writer.rs
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
 
-#1519 P0: a raw pointer to what a &mut dyn of a number refers to is a made-up address (now refused where it runs)
-plain std dyn-ref address_of_a_field_given_to_generic_code.rs
