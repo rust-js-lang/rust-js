@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "    return \"borrowed\";\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
   },
+  {
+    name: "text-option-null-as-unit",
+    breaks: "a hand-written visitor's `deserialize_option` of the text gives `null` to its `visit_unit`, serde's content's rule, where serde_json's reader gives it to `visit_none` (#1597)",
+    file: "src/runtime/json_reader.js",
+    find: "    this.parseIdent(\"ull\");\n    return visitor.none();\n",
+    replace: "    this.parseIdent(\"ull\");\n    return visitor.unit ? visitor.unit() : visitor.none();\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

@@ -610,3 +610,158 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A hand-written visitor's 'deserialize_option', by each reader's own rule
+// (#1597, #1549): the text's and a 'Value's give 'null' to its
+// 'visit_none' and anything else to its 'visit_some'; serde's buffered
+// content, an untagged or an internally tagged enum's, gives 'null', a
+// unit, to its 'visit_unit'; a missing field is its 'visit_none'; and a
+// flattened one can't be read. Of a method it lacks, serde's error.
+test("serde: a visitor's deserialize_option is each reader's own", async () => {
+  const dir = fixture("serde-protocol-option-visitor");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+
+/// Read by 'deserialize_option': 'visit_none' and 'visit_some'.
+#[derive(Debug)]
+pub struct Answer(u32);
+
+struct AnswerVisitor;
+
+impl<'de> Visitor<'de> for AnswerVisitor {
+    type Value = Answer;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an option")
+    }
+    fn visit_none<E: Error>(self) -> Result<Answer, E> {
+        Ok(Answer(0))
+    }
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Answer, D::Error> {
+        u32::deserialize(d).map(Answer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Answer {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(AnswerVisitor)
+    }
+}
+
+/// The same with 'visit_unit' too.
+#[derive(Debug)]
+pub struct WithUnit(u32);
+
+struct WithUnitVisitor;
+
+impl<'de> Visitor<'de> for WithUnitVisitor {
+    type Value = WithUnit;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an option or a unit")
+    }
+    fn visit_none<E: Error>(self) -> Result<WithUnit, E> {
+        Ok(WithUnit(0))
+    }
+    fn visit_unit<E: Error>(self) -> Result<WithUnit, E> {
+        Ok(WithUnit(1))
+    }
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<WithUnit, D::Error> {
+        u32::deserialize(d).map(WithUnit)
+    }
+}
+
+impl<'de> Deserialize<'de> for WithUnit {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(WithUnitVisitor)
+    }
+}
+
+/// Only 'visit_some': a 'null' is serde's invalid type.
+#[derive(Debug)]
+pub struct SomeOnly(u32);
+
+struct SomeOnlyVisitor;
+
+impl<'de> Visitor<'de> for SomeOnlyVisitor {
+    type Value = SomeOnly;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("some")
+    }
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<SomeOnly, D::Error> {
+        u32::deserialize(d).map(SomeOnly)
+    }
+}
+
+impl<'de> Deserialize<'de> for SomeOnly {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(SomeOnlyVisitor)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum Untagged {
+    A { a: Answer },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum UntaggedUnit {
+    W { w: WithUnit },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "t")]
+pub enum Tagged {
+    V { a: Answer, w: WithUnit },
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Fields {
+    a: Answer,
+    s: SomeOnly,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Flat {
+    n: u8,
+    #[serde(flatten)]
+    a: Answer,
+}
+
+fn read<T: for<'de> Deserialize<'de> + fmt::Debug>(text: &str) -> String {
+    let from_text = serde_json::from_str::<T>(text);
+    let value: serde_json::Value = serde_json::from_str(text).unwrap();
+    let from_value = serde_json::from_value::<T>(value);
+    format!("{from_text:?}; {from_value:?}")
+}
+
+pub fn report() -> String {
+    [
+        read::<Answer>("null"),
+        read::<Answer>("5"),
+        read::<Answer>("\"x\""),
+        read::<WithUnit>("null"),
+        read::<WithUnit>("7"),
+        read::<SomeOnly>("null"),
+        read::<SomeOnly>("3"),
+        read::<Untagged>(r#"{"a": null}"#),
+        read::<Untagged>(r#"{"a": 4}"#),
+        read::<UntaggedUnit>(r#"{"w": null}"#),
+        read::<UntaggedUnit>(r#"{"w": 2}"#),
+        read::<Tagged>(r#"{"t": "V", "a": null, "w": null}"#),
+        read::<Tagged>(r#"{"t": "V", "a": 1, "w": 2}"#),
+        read::<Fields>(r#"{"a": null, "s": 1}"#),
+        read::<Fields>(r#"{"a": 2, "s": null}"#),
+        read::<Vec<Answer>>("[null, 1]"),
+        read::<Fields>(r#"{"s": 1}"#),
+        read::<Flat>(r#"{"n": 1}"#),
+        read::<Flat>(r#"{"n": 1, "x": 2}"#),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

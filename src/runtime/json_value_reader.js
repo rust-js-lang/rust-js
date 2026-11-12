@@ -103,6 +103,12 @@ class $JsonValueReader extends $JsonDecoder {
     return this.value === "Null" ? undefined : read(this);
   }
 
+  // `deserialize_option` of a hand-written visitor, a `Value`'s: `Null` to
+  // its `visit_none`, anything else to its `visit_some` (#1597).
+  deserializeOption(expected, visitor) {
+    return this.value === "Null" ? visitor.none() : visitor.some(this);
+  }
+
   ignoreValue() {}
 
   // serde's `ContentVisitor` of it: a string is an owned one.
@@ -275,6 +281,12 @@ const $JsonMissing = /* @__PURE__ */ (() => {
 
     option() {
       return undefined;
+    }
+
+    // serde's `MissingFieldDeserializer`: a hand-written visitor's
+    // `visit_none` (#1597).
+    deserializeOption(expected, visitor) {
+      return visitor.none();
     }
 
     untaggedUnit() {

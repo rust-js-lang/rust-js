@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-protocol.test.ts", "-t", "a 128-bit integer is written by each serializer"],
   },
+  {
+    name: "serde-option-unit-unwritten",
+    breaks: "a hand-written option visitor's `visit_unit` isn't among its methods, so serde's content's `null`, a unit, is `invalid type: null` where native calls it (#1597)",
+    file: "src/lower/serde/protocol.rs",
+    find: "(VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit | SerdeHint::Option) => \"unit\",",
+    replace: "(VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit) => \"unit\",",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

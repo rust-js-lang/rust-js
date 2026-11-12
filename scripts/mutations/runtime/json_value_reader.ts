@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "    if (visit) return visit(inner, \"transient\");\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
   },
+  {
+    name: "value-option-null-to-some",
+    breaks: "a hand-written visitor's `deserialize_option` of a `Value` gives `Null` to its `visit_some`, not its `visit_none` (#1597)",
+    file: "src/runtime/json_value_reader.js",
+    find: "    return this.value === \"Null\" ? visitor.none() : visitor.some(this);\n",
+    replace: "    return visitor.some(this);\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
+  {
+    name: "missing-option-field-refused",
+    breaks: "a missing field of a hand-written visitor's `deserialize_option` is `missing field`, where serde's `MissingFieldDeserializer` gives its `visit_none` (#1597)",
+    file: "src/runtime/json_value_reader.js",
+    find: "      return visitor.none();\n",
+    replace: "      throw $jsonError(`missing field \\`${this.name}\\``);\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "kind === \"owned\" ? (string ?? str) : (string ?? str);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
   },
+  {
+    name: "visit-option-none-unchecked",
+    breaks: "a hand-written option visitor without `visit_none` given `null` throws a TypeError, not serde's `invalid type: Option value` (#1597)",
+    file: "src/runtime/json_visit.js",
+    find: "    if (!methods.none) throw invalid();\n",
+    replace: "",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

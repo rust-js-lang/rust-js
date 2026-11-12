@@ -87,6 +87,15 @@ class $JsonContent extends $JsonDecoder {
     return this.data.type === "unit" ? undefined : read(this);
   }
 
+  // `deserialize_option` of a hand-written visitor, serde's
+  // `ContentDeserializer`'s: a unit to its `visit_unit`, which a `null` is,
+  // anything else to its `visit_some` (#1597).
+  deserializeOption(expected, visitor) {
+    if (this.data.type !== "unit") return visitor.some(this);
+    if (visitor.unit) return visitor.unit();
+    throw this.invalid(expected);
+  }
+
   ignoreValue() {}
 
   content() {

@@ -385,3 +385,50 @@ Mutations `value-wide-int-unchecked`, `value-wide-int-signed-range`
 (`json_value.ts`), `flat-wide-int-said-as-integer` (`to_json.ts`),
 `serde-u128-width-lost` (recognition) and `serde-wide-int-ungiven`
 (protocol), caught.
+
+## Amendment: the readers are one interface, and `deserialize_option` is each one's (2026-11-13, #1549, #1597)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`$jsonVisitOption`, a hand-written visitor's `deserialize_option`, peeked
+for `null` with the text reader's own `parseWhitespace()`. A `Value`'s
+reader has none, so `from_value` of such a visitor threw `TypeError:
+reader.parseWhitespace is not a function` (P1, both builds); serde's
+buffered content, an untagged or internally tagged enum's, likewise. The
+readers had no stated interface, so nothing caught a helper calling one
+reader's own method of any reader.
+
+Each reader now writes `deserializeOption(expected, visitor)` by serde's
+own rule for it:
+
+| Reader | `null` | anything else |
+|---|---|---|
+| the text, `$JsonReader` | `visit_none` | `visit_some`, given the reader |
+| a `Value`, `$JsonValueReader` | `visit_none` | `visit_some` |
+| serde's content, `$JsonContent` | `visit_unit`, a unit, else `invalid type: null` | `visit_some` |
+| a missing field, `$JsonMissing` | `visit_none`, serde's `MissingFieldDeserializer` | |
+| a flattened field, `$JsonFlat` | `can only flatten structs and maps` | the same |
+
+`$jsonVisitOption` asks it, and an option hint's visitor gives its
+`visit_unit` too. A method the visitor lacks is serde's `invalid type:
+Option value`. The interface is held by `test/architecture-json.test.ts`:
+each method the code over a reader calls of it, `$JsonDecoder`'s of
+`this`, `json_visit.js`'s of `reader` and the `$json` codecs' of `json`,
+is written by `$JsonReader`, `$JsonValueReader` and `$JsonContent` or
+inherited from `$JsonDecoder`; a planted `reader.parseWhitespace()` is
+caught. Every program that reads JSON carries the readers' classes, which
+grow by these short methods; codegen and the guide's Order output don't
+change.
+
+The serde-protocol test `a visitor's deserialize_option is each reader's
+own` holds a visitor of `visit_none` and `visit_some`, one with
+`visit_unit` too and one of `visit_some` alone, each from text and from a
+`Value`, in an untagged and an internally tagged enum, as struct fields,
+missing and flattened, and in a `Vec`, against native serde_json.
+Mutations, one of each reader's rule: `text-option-null-as-unit`,
+`value-option-null-to-some`, `missing-option-field-refused`,
+`content-option-unit-as-none`, `flat-option-read`,
+`visit-option-none-unchecked` and `serde-option-unit-unwritten`, caught.
+`T::deserialize(&value)` of a `&Value` is #1539's, apart.
+

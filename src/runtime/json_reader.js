@@ -618,6 +618,15 @@ class $JsonReader extends $JsonDecoder {
     return undefined;
   }
 
+  // `deserialize_option` of a hand-written visitor, serde_json's: `null` to
+  // its `visit_none`, anything else to its `visit_some`, given this.
+  deserializeOption(expected, visitor) {
+    if (this.parseWhitespace() !== 110) return visitor.some(this);
+    this.index++;
+    this.parseIdent("ull");
+    return visitor.none();
+  }
+
   // `deserialize_any`: whatever's there, for the `visitor` method of its
   // kind (`unit`, `bool`, `number`, `string`, `seq` or `map`), which is
   // `expected` if the visitor has none.

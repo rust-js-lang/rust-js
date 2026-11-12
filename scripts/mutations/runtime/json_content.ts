@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "    if (visit) return visit(value);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
   },
+  {
+    name: "content-option-unit-as-none",
+    breaks: "a hand-written visitor's `deserialize_option` of serde's buffered content gives a unit to its `visit_none`, where serde's `ContentDeserializer` gives it to `visit_unit`, an untagged enum's `{\"a\": null}` read where native fails (#1597)",
+    file: "src/runtime/json_content.js",
+    find: "    if (visitor.unit) return visitor.unit();\n    throw this.invalid(expected);\n",
+    replace: "    return visitor.none();\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

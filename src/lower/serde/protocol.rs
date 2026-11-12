@@ -294,7 +294,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ));
                     continue;
                 }
-                (VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit) => "unit",
+                // And an option's, which serde's content gives a unit (#1597).
+                (VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit | SerdeHint::Option) => "unit",
                 (VisitorMethod::Bool, SerdeHint::Any | SerdeHint::Bool) => "bool",
                 (VisitorMethod::U64, SerdeHint::Any | SerdeHint::Number) => "u64",
                 (VisitorMethod::I64, SerdeHint::Any | SerdeHint::Number) => "i64",

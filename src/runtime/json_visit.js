@@ -26,22 +26,23 @@ function $jsonVisitHint(json, expecting, methods) {
   return $jsonRead(json, (reader) => reader.deserializeHinted(expected, visitor));
 }
 
-// `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
-// else to its `visit_some`, the reader to read it; of one it has none for,
-// serde's "invalid type: Option value", as serde_json gives it.
-function $jsonVisitOption(json, expecting, { none, some }) {
+// `deserialize_option(visitor)`: what's there given to its `visit_none`, its
+// `visit_some`, the reader to read it, or its `visit_unit`, as each reader's
+// `deserializeOption` says (#1597); of one it has none for, serde's
+// "invalid type: Option value", as serde_json gives it.
+function $jsonVisitOption(json, expecting, methods) {
   const expected = $jsonExpected(expecting);
+  const visitor = $jsonVisitor(expected, methods);
   const invalid = () => $jsonError(`invalid type: Option value, expected ${expected}`);
-  return $jsonRead(json, (reader) => {
-    if (reader.parseWhitespace() === 110) {
-      reader.index++;
-      reader.parseIdent("ull");
-      if (!none) throw invalid();
-      return $jsonCodec(none)();
-    }
-    if (!some) throw invalid();
-    return $jsonCodec(some)(reader);
-  });
+  visitor.none = () => {
+    if (!methods.none) throw invalid();
+    return $jsonCodec(methods.none)();
+  };
+  visitor.some = (reader) => {
+    if (!methods.some) throw invalid();
+    return $jsonCodec(methods.some)(reader);
+  };
+  return $jsonRead(json, (reader) => reader.deserializeOption(expected, visitor));
 }
 
 // The reader's visitor of a hand-written one's methods.

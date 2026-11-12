@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    return { type: \"map\", value: this.entries };\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
+  {
+    name: "flat-option-read",
+    breaks: "a flattened field of a hand-written visitor's `deserialize_option` is its `visit_none`, where serde's `FlatMapDeserializer` can't read it (#1597)",
+    file: "src/runtime/json_flat.js",
+    find: "  deserializeOption() {\n    throw this.other();\n",
+    replace: "  deserializeOption(expected, visitor) {\n    return visitor.none();\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
 ];

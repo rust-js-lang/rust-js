@@ -58,6 +58,12 @@ class $JsonFlat extends $JsonDecoder {
 
   ignoreValue() {}
 
+  // A hand-written visitor's `deserialize_option`, which serde's flattening
+  // gives only its own `Option`'s visitor (#1597).
+  deserializeOption() {
+    throw this.other();
+  }
+
   // An `Option`: `None` when what it holds can't be read from what's left.
   option(read) {
     try {

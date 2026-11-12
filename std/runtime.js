@@ -11646,22 +11646,23 @@ export function $jsonVisitHint(json, expecting, methods) {
   return $jsonRead(json, (reader) => reader.deserializeHinted(expected, visitor));
 }
 
-// `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
-// else to its `visit_some`, the reader to read it; of one it has none for,
-// serde's "invalid type: Option value", as serde_json gives it.
-export function $jsonVisitOption(json, expecting, { none, some }) {
+// `deserialize_option(visitor)`: what's there given to its `visit_none`, its
+// `visit_some`, the reader to read it, or its `visit_unit`, as each reader's
+// `deserializeOption` says (#1597); of one it has none for, serde's
+// "invalid type: Option value", as serde_json gives it.
+export function $jsonVisitOption(json, expecting, methods) {
   const expected = $jsonExpected(expecting);
+  const visitor = $jsonVisitor(expected, methods);
   const invalid = () => $jsonError(`invalid type: Option value, expected ${expected}`);
-  return $jsonRead(json, (reader) => {
-    if (reader.parseWhitespace() === 110) {
-      reader.index++;
-      reader.parseIdent("ull");
-      if (!none) throw invalid();
-      return $jsonCodec(none)();
-    }
-    if (!some) throw invalid();
-    return $jsonCodec(some)(reader);
-  });
+  visitor.none = () => {
+    if (!methods.none) throw invalid();
+    return $jsonCodec(methods.none)();
+  };
+  visitor.some = (reader) => {
+    if (!methods.some) throw invalid();
+    return $jsonCodec(methods.some)(reader);
+  };
+  return $jsonRead(json, (reader) => reader.deserializeOption(expected, visitor));
 }
 
 // The reader's visitor of a hand-written one's methods.
@@ -15838,6 +15839,15 @@ export class $JsonReader extends $JsonDecoder {
     return undefined;
   }
 
+  // `deserialize_option` of a hand-written visitor, serde_json's: `null` to
+  // its `visit_none`, anything else to its `visit_some`, given this.
+  deserializeOption(expected, visitor) {
+    if (this.parseWhitespace() !== 110) return visitor.some(this);
+    this.index++;
+    this.parseIdent("ull");
+    return visitor.none();
+  }
+
   // `deserialize_any`: whatever's there, for the `visitor` method of its
   // kind (`unit`, `bool`, `number`, `string`, `seq` or `map`), which is
   // `expected` if the visitor has none.
@@ -16056,6 +16066,15 @@ export class $JsonContent extends $JsonDecoder {
 
   option(read) {
     return this.data.type === "unit" ? undefined : read(this);
+  }
+
+  // `deserialize_option` of a hand-written visitor, serde's
+  // `ContentDeserializer`'s: a unit to its `visit_unit`, which a `null` is,
+  // anything else to its `visit_some` (#1597).
+  deserializeOption(expected, visitor) {
+    if (this.data.type !== "unit") return visitor.some(this);
+    if (visitor.unit) return visitor.unit();
+    throw this.invalid(expected);
   }
 
   ignoreValue() {}
@@ -16434,6 +16453,12 @@ export class $JsonFlat extends $JsonDecoder {
 
   ignoreValue() {}
 
+  // A hand-written visitor's `deserialize_option`, which serde's flattening
+  // gives only its own `Option`'s visitor (#1597).
+  deserializeOption() {
+    throw this.other();
+  }
+
   // An `Option`: `None` when what it holds can't be read from what's left.
   option(read) {
     try {
@@ -16619,6 +16644,12 @@ export class $JsonValueReader extends $JsonDecoder {
     return this.value === "Null" ? undefined : read(this);
   }
 
+  // `deserialize_option` of a hand-written visitor, a `Value`'s: `Null` to
+  // its `visit_none`, anything else to its `visit_some` (#1597).
+  deserializeOption(expected, visitor) {
+    return this.value === "Null" ? visitor.none() : visitor.some(this);
+  }
+
   ignoreValue() {}
 
   // serde's `ContentVisitor` of it: a string is an owned one.
@@ -16791,6 +16822,12 @@ export const $JsonMissing = /* @__PURE__ */ (() => {
 
     option() {
       return undefined;
+    }
+
+    // serde's `MissingFieldDeserializer`: a hand-written visitor's
+    // `visit_none` (#1597).
+    deserializeOption(expected, visitor) {
+      return visitor.none();
     }
 
     untaggedUnit() {
