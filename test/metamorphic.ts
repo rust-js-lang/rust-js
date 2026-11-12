@@ -9,7 +9,7 @@
 //   case.rs ─► metamorph <rewrite> ─┬─ rustc ──► native ─────┐
 //                                   └─ rust-js ─► node ──────┴─► the same?
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
@@ -117,20 +117,29 @@ export function rewritten(rewrite: Rewrite, file: string, edition: string, limit
  * Rust's and its JS's, so a block only the JS reaches, by a difference
  * decided and written down, a panic's payload that downcasts as a `&str`
  * and a `String` both (ADR 0692), is no block pruned; or `undefined` where
- * the native probe doesn't run to its end (#1086). */
+ * the native probe doesn't run to its end (#1086). Each probe in a
+ * directory of its own, removed after: one a probe's hash named was shared
+ * by every part of a parallel run probing the same case, the harness's own
+ * test in each of them, one part's build written over while another ran
+ * it, and that test failed about once in twelve parts. */
 function reached(file: string, edition: string): number[] | undefined {
   const probe = runSync([rewriter, "emi-probe", file], root, 60_000, { METAMORPH_EDITION: edition });
   if (probe.code !== 0) return undefined;
-  const dir = join(target, "metamorph-emi", Bun.hash(probe.stdout).toString(36));
-  mkdirSync(dir, { recursive: true });
-  const program = join(dir, "probe.rs");
-  writeFileSync(program, probe.stdout);
-  const ran = runNative(program, dir, edition);
-  if (typeof ran === "string" || typeof ran.outcome === "string") return undefined;
-  const said = (stderr: string) => [...stderr.matchAll(/^METAMORPH-EMI-HIT (\d+)$/gm)].map((m) => Number(m[1]));
-  const compiled = compileJs(program, dir, edition);
-  const js = "js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, runtimes[0][0]).stderr : "";
-  return [...new Set([...said(ran.stderr), ...said(js)])];
+  const probes = join(target, "metamorph-emi");
+  mkdirSync(probes, { recursive: true });
+  const dir = mkdtempSync(join(probes, `${Bun.hash(probe.stdout).toString(36)}-`));
+  try {
+    const program = join(dir, "probe.rs");
+    writeFileSync(program, probe.stdout);
+    const ran = runNative(program, dir, edition);
+    if (typeof ran === "string" || typeof ran.outcome === "string") return undefined;
+    const said = (stderr: string) => [...stderr.matchAll(/^METAMORPH-EMI-HIT (\d+)$/gm)].map((m) => Number(m[1]));
+    const compiled = compileJs(program, dir, edition);
+    const js = "js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, runtimes[0][0]).stderr : "";
+    return [...new Set([...said(ran.stderr), ...said(js)])];
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 /** The event a `loud-<kind>` panics at: of the events of `kind` that
