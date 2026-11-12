@@ -57,7 +57,7 @@ const owners: Record<string, string[]> = {
   "self.drops_observed": ["src/lower/drops.rs", "src/lower/drops/uses.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.recursive": ["src/lower/recursive_fns.rs"],
-  "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/routes.rs"],
+  "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs", "src/lower/traits/routes.rs"],
   "self.walks.representable": ["src/lower/support.rs"],
   "self.walks.assumed": ["src/lower/support.rs"],
   "self.walks.mutated": ["src/lower/copies.rs"],

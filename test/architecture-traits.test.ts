@@ -27,6 +27,7 @@ test("a copied default is put in its impl's terms by default_args alone", () => 
   expect(sources.filter(file => asks.test(read(file)))).toEqual([
     "src/lower/analysis/type_facts/collects.rs",
     "src/lower/traits/drop_params.rs",
+    "src/lower/traits/impls/defaults.rs",
     "src/lower/traits/impls.rs",
   ]);
   // Nor a second environment beside the body's, the impl's, which a call
