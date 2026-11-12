@@ -14,11 +14,6 @@ for (const [name, source, message, crate] of [
   // one, for a consumer that may ask its address, is refused where it's
   // made, never an address made up (#1474).
   ["a raw pointer to a &mut lent from std's storage, asking no address", "pub fn once_ptr<T>(c: &mut std::cell::OnceCell<T>) -> *mut T { match c.get_mut() { Some(x) => x as *mut T, None => std::ptr::null_mut() } }", "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy"],
-  // A `&mut` to a number std lends in generic code whose instances keep it
-  // at different offsets, `Result<u8, u16>`'s at 1 and `Result<u16, u8>`'s
-  // at 2, in a crate that asks that type's address: one JS can't be both, so
-  // refused, never let through as a shared one's copy (#1478).
-  ["a generic as_mut of numbers its instances keep at different offsets", "pub fn bump<T: Copy + std::ops::AddAssign + From<u8>, E>(r: &mut Result<T, E>) { if let Ok(x) = r.as_mut() { *x += T::from(1) } }\npub fn f(a: &mut Result<u8, u16>, b: &mut Result<u16, u8>, m: u8, n: u16) -> usize { let at = &raw const m as usize + &raw const n as usize; bump(a); bump(b); at }", "`std::result::Result::<T, E>::as_mut` in a crate that asks an address (#1478)"],
   // A pointer made of what `Option::as_mut()` lends, a cell made at each
   // call: two pointers to one place would differ, so it's refused (#1497,
   // #1502).

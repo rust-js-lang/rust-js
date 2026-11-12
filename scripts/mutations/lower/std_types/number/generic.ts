@@ -332,4 +332,12 @@ export const mutations: Mutation[] = [
     replace: "                    (false, _) => self.clone_items(slice.clone(), item, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "lend-offset-given-zero",
+    breaks: "a caller gives generic code 0 for a lend's offset, not rustc's layout of its instance (#1478)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            return Ok(Expr::int(i128::from(at)));\n",
+    replace: "            return Ok(Expr::int(i128::from(at * 0)));\n",
+    tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
+  },
 ];

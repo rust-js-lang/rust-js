@@ -148,14 +148,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_lends_beside_an_address.rs$"],
   },
   {
-    name: "mut-lend-taken-for-shared",
-    breaks: "a `&mut` to a number std lends, a handle whose place no record says, is let through as a shared one's copy, in a crate that asks that type's address (#1293, #1478)",
-    file: "src/lower/lent.rs",
-    find: "lent.push((given(pointee), mutability.is_not()))",
-    replace: "lent.push((given(pointee), true))",
-    tests: ["test/diagnostics.test.ts", "-t", "generic as_mut of numbers its instances keep at different offsets"],
-  },
-  {
     name: "lend-refusal-names-one-issue",
     breaks: "a lent object's refusal names #1474, a `&mut` to a number's, where it's #1475's, a record of where its receiver keeps it",
     file: "src/lower/lent.rs",
@@ -194,5 +186,13 @@ export const mutations: Mutation[] = [
     find: "        let within = by_slot(&|l| self.lent_within(receiver, l).expect(\"lend_recorded's\"));\n",
     replace: "        let within = by_slot(&|_| 0);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_object_std_lends_from_its_storage.rs$"],
+  },
+  {
+    name: "lend-offset-given-unread",
+    breaks: "generic code's lend reads no offset its caller gives, so it's refused where its instances disagree (#1478)",
+    file: "src/lower/lent.rs",
+    find: "        self.known_fact_of(receiver, crate::lower::recognition::TypeFact::LentOffset(lent))\n",
+    replace: "        None\n",
+    tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
   },
 ];

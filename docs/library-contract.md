@@ -48,9 +48,9 @@ m6-react's to see first (#1462).
 | `Calling.facts` | holds | `ItemFact` | |
 | `TypeParam.index` | summary | which type parameter | |
 | `TypeParam.marks` | holds | `ParamFact` | |
-| `TypeParam.facts` | summary | the type facts it asks of it, `Size`, `Align`, `RoomSize` and the rest (ADR 0145), which its call gives | |
+| `TypeParam.facts` | summary | the type facts it asks of it, `Size`, `Align`, `RoomSize` and the rest (ADR 0145), which its call gives; of a built receiver, the offset of what std lends from inside it, `OkOffset`, `ErrOffset` and the like, true of the consumer's instance as `Size` is: a call that can't give it, of no layout, is refused (#1478) | |
 | `TypeParam.stepped` | summary | the traits it's stepped by as it is, each given a dictionary of | |
-| `TypeParam.built` | summary | of a slot past its type parameters', the type built of them whose layout it asks | |
+| `TypeParam.built` | summary | of a slot past its type parameters', the type built of them whose layout it asks, or where in it std lends from, `Result<T, E>`'s `Ok` (#1478) | |
 | `ParamFact::Drop` | summary | it's given what drops a value of it | |
 | `ParamFact::Copy` | summary | it's given what copies a value of it | |
 | `ParamFact::Clone` | summary | it's given its `Clone` dictionary | |

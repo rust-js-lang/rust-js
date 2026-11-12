@@ -1054,7 +1054,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &fns,
         (&foreign, library),
         given,
-        (&recognition, &counted),
+        (&recognition, &counted, &stored_places),
         kept,
     );
     let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);

@@ -47,7 +47,11 @@ pub(super) fn type_fact_params<'tcx>(
     fns: &IndexMap<DefId, FnInfo>,
     (foreign, library): (&crate::lower::library::Foreign<'_, 'tcx>, bool),
     given: Given<'_>,
-    (recognition, counted): (&crate::lower::recognition::Recognition<'_, 'tcx>, &super::Counted<'tcx>),
+    (recognition, counted, stored): (
+        &crate::lower::recognition::Recognition<'_, 'tcx>,
+        &super::Counted<'tcx>,
+        &super::stored_places::StoredPlaces<'tcx>,
+    ),
     (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
 ) -> FactParams<'tcx> {
     let iterator = std_item(tcx, StdItem::Iterator);
@@ -246,6 +250,13 @@ pub(super) fn type_fact_params<'tcx>(
                 && let Some(index) = slot_of(tcx, foreign, caller, of)
             {
                 asking.asked.insert((caller, index, TypeFact::Instance));
+            }
+            // What generic code's `&mut` std lends from inside a receiver built
+            // of its type parameters, where its callers' instances keep it at
+            // different offsets: the offset, its caller's, `ROkOffset` (#1478).
+            // A type built of its type parameters, a slot of its own (#737).
+            for (receiver, lend) in lend_offsets_asked(tcx, (recognition, stored), caller, (callee, args)) {
+                asking.ask(caller, Asked::Built(receiver, TypeFact::LentOffset(lend)));
             }
             // What std's call asks of its items' type (`std_call_asks`).
             if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {
@@ -1145,4 +1156,53 @@ fn implementors(tcx: TyCtxt<'_>, method: DefId) -> Vec<DefId> {
 /// std's `Iterator::collect`.
 fn collect_of(tcx: TyCtxt<'_>) -> Option<DefId> {
     Some(trait_method(tcx, std_item(tcx, StdItem::Iterator), "collect"))
+}
+
+/// What std's call `callee`, of `args`, in generic code `caller` lends a
+/// `&mut` to from inside its receiver, a type built of `caller`'s type
+/// parameters, `Result<T, E>`, in a crate that asks an address, where the
+/// instances its callers give keep it at different offsets: each lend whose
+/// offset its caller gives, `TypeFact::LentOffset` (#1478). Of a payload
+/// that's a type parameter's, which generic code holds as a handle.
+fn lend_offsets_asked<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (recognition, stored): (
+        &crate::lower::recognition::Recognition<'_, 'tcx>,
+        &super::stored_places::StoredPlaces<'tcx>,
+    ),
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(ty::Ty<'tcx>, crate::lower::recognition::Lend)> {
+    if !stored.asks() || !tcx.def_kind(callee).is_fn_like() {
+        return Vec::new();
+    }
+    let inputs = tcx
+        .fn_sig(callee)
+        .instantiate(tcx, args)
+        .skip_normalization()
+        .skip_binder()
+        .inputs();
+    let Some(ty::Ref(_, receiver, ty::Mutability::Mut)) = inputs.first().map(|input| input.kind()) else {
+        return Vec::new();
+    };
+    let receiver = tcx.erase_and_anonymize_regions(*receiver);
+    if !receiver.has_non_region_param() {
+        return Vec::new();
+    }
+    let Some(lends) = recognition.lends_mut_of(callee, receiver) else {
+        return Vec::new();
+    };
+    // Of callers this crate doesn't see, a library's consumers': asked of
+    // them, which they give through the manifest.
+    let instances = stored.instances(tcx, receiver, caller);
+    (lends.iter().copied())
+        .filter(|&lend| {
+            let Some(instances) = &instances else { return true };
+            let offsets: IndexSet<Option<u64>> = (instances.iter())
+                .map(|&instance| recognition.lend_offset(instance, lend))
+                .collect();
+            offsets.len() > 1 && !offsets.contains(&None)
+        })
+        .map(|lend| (receiver, lend))
+        .collect()
 }

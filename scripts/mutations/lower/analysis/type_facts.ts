@@ -498,4 +498,20 @@ export const mutations: Mutation[] = [
     replace: "        for (impl_id, ty, facts) in lifted_built.into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
   },
+  {
+    name: "lend-offset-never-asked",
+    breaks: "generic code's lend from inside a receiver whose instances keep it at different offsets asks no offset of its callers, so it's refused (#1478)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            for (receiver, lend) in lend_offsets_asked(tcx, (recognition, stored), caller, (callee, args)) {\n",
+    replace: "            for (receiver, lend) in lend_offsets_asked(tcx, (recognition, stored), caller, (callee, args)).into_iter().take(0) {\n",
+    tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
+  },
+  {
+    name: "lend-offset-unseen-callers-unasked",
+    breaks: "a library's generic lend, whose callers it doesn't see, asks no offset of its consumers, so it's refused (#1478)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            let Some(instances) = &instances else { return true };\n",
+    replace: "            let Some(instances) = &instances else { return false };\n",
+    tests: ["test/crates.test.ts","-t","two crates: lend_offset_a_consumer_gives"],
+  },
 ];

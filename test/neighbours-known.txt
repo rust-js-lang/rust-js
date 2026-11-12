@@ -21,9 +21,6 @@ plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.r
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 
-#1478 P2: generic code's &mut lent from std's storage is refused where its instances keep the payload at different offsets: needs an offset type fact
-plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
-
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs

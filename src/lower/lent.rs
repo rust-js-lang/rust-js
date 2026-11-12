@@ -723,7 +723,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             !lents
                 .iter()
                 .any(|&l| matches!(l, Lend::OnceCell | Lend::Peekable) && self.boxed_lent(receiver, l))
-                && lents.iter().all(|&l| self.lent_offset(receiver, l).is_some())
+                && lents.iter().all(|&l| self.lent_offset_expr(receiver, l).is_some())
         })
     }
 
@@ -852,15 +852,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.krate.stored_places.asks() {
             return None;
         }
-        let at = |lent: Lend| self.lent_offset(receiver_ty, lent);
+        let at = |lent: Lend| self.lent_offset_expr(receiver_ty, lent);
         // Of both variants at one offset, that offset, no test.
         let offset = match ok {
             Some(ok) => match (at(Lend::Ok)?, at(Lend::Err)?) {
-                (ok_at, err_at) if ok_at == err_at => Expr::int(i128::from(ok_at)),
-                (ok_at, err_at) => Expr::cond(ok, Expr::int(i128::from(ok_at)), Expr::int(i128::from(err_at))),
+                (ok_at, err_at) if matches!((&ok_at.kind, &err_at.kind), (crate::js::ExprKind::Num(a), crate::js::ExprKind::Num(b)) if a == b) => {
+                    ok_at
+                }
+                (ok_at, err_at) => Expr::cond(ok, ok_at, err_at),
             },
-            None => Expr::int(i128::from(at(lent)?)),
+            None => at(lent)?,
         };
         Some(Expr::call_helper("$ptr", vec![receiver, Expr::str(lent.key()), offset]))
+    }
+
+    /// The offset in a `receiver` of what std lends of it, `lent`: the one
+    /// its instances agree on (`lent_offset`), or, where they disagree in
+    /// generic code, the one its caller gives, `TypeFact::LentOffset` of the
+    /// receiver (#1478). None where neither is.
+    pub(in crate::lower) fn lent_offset_expr(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<Expr> {
+        if let Some(at) = self.lent_offset(receiver, lent) {
+            return Some(Expr::int(i128::from(at)));
+        }
+        if !receiver.has_non_region_param() {
+            return None;
+        }
+        self.known_fact_of(receiver, crate::lower::recognition::TypeFact::LentOffset(lent))
     }
 }

@@ -328,6 +328,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(known) = self.known_fact_of(of, fact) {
             return Ok(known);
         }
+        // Where in a receiver std lends from, rustc's layout of it (#1478).
+        if let TypeFact::LentOffset(lend) = fact
+            && !of.has_non_region_param()
+        {
+            let at = (self.recognition().lend_offset(of, lend))
+                .ok_or_else(|| self.unsupported(span, &format!("{what} of `{of}`")))?;
+            return Ok(Expr::int(i128::from(at)));
+        }
         if let ty::Param(param) = of.kind() {
             // Whether it's a `FusedIterator`, its caller's, or not where no
             // caller says (ADR 0543).
