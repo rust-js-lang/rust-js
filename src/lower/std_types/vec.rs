@@ -338,22 +338,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: rustc_span::Span,
         out: &mut Vec<Stmt>,
     ) {
-        let (size, align) = match self.layout(entry) {
-            Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
-            None => (0, 1),
-        };
+        let (size, align) = self.entry_layout(entry);
         // Of fewer than 3 times as many buckets as entries, or 16, each
         // of its size and a control byte, its control bytes aligned to
         // the entry's or a group's, and a group's more: a bound, past
-        // hashbrown's own, of a count whose eighths are a `usize`.
-        let fits = |n: i128| n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES;
+        // hashbrown's own, of a count whose eighths are a `usize`. Of a
+        // size its caller gives, of none but `0`.
+        let fits = |n: i128| match (size.as_int(), align.as_int()) {
+            (Some(size), Some(align)) => {
+                n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES
+            }
+            _ => n == 0,
+        };
         if count.as_int().is_some_and(fits) {
             return;
         }
-        let check = Expr::call(
-            Expr::helper("$tableRoomFor"),
-            vec![count, Expr::int(size), Expr::int(align)],
-        );
+        let check = Expr::call(Expr::helper("$tableRoomFor"), vec![count, size, align]);
         out.push(StmtKind::Expr(check).at(self.js_span(span)));
     }
 

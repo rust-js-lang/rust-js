@@ -156,8 +156,8 @@ export const mutations: Mutation[] = [
     name: "table-room-bound-past-it",
     breaks: "`HashMap::with_capacity(usize::MAX)` is taken to fit, no panic",
     file: "src/lower/std_types/vec.rs",
-    find: "        let fits = |n: i128| n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES;\n",
-    replace: "        let fits = |n: i128| n >= 0;\n",
+    find: "                n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES\n",
+    replace: "                n >= 0\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
   {

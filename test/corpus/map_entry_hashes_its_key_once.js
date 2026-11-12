@@ -28,6 +28,7 @@ import {
   $retainMap,
   $sortedEntries,
   $strictlyEqual,
+  $tableRoomFor,
   $toBytes,
   $treeFromSorted,
   $utf8Bytes,
@@ -89,7 +90,8 @@ function hashed(what) {
   console.log(`${what}: ${arg} hashed`);
 }
 
-function counted(words, THash, TPartialEq, TCopy, TMap) {
+function counted(words, THash, TPartialEq, TCopy, TMap, TU32Align, TU32Size) {
+  $tableRoomFor(16, TU32Size, TU32Align);
   let counts = new TMap();
   const iter = words.values();
   let value;
@@ -104,7 +106,24 @@ function counted(words, THash, TPartialEq, TCopy, TMap) {
   return counts;
 }
 
-function entries(a, b, c, THash, TPartialEq, TCopy, TDebug, TMap, TSet) {
+function entries(
+  a,
+  b,
+  c,
+  THash,
+  TPartialEq,
+  TCopy,
+  TDebug,
+  TAlign,
+  TMap,
+  TSet,
+  TSize,
+  TStringAlign,
+  TStringSize,
+  TUsizeAlign,
+  TUsizeSize,
+) {
+  $tableRoomFor(16, TUsizeSize, TUsizeAlign);
   let lengths = new TMap();
   const orInsert = $entryOrInsert($entry(lengths, TCopy ? TCopy.copy(a) : a), 1, true);
   orInsert.value = (orInsert.value + 1) >>> 0;
@@ -138,6 +157,7 @@ function entries(a, b, c, THash, TPartialEq, TCopy, TDebug, TMap, TSet) {
     true,
   );
   hashed("and_modify of one there");
+  $tableRoomFor(16, TStringSize, TStringAlign);
   let names = new TMap();
   const value = $entryOrInsertWith(
     $entry(names, TCopy ? TCopy.copy(a) : a),
@@ -196,6 +216,7 @@ function entries(a, b, c, THash, TPartialEq, TCopy, TDebug, TMap, TSet) {
   taken.sort((a, b) => a - b);
   console.log(`[${taken.join(", ")}]`);
   hashed("extract_if");
+  $tableRoomFor(16, TSize, TAlign);
   const seen = new TSet();
   console.log(`${$add(seen, TCopy ? TCopy.copy(a) : a)} ${$add(seen, TCopy ? TCopy.copy(c) : c)}`);
   hashed("a set's insert");
@@ -214,7 +235,7 @@ function main() {
   const wordCopy = { copy: (value) => [value[0]] };
   const words = [["to"], ["be"], ["OR"], ["not"], ["To"], ["BE"]];
   console.log(
-    `[${counted(words, wordHash, wordPartialEq, wordCopy, $hashedMap(wordHash, wordPartialEq_eq)).join(", ")}]`,
+    `[${counted(words, wordHash, wordPartialEq, wordCopy, $hashedMap(wordHash, wordPartialEq_eq), 4, 12).join(", ")}]`,
   );
   console.log(
     `[${counted(
@@ -233,6 +254,8 @@ function main() {
       $strictlyEqual,
       undefined,
       Map,
+      4,
+      8,
     ).join(", ")}]`,
   );
   entries(
@@ -243,8 +266,14 @@ function main() {
     wordPartialEq,
     wordCopy,
     wordDebug,
+    4,
     $hashedMap(wordHash, wordPartialEq_eq),
     $hashedSet(wordHash, wordPartialEq_eq),
+    8,
+    4,
+    20,
+    4,
+    12,
   );
   entries(
     ["a"],
@@ -254,8 +283,14 @@ function main() {
     wordPartialEq,
     wordCopy,
     wordDebug,
+    4,
     $hashedMap(wordHash, wordPartialEq_eq),
     $hashedSet(wordHash, wordPartialEq_eq),
+    8,
+    4,
+    20,
+    4,
+    12,
   );
 
   // Where the map's keys are known here.

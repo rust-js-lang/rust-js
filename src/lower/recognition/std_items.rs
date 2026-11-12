@@ -466,7 +466,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// Is `id` std's, core's or alloc's?
 /// Is `id` indexmap's `IndexMap` or `IndexSet`, std's maps that keep the
 /// order they're added in (ADR 0424)?
-pub(super) fn is_index_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(in crate::lower) fn is_index_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate).as_str() == "indexmap" && matches!(bound_map_item(tcx, id), Some("HashMap" | "HashSet"))
 }
 

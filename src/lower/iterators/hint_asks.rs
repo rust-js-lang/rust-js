@@ -285,6 +285,76 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         Some((collection, first(item)?))
     }
+
+    /// What `extend` of `into` by what's of type `iterable` reserves room
+    /// for first, and of what iterator (`room_of`). `None` of another.
+    pub(in crate::lower) fn extend_room(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> Option<(Ty<'tcx>, Room<'tcx>)> {
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+        let item = self.iterator_item(iter_ty)?;
+        Some((iter_ty, self.room_of(into, item)?))
+    }
+
+    /// What `extend` of `into` by `item`s reserves room for first: a
+    /// `String`'s by `char`s, its bytes; a hash table's, its entries. `None`
+    /// of another.
+    pub(in crate::lower) fn room_of(&self, into: Ty<'tcx>, item: Ty<'tcx>) -> Option<Room<'tcx>> {
+        match () {
+            _ if self.is_lang_adt(into, rustc_hir::attrs::lang_items::LangItem::String)
+                && item.peel_refs().is_char() =>
+            {
+                Some(Room::Bytes)
+            }
+            _ if self.is_map(into) && !self.is_sorted(into) => Some(Room::Entries(item)),
+            _ => None,
+        }
+    }
+
+    /// The entries of a hash table whose room a call of `callee` with
+    /// `args` checks by their layout (ADR 0774), as `table_room` asks it:
+    /// a `HashMap`'s or a `HashSet`'s `with_capacity` or `reserve`, its
+    /// entry's size and alignment, a `(K, V)`'s or a set's `T`'s; an
+    /// indexmap's, its buckets' size, `(usize, K, V)`'s. Their caller gives
+    /// them where they're its type parameters' (#1437).
+    pub(in crate::lower) fn table_room_entry(
+        &self,
+        callee: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Vec<(Ty<'tcx>, TypeFact)> {
+        use crate::lower::recognition::StdItem;
+        let tcx = self.tcx;
+        let Some(imp) = tcx.inherent_impl_of_assoc(callee) else {
+            return Vec::new();
+        };
+        if !matches!(tcx.item_name(callee).as_str(), "with_capacity" | "reserve") {
+            return Vec::new();
+        }
+        let owner = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization())
+            .instantiate(tcx, args)
+            .skip_normalization();
+        let ty::Adt(adt, held) = owner.kind() else {
+            return Vec::new();
+        };
+        let set = self.is_std_type(owner, StdItem::HashSet) || self.is_set(owner);
+        let hashed = self.is_std_type(owner, StdItem::HashMap) || self.is_std_type(owner, StdItem::HashSet);
+        let indexed = crate::lower::recognition::is_index_map(tcx, adt.did());
+        let mut types = held.types();
+        let (Some(key), value) = (types.next(), types.next()) else {
+            return Vec::new();
+        };
+        let value = if set {
+            tcx.types.unit
+        } else {
+            value.unwrap_or(tcx.types.unit)
+        };
+        match (hashed, indexed) {
+            (true, _) => {
+                let entry = if set { key } else { Ty::new_tup(tcx, &[key, value]) };
+                vec![(entry, TypeFact::Room), (entry, TypeFact::Align)]
+            }
+            (false, true) => vec![(Ty::new_tup(tcx, &[tcx.types.usize, key, value]), TypeFact::Room)],
+            _ => Vec::new(),
+        }
+    }
 }
 
 /// What a reserve by an iterator's hint makes room for (`reserved_by_hint`).
@@ -744,6 +814,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its trait's dictionary gives it (`known_fact_of`, #1260), as the
     /// analysis asks it (`grown_vec_item`, #1180). `None` where neither
     /// gives it: its growth isn't kept, and `capacity()` refuses it.
+    /// The size and alignment of a hash table's entry, `entry`, by which
+    /// hashbrown checks its table's room (ADR 0774): rustc's where it lays
+    /// it out here; else its caller's, `KVSize` and `KVAlign` of a `(K,
+    /// V)`, a set's `TSize` and `TAlign` (#1437), as the analysis asks them
+    /// (`table_room_entry`); of none given, #934's, `0` and `1`, checked by
+    /// the count alone.
+    pub(in crate::lower) fn entry_layout(&self, entry: Ty<'tcx>) -> (Expr, Expr) {
+        if let Ok(layout) = self.tcx.layout_of(self.typing_env.as_query_input(entry)) {
+            return (
+                Expr::int(i128::from(layout.size.bytes())),
+                Expr::int(i128::from(layout.align.abi.bytes())),
+            );
+        }
+        let align = match entry.kind() {
+            ty::Param(param) => self.given_type_fact(param.index, TypeFact::Align),
+            _ => self.known_fact_of(entry, TypeFact::Align),
+        };
+        match (self.room_value(entry), align) {
+            (Some(size), Some(align)) if !matches!(size.kind, crate::js::ExprKind::Undefined) => (size, align),
+            _ => (Expr::int(0), Expr::int(1)),
+        }
+    }
+
     pub(in crate::lower) fn capacity_item_size(&self, item: Ty<'tcx>) -> Option<Expr> {
         self.room_value(item)
     }
@@ -852,7 +945,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// asks none first, a `String` by strings, a B-tree's; a `Vec`'s and a
     /// `VecDeque`'s, which ask it as they grow, are their own.
     pub(in crate::lower) fn extended_reserved(&self, it: Expr, into: Ty<'tcx>, iterable: Ty<'tcx>, of: Expr) -> Expr {
-        match self.extend_room(into, iterable) {
+        match self.recognition().extend_room(into, iterable) {
             Some((iter_ty, room)) => self.reserved_by_hint(it, Some(iter_ty), room, Some(of)),
             None => it,
         }
@@ -863,40 +956,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// not named, it's held first, so it's made once.
     pub(in crate::lower) fn extend_reserves(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
         let reserves = self
+            .recognition()
             .extend_room(into, iterable)
             .is_some_and(|(iter_ty, _)| self.recognition().hint_room_seen(iter_ty));
         crate::decisions::record("extend-reserves", if reserves { "reserves" } else { "none" });
         reserves
     }
 
-    /// What `extend` of `into` by what's of type `iterable` reserves room
-    /// for first, and of what iterator (`room_of`). `None` of another.
-    fn extend_room(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> Option<(Ty<'tcx>, Room<'tcx>)> {
-        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
-        let item = self.iterator_item(iter_ty)?;
-        Some((iter_ty, self.room_of(into, item)?))
-    }
-
-    /// What `extend` of `into` by `item`s reserves room for first: a
-    /// `String`'s by `char`s, its bytes; a hash table's, its entries. `None`
-    /// of another.
-    fn room_of(&self, into: Ty<'tcx>, item: Ty<'tcx>) -> Option<Room<'tcx>> {
-        match () {
-            _ if self.is_lang_adt(into, rustc_hir::attrs::lang_items::LangItem::String)
-                && item.peel_refs().is_char() =>
-            {
-                Some(Room::Bytes)
-            }
-            _ if self.is_map(into) && !self.is_sorted(into) => Some(Room::Entries(item)),
-            _ => None,
-        }
-    }
-
     /// `extend_reserved`'s, of a dictionary's `extend`, `C: Extend<item>`
     /// of `into`, given any iterator generic code has, which may be the
     /// crate's own: its hint asked, as std's asks it (#849).
     pub(in crate::lower) fn dictionary_reserved(&self, it: Expr, into: Ty<'tcx>, item: Ty<'tcx>, of: Expr) -> Expr {
-        let Some(room) = self.room_of(into, item) else {
+        let Some(room) = self.recognition().room_of(into, item) else {
             return it;
         };
         let mut args = vec![it];
@@ -904,11 +975,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Room::Nothing => {}
             Room::Bytes => args.extend([Expr::int(1), Expr::undefined()]),
             Room::Entries(entry) => {
-                let (size, align) = match self.layout(entry) {
-                    Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
-                    None => (0, 1),
-                };
-                args.extend([Expr::int(size), Expr::int(align)]);
+                let (size, align) = self.entry_layout(entry);
+                args.extend([size, align]);
             }
         }
         args.push(of);
@@ -943,11 +1011,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Room::Nothing => {}
             Room::Bytes => args.push(Expr::int(1)),
             Room::Entries(entry) => {
-                let (size, align) = match self.layout(entry) {
-                    Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
-                    None => (0, 1),
-                };
-                args.extend([Expr::int(size), Expr::int(align)]);
+                let (size, align) = self.entry_layout(entry);
+                args.extend([size, align]);
             }
         }
         if let Some(of) = of {

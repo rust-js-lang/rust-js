@@ -536,7 +536,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(key), Some(value)) if !set => (key, value),
             (item, _) => (item.unwrap_or(self.tcx.types.unit), self.tcx.types.unit),
         };
-        let entry = Ty::new_tup(self.tcx, &[key, value]);
+        // A set's entry is its item, as `(T, ())` is laid out (#1437).
+        let entry = match set {
+            true => key,
+            false => Ty::new_tup(self.tcx, &[key, value]),
+        };
         match table {
             Table::Hashed => self.table_room_for(count, entry, span, out),
             Table::Indexed => {

@@ -156,4 +156,20 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
   },
+  {
+    name: "table-room-of-a-collect-unasked",
+    breaks: "a generic collect into a hash table by a count the program gives asks its caller no entry layout, so its room is checked by its count alone (#1437)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        && let Some(Room::Entries(entry)) = revealed.room_of(output, dest)\n",
+    replace: "        && let Some(Room::Entries(entry)) = None::<Room<'tcx>>\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
+  },
+  {
+    name: "table-room-of-an-extend-unasked",
+    breaks: "a generic `extend` of a hash table by a count the program gives asks its caller no entry layout, so its room is checked by its count alone (#1437)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        && let Some((iter, Room::Entries(entry))) = revealed.extend_room(into.peel_refs(), iterable)\n",
+    replace: "        && let Some((iter, Room::Entries(entry))) = None::<(ty::Ty<'tcx>, Room<'tcx>)>\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
+  },
 ];

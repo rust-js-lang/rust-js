@@ -24,3 +24,6 @@ plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs
 plain std loud lock_poisoning.rs
 plain std loud-call lock_poisoning.rs
 plain std loud-drop lock_poisoning.rs
+
+#1450 P0: a generic collect into a hash table through a FromIterator bound checks room by count alone
+plain std generic-instances table_room_of_generic_entries.rs

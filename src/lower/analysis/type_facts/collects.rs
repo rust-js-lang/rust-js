@@ -62,6 +62,7 @@ pub(super) fn collect_asks<'tcx>(
             keeps_capacity,
         ));
         asked.extend(room_asked(recognition, typing_env, owner, (callee, args)));
+        asked.extend(table_room_asked(recognition, typing_env, owner, (callee, args)));
         asked
     };
     // A library's default the crate compiles itself as a function over
@@ -240,6 +241,48 @@ fn room_asked<'tcx>(
         .and_then(|item| asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Room), &None))
         .into_iter())
     .collect()
+}
+
+/// In any crate, of a call that checks a hash table's room by its entries'
+/// layout (ADR 0774): a `with_capacity` or a `reserve` of one
+/// (`table_room_entry`), or a collect into one or an `extend` of one whose
+/// hint's room is asked first (`room_of`'s entries, `hint_room_seen`): the
+/// entries' size, `Room`, and alignment, which its caller gives where
+/// rustc can't lay them out here, a `(K, V)`'s or a set's `T`'s (#1437).
+fn table_room_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Asked<'tcx>> {
+    use crate::lower::iterators::Room;
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let revealed = crate::lower::recognition::Recognition {
+        typing_env: typing_env.with_post_analysis_normalized(tcx),
+        ..*recognition
+    };
+    let mut asks = revealed.table_room_entry(callee, args);
+    // Of a collect into one, `collected_into`'s `reserved_by_hint`.
+    if let Some((iter, output, dest, false)) = crate::lower::recognition::collected_items(tcx, typing_env, callee, args)
+        && !revealed.is_sorted(output)
+        && let Some(Room::Entries(entry)) = revealed.room_of(output, dest)
+        && revealed.hint_room_seen(iter)
+    {
+        asks.extend([(entry, TypeFact::Room), (entry, TypeFact::Align)]);
+    }
+    // Of an `extend` of one, `extended_reserved`'s.
+    if tcx
+        .trait_of_assoc(callee)
+        .is_some_and(|t| crate::lower::recognition::is_extend(tcx, t))
+        && let [into, .., iterable] = args.types().collect::<Vec<_>>()[..]
+        && let Some((iter, Room::Entries(entry))) = revealed.extend_room(into.peel_refs(), iterable)
+        && revealed.hint_room_seen(iter)
+    {
+        asks.extend([(entry, TypeFact::Room), (entry, TypeFact::Align)]);
+    }
+    asks.into_iter()
+        .filter_map(|(entry, fact)| asked_of(tcx, foreign, typing_env, caller, (entry, fact), &None))
+        .collect()
 }
 
 /// Of `default`, a trait's default, what its body names, `args`, in the

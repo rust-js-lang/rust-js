@@ -446,3 +446,32 @@ snapshots changed, a generic collect of a map of a range given its
 `counted-by-program-not-of-zip`, `counted-by-program-not-of-a-finite-take`,
 `collect-counted-by-program-unroomed`, `collect-room-left-to-any-mapped-range`
 and `collect-room-unasked`, caught.
+
+## Amendment: a generic hash table's room is checked by its entries' layout (2026-11-12, #1437)
+
+Room hashbrown checks for a table of entries whose layout a type parameter
+gives was checked by their count alone (`table_room_for`'s "of an entry a
+type parameter's size makes, of its count alone"), #1432's last case:
+`HashMap::<K, V>::with_capacity(n)` in generic code didn't panic `Hash
+table capacity overflow` where native Rust does (ADR 0262's third case).
+
+- **The entry's layout has one owner, `entry_layout`**: rustc's where it
+  lays it out here, else its caller's size and alignment, `KVSize` and
+  `KVAlign` of a `(K, V)`, a set's `TSize` and `TAlign` (a set's entry is
+  its item, laid out as `(T, ())` is), or `0` and `1` of #934's case.
+  `table_room_for` and `$reserveHint`'s two sites read it.
+- **The analysis asks `Room` and `Align` of the entry exactly where the
+  lowering checks it** (`table_room_asked`): a `HashMap`'s or a `HashSet`'s
+  `with_capacity` or `reserve` (`table_room_entry`; an indexmap's, its
+  buckets' size), and a collect into one or an `extend` of one whose
+  hint's room is asked first (`room_of`'s entries and `hint_room_seen`,
+  moved to `Recognition` to be the one answer of both). A count of none
+  fits without a check; any other may not, of an entry of any size.
+
+Tests: corpus case `table_room_of_generic_entries` (each of a map's and a
+set's, past `isize::MAX` bytes of its table on wasm32 and native both and
+within it), against native Rust in each build; one corpus snapshot
+changed, `map_entry_hashes_its_key_once`'s generic tables given their
+layouts. Mutations `table-room-of-capacity-unasked`,
+`table-entry-layout-of-a-param-unread`, `table-room-of-a-collect-unasked`
+and `table-room-of-an-extend-unasked`, caught; three refitted.

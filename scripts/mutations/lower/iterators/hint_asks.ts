@@ -146,8 +146,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-extend-unreserved",
     breaks: "generic code's `extend` of a hash set or a `String` by `char`s, through its dictionary, doesn't ask its iterator's hint first, which may be the crate's own (a wrong answer, #849)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        let Some(room) = self.room_of(into, item) else {\n",
-    replace: "        let Some(room) = self.room_of(into, item).filter(|_| false) else {\n",
+    find: "        let Some(room) = self.recognition().room_of(into, item) else {\n",
+    replace: "        let Some(room) = self.recognition().room_of(into, item).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend_of_own_hints.rs$"],
   },
   {
@@ -370,5 +370,21 @@ export const mutations: Mutation[] = [
     find: "            return Some(Expr::int(i128::from(layout.size.bytes())));\n",
     replace: "            return Some(Expr::int(0));\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
+  {
+    name: "table-room-of-capacity-unasked",
+    breaks: "a generic hash table's `with_capacity` or `reserve` asks its caller no entry layout, so its room is checked by its count alone and no `Hash table capacity overflow` panics where hashbrown's does (#1437)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if !matches!(tcx.item_name(callee).as_str(), \"with_capacity\" | \"reserve\") {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
+  },
+  {
+    name: "table-entry-layout-of-a-param-unread",
+    breaks: "a hash table's entry layout its caller gives isn't read, so its room is checked by its count alone (#1437)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            (Some(size), Some(align)) if !matches!(size.kind, crate::js::ExprKind::Undefined) => (size, align),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },
 ];
