@@ -7,7 +7,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `<D as Deserializer<'de>>::Error`, `<A as SeqAccess>::Error`, `<S as
     /// Serializer>::Ok`? Its impls are serde_json's alone, as a crate's own
     /// `Deserializer`, `Serializer`, access or `Error` is refused
-    /// (`implementable`), in a library's consumer too: values rust-js makes,
+    /// (`implementable`, #1567, which test/diagnostics.test.ts holds), in a
+    /// library's consumer too, and supporting one makes its types asked as
+    /// any other's again, by this same question: values rust-js makes,
     /// holding none of the program's, so they drop nothing, whichever
     /// backend a caller gives (#1554). Not a `Visitor`'s `Value`, which is
     /// the crate's.
