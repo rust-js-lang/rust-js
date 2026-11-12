@@ -35,7 +35,7 @@ mod value_chains;
 mod values;
 
 pub(super) use self::again::Again;
-pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_params, user_name};
+pub(super) use self::bindings::{is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{

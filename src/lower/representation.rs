@@ -9,6 +9,7 @@ use super::{FnCx, R, Shape};
 use crate::collections::IndexSet;
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::lower::temporary_names::Role;
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -235,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let subject = match subject.reads_same() || variants.is_empty() {
             true => subject,
-            false => self.spill("value", subject, out),
+            false => self.spill(Role::Value, subject, out),
         };
         variants.into_iter().rev().fold(literal(last), |rest, (variant, n)| {
             Expr::cond(

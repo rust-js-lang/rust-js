@@ -3,6 +3,7 @@
 
 use crate::js::{self, Expr, Stmt};
 use crate::lower::recognition::{StdItem, std_item, trait_method};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -63,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let set = self.is_set(receiver.peel_refs());
         let mut held = Vec::new();
-        let mut hold = |this: &mut Self, name: &str, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>| -> Expr {
+        let mut hold = |this: &mut Self, name: Role, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>| -> Expr {
             match ty.needs_drop(this.tcx, this.typing_env) {
                 true => {
                     let value = match value.reads_same() {
@@ -76,8 +77,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => value,
             }
         };
-        let f = hold(self, "test", f, f_ty, out);
-        let range = range.map(|(range, ty)| (hold(self, "range", range, ty, out), ty));
+        let f = hold(self, Role::Test, f, f_ty, out);
+        let range = range.map(|(range, ty)| (hold(self, Role::Range, range, ty, out), ty));
         let drop = match held.is_empty() {
             true => None,
             false => Some(Expr::arrow(Vec::new(), self.drop_each(held, span)?)),
@@ -149,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `iter_mut`'s is (ADR 0152).
         let handles = mutable && self.handles_mut(map.type_at(1));
         let m = match handles && !m.reads_same() {
-            true => self.spill("map", m, out),
+            true => self.spill(Role::Map, m, out),
             false => m,
         };
         let mut list = vec![m.clone(), cmp, Expr::bool(set), Expr::str(&name), start, end];

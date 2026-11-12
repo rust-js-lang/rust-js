@@ -5,6 +5,7 @@
 
 use crate::js::{self, Expr, StmtKind};
 use crate::lower::drops::Drops;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -74,7 +75,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mut make: impl FnMut(&mut Self, usize) -> R<Expr>,
     ) -> R<(Vec<Expr>, Option<String>)> {
         let held = self.held_in_turn(parts);
-        let made = held.contains(&true).then(|| self.fresh("made"));
+        let made = held.contains(&true).then(|| self.fresh(Role::Made));
         let mut out = Vec::new();
         for (i, &(ty, _)) in parts.iter().enumerate() {
             let part = make(self, i)?;

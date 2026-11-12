@@ -3,6 +3,7 @@
 //! fieldless enums.
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::temporary_names::Role;
 
 use crate::lower::recognition::{KeyParts, StdItem, TypeFact, std_item};
 use crate::lower::{FnCx, R};
@@ -566,7 +567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Table::Indexed => {
                 let count = match count.reads_same() {
                     true => count,
-                    false => self.spill("n", count, out),
+                    false => self.spill(Role::N, count, out),
                 };
                 let usize = self.tcx.types.usize;
                 self.table_room_for(count.clone(), usize, span, out);
@@ -746,7 +747,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // dropped again with the map (#899).
             MapOp::Clear if self.drops(receiver) != crate::lower::drops::Drops::Nothing => {
                 let m = arg();
-                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                let m = if m.reads_same() {
+                    m
+                } else {
+                    self.spill(Role::Map, m, out)
+                };
                 let mut dropped = Vec::new();
                 self.drop_value(m.clone(), receiver, span, &mut dropped)?;
                 let cleared = method(m, "clear", Vec::new()).never_throws();
@@ -763,7 +768,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a value that's a number or a string (ADR 0152).
             MapOp::Retain => {
                 let (m, f) = (arg(), arg());
-                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                let m = if m.reads_same() {
+                    m
+                } else {
+                    self.spill(Role::Map, m, out)
+                };
                 let entries = self.in_order_of(m.clone(), receiver, span)?;
                 match set {
                     true => map_ops("$retainSet", with_drops(vec![m, f, entries], vec![keys_drop])),
@@ -787,7 +796,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             MapOp::SetGet | MapOp::SetTake => {
                 let (s, x) = (arg(), arg());
-                let x = if x.reads_same() { x } else { self.spill("item", x, out) };
+                let x = if x.reads_same() {
+                    x
+                } else {
+                    self.spill(Role::Item, x, out)
+                };
                 let test = match op {
                     MapOp::SetGet => method(s, "has", vec![x.clone()]),
                     _ => method(s, "delete", vec![x.clone()]),
@@ -904,7 +917,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // asked first, as hashbrown's `extend` reserves by it (#849).
                 let reserves = self.extend_reserves(receiver, tys[1]);
                 let m = match reserves && !m.reads_same() {
-                    true => self.spill("map", m, out),
+                    true => self.spill(Role::Map, m, out),
                     false => m,
                 };
                 let items = self.iterable_items(items, tys[1], span, out)?;
@@ -961,7 +974,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let m = arg();
                     let m = match m.reads_same() {
                         true => m,
-                        false => self.spill("m", m, out),
+                        false => self.spill(Role::M, m, out),
                     };
                     let last = Expr::bin(Op::Sub, Expr::member(m.clone(), "size"), Expr::int(1));
                     helper("$atIndex", vec![m, last])

@@ -3,6 +3,7 @@
 //! `&mut`. `mir_call_values` tells which a call is, and hands it here.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 mod defined;
 mod method_paths;
@@ -308,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(self.fmt_try(body))).at(js::Span::NONE)],
             ),
             kind => {
-                let args = self.fresh("args");
+                let args = self.fresh(Role::Args);
                 let called = Expr::call(Expr { kind, ..f }, vec![Expr::spread(Expr::var(&args))]);
                 Expr::arrow(
                     vec![js::Pattern::Rest(args)],
@@ -530,7 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 tuple => {
                     let tuple = match tuple.reads_same() {
                         true => tuple,
-                        false => self.spill("spread", tuple, out),
+                        false => self.spill(Role::Spread, tuple, out),
                     };
                     (0..tys.len())
                         .map(|i| Value::Expr(Expr::index(tuple.clone(), Expr::int(i as i128))))
@@ -546,7 +547,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for part in &mut parts {
                 if !part.reads_same() {
                     let made = std::mem::replace(part, Expr::undefined());
-                    *part = self.spill("spread", made, out);
+                    *part = self.spill(Role::Spread, made, out);
                 }
             }
         }

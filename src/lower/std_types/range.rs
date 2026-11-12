@@ -6,6 +6,7 @@ use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::display::{Pretty, join};
 use crate::lower::recognition::{IterMethod, trait_method};
 use crate::lower::representation::Num;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -231,7 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (range.reads_same() || !range.has_effects());
         let range = match literal || range.reads_same() {
             true => range,
-            false => self.spill("range", range, out),
+            false => self.spill(Role::Range, range, out),
         };
         let variant = |name: &str| match bound.kind() {
             ty::Adt(adt, _) => (adt.variants().iter_enumerated())
@@ -324,7 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let range = if range.reads_same() {
             range
         } else {
-            self.spill("range", range, out)
+            self.spill(Role::Range, range, out)
         };
         kind.bounds()
             .iter()
@@ -363,7 +364,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let range = match range.reads_same() {
             true => range,
-            false => self.spill("range", range, out),
+            false => self.spill(Role::Range, range, out),
         };
         // One used up as std's `fold` leaves it, or a `char`'s past its
         // last, holds Rust's bounds in `exhausted`.
@@ -489,7 +490,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let item = if item.reads_same() {
                 item
             } else {
-                self.spill("item", item, out)
+                self.spill(Role::Item, item, out)
             };
             // As Rust's: the start's test, then the end's; of `char`s, by code
             // point (ADR 0183).
@@ -549,7 +550,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // What's left of the numbers, both bounds; of BigInts, an error.
             (RangeOp::SizeHint, [start, end]) if index.and_then(Num::of).is_some_and(|n| !n.big()) => {
-                let left = self.spill("left", range_count(start.clone(), end.clone(), kind), out);
+                let left = self.spill(Role::Left, range_count(start.clone(), end.clone(), kind), out);
                 Expr::array(vec![left.clone(), left])
             }
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
@@ -585,7 +586,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = if item.reads_same() {
             item
         } else {
-            self.spill("item", item, out)
+            self.spill(Role::Item, item, out)
         };
         let (start, end) = match (kind, parts.as_slice()) {
             (RangeKind::Exclusive | RangeKind::Inclusive, [start, end]) => (Some(start.clone()), Some(end.clone())),
@@ -612,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The end's test, which takes statements, runs only where the
             // start's holds.
             (Some(below), Some(above)) => {
-                let name = self.fresh("contained");
+                let name = self.fresh(Role::Contained);
                 out.push(StmtKind::Let(name.clone(), Some(below)).at(js::Span::NONE));
                 later.push(StmtKind::Assign(Expr::var(&name), above).at(js::Span::NONE));
                 out.push(StmtKind::If(Expr::var(&name), later, None).at(js::Span::NONE));

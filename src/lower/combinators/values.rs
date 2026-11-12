@@ -2,6 +2,7 @@
 //! closure with, and what's dropped of what it doesn't keep.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a `value` of `ty` points at, as `*value` reads it: a counted
@@ -89,10 +90,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (mut item, mut n) = (item, n);
         if !repeats {
             if !item.reads_same() {
-                item = self.spill("item", item, out);
+                item = self.spill(Role::Item, item, out);
             }
             if !n.reads_same() {
-                n = self.spill("n", n, out);
+                n = self.spill(Role::N, n, out);
             }
             self.room_for_count((n.clone(), known), size.clone(), span, out);
         }
@@ -103,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A hand-written Clone (including one in a field) can change values
         // and run effects: clone n - 1 times, then move the original item.
         if repeats {
-            let name = self.fresh("item");
+            let name = self.fresh(Role::Item);
             let mut body = Vec::new();
             let copy = self.clone_value(Expr::var(&name), item_ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
@@ -114,7 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = if item.reads_same() {
             item
         } else {
-            self.spill("item", item, out)
+            self.spill(Role::Item, item, out)
         };
         let mut body = Vec::new();
         let copy = self.clone_value(item, item_ty, span, &mut body)?;
@@ -126,10 +127,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `f(args)`, with a closure that only returns written in place. One of
     /// statements gets a name first: `const f = (x) => { .. }; f(o)`.
-    pub(in crate::lower) fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: &str, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: Role, out: &mut Vec<Stmt>) -> Expr {
         let args: Vec<Expr> = args
             .into_iter()
-            .map(|a| if a.reads_same() { a } else { self.spill("value", a, out) })
+            .map(|a| {
+                if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Value, a, out)
+                }
+            })
             .collect();
         let applied = crate::lower::calls::apply(f.clone(), args.clone());
         match &applied.kind {
@@ -153,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Vec<Stmt>> {
         let js_span = self.js_span(span);
         let mut call = Vec::new();
-        let called = self.call_with(f, vec![given.clone()], "inspected", &mut call);
+        let called = self.call_with(f, vec![given.clone()], Role::Inspected, &mut call);
         call.push(StmtKind::Expr(called).at(js_span));
         let held = held.filter(|&held| self.drops(held) != Drops::Nothing && self.call_may_unwind(f_ty));
         let Some(held) = held else {
@@ -233,7 +240,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(a_ty) == Drops::Nothing && self.drops(b_ty) == Drops::Nothing {
             return Ok(made);
         }
-        let made = self.spill("value", made, out);
+        let made = self.spill(Role::Value, made, out);
         let js_span = self.js_span(span);
         let mut dropped_a = Vec::new();
         self.drop_value(a_value, a_ty, span, &mut dropped_a)?;
@@ -271,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(given_up.1) == Drops::Nothing {
             return Ok(Expr::cond(test, kept, otherwise));
         }
-        let name = self.fresh("kept");
+        let name = self.fresh(Role::Kept);
         let then = vec![StmtKind::Assign(Expr::var(&name), kept).at(js::Span::NONE)];
         self.or_dropped(test, name, then, given_up, otherwise, span, out)
     }

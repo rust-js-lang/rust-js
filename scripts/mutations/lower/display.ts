@@ -388,8 +388,8 @@ export const mutations: Mutation[] = [
     name: "mir-writer-options-dropped",
     breaks: "MIR's writer takes no options, a `{:>6}` of it unpadded",
     file: "src/lower/display.rs",
-    find: "        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(\"options\"))\n",
-    replace: "        (formatter && false).then(|| self.fresh(\"options\"))\n",
+    find: "        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(Role::Options))\n",
+    replace: "        (formatter && false).then(|| self.fresh(Role::Options))\n",
     tests: [
       "test/lowering-strings.test.ts",
       "-t",

@@ -3,6 +3,7 @@
 //! writes to it or steps a builder, whose JS `display.rs` writes.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value a writer shows where it's made, a derived `Debug`'s field or
@@ -57,7 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.writer_epilogue(&name, sink, out);
         }
         if let Some((_, conversion)) = state.thrown_writes.take() {
-            let error = self.fresh("error");
+            let error = self.fresh(Role::Error);
             let caught = Expr::call_helper("$writeCaught", vec![Expr::var(&error)]);
             let converted = conversion.map_or_else(|| caught.clone(), |conversion| conversion.of(caught.clone()));
             let handler = vec![StmtKind::Return(Some(crate::js::result::err(converted))).at(js::Span::NONE)];
@@ -84,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is, `return "";`, whose `let` tidy took: what it wrote before
             // is `""`, and its body gives what it gives.
             true if js::mentions_in(out, name) == 0 => {
-                let error = self.fresh("error");
+                let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::str("")]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
                 *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
@@ -99,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if *r == written_so_far()) {
                     body.pop();
                 }
-                let error = self.fresh("error");
+                let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), written_so_far()]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
                 out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
@@ -308,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = (state.body.var_debug_info.iter()).any(
                     |info| matches!(info.value, mir::VarDebugInfoContents::Place(p) if p.local == destination.local),
                 );
-                let parts = held.then(|| self.fresh("parts"));
+                let parts = held.then(|| self.fresh(Role::Parts));
                 if let Some(parts) = &parts {
                     self.flush(state, out)?;
                     out.push(StmtKind::Let(parts.clone(), Some(Expr::array(Vec::new()))).at(self.js_span(span)));
@@ -344,7 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if fails && !given_on(self.tcx, state.body, destination) {
                 let mut written_out = Vec::new();
                 self.append_to_writer(state, &name, written, pieces, js_span, &mut written_out);
-                let caught = self.fresh("error");
+                let caught = self.fresh(Role::Error);
                 let partial = Expr::call_helper("$fmtPartial", vec![Expr::var(&caught)]);
                 let mut handler = Vec::new();
                 self.append_to_writer(state, &name, partial, false, js_span, &mut handler);
@@ -471,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (aliases, name) = match (formatter, captures) {
             (Some((param, named)), _) => {
                 let name = match named {
-                    "" => self.fresh("f"),
+                    "" => self.fresh(Role::F),
                     name => name.to_string(),
                 };
                 (formatter_aliases(body, &[param], None), name)

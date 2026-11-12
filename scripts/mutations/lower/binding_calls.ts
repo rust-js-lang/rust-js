@@ -734,7 +734,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an item a `with_this` closure's tuple leaves out, `(_, b)`, is no parameter, so `function (b)` takes the first argument for the second (a wrong answer, ADR 0972)",
     file: "src/lower/binding_calls.rs",
-    find: '                for item in items {\n                    own.push(match item {\n                        Some(pattern) => pattern,\n                        None => js::Pattern::Name(self.fresh("_")),\n                    });\n                }\n',
+    find: '                for item in items {\n                    own.push(match item {\n                        Some(pattern) => pattern,\n                        None => js::Pattern::Name(self.fresh(Role::Unread)),\n                    });\n                }\n',
     replace: "                own.extend(items.into_iter().flatten());\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
   },

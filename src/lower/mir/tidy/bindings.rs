@@ -128,12 +128,9 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
 /// A temporary MIR made, by its local's index, `_5`: the one spelling of
 /// one, which `is_temporary` knows, and no name the program gives has
 /// (`user_name`).
-pub(in crate::lower::mir) fn temporary(local: usize) -> String {
-    format!("_{local}")
-}
+pub(in crate::lower::mir) use crate::lower::temporary_names::temporary;
 
-/// What MIR's lowering holds an argument in, `_arg`, named once tidied.
-pub(in crate::lower::mir) const HELD_ARG: &str = "_arg";
+use crate::lower::temporary_names::HELD_ARG;
 
 /// A name the program gives a local, as JS's: one shaped as a temporary's,
 /// `let _5`, is `_5_`, so tidy never takes it for one and names it apart.

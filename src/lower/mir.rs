@@ -14,6 +14,7 @@
 
 mod made;
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::temporary_names::{Base, Role};
 pub(super) use made::Made;
 mod alternatives;
 mod assign;
@@ -655,7 +656,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `on_load!` body is its module's top, where JS has no `return`:
         // each a `break` out of a labeled block of it (ADR 0267).
         if bindings::is_on_load(self.tcx, def_id) {
-            let label = self.fresh("load");
+            let label = self.fresh(Role::Load);
             let mut returns = false;
             js::statement_lists(&mut out, &mut |stmts| {
                 for stmt in stmts.iter_mut() {
@@ -758,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.locals.names[local] = String::new();
         }
         let name = match state.locals.names[local].as_str() {
-            "" => self.fresh("_"),
+            "" => self.fresh(Role::Unread),
             name => name.to_string(),
         };
         state.locals.names[local].clone_from(&name);
@@ -778,7 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // one a pointer is taken to is (ADR 0407, #1381). Its
         // callers give the value.
         if !boxed && state.facts.pointed().locals.contains(&local) {
-            let cell = self.fresh(&name);
+            let cell = self.fresh(Base::Named(&name));
             state.locals.names[local].clone_from(&cell);
             cell_params.push((cell, name.clone()));
             return js::Pattern::Name(name);

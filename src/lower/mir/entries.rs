@@ -2,6 +2,7 @@
 //! and `mem::swap`, `mem::replace` and `take`.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `m.entry(k).or_insert(v)`, `or_insert_with(f)` or `or_default()`, of
@@ -48,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             kind => {
                 let entry = self.spill(
-                    "entry",
+                    Role::Entry,
                     Expr {
                         facts: crate::lower::iterators::its_facts(entry.facts),
                         kind,
@@ -67,12 +68,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let map = if map.reads_same() {
             map
         } else {
-            self.spill("map", map, out)
+            self.spill(Role::Map, map, out)
         };
         let key = if key.reads_same() {
             key
         } else {
-            self.spill("key", key, out)
+            self.spill(Role::Key, key, out)
         };
         let default = match op {
             MapOp::OrDefault => {
@@ -258,9 +259,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.flush(state, out)?;
         let name = if self.option_of(ty).is_some() {
-            "value"
+            Role::Value
         } else {
-            "result"
+            Role::Result
         };
         Ok(self.spill(name, tried, out))
     }
@@ -501,7 +502,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {
                     let cell = match e.reads_same() {
                         true => e,
-                        false => self.spill("cell", e, out),
+                        false => self.spill(Role::Cell, e, out),
                     };
                     Value::Ref(Expr::held(cell))
                 }
@@ -628,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => b,
         };
         let old = self.spill(
-            if b_place.is_some() { "t" } else { "old" },
+            if b_place.is_some() { Role::T } else { Role::Old },
             moved(self, 0, a.clone()),
             out,
         );

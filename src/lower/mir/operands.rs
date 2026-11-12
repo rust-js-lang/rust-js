@@ -2,6 +2,7 @@
 //! as code.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_operand(
@@ -130,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
                 let item = self.value_expr(item, span)?;
-                let held = self.spill(tidy::HELD_ARG, item, out);
+                let held = self.spill(Base::HeldArg, item, out);
                 let Value::List(items, _) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };
@@ -215,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     js::ExprKind::Handle(object, js::Storage::InPlace(_)) => {
                         let object = match object.reads_same() && !object.has_effects() {
                             true => *object,
-                            false => self.spill("object", *object, out),
+                            false => self.spill(Role::Object, *object, out),
                         };
                         self.moved_out_of_cell(object, item)
                     }

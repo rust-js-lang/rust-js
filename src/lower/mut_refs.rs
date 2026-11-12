@@ -9,6 +9,7 @@ use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
 use crate::lower::generic_facts::{Crossing, Form};
+use crate::lower::temporary_names::Role;
 
 /// The forms generic code gives a function it calls as an `F`, of each
 /// parameter where they differ from its callers', and gives back
@@ -302,7 +303,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A B-tree's in its keys' order.
             Std::Map(MapOp::Iter(_)) if self.is_sorted(receiver) => {
                 let m = values.remove(0);
-                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                let m = if m.reads_same() {
+                    m
+                } else {
+                    self.spill(Role::Map, m, out)
+                };
                 let entries = self.in_order_of(m.clone(), receiver, span)?;
                 values = vec![m, entries];
             }

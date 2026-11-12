@@ -446,9 +446,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of what a call gives, flushed before its switch, is refused",
     file: "src/lower/mir/temporaries.rs",
-    find: '                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::undefined());\n                    *subject = self.spill("_$", made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n',
-    replace:
-      "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
+    find: "                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::undefined());\n                    *subject = self.spill(Base::Temporary, made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n",
+    replace: "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
     snapshots: true,
   },
@@ -632,7 +631,7 @@ export const mutations: Mutation[] = [
     name: "kept-place-object-unnamed",
     breaks: "the object a kept place is reached through, `h.node` of `h.node.count`, isn't named where the borrow's made, so `h.node = other` after moves the handle to the other node (#988)",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Member(_, field) => {\n                let field = field.clone();\n                self.spill(&field, e, out)\n            }\n",
+    find: "            js::ExprKind::Member(_, field) => {\n                let field = field.clone();\n                self.spill(Base::Named(&field), e, out)\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
   },

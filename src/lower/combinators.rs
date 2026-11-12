@@ -17,6 +17,7 @@ use super::{FnCx, R, representation::Num};
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::lent::Lent;
+use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -36,11 +37,11 @@ pub(super) enum Unused {
 
 impl Unused {
     /// What its subject's called, held to be tested.
-    pub(super) fn subject(self) -> &'static str {
+    pub(super) fn subject(self) -> Role {
         match self {
-            Unused::None | Unused::Some => "option",
-            Unused::Ok | Unused::Err => "result",
-            Unused::False => "condition",
+            Unused::None | Unused::Some => Role::Option,
+            Unused::Ok | Unused::Err => Role::Result,
+            Unused::False => Role::Condition,
         }
     }
 }
@@ -289,10 +290,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let some = generic_args.type_at(0);
             let (test, value) = (values.remove(0), values.remove(0));
             let value = if comb == Comb::Then {
-                self.call_with(value, Vec::new(), "value", out)
+                self.call_with(value, Vec::new(), Role::Value, out)
             } else if value.has_effects() {
                 // Rust works it out either way.
-                self.spill("value", value, out)
+                self.spill(Role::Value, value, out)
             } else {
                 value
             };
@@ -334,9 +335,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             subject
         } else {
             let base = if self.option_of(subject_ty).is_some() {
-                "option"
+                Role::Option
             } else {
-                "result"
+                Role::Result
             };
             self.spill_subject(base, subject, (self.option_of(subject_ty).is_some(), false), out)
         };
@@ -356,13 +357,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it's needed: in a `const` first if it has effects.
         let eager = |this: &mut Self, value: Expr, out: &mut Vec<Stmt>| {
             if value.has_effects() {
-                this.spill("fallback", value, out)
+                this.spill(Role::Fallback, value, out)
             } else {
                 value
             }
         };
         // One read more than once: in a `const` first unless it reads the same.
-        let once = |this: &mut Self, value: Expr, name: &str, out: &mut Vec<Stmt>| match value.reads_same() {
+        let once = |this: &mut Self, value: Expr, name: Role, out: &mut Vec<Stmt>| match value.reads_same() {
             true => value,
             false => this.spill(name, value, out),
         };
@@ -372,7 +373,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `??` would give a box for the value in it.
             Comb::UnwrapOrElse => {
                 let f = next();
-                let fallback = self.call_with(f, Vec::new(), "fallback", out);
+                let fallback = self.call_with(f, Vec::new(), Role::Fallback, out);
                 match boxed {
                     true => Expr::cond(some, value, fallback),
                     false => Expr::bin(Op::Coalesce, subject, fallback),
@@ -390,12 +391,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let fallback = next();
                 let fallback = match fallback.kind {
                     js::ExprKind::Var(_) => fallback,
-                    _ => self.spill("fallback", fallback, out),
+                    _ => self.spill(Role::Fallback, fallback, out),
                 };
                 let f = next();
                 let mut body = Vec::new();
-                let mapped = self.call_with(f, vec![value], "map", &mut body);
-                let result = self.fresh("mapped");
+                let mapped = self.call_with(f, vec![value], Role::Map, &mut body);
+                let result = self.fresh(Role::Mapped);
                 body.push(StmtKind::Assign(Expr::var(&result), mapped).at(js::Span::NONE));
                 let mut dropped = Vec::new();
                 self.drop_value(fallback.clone(), tys[1], span, &mut dropped)?;
@@ -414,7 +415,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::MapOr => {
                 let fallback = eager(self, next(), out);
                 let f = next();
-                let mapped = self.call_with(f, vec![value], "map", out);
+                let mapped = self.call_with(f, vec![value], Role::Map, out);
                 // `e?.[1] ?? d`, as a `match` of it is (ADR 0309).
                 let option = match spilled_at {
                     Some(at) if out.len() == at + 1 => match &out[at].kind {
@@ -444,8 +445,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::MapOrElse => {
                 let (g, f) = (next(), next());
-                let mapped = self.call_with(f, vec![value], "map", out);
-                let fallback = self.call_with(g, Vec::new(), "fallback", out);
+                let mapped = self.call_with(f, vec![value], Role::Map, out);
+                let fallback = self.call_with(g, Vec::new(), Role::Fallback, out);
                 Expr::cond(some, mapped, fallback)
             }
             // An `Err` with a destructor is dropped, and a fallback with one
@@ -457,12 +458,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let fallback = next();
                 let fallback = match fallback.kind {
                     js::ExprKind::Var(_) => fallback,
-                    _ => self.spill("fallback", fallback, out),
+                    _ => self.spill(Role::Fallback, fallback, out),
                 };
                 let f = next();
-                let name = self.fresh("mapped");
+                let name = self.fresh(Role::Mapped);
                 let mut body = Vec::new();
-                let mapped = self.call_with(f, vec![inside()], "map", &mut body);
+                let mapped = self.call_with(f, vec![inside()], Role::Map, &mut body);
                 body.push(StmtKind::Assign(Expr::var(&name), mapped).at(js::Span::NONE));
                 let mut unused = Vec::new();
                 self.drop_value(fallback.clone(), fallback_ty, span, &mut unused)?;
@@ -476,17 +477,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::ResultMapOr => {
                 let fallback = eager(self, next(), out);
                 let f = next();
-                let mapped = self.call_with(f, vec![inside()], "map", out);
+                let mapped = self.call_with(f, vec![inside()], Role::Map, out);
                 Expr::cond(tag(true), mapped, fallback)
             }
             Comb::ResultMapOrElse => {
                 let (g, f) = (next(), next());
-                let mapped = self.call_with(f, vec![inside()], "map", out);
-                let fallback = self.call_with(g, vec![inside()], "fallback", out);
+                let mapped = self.call_with(f, vec![inside()], Role::Map, out);
+                let fallback = self.call_with(g, vec![inside()], Role::Fallback, out);
                 Expr::cond(tag(true), mapped, fallback)
             }
             Comb::AndThen => {
-                let then = self.call_with(next(), vec![value], "then", out);
+                let then = self.call_with(next(), vec![value], Role::Then, out);
                 let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
                 super::std_types::option::and_then_of(out, spilled_at.filter(|_| !boxed), some, then, none)
             }
@@ -496,8 +497,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let inner = self.option_of(subject_ty).expect("an `Option`");
                 let p = next();
                 let mut body = Vec::new();
-                let keep = self.call_with(p, vec![value.clone()], "keep", &mut body);
-                let kept = self.fresh("kept");
+                let keep = self.call_with(p, vec![value.clone()], Role::Keep, &mut body);
+                let kept = self.fresh(Role::Kept);
                 let js_span = self.js_span(span);
                 body.push(
                     StmtKind::If(
@@ -517,7 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Filter => {
                 let p = next();
-                let keep = self.call_with(p, vec![value], "keep", out);
+                let keep = self.call_with(p, vec![value], Role::Keep, out);
                 Expr::cond(Expr::bin(Op::And, some, keep), subject, Expr::undefined())
             }
             Comb::OkOr => {
@@ -526,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::OkOrElse => {
                 let f = next();
-                let e = self.call_with(f, Vec::new(), "error", out);
+                let e = self.call_with(f, Vec::new(), Role::Error, out);
                 Expr::cond(some, result::ok(value), result::err(e))
             }
             Comb::Or => {
@@ -535,32 +536,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::IsSomeAnd => {
                 let p = next();
-                let holds = self.call_with(p, vec![value], "holds", out);
+                let holds = self.call_with(p, vec![value], Role::Holds, out);
                 Expr::bin(Op::And, some, holds)
             }
             Comb::IsNoneOr => {
                 let p = next();
-                let holds = self.call_with(p, vec![value], "holds", out);
+                let holds = self.call_with(p, vec![value], Role::Holds, out);
                 Expr::bin(Op::Or, none(), holds)
             }
             Comb::ResultMap => {
                 let f = next();
-                let mapped = self.call_with(f, vec![inside()], "map", out);
+                let mapped = self.call_with(f, vec![inside()], Role::Map, out);
                 Expr::cond(tag(true), result::ok(mapped), subject)
             }
             Comb::MapErr => {
                 let f = next();
-                let mapped = self.call_with(f, vec![inside()], "map", out);
+                let mapped = self.call_with(f, vec![inside()], Role::Map, out);
                 Expr::cond(tag(false), result::err(mapped), subject)
             }
             Comb::ResultAndThen => {
                 let f = next();
-                let then = self.call_with(f, vec![inside()], "then", out);
+                let then = self.call_with(f, vec![inside()], Role::Then, out);
                 Expr::cond(tag(true), then, subject)
             }
             Comb::ResultUnwrapOrElse => {
                 let f = next();
-                let fallback = self.call_with(f, vec![inside()], "fallback", out);
+                let fallback = self.call_with(f, vec![inside()], Role::Fallback, out);
                 Expr::cond(tag(true), inside(), fallback)
             }
             Comb::ResultUnwrapOrDefault => {
@@ -572,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // boxed where the error looks like `None`, `()` say, as `ok()`'s
             // is (ADR 0051).
             Comb::Err if self.drops(generic_args.type_at(0)) != Drops::Nothing => {
-                let name = self.fresh("error");
+                let name = self.fresh(Role::Error);
                 let error = self.held_in_option(inside(), generic_args.type_at(1));
                 let then = vec![StmtKind::Assign(Expr::var(&name), error).at(js::Span::NONE)];
                 let value = (inside(), generic_args.type_at(0));
@@ -591,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // The one that's `Some`, where only one is.
             Comb::Xor | Comb::Zip => {
-                let other = once(self, next(), "other", out);
+                let other = once(self, next(), Role::Other, out);
                 let own = (subject.clone(), value.clone(), generic_args.type_at(0));
                 self.unpaired(comb == Comb::Xor, own, (other, tys[1]), span, out)?
             }
@@ -644,7 +645,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => (tag(true), inside(), generic_args.types().nth(2)),
                 };
                 let fallback = self.default_value(mapped_ty.expect("its result's type"), span)?;
-                let mapped = self.call_with(f, vec![given], "map", out);
+                let mapped = self.call_with(f, vec![given], Role::Map, out);
                 Expr::cond(test, mapped, fallback)
             }
             Comb::AsSlice => Expr::cond(some, Expr::array(vec![value]), Expr::array(Vec::new())),
@@ -674,7 +675,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::ResultOrElse => {
                 let f = next();
-                let other = self.call_with(f, vec![inside()], "fallback", out);
+                let other = self.call_with(f, vec![inside()], Role::Fallback, out);
                 Expr::cond(tag(true), subject, other)
             }
             Comb::ResultFlatten => Expr::cond(tag(true), inside(), subject),
@@ -716,16 +717,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let p = next();
                 let which = comb == Comb::IsOkAnd;
-                let name = self.fresh("holds");
+                let name = self.fresh(Role::Holds);
                 let mut then = Vec::new();
-                let holds = self.call_with(p, vec![inside()], "holds", &mut then);
+                let holds = self.call_with(p, vec![inside()], Role::Holds, &mut then);
                 then.push(StmtKind::Assign(Expr::var(&name), holds).at(js::Span::NONE));
                 let other = (inside(), generic_args.type_at(usize::from(comb == Comb::IsOkAnd)));
                 self.or_dropped(tag(which), name, then, other, Expr::bool(false), span, out)?
             }
             Comb::IsOkAnd | Comb::IsErrAnd => {
                 let p = next();
-                let holds = self.call_with(p, vec![inside()], "holds", out);
+                let holds = self.call_with(p, vec![inside()], Role::Holds, out);
                 let which = comb == Comb::IsOkAnd;
                 Expr::bin(Op::And, tag(which), holds)
             }
@@ -750,7 +751,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `f(item)` compared with `b`, by its type's `Ord`.
             Comb::BinarySearchByKey => {
                 let (key, f) = (next(), next());
-                let key = once(self, key, "key", out);
+                let key = once(self, key, Role::Key, out);
                 let key_ty = search_key(generic_args);
                 let compare = self.cmp_fn(key_ty, false, span)?;
                 let item = Expr::var("item");
@@ -787,17 +788,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::DedupByKey => {
                 let key_ty = generic_args.type_at(generic_args.len() - 1);
                 let key = next();
-                let key = once(self, key, "key", out);
-                let (a, b) = (self.fresh("a"), self.fresh("b"));
+                let key = once(self, key, Role::Key, out);
+                let (a, b) = (self.fresh(Role::A), self.fresh(Role::B));
                 let mut body = Vec::new();
-                let mut keyed = |item: &str, named: &str, body: &mut Vec<Stmt>| {
+                let mut keyed = |item: &str, named: Role, body: &mut Vec<Stmt>| {
                     let made = Expr::call(key.clone(), vec![Expr::var(item)]);
                     match self.eq_is_identity(key_ty) {
                         true => made,
                         false => self.spill(named, made, body),
                     }
                 };
-                let (ka, kb) = (keyed(&a, "aKey", &mut body), keyed(&b, "bKey", &mut body));
+                let (ka, kb) = (keyed(&a, Role::AKey, &mut body), keyed(&b, Role::BKey, &mut body));
                 let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;
                 body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
                 let same = Expr::arrow(vec![a.into(), b.into()], body);
@@ -891,7 +892,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let inner = self.option_of(subject_ty).expect("an `Option`");
                 Some(self.default_value(inner, span)?)
             }
-            Comb::UnwrapOrElse if !boxed => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
+            Comb::UnwrapOrElse if !boxed => Some(self.call_with(values.remove(0), Vec::new(), Role::Fallback, out)),
             // `map_or_else(g, f)` by an `f` that gives what it's given, the
             // option's own value as JS has it, `js::shown` or `|name| name`
             // (`maps_to_itself`), is `unwrap_or_else(g)`'s, React's
@@ -899,9 +900,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::MapOrElse
                 if !boxed && self.maps_to_itself(tys[2], (generic_args.type_at(0), generic_args.type_at(1))) =>
             {
-                Some(self.call_with(values.remove(0), Vec::new(), "fallback", out))
+                Some(self.call_with(values.remove(0), Vec::new(), Role::Fallback, out))
             }
-            Comb::OrElse => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
+            Comb::OrElse => Some(self.call_with(values.remove(0), Vec::new(), Role::Fallback, out)),
             Comb::Or if !values[0].has_effects() => Some(values.remove(0)),
             _ => None,
         };
@@ -915,7 +916,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !boxed
             && let Some((kept, value)) = super::std_types::option::filtered(subject)
         {
-            let then = self.call_with(values.remove(0), vec![value], "then", out);
+            let then = self.call_with(values.remove(0), vec![value], Role::Then, out);
             let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
             return Ok(Some(Expr::cond(kept, then, none)));
         }
@@ -1140,13 +1141,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let collection = match collection.reads_same() {
             true => collection,
-            false => self.spill("collection", collection, out),
+            false => self.spill(Role::Collection, collection, out),
         };
         let list = match list.reads_same() {
             true => list,
-            false => self.spill("items", list, out),
+            false => self.spill(Role::Items, list, out),
         };
-        let i = self.fresh("i");
+        let i = self.fresh(Role::I);
         let mut body = Vec::new();
         let item = Expr::index(list.clone(), Expr::var(&i));
         let item = match cloned {

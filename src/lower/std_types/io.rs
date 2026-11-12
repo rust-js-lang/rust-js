@@ -14,6 +14,7 @@ use crate::lower::calls::Call;
 use crate::lower::generic_facts::Form;
 use crate::lower::plain;
 use crate::lower::recognition::{ByteSource, IoOp, Std, StdItem};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -162,13 +163,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // made first, though the room fails.
                 let mut capacity = next();
                 if !capacity.reads_same() {
-                    capacity = self.spill("capacity", capacity, out);
+                    capacity = self.spill(Role::Capacity, capacity, out);
                 }
                 let mut check = Vec::new();
                 self.room_for((None, capacity.clone()), Expr::int(1), call.span, &mut check);
                 let mut inner = self.buf_reader_inner_given(&call, next());
                 if !check.is_empty() && !inner.reads_same() {
-                    inner = self.spill("inner", inner, out);
+                    inner = self.spill(Role::Inner, inner, out);
                 }
                 out.extend(check);
                 Expr::object(vec![
@@ -181,7 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IoOp::BufReaderBuffer => {
                 let mut reader = next();
                 if !reader.reads_same() {
-                    reader = self.spill("reader", reader, out);
+                    reader = self.spill(Role::Reader, reader, out);
                 }
                 Expr::call_helper(
                     "$part",

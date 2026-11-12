@@ -11,6 +11,7 @@
 //! value with a destructor that nothing drops would be a wrong answer.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::temporary_names::{Base, Role};
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;
@@ -588,8 +589,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (self.drops_itself(ty) || self.drop_size(ty, &mut Vec::new()) > 8)
         {
             let type_name = self.tcx.item_name(adt.did()).to_string();
-            let name = self.fresh(&format!("drop{type_name}"));
-            let param = self.fresh(&lower_first(&type_name));
+            let name = self.fresh(Base::Prefixed(Role::Drop, &type_name));
+            let param = self.fresh(Base::Named(&lower_first(&type_name)));
             let js_span = self.js_span(span);
             // Declared once, at the top of the body, where it hoists them.
             match self.drop_state.hoisted.as_mut() {

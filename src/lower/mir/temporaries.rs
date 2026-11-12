@@ -2,6 +2,7 @@
 //! written as `const`s, in the order they're read.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, a subject its call reads more than once, `o.map(f)`'s, in a
@@ -15,9 +16,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// names worse, `catchUnwind`, `parse`. Of a binding read as a property,
     /// `ReactSharedInternals.G`, only where `base` isn't a closure's
     /// parameter that binds it, `bound` (#784).
-    pub(in crate::lower) fn spill_subject(
+    pub(in crate::lower) fn spill_subject<'b>(
         &mut self,
-        base: &str,
+        base: impl Into<Base<'b>>,
         value: Expr,
         (named, bound): (bool, bool),
         out: &mut Vec<Stmt>,
@@ -30,14 +31,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.spill(base, value, out);
         };
         self.locals.mir.subjects.insert(held.clone());
-        self.spill(&held, value, out)
+        self.spill(Base::Named(&held), value, out)
     }
 
     /// `value` held in a `const` named after `name`, as `spill` holds it,
     /// a temporary of MIR's lowering's (`Made::fixed`), which tidy reads in
     /// place where it's read once: a place fixed (`fixed_place_of`), or an
     /// `Option` its items read twice (`option_items`, #588).
-    pub(in crate::lower) fn held_in_place(&mut self, name: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn held_in_place<'b>(
+        &mut self,
+        name: impl Into<Base<'b>>,
+        value: Expr,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
         let held = self.spill(name, value, out);
         if let js::ExprKind::Var(name) = &held.kind {
             self.locals.mir.made.fixed.insert(name.clone());
@@ -74,13 +80,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match &e.kind {
             js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {
                 let name = name.clone();
-                self.spill(&name, e, out)
+                self.spill(Base::Named(&name), e, out)
             }
             js::ExprKind::Member(_, field) => {
                 let field = field.clone();
-                self.spill(&field, e, out)
+                self.spill(Base::Named(&field), e, out)
             }
-            js::ExprKind::Index(..) => self.spill("item", e, out),
+            js::ExprKind::Index(..) => self.spill(Role::Item, e, out),
             _ => e,
         }
     }
@@ -146,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Value::Discriminant(subject, ..) = &mut value {
                 if !subject.reads_same() {
                     let made_once = std::mem::replace(subject, Expr::undefined());
-                    *subject = self.spill("_$", made_once, &mut made);
+                    *subject = self.spill(Base::Temporary, made_once, &mut made);
                 }
                 kept.push((local, value));
                 continue;
@@ -166,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !named && let Value::DynDebug(_, _, subject) = &mut value {
                 if subject.has_effects() {
                     let made_once = std::mem::replace(subject, Expr::undefined());
-                    *subject = self.spill("value", made_once, &mut made);
+                    *subject = self.spill(Role::Value, made_once, &mut made);
                 }
                 state.places.insert(local, value);
                 continue;
@@ -178,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !named && let Value::Fmt(_, _, subject) = &mut value {
                 if subject.has_effects() {
                     let made_once = std::mem::replace(subject, Expr::undefined());
-                    *subject = self.spill("value", made_once, &mut made);
+                    *subject = self.spill(Role::Value, made_once, &mut made);
                 }
                 state.places.insert(local, value);
                 continue;

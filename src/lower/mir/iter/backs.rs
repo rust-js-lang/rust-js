@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::recognition::{OwnStep, Reach};
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` of what holds what has a destructor, closed to drop it:
@@ -185,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// clone of it is where it is.
     pub(super) fn cloned_apart_adapter(
         &mut self,
-        (name, parts, names): (&str, Vec<Expr>, &[&str]),
+        (name, parts, names): (&str, Vec<Expr>, &[Role]),
         (part_tys, output): (Vec<Ty<'tcx>>, Ty<'tcx>),
         lent: bool,
         span: Span,
@@ -215,9 +216,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("cloning a `{output}` made where `{ty}` isn't bound by `Clone`"),
             ));
         }
-        let named: Vec<String> = names.iter().map(|name| self.fresh(name)).collect();
+        let named: Vec<String> = names.iter().map(|&name| self.fresh(name)).collect();
         // `makeMap`, `makeChain`, `makeCopied`.
-        let make = self.fresh(&format!("make{}{}", name[..1].to_uppercase(), &name[1..]));
+        let make = self.fresh(Base::Prefixed(Role::Make, &crate::lower::upper_first(name)));
         let adapter = build(self, named.iter().map(|part| Expr::var(part)).collect())?;
         let mut cloned = Vec::new();
         let mut clones = Vec::new();

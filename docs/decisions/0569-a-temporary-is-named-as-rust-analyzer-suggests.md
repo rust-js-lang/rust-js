@@ -334,3 +334,27 @@ itself. No output changes. #890's next steps give lowering's `spill` a
 `Role` in place of its word, carry what made a value on `js::Expr` as
 `made_by` in place of `held_as` (the coordinator's decision), and name
 spilled temporaries where MIR's are, by this rule.
+
+## Amendment (2026-11-12, #890 step 2): lowering writes no word of its own
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; no name a program
+reads changes, and no output does. Lowering's `spill` and `fresh` took a
+word each caller spelled, `spill("value", ..)`, `fresh("items")`: 261
+calls, and the helpers that forwarded one (`call_with`, `held_value`,
+`named_once`, `spill_subject`, `held_in_place`, `capture_jsx_input`,
+`parameter_name`, `Unused::subject`). They now take a `Base`
+(`temporary_names.rs`): a `Role`, now the catalogue of all 128 words a
+name the compiler picks is made of, each written once in `Role::word`;
+`Numbered(Role, i)`, `arg0`; `Prefixed(Role, name)`, `dropT`, and
+`Suffixed(name, Role)`, `countValue`; `Named`, a name the program wrote
+or one made of such names, a field's, a key's, a binding's, a type's;
+`Local(n)`, a MIR local's `_12` (with `temporary`, moved here beside
+`HELD_ARG`); and tidy's `Temporary`, `_$`, and `HeldArg`, `_arg`. A
+text isn't a `Base` (no `From<&str>`), so a word can't be passed as one;
+an architecture test (`test/architecture-names.test.ts`, "spill and fresh
+take a Base, never a word") holds both. The `$live` of a drop flag is still
+spelled where it's made (`mir/drops.rs`), a name derived from another's,
+which #890's step 4 makes `Derived(temp, suffix)` named after its base.
+The corpus, the committed std and every snapshot are unchanged, which
+holds that each word is the one its caller wrote; 29 mutations whose
+anchors named a word are re-anchored, and catch as before.

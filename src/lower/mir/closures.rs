@@ -2,6 +2,7 @@
 //! captured.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `local`, a closure that captures nothing held in a local optimized
@@ -58,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let make = self.fresh("make");
+        let make = self.fresh(Role::Make);
         let mut cloned = Vec::new();
         let mut clones = Vec::new();
         for (name, ty) in &taken {
@@ -216,8 +217,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let e = self.value_expr(value, span)?;
                     self.flush(state, out)?;
                     let name = self.fresh(match &e.kind {
-                        js::ExprKind::Var(name) => name,
-                        _ => "captured",
+                        js::ExprKind::Var(name) => Base::Named(name),
+                        _ => Base::Role(Role::Captured),
                     });
                     out.push(StmtKind::Let(name.clone(), Some(e)).at(self.js_span(span)));
                     (Expr::var(&name), false)
@@ -247,7 +248,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     if p.projection.is_empty() && state.locals.names[p.local] == *v)
                                     && crate::lower::camel_case(info.name.as_str()) == *name))
                         });
-                        self.spill(base.as_deref().unwrap_or("captured"), e, out)
+                        self.spill(base.as_deref().map_or(Base::Role(Role::Captured), Base::Named), e, out)
                     };
                     if let js::ExprKind::Var(name) = &e.kind
                         && by_value.get(i).copied().unwrap_or(false)

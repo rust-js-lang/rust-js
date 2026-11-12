@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::lower::Num;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The blocks `LocalFacts::tried_int` says: each that ends in a call of
@@ -54,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => n,
             false => {
                 self.flush(state, out)?;
-                self.spill("value", n, out)
+                self.spill(Role::Value, n, out)
             }
         };
         let out_of = crate::lower::std_types::number::int_out_of(&n, from, to);

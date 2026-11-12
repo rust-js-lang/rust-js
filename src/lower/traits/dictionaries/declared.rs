@@ -4,6 +4,7 @@
 //! dictionaries.rs by concept, as a file is at most 1500 lines.
 
 use super::super::*;
+use crate::lower::temporary_names::Base;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `made`, a body's dictionaries and their names, each that `body`
@@ -25,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if count < 2 {
                 continue;
             }
-            let name = self.fresh(&hint);
+            let name = self.fresh(Base::Named(&hint));
             let mut put = |e: &mut Expr| {
                 if *e == dictionary {
                     *e = Expr::var(&name);

@@ -4,6 +4,7 @@
 //! (#1309).
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 /// One kind of std call's handler, `std_calls`': of what it reads alone, the
 /// call's lowering where it takes the call, else `None` (#191).
@@ -97,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             let vector = match vector.reads_same() {
                 true => vector,
-                false => self.spill("items", vector, out),
+                false => self.spill(Role::Items, vector, out),
             };
             let kept = Expr::call(Expr::helper("$keepCapacity"), vec![vector.clone()]);
             out.push(StmtKind::Expr(kept).at(self.js_span(span)));
@@ -131,7 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => handle,
                     false => {
                         self.flush(state, out)?;
-                        self.spill("handle", handle, out)
+                        self.spill(Role::Handle, handle, out)
                     }
                 };
                 Expr::held(handle)

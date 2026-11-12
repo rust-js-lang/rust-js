@@ -22,6 +22,17 @@ test("a temporary's name is suggested and picked in temporary_names.rs alone", (
   expect(sources.filter(file => rule.test(read(file)))).toEqual(["src/lower/temporary_names.rs"]);
 });
 
+// A name lowering picks is made of a `Base` (#890 step 2): a `Role`, whose
+// word is written in temporary_names.rs's catalogue alone, or a name the
+// program wrote (`Base::Named`). 261 calls each wrote a word of their own,
+// `spill("value", ..)`, `fresh("items")`; none may again, nor may a text
+// become a `Base` without saying which it is.
+test("spill and fresh take a Base, never a word", () => {
+  const word = /\.(?:spill|spill_subject|fresh|held_in_place)\(\s*(?:&\s*)?(?:"|format!\("[a-z])/;
+  expect(sources.filter(file => word.test(read(file)))).toEqual([]);
+  expect(read("src/lower/temporary_names.rs")).not.toMatch(/impl\b[^{]*From<&[^>]*str>\s+for\s+Base\b/);
+});
+
 // Whether a label is MIR's, `bb12`, or one the program wrote, `'desc`, is
 // answered by `is_block_label` alone (ADR 0742): tidy's decisions had a
 // copy of its test.

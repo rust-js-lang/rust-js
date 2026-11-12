@@ -2,6 +2,7 @@
 //! a field, and a range pattern's.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A place, for a read or a write.
@@ -143,7 +144,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let items = match value.reads_same() {
                     true => value,
-                    false => self.spill("items", value, out),
+                    false => self.spill(Role::Items, value, out),
                 };
                 let index = self.read_local(state, local, out)?;
                 // A constant index of an array as long as that has no check
@@ -301,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // first, then read so.
             PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } => {
                 self.flush(state, out)?;
-                let held = self.spill("items", base, out);
+                let held = self.spill(Role::Items, base, out);
                 return self.project_mir(state, held, ty, elem, span, out);
             }
             _ => return Err(self.unsupported(span, "this place, from its MIR")),
@@ -350,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let items = self.mir_place(state, of, span, out)?;
         let items = match items.reads_same() {
             true => items,
-            false => self.spill("items", items, out),
+            false => self.spill(Role::Items, items, out),
         };
         let mut list = vec![items.clone()];
         list.extend(self.subslice_range(&items, ty, (from, to, from_end)));

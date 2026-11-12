@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::recognition::{OwnStep, Reach};
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The helper of items a closure takes `&mut`: of objects, `objects`;
@@ -440,7 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (state_drops, function_drops) = (drops(state_ty), drops(function_ty));
                 let f = match (&f.kind, function_drops) {
                     (js::ExprKind::Var(_), _) | (_, None) => f,
-                    _ => self.spill("f", f, out),
+                    _ => self.spill(Role::F, f, out),
                 };
                 let mut dropped = Vec::new();
                 if let Some(function) = function_drops {
@@ -472,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let n = next();
                 let n = match n.as_int() {
                     Some(step) if step != 0 => n,
-                    _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
+                    _ => self.spill(Role::Step, Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
                 // Of a source no array's items bound (`bounded_by_items`),
                 // by its `nth`, as std's `StepBy` steps it: one that may give
@@ -601,7 +602,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = if matches!(f.kind, js::ExprKind::Var(_)) {
                     f
                 } else {
-                    self.spill("inspect", f, out)
+                    self.spill(Role::Inspect, f, out)
                 };
                 let item = Expr::var("item");
                 let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
@@ -663,7 +664,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if sides.iter().all(|&side| self.is_vec_like(side)) {
                     return Ok(pairs);
                 }
-                let pairs = self.spill("unzipped", pairs, out);
+                let pairs = self.spill(Role::Unzipped, pairs, out);
                 let mut parts = Vec::new();
                 for (i, &side) in sides.iter().enumerate() {
                     let part = Expr::index(pairs.clone(), Expr::int(i as i128));

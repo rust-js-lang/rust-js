@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's string edit of a part a call gives, `tail(&mut s).make_ascii_uppercase()`, is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: '                            let cell = this.spill("part", (**cell).clone(), out);\n                            Expr::held(cell)\n',
+    find: '                            let cell = this.spill(Role::Part, (**cell).clone(), out);\n                            Expr::held(cell)\n',
     replace:
       '                            return Err(this.unsupported(span, "changing this string, from its MIR"));\n',
     tests: ["test/corpus.test.ts", "-t", "str_mut"],

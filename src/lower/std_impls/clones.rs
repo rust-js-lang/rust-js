@@ -6,6 +6,7 @@
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::StdItem;
 use crate::lower::recursive_fns::Kind;
+use crate::lower::temporary_names::{Base, Role};
 use crate::lower::{FnCx, R, Shape, lower_first};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -229,7 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (base, param) = (format!("clone{type_name}"), lower_first(&type_name));
             let name = self.recursive_fn(
                 (Kind::Clone, ty, &base),
-                &[&param],
+                &[Base::Named(&param)],
                 |cx, params, body| cx.clone_parts(params[0].clone(), ty, span, body),
                 out,
             )?;
@@ -360,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // clone may ask (ADR 0328).
             ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
                 if !self.recognition().std_alone(args.type_at(0)) {
-                    let param = self.fresh("value");
+                    let param = self.fresh(Role::Value);
                     let mut body = Vec::new();
                     let value = self.clone_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                     body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
@@ -380,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
                 // Its parameter named apart from what its body names, a
                 // part read more than once of a `RefCell` inside (#200).
-                let param = self.fresh("value");
+                let param = self.fresh(Role::Value);
                 let mut body = Vec::new();
                 let value = self.clone_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
@@ -409,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Read more than once below.
         let written = place.clone();
         let place = if !place.reads_same() {
-            self.spill("value", place, out)
+            self.spill(Role::Value, place, out)
         } else {
             place
         };
@@ -671,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(&(_, t), &needs)| (t, needs && self.clone_may_panic(t)))
             .collect();
         let held = self.held_in_turn(&parts);
-        let made = held.contains(&true).then(|| self.fresh("made"));
+        let made = held.contains(&true).then(|| self.fresh(Role::Made));
         let mut props = vec![Prop::Spread(place.clone())];
         for (i, (name, t)) in fields.into_iter().enumerate() {
             if !needs[i] && !held[i] {

@@ -3,6 +3,7 @@
 //! own. Split from `impls.rs` by concept (#1334).
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn default_method(&mut self, imp: DefId, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
@@ -20,7 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     evidence_word(self.tcx, bound.self_ty()),
                     trait_word(self.tcx, bound)
                 );
-                let name = self.fresh(&js_word(&word));
+                let name = self.fresh(Base::Named(&js_word(&word)));
                 specialized.push((bound, Expr::var(&name)));
                 // And as the body asks for it, in the impl's terms: a method's
                 // `where Self: PartialEq` of a `Wrapping<T>`'s.
@@ -51,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut own_drops = Vec::new();
         for index in self.own_drops_taken(id, id) {
             let ty = drop_slot(self.tcx, self.slots(), id, index);
-            let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+            let name = self.fresh(Base::Prefixed(Role::Drop, &drop_word(self.tcx, ty)));
             let in_impl = ty::EarlyBinder::bind(self.tcx, ty)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
@@ -88,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut const_names = Vec::new();
         for index in own_const_params(self.tcx, id) {
-            let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());
+            let name = self.fresh(Base::Named(generics.param_at(index as usize, self.tcx).name.as_str()));
             // As the impl's terms number it (`default_args`).
             if let Some(there) = args.get(index as usize).and_then(|arg| arg.as_const())
                 && let ty::ConstKind::Param(there) = there.kind()
@@ -115,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Err(self.unsupported(span, "a trait default's type parameter's fact here"));
             }
-            let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+            let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.word())));
             facts.push((of, fact, Expr::var(&name)));
             // And in the impl's terms, as the body asks: `T::Item` of the
             // trait's `Self::Item`.
@@ -142,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Where it's called, after its arguments, of one that takes it, which
         // `Location::caller()` in it reads (ADR 0427).
-        let location = self.takes_caller_location(id).then(|| self.fresh("location"));
+        let location = self.takes_caller_location(id).then(|| self.fresh(Role::Location));
         let nested = crate::lower::Nested::Default {
             given: Box::new(super::DefaultGiven {
                 evidence: specialized,
@@ -211,7 +212,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let ((signature, used, given_names), hoisted) = self.lowered_in(body, id, nested, |cx| {
-            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(|word| cx.fresh(word))).collect();
+            let given_names: Vec<Option<String>> = (words.iter())
+                .map(|word| word.map(|word| cx.fresh(Base::Named(word))))
+                .collect();
             let signature = match class_default.as_ref().or(body.mir.as_ref()) {
                 Some(mir) => cx.mir_signature(body, mir, &mut rest)?,
                 None => return Err(cx.unsupported(span, "this default, without its MIR")),

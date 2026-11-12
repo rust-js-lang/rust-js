@@ -3,6 +3,7 @@
 //! (ADR 0419, amended, #1180).
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std function rust-js knows, given what MIR made of its arguments,
@@ -61,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.flush(state, out)?;
         let vector = match vector.reads_same() {
             true => vector,
-            false => self.spill("items", vector, out),
+            false => self.spill(Role::Items, vector, out),
         };
         values[at] = Value::Expr(vector.clone());
         let mut length = Expr::member(vector.clone(), "length");
@@ -80,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )?;
         let made = self.value_expr(made, span)?;
         if !made_out.is_empty() {
-            length = self.spill("length", length, out);
+            length = self.spill(Role::Length, length, out);
         }
         out.extend(made_out);
         Ok(Value::Expr(match size {

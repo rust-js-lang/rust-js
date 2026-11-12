@@ -132,9 +132,9 @@ export const mutations: Mutation[] = [
     breaks:
       "what a cell's `take()` gives is taken as never `undefined`, so an optional nullable field's, `undefined` where it's left out, is returned as it is (#539)",
     file: "src/lower/std_types/cell.rs",
-    find: "                let old = self.spill(\"old\", moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old\n",
+    find: "                let old = self.spill(Role::Old, moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old\n",
     replace:
-      "                let old = self.spill(\"old\", moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old.defined()\n",
+      "                let old = self.spill(Role::Old, moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old.defined()\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds is stored as it is"],
   },
   {
@@ -667,8 +667,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a flattened state's cell's `replace_with` gives back is its class's object, which the write of what its function made then changes, not a copy of its variant's keys (#687)",
     file: "src/lower/std_types/cell.rs",
-    find: "                let next = self.spill(\"next\", made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = self.moved_out(object.clone(), item);\n",
-    replace: "                let next = self.spill(\"next\", made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = object.clone();\n",
+    find: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = self.moved_out(object.clone(), item);\n",
+    replace: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = object.clone();\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
   },
   {
@@ -731,7 +731,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local's `take`, of one made where it's first used, runs its `Default` before its initializer, `log default` printed before `local made`, where std's `with` makes the cell first (#699)",
     file: "src/lower/std_types/cell.rs",
-    find: "                                _ if first(&cell) => self.spill(\"cell\", cell, out),\n",
+    find: "                                _ if first(&cell) => self.spill(Role::Cell, cell, out),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_taken_default_first.rs$"],
   },

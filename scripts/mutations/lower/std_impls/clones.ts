@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell`'s clone's arrow names its parameter `value` itself, which a part its body spills is named too: `(value) => { const value = ..`, JS that doesn't parse (#200)",
     file: "src/lower/std_impls/clones.rs",
-    find: '                // part read more than once of a `RefCell` inside (#200).\n                let param = self.fresh("value");\n',
+    find: '                // part read more than once of a `RefCell` inside (#200).\n                let param = self.fresh(Role::Value);\n',
     replace:
       '                // part read more than once of a `RefCell` inside (#200).\n                let param = String::from("value");\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],

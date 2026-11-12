@@ -4,6 +4,7 @@
 //! flag of its own then says as the body runs, set where rustc sets it.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::temporary_names::{Base, Role};
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
@@ -490,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty = ty.projection_ty(self.tcx, elem);
         }
-        self.fresh(&format!("{name}$live"))
+        self.fresh(Base::Named(&format!("{name}$live")))
     }
 
     /// The flags set before `at`, as rustc sets them, after what's made
@@ -1007,7 +1008,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 kind => inner.push(Stmt { kind, span: stmt.span }),
             }
         }
-        let error = self.fresh("error");
+        let error = self.fresh(Role::Error);
         let mut handler = cleanup;
         handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
         out.push(StmtKind::TryCatch(inner, Some(error), handler).at(span));

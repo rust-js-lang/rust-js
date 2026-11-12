@@ -6,6 +6,7 @@ use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, StdItem, TypeFact, any_trait, linked_twice, std_item};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -55,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let pair = if value.reads_same() {
             value
         } else {
-            self.spill("any", value, out)
+            self.spill(Role::Any, value, out)
         };
         let any = tys[0].peel_refs();
         // To a type of a generic `Error` impl, whose dictionary has no

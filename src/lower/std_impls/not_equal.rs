@@ -3,6 +3,7 @@
 //! its parts' `!=`.
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R, Shape};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -140,8 +141,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match ty.kind() {
             ty::Tuple(_) => {
-                let a = if a.reads_same() { a } else { self.spill("left", a, out) };
-                let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+                let a = if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Left, a, out)
+                };
+                let b = if b.reads_same() {
+                    b
+                } else {
+                    self.spill(Role::Right, b, out)
+                };
                 let Shape::Array(parts) = self.shape(ty) else {
                     return Err(self.unsupported(span, &format!("`!=` on `{ty}`")));
                 };
@@ -163,12 +172,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let a = if !spill || a.reads_same() {
                     a
                 } else {
-                    self.spill("left", a, out)
+                    self.spill(Role::Left, a, out)
                 };
                 let b = if !spill || b.reads_same() {
                     b
                 } else {
-                    self.spill("right", b, out)
+                    self.spill(Role::Right, b, out)
                 };
                 let (x, y) = match counted {
                     true => (

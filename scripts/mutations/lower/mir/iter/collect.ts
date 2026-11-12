@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat(made()).take(usize::MAX).collect()` asks room before `made()` runs, so it never prints, where Rust makes the iterator first (#246)",
     file: "src/lower/mir/iter/collect.rs",
-    find: '                    true => self.spill("it", it, made),\n',
+    find: '                    true => self.spill(Role::It, it, made),\n',
     replace: "                    true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },

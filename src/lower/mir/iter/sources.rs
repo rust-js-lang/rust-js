@@ -2,6 +2,7 @@
 //! iterator; and the callbacks it's given.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
@@ -100,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let it = match it.reads_same() {
             true => it,
-            false => self.spill("it", it, made),
+            false => self.spill(Role::It, it, made),
         };
         Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
     }
@@ -160,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && start.has_effects()
                 && end.has_effects()
             {
-                let start = self.spill("start", start, made);
+                let start = self.spill(Role::Start, start, made);
                 let held = Expr::object(vec![
                     js::Prop::Field("start".into(), start),
                     js::Prop::Field("end".into(), end),
@@ -447,7 +448,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (end, params, body) = self.counted_range_parts(it, iter_ty, item)?;
         let count = match end.reads_same() {
             true => end.clone(),
-            false => self.spill("n", end.clone(), made),
+            false => self.spill(Role::N, end.clone(), made),
         };
         if let Some(size) = item.and_then(|item| self.room_size_of(&count, item)) {
             self.room_for((None, count.clone()), size, span, made);
@@ -562,7 +563,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,
             _ if own => f,
             _ => {
-                let x = self.fresh("item");
+                let x = self.fresh(Role::Item);
                 let call = Expr::call(f, vec![Expr::var(&x)]);
                 Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(call)).at(js::Span::NONE)])
             }
@@ -593,14 +594,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `f`, of an item, as a fold's callback, of what it's made so far and
     /// the item: `(_, x) => ..` of `(x) => ..`.
     pub(super) fn unary_folded(&mut self, f: Expr) -> Expr {
-        let made = self.fresh("_");
+        let made = self.fresh(Role::Unread);
         match f.kind {
             js::ExprKind::Arrow(mut params, body) if params.len() == 1 => {
                 params.insert(0, made.into());
                 Expr::arrow(params, body)
             }
             _ => {
-                let x = self.fresh("x");
+                let x = self.fresh(Role::X);
                 let call = Expr::call(f, vec![Expr::var(&x)]);
                 Expr::arrow(
                     vec![made.into(), x.into()],
@@ -616,7 +617,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if own => f,
             _ if matches!(f.helper_name(), Some("$f64Max" | "$f64Min")) => f,
             _ => {
-                let (a, b) = (self.fresh("a"), self.fresh("b"));
+                let (a, b) = (self.fresh(Role::A), self.fresh(Role::B));
                 let call = Expr::call(f, vec![Expr::var(&a), Expr::var(&b)]);
                 Expr::arrow(
                     vec![a.into(), b.into()],

@@ -130,9 +130,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`vec![made(); n]` checks the room before `made()` runs, which a panic then skips",
     file: "src/lower/combinators/values.rs",
-    find: '            if !item.reads_same() {\n                item = self.spill("item", item, out);\n            }\n            if !n.reads_same() {',
+    find: '            if !item.reads_same() {\n                item = self.spill(Role::Item, item, out);\n            }\n            if !n.reads_same() {',
     replace:
-      '            if false {\n                item = self.spill("item", item, out);\n            }\n            if !n.reads_same() {',
+      '            if false {\n                item = self.spill(Role::Item, item, out);\n            }\n            if !n.reads_same() {',
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {

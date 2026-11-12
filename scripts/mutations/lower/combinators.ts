@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "            Comb::Or if !values[0].has_effects() => Some(values.remove(0)),\n",
     replace:
-      '            Comb::Or => Some(self.spill("fallback", values.remove(0), out)),\n',
+      '            Comb::Or => Some(self.spill(Role::Fallback, values.remove(0), out)),\n',
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -159,9 +159,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`unwrap_or_else` of `Some(None)` gives the box, `??`'s, not the `None` in it",
     file: "src/lower/combinators.rs",
-    find: '                let fallback = self.call_with(f, Vec::new(), "fallback", out);\n                match boxed {',
+    find: '                let fallback = self.call_with(f, Vec::new(), Role::Fallback, out);\n                match boxed {',
     replace:
-      '                let fallback = self.call_with(f, Vec::new(), "fallback", out);\n                match false {',
+      '                let fallback = self.call_with(f, Vec::new(), Role::Fallback, out);\n                match false {',
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -196,9 +196,9 @@ export const mutations: Mutation[] = [
     name: "result-map-or-else-no-error",
     breaks: "a `Result`'s `map_or_else` calls its fallback without the error",
     file: "src/lower/combinators.rs",
-    find: '                let fallback = self.call_with(g, vec![inside()], "fallback", out);',
+    find: '                let fallback = self.call_with(g, vec![inside()], Role::Fallback, out);',
     replace:
-      '                let fallback = self.call_with(g, Vec::new(), "fallback", out);',
+      '                let fallback = self.call_with(g, Vec::new(), Role::Fallback, out);',
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
   },
   {
@@ -779,7 +779,7 @@ export const mutations: Mutation[] = [
     name: "extend-loop-list-unheld",
     breaks: "a `Vec`'s `extend` of a list a call makes, `v.extend(made(2))`, calls it at each step of the index loop (ADR 1042)",
     file: "src/lower/combinators.rs",
-    find: '            false => self.spill("items", list, out),\n',
+    find: '            false => self.spill(Role::Items, list, out),\n',
     replace: "            false => list,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
   },

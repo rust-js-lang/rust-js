@@ -5,6 +5,7 @@
 //! `assign.rs` by concept (#1300).
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a trait method's call of `def_id` gives a `&mut` std's
@@ -188,7 +189,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }) {
                         true => {
                             if !f.reads_same() {
-                                f = self.spill("f", f, out);
+                                f = self.spill(Role::F, f, out);
                             }
                             Some(f.clone())
                         }
@@ -196,8 +197,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     exprs.push(match unboxed {
                         Some((unboxed, back)) => {
-                            let params: Vec<String> =
-                                (0..unboxed.len()).map(|at| self.fresh(&format!("x{at}"))).collect();
+                            let params: Vec<String> = (0..unboxed.len())
+                                .map(|at| self.fresh(Base::Numbered(Role::X, at)))
+                                .collect();
                             let given = (params.iter().zip(&unboxed))
                                 .map(|(param, &unboxed)| match unboxed {
                                     Some((form, crossing)) => self.form_back(form, crossing, Expr::var(param)),
@@ -357,7 +359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for expr in &mut exprs {
                 if expr.has_effects() {
                     let made = std::mem::replace(expr, Expr::undefined());
-                    *expr = self.spill("arg", made, out);
+                    *expr = self.spill(Role::Arg, made, out);
                 }
             }
             let names = self.tcx.fn_arg_idents(def_id);
@@ -366,7 +368,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .copied()
                 .flatten()
                 .map_or("value".to_string(), |i| i.name.to_string());
-            let name = self.fresh(&crate::lower::camel_case(&base));
+            let name = self.fresh(Base::Named(&crate::lower::camel_case(&base)));
             let held = match inner {
                 Some(crossing) => self.form_given(Form::Box, crossing, place.clone()),
                 None => place.clone(),

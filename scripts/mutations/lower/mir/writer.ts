@@ -146,9 +146,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder held in a variable is taken as a chain, its steps in a branch or a loop lost",
     file: "src/lower/mir/writer.rs",
-    find: '                let parts = held.then(|| self.fresh("parts"));',
+    find: '                let parts = held.then(|| self.fresh(Role::Parts));',
     replace:
-      '                let parts = held.then(|| self.fresh("parts")).filter(|_| false);',
+      '                let parts = held.then(|| self.fresh(Role::Parts)).filter(|_| false);',
     tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
   },
   {

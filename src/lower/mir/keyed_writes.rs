@@ -3,6 +3,7 @@
 //! a key of its own.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `node.kind = kind` of a field a keyed enum is flattened in: each key
@@ -53,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let parent = self.mir_place(state, parent, span, out)?;
         let parent = match parent.reads_same() {
             true => parent,
-            false => self.spill("parent", parent, out),
+            false => self.spill(Role::Parent, parent, out),
         };
         let delete = |key: &str| StmtKind::Expr(Expr::unary(js::UnaryOp::Delete, Expr::member(parent.clone(), key)));
         match value.kind {
@@ -64,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         unreachable!("fields alone")
                     };
                     let value = match value.has_effects() {
-                        true => self.spill(&key, value, out),
+                        true => self.spill(Base::Named(&key), value, out),
                         false => value,
                     };
                     set.push((key, value));
@@ -79,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => {
                 let value = match value.reads_same() {
                     true => value,
-                    false => self.spill("value", value, out),
+                    false => self.spill(Role::Value, value, out),
                 };
                 for key in keys {
                     out.push(delete(key).at(js_span));

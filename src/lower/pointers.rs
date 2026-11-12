@@ -9,6 +9,7 @@
 //! A `NonNull<T>` is its pointer, never `null`.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::temporary_names::Role;
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -853,7 +854,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = arg();
                 let items = match items.reads_same() {
                     true => items,
-                    false => self.spill("items", items, out),
+                    false => self.spill(Role::Items, items, out),
                 };
                 let end = helper("$ptr", vec![items.clone(), Expr::member(items.clone(), "length")]);
                 Expr::object(vec![
@@ -924,7 +925,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointer = arg();
                 let pointer = match pointer.reads_same() {
                     true => pointer,
-                    false => self.spill("pointer", pointer, out),
+                    false => self.spill(Role::Pointer, pointer, out),
                 };
                 let pointee = pointee.expect("a raw pointer");
                 let referred = match op == PointerOp::AsMut && self.mut_ref_form(pointee).is_cell() {
@@ -943,7 +944,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let place = self.pointed_place(arg(), pointee.expect("a pointer"));
                 let place = match place.reads_same() {
                     true => place,
-                    false => self.spill("value", place, out),
+                    false => self.spill(Role::Value, place, out),
                 };
                 self.drop_value(place, pointee.expect("a pointer"), span, out)?;
                 Expr::undefined()
@@ -1096,7 +1097,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn spilled_pointer(&mut self, pointer: Expr, out: &mut Vec<Stmt>) -> Expr {
         match pointer.reads_same() {
             true => pointer,
-            false => self.spill("pointer", pointer, out),
+            false => self.spill(Role::Pointer, pointer, out),
         }
     }
 

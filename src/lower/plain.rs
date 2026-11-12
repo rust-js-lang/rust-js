@@ -6,6 +6,7 @@
 //! as wasm32 is. JS has no bytes to address, but plain data's are its
 //! numbers', which `$toBytes` and `$fromBytes` write and read (ADR 0156).
 
+use crate::lower::temporary_names::Role;
 use rustc_abi::VariantIdx;
 use rustc_middle::ty::layout::TyAndLayout;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -155,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let value = match value.reads_same() {
             true => value,
-            false => self.spill("value", value, out),
+            false => self.spill(Role::Value, value, out),
         };
         let mut reads = Vec::new();
         self.plain_reads(value.clone(), &source, 0, &mut reads);
@@ -188,7 +189,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let made = cx.bytes_of(&value, &reads, (from, size), span)?;
                         let all = match made.reads_same() {
                             true => made,
-                            false => cx.spill("bytes", made, out),
+                            false => cx.spill(Role::Bytes, made, out),
                         };
                         bytes = Some(all.clone());
                         all

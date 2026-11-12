@@ -2,6 +2,7 @@
 //! iterated, and stepped from its back.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
@@ -33,7 +34,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(crossing) = item.and_then(|item| self.std_reads_tagged(item)) else {
             return self.collect_fallible_items(items, target, item, iter_ty, span);
         };
-        let r = self.fresh("r");
+        let r = self.fresh(Role::R);
         let tagged = self.form_given(crate::lower::generic_facts::Form::Tagged, crossing, Expr::var(&r));
         let f = Expr::arrow(vec![r.into()], vec![StmtKind::Return(Some(tagged)).at(js::Span::NONE)]);
         let items = Expr::call(Expr::member(items, "map"), vec![f]);
@@ -67,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             true => None,
             false => {
-                let values = self.fresh("values");
+                let values = self.fresh(Role::Values);
                 // What each `Ok` or `Some` holds.
                 let value = item.and_then(|item| match item.kind() {
                     ty::Adt(_, args) => args.types().next(),

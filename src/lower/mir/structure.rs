@@ -3,6 +3,7 @@
 //! the tests a switch and a check make.
 
 use super::*;
+use crate::lower::temporary_names::Base;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `block`, and what it dominates (Ramsey's `doTree`): a loop of it if
@@ -424,7 +425,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && made.has_effects()
                 {
                     let value = std::mem::replace(made, Expr::undefined());
-                    *made = self.spill("_$", value, &mut out);
+                    *made = self.spill(Base::Temporary, value, &mut out);
                 }
                 // What goes one way alone, the rest unreachable, tests
                 // nothing, but still makes it as Rust does: `if loud(n) {

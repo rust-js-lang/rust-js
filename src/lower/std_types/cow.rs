@@ -1,6 +1,7 @@
 //! `Cow` (ADR 0319): its enum, `{ TAG, _0 }` (ADR 0033), what it borrowed
 //! or owns, made owned by a clone of what it borrowed.
 
+use crate::lower::temporary_names::Role;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -55,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let cow = if cow.reads_same() {
             cow
         } else {
-            self.spill("cow", cow, out)
+            self.spill(Role::Cow, cow, out)
         };
         let tag = Expr::member(cow.clone(), tag_key(self.tcx, adt.did()));
         let borrowed = Expr::bin(Op::Eq, tag.clone(), Expr::str(variant_name(self.tcx, borrowed_variant)));
@@ -90,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.recognition().is_cow(item) {
             return items;
         }
-        let cow = self.fresh("cow");
+        let cow = self.fresh(Role::Cow);
         let (read, _) = self.cow_deref(&Expr::var(&cow), item).expect("a Cow's parts");
         let read = vec![StmtKind::Return(Some(read)).at(crate::js::Span::NONE)];
         Expr::call(Expr::member(items, "map"), vec![Expr::arrow(vec![cow.into()], read)])

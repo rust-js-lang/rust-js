@@ -6,6 +6,7 @@ use crate::collections::IndexSet;
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Operand, Rvalue, StatementKind, TerminatorKind};
@@ -113,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let slot = if slot.reads_same() {
                             slot
                         } else {
-                            self.spill("slot", slot, out)
+                            self.spill(Role::Slot, slot, out)
                         };
                         Expr::held(slot)
                     }

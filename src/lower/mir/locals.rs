@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::collections::IndexSet;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each local `pin!` pins, and the local its `Pin` is.
@@ -277,12 +278,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 locals.names[local] = name.clone();
                 continue;
             }
-            let base = match (&user[local], body.local_kind(local)) {
-                (Some(name), _) => tidy::user_name(name),
-                (None, LocalKind::ReturnPointer) => "result".to_string(),
-                (None, _) => tidy::temporary(local.as_usize()),
+            locals.names[local] = match (&user[local], body.local_kind(local)) {
+                (Some(name), _) => self.fresh(Base::Named(&tidy::user_name(name))),
+                (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
+                (None, _) => self.fresh(Base::Local(local.as_usize())),
             };
-            locals.names[local] = self.fresh(&base);
         }
         // Its inclusive ranges no step can leave exhausted, by name (#418).
         let fresh = self.fresh_ranges(body, &locals.names);

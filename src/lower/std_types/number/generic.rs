@@ -2,6 +2,7 @@
 //! fact's value, a generic's name, and a layout's bytes.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A number's conversion, comparison, operator or size (ADRs 0011, 0057): `None` if `known` is another.
@@ -56,8 +57,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     DurationOp::Checked { add: false } => {
                         let (a, b) = (arg(), arg());
-                        let a = if a.reads_same() { a } else { self.spill("a", a, out) };
-                        let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                        let a = if a.reads_same() { a } else { self.spill(Role::A, a, out) };
+                        let b = if b.reads_same() { b } else { self.spill(Role::B, b, out) };
                         let less = Expr::bin(Op::Lt, a.clone(), b.clone());
                         Expr::cond(less, Expr::undefined(), Expr::bin(Op::Sub, a, b))
                     }
@@ -86,7 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let slice = if slice.reads_same() {
                     slice
                 } else {
-                    self.spill("slice", slice, out)
+                    self.spill(Role::Slice, slice, out)
                 };
                 let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
                 // A `Vec`'s, moved, is itself, and given back as it's refused.

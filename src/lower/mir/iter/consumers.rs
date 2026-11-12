@@ -5,6 +5,7 @@
 
 use super::*;
 use crate::lower::recognition::{OwnStep, Reach};
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
@@ -32,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .flatten();
         if let Some(num) = option.or(result).and_then(Num::of) {
-            let values = self.fresh("values");
+            let values = self.fresh(Role::Values);
             let total = self.accumulated_numbers(Expr::var(&values), num, sum);
             let into = Expr::arrow(
                 vec![values.into()],
@@ -61,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => (Op::Add, 0),
             false => (Op::Mul, 1),
         };
-        let (a, b) = (self.fresh("a"), self.fresh("b"));
+        let (a, b) = (self.fresh(Role::A), self.fresh(Role::B));
         let total = num.wrap(Expr::bin(op, Expr::var(&a), Expr::var(&b)));
         let f = Expr::arrow(
             vec![a.into(), b.into()],

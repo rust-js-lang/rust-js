@@ -28,6 +28,7 @@ mod value;
 
 pub(super) use super::recognition::Json;
 use crate::collections::IndexMap;
+use crate::lower::temporary_names::{Base, Role};
 
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
@@ -394,8 +395,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, args) = *self_ty.kind() else {
             return Err(self.unsupported(span, "serializing this"));
         };
-        let value = self.fresh(&lower_first(self.tcx.item_name(adt.did()).as_str()));
-        let json = self.fresh("json");
+        let value = self.fresh(Base::Named(&lower_first(self.tcx.item_name(adt.did()).as_str())));
+        let json = self.fresh(Role::Json);
         let mut params = vec![value.clone().into(), json.clone().into()];
         params.extend(self.codec_params(args, "write"));
         let mut body = Vec::new();
@@ -443,7 +444,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut params = Vec::new();
         for t in args.types() {
             if let ty::Param(p) = t.kind() {
-                let name = self.fresh(&format!("{prefix}{}", p.name));
+                let name = self.fresh(Base::Named(&format!("{prefix}{}", p.name)));
                 self.codecs.push((t, name.clone()));
                 params.push(name.into());
             }
@@ -468,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(self.codec_callee(f));
         }
-        let (item, json) = (self.fresh("value"), self.fresh("json"));
+        let (item, json) = (self.fresh(Role::Value), self.fresh(Role::Json));
         let mut body = Vec::new();
         self.write_json(Expr::var(&item), &json, ty, span, &mut body)?;
         Ok(Expr::arrow(vec![item.into(), json.into()], body))
@@ -531,7 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = if value.reads_same() {
             value
         } else {
-            self.spill("value", value, out)
+            self.spill(Role::Value, value, out)
         };
         if let Some(inner) = self.option_of(ty) {
             // Of a type parameter, a `Some` may be boxed (ADR 0051).
@@ -597,7 +598,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_map(ty) => {
                 let (key_ty, item_ty) = (args.type_at(0), args.type_at(1));
                 let entries = self.in_order_of(value, ty, span)?;
-                let (key, item) = (self.fresh("key"), self.fresh("item"));
+                let (key, item) = (self.fresh(Role::Key), self.fresh(Role::Item));
                 let mut body = Vec::new();
                 let key_text = self.json_key(Expr::var(&key), key_ty, span)?;
                 self.emit(json, "key", vec![key_text], &mut body);
@@ -641,7 +642,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        let item = self.fresh("item");
+        let item = self.fresh(Role::Item);
         let mut body = Vec::new();
         self.emit(json, "element", Vec::new(), &mut body);
         self.write_json(Expr::var(&item), json, item_ty, span, &mut body)?;

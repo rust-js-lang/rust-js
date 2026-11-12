@@ -7,6 +7,7 @@ use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind, UnaryOp};
+use crate::lower::temporary_names::{Base, Role};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -301,9 +302,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut other = args.remove(0);
                 if other.has_effects() {
                     if this.has_effects() {
-                        this = self.spill("value", this, out);
+                        this = self.spill(Role::Value, this, out);
                     }
-                    other = self.spill("fallback", other, out);
+                    other = self.spill(Role::Fallback, other, out);
                 }
                 Expr::bin(Op::Or, this, other)
             }
@@ -392,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let kind = sig.skip_binder().inputs()[0];
                 let this = match this.reads_same() {
                     true => this,
-                    false => self.spill("kind", this, out),
+                    false => self.spill(Role::Kind, this, out),
                 };
                 let test = self.object_test(kind, &this);
                 Expr::cond(test, this.present(), Expr::undefined())
@@ -762,12 +763,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for item in items {
                     own.push(match item {
                         Some(pattern) => pattern,
-                        None => js::Pattern::Name(self.fresh("_")),
+                        None => js::Pattern::Name(self.fresh(Role::Unread)),
                     });
                 }
             }
             Some(js::Pattern::Name(tuple)) => {
-                let items: Vec<String> = (0..arity).map(|_| self.fresh(&tuple)).collect();
+                let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(&tuple))).collect();
                 let whole = match arity {
                     0 => Expr::undefined(),
                     _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),

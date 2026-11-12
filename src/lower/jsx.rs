@@ -4,6 +4,7 @@ use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::collections::IndexMap;
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
+use crate::lower::temporary_names::{Base, Role};
 
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
@@ -38,14 +39,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match &mut value.kind {
             js::ExprKind::Jsx(jsx) => {
                 if let js::JsxTag::Component(tag) = &mut jsx.tag {
-                    self.capture_jsx_input("Component", tag, out);
+                    self.capture_jsx_input(Base::Role(Role::Component), tag, out);
                 }
                 for prop in &mut jsx.props {
                     match prop {
                         Prop::Field(name, value)
                         | Prop::Getter(name, value)
                         | Prop::Setter(name, value)
-                        | Prop::Method(name, value) => self.capture_jsx_input(&js_ident(name), value, out),
+                        | Prop::Method(name, value) => self.capture_jsx_input(Base::Named(&js_ident(name)), value, out),
                         Prop::Keyed(..) | Prop::KeyedMethod(..) => {
                             unreachable!("a JSX attribute is named by text (ADR 1051)")
                         }
@@ -53,21 +54,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // JSX spreads read properties now, not when the
                             // later element is built. Preserve getters too.
                             let old = std::mem::replace(value, Expr::undefined());
-                            *value = self.spill("props", Expr::object(vec![Prop::Spread(old)]), out);
+                            *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
                         }
                     }
                 }
                 for child in &mut jsx.children {
-                    self.capture_jsx_input("children", child, out);
+                    self.capture_jsx_input(Base::Role(Role::Children), child, out);
                 }
                 true
             }
             js::ExprKind::Cond(test, yes, no) if jsx_tree(yes) || jsx_tree(no) => {
-                self.capture_jsx_input("condition", test, out);
+                self.capture_jsx_input(Base::Role(Role::Condition), test, out);
                 let mut then = Vec::new();
                 let mut otherwise = Vec::new();
-                self.capture_jsx_input("children", yes, &mut then);
-                self.capture_jsx_input("children", no, &mut otherwise);
+                self.capture_jsx_input(Base::Role(Role::Children), yes, &mut then);
+                self.capture_jsx_input(Base::Role(Role::Children), no, &mut otherwise);
                 // Keep branch computations conditional. Only their result
                 // bindings are visible to the deferred JSX expression.
                 for statement in then.iter_mut().chain(&mut otherwise) {
@@ -94,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if items.iter().any(jsx_tree) && !items.iter().any(|i| matches!(i.kind, js::ExprKind::Spread(_))) =>
             {
                 for item in items {
-                    self.capture_jsx_input("children", item, out);
+                    self.capture_jsx_input(Base::Role(Role::Children), item, out);
                 }
                 true
             }
@@ -127,7 +128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && !self.capture_object(value, out)
                     {
                         let old = std::mem::replace(value, Expr::undefined());
-                        *value = self.spill(&camel_case(&js_ident(name)), old, out);
+                        *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
                     }
                 }
                 Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) | Prop::Keyed(..) | Prop::KeyedMethod(..) => {
@@ -136,7 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
                     let old = std::mem::replace(value, Expr::undefined());
-                    *value = self.spill("props", Expr::object(vec![Prop::Spread(old)]), out);
+                    *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
                 }
             }
         }
@@ -225,12 +226,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value.reads_only_vars() && vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))
     }
 
-    fn capture_jsx_input(&mut self, base: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
+    fn capture_jsx_input(&mut self, base: Base<'_>, value: &mut Expr, out: &mut Vec<Stmt>) {
         let stable = self.reads_alike(value, out);
         if !stable && !self.capture_jsx(value, out) {
             let map = matches!(&value.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Member(_, name) if name == "map"));
             let old = std::mem::replace(value, Expr::undefined());
-            *value = self.spill(if map { "items" } else { base }, old, out);
+            *value = self.spill(if map { Base::Role(Role::Items) } else { base }, old, out);
         }
     }
 
@@ -536,7 +537,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if !value.is_constant() {
             let old = std::mem::replace(value, Expr::undefined());
-            *value = self.spill(&camel_case(&js_ident(name)), old, out);
+            *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
         }
     }
 
@@ -740,7 +741,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if tys.is_empty() => Vec::new(),
             _ => {
                 let tuple = if value.has_effects() {
-                    self.spill("children", value, out)
+                    self.spill(Role::Children, value, out)
                 } else {
                     value
                 };
@@ -827,13 +828,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if !value.is_constant() {
                     let old = std::mem::replace(value, Expr::undefined());
-                    *value = self.spill(&camel_case(&js_ident(base)), old, out);
+                    *value = self.spill(Base::Named(&camel_case(&js_ident(base))), old, out);
                 }
             }
             for value in &mut jsx.children {
                 if !self.reads_alike(value, out) {
                     let old = std::mem::replace(value, Expr::undefined());
-                    *value = self.spill("children", old, out);
+                    *value = self.spill(Role::Children, old, out);
                 }
             }
         }

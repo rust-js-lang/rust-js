@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`(a + b).isolate_lowest_one()` computes its receiver twice, `((a + b) | 0) & -((a + b) | 0)`",
     file: "src/lower/std_types/number.rs",
-    find: '            (NumOp::IsolateOne { highest }, None) => {\n                let a = if a.reads_same() { a } else { self.spill("value", a, out) };\n',
+    find: "            (NumOp::IsolateOne { highest }, None) => {\n                let a = if a.reads_same() {\n                    a\n                } else {\n                    self.spill(Role::Value, a, out)\n                };\n",
     replace: "            (NumOp::IsolateOne { highest }, None) => {\n",
     tests: [
       "test/lowering-bits.test.ts",

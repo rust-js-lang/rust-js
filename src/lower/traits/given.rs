@@ -2,6 +2,7 @@
 //! in the impl's terms, and its dictionaries, facts and location.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 /// What a copied default body replaced of the given of the item it's
 /// lowered in, its evidence, arguments, const parameters and caller's
@@ -439,18 +440,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for slot in self.evidence_slots(id, Scope::Whole) {
             let name = match slot {
                 Slot::Location => {
-                    let name = self.fresh("location");
+                    let name = self.fresh(Role::Location);
                     self.given.caller_location = Some((id, Expr::var(&name)));
                     name
                 }
                 Slot::Const(index) => {
                     let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
-                    let name = self.fresh(param.name.as_str());
+                    let name = self.fresh(Base::Named(param.name.as_str()));
                     self.given.const_params.push((index, Expr::var(&name)));
                     name
                 }
                 Slot::Bound(tr) => {
-                    let name = self.fresh(&bound_word(self.tcx, tr));
+                    let name = self.fresh(Base::Named(&bound_word(self.tcx, tr)));
                     self.given.evidence.push((tr, Expr::var(&name)));
                     // A std body's default, where a call gives none (ADR 0995).
                     if let Some(default) = self.default_dictionary(id, tr.def_id) {
@@ -461,13 +462,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Slot::Fact(index, fact) => {
                     let of = drop_slot(self.tcx, self.slots(), id, index);
-                    let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+                    let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.word())));
                     self.given.type_facts.push((of, fact, Expr::var(&name)));
                     name
                 }
                 Slot::Drop(index) => {
                     let ty = drop_slot(self.tcx, self.slots(), id, index);
-                    let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+                    let name = self.fresh(Base::Prefixed(Role::Drop, &drop_word(self.tcx, ty)));
                     self.give_drop_param(index, name.clone(), ty);
                     name
                 }

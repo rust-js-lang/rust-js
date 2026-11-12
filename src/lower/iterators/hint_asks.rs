@@ -12,6 +12,7 @@ use super::*;
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::iterator_type_of;
 use crate::lower::recognition::{Recognition, TypeFact, is_trusted_len};
+use crate::lower::temporary_names::Role;
 use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
 
@@ -900,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Expr, Expr)> {
         let collection = match collection.reads_same() {
             true => collection,
-            false => self.spill("items", collection, out),
+            false => self.spill(Role::Items, collection, out),
         };
         let deque = self.is_std_type(into, crate::lower::recognition::StdItem::VecDeque);
         let drop = match self.drops(item) != crate::lower::drops::Drops::Nothing {

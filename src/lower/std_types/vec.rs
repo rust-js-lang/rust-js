@@ -5,6 +5,7 @@ use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::std_types::slice::SortWith;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -76,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // The room it's asked, which std checks (ADR 0774): what it's
                 // given is read again, as it is or a `const`.
                 let size = self.room_item_size(generic_args.type_at(0));
-                let mut once = |this: &mut Self, at: usize, base: &str| {
+                let mut once = |this: &mut Self, at: usize, base: Role| {
                     if !given[at].reads_same() {
                         given[at] = this.spill(base, given[at].clone(), out);
                     }
@@ -84,12 +85,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 match op {
                     CapacityOp::WithCapacity => {
-                        let n = once(self, 0, "n");
+                        let n = once(self, 0, Role::N);
                         self.room_for((None, n), size, span, out);
                     }
                     CapacityOp::Reserve { .. } => {
-                        let len = Expr::member(once(self, 0, "items"), "length");
-                        let n = once(self, 1, "n");
+                        let len = Expr::member(once(self, 0, Role::Items), "length");
+                        let n = once(self, 1, Role::N);
                         self.room_for((Some(len), n), size, span, out);
                     }
                     CapacityOp::Of | CapacityOp::ShrinkTo { .. } => {}
@@ -164,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::SliceLast if boxed => {
                 let mut items = arg();
                 if items.has_effects() {
-                    items = self.spill("items", items, out);
+                    items = self.spill(Role::Items, items, out);
                 }
                 let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
                 self.some_at(items, last)

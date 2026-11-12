@@ -8,6 +8,7 @@
 use super::*;
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::NoneForm;
+use crate::lower::temporary_names::Role;
 use rustc_span::def_id::DefId;
 
 /// What an `Option` held where it's made holds (ADR 1017): of an `Option`
@@ -256,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn boxed_of_held(&mut self, held: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         let held = match held.reads_same() {
             true => held,
-            false => self.spill("option", held, out),
+            false => self.spill(Role::Option, held, out),
         };
         let some = self.some(held.clone());
         Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::undefined(), some)
@@ -298,7 +299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let boxed = match boxed.reads_same() {
             true => boxed,
-            false => self.spill("option", boxed, out),
+            false => self.spill(Role::Option, boxed, out),
         };
         let value = self.some_value(boxed.clone());
         let held = match value_form {

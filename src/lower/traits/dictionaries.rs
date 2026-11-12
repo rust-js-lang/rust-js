@@ -2,6 +2,7 @@
 //! impl's, a `dyn`'s, and its associated types' facts.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 mod conversions;
 mod declared;
@@ -38,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Each piece appended as it's stepped, as std's `for_each`
             // pushes each, so a panic part-way leaves what came before (#1127).
             Some(Std::PushStr) => {
-                let piece = self.fresh("piece");
+                let piece = self.fresh(Role::Piece);
                 let added = Expr::bin(Op::Add, collection.clone(), Expr::var(&piece));
                 let push = vec![StmtKind::Assign(collection.clone(), added).at(js::Span::NONE)];
                 let stepped = crate::lower::std_types::text::extend_text(items.clone(), &piece, push);
@@ -380,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => (rustc_middle::mir::BinOp::Add, 0),
                 false => (rustc_middle::mir::BinOp::Mul, 1),
             };
-            let (a, b) = (self.fresh("a"), self.fresh("b"));
+            let (a, b) = (self.fresh(Role::A), self.fresh(Role::B));
             let mut step = Vec::new();
             let item = Some((Expr::index(Expr::var(&b), Expr::int(0)), newtype.0));
             let total = self.newtype_result(Ok(op), Expr::var(&a), item, newtype, span, &mut step)?;
@@ -1097,8 +1098,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
         // A `&mut`'s, the cell generic code has, a box of an object's.
         let name = match mutability {
-            Mutability::Mut => "cell",
-            Mutability::Not => self.parameter_name(pointee),
+            Mutability::Mut => Role::Cell.word(),
+            Mutability::Not => self.parameter_name(pointee).word(),
         };
         let given = match boxed {
             true => Expr::held(Expr::var(name)),

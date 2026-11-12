@@ -89,6 +89,7 @@ mod std_impls;
 mod std_types;
 mod support;
 mod temporary_names;
+use temporary_names::{Base, Role};
 mod traits;
 mod unions;
 mod untagged;
@@ -579,8 +580,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         strip(self.frame.thir, e)
     }
 
-    fn fresh(&mut self, base: &str) -> String {
-        fresh_in(&mut self.names, base)
+    fn fresh<'b>(&mut self, base: impl Into<Base<'b>>) -> String {
+        fresh_in(&mut self.names, &base.into().word())
     }
 
     /// The names a pattern gives the fields it leaves out, so the rest
@@ -588,12 +589,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// out is `_` once it's known, as preparation names it.
     fn left_out(&mut self, keys: &[&str]) -> Vec<String> {
         (keys.iter())
-            .map(|key| self.fresh(&format!("_{}", camel_case(&crate::names::js_ident(key)))))
+            .map(|key| self.fresh(Base::Named(&format!("_{}", camel_case(&crate::names::js_ident(key))))))
             .collect()
     }
 
     fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> String {
-        let name = self.fresh(&camel_case(name));
+        let name = self.fresh(Base::Named(&camel_case(name)));
         self.locals.vars.insert(
             var,
             Var {
@@ -772,11 +773,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ) {
                     return Ok(None);
                 }
-                let params: Vec<String> = (0..inputs.len()).map(|i| self.fresh(&format!("arg{i}"))).collect();
+                let params: Vec<String> = (0..inputs.len())
+                    .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
+                    .collect();
                 let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
                 // A C-variadic one's, given on what it's given past the rest,
                 // `(...args) => f(...args)` (ADR 0428).
-                let variadic = variadic.then(|| self.fresh("args"));
+                let variadic = variadic.then(|| self.fresh(Role::Args));
                 if let Some(rest) = &variadic {
                     values.push(Expr::spread(Expr::var(rest)));
                 }
@@ -921,7 +924,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => {
                 let item = match item.reads_same() {
                     true => item,
-                    false => self.spill("item", item, out),
+                    false => self.spill(Role::Item, item, out),
                 };
                 self.copy(item, item_ty)
             }
@@ -939,8 +942,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `const <base> = value;`, so it's evaluated here, then its name, which
     /// keeps what's known of an iterator's value (`iterators::held_marks`).
-    fn spill(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let name = self.fresh(&unhyphenated(base));
+    fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let name = self.fresh(Base::Named(&unhyphenated(&base.into().word())));
         let (span, marks) = (value.span, iterators::held_marks(value.facts));
         out.push(StmtKind::Const(name.clone(), value).at(span));
         let mut held = Expr::var(&name);

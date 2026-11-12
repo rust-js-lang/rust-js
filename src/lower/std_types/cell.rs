@@ -2,6 +2,7 @@
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::NoneForm;
+use crate::lower::temporary_names::{Base, Role};
 
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
@@ -46,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_binder()
             .output();
         let output = self.tcx.erase_and_anonymize_regions(output);
-        let guard = self.spill("guard", guard, out);
+        let guard = self.spill(Role::Guard, guard, out);
         let guarded = self.guard_value(guard.clone(), guard_ty, mutable);
         let made = Expr::arrow(
             Vec::new(),
@@ -162,7 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let object = match object.reads_same() && !object.has_effects() {
             true => *object,
-            false => self.spill("object", *object, out),
+            false => self.spill(Role::Object, *object, out),
         };
         Some((object, storage))
     }
@@ -188,11 +189,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter)
             && let js::ExprKind::Var(key) = &key.kind
         {
-            let base = format!("{key}Value");
+            let key = key.clone();
             let mut given: Vec<Expr> = values.by_ref().collect();
             for value in given.iter_mut().skip(1) {
                 if value.has_effects() {
-                    *value = self.spill(&base, value.clone(), out);
+                    *value = self.spill(Base::Suffixed(&key, Role::Value), value.clone(), out);
                 }
             }
             *values = given.into_iter();
@@ -288,10 +289,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(getter) => {
                         if !value.reads_same() {
                             let base = match &getter.kind {
-                                js::ExprKind::Var(key) => format!("{key}Value"),
-                                _ => "value".into(),
+                                js::ExprKind::Var(key) => Base::Suffixed(key, Role::Value),
+                                _ => Base::Role(Role::Value),
                             };
-                            value = self.spill(&base, value, out);
+                            value = self.spill(base, value, out);
                         }
                         // The cell this writes the value of: `{ value }`,
                         // or the object a `RefCell` of one is (ADR 0863);
@@ -330,14 +331,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 match replaced {
                     Some(replaced) if drops => {
-                        let old = self.spill("old", replaced, out_set);
+                        let old = self.spill(Role::Old, replaced, out_set);
                         self.drop_value(old, item, span, out_set)?;
                     }
                     Some(replaced) => out_set.push(StmtKind::Expr(replaced).at(js_span)),
                     None if itself => {}
                     None if drops => {
-                        let cell = self.spill("cell", cell, out_set);
-                        let old = self.spill("old", Expr::held(cell.clone()), out_set);
+                        let cell = self.spill(Role::Cell, cell, out_set);
+                        let old = self.spill(Role::Old, Expr::held(cell.clone()), out_set);
                         out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
                         self.drop_value(old, item, span, out_set)?;
                     }
@@ -357,18 +358,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplaceWith if let Some((object, storage)) = in_place => {
                 let item = generic_args.type_at(0);
                 let made = apply(arg(), vec![Expr::stored_handle(object.clone(), storage)]);
-                let next = self.spill("next", made, out);
+                let next = self.spill(Role::Next, made, out);
                 let old = match call.unread {
                     true => Expr::undefined(),
                     false => {
                         let copied = self.moved_out(object.clone(), item);
-                        self.spill("old", copied, out)
+                        self.spill(Role::Old, copied, out)
                     }
                 };
                 let sets = storage.written_in_place(
                     &object,
                     next,
-                    &mut |name, value, out| self.spill(name, value, out),
+                    &mut |name, value, out| self.spill(Base::Named(name), value, out),
                     js_span,
                 );
                 out.extend(sets.expect("a flattened state's storage"));
@@ -420,18 +421,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 |e: &Expr| e.facts.has(js::Known::LocalRead) || !e.reads_same() || e.has_effects();
                             cell = match cell.kind {
                                 js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) if first(&object) => {
-                                    let object = self.spill("object", *object, out);
+                                    let object = self.spill(Role::Object, *object, out);
                                     Expr {
                                         kind: js::ExprKind::Handle(Box::new(object), storage),
                                         ..cell
                                     }
                                 }
                                 js::ExprKind::Handle(_, js::Storage::InPlace(_)) => cell,
-                                _ if first(&cell) => self.spill("cell", cell, out),
+                                _ if first(&cell) => self.spill(Role::Cell, cell, out),
                                 _ => cell,
                             };
                             let made = written(&cell, made);
-                            self.spill("next", made, out)
+                            self.spill(Role::Next, made, out)
                         } else {
                             written(&cell, made)
                         }
@@ -444,19 +445,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) = cell.kind {
                     let object = match object.reads_same() && !object.has_effects() {
                         true => *object,
-                        false => self.spill("object", *object, out),
+                        false => self.spill(Role::Object, *object, out),
                     };
                     let old = match call.unread {
                         true => Expr::undefined(),
                         false => {
                             let copied = self.moved_out(object.clone(), item);
-                            self.spill("old", copied, out)
+                            self.spill(Role::Old, copied, out)
                         }
                     };
                     let sets = storage.written_in_place(
                         &object,
                         next,
-                        &mut |name, value, out| self.spill(name, value, out),
+                        &mut |name, value, out| self.spill(Base::Named(name), value, out),
                         js_span,
                     );
                     out.extend(sets.expect("a flattened state's storage"));
@@ -499,7 +500,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let place = match place.is_assignable() {
                     true => place,
                     false => {
-                        let name = self.fresh("cell");
+                        let name = self.fresh(Role::Cell);
                         out.push(StmtKind::Let(name.clone(), Some(place)).at(js_span));
                         Expr::var(&name)
                     }
@@ -533,7 +534,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.moved_out_of_cell(place.clone(), item),
                     false => self.moved_out(place.clone(), item),
                 };
-                let old = self.spill("old", moved, out);
+                let old = self.spill(Role::Old, moved, out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
                 old
             }
@@ -547,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // *chunk.state.borrow_mut())`.
             Std::CellGetMut | Std::CellFromMut if flattened => {
                 let handle = arg();
-                self.spill("state", handle, out)
+                self.spill(Role::State, handle, out)
             }
             // Of what a `&mut` to is a cell (`is_cell_pointee`), a number's,
             // a text's or a type parameter's, generic code's box (ADR 0454),
@@ -583,7 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)), _) => {
                             let object = match object.reads_same() && !object.has_effects() {
                                 true => *object,
-                                false => self.spill("object", *object, out),
+                                false => self.spill(Role::Object, *object, out),
                             };
                             Swapped::InPlace(object, storage)
                         }
@@ -591,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let cell = Expr { kind, ..cell };
                             let cell = match cell.reads_same() && !cell.has_effects() {
                                 true => cell,
-                                false => self.spill("cell", cell, out),
+                                false => self.spill(Role::Cell, cell, out),
                             };
                             match flattened {
                                 true => Swapped::Held(cell),
@@ -619,7 +620,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let write = |cx: &mut Self, side: &Swapped, value: Expr, out: &mut Vec<Stmt>| match side {
                     Swapped::InPlace(object, storage) => {
-                        let spill = &mut |name: &str, value, out: &mut Vec<Stmt>| cx.spill(name, value, out);
+                        let spill =
+                            &mut |name: &str, value, out: &mut Vec<Stmt>| cx.spill(Base::Named(name), value, out);
                         let sets = storage.written_in_place(object, value, spill, js_span);
                         out.extend(sets.expect("a flattened state's storage"));
                     }
@@ -629,7 +631,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 };
                 let a_moved = read(self, &a);
-                let t = self.spill("t", a_moved, out);
+                let t = self.spill(Role::T, a_moved, out);
                 let b_moved = read(self, &b);
                 write(self, &a, b_moved, out);
                 write(self, &b, t, out);
@@ -653,12 +655,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let cell = arg();
                     match cell.reads_same() && !cell.has_effects() {
                         true => cell,
-                        false => self.spill("cell", cell, out),
+                        false => self.spill(Role::Cell, cell, out),
                     }
                 };
                 let (a, b) = (cell(), cell());
                 let a_moved = self.moved_out(Expr::held(a.clone()), item);
-                let old = self.spill("t", a_moved, out);
+                let old = self.spill(Role::T, a_moved, out);
                 let b_moved = self.moved_out(Expr::held(b.clone()), item);
                 out.push(StmtKind::Assign(Expr::held(a), b_moved).at(js_span));
                 out.push(StmtKind::Assign(Expr::held(b), old).at(js_span));
@@ -671,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = if cell.reads_same() {
                     cell
                 } else {
-                    self.spill("cell", cell, out)
+                    self.spill(Role::Cell, cell, out)
                 };
                 let updated = apply(arg(), vec![Expr::held(cell.clone())]);
                 out.push(StmtKind::Assign(Expr::held(cell), updated).at(js_span));
@@ -712,7 +714,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::TryBorrow { lock: false, .. } if flattened => {
                 crate::decisions::record("refcell-try-borrow", "flattened");
                 let handle = arg();
-                result::ok(self.spill("state", handle, out))
+                result::ok(self.spill(Role::State, handle, out))
             }
             Std::TryBorrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
                 crate::decisions::record("refcell-try-borrow", "unchecked");
@@ -782,7 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let cell = arg();
                 let cell = if operands > 0 && !cell.reads_same() {
-                    self.spill("atomic", cell, out)
+                    self.spill(Role::Atomic, cell, out)
                 } else {
                     cell
                 };
@@ -794,7 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if v.reads_same() {
                             v
                         } else {
-                            self.spill("operand", v, out)
+                            self.spill(Role::Operand, v, out)
                         }
                     })
                     .collect();
@@ -814,7 +816,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Assign(slot, v.clone()).at(js_span));
                     return Ok(Some(Expr::undefined()));
                 }
-                let previous = self.spill("previous", slot.clone(), out);
+                let previous = self.spill(Role::Previous, slot.clone(), out);
                 let next = match known {
                     Std::AtomicSwap => v.clone(),
                     Std::AtomicFetch(op) => self.binary(op, previous.clone(), v.clone(), None, item, span)?,
@@ -823,7 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::cond(Expr::bin(op, previous.clone(), v.clone()), previous.clone(), v.clone())
                     }
                     _ => {
-                        let done = self.spill("exchanged", Expr::bin(Op::Eq, previous.clone(), v.clone()), out);
+                        let done = self.spill(Role::Exchanged, Expr::bin(Op::Eq, previous.clone(), v.clone()), out);
                         out.push(
                             StmtKind::If(
                                 done.clone(),

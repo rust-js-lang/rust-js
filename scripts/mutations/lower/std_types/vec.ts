@@ -131,8 +131,8 @@ export const mutations: Mutation[] = [
     name: "with-capacity-room-unchecked",
     breaks: "`Vec::with_capacity(n)` past `isize::MAX` bytes is no panic",
     file: "src/lower/std_types/vec.rs",
-    find: '                        let n = once(self, 0, "n");\n                        self.room_for((None, n), size, span, out);\n',
-    replace: '                        let _ = once(self, 0, "n");\n',
+    find: "                        let n = once(self, 0, Role::N);\n                        self.room_for((None, n), size, span, out);\n",
+    replace: "                        let _ = once(self, 0, Role::N);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {

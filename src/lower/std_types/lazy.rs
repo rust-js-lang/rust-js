@@ -5,6 +5,7 @@ use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::lent::Lent;
 use crate::lower::recognition::{Std, StdItem};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -62,7 +63,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let lazy = if lazy.reads_same() {
             lazy
         } else {
-            self.spill("lazy", lazy, out)
+            self.spill(Role::Lazy, lazy, out)
         };
         // A `&mut` to a number or text is a `{ value }` box (ADR 0074), which
         // the cell itself is once its value's made.

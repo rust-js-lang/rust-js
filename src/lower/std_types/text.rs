@@ -4,6 +4,7 @@
 //! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
 
 use crate::collections::IndexSet;
+use crate::lower::temporary_names::Role;
 
 use crate::js;
 use crate::js::result;
@@ -296,7 +297,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let items = self.iterable_items(items, ty, span, out)?;
         let pieces = self.cow_texts(items, self.iterable_item(ty));
-        let piece = self.fresh("piece");
+        let piece = self.fresh(Role::Piece);
         let mut push = Vec::new();
         crate::lower::display::append_written(place, Expr::var(&piece), false, js_span, &mut push);
         out.push(StmtKind::Expr(extend_text(pieces, &piece, push)).at(js_span));
@@ -363,12 +364,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | StringEdit::PathPop
             | StringEdit::SetExtension => {
                 let (name, label) = match edit {
-                    StringEdit::Pop => ("$strPop", "popped"),
-                    StringEdit::SplitOff => ("$strSplitOff", "split"),
-                    StringEdit::Drain => ("$strDrain", "drained"),
-                    StringEdit::PathPop => ("$pathPop", "popped"),
-                    StringEdit::SetExtension => ("$pathSetExtension", "set"),
-                    _ => ("$strRemove", "removed"),
+                    StringEdit::Pop => ("$strPop", Role::Popped),
+                    StringEdit::SplitOff => ("$strSplitOff", Role::Split),
+                    StringEdit::Drain => ("$strDrain", Role::Drained),
+                    StringEdit::PathPop => ("$pathPop", Role::Popped),
+                    StringEdit::SetExtension => ("$pathSetExtension", Role::Set),
+                    _ => ("$strRemove", Role::Removed),
                 };
                 let pair = helper(name, given);
                 let pair = self.spill(label, pair, out);
@@ -595,7 +596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = if items.reads_same() {
                     items
                 } else {
-                    self.spill("items", items, out)
+                    self.spill(Role::Items, items, out)
                 };
                 let length = Expr::member(items.clone(), "length");
                 let empty = Expr::bin(Op::Eq, length.clone(), Expr::int(0));

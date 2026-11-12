@@ -1,6 +1,7 @@
 //! A slice's sorts: which of std's sorts an item's type picks, and the
 //! calls of the runtime's that run them (ADRs 0342, 0471).
 
+use crate::lower::temporary_names::Role;
 use rustc_middle::ty;
 use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
@@ -166,11 +167,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let returned = vec![StmtKind::Return(Some(less)).at(js::Span::NONE)];
                     return Ok(Expr::arrow(params.clone(), returned));
                 }
-                let compare = self.named_once("compare", compare, out);
+                let compare = self.named_once(Role::Compare, compare, out);
                 Expr::bin(Op::Lt, Expr::call(compare, vec![a, b]), Expr::int(0))
             }
             SortWith::Key => {
-                let key = self.named_once("key", by.expect("rustc checked the arguments"), out);
+                let key = self.named_once(Role::Key, by.expect("rustc checked the arguments"), out);
                 let key_ty = key_ty.expect("`_by_key` names its key");
                 let (a, b) = (Expr::call(key.clone(), vec![a]), Expr::call(key, vec![b]));
                 self.operator_value(Op::Lt, a, b, key_ty, span, &mut body)?

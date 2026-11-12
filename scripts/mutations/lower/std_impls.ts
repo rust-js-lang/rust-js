@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
     file: "src/lower/std_impls.rs",
-    find: '        let (x, i) = (self.fresh("x"), self.fresh("i"));\n',
+    find: '        let (x, i) = (self.fresh(Role::X), self.fresh(Role::I));\n',
     replace: '        let (x, i) = ("x".to_string(), "i".to_string());\n',
     tests: ["test/corpus.test.ts", "-t", "^eq_items_of_other_types.rs$"],
   },
@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
     name: "eq-items-repeated",
     breaks: "a side of `==` of items that's a call is called for each item",
     file: "src/lower/std_impls.rs",
-    find: '        let b = if b.reads_same() { b } else { self.spill("other", b, out) };\n',
+    find: "        let b = if b.reads_same() {\n            b\n        } else {\n            self.spill(Role::Other, b, out)\n        };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_two_types.rs$"],
     snapshots: true,

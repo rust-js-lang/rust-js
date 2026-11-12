@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::lower::combinators::Comb;
+use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -96,12 +97,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = if items.reads_same() {
                 items
             } else {
-                self.spill("items", items, out)
+                self.spill(Role::Items, items, out)
             };
             let index = if index_kept {
                 index
             } else {
-                self.spill("index", index, out)
+                self.spill(Role::Index, index, out)
             };
             if checked {
                 let check = self.index_checked(items.clone(), index.clone(), items_ty);
@@ -110,7 +111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Ref(Expr::index(items, index)));
         }
         let mut exprs = Vec::new();
-        for (value, name) in values.into_iter().zip(["items", "i", "j"]) {
+        for (value, name) in values.into_iter().zip([Role::Items, Role::I, Role::J]) {
             let e = self.value_expr(value, span)?;
             exprs.push(match known {
                 // Each read once, in order.

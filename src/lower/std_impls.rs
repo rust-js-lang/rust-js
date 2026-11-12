@@ -14,6 +14,7 @@ use super::representation::Num;
 use super::{FnCx, R, Shape};
 use crate::collections::IndexMap;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::temporary_names::{Base, Role};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -364,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let x = match x.reads_same() {
             true => x,
-            false => self.spill("item", x, out),
+            false => self.spill(Role::Item, x, out),
         };
         let mut body = Vec::new();
         let same = self.eq_value(Expr::var("each"), x.clone(), item, span, &mut body)?;
@@ -401,8 +402,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(first) = self.rc_eq_first(ty, pointee, span)?
         {
             let counted = self.counted_rc(ty).is_some();
-            let a = if a.reads_same() { a } else { self.spill("left", a, out) };
-            let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+            let a = if a.reads_same() {
+                a
+            } else {
+                self.spill(Role::Left, a, out)
+            };
+            let b = if b.reads_same() {
+                b
+            } else {
+                self.spill(Role::Right, b, out)
+            };
             let (x, y) = match counted {
                 true => (
                     self.counted_pointee(a.clone(), pointee),
@@ -560,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.is_set(ty) {
                 return Ok(Expr::call_helper("$setEq", vec![a, b]));
             }
-            let (x, y) = (self.fresh("x"), self.fresh("y"));
+            let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
             let mut made = Vec::new();
             let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), span, &mut made)?;
             let is = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
@@ -611,7 +620,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let base = format!("eq{}", self.tcx.item_name(adt.did()));
             let name = self.recursive_fn(
                 (Kind::Eq, ty, &base),
-                &["a", "b"],
+                &[Base::Role(Role::A), Base::Role(Role::B)],
                 |cx, params, body| cx.eq_derived(params[0].clone(), params[1].clone(), ty, span, body),
                 out,
             )?;
@@ -624,8 +633,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made of in turn.
     fn eq_derived(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // Each is read more than once below.
-        let a = if a.reads_same() { a } else { self.spill("left", a, out) };
-        let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+        let a = if a.reads_same() {
+            a
+        } else {
+            self.spill(Role::Left, a, out)
+        };
+        let b = if b.reads_same() {
+            b
+        } else {
+            self.spill(Role::Right, b, out)
+        };
         let std = |item: StdItem| self.is_std_type(ty, item);
         match ty.kind() {
             ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, (*item, *item), true, span, out),
@@ -650,7 +667,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     given
                 };
-                let (x, y) = (self.fresh("x"), self.fresh("y"));
+                let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
                 let mut body = Vec::new();
                 let eq = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
@@ -806,9 +823,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let a = if a.reads_same() { a } else { self.spill("items", a, out) };
-        let b = if b.reads_same() { b } else { self.spill("other", b, out) };
-        let (x, i) = (self.fresh("x"), self.fresh("i"));
+        let a = if a.reads_same() {
+            a
+        } else {
+            self.spill(Role::Items, a, out)
+        };
+        let b = if b.reads_same() {
+            b
+        } else {
+            self.spill(Role::Other, b, out)
+        };
+        let (x, i) = (self.fresh(Role::X), self.fresh(Role::I));
         let mut body = Vec::new();
         let other = Expr::index(b.clone(), Expr::var(&i));
         // std's slice `==` asks each two `x != y`, until one is: of items

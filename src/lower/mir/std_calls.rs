@@ -7,6 +7,7 @@
 use super::*;
 use crate::lower::format_args::Piece;
 use crate::lower::std_types::once::OnceOp;
+use crate::lower::temporary_names::{Base, Role};
 
 mod fmt_parts;
 mod iterators;
@@ -236,7 +237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if let Value::Fmt(_, _, value) = item
                                 && value.has_effects()
                             {
-                                *value = this.spill("_$", std::mem::replace(value, Expr::undefined()), out);
+                                *value = this.spill(Base::Temporary, std::mem::replace(value, Expr::undefined()), out);
                             }
                         }
                         parts = this.written_parts(&items, &written, arguments, span)?;
@@ -387,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let js_span = this.js_span(span);
                         let mut written = Vec::new();
                         crate::lower::display::append_written(&place, value, true, js_span, &mut written);
-                        let caught = this.fresh("error");
+                        let caught = this.fresh(Role::Error);
                         let partial = Expr::call(Expr::helper("$fmtPartial"), vec![Expr::var(&caught)]);
                         let handler = vec![
                             StmtKind::Assign(place.clone(), Expr::bin(Op::Add, place.clone(), partial)).at(js_span),
@@ -415,7 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // so it's made once.
                     let place = match place.kind {
                         js::ExprKind::Member(object, field) if !object.reads_same() => {
-                            Expr::member(this.spill("value", *object, out), &field)
+                            Expr::member(this.spill(Role::Value, *object, out), &field)
                         }
                         kind => Expr {
                             facts: crate::lower::iterators::its_facts(place.facts),
@@ -476,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => part,
                             false => {
                                 this.flush(state, out)?;
-                                this.spill("text", part, out)
+                                this.spill(Role::Text, part, out)
                             }
                         });
                     }
@@ -613,7 +614,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 && field == js::HELD =>
                         {
                             this.flush(state, out)?;
-                            let cell = this.spill("part", (**cell).clone(), out);
+                            let cell = this.spill(Role::Part, (**cell).clone(), out);
                             Expr::held(cell)
                         }
                         _ => return Err(this.unsupported(span, "changing this string, from its MIR")),
@@ -658,7 +659,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut n = this.value_expr(values.next().expect("the capacity"), span)?;
                     this.flush(state, out)?;
                     if !n.reads_same() {
-                        n = this.spill("n", n, out);
+                        n = this.spill(Role::N, n, out);
                     }
                     this.room_for((None, n), Expr::int(1), span, out);
                     Expr::str("")
@@ -960,7 +961,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Ref(place) => this.box_of_place(state, place),
                         _ => Some(this.value_expr(dest.clone(), span)?),
                     };
-                    let made = given_box.is_none().then(|| this.fresh("to"));
+                    let made = given_box.is_none().then(|| this.fresh(Role::To));
                     let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_deref().expect("a box made")));
                     let held = inner.unwrap_or(ty);
                     if this
@@ -971,7 +972,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // Read again by what's asked and by the clone.
                         let source = match source.reads_same() {
                             true => source,
-                            false => this.spill("source", source, out),
+                            false => this.spill(Role::Source, source, out),
                         };
                         let (asked, written) = this
                             .written_over(held, (to.clone(), pointer), source.clone(), span)?
@@ -1189,7 +1190,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let target = match op.is_ok() && !target.reads_same() {
                         true => {
                             this.flush(state, out)?;
-                            this.spill("wrapping", target, out)
+                            this.spill(Role::Wrapping, target, out)
                         }
                         false => target,
                     };

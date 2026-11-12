@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::lower::pointers::{Rewritten, within_items};
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value` written to `place` where `rewritten` says how: written, none;
@@ -41,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => {
                         // Held as any value read more than once is, which
                         // #890's namer names.
-                        let held = self.spill("value", value, out);
+                        let held = self.spill(Role::Value, value, out);
                         for inner in kept {
                             let inner_js = self.mir_place(state, inner, span, out)?;
                             let steps = inner.projection.len() - place.projection.len();

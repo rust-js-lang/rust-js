@@ -5,6 +5,7 @@
 //! value it points at (ADR 0023). The one owner of how each is held, read,
 //! made and counted (`RcForm`).
 
+use crate::lower::temporary_names::Role;
 use rustc_middle::ty::{self, GenericArgsRef, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -338,7 +339,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.unsupported(span, &format!("`Rc::get_mut` of an `Rc<{item}>`")));
                     }
                     RcOp::GetMut => {
-                        let rc = if rc.reads_same() { rc } else { self.spill("rc", rc, out) };
+                        let rc = if rc.reads_same() {
+                            rc
+                        } else {
+                            self.spill(Role::Rc, rc, out)
+                        };
                         let only = Expr::bin(
                             Op::And,
                             Expr::bin(Op::Eq, self.rc_count(rc.clone(), item, RcCount::Strong), Expr::int(1)),

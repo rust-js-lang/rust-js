@@ -2,6 +2,7 @@
 //! and a generic impl's constant.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A type whose `Borrow` is the crate's that std's function would take
@@ -469,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // still first: `operands` put anything before it that needed
                     // statements in `const`s of its own.
                     let pair = if !receiver.reads_same() {
-                        self.spill("receiver", receiver, out)
+                        self.spill(Role::Receiver, receiver, out)
                     } else {
                         receiver
                     };

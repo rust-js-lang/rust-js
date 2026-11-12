@@ -569,7 +569,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc` held before it's unsized, its function made one of its own that reads its cell when it's called, `rc.value = (arg0) => rc.value(arg0)`, calls itself (#1053)",
     file: "src/lower/traits/dyns.rs",
-    find: "        let f = self.spill(\"f\", Expr::held(rc.clone()), out);\n",
+    find: "        let f = self.spill(Role::F, Expr::held(rc.clone()), out);\n",
     replace: "        let f = Expr::held(rc.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
   },

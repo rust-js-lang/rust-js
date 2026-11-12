@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::lower::recognition::{OwnStep, Reach};
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
@@ -752,7 +753,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // of an adapter a function gives (#1226), `$flattenEnds(src,
                 // pick(), (items) => ..)` (#1235).
                 (false, Some(into_iter)) => {
-                    let items = self.fresh("items");
+                    let items = self.fresh(Role::Items);
                     let knowing = self.as_double_ended(Expr::var(&items), into_iter, span)?;
                     let knowing = Expr::arrow(
                         vec![items.as_str().into()],

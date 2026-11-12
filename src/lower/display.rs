@@ -10,6 +10,7 @@ mod written;
 pub(super) use printing::write_to_sink;
 
 use super::bindings;
+use crate::lower::temporary_names::Role;
 
 use super::format_spec::{Options, Radix};
 use super::passed_on::{Taker, passed_on};
@@ -242,7 +243,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let result = if result.reads_same() {
             result
         } else {
-            self.spill("result", result, out)
+            self.spill(Role::Result, result, out)
         };
         let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
         match answer {
@@ -364,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The parameter of `writer`'s `Formatter`'s options, where it has a
     /// `Formatter` and takes them (`compiled_writer_takes_options`).
     pub(super) fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<String> {
-        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh("options"))
+        (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(Role::Options))
     }
 
     /// `lower`, `writer`'s body, given its `Formatter`'s options, `given`,
@@ -617,7 +618,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.writing.given.is_none() || value.reads_same() {
             value
         } else {
-            self.spill("shown", value, out)
+            self.spill(Role::Shown, value, out)
         }
     }
 

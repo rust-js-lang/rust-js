@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::lower::lent::Lent;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An iterator's call `mir_iter_call` leaves: a combinator, a step
@@ -38,10 +39,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => at,
                             false => {
                                 this.flush(state, out)?;
-                                this.spill("at", at, out)
+                                this.spill(Role::At, at, out)
                             }
                         };
-                        let then = this.call_with(f, vec![at.clone()], "then", out);
+                        let then = this.call_with(f, vec![at.clone()], Role::Then, out);
                         let mapped = known == Std::OptionMap;
                         let then = match mapped && this.option_of(output).is_some_and(|item| this.boxed_payload(item)) {
                             true => this.some(then),
@@ -149,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (Some(function), Some(f)) => {
                             let f = match f.kind {
                                 js::ExprKind::Var(_) => f,
-                                _ => this.spill("f", f, out),
+                                _ => this.spill(Role::F, f, out),
                             };
                             exprs[0] = f.clone();
                             Some((f, function))
@@ -252,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                         true => {
                                             let it = match it.reads_same() {
                                                 true => it,
-                                                false => this.spill("peekable", it, out),
+                                                false => this.spill(Role::Peekable, it, out),
                                             };
                                             let place = (this.lent_place((it.clone(), peekable), Lent::Peekable, None))
                                                 .expect("placed");
@@ -299,7 +300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 let x = if x.reads_same() {
                                     x
                                 } else {
-                                    this.spill("expected", x, out)
+                                    this.spill(Role::Expected, x, out)
                                 };
                                 let same = Expr::arrow(
                                     vec!["item".into()],
@@ -350,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 }
                                 let it = match it.reads_same() || is_stepped_items(&it) {
                                     true => it,
-                                    false => this.spill("it", it, out),
+                                    false => this.spill(Role::It, it, out),
                                 };
                                 let mut args = vec![this.stepped_left(it, iter_ty, false, span)?];
                                 let item = this.iterator_item(iter_ty).expect("an iterator's item");
@@ -360,7 +361,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 Expr::call_helper("$cycle", args)
                             }
                             _ => {
-                                let it = if it.reads_same() { it } else { this.spill("it", it, out) };
+                                let it = if it.reads_same() {
+                                    it
+                                } else {
+                                    this.spill(Role::It, it, out)
+                                };
                                 this.stepped_left(it, arg_tys[0].peel_refs(), false, span)?
                             }
                         }

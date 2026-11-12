@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a copied default's parameter its entry takes out of a box is named after its body's names are, so it's named as one of them, `self` twice, which JS refuses (#803)",
     file: "src/lower/traits/impls/defaults.rs",
-    find: "            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(|word| cx.fresh(word))).collect();\n",
+    find: "            let given_names: Vec<Option<String>> = (words.iter())\n                .map(|word| word.map(|word| cx.fresh(Base::Named(word))))\n                .collect();\n",
     replace: "            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(String::from)).collect();\n",
     tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_dictionary_declared_once|copied_default_box_named_apart).rs$"],
   },

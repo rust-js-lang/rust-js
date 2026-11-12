@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::collections::IndexSet;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.collect()` into `output`: a heap of its items in heap order,
@@ -187,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // asking it doesn't close it: `$roomFor(n, size)`.
             Some((len, size)) if held.is_empty() && !drops => {
                 let it = match it.has_effects() {
-                    true => self.spill("it", it, made),
+                    true => self.spill(Role::It, it, made),
                     false => it,
                 };
                 self.room_for((None, len), size, span, made);
@@ -254,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = if it.reads_same() {
                     it
                 } else {
-                    self.spill("iter", it, made)
+                    self.spill(Role::Iter, it, made)
                 };
                 (held.clone(), Some(held))
             }
@@ -785,7 +786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let call = self.grown_by_hint(it, grown, iter_ty, callers_trusted.clone(), span)?;
                 match keeps {
                     true => {
-                        let name = self.fresh("grown");
+                        let name = self.fresh(Role::Grown);
                         (Expr::var(&name), Some((name, call)))
                     }
                     false => (call, None),

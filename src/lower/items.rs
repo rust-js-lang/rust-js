@@ -12,6 +12,7 @@ use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case};
 use crate::js;
 use crate::js::{Expr, ExprKind, Op, Pattern, StmtKind};
+use crate::lower::temporary_names::{Base, Role};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -407,16 +408,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let params: Vec<String> = inputs
             .iter()
             .enumerate()
-            .map(|(i, input)| {
-                let name = match idents.get(i).copied().flatten().map(|ident| ident.name.to_string()) {
-                    Some(name) if name != "this" && !name.starts_with('_') => camel_case(&name),
+            .map(
+                |(i, input)| match idents.get(i).copied().flatten().map(|ident| ident.name.to_string()) {
+                    Some(name) if name != "this" && !name.starts_with('_') => {
+                        self.fresh(Base::Named(&camel_case(&name)))
+                    }
                     _ => match input.peel_refs().kind() {
-                        ty::Adt(adt, _) => super::lower_first(self.tcx.item_name(adt.did()).as_str()),
-                        _ => format!("arg{i}"),
+                        ty::Adt(adt, _) => {
+                            self.fresh(Base::Named(&super::lower_first(self.tcx.item_name(adt.did()).as_str())))
+                        }
+                        _ => self.fresh(Base::Numbered(Role::Arg, i)),
                     },
-                };
-                self.fresh(&name)
-            })
+                },
+            )
             .collect();
         // Each given as its call gives it (ADR 0604): a nullable one's
         // `None`, `null`.
@@ -608,7 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let given = *input;
         let input = input.peel_refs();
-        let name = self.parameter_name(input);
+        let name = self.parameter_name(input).word();
         let x = Expr::var(name);
         let body = match known {
             Std::Trim { start, end } => self.trimmed(x, start, end),
@@ -652,15 +656,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What an arrow's one parameter of `input` is called: `(s) => ..` of a
     /// string, `c` of a `char`, `n` of a number.
-    pub(super) fn parameter_name(&self, input: Ty<'tcx>) -> &'static str {
+    pub(super) fn parameter_name(&self, input: Ty<'tcx>) -> Role {
         if input.is_char() {
-            "c"
+            Role::C
         } else if self.is_string_like(input) {
-            "s"
+            Role::S
         } else if Num::of(input).is_some() {
-            "n"
+            Role::N
         } else {
-            "x"
+            Role::X
         }
     }
 

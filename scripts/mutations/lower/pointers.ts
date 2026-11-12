@@ -605,7 +605,7 @@ export const mutations: Mutation[] = [
     name: "items-range-unspilled",
     breaks: "a slice's `as_ptr_range()` of an expression reads it twice, a `$view` of a `Vec`'s part made twice, two places, so a cursor's ends are of two views and it never meets its end (#1256)",
     file: "src/lower/pointers.rs",
-    find: '                let items = match items.reads_same() {\n                    true => items,\n                    false => self.spill("items", items, out),\n                };\n                let end',
+    find: '                let items = match items.reads_same() {\n                    true => items,\n                    false => self.spill(Role::Items, items, out),\n                };\n                let end',
     replace: "                let end",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointer_range_walked_by_a_cursor.rs$"],
     snapshots: true,

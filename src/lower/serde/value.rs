@@ -8,6 +8,7 @@ use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::display::Pretty;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 
 use crate::js::result;
@@ -185,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A `Vec` of what makes one, or an `Option` of one: `Null` for `None`.
         let convert = |this: &mut Self, item: Ty<'tcx>| -> R<Expr> {
-            let x = this.fresh("x");
+            let x = this.fresh(Role::X);
             let converted = this.json_value_from(Expr::var(&x), item, span)?;
             Ok(Expr::arrow(
                 vec![x.into()],

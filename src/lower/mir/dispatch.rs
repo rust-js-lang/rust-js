@@ -2,6 +2,7 @@
 //! `calls.rs`, `dispatch/known_calls.rs` or `iter.rs`.
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 /// The forms a function value's arrow takes: generic code's, as generic
 /// code that calls it as an `F` gives them (#975), or its callers' (#1324).
@@ -463,7 +464,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Named by its type: `(s) => ..` of a string.
             1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
             n => (0..n)
-                .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
+                .map(|i| {
+                    self.fresh(
+                        [Role::A, Role::B, Role::C, Role::D, Role::E, Role::F]
+                            .get(i)
+                            .copied()
+                            .unwrap_or(Role::Arg),
+                    )
+                })
                 .collect(),
         };
         // Given in generic code's forms where it's asked them, as generic
@@ -497,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A C-variadic one's, given on what it's given past the rest, `(a,
         // ...args) => f(a, ...args)` (ADR 0428): C's numbers and pointers,
         // passed as they are.
-        let variadic = crate::lower::recognition::is_c_variadic(tcx, def_id).then(|| self.fresh("args"));
+        let variadic = crate::lower::recognition::is_c_variadic(tcx, def_id).then(|| self.fresh(Role::Args));
         if let Some(rest) = &variadic {
             values.push(Value::Expr(Expr::spread(Expr::var(rest))));
             inputs.push(tcx.types.i32);
@@ -675,7 +683,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
         let [error, f]: [Expr; 2] = exprs.try_into().ok().expect("an `Option` and a function");
-        let given = self.call_with(f, vec![error], "then", out);
+        let given = self.call_with(f, vec![error], Role::Then, out);
         let boxed = known == Std::OptionMap && self.option_of(output).is_some_and(|item| self.boxed_payload(item));
         Ok(Some(Value::Expr(if boxed { self.some(given) } else { given })))
     }
@@ -759,7 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(if value.reads_same() {
                 value
             } else {
-                cx.spill("option", value, out)
+                cx.spill(Role::Option, value, out)
             })
         };
         let (a, b) = (next(self, out)?, next(self, out)?);
@@ -893,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         }
         let subject = match given.iter().find_map(|&(_, when)| when) {
-            Some(when) => Some(self.held_value(&mut values, 0, when.subject(), span, out)?),
+            Some(when) => Some(self.held_value(&mut values, 0, when.subject().into(), span, out)?),
             None => None,
         };
         let mut held = Vec::new();
@@ -902,7 +910,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let method = self.recognition().iterator_method(def_id);
         for (at, when) in given {
             let consumed = at + 1 == arg_tys.len() && self.consumed_function(method, arg_tys);
-            let f = self.held_value(&mut values, at, "f", span, out)?;
+            let f = self.held_value(&mut values, at, Role::F.into(), span, out)?;
             if !(when.is_none() && consumed) {
                 held.push((when, f, arg_tys[at]));
             }
@@ -920,7 +928,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the call unwinds (#719).
         let (value, unwound) = match value {
             Value::Expr(e) => (
-                Value::Expr(self.spill("value", e, &mut call)),
+                Value::Expr(self.spill(Role::Value, e, &mut call)),
                 self.dropped_unwinding(&held, span)?,
             ),
             value => (value, Vec::new()),
@@ -1228,7 +1236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         values: &mut [Value<'tcx>],
         at: usize,
-        base: &str,
+        base: Base<'_>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {

@@ -11,6 +11,7 @@ mod operators;
 use self::generic::*;
 pub(in crate::lower) use self::generic::{int_as, int_out_of};
 pub(in crate::lower) use self::operators::*;
+use crate::lower::temporary_names::Role;
 
 use crate::js::StmtKind;
 use crate::js::result;
@@ -486,7 +487,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // self.leading_zeros()))`, its highest bit shifted down to the
             // highest it has, `0`'s shift masked to none (ADR 0156, amended).
             (NumOp::IsolateOne { highest }, None) => {
-                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
+                let a = if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Value, a, out)
+                };
                 let other = match highest {
                     false => self.unary(UnOp::Neg, a.clone(), ty, span)?,
                     true => {
@@ -498,13 +503,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.binary(BinOp::BitAnd, a, other, None, ty, span)?
             }
             (NumOp::OverflowingShift { right }, Some(n)) => {
-                let n = if n.reads_same() { n } else { self.spill("by", n, out) };
+                let n = if n.reads_same() {
+                    n
+                } else {
+                    self.spill(Role::By, n, out)
+                };
                 let past = Expr::bin(Op::Ge, n.clone(), Expr::int(i128::from(num.bits())));
                 let op = if right { BinOp::Shr } else { BinOp::Shl };
                 Expr::array(vec![self.binary(op, a, n, None, ty, span)?, past])
             }
             (NumOp::OverflowingAbs, None) => {
-                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
+                let a = if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Value, a, out)
+                };
                 let at_min = Expr::bin(Op::Eq, a.clone(), num.literal(lo));
                 let negated = Expr::unary(UnaryOp::Neg, a.clone());
                 let abs = Expr::cond(Expr::bin(Op::Lt, a.clone(), num.literal(0)), negated, a.clone());
@@ -512,8 +525,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::array(vec![wrapped, at_min])
             }
             (NumOp::OverflowingPow, Some(n)) => {
-                let a = if a.reads_same() { a } else { self.spill("base", a, out) };
-                let n = if n.reads_same() { n } else { self.spill("exp", n, out) };
+                let a = if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Base, a, out)
+                };
+                let n = if n.reads_same() {
+                    n
+                } else {
+                    self.spill(Role::Exp, n, out)
+                };
                 let exact = helper("$powExact", vec![a.clone(), n.clone()]);
                 let wrapped = self.number_call(NumOp::Pow, vec![a, n], ty, span, out)?;
                 helper(
@@ -530,7 +551,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     SignMode::Wrapping => num.wrap(exact),
                     SignMode::Saturating => helper("$saturate", vec![exact, lo, hi]),
                     SignMode::Overflowing => {
-                        let exact = self.spill("exact", exact, out);
+                        let exact = self.spill(Role::Exact, exact, out);
                         helper("$overflowing", vec![num.wrap(exact.clone()), exact, lo, hi])
                     }
                 }
@@ -545,8 +566,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (NumOp::BytesEqIgnoreAsciiCase, Some(b)) => helper("$bytesEqIgnoreAsciiCase", vec![a, b]),
             (NumOp::UnboundedShift { right }, Some(n)) => {
-                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
-                let n = if n.reads_same() { n } else { self.spill("by", n, out) };
+                let a = if a.reads_same() {
+                    a
+                } else {
+                    self.spill(Role::Value, a, out)
+                };
+                let n = if n.reads_same() {
+                    n
+                } else {
+                    self.spill(Role::By, n, out)
+                };
                 let past = Expr::bin(Op::Ge, n.clone(), Expr::int(i128::from(num.bits())));
                 let op = if right { BinOp::Shr } else { BinOp::Shl };
                 let shifted = self.binary(op, a.clone(), n, None, ty, span)?;
@@ -752,8 +781,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Shifted, below the width, as `<<` shifts.
             NumOp::CheckedShift(op) => {
                 let (a, by) = (arg(), arg());
-                let a = if a.reads_same() { a } else { self.spill("n", a, out) };
-                let by = if by.reads_same() { by } else { self.spill("by", by, out) };
+                let a = if a.reads_same() { a } else { self.spill(Role::N, a, out) };
+                let by = if by.reads_same() {
+                    by
+                } else {
+                    self.spill(Role::By, by, out)
+                };
                 let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
@@ -780,15 +813,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // 2^53 rounds, far out of range either way.
             NumOp::Overflowing(op) => {
                 let (a, b) = (arg(), arg());
-                let a = if a.reads_same() { a } else { self.spill("a", a, out) };
-                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let a = if a.reads_same() { a } else { self.spill(Role::A, a, out) };
+                let b = if b.reads_same() { b } else { self.spill(Role::B, b, out) };
                 let exact = Expr::bin(js_op(op), a.clone(), b.clone());
                 let wrapped = self.binary(op, a, b, None, ty, span)?;
                 helper("$overflowing", vec![wrapped, exact, Expr::int(lo), Expr::int(hi)])
             }
             NumOp::OverflowingNeg => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::N, x, out) };
                 let overflowed = if num.signed() {
                     Expr::bin(Op::Eq, x.clone(), Expr::int(lo))
                 } else {
@@ -812,7 +845,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if by == 0 {
                     return Ok(x);
                 }
-                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::X, x, out) };
                 let (up, down) = match left {
                     true => (by, 32 - by),
                     false => (32 - by, by),
@@ -885,13 +918,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Exact: what's after the point, in an `f32` as in an `f64`.
             NumOp::Fract => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::X, x, out) };
                 Expr::bin(Op::Sub, x.clone(), math("trunc", vec![x]))
             }
             NumOp::Log => rounded(Expr::bin(Op::Div, math("log", vec![arg()]), math("log", vec![arg()]))),
             NumOp::SinCos => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::X, x, out) };
                 Expr::array(vec![
                     rounded(math("sin", vec![x.clone()])),
                     rounded(math("cos", vec![x])),
@@ -916,7 +949,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The sign of `sign`, `-0`'s too, by `$signNegative`.
             NumOp::CopySign => {
                 let x = math("abs", vec![arg()]);
-                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::X, x, out) };
                 let negative = helper("$signNegative", vec![arg()]);
                 Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)
             }
@@ -980,7 +1013,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::IsPowerOfTwo => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::N, x, out) };
                 let lower = Expr::bin(Op::BitAnd, x.clone(), Expr::bin(Op::Sub, x.clone(), Expr::int(1)));
                 Expr::bin(
                     Op::And,
@@ -992,7 +1025,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `b >= 48 && b <= 57`, as `(b'0'..=b'9').contains(&b)` is.
             NumOp::AsciiIs(ranges) => {
                 let b = arg();
-                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let b = if b.reads_same() { b } else { self.spill(Role::B, b, out) };
                 let int = |n: u8| Expr::int(i128::from(n));
                 ranges
                     .iter()
@@ -1011,7 +1044,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `b >= 97 && b <= 122 ? b - 32 : b`: a letter's other case, 32 apart.
             NumOp::AsciiCase { upper } => {
                 let b = arg();
-                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let b = if b.reads_same() { b } else { self.spill(Role::B, b, out) };
                 let (lo, hi, op) = match upper {
                     true => (b'a', b'z', Op::Sub),
                     false => (b'A', b'Z', Op::Add),
@@ -1103,7 +1136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::IsPowerOfTwo => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::N, x, out) };
                 let lower = Expr::bin(Op::BitAnd, x.clone(), Expr::bin(Op::Sub, x.clone(), Expr::bigint(1)));
                 Expr::bin(
                     Op::And,
@@ -1124,8 +1157,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::CheckedShift(op) => {
                 let (a, by) = (arg(), arg());
-                let a = if a.reads_same() { a } else { self.spill("n", a, out) };
-                let by = if by.reads_same() { by } else { self.spill("by", by, out) };
+                let a = if a.reads_same() { a } else { self.spill(Role::N, a, out) };
+                let by = if by.reads_same() {
+                    by
+                } else {
+                    self.spill(Role::By, by, out)
+                };
                 let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
@@ -1148,13 +1185,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The exact result, and it wrapped.
             NumOp::Overflowing(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
-                let exact = self.spill("exact", exact, out);
+                let exact = self.spill(Role::Exact, exact, out);
                 let wrapped = num.wrap(exact.clone());
                 helper("$overflowing", vec![wrapped, exact, lo, hi])
             }
             NumOp::OverflowingNeg => {
                 let x = arg();
-                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let x = if x.reads_same() { x } else { self.spill(Role::N, x, out) };
                 let overflowed = if num.signed() {
                     Expr::bin(Op::Eq, x.clone(), lo)
                 } else {

@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::lower::calls::apply;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `drop_function` of a `ty` a std function drops itself, `truncate`'s
@@ -72,12 +73,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(drop) = self.item_drop(ty) {
             return Ok(Some((drop, true)));
         }
-        let base = match (param, ty.kind()) {
-            (Some(param), _) => param.to_string(),
-            (None, ty::Adt(adt, _)) => lower_first(self.tcx.item_name(adt.did()).as_str()),
-            (None, _) => "value".to_string(),
+        let param = match (param, ty.kind()) {
+            (Some(param), _) => self.fresh(Base::Named(param)),
+            (None, ty::Adt(adt, _)) => self.fresh(Base::Named(&lower_first(self.tcx.item_name(adt.did()).as_str()))),
+            (None, _) => self.fresh(Role::Value),
         };
-        let param = self.fresh(&base);
         let mut body = Vec::new();
         self.drop_value(Expr::var(&param), ty, span, &mut body)?;
         // `(noisy) => noisyDrop_drop(noisy)` is `noisyDrop_drop`.
@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Some(Expr::call_helper("$givenDrop", vec![drop])));
         }
-        let param = self.fresh("it");
+        let param = self.fresh(Role::It);
         let mut body = Vec::new();
         self.drop_value(Expr::member(Expr::var(&param), "of"), ty, span, &mut body)?;
         Ok(Some(Expr::arrow(vec![param.into()], body)))
@@ -199,7 +199,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if value.reads_same() || self.drops_once(ty) {
             value
         } else {
-            self.spill("value", value, out)
+            self.spill(Role::Value, value, out)
         }
     }
 }

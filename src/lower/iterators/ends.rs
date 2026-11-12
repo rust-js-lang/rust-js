@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::std_types::slice::SortWith;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.filter(test)`; of items with a destructor, `dropping`, each it
@@ -128,7 +129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = if items.reads_same() {
                     items
                 } else {
-                    self.spill("items", items, out)
+                    self.spill(Role::Items, items, out)
                 };
                 let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
                 self.some_at(items, last)
@@ -187,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = if matches!(key.kind, js::ExprKind::Var(_)) {
                     key
                 } else {
-                    self.spill("key", key, out)
+                    self.spill(Role::Key, key, out)
                 };
                 let js_span = self.js_span(span);
                 // The keys' `partial_cmp`, std's `lt`'s (#937), which is

@@ -16,6 +16,7 @@ pub(in crate::lower::mir) mod sources;
 use self::sources::*;
 use crate::lower::iterators::was_made_knowing_its_back as knows_back;
 use crate::lower::recognition::{OwnStep, Reach};
+use crate::lower::temporary_names::Role;
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
@@ -72,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))
             && self.dropped_after(def_id, (receiver_ty, arg_tys), output, values.first(), span)?
         {
-            let held = self.spill("iter", values.remove(0), made);
+            let held = self.spill(Role::Iter, values.remove(0), made);
             values.insert(0, held.clone());
             let method = |cx: &mut Self, call: &mut Vec<Stmt>| {
                 cx.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, call)
@@ -150,7 +151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Member(source, _) = &callee.kind
         {
             let last = Expr::call_helper("$nextBack", vec![(**source).clone()]);
-            let last = self.spill("last", last, made);
+            let last = self.spill(Role::Last, last, made);
             let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
             let mapped = crate::lower::calls::apply(args[0].clone(), vec![last]);
             return Ok(Some(Expr::cond(none, Expr::undefined(), mapped)));
@@ -201,7 +202,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !crate::lower::iterators::is_stepped_items(source)
             && let Some(len) = self.len_in_place(&receiver, iter_ty, made)
         {
-            let n = self.spill("n", len, made);
+            let n = self.spill(Role::N, len, made);
             return Ok(Expr::array(vec![n.clone(), n]));
         }
         let mut it = receiver;
@@ -373,9 +374,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let parts = vec![receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
-        let names: &[&str] = match parted {
-            Parted::Chain => &["a", "b"],
-            _ => &["it", "f"],
+        let names: &[Role] = match parted {
+            Parted::Chain => &[Role::A, Role::B],
+            _ => &[Role::It, Role::F],
         };
         let own = self.is_called_as_written(other_ty);
         let back = self.stepped_from_its_back(output);
@@ -455,7 +456,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let f = match f.kind {
             js::ExprKind::Var(_) => f,
-            _ => self.spill("f", f, made),
+            _ => self.spill(Role::F, f, made),
         };
         values[1] = f.clone();
         let Some(adapter) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
@@ -544,7 +545,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.flush(state, out)?;
         let held = match given.reads_same() {
             true => given,
-            false => self.spill("iter", given, out),
+            false => self.spill(Role::Iter, given, out),
         };
         values[at] = super::Value::Expr(held.clone());
         let given = self.call_given(state, nulled);
@@ -595,7 +596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call.push(StmtKind::Expr(result).at(self.js_span(span)));
                 Expr::undefined()
             }
-            false => self.spill("result", result, &mut call),
+            false => self.spill(Role::Result, result, &mut call),
         };
         let mut dropped = Vec::new();
         self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;
@@ -1159,7 +1160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
         self.cloned_apart_adapter(
-            (name, vec![it], &["it"]),
+            (name, vec![it], &[Role::It]),
             (vec![iter_ty], output),
             lent,
             span,
@@ -1182,7 +1183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,
             _ => it,
         };
-        let x = self.fresh("item");
+        let x = self.fresh(Role::Item);
         let mut body = Vec::new();
         let pointee = match *item.kind() {
             ty::Ref(_, pointee, _) => pointee,
@@ -1218,8 +1219,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(length);
         }
-        let n = self.fresh("n");
-        let x = self.fresh("item");
+        let n = self.fresh(Role::N);
+        let x = self.fresh(Role::Item);
         let mut body = Vec::new();
         if let Some(item) = item {
             self.drop_value(Expr::var(&x), item, span, &mut body)?;

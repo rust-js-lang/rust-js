@@ -6,6 +6,7 @@ use crate::js::{self, Expr, Pattern, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::mut_refs::boxed;
 use crate::lower::recognition::{Std, StdItem, is_std_def, std_item};
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty};
@@ -230,7 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (made, hasher_ty) = self.built_hasher(&call)?;
                 let _built = values.next();
                 let value = values.next().expect("what's hashed");
-                let state = self.spill("hasher", made, out);
+                let state = self.spill(Role::Hasher, made, out);
                 let hasher = self.hasher(state, hasher_ty, call.span, out)?;
                 self.hash_writes(value, call.generic_args.type_at(1), &hasher, call.span, out)?;
                 hasher.call("finish", Vec::new())
@@ -370,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !is_std_def(self.tcx, tr.def_id, StdItem::Hash) || self.recognition().hashed_as(ty).is_none() {
             return Ok(None);
         }
-        let [value, state, dictionary] = ["value", "state", "H"].map(|name| self.fresh(name));
+        let [value, state, dictionary] = [Role::Value, Role::State, Role::H].map(|name| self.fresh(name));
         let hasher = Hasher {
             state: Expr::var(&state),
             dictionary: Expr::var(&dictionary),
@@ -382,7 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![value.into(), state.clone().into(), dictionary.clone().into()],
             body,
         );
-        let items = self.fresh("items");
+        let items = self.fresh(Role::Items);
         let mut body = Vec::new();
         self.item_writes(Expr::var(&items), ty, &hasher, span, &mut body)?;
         let hash_slice = Expr::arrow(vec![items.into(), state.into(), dictionary.into()], body);
@@ -400,7 +401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn spilled(&mut self, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         match value.reads_same() {
             true => value,
-            false => self.spill("value", value, out),
+            false => self.spill(Role::Value, value, out),
         }
     }
 
@@ -471,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => {
                         let under = Expr::bin(js::Op::Rem, value.clone(), second());
                         let wrapped = Expr::bin(js::Op::Add, under, second());
-                        let nanos = self.spill("nanos", Expr::bin(js::Op::Rem, wrapped, second()), out);
+                        let nanos = self.spill(Role::Nanos, Expr::bin(js::Op::Rem, wrapped, second()), out);
                         let whole = Expr::bin(js::Op::Sub, value, nanos.clone());
                         (Expr::bin(js::Op::Div, whole, second()), nanos)
                     }
@@ -678,7 +679,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        let name = self.fresh("item");
+        let name = self.fresh(Role::Item);
         let mut body = Vec::new();
         self.hash_writes(Expr::var(&name), item, hasher, span, &mut body)?;
         // Of items that write nothing, a `PhantomData`'s, no loop.

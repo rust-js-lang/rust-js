@@ -1,6 +1,7 @@
 //! A slice's fills, copies, order checks, chunks and splits (ADR 0324): its
 //! JS array, changed in place where std's is.
 
+use crate::lower::temporary_names::Role;
 use rustc_middle::ty;
 use rustc_span::Span;
 
@@ -337,7 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let boxed = self.boxed_payload(inner);
         let (payload, payload_pointer, from_payload, made) = match boxed {
             true => {
-                let name = self.fresh("payload");
+                let name = self.fresh(Role::Payload);
                 let getter = Expr::arrow(
                     Vec::new(),
                     vec![StmtKind::Return(Some(Expr::call_helper("$someValue", vec![to.clone()]))).at(js::Span::NONE)],
@@ -374,7 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut replaced = Vec::new();
         let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
-        let old = self.fresh("old");
+        let old = self.fresh(Role::Old);
         replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
@@ -406,7 +407,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut sides = Vec::new();
         for (ok, held) in [(true, args.type_at(0)), (false, args.type_at(1))] {
-            let name = self.fresh("payload");
+            let name = self.fresh(Role::Payload);
             let getter = Expr::arrow(
                 Vec::new(),
                 vec![StmtKind::Return(Some(js::result::held(to.clone()))).at(js::Span::NONE)],
@@ -446,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut replaced = Vec::new();
         let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
-        let old = self.fresh("old");
+        let old = self.fresh(Role::Old);
         let held = self.moved_out(to.clone(), ty);
         replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
@@ -724,7 +725,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `value` where it's read more than once: a variable, or a `const`.
-    pub(super) fn named_once(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub(super) fn named_once(&mut self, base: Role, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         match value.kind {
             js::ExprKind::Var(_) => value,
             _ => self.spill(base, value, out),
@@ -773,7 +774,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let slots = if slots.reads_same() {
             slots
         } else {
-            self.spill("slots", slots, out)
+            self.spill(Role::Slots, slots, out)
         };
         if clone {
             let clone = self.clone_arg(item, span)?;
@@ -821,7 +822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => Expr::call(Expr::helper(name), list),
             true => self.view_call(name, list),
         };
-        self.spill("split", split, out)
+        self.spill(Role::Split, split, out)
     }
 
     /// `v.copy_within(start..end, dest)`: `$copyWithin`.
@@ -1025,7 +1026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = if items.reads_same() {
                     items
                 } else {
-                    self.spill("items", items, out)
+                    self.spill(Role::Items, items, out)
                 };
                 let length = Expr::member(items.clone(), "length");
                 Expr::cond(
@@ -1074,7 +1075,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = if items.reads_same() {
                     items
                 } else {
-                    self.spill("items", items, out)
+                    self.spill(Role::Items, items, out)
                 };
                 let length = Expr::member(items.clone(), "length");
                 let chunk = match (last, mutable) {
@@ -1223,7 +1224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::arrow(params, body)
                     }
                     f => {
-                        let i = self.fresh("i");
+                        let i = self.fresh(Role::I);
                         let call = Expr::call(f, vec![Expr::var(&i)]);
                         Expr::arrow(
                             vec!["_".into(), i.into()],

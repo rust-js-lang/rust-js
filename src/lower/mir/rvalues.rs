@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::pointers::Offset;
+use crate::lower::temporary_names::{Base, Role};
 
 mod aggregate;
 
@@ -35,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Handle(on, _) => Some((**on).clone()),
             _ => None,
         };
-        let handle = self.spill("place", handle, out);
+        let handle = self.spill(Role::Place, handle, out);
         if let (js::ExprKind::Var(name), Some(on)) = (&handle.kind, on) {
             self.locals.mir.made.handles.insert(name.clone(), on);
         }
@@ -144,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let parent = self.mir_place(state, base, span, out)?;
                     let parent = match parent.reads_same() {
                         true => parent,
-                        false => self.spill("value", parent, out),
+                        false => self.spill(Role::Value, parent, out),
                     };
                     let value = self.project(parent.clone(), base_ty, field.as_usize());
                     let dictionary = Expr::member(parent, js::DICTIONARY);
@@ -214,7 +215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => {
                             let name = state.locals.names[place.local].clone();
                             self.flush(state, out)?;
-                            let held = self.spill(&name, Expr::var(&name), out);
+                            let held = self.spill(Base::Named(&name), Expr::var(&name), out);
                             target
                                 .substitute(&|v| (v == name).then(|| held.clone()))
                                 .unwrap_or(target)
@@ -277,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     if local {
                         let name = state.locals.names[place.local].clone();
-                        let held = self.spill(&name, Expr::var(&name), out);
+                        let held = self.spill(Base::Named(&name), Expr::var(&name), out);
                         target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target);
                     }
                     if within {
@@ -568,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 && !self.recognition().is_dyn_iter(iterator)
                                 && self.drops(iterator) != crate::lower::drops::Drops::Nothing;
                             let value = match carried && !value.reads_same() {
-                                true => self.spill("it", value, out),
+                                true => self.spill(Role::It, value, out),
                                 false => value,
                             };
                             let it = match self.knows_its_back(*to) {
@@ -595,7 +596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // A pair, read for its dictionary and its value: held
                             // once where it's made, a call's, `&*shapes[1]`.
                             let value = match self.is_pair_dyn(from) && !value.parts_read_same() {
-                                true => self.spill("shown", value, out),
+                                true => self.spill(Role::Shown, value, out),
                                 false => value,
                             };
                             return Ok(Value::DynDebug(from, *to, value));

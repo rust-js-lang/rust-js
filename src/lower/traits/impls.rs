@@ -2,6 +2,7 @@
 //! bounds', and a trait's default body copied into it (`defaults.rs`).
 
 use super::*;
+use crate::lower::temporary_names::{Base, Role};
 
 mod defaults;
 use crate::lower::mut_refs::{Within, adapted_part};
@@ -41,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if value.is_named() {
             return Ok(value);
         }
-        let name = self.fresh(method);
+        let name = self.fresh(Base::Named(method));
         shared.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
         for prop in props.iter_mut() {
             if let Prop::Field(field, value) = prop
@@ -487,7 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut defaulted = None;
             let location = match self.takes_caller_location(item.def_id) {
                 true => {
-                    let name = self.fresh("location");
+                    let name = self.fresh(Role::Location);
                     params.push(name.clone());
                     if !tracks_caller(self.tcx, item.def_id) && self.takes_caller_location(method) {
                         defaulted = Some((name.clone(), at_definition));
@@ -503,13 +504,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.given.const_params.iter().any(|&(at, _)| at == index) {
                     return Err(self.unsupported(span, "a trait method's const parameter here"));
                 }
-                let name = self.fresh(
+                let name = self.fresh(Base::Named(
                     self.tcx
                         .generics_of(item.def_id)
                         .param_at(index as usize, self.tcx)
                         .name
                         .as_str(),
-                );
+                ));
                 self.given.const_params.push((index, Expr::var(&name)));
                 params.push(name);
             }
@@ -526,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .iter()
                 .map(|&d| {
                     let word = format!("{}{}", evidence_word(self.tcx, d.self_ty()), trait_word(self.tcx, d));
-                    self.fresh(&js_word(&word))
+                    self.fresh(Base::Named(&js_word(&word)))
                 })
                 .collect();
             // What it takes and gives as its caller through the dictionary
@@ -547,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut replaced = Vec::new();
             for &index in &own_drops {
                 let ty = drop_slot(self.tcx, self.slots(), item.def_id, index);
-                let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+                let name = self.fresh(Base::Prefixed(Role::Drop, &drop_word(self.tcx, ty)));
                 replaced.push(self.lend_drop_param(name.clone(), ty));
                 drop_names.push(name);
             }
@@ -580,7 +581,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // same fact, and the dictionary's is read. Two facts of one
                 // type, its `IInPlace` and `IVecCollect`, are each their own
                 // (#1239).
-                let name = self.fresh(&format!("{}{}", drop_word(self.tcx, declared), fact.word()));
+                let name = self.fresh(Base::Named(&format!(
+                    "{}{}",
+                    drop_word(self.tcx, declared),
+                    fact.word()
+                )));
                 if !(self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {
                     self.given.type_facts.push((of, fact, Expr::var(&name)));
                 }
@@ -703,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
             // impl's made generic code's box (#686).
-            let given = self.fresh("given");
+            let given = self.fresh(Role::Given);
             let given_back =
                 (forms.result_within.as_ref()).and_then(|within| within.adapted(&Expr::var(&given), false));
             let made = call.is_none() && given_back.is_none();

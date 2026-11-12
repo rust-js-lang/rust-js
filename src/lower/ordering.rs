@@ -10,6 +10,7 @@ use super::representation::{Num, variant_field};
 use super::{FnCx, R, Shape};
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::temporary_names::{Base, Role};
 use rustc_abi::VariantIdx;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::traits::ImplSource;
@@ -468,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let base = format!("{order}{}", self.tcx.item_name(adt.did()));
             let name = self.recursive_fn(
                 (super::recursive_fns::Kind::Cmp { partial }, ty, &base),
-                &["a", "b"],
+                &[Base::Role(Role::A), Base::Role(Role::B)],
                 |cx, params, body| cx.cmp_derived(params[0].clone(), params[1].clone(), ty, partial, span, body),
                 out,
             )?;
@@ -489,8 +490,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (ord, partial_ord) = (self.ord_trait(), self.partial_ord_trait());
         // Each is read more than once below.
-        let a = if a.reads_same() { a } else { self.spill("left", a, out) };
-        let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+        let a = if a.reads_same() {
+            a
+        } else {
+            self.spill(Role::Left, a, out)
+        };
+        let b = if b.reads_same() {
+            b
+        } else {
+            self.spill(Role::Right, b, out)
+        };
         match ty.kind() {
             _ if let Some(inner) = self.option_of(ty) => {
                 // `None` is less than any `Some`.
@@ -709,7 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let x = match x.reads_same() {
             true => x,
-            false => self.spill("item", x, out),
+            false => self.spill(Role::Item, x, out),
         };
         let mut body = Vec::new();
         let order = self.cmp_value(Expr::var("each"), x, item, false, span, &mut body)?;
@@ -888,8 +897,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `max` and `min` return one of them, so each is read twice.
         let (a, b) = if matches!(call, OrderingCall::Max | OrderingCall::Min) {
-            let a = if a.reads_same() { a } else { self.spill("left", a, out) };
-            let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+            let a = if a.reads_same() {
+                a
+            } else {
+                self.spill(Role::Left, a, out)
+            };
+            let b = if b.reads_same() {
+                b
+            } else {
+                self.spill(Role::Right, b, out)
+            };
             (a, b)
         } else {
             (a, b)

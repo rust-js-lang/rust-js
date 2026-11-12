@@ -9,6 +9,7 @@ use crate::js::{Expr, StmtKind};
 use crate::lower::recognition::{
     SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 use rustc_span::Span;
@@ -129,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SerdeOp::CollectMap => {
                 let entries = self.as_js_iterator(values.remove(0), own(3), span)?;
-                let key = self.fresh("key");
+                let key = self.fresh(Role::Key);
                 let text = self.json_key(Expr::var(&key), own(1), span)?;
                 let key = Expr::arrow(
                     vec![key.into()],
@@ -221,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let visitor = match visitor.reads_same() {
             true => visitor,
-            false => self.spill("visitor", visitor, out),
+            false => self.spill(Role::Visitor, visitor, out),
         };
         let mut expected = None;
         let mut props = Vec::new();
@@ -247,7 +248,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Each of the visitor and what it's given: nothing of a `null`.
             let given: Vec<String> = match method {
                 VisitorMethod::Unit | VisitorMethod::None => Vec::new(),
-                _ => vec![self.fresh("v")],
+                _ => vec![self.fresh(Role::V)],
             };
             let args = std::iter::once(visitor.clone())
                 .chain(given.iter().map(|v| Expr::var(v)))

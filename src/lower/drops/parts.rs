@@ -2,6 +2,7 @@
 //! facts, found before it's lowered.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a `ty`, an iterator, is dropped by closing it, `it.return()`:
@@ -145,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value_ty.expect("a map's values"),
                         ),
                     };
-                    let name = self.fresh("item");
+                    let name = self.fresh(Role::Item);
                     let mut body = Vec::new();
                     self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
                     out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
@@ -154,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => self.in_order_of(value, ty, span)?,
                         false => value,
                     };
-                    let (key, item) = (self.fresh("key"), self.fresh("value"));
+                    let (key, item) = (self.fresh(Role::Key), self.fresh(Role::Value));
                     let mut body = Vec::new();
                     let pattern = match value_ty {
                         None => {
@@ -206,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Whether what the last drops never throws, as a count never does.
                 let mut quiet = true;
                 if self.drops(pointee) == Drops::Runs {
-                    let name = self.fresh("value");
+                    let name = self.fresh(Role::Value);
                     let mut body = Vec::new();
                     self.drop_in(Expr::var(&name), pointee, span, made, &mut body)?;
                     quiet = !may_throw(&body);
@@ -360,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Made<'tcx>,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        let name = self.fresh("item");
+        let name = self.fresh(Role::Item);
         let mut body = Vec::new();
         self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
         let js_span = self.js_span(span);

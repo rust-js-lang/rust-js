@@ -2,6 +2,7 @@
 //! and what a big integer's shift and mask are.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 /// The largest constant a 32-bit integer is multiplied by exactly in a
 /// double: any 32-bit value, under 2^32, times one of at most 2^21 is under
@@ -228,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
             return Ok(if value == 0 { Expr::undefined() } else { n });
         }
-        let n = if n.reads_same() { n } else { self.spill("n", n, out) };
+        let n = if n.reads_same() { n } else { self.spill(Role::N, n, out) };
         let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
         Ok(Expr::cond(zero, Expr::undefined(), n))
     }

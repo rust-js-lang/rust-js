@@ -6,6 +6,7 @@
 //! reads one type's memory as another's, or an address, is refused.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A cast of or to a raw pointer, `kind`'s, of `value`: another pointer
@@ -60,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let value = match value.reads_same() {
                     true => value,
-                    false => self.spill("items", value, out),
+                    false => self.spill(Role::Items, value, out),
                 };
                 let first = Expr::call(Expr::helper("$ptr"), vec![value.clone(), Expr::int(0)]);
                 let retyped = self.recast(first, a, b, span)?;

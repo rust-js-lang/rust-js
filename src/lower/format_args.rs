@@ -4,6 +4,7 @@
 
 use super::calls::Call;
 use super::display::{append_written, join};
+use crate::lower::temporary_names::Role;
 
 use super::format_spec::Spec;
 use super::recognition::StreamOp;
@@ -289,7 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let js_span = self.js_span(span);
         if let Std::Print { error } = known {
-            let (text, caught) = (self.fresh("text"), self.fresh("error"));
+            let (text, caught) = (self.fresh(Role::Text), self.fresh(Role::Error));
             append_written(&Expr::var(&text), value, true, js_span, &mut body);
             let failed = Expr::call(
                 Expr::helper("$fmtPrintFailed"),

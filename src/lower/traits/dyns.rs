@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::generic_facts::Form;
+use crate::lower::temporary_names::{Base, Role};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `dyn` given for one of `id`'s type parameters that its signature,
@@ -397,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let f = match value.reads_same() {
             true => value,
-            false => self.spill("f", value, out),
+            false => self.spill(Role::F, value, out),
         };
         let mut dropped = Vec::new();
         match carried {
@@ -416,9 +417,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn own_function_of(&mut self, count: usize, f: Expr, out: &mut Vec<js::Stmt>) -> Expr {
         let f = match f.reads_same() {
             true => f,
-            false => self.spill("f", f, out),
+            false => self.spill(Role::F, f, out),
         };
-        let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
+        let params: Vec<String> = (0..count).map(|i| self.fresh(Base::Numbered(Role::Arg, i))).collect();
         let call = Expr::call(f, params.iter().map(|param| Expr::var(param)).collect());
         Expr::arrow(
             params.into_iter().map(Into::into).collect(),
@@ -445,10 +446,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let rc = match rc.reads_same() {
             true => rc,
-            false => self.spill("rc", rc, out),
+            false => self.spill(Role::Rc, rc, out),
         };
         // What it held, read before its cell holds the function that calls it.
-        let f = self.spill("f", Expr::held(rc.clone()), out);
+        let f = self.spill(Role::F, Expr::held(rc.clone()), out);
         let own = self.own_function(predicates, f, out);
         out.push(StmtKind::Assign(Expr::held(rc.clone()), own).at(js::Span::NONE));
         rc
@@ -541,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.counted_rc(target).is_some() {
                 let rc = match value.reads_same() {
                     true => value,
-                    false => self.spill("rc", value, out),
+                    false => self.spill(Role::Rc, value, out),
                 };
                 let cell = self.counted_pointee(rc.clone(), self.pointee(source));
                 let given = self.given_impl(cell, (from.type_at(0), Some(tr.def_id)), dictionary, target, span)?;
@@ -573,7 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let value = match value.reads_same() {
                 true => value,
-                false => self.spill(if counted { "rc" } else { "value" }, value, out),
+                false => self.spill(if counted { Role::Rc } else { Role::Value }, value, out),
             };
             // A counted `Rc`'s struct, in its cell.
             let root = match counted {
@@ -648,7 +649,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let rc = match value.reads_same() {
                     true => value,
-                    false => self.spill("rc", value, out),
+                    false => self.spill(Role::Rc, value, out),
                 };
                 let held = Expr::held(rc.clone());
                 out.push(StmtKind::Assign(held.clone(), Expr::call_helper("$borrowed", vec![held])).at(js::Span::NONE));
@@ -677,7 +678,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => self.drops(function) != crate::lower::drops::Drops::Nothing,
             };
             if once && !handed && dropping {
-                let f = self.spill("f", value, out);
+                let f = self.spill(Role::F, value, out);
                 let mut dropped = Vec::new();
                 match carried {
                     true => {
@@ -701,7 +702,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let f = match own && value.reads_same() {
                 true => value,
-                false => self.spill("f", value, out),
+                false => self.spill(Role::F, value, out),
             };
             let mut dropped = Vec::new();
             match carried {
@@ -743,7 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Read twice, so one with effects goes in a `const` first.
             let pair = if value.has_effects() {
-                self.spill("receiver", value, out)
+                self.spill(Role::Receiver, value, out)
             } else {
                 value
             };
@@ -778,7 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let cell = if value.reads_same() {
                         value
                     } else {
-                        self.spill("cell", value, out)
+                        self.spill(Role::Cell, value, out)
                     };
                     Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)
                 }
@@ -797,7 +798,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let object = match value.reads_same() {
                 true => self.place_where_made(value, out),
-                false => self.spill("object", value, out),
+                false => self.spill(Role::Object, value, out),
             };
             return Ok(Expr::stored_pair(object, dictionary, js::Storage::Assigned));
         }
@@ -879,7 +880,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rc = if value.reads_same() {
                 value
             } else {
-                self.spill("rc", value, out)
+                self.spill(Role::Rc, value, out)
             };
             let dictionary = self
                 .super_evidence(from, to, Expr::member(rc.clone(), js::DICTIONARY))

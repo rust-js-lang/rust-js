@@ -25,6 +25,7 @@ use crate::js::{self, Expr, Op, Pattern, Prop, Stmt, StmtKind};
 use crate::lower::bindings::variant_name;
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::representation::Num;
+use crate::lower::temporary_names::{Base, Role};
 use crate::lower::{FnCx, R, Shape};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
@@ -72,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "deserializing this"));
         };
         self.use_reader();
-        let json = self.fresh("json");
+        let json = self.fresh(Role::Json);
         let mut params = vec![json.clone().into()];
         params.extend(self.codec_params(args, "read"));
         let value = self.read_adt(&json, adt, args, span)?;
@@ -260,7 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An `Err` is serde's `Error::custom` of it: its `Display`.
             let error = self.try_from_error(this, source, span)?;
-            let e = self.fresh("error");
+            let e = self.fresh(Role::Error);
             let shown = self.display_string(Expr::var(&e), error, span)?;
             let display = Expr::arrow(vec![e.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]);
             return Ok(Expr::call(
@@ -363,7 +364,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Table> {
         let named = variant.ctor_kind().is_none();
         let keys = self.field_keys(adt, variant, args);
-        let defaults = container.default.map(|_| self.fresh("defaults"));
+        let defaults = container.default.map(|_| self.fresh(Role::Defaults));
         let mut entries = Vec::new();
         let mut params = Vec::new();
         let mut items = Vec::new();
@@ -374,7 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let field_ty = self.field_ty(field, args);
             if attrs.flatten && !attrs.skip_deserializing {
                 flattened.push(self.json_reader(field_ty, span)?);
-                let param = self.fresh(&keys[i]);
+                let param = self.fresh(Base::Named(&keys[i]));
                 items.push(Expr::var(&param));
                 flat_params.push(param);
                 continue;
@@ -417,7 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok([read]) => read,
                 Err(entry) => Expr::array(entry),
             });
-            let param = self.fresh(&keys[i]);
+            let param = self.fresh(Base::Named(&keys[i]));
             items.push(Expr::var(&param));
             params.push(param);
         }
@@ -557,14 +558,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut attempts = Vec::new();
         let names = self.names.clone();
         if !tagged.is_empty() {
-            let reader = self.fresh("content");
+            let reader = self.fresh(Role::Content);
             let value = self.read_tagged(&reader, &tagging, &tagged, adt, args, container, type_name, span)?;
             let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
             attempts.push(Expr::arrow(vec![reader.into()], body));
             self.names = names.clone();
         }
         for (variant, attrs) in &untagged {
-            let reader = self.fresh("content");
+            let reader = self.fresh(Role::Content);
             let rule = attrs.de_rename_all.or(container.de_rename_all_fields);
             let body = self.read_variant(
                 &reader,
@@ -602,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         type_name: &str,
         span: Span,
     ) -> R<Expr> {
-        let (variant_var, content) = (self.fresh("variant"), self.fresh("content"));
+        let (variant_var, content) = (self.fresh(Role::Variant), self.fresh(Role::Content));
         let form = match tagging {
             Tagging::External => Form::External,
             Tagging::Internal(_) => Form::Internal,

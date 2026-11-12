@@ -6,6 +6,7 @@ use crate::js::{Expr, Op, Prop, Stmt, StmtKind, result};
 use crate::lower::calls::Call;
 use crate::lower::lent::Lent;
 use crate::lower::recognition::Std;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 
 /// A `OnceCell`'s or `OnceLock`'s own methods.
@@ -53,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = if cell.reads_same() {
                     cell
                 } else {
-                    self.spill("cell", cell, out)
+                    self.spill(Role::Cell, cell, out)
                 };
                 // In a crate that asks an address, a handle on its place in the
                 // cell, past its `Option`'s tag (#1474).
@@ -82,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `const old = cell.value; cell.value = undefined;`.
             OnceOp::Take => {
                 let place = self.fixed_place_of(Expr::held(arg()), out);
-                let old = self.spill("old", place.clone(), out);
+                let old = self.spill(Role::Old, place.clone(), out);
                 out.push(StmtKind::Assign(place, Expr::undefined()).at(self.js_span(span)));
                 old
             }
@@ -113,11 +114,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Made before it's tested, as Rust makes it before the call.
         let value = match value.reads_same() || (!read && !value.has_effects()) {
             true => value,
-            false => self.spill("value", value, out),
+            false => self.spill(Role::Value, value, out),
         };
         let unset = Expr::bin(Op::Eq, place.clone(), Expr::undefined());
         let unset = match read {
-            true => self.spill("unset", unset, out),
+            true => self.spill(Role::Unset, unset, out),
             false => unset,
         };
         let stored = self.once_stored(value.clone(), item);

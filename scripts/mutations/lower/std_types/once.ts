@@ -53,9 +53,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `set` whose `Result` nothing reads still holds its test, `const unset = node.cache === undefined; if (unset) ..`, where it's `if (node.cache === undefined) ..`",
     file: "src/lower/std_types/once.rs",
-    find: '        let unset = match read {\n            true => self.spill("unset", unset, out),\n',
+    find: '        let unset = match read {\n            true => self.spill(Role::Unset, unset, out),\n',
     replace:
-      '        let unset = match true {\n            true => self.spill("unset", unset, out),\n',
+      '        let unset = match true {\n            true => self.spill(Role::Unset, unset, out),\n',
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
   },

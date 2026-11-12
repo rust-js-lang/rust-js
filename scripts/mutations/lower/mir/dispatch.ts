@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
       "`.map(Vec::len)` from MIR names its arrow's parameter `value`, not by its type, `x`",
     file: "src/lower/mir/dispatch.rs",
     find: "self.fresh(self.parameter_name(inputs[0].peel_refs()))",
-    replace: 'self.fresh("value")',
+    replace: "self.fresh(Role::Value)",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",

@@ -4,6 +4,7 @@ use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
+use crate::lower::temporary_names::{Base, Role};
 
 use crate::js::result;
 use crate::lower::recognition::Std;
@@ -262,17 +263,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let result = if result.reads_same() {
                     result
                 } else {
-                    self.spill("result", result, out)
+                    self.spill(Role::Result, result, out)
                 };
                 let otherwise = match (known == Std::ResultOr).then(arg) {
-                    Some(d) if d.has_effects() => self.spill("fallback", d, out),
+                    Some(d) if d.has_effects() => self.spill(Role::Fallback, d, out),
                     Some(d) => d,
                     None => Expr::undefined(),
                 };
                 let ok = result::is(result.clone(), true);
                 let value = result::held(result.clone());
                 let value = if boxed { self.some(value) } else { value };
-                let name = self.fresh("value");
+                let name = self.fresh(Role::Value);
                 let then = vec![StmtKind::Assign(Expr::var(&name), value).at(js::Span::NONE)];
                 let error = (result::held(result), generic_args.type_at(1));
                 self.or_dropped(ok, name, then, error, otherwise, span, out)?
@@ -286,10 +287,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Some(value));
                 }
                 if result.has_effects() {
-                    result = self.spill("result", result, out);
+                    result = self.spill(Role::Result, result, out);
                 }
                 let otherwise = match fallback {
-                    Some(d) if d.has_effects() => self.spill("fallback", d, out),
+                    Some(d) if d.has_effects() => self.spill(Role::Fallback, d, out),
                     Some(d) => d,
                     None => Expr::undefined(),
                 };
@@ -344,9 +345,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (mut option, mut default) = (arg(), arg());
                 if default.has_effects() {
                     if option.has_effects() {
-                        option = self.spill("option", option, out);
+                        option = self.spill(Role::Option, option, out);
                     }
-                    default = self.spill("fallback", default, out);
+                    default = self.spill(Role::Fallback, default, out);
                 }
                 // Of a generic `T` (ADR 0051): `$someValue(o ?? $some(d))`.
                 if self.boxed_payload(generic_args.type_at(0)) {
@@ -388,8 +389,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 let base = match &param {
-                    Some(Some(js::Pattern::Name(name))) => name.clone(),
-                    _ => "option".to_string(),
+                    Some(Some(js::Pattern::Name(name))) => Base::Named(name),
+                    _ => Base::Role(Role::Option),
                 };
                 // What a `filter` kept is its variable, where its test holds.
                 let fused = match self.boxed_payload(generic_args.type_at(0)) {
@@ -416,7 +417,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let option = match &option.kind {
                             js::ExprKind::Var(_) => option,
                             _ if self.plain_field(&option) => option,
-                            _ => self.spill_subject(&base, option, (true, base != "option"), out),
+                            _ => self.spill_subject(base, option, (true, base != Base::Role(Role::Option)), out),
                         };
                         let present = Expr::presence(option.clone(), true);
                         (option, present)
@@ -451,7 +452,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(value) => value,
                     // Not `((h) => { .. })(h)`: the closure gets a name first.
                     None if matches!(f.kind, js::ExprKind::Arrow(..)) => {
-                        let f = self.spill("map", f, out);
+                        let f = self.spill(Role::Map, f, out);
                         Expr::call(f, vec![option.clone()])
                     }
                     None => Expr::call(f, vec![option.clone()]),
@@ -486,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let option = arg();
                 let option = match &option.kind {
                     js::ExprKind::Var(_) => option,
-                    _ => self.spill_subject("option", option, (true, false), out),
+                    _ => self.spill_subject(Role::Option, option, (true, false), out),
                 };
                 let present = Expr::presence(option.clone(), true);
                 let value = match self.recognition().option_copied(def_id) {
@@ -526,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(());
         }
-        let e = self.fresh("e");
+        let e = self.fresh(Role::E);
         let shown = self.debug_string(Expr::var(&e), ty, span)?;
         if list.len() == 1 {
             list.push(Expr::undefined());
@@ -589,7 +590,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let option = if option.reads_same() {
             option
         } else {
-            self.held_in_place("option", option, out)
+            self.held_in_place(Role::Option, option, out)
         };
         let value = if self.boxed_payload(item) {
             self.some_value(option.clone())
@@ -628,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A name, which reads the same each time: itself.
             js::ExprKind::Var(_) => (Expr::held(option.clone()), option),
             _ => {
-                let cell = self.spill("option", option, out);
+                let cell = self.spill(Role::Option, option, out);
                 (Expr::held(cell.clone()), cell)
             }
         };
@@ -928,7 +929,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = given.into_iter().next().expect("its function");
             let f = match f.kind {
                 js::ExprKind::Var(_) => f,
-                _ => self.spill("f", f, out),
+                _ => self.spill(Role::F, f, out),
             };
             let mut dropped = Vec::new();
             self.drop_value(f.clone(), *f_ty, span, &mut dropped)?;
@@ -948,7 +949,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OptionPlaceOp::GetOrInsertDefault => self.default_value(item, span)?,
             // What it holds, taken where `p` of a `&mut` to it holds.
             OptionPlaceOp::TakeIf => {
-                let taken = self.fresh("taken");
+                let taken = self.fresh(Role::Taken);
                 let holds = apply(given.next().expect("its predicate"), vec![through]);
                 let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
                 let take = vec![
@@ -979,7 +980,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the call drops the old one, `const value = made(5);`: what makes
         // it may print, panic or read what the drop changes (#765).
         let value = match (op, &dropped) {
-            (OptionPlaceOp::Insert, Some(_)) if !value.reads_same() => self.spill("value", value, out),
+            (OptionPlaceOp::Insert, Some(_)) if !value.reads_same() => self.spill(Role::Value, value, out),
             _ => value,
         };
         let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());

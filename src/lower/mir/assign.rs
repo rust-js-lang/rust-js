@@ -4,6 +4,7 @@
 use super::*;
 use crate::lower::aggregates::Given;
 use crate::lower::generic_facts::Form;
+use crate::lower::temporary_names::{Base, Role};
 
 mod boxed_args;
 mod rewritten;
@@ -538,7 +539,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         self.flush(state, out)?;
-        let held = self.spill(&name, Expr::var(&name), out);
+        let held = self.spill(Base::Named(&name), Expr::var(&name), out);
         for (l, target) in (state.refs.iter_mut()).chain(state.in_place.iter_mut()) {
             if read.contains(l) {
                 *target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target.clone());
@@ -957,7 +958,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut reached = Vec::new();
             let target = self.mir_place(state, place, span, &mut reached)?;
             if !reached.is_empty() || !(matches!(target.kind, js::ExprKind::Var(_)) || settled_place(state, &target)) {
-                value = self.spill("value", value, out);
+                value = self.spill(Role::Value, value, out);
             }
             out.extend(reached);
             target
@@ -1094,7 +1095,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let item = match item.reads_only_vars() || item.is_constant() {
                 true => item.clone(),
-                false => self.spill("value", item.clone(), out),
+                false => self.spill(Role::Value, item.clone(), out),
             };
             let at = Expr::index(target.clone(), Expr::int(i as i128));
             writes.push(StmtKind::Assign(at, item).at(js_span));
@@ -1218,14 +1219,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => object,
             false => {
                 self.flush(state, out)?;
-                let name = match &object.kind {
-                    js::ExprKind::Member(_, field) => crate::lower::camel_case(field),
-                    _ => "item".to_string(),
+                let field = match &object.kind {
+                    js::ExprKind::Member(_, field) => Some(crate::lower::camel_case(field)),
+                    _ => None,
                 };
+                let name = field.as_deref().map_or(Base::Role(Role::Item), Base::Named);
                 // A name the program didn't write, which tidy reads as what
                 // it holds where that's a variable nothing sets meanwhile,
                 // a flattened state's `chunk` (`alias_variables`, rd482).
-                self.held_in_place(&name, object, out)
+                self.held_in_place(name, object, out)
             }
         };
         Ok(match part {
@@ -1243,19 +1245,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (span, facts) = (place.span, place.facts);
         // What holds it, named, a temporary of MIR's lowering's, which tidy
         // reads in place where it's read once.
-        let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
+        let mut fixed = |e: Expr, name: Base<'_>, this: &mut Self| match fixed_place(&e) {
             true => e,
             false => this.held_in_place(name, e, out),
         };
         // The same place, what's known of it kept: a nullable field's read
         // never `undefined` (ADR 0620, amended).
         let fixed = match place.kind {
-            js::ExprKind::Member(object, field) => Expr::member(fixed(*object, "item", self), &field).or_at(span),
+            js::ExprKind::Member(object, field) => {
+                Expr::member(fixed(*object, Role::Item.into(), self), &field).or_at(span)
+            }
             js::ExprKind::Index(object, index) => {
-                let object = fixed(*object, "items", self);
+                let object = fixed(*object, Role::Items.into(), self);
                 let index = match index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) {
                     true => *index,
-                    false => self.spill("at", *index, out),
+                    false => self.spill(Role::At, *index, out),
                 };
                 Expr::index(object, index).or_at(span)
             }

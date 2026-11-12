@@ -11,6 +11,7 @@ use crate::lower::pointers::{Offset, raw_pointee};
 use crate::lower::recognition::{StdItem, is_std_crate, is_vec_like_def};
 use crate::lower::refusal::{Refused, refuse};
 use crate::lower::representation::property_of_cell;
+use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R, bindings};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -458,7 +459,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let object = match object.reads_same() && !object.has_effects() {
             true => object,
-            false => self.spill("object", object, out),
+            false => self.spill(Role::Object, object, out),
         };
         let record = vec![
             object,
@@ -743,7 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let lents = self.lends_object_of(def_id, receiver).expect("lend_recorded's");
         if !values[0].reads_same() {
             let given = std::mem::replace(&mut values[0], Expr::undefined());
-            values[0] = self.spill("receiver", given, out);
+            values[0] = self.spill(Role::Receiver, given, out);
         }
         let held = values[0].clone();
         // Of each slot, or of a `Result`'s two by its variant where they differ.

@@ -10,6 +10,7 @@
 //! `console.log`'s and a writer gives back its string, as before.
 
 use super::*;
+use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// May the body being lowered run while a line is formatted?
@@ -54,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|part| StmtKind::Expr(Expr::call_helper("$out", vec![part])).at(js_span))
             .collect();
         if fails {
-            let caught = self.fresh("error");
+            let caught = self.fresh(Role::Error);
             let failed = Expr::call_helper(
                 "$fmtPrintFailed",
                 vec![Expr::var(&caught), Expr::str(""), Expr::bool(false)],

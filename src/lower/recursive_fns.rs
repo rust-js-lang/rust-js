@@ -11,6 +11,7 @@
 use super::{Dependencies, FnCx, R};
 use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, Stmt, StmtKind};
+use crate::lower::temporary_names::Base;
 use rustc_middle::ty::{Ty, TypeVisitableExt};
 use rustc_span::def_id::{DefId, LocalModId};
 
@@ -251,7 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn recursive_fn(
         &mut self,
         (kind, ty, base): (Kind, Ty<'tcx>, &str),
-        params: &[&str],
+        params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
         out: &mut Vec<Stmt>,
     ) -> R<String> {
@@ -304,7 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn module_fn(
         &mut self,
         (kind, ty, base): (Kind, Ty<'tcx>, &str),
-        params: &[&str],
+        params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
     ) -> R<String> {
         let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));
@@ -352,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut names: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
             .collect();
-        let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, p)).collect();
+        let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, &p.word())).collect();
         let names = std::mem::replace(&mut self.names, names);
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
@@ -388,15 +389,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn local_recursive_fn(
         &mut self,
         (kind, ty, base): (Kind, Ty<'tcx>, &str),
-        params: &[&str],
+        params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
         out: &mut Vec<Stmt>,
     ) -> R<String> {
         if let Some((.., name)) = self.recursive.0.iter().find(|(k, t, _)| *k == kind && *t == ty) {
             return Ok(name.clone());
         }
-        let name = self.fresh(base);
-        let params: Vec<String> = params.iter().map(|p| self.fresh(p)).collect();
+        let name = self.fresh(Base::Named(base));
+        let params: Vec<String> = params.iter().map(|&p| self.fresh(p)).collect();
         self.recursive.0.push((kind, ty, name.clone()));
         let mut body = Vec::new();
         let value = make(self, params.iter().map(|p| Expr::var(p)).collect(), &mut body);
