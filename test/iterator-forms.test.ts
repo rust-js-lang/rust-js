@@ -38,6 +38,9 @@ const few = [
   // A flatten stepped by `nth`, whose std body drops each inner iterator it
   // runs out by its `IntoIterator` dictionary's `$dropIntoIter` (#1510).
   "flatten_nth_drops_each_inner_it_runs_out.rs",
+  // `repeat(x)`, std's compiled `Repeat` in the std build, which drops the
+  // `x` it holds by the drop its compiled maker is given (#1458).
+  "repeat_n_drops_what_it_holds.rs",
   // A generic flatten's items' constant size, of what's no array and of
   // an array of a const parameter's length (#813).
   "generic_flatten_of_vecs.rs",

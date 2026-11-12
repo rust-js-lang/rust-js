@@ -147,3 +147,43 @@ filters nothing shows, against native Rust in both builds. Mutations
 `debug-shown-maker-of-any-type` and `std-impl-of-any-type-user`. The
 package `@rust-js/std` doesn't change: the meaning build already compiles
 each adapter's `fmt`.
+
+## Amendment (2026-11-13, #1458): `RepeatN`, and std's free functions in one table
+
+`RepeatN` is compiled as its meaning alone. In the build of std's bodies,
+`repeat_n(x, n)` is std's compiled `repeat_n`, which makes std's
+`RepeatN`. Every other build makes the runtime's `$repeatingN(x, n)`, as
+before, so its output is byte-identical: no readability change.
+
+std's free functions compiled are one table, `COMPILED_STD_FNS` (module,
+name, and the struct it makes where a build compiles it alone). It holds
+io's `chain` and `take` (#1156), which `COMPILED_STD_IO_FNS` held, and
+`iter`'s `repeat_n`. A free maker of a meaning-only struct isn't called
+outside a build of its meaning (`not_compiled_for_build`), as a
+meaning-only adapter's `Iterator` maker isn't.
+
+Each of `RepeatN`'s methods std writes is compiled: `next`, `size_hint`,
+`advance_by`, `last`, `count`, `len`, `next_back`, `advance_back_by`,
+`nth_back`, `rfold`, `try_rfold`, `clone` and `Debug`'s `fmt`. Its drop
+needed std's maker to be given the drop of what it holds (ADR 0561,
+amended).
+
+`Repeat` stays the runtime's `$repeating` in every build (#1569): its
+`last` and `count`, which only panic "iterator is infinite", make a
+`fmt::Arguments` of a literal, whose inlined `Arguments::from_str`
+transmutes a pointer std's build can't lower, and a struct compiled
+without them would loop forever where Rust panics.
+
+`test/corpus/repeat_n_drops_what_it_holds.rs` holds an element with a
+destructor through each of those, and a `zip`, made with no items too,
+and advanced past its end, against native Rust in both builds;
+`test/iterator-forms.test.ts` runs it in the build of std's bodies. The
+twin net, over the conformance and consumers tables, pits `$repeatingN`
+against std's `RepeatN`. Mutations: `std-maker-given-no-drop`
+(`lower/analysis/drops.ts`), `repeat-n-maker-uncompiled`,
+`repeat-n-maker-called-plain` and `repeat-n-compiled-in-every-build`
+(`lower/recognition/compiled_std.ts`); `io-chain-fn-not-compiled`
+re-anchored.
+
+The plain build refuses `clone()` of a `RepeatN`, as it did before, and
+the case leaves it out; the build of std's bodies compiles it.

@@ -245,6 +245,20 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Zip", Some("DoubleEndedIterator"), "next_back"),
     ("Zip", Some("Iterator"), "__iterator_get_unchecked"),
     ("Zip", Some("Clone"), "clone"),
+    // A plain struct's (#1458).
+    ("RepeatN", Some("Iterator"), "next"),
+    ("RepeatN", Some("Iterator"), "size_hint"),
+    ("RepeatN", Some("Iterator"), "advance_by"),
+    ("RepeatN", Some("Iterator"), "last"),
+    ("RepeatN", Some("Iterator"), "count"),
+    ("RepeatN", Some("ExactSizeIterator"), "len"),
+    ("RepeatN", Some("DoubleEndedIterator"), "next_back"),
+    ("RepeatN", Some("DoubleEndedIterator"), "advance_back_by"),
+    ("RepeatN", Some("DoubleEndedIterator"), "nth_back"),
+    ("RepeatN", Some("DoubleEndedIterator"), "rfold"),
+    ("RepeatN", Some("DoubleEndedIterator"), "try_rfold"),
+    ("RepeatN", Some("Clone"), "clone"),
+    ("RepeatN", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -319,10 +333,18 @@ const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
     ("Seek", "rewind"),
 ];
 
-/// `core::io`'s functions that make a reader of others, which `Read`'s
-/// `chain` and `take` call (#1156): public to std alone, unstable, so the
-/// walk of what a compiled body calls that std keeps private finds neither.
-const COMPILED_STD_IO_FNS: &[&str] = &["chain", "take"];
+/// std's free functions compiled, each `core`'s by its module and name,
+/// and the struct it makes where it's one a build compiles alone
+/// (`called_for_build`): `core::io`'s that make a reader of others, which
+/// `Read`'s `chain` and `take` call (#1156), public to std alone, unstable,
+/// so the walk of what a compiled body calls that std keeps private finds
+/// neither; and `iter`'s makers of a plain struct, `repeat_n` (#1458). The
+/// one table of them.
+const COMPILED_STD_FNS: &[(&str, &str, Option<&str>)] = &[
+    ("io", "chain", None),
+    ("io", "take", None),
+    ("iter", "repeat_n", Some("RepeatN")),
+];
 
 /// The `Iterator` methods a compiled std struct is made a JS iterator with
 /// where it's made (`std_iterator_steps`), and its dictionary's reader by
@@ -374,6 +396,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
 /// 0908), and what the recognizers make wherever the crate makes one in
 /// any other, as before it was compiled.
 const MEANING_ONLY: &[&str] = &[
+    "RepeatN",
     "Filter",
     "FilterMap",
     "TakeWhile",
@@ -508,9 +531,10 @@ pub(crate) fn zips_by_index_compiled(tcx: TyCtxt<'_>) -> bool {
 }
 
 /// Whether `id`, a std body `@rust-js/std` compiles, isn't this build's: an
-/// impl of a `MEANING_ONLY` adapter, a method of one, or its maker, `filter`, outside
-/// a build of its meaning, which its manifest's entry doesn't make the
-/// crate's to call (ADR 0932).
+/// impl of a `MEANING_ONLY` adapter, a method of one, or its maker, `filter`
+/// or a free function's, `repeat_n` (`COMPILED_STD_FNS`), outside a build of its
+/// meaning, which its manifest's entry doesn't make the crate's to call
+/// (ADR 0932).
 pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
     if crate::lower::session::caches(tcx).meaning.get() || id.is_local() {
         return false;
@@ -529,6 +553,9 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
     owner.is_some_and(|adt| (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(not_called))
         || (HELD_COMPILED.iter())
             .any(|&(name, method, _)| not_called(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
+        || (COMPILED_STD_FNS.iter()).any(|&(module, name, makes)| {
+            makes.is_some_and(not_called) && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)
+        })
 }
 
 /// The provided method `method` of std's trait `trait_name` compiled into
@@ -661,8 +688,10 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 .map(|item| item.def_id),
         );
     }
-    for name in COMPILED_STD_IO_FNS {
-        found.extend(registry::by_path(tcx, StdCrate::Core, &["io", name]));
+    for &(module, name, makes) in COMPILED_STD_FNS {
+        if makes.is_none_or(|type_name| called_for_build(tcx, type_name)) {
+            found.extend(registry::by_path(tcx, StdCrate::Core, &[module, name]));
+        }
     }
     // And each function std keeps private that a compiled body calls,
     // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:

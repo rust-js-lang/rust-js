@@ -165,8 +165,8 @@ export const mutations: Mutation[] = [
     name: "io-chain-fn-not-compiled",
     breaks: "`core::io::chain`, which `Read::chain` calls and std keeps public but unstable, isn't compiled, so `@rust-js/std` can't be built (#1156)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "const COMPILED_STD_IO_FNS: &[&str] = &[\"chain\", \"take\"];\n",
-    replace: "const COMPILED_STD_IO_FNS: &[&str] = &[\"take\"];\n",
+    find: '    ("io", "chain", None),\n',
+    replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
   {
@@ -200,6 +200,35 @@ export const mutations: Mutation[] = [
     find: "        return is_compiled_std(tcx, id) && compiled_for(tcx, made);\n",
     replace: "        return is_compiled_std(tcx, id);\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "repeat-n-maker-uncompiled",
+    breaks:
+      "std's `repeat_n` isn't compiled, so the build of std's bodies makes the runtime's `$repeatingN` and pits nothing against it (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    (\"iter\", \"repeat_n\", Some(\"RepeatN\")),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "repeat-n-maker-called-plain",
+    breaks:
+      "the plain build calls std's compiled `repeat_n`, `repeatN(L(7), 3, clone)`, not the runtime's `$repeatingN(L(7), 3)`, though `RepeatN` is compiled as its meaning alone (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "            makes.is_some_and(not_called) && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)\n",
+    replace: "            false && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_drops_what_it_holds.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "repeat-n-compiled-in-every-build",
+    breaks:
+      "`RepeatN` is compiled for every build, so the plain build makes std's struct of `repeat_n(x, n)`, not the runtime's `$repeatingN(x, n)` (#1458)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    \"RepeatN\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_drops_what_it_holds.rs$"],
     snapshots: true,
   },
 ];

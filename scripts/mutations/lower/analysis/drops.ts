@@ -138,4 +138,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
+  {
+    name: "std-maker-given-no-drop",
+    breaks:
+      "std's compiled `repeat_n` is given no drop of what its `RepeatN` holds, so in the build of std's bodies `repeat_n(L(1), 0)` never drops `L(1)` (#1458)",
+    file: "src/lower/analysis/drops.rs",
+    find: "            if crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
+    replace: "            if false && crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

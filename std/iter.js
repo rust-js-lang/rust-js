@@ -93,6 +93,18 @@ export const StepBy = {
   },
 };
 
+export const RepeatNInner = {
+  new(element, count, dropT) {
+    const value = count === 0 ? undefined : count;
+    if (value != null) {
+      return { count: value, element };
+    }
+    const result = undefined;
+    dropT?.(element);
+    return result;
+  },
+};
+
 export const FlattenCompat = {
   iterFold(
     flattenCompat,
@@ -875,6 +887,8 @@ const $stepByClone = new WeakMap();
 const $chainClone = new WeakMap();
 const $chainABDebug = new WeakMap();
 const $zipClone = new WeakMap();
+const $repeatNClone = new WeakMap();
+const $repeatNDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -8964,6 +8978,191 @@ export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
   return result;
 }
 
+export function repeatNIterator_next(repeatN, AClone, dropA) {
+  if (repeatN.inner != null) {
+    const count = repeatN.inner.count;
+    const n = (count - 1) >>> 0;
+    const decremented = n === 0 ? undefined : n;
+    if (decremented != null) {
+      const tmp = AClone.clone(repeatN.inner.element);
+      repeatN.inner.count = decremented;
+      return $some(tmp);
+    }
+    const inner = repeatN.inner;
+    repeatN.inner = undefined;
+    if (inner != null) {
+      return $some(inner.element);
+    }
+    return;
+  }
+}
+
+export function repeatNIterator_sizeHint(repeatN, AClone, dropA) {
+  const len = repeatNExactSizeIterator_len(repeatN, AClone, dropA);
+  return [len, len];
+}
+
+export function repeatNIterator_advanceBy(repeatN, skip, AClone, dropA) {
+  if (repeatN.inner != null) {
+    const inner = repeatN.inner;
+    const len = inner.count;
+    if (len >= skip) {
+      const n = (len - skip) >>> 0;
+      const newLen = n === 0 ? undefined : n;
+      if (newLen != null) {
+        inner.count = newLen;
+        return { TAG: "Ok" };
+      }
+    }
+    try {
+      if (repeatN.inner != null) {
+        dropA?.(repeatN.inner.element);
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        repeatN.inner = undefined;
+      }
+    }
+    const n = (skip - len) >>> 0;
+    const value = n === 0 ? undefined : n;
+    if (value == null) {
+      return { TAG: "Ok" };
+    }
+    return { TAG: "Err", _0: value };
+  }
+  const value = skip === 0 ? undefined : skip;
+  if (value == null) {
+    return { TAG: "Ok" };
+  }
+  return { TAG: "Err", _0: value };
+}
+
+export function repeatNIterator_last(repeatN, AClone, dropA) {
+  const inner = repeatN.inner;
+  repeatN.inner = undefined;
+  let result;
+  if (inner != null) {
+    result = $some(inner.element);
+  } else {
+    result = undefined;
+  }
+  repeatN.return();
+  return result;
+}
+
+export function repeatNIterator_count(repeatN, AClone, dropA) {
+  const result = repeatN.inner != null ? repeatN.inner.count : 0;
+  repeatN.return();
+  return result;
+}
+
+export function repeatNExactSizeIterator_len(repeatN, AClone, dropA) {
+  if (repeatN.inner != null) {
+    return repeatN.inner.count;
+  }
+  return 0;
+}
+
+export function repeatNDoubleEndedIterator_nextBack(repeatN, AClone, dropA) {
+  return $nextSome(repeatN);
+}
+
+export function repeatNDoubleEndedIterator_advanceBackBy(repeatN, n, AClone, dropA) {
+  return $advanceBy($lent(repeatN), n, dropA);
+}
+
+export function repeatNDoubleEndedIterator_nthBack(repeatN, n, AClone, dropA) {
+  return $nthDropping($lent(repeatN), n, dropA, true);
+}
+
+export function repeatNDoubleEndedIterator_rfold(repeatN, init, f, AClone, dropA, dropB, dropF) {
+  const iter = repeatN;
+  let result;
+  try {
+    result = $consume(
+      iter,
+      "fold",
+      init,
+      (a, b) => f(a, b),
+      dropB,
+      () => {
+        dropF?.(f);
+      },
+    );
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    }, error);
+    throw error;
+  }
+  iter.return();
+  const value = result;
+  return value;
+}
+
+export function repeatNDoubleEndedIterator_tryRfold(
+  repeatN,
+  init,
+  f,
+  AClone,
+  RTry,
+  dropA,
+  dropB,
+  dropF,
+  dropR,
+) {
+  const value = $tryFoldInto(
+    repeatN,
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropB,
+    () => {
+      dropF?.(f);
+    },
+  );
+  return value;
+}
+
+export function repeatNClone_clone(repeatN, AClone) {
+  return $stdIterator(
+    {
+      inner:
+        repeatN.inner == null
+          ? undefined
+          : { count: repeatN.inner.count, element: AClone.clone(repeatN.inner.element) },
+    },
+    repeatN.$steps,
+  );
+}
+
+export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
+  let tmp;
+  let tmp$1;
+  if (repeatN.inner == null) {
+    tmp = 0;
+    tmp$1 = undefined;
+  } else {
+    const inner = repeatN.inner;
+    tmp = inner.count;
+    tmp$1 = $some(inner.element);
+  }
+  const count = tmp;
+  const element = tmp$1;
+  return options?.alternate
+    ? $pretty(
+        "RepeatN {",
+        [
+          `count: ${$formatted(String(count), options, true)}`,
+          `element: ${element == null ? "None" : options?.alternate ? $pretty("Some(", [ADebug.fmt($someValue(element), options)], ")") : `Some(${ADebug.fmt($someValue(element), options)})`}`,
+        ],
+        "}",
+      )
+    : `RepeatN { count: ${$formatted(String(count), options, true)}, element: ${element == null ? "None" : options?.alternate ? $pretty("Some(", [ADebug.fmt($someValue(element), options)], ")") : `Some(${ADebug.fmt($someValue(element), options)})`} }`;
+}
+
 export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -10754,6 +10953,35 @@ export function trustedRandomAccessNoCoerce_size(
   dropSelfItem,
 ) {
   return $sizeHint(self, SelfIterator)[0];
+}
+
+export function repeatN(element, count, TClone, dropT) {
+  return $stdIterator(
+    { inner: RepeatNInner.new(element, count, dropT) },
+    {
+      next(iterator) {
+        return repeatNIterator_next(iterator, TClone, dropT);
+      },
+      hint(iterator) {
+        return repeatNIterator_sizeHint(iterator, TClone, dropT);
+      },
+      advance(iterator, n) {
+        return repeatNIterator_advanceBy(iterator, n, TClone, dropT);
+      },
+      last(iterator) {
+        return repeatNIterator_last(iterator, TClone, dropT);
+      },
+      count(iterator) {
+        return repeatNIterator_count(iterator, TClone, dropT);
+      },
+      takes: ["last", "count"],
+      close(iterator) {
+        if (iterator.inner != null) {
+          dropT?.(iterator.inner.element);
+        }
+      },
+    },
+  );
 }
 
 export function iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
@@ -14575,6 +14803,23 @@ export function zipClone(AClone, BClone, dropA, dropB) {
     },
     $drop(zip) {
       zip.return();
+    },
+  }));
+}
+
+export function repeatNClone(AClone) {
+  return $traitImpl($repeatNClone, [AClone], () => ({
+    clone: (arg0) => repeatNClone_clone(arg0, AClone),
+  }));
+}
+
+export function repeatNDebug(ADebug, dropA) {
+  return $traitImpl($repeatNDebug, [ADebug, dropA], () => ({
+    fmt(arg0, arg1) {
+      return repeatNDebug_fmt(arg0, arg1, ADebug, dropA);
+    },
+    $drop(repeatN) {
+      repeatN.return();
     },
   }));
 }

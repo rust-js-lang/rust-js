@@ -101,3 +101,10 @@ and what's merely not done yet:
 
 `iterators` keeps a slice's lazy searches. The ranges' eight stay `ranges`
 until a probe of compiling `Step`'s bodies says which they are.
+
+`$repeatingN` is pitted now, std's `RepeatN` compiled in the build of
+std's bodies (ADR 0932, amended). `$repeating` is `memory` (#1569):
+`Repeat`'s `last` and `count` inline a pointer transmute std's build
+can't lower. `$repeat` was listed `to-pit` by
+mistake: it's `vec![item; count]`, `Vec::from_elem`, a collection's, not
+`Repeat`'s, so it's `collections`.
