@@ -22,10 +22,14 @@ hand-written impls.
 These files are the review's as written above, kept unchanged, with `outcomes-at-f3f4bfd25.txt` its record of that commit.
 `bun scripts/serde-probes.ts` (after `cargo build`) is the one bounded command that reproduces the baseline:
 it makes `p/` with the generators in `target/serde-probes/`, builds each program natively with the pinned serde
-(`serde/Cargo.lock`) and with rust-js, runs both on Bun and on Node, and compares each with `outcomes.txt`, the
-baseline, as `run-one.sh` does one. It prints the source of each program whose outcome changed, and fails where one
+(`serde/Cargo.lock`) and with rust-js, runs both on Bun and on Node, and compares each with its record, as
+`run-one.sh` does one. Each program is built three ways, each with its record: as a program (`outcomes.txt`); as a
+library whose `entry` runs its `main`, as the corpus builds one (`outcomes-library.txt`); and split, its items moved
+into a library crate of their own by the metamorphic net's `library` rewrite, the library compiled first and the
+program against its manifest and metadata, a producer and its consumer each compiled on its own, natively too
+(`outcomes-split.txt`). It prints the source of each program whose outcome changed, and fails where one
 that gave native Rust's answer no longer does. Name programs to run only those; `--record` writes this run's Bun
-outcomes to `outcomes.txt`. It runs as many programs at once as `atOnce` says of tests.
+outcomes to the records, of every program. It runs as many programs at once as `atOnce` says of tests.
 
 `outcomes.txt` at 069058dab, Bun 1.4.4 and Node 24, the same on both, of the generated 358: 242 same, 91 refused,
 9 compiler panics, 13 different, 3 native-invalid (`more_28`, a stateful skip predicate, gives native's answer since
@@ -49,3 +53,9 @@ first line naming the issue; the runner copies them into `p/` beside `drop_0N.rs
 | #1552 a read that fails partway drops nothing | `issue_1552.rs` | refused |
 | #1554 `impl Drop` beside a hand-written `Deserialize` | `issue_1554.rs` | refused |
 
+Each way's outcomes at d81f17afb, the same on Bun and Node: as a library, 173 same, 173 refused, 10 compiler
+panics, 10 different, 3 native-invalid; split, 171 same, 185 refused, 5 compiler panics, 5 different, 3 native-invalid,
+none `unsplit`. No program gives native's answer as a program and another answer either other way. What's refused
+only as a library or split: 62 (63 split) by #1554's refusal, met by the header's generic `deserialize_with` helper
+`down`, which a library compiles generically; the nine `ienum_*` by #1559; split, a library's hand-written
+`Serialize` or `Deserialize`, #1560; and `chk_04` panics the compiler as a library, #1558.
