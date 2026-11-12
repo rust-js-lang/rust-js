@@ -124,7 +124,7 @@ function generated(dir: string): Map<string, string> {
 // crate's, app/counter.rs, and a route below it, app/about/page.rs, links
 // back (ADR 0192), by a link of its own that gives next/link a class it
 // computes, an aria-label, and the anchor's other props (ADR 0200, 0208).
-function app(name: string): string {
+function app(name: string, more: (kept: KeptApp) => void = () => {}): string {
   return copy(name, (kept) => {
   const dir = kept.dir;
   kept.write("app/page.rs", readFileSync(join(example, "app/page.rs"), "utf8")
@@ -238,6 +238,7 @@ js::on_load! {
     next::set_get_initial_props(MyDocument, initial);
 }
 `);
+  more(kept);
   });
 }
 
@@ -844,6 +845,16 @@ function rustJs(dir: string, args: string[], env: Record<string, string> = {}) {
   return spawn(process.execPath, [cli, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, ...env } });
 }
 
+/** Whether `condition` holds within `deadline` ms, asked every 50 ms. */
+async function within(condition: () => boolean, deadline: number): Promise<boolean> {
+  const end = Date.now() + deadline;
+  while (!condition()) {
+    if (Date.now() > end) return false;
+    await Bun.sleep(50);
+  }
+  return true;
+}
+
 function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | null; output: string }> {
   let output = "";
   child.stdout?.on("data", (data) => (output += data));
@@ -1077,7 +1088,15 @@ test("the example's committed JS is what rust-js writes from its Rust", async ()
 
 test("next dev serves Rust routes, refreshes each rust-js build in place, and recovers from an error", async () => {
   buildCompiler();
-  const dir = app("next-dev");
+  // Its dev server's watcher polls, as the vite tests' servers do (`polled`):
+  // Turbopack hears a save by macOS's file system events, which run late, or
+  // lose one, while the suite's other tests write their files (#1429).
+  const dir = app("next-dev", (kept) => {
+    const config = readFileSync(join(example, "next.config.mjs"), "utf8");
+    const watched = config.replace("/* config options here */", "watchOptions: { pollIntervalMs: 250 },");
+    if (watched === config) throw new Error("the example's next.config.mjs has no `/* config options here */` to give watchOptions");
+    kept.write("next.config.mjs", watched);
+  });
   // The app's Rust compiled, then Next.js's dev server, each its own process.
   expect((await finished(rustJs(dir, ["build"]))).code).toBe(0);
   const save = async (text: string) => {
@@ -1119,9 +1138,32 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
       }
     }
 
+    // Each save applied: rust-js build, Next.js's compile of it, `✓ Compiled`,
+    // then the page's update. One Next.js didn't compile, or whose update the
+    // page didn't show, is written again, its module's new time, at most
+    // three times; and the timeout says which it was (#1429).
+    const jsx = join(dir, "app/counter.jsx");
+    const applied = async (text: string, label: string) => {
+      for (let tries = 1; ; tries++) {
+        const mark = output.length;
+        if (tries === 1) await save(text);
+        else writeFileSync(jsx, readFileSync(jsx));
+        const compiled = await within(() => output.indexOf("Compiled", mark) >= 0, browserDeadline() / 3);
+        try {
+          await button.filter({ hasText: label }).waitFor({ timeout: browserDeadline() / 3 });
+          return;
+        } catch (error) {
+          if (tries < 3) continue;
+          const which = compiled
+            ? "Next.js compiled it, but the page never showed its update"
+            : "Next.js never compiled it: the save went unheard";
+          throw new Error(`\`${label}\` wasn't shown after ${tries} writes: ${which}\n${error}`);
+        }
+      }
+    };
+
     // A build is a Fast Refresh: the client component keeps its state.
-    await save(counter("Clicks "));
-    await seen(button.filter({ hasText: "Clicks 1" }));
+    await applied(counter("Clicks "), "Clicks 1");
 
     // An error is rustc's, rust-js build's, and Next.js goes on serving what
     // was written; fixed, the page is the Rust's again.
@@ -1129,8 +1171,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     expect([broken.code, broken.output.includes("error")]).toEqual([1, true]);
     expect(server.exitCode).toBe(null);
     await seen(button.filter({ hasText: "Clicks 1" }));
-    await save(counter("Taps "));
-    await seen(button.filter({ hasText: "Taps 1" }));
+    await applied(counter("Taps "), "Taps 1");
 
     // A route below it, and next/link back, without loading the page again.
     await page.goto(`http://localhost:${port}/about`);
