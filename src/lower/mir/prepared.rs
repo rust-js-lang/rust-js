@@ -225,7 +225,11 @@ impl<'tcx> Mir<'tcx> {
 /// crate's own body reads it, `(*_b).x`: a box is the value it holds (ADR
 /// 0914, amended). The pointer is made just before the one place that reads
 /// through it, past the others made for that statement, so nothing changes
-/// the box between; one read otherwise is left as it is.
+/// the box between; one read otherwise is left as it is. And a box copied
+/// out of a place just before, `_b = copy (*_r); _t = copy (_b.0 ..)`,
+/// which std's `Box` is its pointer's bits of, the same allocation, is read
+/// through that place, `&mut (*(*_r))`: a copy of a box of a number is the
+/// number in JS, a write through it lost (#1455).
 fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) {
     use rustc_middle::mir::visit::MutVisitor;
     struct Uses(Local, Vec<(mir::Location, bool)>);
@@ -247,17 +251,25 @@ fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>)
             }
         }
     }
-    struct Through<'tcx>(Local, Local, ty::TyCtxt<'tcx>);
+    struct Through<'tcx>(Local, Place<'tcx>, ty::TyCtxt<'tcx>);
     impl<'tcx> MutVisitor<'tcx> for Through<'tcx> {
         fn tcx(&self) -> ty::TyCtxt<'tcx> {
             self.2
         }
         fn visit_place(&mut self, place: &mut Place<'tcx>, _: PlaceContext, _: mir::Location) {
             if place.local == self.0 {
-                place.local = self.1;
+                *place = self.1.project_deeper(place.projection, self.2);
             }
         }
     }
+    // A statement `_b = copy <place>` of a box, its local and that place.
+    let box_copy = |statement: &mir::Statement<'tcx>| match &statement.kind {
+        StatementKind::Assign(assign) => match (&assign.0, &assign.1) {
+            (copied, Rvalue::Use(Operand::Copy(from), _)) => copied.as_local().map(|copied| (copied, *from)),
+            _ => None,
+        },
+        _ => None,
+    };
     let pointer_of = |statement: &mir::Statement<'_>| match &statement.kind {
         StatementKind::Assign(assign) => match (&assign.0, &assign.1) {
             (pointer, Rvalue::Cast(mir::CastKind::BoxDerefTransmute, Operand::Copy(unique), _))
@@ -305,13 +317,40 @@ fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>)
                 at += 1;
                 continue;
             }
-            let mut through = Through(pointer, boxed, tcx);
+            // Of a box copied out of a place just before, read nowhere else
+            // and that place not of the box itself: that place's.
+            let copied = at
+                .checked_sub(1)
+                .and_then(|before| box_copy(&body.basic_blocks[block].statements[before]).map(|c| (before, c)))
+                .filter(|&(before, (copied, from))| {
+                    let mut box_uses = Uses(boxed, Vec::new());
+                    box_uses.visit_body(body);
+                    let copy_at = mir::Location {
+                        block,
+                        statement_index: before,
+                    };
+                    copied == boxed
+                        && from.local != boxed
+                        && from.ty(&body.local_decls, tcx).ty.is_box()
+                        && box_uses
+                            .1
+                            .iter()
+                            .all(|&(location, _)| location == copy_at || location == made)
+                });
+            let base = match copied {
+                Some((_, (_, from))) => from,
+                None => Place::from(boxed),
+            };
+            let mut through = Through(pointer, base, tcx);
             let data = &mut body.basic_blocks.as_mut_preserves_cfg()[block];
             match data.statements.get_mut(read) {
                 Some(statement) => through.visit_statement(statement, read_at),
                 None => through.visit_terminator(data.terminator_mut(), read_at),
             }
             data.statements[at].make_nop(true);
+            if let Some((before, _)) = copied {
+                data.statements[before].make_nop(true);
+            }
             at += 1;
         }
     }

@@ -1684,3 +1684,26 @@ case `non_zero_constants_matched` against native Rust in both builds;
 mutations `library-conversion-uncompiled`, `question-from-unanswered`,
 `mir-transmute-cast-as-number`, `transmute-of-a-pattern-type-refused` and
 `transmute-of-a-non-zero-refused`, caught.
+
+## Amendment (2026-11-12, #1455): a box copied out of a place is that place
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so Rust's
+behavior is kept. A library's impl its consumer compiles from optimized MIR
+reads a box in a place through a copy of it: `fn deref_mut(&mut self) ->
+&mut u32 { &mut self.0 }` of `Counter(Box<u32>)` is `_2 = &mut (*_1).0; _3 =
+copy (*_2); _4 = copy (_3.0: Unique<u32>) as *const u32
+(BoxDerefTransmute); _0 = &mut (*_4)`. `boxes_read_as_values` read `(*_4)`
+as `(*_3)`, a copy of the box, which of a number is the number in JS: the
+`&mut` was a handle on a local, `let tmp = counter[0]`, and every write
+through it lost (P0). A box's copy is its pointer's bits, the same
+allocation, so a box copied out of a place just before, read nowhere else,
+is read through that place, `&mut (*(*_2))`, as the crate's own MIR has it:
+a handle on `counter[0]`. Nested boxes, an enum variant's box, a boxed
+struct's fields and a `Vec` of boxes, each in an impl the consumer compiles,
+were lost the same way and are written now; a box local was right and is.
+
+Held by the crate pair `boxed_places_a_consumer_writes_through` (`AsMut`,
+`Deref`/`DerefMut` of an enum, `IndexMut` and `BorrowMut` of a boxed
+struct, an `Iterator` of a box local, a `Counter`) against native Rust; the
+metamorphic net's `library` rewrite of each of the corpus's 47 cases that
+return a `&mut` agrees; mutation `box-copied-from-a-place-read-as-the-copy`.

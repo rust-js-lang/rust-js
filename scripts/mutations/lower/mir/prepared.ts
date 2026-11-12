@@ -127,4 +127,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
   },
+  {
+    name: "box-copied-from-a-place-read-as-the-copy",
+    breaks: "a library's impl the consumer compiles, of optimized MIR that reads a box through a copy of it, `_b = copy (*_r)`, gives a `&mut` to that copy, so a write through it is lost (#1455)",
+    file: "src/lower/mir/prepared.rs",
+    find: "                    copied == boxed\n                        && from.local != boxed\n",
+    replace: "                    false && copied == boxed\n                        && from.local != boxed\n",
+    tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
+  },
 ];
