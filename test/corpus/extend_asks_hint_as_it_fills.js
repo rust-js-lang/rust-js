@@ -58,7 +58,7 @@ function main() {
       true,
     ),
   );
-  console.log(`new ${v.length} ${$capacity(v, 4)}`);
+  $print(`new ${v.length} ${$capacity(v, 4)}\n`);
   v = $withCapacity(2);
   $extend(
     v,
@@ -82,7 +82,7 @@ function main() {
       true,
     ),
   );
-  console.log(`with capacity ${v.length} ${$capacity(v, 4)}`);
+  $print(`with capacity ${v.length} ${$capacity(v, 4)}\n`);
   v = [1, 2];
   $extend(
     v,
@@ -95,7 +95,7 @@ function main() {
       true,
     ),
   );
-  console.log(`literal ${v.length} ${$capacity(v, 4)}`);
+  $print(`literal ${v.length} ${$capacity(v, 4)}\n`);
   v = new Array(3).fill(0);
   $roomFor(v.length + 2, 1);
   $reserve(v, 2, 1);
@@ -112,7 +112,7 @@ function main() {
       true,
     ),
   );
-  console.log(`bytes ${v.length} ${$capacity(v, 1)}`);
+  $print(`bytes ${v.length} ${$capacity(v, 1)}\n`);
   v = $range(0, 3);
   $roomFor(v.length + 1, 4);
   $reserveExact(v, 1);
@@ -127,7 +127,7 @@ function main() {
       true,
     ),
   );
-  console.log(`collected ${v.length} ${$capacity(v, 4)}`);
+  $print(`collected ${v.length} ${$capacity(v, 4)}\n`);
   const h = [];
   $heapExtend(
     h,
@@ -141,7 +141,7 @@ function main() {
     ),
     $partiallyOrdered,
   );
-  console.log(`heap ${h.length} ${h[0] == null ? "None" : `Some(${h[0]})`}`);
+  $print(`heap ${h.length} ${h[0] == null ? "None" : `Some(${h[0]})`}\n`);
   const d = $withCapacity(10);
   $extend(
     d,
@@ -165,7 +165,7 @@ function main() {
       true,
     ),
   );
-  console.log(`deque ${d.length} ${$capacity(d, 4)}`);
+  $print(`deque ${d.length} ${$capacity(d, 4)}\n`);
   const units = [];
   $extend(
     units,
@@ -180,7 +180,7 @@ function main() {
       true,
     ),
   );
-  console.log(`units ${units.length}`);
+  $print(`units ${units.length}\n`);
   const caught = $catchUnwind(() => {
     const v = [];
     try {
@@ -213,6 +213,6 @@ function main() {
       }
     }
   });
-  console.log(`panicked ${caught.TAG === "Err"}`);
+  $print(`panicked ${caught.TAG === "Err"}\n`);
 }
 //# sourceMappingURL=case.js.map

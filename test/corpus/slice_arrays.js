@@ -21,22 +21,20 @@ function main() {
   const items = v.slice(0, 3);
   const array = items.length === 3 ? items : undefined;
   const value = v.length === 3 ? v : undefined;
-  console.log(
-    `${array == null ? "None" : `Some([${array.join(", ")}])`} ${value == null ? "None" : `Some([${value.join(", ")}])`}`,
+  $print(
+    `${array == null ? "None" : `Some([${array.join(", ")}])`} ${value == null ? "None" : `Some([${value.join(", ")}])`}\n`,
   );
   for (const [a, b] of $windows(v, 2)) {
     $print(`${Math.imul(a, b)} `);
   }
-  console.log("");
+  $print("\n");
   const [chunks, rest] = $asChunks(v, 3);
-  console.log(`[${chunks.map((item) => `[${item.join(", ")}]`).join(", ")}] [${rest.join(", ")}]`);
+  $print(`[${chunks.map((item) => `[${item.join(", ")}]`).join(", ")}] [${rest.join(", ")}]\n`);
   const [rest$1, chunks$1] = $asChunks(v, 3, true);
-  console.log(
-    `[${rest$1.join(", ")}] [${chunks$1.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
-  );
+  $print(`[${rest$1.join(", ")}] [${chunks$1.map((item) => `[${item.join(", ")}]`).join(", ")}]\n`);
   const pairs = $asChunks(v.slice(0, 6), 2)[0];
   const arg = pairs.flat();
-  console.log(`[${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${arg.join(", ")}]`);
+  $print(`[${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${arg.join(", ")}]\n`);
 
   const w = [1, 2, 3, 4, 5, 6, 7];
   const items$1 = $view(w, 0, 2);
@@ -60,14 +58,14 @@ function main() {
   chunks$2[0][0] = 8;
   $print(`[${kept.join(", ")}] `);
   rest$2[$at(rest$2, 0)] = -1;
-  console.log(`[${w.join(", ")}]`);
+  $print(`[${w.join(", ")}]\n`);
   const [rest$3, chunks$3] = $asChunksMut(w, 2, true);
   rest$3[$at(rest$3, 0)] = 100;
   chunks$3.reverse();
   for (const chunk of chunks$3) {
     chunk.reverse();
   }
-  console.log(`[${w.join(", ")}]`);
+  $print(`[${w.join(", ")}]\n`);
 
   const grid = [
     [1, 2],
@@ -79,6 +77,6 @@ function main() {
   $view(flat, 4).fill(0);
   flat.reverse();
   const arg$1 = grid.flat().length;
-  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] ${arg$1}`);
+  $print(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] ${arg$1}\n`);
 }
 //# sourceMappingURL=case.js.map

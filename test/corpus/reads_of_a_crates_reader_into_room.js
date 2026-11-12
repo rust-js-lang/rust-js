@@ -47,10 +47,10 @@ function main() {
     $roomFor(room, 1);
     const v = $withCapacity(room);
     const read = $unwrapOk(loggedRead.readToEnd({ value: [left] }, v), undefined, $ioErrorDebug);
-    console.log(` = ${read}`);
+    $print(` = ${read}\n`);
   }
   $print("generic:");
-  console.log(` = ${intoRoom([70], 40, loggedRead)}`);
+  $print(` = ${intoRoom([70], 40, loggedRead)}\n`);
   $print("string:");
   let s = "";
   const read = $unwrapOk(
@@ -69,6 +69,6 @@ function main() {
     undefined,
     $ioErrorDebug,
   );
-  console.log(` = ${read} ${$byteLen(s)}`);
+  $print(` = ${read} ${$byteLen(s)}\n`);
 }
 //# sourceMappingURL=case.js.map

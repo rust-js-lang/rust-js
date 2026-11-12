@@ -38,33 +38,27 @@ function main() {
   let s = v;
   const split = $sliceSplitOff(s, 2);
   s = split[0];
-  console.log(`${split[1] == null ? "None" : `Some([${split[1].join(", ")}])`} [${s.join(", ")}]`);
+  $print(`${split[1] == null ? "None" : `Some([${split[1].join(", ")}])`} [${s.join(", ")}]\n`);
   const split$1 = $sliceSplitOff(s, 3, true);
   s = split$1[0];
-  console.log(
-    `${split$1[1] == null ? "None" : `Some([${split$1[1].join(", ")}])`} [${s.join(", ")}]`,
-  );
+  $print(`${split$1[1] == null ? "None" : `Some([${split$1[1].join(", ")}])`} [${s.join(", ")}]\n`);
   const split$2 = $sliceSplitOff(s, 1);
   s = split$2[0];
-  console.log(
-    `${split$2[1] == null ? "None" : `Some([${split$2[1].join(", ")}])`} [${s.join(", ")}]`,
-  );
+  $print(`${split$2[1] == null ? "None" : `Some([${split$2[1].join(", ")}])`} [${s.join(", ")}]\n`);
   const split$3 = $sliceSplitOff(s, 9);
   s = split$3[0];
-  console.log(
-    `${split$3[1] == null ? "None" : `Some([${split$3[1].join(", ")}])`} [${s.join(", ")}]`,
-  );
+  $print(`${split$3[1] == null ? "None" : `Some([${split$3[1].join(", ")}])`} [${s.join(", ")}]\n`);
   const split$4 = $sliceSplitOffEnd(s, false);
   s = split$4[0];
   const splitOffFirst = split$4[1];
   const split$5 = $sliceSplitOffEnd(s, true);
   s = split$5[0];
-  console.log(
-    `${splitOffFirst == null ? "None" : `Some(${splitOffFirst})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.join(", ")}]`,
+  $print(
+    `${splitOffFirst == null ? "None" : `Some(${splitOffFirst})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.join(", ")}]\n`,
   );
   const split$6 = $sliceSplitOffEnd(s, false);
   s = split$6[0];
-  console.log(`${split$6[1] == null ? "None" : `Some(${split$6[1]})`} [${s.join(", ")}]`);
+  $print(`${split$6[1] == null ? "None" : `Some(${split$6[1]})`} [${s.join(", ")}]\n`);
 
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
@@ -84,7 +78,7 @@ function main() {
     }
     $print(`${word.length} `);
   }
-  console.log("");
+  $print("\n");
 
   const w = [1, 2, 3, 4, 5, 6];
   let rest = w;
@@ -107,7 +101,7 @@ function main() {
     last.value = -1;
   }
   rest.reverse();
-  console.log(`[${w.join(", ")}]`);
+  $print(`[${w.join(", ")}]\n`);
   const names = ["a", "b"];
   let all = names;
   const split$10 = $sliceSplitOffEndMut(all, true, true);
@@ -121,15 +115,15 @@ function main() {
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
   }
   all[0] += "?";
-  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+  $print(`[${names.map((item) => $debugStr(item)).join(", ")}]\n`);
   let none = [];
   const split$11 = $sliceSplitOffEndMut(none, false, true);
   none = split$11[0];
   const splitOffFirstMut = split$11[1];
   const split$12 = $sliceSplitOffMut(none, 1, true);
   none = split$12[0];
-  console.log(
-    `${splitOffFirstMut == null ? "None" : `Some(${splitOffFirstMut.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].join(", ")}])`}`,
+  $print(
+    `${splitOffFirstMut == null ? "None" : `Some(${splitOffFirstMut.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].join(", ")}])`}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

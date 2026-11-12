@@ -78,34 +78,34 @@ function main() {
   const nextBack = inspectDoubleEndedIterator_nextBack(w, {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
-  console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${inspectExactSizeIterator_len(w, countdownExactSizeIterator)} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(w))}`,
+  $print(
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${inspectExactSizeIterator_len(w, countdownExactSizeIterator)} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(w))}\n`,
   );
   const c = inspectClone_clone(
     w,
     { clone: (value) => [value[0]] },
     { clone: (value) => $clone(value) },
   );
-  console.log(
-    `[${Array.from($roomForHint(c, 4, false)).join(", ")}] [${Array.from($roomForHint(w, 4, false)).join(", ")}]`,
+  $print(
+    `[${Array.from($roomForHint(c, 4, false)).join(", ")}] [${Array.from($roomForHint(w, 4, false)).join(", ")}]\n`,
   );
 
   const v = [1, 2, 3, 4];
   const held = iterator_inspect($iter(v), (x) => {
     $print(`(${x})`);
   });
-  console.log(
-    `${inspectClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
+  $print(
+    `${inspectClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}\n`,
   );
-  console.log(
-    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0)}`,
+  $print(
+    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0)}\n`,
   );
 
   const shown = iterator_inspect([2], show, {
     next: countdownIterator_next,
     sizeHint: countdownIterator_sizeHint,
   });
-  console.log(`${inspectDebug_fmt(shown, undefined, countdownDebug)}`);
+  $print(`${inspectDebug_fmt(shown, undefined, countdownDebug)}\n`);
 
   const d = {
     inner: watched([3], { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint }),
@@ -114,8 +114,8 @@ function main() {
   const value$1 = inspectDoubleEndedIterator_nextBack(d.inner, {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${inspectExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
+  $print(
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${inspectExactSizeIterator_len(d.inner, countdownExactSizeIterator)}\n`,
   );
 
   const holder = { it: iterator_inspect({ start: 0, end: 3 }, show, { next: $rangeNext }) };
@@ -128,8 +128,8 @@ function main() {
     ),
   };
   $next(again.it);
-  console.log(
-    ` [${Array.from($roomForHint(again.it, 4, false)).join(", ")}] [${Array.from($roomForHint(holder.it, 4, false)).join(", ")}]`,
+  $print(
+    ` [${Array.from($roomForHint(again.it, 4, false)).join(", ")}] [${Array.from($roomForHint(holder.it, 4, false)).join(", ")}]\n`,
   );
 
   // Made in place.
@@ -143,7 +143,7 @@ function main() {
     })
     .map((x) => (x * 2) >>> 0)
     .reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(` ${total}`);
+  $print(` ${total}\n`);
 
   const by = "inspect's";
   const kept = {
@@ -153,7 +153,7 @@ function main() {
       { next: $rangeNext },
       undefined,
       (value) => {
-        console.log(`drop ${by}`);
+        $print(`drop ${by}\n`);
       },
     ),
   };
@@ -166,13 +166,13 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     undefined,
     (value) => {
-      console.log(`drop ${by}`);
+      $print(`drop ${by}\n`);
     },
     undefined,
     (value) => {
-      console.log(`drop ${into}`);
+      $print(`drop ${into}\n`);
     },
   );
-  console.log(`${folded}`);
+  $print(`${folded}\n`);
 }
 //# sourceMappingURL=case.js.map

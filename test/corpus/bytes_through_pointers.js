@@ -71,8 +71,8 @@ function main() {
   const three = $ptrRetyped($ptrAdd(p, 9), 3, "bytes").value.slice();
   const signed = $ptrRetyped($ptrAdd(p, 11), 1, true).value;
   const stepped = $ptrAdd($ptrRetyped(p, 4, false), 2).value;
-  console.log(
-    `[${words.join(", ")}] 0x${unaligned.toString(16)} 0x${half.toString(16)} [${three.join(", ")}] ${signed} ${stepped}`,
+  $print(
+    `[${words.join(", ")}] 0x${unaligned.toString(16)} 0x${half.toString(16)} [${three.join(", ")}] ${signed} ${stepped}\n`,
   );
 
   for (const [a, b, n] of [
@@ -84,7 +84,7 @@ function main() {
   ]) {
     $print(`${isEqualRaw($ptr(a, 0), $ptr(b, 0), n)} `);
   }
-  console.log("");
+  $print("\n");
 
   // Written through as a wider integer, then read as bytes again.
   const buffer = new Array(8).fill(0);
@@ -94,7 +94,7 @@ function main() {
   $ptrAdd(b, 5).value = 7;
   const negative = $ptrRetyped($ptrAdd(b, 1), 1, true).value;
   const text = $utf8Decode([98, 121, 116, 101, 115]);
-  console.log(`[${buffer.join(", ")}] ${negative} ${text}`);
+  $print(`[${buffer.join(", ")}] ${negative} ${text}\n`);
 
   // A wider array's bytes.
   const wide = [0x04030201, 0x08070605];
@@ -108,8 +108,8 @@ function main() {
   const copied = $ptrSlice($ptrAdd(w, 2), 5).slice();
   $ptrAdd(w, 1).value = 0xff;
   $ptrCopy($ptr(bytes, 0), $ptrAdd(w, 4), 3);
-  console.log(
-    `0x${tail.toString(16)} [${copied.join(", ")}] 0x${wide[0].toString(16)} 0x${wide[1].toString(16)}`,
+  $print(
+    `0x${tail.toString(16)} [${copied.join(", ")}] 0x${wide[0].toString(16)} 0x${wide[1].toString(16)}\n`,
   );
 
   // Plain data's bytes, read and written through a pointer to them.
@@ -133,8 +133,8 @@ function main() {
   const all = $ptrSlice(q, 5).slice();
   $ptrAdd(q, 4).value = 10;
   $ptrRetyped($ptrAdd(q, 1), 2, false).value = 0xaabb;
-  console.log(
-    `0x${first.toString(16)} 0x${high.toString(16)} [${all.join(", ")}] ${pairDebug_fmt(pair)}`,
+  $print(
+    `0x${first.toString(16)} 0x${high.toString(16)} [${all.join(", ")}] ${pairDebug_fmt(pair)}\n`,
   );
 
   // An uninitialized slot's bytes, written one by one, then read whole.
@@ -148,15 +148,15 @@ function main() {
   for (let i = 0; i < 4; i++) {
     $ptrAdd(s, i).value = 0x10 * (i + 1);
   }
-  console.log(`0x${slot.value.toString(16)}`);
+  $print(`0x${slot.value.toString(16)}\n`);
   const raw = Array.from({ length: 4 });
   $storedItems(raw, 1);
   const r = $ptr(raw, 0);
   for (let i = 0; i < 4; i++) {
     $ptrAdd(r, i).value = i + 1;
   }
-  console.log(`0x${$ptrRetyped(r, 4, false).value.toString(16)}`);
-  console.log(
+  $print(`0x${$ptrRetyped(r, 4, false).value.toString(16)}\n`);
+  $print(
     `${
       $ptrRetyped(
         $ptrBytes(
@@ -172,7 +172,7 @@ function main() {
         4,
         false,
       ).value === $fromBytes([0xbb, 0xaa, 0x44, 0x33], 4, true, false)
-    }`,
+    }\n`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -11,6 +11,7 @@ import {
   $debugTuple,
   $iterator,
   $out,
+  $print,
   $printing,
   $sink,
   $sortedEntries,
@@ -72,7 +73,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     const value = [[1], [3]];
     $printing(() => {
@@ -87,7 +88,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -104,7 +105,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -120,7 +121,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -146,7 +147,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     const value = [{ loud: [1] }, { loud: [7] }];
     $printing(() => {
@@ -161,7 +162,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     const value = [[0], [1]];
     $printing(() => {
@@ -176,7 +177,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   const value = [[1], undefined];
   $printing(() => {
     $out("x ");

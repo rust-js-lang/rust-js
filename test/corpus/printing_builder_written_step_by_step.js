@@ -13,6 +13,7 @@ import {
   $lazyRange,
   $out,
   $pretty,
+  $print,
   $printing,
   $sink,
   $writeTry,
@@ -292,7 +293,7 @@ function main() {
       throw error;
     }
   });
-  console.log(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s)}`);
+  $print(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s)}\n`);
   let s$1 = "";
   r = $writeTry(() => {
     try {
@@ -302,7 +303,7 @@ function main() {
       throw error;
     }
   });
-  console.log(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s$1)}`);
+  $print(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s$1)}\n`);
   let s$2 = "";
   r = $writeTry(() => {
     try {
@@ -314,7 +315,7 @@ function main() {
       throw error;
     }
   });
-  console.log(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s$2)}`);
+  $print(` ${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(s$2)}\n`);
   $printing(() => {
     $out("x ");
     $out(outerDebug_fmt(undefined));
@@ -476,7 +477,7 @@ function main() {
     $out(" y\n");
   });
   const s$3 = steppedDebug_fmt([[9, 10]]);
-  console.log(`format ${s$3}`);
+  $print(`format ${s$3}\n`);
   const value$12 = [[[11]], [[12]]];
   $printing(() => {
     $out("x [");

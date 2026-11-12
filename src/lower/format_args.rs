@@ -256,14 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(through) = self.print_through_the_line(&text, error) {
                     return through;
                 }
-                match without_newline(text) {
-                    Ok(line) => Expr::call(
-                        Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
-                        vec![line],
-                    )
-                    .never_throws(),
-                    Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
-                }
+                self.stream_printed(text, error)
             }
             StreamOp::WriteBytes { error } | StreamOp::Written { error } => {
                 let bytes = values.next().expect("a write's bytes");
@@ -367,16 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // the line, so it lands inside it (#1490).
                 match self.print_through_the_line(&text, error) {
                     Some(through) => through,
-                    None => match without_newline(text) {
-                        // A write never fails (ADR 0132): it throws only where
-                        // its text does (ADR 0901).
-                        Ok(line) => Expr::call(
-                            Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
-                            vec![line],
-                        )
-                        .never_throws(),
-                        Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
-                    },
+                    None => self.stream_printed(text, error),
                 }
             }
             Std::FmtStr => arg(),
@@ -394,6 +378,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `text` printed to stdout, or of `error`, stderr: a whole line by
+    /// `console.log`, which ends it, or `console.error`; other text as it
+    /// is, `$print(text)`, which holds what it leaves unended. A whole line
+    /// too where a print of the crate's may leave the stream's line
+    /// unended (`Prints::leaves_unended`), so a browser's console, which
+    /// takes whole lines, has the line after what's held, not before it
+    /// (#1599). A write never fails (ADR 0132): it throws only where its
+    /// text does (ADR 0901).
+    pub(super) fn stream_printed(&self, text: Expr, error: bool) -> Expr {
+        let held = |text: Expr| Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]);
+        if self.krate.prints.leaves_unended(error) {
+            return held(text);
+        }
+        match without_newline(text) {
+            Ok(line) => Expr::call(
+                Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
+                vec![line],
+            )
+            .never_throws(),
+            Err(text) => held(*text),
+        }
     }
 }
 

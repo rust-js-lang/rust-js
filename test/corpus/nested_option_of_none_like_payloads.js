@@ -49,7 +49,7 @@ function show(h) {
   const value = state(h.pin === undefined ? undefined : $some(h.pin));
   const value$1 = state(h.uninit === undefined ? undefined : $some(h.uninit));
   const arg = state(h.unit === undefined ? undefined : $some(h.unit));
-  console.log(`${w} ${value} ${value$1} ${arg}`);
+  $print(`${w} ${value} ${value$1} ${arg}\n`);
 }
 
 function make(i, n) {
@@ -200,7 +200,7 @@ function main() {
         throw error;
       }
       try {
-        console.log(`${tmp$2} ${state(u)}`);
+        $print(`${tmp$2} ${state(u)}\n`);
       } catch (error) {
         $cleanup(() => {
           if (w != null && $someValue(w) != null) {
@@ -297,8 +297,8 @@ export function generics() {
   }
   const g = genericMade($some($some(undefined)));
   const arg = genericState(g);
-  console.log(
-    `${arg} ${(g.held === undefined ? undefined : $some(g.held)) == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(g.held === undefined ? undefined : $some(g.held)))})`}`,
+  $print(
+    `${arg} ${(g.held === undefined ? undefined : $some(g.held)) == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(g.held === undefined ? undefined : $some(g.held)))})`}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -88,11 +88,11 @@ function main() {
   $print(describeNode(tree, 0));
   $print(describeNode($index($index(tree.children, 0).children, 0), 1));
   const items = [leaf("x"), leaf("y")];
-  console.log(`${isFirst(items, $index(items, 0))} ${isFirst(items, $index(items, 1))}`);
+  $print(`${isFirst(items, $index(items, 0))} ${isFirst(items, $index(items, 1))}\n`);
   const empty = [];
   try {
     const first = isFirst(empty, $index(items, 0));
-    console.log(`no panic: ${first}`);
+    $print(`no panic: ${first}\n`);
   } catch (thrown) {
     $catchable(thrown);
     const payload = $unwound(thrown);
@@ -100,11 +100,11 @@ function main() {
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
         ? payload.value
         : undefined;
-    console.log(`panicked: ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}`);
+    $print(`panicked: ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}\n`);
   }
-  console.log(`${firstDiff("hello there", "hello world")} ${firstDiff("ab", "ab")}`);
+  $print(`${firstDiff("hello there", "hello world")} ${firstDiff("ab", "ab")}\n`);
   const indent = -1;
-  console.log(`[${"".repeat(indent >>> 0)}] [${"ab".repeat(2)}]`);
-  console.log(`${$catchUnwind(() => $byteLen("  ".repeat(indent))).TAG === "Err"}`);
+  $print(`[${"".repeat(indent >>> 0)}] [${"ab".repeat(2)}]\n`);
+  $print(`${$catchUnwind(() => $byteLen("  ".repeat(indent))).TAG === "Err"}\n`);
 }
 //# sourceMappingURL=case.js.map

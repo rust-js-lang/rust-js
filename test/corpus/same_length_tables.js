@@ -101,15 +101,15 @@ function main() {
   ]) {
     $print(`${$displayF64(rainWater(terraces))} `);
   }
-  console.log("");
-  console.log(`[${prefixSums(5).join(", ")}] [${prefixSums(0).join(", ")}]`);
+  $print("\n");
+  $print(`[${prefixSums(5).join(", ")}] [${prefixSums(0).join(", ")}]\n`);
   const value = shrunkSum([1, 2, 3], false);
   const value$1 = shrunkSum([1, 2, 3], true);
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  $print(
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
-  console.log(
-    `${$displayF64(staircase(-1))} ${$displayF64(staircase(2))} ${$displayF64(staircase(10))} ${lastAtMost([4, 5], 9)}`,
+  $print(
+    `${$displayF64(staircase(-1))} ${$displayF64(staircase(2))} ${$displayF64(staircase(10))} ${lastAtMost([4, 5], 9)}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

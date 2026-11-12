@@ -35,10 +35,10 @@ function main() {
   )) {
     v.value = (v.value + (k | 0)) | 0;
   }
-  console.log(
+  $print(
     `{${Array.from($sortedEntries(scores, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")}}`,
+      .join(", ")}}\n`,
   );
   const total = $mutEntries(
     scores,
@@ -49,10 +49,10 @@ function main() {
       return v.value;
     })
     .reduce((a, b) => (a + b) | 0, 0);
-  console.log(
+  $print(
     `${total} {${Array.from($sortedEntries(scores, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")}}`,
+      .join(", ")}}\n`,
   );
   const names = new $BTreeMap([
     ["ann", "a"],
@@ -77,7 +77,7 @@ function main() {
     const k = nextBack[0];
     const v = nextBack[1];
     v.value = $insertStr(v.value, 0, ">");
-    console.log(`${k}`);
+    $print(`${k}\n`);
   }
   const last = $iter(
     $mutEntries(
@@ -98,10 +98,10 @@ function main() {
     v.value = v.value.toUpperCase();
   }
   const arg = last.reduce((n) => n + 1, 0);
-  console.log(
+  $print(
     `{${Array.from($sortedEntries(names, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${$debugStr(value)}`)
-      .join(", ")}} ${arg}`,
+      .join(", ")}} ${arg}\n`,
   );
 
   const points = new $BTreeMap($range(0, 4).map((k) => [k, [k, 0]]));
@@ -123,10 +123,10 @@ function main() {
     { TAG: "Included", _0: 9 },
     "Unbounded",
   ).length;
-  console.log(
+  $print(
     `{${Array.from($sortedEntries(points, $cmp))
       .map(([key, value]) => `${key}: (${value[0]}, ${value[1]})`)
-      .join(", ")}} ${arg$1}`,
+      .join(", ")}} ${arg$1}\n`,
   );
 
   const set = new $BTreeSet($range(0, 5));
@@ -140,6 +140,6 @@ function main() {
   )) {
     $print(`${x} `);
   }
-  console.log("");
+  $print("\n");
 }
 //# sourceMappingURL=case.js.map

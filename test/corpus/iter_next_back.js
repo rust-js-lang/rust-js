@@ -41,28 +41,28 @@ function main() {
   const next = $next(it);
   const nextBack = $nextBack(it);
   const value = $nextBack(it);
-  console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+  $print(
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}\n`,
   );
   const len = it.end - it.at;
   const sizeHint = $sizeHint(it);
   const value$1 = hint(it);
-  console.log(
-    `${len} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) [${it.items.slice(it.at, it.end).join(", ")}]`,
+  $print(
+    `${len} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) [${it.items.slice(it.at, it.end).join(", ")}]\n`,
   );
   const rest = it.items.slice(it.at, it.end);
-  console.log(`[${rest.join(", ")}]`);
+  $print(`[${rest.join(", ")}]\n`);
   const taken = $iter(v);
   $nextBack(taken);
   const front = Array.from(taken);
-  console.log(`[${front.join(", ")}]`);
+  $print(`[${front.join(", ")}]\n`);
   for (const x of $lent(it)) {
     $print(`${x} `);
   }
   const value$2 = $next(it);
   const value$3 = $nextBack(it);
-  console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+  $print(
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`,
   );
 
   const both = $iter($range(1, 5));
@@ -75,7 +75,7 @@ function main() {
     $print(`(${a}, ${b}) `);
   }
   const value$4 = $next(both);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  $print(`${value$4 == null ? "None" : `Some(${value$4})`}\n`);
 
   const tree = new $BTreeMap([
     [1, "a"],
@@ -86,16 +86,16 @@ function main() {
     $iter($treeRange(tree, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Excluded", _0: 3 })),
   );
   const value$6 = $nextBack($iter($sortedEntries(tree, $cmp)));
-  console.log(
-    `${value$5 == null ? "None" : `Some((${value$5[0]}, ${$debugStr(value$5[1])}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${$debugStr(value$6[1])}))`}`,
+  $print(
+    `${value$5 == null ? "None" : `Some((${value$5[0]}, ${$debugStr(value$5[1])}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${$debugStr(value$6[1])}))`}\n`,
   );
   const last = $nextBack($iter(v));
   const value$7 = last === undefined ? undefined : (last * 10) | 0;
-  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
+  $print(`${value$7 == null ? "None" : `Some(${value$7})`}\n`);
   const value$8 = $nextBack($chars("héllo"));
   const value$9 = $nextBack($iter("a,b,c".split(",")));
-  console.log(
-    `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`}`,
+  $print(
+    `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`}\n`,
   );
 
   const maybe = [1, undefined];
@@ -103,38 +103,36 @@ function main() {
   const value$10 = $nextBackSome(options);
   const value$11 = $nextBackSome(options);
   const value$12 = $nextBackSome(options);
-  console.log(
-    `${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`} ${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$12))})`}`,
+  $print(
+    `${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`} ${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$12))})`}\n`,
   );
   const value$13 = $nextBackSome($iter(maybe));
   const value$14 = $nextBackSome($iter($slice(maybe, 0, 1)));
-  console.log(
-    `${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$13))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$14))})`}`,
+  $print(
+    `${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$13))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$14))})`}\n`,
   );
   const peeked = iterator_peekable($iter(maybe), { next: $nextSome });
   peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
   peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
   const peek = $peekSome(peeked);
   const value$15 = $rangeInclusiveNextBack({ start: 0, end: 3 });
-  console.log(
-    `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
+  $print(
+    `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$15 == null ? "None" : `Some(${value$15})`}\n`,
   );
 
   const peeking = iterator_peekable($iter(v));
   const first = $peek(peeking);
   const arg = peekableDoubleEndedIterator_nextBack(peeking);
-  console.log(
-    `${first == null ? "None" : `Some(${first})`} ${arg == null ? "None" : `Some(${arg})`}`,
-  );
+  $print(`${first == null ? "None" : `Some(${first})`} ${arg == null ? "None" : `Some(${arg})`}\n`);
   while (peekableDoubleEndedIterator_nextBack(peeking) != null) {}
   const left = $peek(peeking);
   const arg$1 = $nextIf(peeking, () => true);
-  console.log(
-    `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+  $print(
+    `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}\n`,
   );
 
   const chars = $chars("xyz");
   $nextBack(chars);
-  console.log(`${$debugStr($restStr(chars))}`);
+  $print(`${$debugStr($restStr(chars))}\n`);
 }
 //# sourceMappingURL=case.js.map

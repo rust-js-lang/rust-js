@@ -20,14 +20,14 @@ function main() {
   const letters = { start: "a" };
   const next = $rangeFromNext(letters);
   const value = $rangeFromNext(letters);
-  console.log(
-    `char ${next == null ? "None" : `Some(${$debugStr(next, "'")})`} ${value == null ? "None" : `Some(${$debugStr(value, "'")})`}`,
+  $print(
+    `char ${next == null ? "None" : `Some(${$debugStr(next, "'")})`} ${value == null ? "None" : `Some(${$debugStr(value, "'")})`}\n`,
   );
   const surrogates = { start: "퟿" };
   const value$1 = $rangeFromNext(surrogates);
   const value$2 = $rangeFromNext(surrogates);
-  console.log(
-    `past surrogates ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2, "'")})`}`,
+  $print(
+    `past surrogates ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2, "'")})`}\n`,
   );
 
   // Past the last `char`, std's panic, before it gives one.
@@ -35,62 +35,62 @@ function main() {
     const r = { start: "\u{10ffff}" };
     return $rangeFromNext(r);
   });
-  console.log(`past the last char: ${last.TAG === "Err"}`);
+  $print(`past the last char: ${last.TAG === "Err"}\n`);
 
   const bytes = { start: 255 };
   const value$3 = $rangeFromNext(bytes, 0, 255);
   const value$4 = $rangeFromNext(bytes, 0, 255);
-  console.log(
-    `u8 ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+  $print(
+    `u8 ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}\n`,
   );
   const small = { start: 127 };
   const value$5 = $rangeFromNext(small, -128, 127);
   const value$6 = $rangeFromNext(small, -128, 127);
-  console.log(
-    `i8 ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+  $print(
+    `i8 ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}\n`,
   );
   const wide = { start: 2147483647 };
   const value$7 = $rangeFromNext(wide, -2147483648, 2147483647);
   const value$8 = $rangeFromNext(wide, -2147483648, 2147483647);
-  console.log(
-    `i32 ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+  $print(
+    `i32 ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}\n`,
   );
   const count = { start: 65535 };
   const value$9 = $rangeFromNext(count, 0, 65535);
   const value$10 = $rangeFromNext(count, 0, 65535);
-  console.log(
-    `u16 ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
+  $print(
+    `u16 ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}\n`,
   );
   const big = { start: 9223372036854775807n };
   const value$11 = $rangeFromNext(big, -9223372036854775808n, 9223372036854775807n);
   const value$12 = $rangeFromNext(big, -9223372036854775808n, 9223372036854775807n);
-  console.log(
-    `i64 ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
+  $print(
+    `i64 ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`}\n`,
   );
   const huge = { start: 340282366920938463463374607431768211455n };
   const value$13 = $rangeFromNext(huge, 0n, 340282366920938463463374607431768211455n);
   const value$14 = $rangeFromNext(huge, 0n, 340282366920938463463374607431768211455n);
-  console.log(
-    `u128 ${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`}`,
+  $print(
+    `u128 ${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`}\n`,
   );
 
   const firsts = Array.from($iterator({ start: 254 }, $rangeFromStep(0, 255)).take(4));
-  console.log(`[${firsts.join(", ")}]`);
+  $print(`[${firsts.join(", ")}]\n`);
   const stepped = Array.from($stepBy($iterator({ start: 250 }, $rangeFromStep(0, 255)), 3).take(4));
-  console.log(`[${stepped.join(", ")}]`);
+  $print(`[${stepped.join(", ")}]\n`);
   const skipped = Array.from($iterator({ start: 250 }, $rangeFromStep(0, 255)).drop(3).take(5));
-  console.log(`[${skipped.join(", ")}]`);
+  $print(`[${skipped.join(", ")}]\n`);
   const longs = Array.from(
     $iterator(
       { start: 9223372036854775806n },
       $rangeFromStep(-9223372036854775808n, 9223372036854775807n),
     ).take(3),
   );
-  console.log(`[${longs.join(", ")}]`);
+  $print(`[${longs.join(", ")}]\n`);
   const chars = Array.from($reserveHint($iterator({ start: "x" }, $rangeFromNext).take(4), 1)).join(
     "",
   );
-  console.log(`${chars}`);
+  $print(`${chars}\n`);
 
   let seen = 0;
   for (const b of $iterator({ start: 250 }, $rangeFromStep(0, 255))) {
@@ -100,7 +100,7 @@ function main() {
     }
     $print(`${b} `);
   }
-  console.log("");
+  $print("\n");
   // A `char`'s, stepped past the surrogates.
   for (const c of $iterator({ start: "퟾" }, $rangeFromNext)) {
     if ($cmp(c, "\ue001") > 0) {
@@ -108,6 +108,6 @@ function main() {
     }
     $print(`${c.codePointAt(0).toString(16)} `);
   }
-  console.log("");
+  $print("\n");
 }
 //# sourceMappingURL=case.js.map

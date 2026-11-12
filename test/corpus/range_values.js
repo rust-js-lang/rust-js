@@ -73,56 +73,56 @@ function main() {
   const partialEq = $partialEq({ eq: (a, b) => a.end === b.end });
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end, 4);
-  console.log(
-    `${r.start}..${r.end} [${v.join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true 0`,
+  $print(
+    `${r.start}..${r.end} [${v.join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true 0\n`,
   );
 
   const steps = { start: 0, end: 4 };
   const first = $rangeNext(steps);
   const last = $rangeNextBack(steps);
-  console.log(
-    `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} ${steps.start}..${steps.end} ${Math.max(steps.end - steps.start, 0)}`,
+  $print(
+    `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} ${steps.start}..${steps.end} ${Math.max(steps.end - steps.start, 0)}\n`,
   );
 
   const inclusive = { start: 1, end: 6 };
-  console.log(
+  $print(
     `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${evens({
       start: inclusive.start,
       end: inclusive.end,
-    }).join(", ")}]`,
+    }).join(", ")}]\n`,
   );
   const low = 3;
   const high = 9;
-  console.log(`${low} ${high} true`);
+  $print(`${low} ${high} true\n`);
 
-  console.log(
+  $print(
     `${total({ start: 1, end: 5 })} ${$lazyRange(0, 5)
       .map((x) => (x * 2) | 0)
-      .reduce((a, b) => (a + b) | 0, 0)}`,
+      .reduce((a, b) => (a + b) | 0, 0)}\n`,
   );
   let ids = Array.from($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3));
   const numbered = Array.from(
     $lazyZip($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)), "abc"[Symbol.iterator]()),
   );
-  console.log(
-    `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}`,
+  $print(
+    `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}\n`,
   );
 
   for (const x of [3, 7, 10]) {
-    console.log(`${1 <= x && x < 4} ${1 <= x && x <= 7} ${5 <= x} ${x < 8} ${x <= 7}`);
+    $print(`${1 <= x && x < 4} ${1 <= x && x <= 7} ${5 <= x} ${x < 8} ${x <= 7}\n`);
   }
-  console.log(`${clampTo({ start: 0, end: 5 }, 9)} ${clampTo({ start: 0, end: 5 }, 3)}`);
+  $print(`${clampTo({ start: 0, end: 5 }, 9)} ${clampTo({ start: 0, end: 5 }, 3)}\n`);
   const unit = { start: 0, end: 1 };
-  console.log(
-    `${unit.start <= 0.5 && 0.5 < unit.end} ${unit.start <= NaN && NaN < unit.end} ${$debugF64(unit.start)}..${$debugF64(unit.end)}`,
+  $print(
+    `${unit.start <= 0.5 && 0.5 < unit.end} ${unit.start <= NaN && NaN < unit.end} ${$debugF64(unit.start)}..${$debugF64(unit.end)}\n`,
   );
 
   const w = { rows: { start: 1, end: 3 } };
   let letters = ["a", "b", "c", "d"];
-  console.log(
+  $print(
     `[${$slice(letters, w.rows.start, w.rows.end)
       .map((item) => $debugStr(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   let iter = w.rows;
   let row;
@@ -135,23 +135,21 @@ function main() {
   while ((n = $rangeInclusiveNext(iter)) != null) {
     $print(`${n} `);
   }
-  console.log("");
+  $print("\n");
 
-  console.log(`4.. ..4 ..=4 .. ${-2n}..=${2n}`);
-  console.log(
-    `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
-  );
-  console.log(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}`);
-  console.log("true true true");
+  $print(`4.. ..4 ..=4 .. ${-2n}..=${2n}\n`);
+  $print(`${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}\n`);
+  $print(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}\n`);
+  $print("true true true\n");
   // A full range, of no bounds, equals another, and one to an end by it.
-  console.log(
-    `${same(undefined, undefined, $partialEq({ eq: (a, b) => true }))} ${same({ end: 5 }, cloned({ end: 5 }, clone), partialEq)} ${!same({ end: 5 }, { end: 4 }, partialEq)}`,
+  $print(
+    `${same(undefined, undefined, $partialEq({ eq: (a, b) => true }))} ${same({ end: 5 }, cloned({ end: 5 }, clone), partialEq)} ${!same({ end: 5 }, { end: 4 }, partialEq)}\n`,
   );
   const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
     (a, b) => BigInt.asUintN(64, a + b),
     0n,
   );
-  console.log(`${big}`);
+  $print(`${big}\n`);
 
   // A clone of a range stepped through is its own.
   const a = { start: 0, end: 3 };
@@ -161,10 +159,10 @@ function main() {
   ids = { start: 100 };
   const firstId = $rangeFromNext(ids, -2147483648, 2147483647);
   const secondId = $rangeFromNext(ids, -2147483648, 2147483647);
-  console.log(
+  $print(
     `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids.start}.. ${$rangeLen(
       { start: 0, end: 5 },
-    )}`,
+    )}\n`,
   );
 
   const labelled = { span: { start: 2, end: 5 }, name: "x" };
@@ -175,24 +173,24 @@ function main() {
   ];
   const lens = spans.map((s) => Math.max(s.end - s.start, 0));
   const value = $eq(labelled, copy);
-  console.log(
-    `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
+  $print(
+    `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]\n`,
   );
-  console.log(
-    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3))}`,
+  $print(
+    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3))}\n`,
   );
-  console.log(
+  $print(
     `${shownTwice(
       { start: 1, end: 4 },
       { clone: (value) => ({ start: value.start, end: value.end }) },
       { fmt: (value) => `${value.start}..${value.end}` },
-    )} ${shownTwice({ end: 2 }, clone, { fmt: (value) => `..=${value.end}` })}`,
+    )} ${shownTwice({ end: 2 }, clone, { fmt: (value) => `..=${value.end}` })}\n`,
   );
 
   const numbers = [1, 2, 3, 4, 5];
   const cut = { start: 1, end: 3 };
   const gone = $drain(numbers, cut.start, cut.end);
-  console.log(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`);
+  $print(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]\n`);
 
   // `char`s step past the surrogates, which no `char` is.
   letters = Array.from($iterator({ start: "a", end: "e" }, $rangeNext)).join("");
@@ -204,8 +202,8 @@ function main() {
   while ((c = $rangeInclusiveNext(iter)) != null) {
     $print(c);
   }
-  console.log(
-    ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
+  $print(
+    ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}\n`,
   );
 }
 

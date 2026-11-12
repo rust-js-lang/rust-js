@@ -33,7 +33,7 @@ function main() {
       }),
       (d) => d % 2 === 0,
     );
-    console.log(`| copied field rfind ${found == null ? "None" : `Some(${found})`}`);
+    $print(`| copied field rfind ${found == null ? "None" : `Some(${found})`}\n`);
     const g$1 = 8;
     try {
       const value = $iter([1, 2, 3, 4]);
@@ -51,7 +51,7 @@ function main() {
         }),
         (d) => d % 2 === 1,
       );
-      console.log(`| copied field inspect rfind ${found == null ? "None" : `Some(${found})`}`);
+      $print(`| copied field inspect rfind ${found == null ? "None" : `Some(${found})`}\n`);
       let h$live = true;
       const h = 7;
       const value$2 = [1, 2, 3, 4];
@@ -91,16 +91,16 @@ function main() {
           value$3.return();
         }
       }
-      console.log(`| owning inspect rfind ${found == null ? "None" : `Some(${found})`}`);
+      $print(`| owning inspect rfind ${found == null ? "None" : `Some(${found})`}\n`);
       const g = 6;
       try {
         let it = iterator_map($iter([1, 2, 3]), (d) => (d + g) >>> 0);
         const back = mapDoubleEndedIterator_nextBack(it);
         const front = $next(it);
-        console.log(
-          `| held ${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`}`,
+        $print(
+          `| held ${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`}\n`,
         );
-        console.log("| dropped");
+        $print("| dropped\n");
         let k$live = true;
         const k = 5;
         const value = [1, 2, 3];
@@ -138,7 +138,7 @@ function main() {
               $print(`drop ${k} `);
             },
           );
-          console.log(`| owning held ${back == null ? "None" : `Some(${back})`}`);
+          $print(`| owning held ${back == null ? "None" : `Some(${back})`}\n`);
         } catch (error) {
           throw $unwindsOn(error);
         } finally {
@@ -146,11 +146,11 @@ function main() {
             it.return();
           }
         }
-        console.log("| owning dropped");
+        $print("| owning dropped\n");
         const g$1 = 4;
         try {
           const r = Array.from($rev($mapEnds($iter([1, 2, 3]), (d) => Math.imul(d, g$1) >>> 0)));
-          console.log(`| rev [${r.join(", ")}]`);
+          $print(`| rev [${r.join(", ")}]\n`);
         } catch (error) {
           throw $unwindsOn(error);
         } finally {

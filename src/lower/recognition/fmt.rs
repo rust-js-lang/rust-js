@@ -678,6 +678,13 @@ pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "new" && std_path(tcx, id).starts_with("std::fmt::Arguments")
 }
 
+/// `fmt::Arguments::from_str`, or `from_str_nonconst`, what `format_args!`
+/// makes of a text alone, `println!("done")`'s.
+pub(crate) fn is_arguments_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.item_name(id).as_str(), "from_str" | "from_str_nonconst")
+        && std_path(tcx, id).starts_with("std::fmt::Arguments")
+}
+
 /// `Argument::new_debug(&x)`, which `format_args!` makes of a `{:?}`
 /// placeholder's argument (ADR 0137), as `classify` has it.
 pub(crate) fn is_debug_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {

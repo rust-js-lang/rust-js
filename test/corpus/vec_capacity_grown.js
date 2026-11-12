@@ -105,24 +105,24 @@ function main() {
       dropIter?.(it);
     },
   };
-  console.log(`[${pushes(1, 10, clone, 1).join(", ")}]`);
-  console.log(`[${pushes(1, 10, clone, 2).join(", ")}]`);
-  console.log(`[${pushes(1n, 10, clone, 8).join(", ")}]`);
-  console.log(
-    `[${pushes(new Array(2000).fill(0), 4, { clone: (value) => value.slice() }, 2000).join(", ")}]`,
+  $print(`[${pushes(1, 10, clone, 1).join(", ")}]\n`);
+  $print(`[${pushes(1, 10, clone, 2).join(", ")}]\n`);
+  $print(`[${pushes(1n, 10, clone, 8).join(", ")}]\n`);
+  $print(
+    `[${pushes(new Array(2000).fill(0), 4, { clone: (value) => value.slice() }, 2000).join(", ")}]\n`,
   );
-  console.log(`[${pushes(undefined, 3, clone, 0).join(", ")}]`);
+  $print(`[${pushes(undefined, 3, clone, 0).join(", ")}]\n`);
 
   const w = [1n, 2n, 3n];
   $grew(w, 8, w.length, w.unshift(9n));
   $grew(w, 8, w.length, w.push(4n, 5n, 6n, 7n));
-  console.log(`${w.length} ${$capacity(w, 8)}`);
+  $print(`${w.length} ${$capacity(w, 8)}\n`);
   const a = [1];
   const o = new Array(5).fill(2);
   const length = a.length;
   $keepCapacity(o);
   $grew(a, 4, length, $append(a, o));
-  console.log(`${$capacity(a, 4)} ${o.length} ${$capacity(o, 4)}`);
+  $print(`${$capacity(a, 4)} ${o.length} ${$capacity(o, 4)}\n`);
   const r = new Array(3).fill(0);
   const length$1 = r.length;
   $keepCapacity(r);
@@ -131,7 +131,7 @@ function main() {
   const length$2 = r.length;
   $keepCapacity(r);
   $grew(r, 2, length$2, $resize(r, 2, 1));
-  console.log(`${$capacity(r, 2)}`);
+  $print(`${$capacity(r, 2)}\n`);
 
   const e = [];
   $grew(e, 4, e.length, e.push(1, 2, 3));
@@ -153,7 +153,7 @@ function main() {
     e.push(items[i]);
   }
   $grew(e, 4, length$3);
-  console.log(`${$capacity(e, 4)}`);
+  $print(`${$capacity(e, 4)}\n`);
   // Grown item by item, `4` then `8`, where reserving all five it adds
   // first would give `5`.
   const f = [];
@@ -165,10 +165,10 @@ function main() {
       4,
     ),
   );
-  console.log(`${$capacity(f, 4)}`);
+  $print(`${$capacity(f, 4)}\n`);
   const s = [""];
   $grew(s, 12, s.length, s.push("t", "u"));
-  console.log(`${$capacity(s, 12)}`);
+  $print(`${$capacity(s, 12)}\n`);
 
   const bytes = $grownVec(
     $roomForHint(
@@ -204,21 +204,21 @@ function main() {
     ),
     (grown) => Array.from(grown),
   );
-  console.log(
-    `${$capacity(bytes, 1)} ${$capacity(halves, 2)} ${$capacity(words, 8)} ${$capacity(big, 2000)}`,
+  $print(
+    `${$capacity(bytes, 1)} ${$capacity(halves, 2)} ${$capacity(words, 8)} ${$capacity(big, 2000)}\n`,
   );
 
-  console.log(
+  $print(
     `${kept([1n, 2n, 3n], 2n, $strictlyEqual, 8)} ${kept(
       [1, 2, 3, 4, 5, 6, 7, 8, 9],
       0,
       $strictlyEqual,
       1,
-    )}`,
+    )}\n`,
   );
   const g = [];
   $print(`${grown(g, 3, 3, 2)} `);
-  console.log(`${grown(g, 3, 9, 2)}`);
+  $print(`${grown(g, 3, 9, 2)}\n`);
   const b = $withCapacity(3);
   fill(
     $cellOf(b),
@@ -230,20 +230,20 @@ function main() {
   $print(`${$capacity(b, 4)} `);
   const z = [];
   fill($cellOf(z), new Array(9).fill(1), vecExtend);
-  console.log(`${$capacity(z, 4)}`);
-  console.log(
+  $print(`${$capacity(z, 4)}\n`);
+  $print(
     `${$capacity(
       $unwrapOk(parsed(["1", "2", "3", "4", "5"]), undefined, (e) =>
         $debugParseError(e, "ParseIntError"),
       ),
       4,
-    )}`,
+    )}\n`,
   );
-  console.log(
+  $print(
     `${$capacity($unwrap(somes([1, 2, 3], 1)), 1)} ${$capacity(
       $unwrap(somes([1n, 2n, 3n, 4n, 5n, 6n], 8)),
       8,
-    )}`,
+    )}\n`,
   );
 
   const d = [];
@@ -261,13 +261,13 @@ function main() {
   $print(`${$capacity(d, 8)} `);
   $grew(d, 8, d.length, d.unshift(9n));
   $grew(d, 8, d.length, d.unshift(9n));
-  console.log(`${$capacity(d, 8)}`);
+  $print(`${$capacity(d, 8)}\n`);
   const h = [];
   $grew(h, 4, h.length, $heapPush(h, 1, $partiallyOrdered));
   const other = $heapFrom([5, 6, 7, 8, 9], $partiallyOrdered);
   const length$4 = h.length;
   $keepCapacity(other);
   $grew(h, 4, length$4, $heapAppend(h, other, $partiallyOrdered));
-  console.log(`${$capacity(h, 4)} ${$capacity(other, 4)}`);
+  $print(`${$capacity(h, 4)} ${$capacity(other, 4)}\n`);
 }
 //# sourceMappingURL=case.js.map

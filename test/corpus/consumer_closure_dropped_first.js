@@ -57,7 +57,7 @@ function zero(guard) {
 function case$(name, run) {
   $print(`${name}: `);
   const r = $catchUnwind(() => run(["f"]));
-  console.log(`| ${r.TAG === "Ok" ? `Ok(${r._0})` : "Err(Any { .. })"}`);
+  $print(`| ${r.TAG === "Ok" ? `Ok(${r._0})` : "Err(Any { .. })"}\n`);
 }
 
 function main() {

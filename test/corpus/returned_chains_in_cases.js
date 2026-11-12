@@ -34,7 +34,7 @@ function main() {
         $print(String(isTagValid(tag, parent, scope) ? 1 : 0));
       }
     }
-    console.log(` ${tag}`);
+    $print(` ${tag}\n`);
   }
 }
 //# sourceMappingURL=case.js.map

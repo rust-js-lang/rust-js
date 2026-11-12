@@ -13,34 +13,34 @@ function main() {
   list.unshift(1);
   const front = list[0];
   const value = list.at(-1);
-  console.log(
-    `[${list.join(", ")}] ${list.length} ${front == null ? "None" : `Some(${front})`} ${value == null ? "None" : `Some(${value})`}`,
+  $print(
+    `[${list.join(", ")}] ${list.length} ${front == null ? "None" : `Some(${front})`} ${value == null ? "None" : `Some(${value})`}\n`,
   );
   const more = [4, 5];
   $append(list, more);
-  console.log(`[${list.join(", ")}] ${more.length === 0}`);
+  $print(`[${list.join(", ")}] ${more.length === 0}\n`);
   const tail = $splitOff(list, 3);
-  console.log(`[${list.join(", ")}] [${tail.join(", ")}]`);
+  $print(`[${list.join(", ")}] [${tail.join(", ")}]\n`);
   const popFront = list.shift();
   const popBack = list.pop();
-  console.log(
-    `${popFront == null ? "None" : `Some(${popFront})`} ${popBack == null ? "None" : `Some(${popBack})`}`,
+  $print(
+    `${popFront == null ? "None" : `Some(${popFront})`} ${popBack == null ? "None" : `Some(${popBack})`}\n`,
   );
-  console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
+  $print(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}\n`);
   const doubled = tail.map((x) => (x * 2) >>> 0);
   for (const x of doubled) {
     $print(`${x} `);
   }
-  console.log("");
+  $print("\n");
   const words = [];
   $extend(words, ["a", "b"]);
-  console.log(
+  $print(
     `[${words.map((item) => $debugStr(item)).join(", ")}] [${words
       .toReversed()
       .map((item) => $debugStr(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   list.length = 0;
-  console.log(`[${list.join(", ")}] ${list.length === 0}`);
+  $print(`[${list.join(", ")}] ${list.length === 0}\n`);
 }
 //# sourceMappingURL=case.js.map

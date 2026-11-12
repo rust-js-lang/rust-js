@@ -54,7 +54,7 @@ function main() {
     $out("]\n");
   });
   const s = `[${v.map((item) => dDebug_fmt(item)).join(", ")}]`;
-  console.log(`format ${s}`);
+  $print(`format ${s}\n`);
   $printing(() => {
     $out("opt ");
     $out(((value) => (value == null ? "None" : `Some(${dDebug_fmt(value)})`))([2]));

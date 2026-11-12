@@ -102,7 +102,7 @@ function main() {
     }
     return v != null ? map(v) : undefined;
   });
-  console.log(`first ask ${caught.TAG === "Err"}`);
+  $print(`first ask ${caught.TAG === "Err"}\n`);
   caught = $catchUnwind(() => {
     const v = $collectOptions(
       $iterator(
@@ -127,7 +127,7 @@ function main() {
     }
     return v != null ? map(v) : undefined;
   });
-  console.log(`later ask ${caught.TAG === "Err"}`);
+  $print(`later ask ${caught.TAG === "Err"}\n`);
   let v = $collectResults(
     $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     undefined,
@@ -136,7 +136,7 @@ function main() {
     4,
   );
   const value = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(`vec ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`}`);
+  $print(`vec ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(10), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
       (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: r._0 & 255 } : r),
@@ -147,9 +147,7 @@ function main() {
     1,
   );
   const value$1 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(
-    `bytes ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`,
-  );
+  $print(`bytes ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}\n`);
   v = $collectResults(
     $iterator(failing(9, 3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     undefined,
@@ -157,7 +155,7 @@ function main() {
     false,
     4,
   );
-  console.log(`failed ${v.TAG === "Ok" ? `Ok([${v._0.join(", ")}])` : `Err(${$debugStr(v._0)})`}`);
+  $print(`failed ${v.TAG === "Ok" ? `Ok([${v._0.join(", ")}])` : `Err(${$debugStr(v._0)})`}\n`);
   v = $collectResults(
     $iterator(failing(5, 4), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     undefined,
@@ -165,8 +163,8 @@ function main() {
     false,
     4,
   );
-  console.log(
-    `failed first ${v.TAG === "Ok" ? `Ok([${v._0.join(", ")}])` : `Err(${$debugStr(v._0)})`}`,
+  $print(
+    `failed first ${v.TAG === "Ok" ? `Ok([${v._0.join(", ")}])` : `Err(${$debugStr(v._0)})`}\n`,
   );
   v = $collectResults(
     $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
@@ -176,9 +174,7 @@ function main() {
     4,
   );
   const value$2 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(
-    `deque ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`,
-  );
+  $print(`deque ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     undefined,
@@ -187,9 +183,7 @@ function main() {
     4,
   );
   const value$3 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(
-    `box ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`}`,
-  );
+  $print(`box ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     undefined,
@@ -198,9 +192,7 @@ function main() {
     4,
   );
   const value$4 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(
-    `heap ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugStr(value$4._0)})`}`,
-  );
+  $print(`heap ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugStr(value$4._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     (values) => new $BTreeSet(values),
@@ -209,16 +201,12 @@ function main() {
     4,
   );
   const value$5 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.size } : v;
-  console.log(
-    `btree ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugStr(value$5._0)})`}`,
-  );
+  $print(`btree ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugStr(value$5._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
   );
   const value$6 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
-  console.log(
-    `list ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugStr(value$6._0)})`}`,
-  );
+  $print(`list ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugStr(value$6._0)})`}\n`);
   v = $collectResults(
     $reserveHint(
       $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
@@ -228,9 +216,7 @@ function main() {
     (values) => new Map(values),
   );
   const value$7 = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.size } : v;
-  console.log(
-    `map ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugStr(value$7._0)})`}`,
-  );
+  $print(`map ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugStr(value$7._0)})`}\n`);
   v = $collectResults(
     $reserveHint(
       $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
@@ -240,14 +226,14 @@ function main() {
     ),
     (values) => values.join(""),
   );
-  console.log(`string ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}`);
+  $print(`string ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}\n`);
   v = $collectResults(
     $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
       (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: String(r._0) } : r),
     ),
     (values) => values.join(""),
   );
-  console.log(`strings ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}`);
+  $print(`strings ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}\n`);
   v = $collectOptions(
     $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
       (r) => (r.TAG === "Ok" ? r._0 : undefined),
@@ -258,7 +244,7 @@ function main() {
     false,
     4,
   );
-  console.log(`option ${v?.length == null ? "None" : `Some(${v?.length})`}`);
+  $print(`option ${v?.length == null ? "None" : `Some(${v?.length})`}\n`);
   v = $collectOptions(
     $iterator(
       failing(9, 2),
@@ -274,16 +260,16 @@ function main() {
     false,
     4,
   );
-  console.log(`option none ${v == null ? "None" : `Some([${v.join(", ")}])`}`);
+  $print(`option none ${v == null ? "None" : `Some([${v.join(", ")}])`}\n`);
   const result = generic(["x", "y"], 7, 4);
   const value$8 = result.TAG === "Ok" ? { TAG: "Ok", _0: result._0.length } : result;
-  console.log(
-    `generic ${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugStr(value$8._0)})`}`,
+  $print(
+    `generic ${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugStr(value$8._0)})`}\n`,
   );
   const result$1 = generic([undefined, undefined], 7, 0);
   const value$9 = result$1.TAG === "Ok" ? { TAG: "Ok", _0: result$1._0.length } : result$1;
-  console.log(
-    `generic units ${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugStr(value$9._0)})`}`,
+  $print(
+    `generic units ${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugStr(value$9._0)})`}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

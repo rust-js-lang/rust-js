@@ -54,34 +54,34 @@ function doubled(it) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  console.log(`[${Array.from($roomForHint(evens(v), 4, false)).join(", ")}]`);
+  $print(`[${Array.from($roomForHint(evens(v), 4, false)).join(", ")}]\n`);
   const max = $max(evens(v).map((n) => (n * 10) >>> 0));
-  console.log(`${max == null ? "None" : `Some(${max})`}`);
-  console.log(`[${Array.from($roomForHint(numbers(true), 4, false)).join(", ")}]`);
-  console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
+  $print(`${max == null ? "None" : `Some(${max})`}\n`);
+  $print(`[${Array.from($roomForHint(numbers(true), 4, false)).join(", ")}]\n`);
+  $print(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}\n`);
 
   const it = $iter(v);
   const value = firstTwo(it);
-  console.log(
-    `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+  $print(
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})\n`,
   );
-  console.log(`${total(it)}`);
+  $print(`${total(it)}\n`);
   const rest = $iter(v);
   $next(rest);
-  console.log(`[${doubled(rest).join(", ")}]`);
+  $print(`[${doubled(rest).join(", ")}]\n`);
 
   const boxed = $iter(v);
   const next = $next(boxed);
-  console.log(`${next == null ? "None" : `Some(${next})`}`);
+  $print(`${next == null ? "None" : `Some(${next})`}\n`);
   for (const n of boxed) {
     $print(`${n} `);
   }
-  console.log("");
+  $print("\n");
 
   const noisy = iterator_map($iter(v), (n) => {
-    console.log(`see ${n}`);
+    $print(`see ${n}\n`);
     return n;
   });
-  console.log(`[${Array.from($roomForHint(noisy.take(2), 4, false)).join(", ")}]`);
+  $print(`[${Array.from($roomForHint(noisy.take(2), 4, false)).join(", ")}]\n`);
 }
 //# sourceMappingURL=case.js.map

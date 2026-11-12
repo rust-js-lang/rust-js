@@ -72,7 +72,7 @@ function main() {
       ),
     ),
   );
-  console.log(`| copied rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  $print(`| copied rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]\n`);
   r = Array.from(
     $rev(
       $trustedZipEnds(
@@ -81,7 +81,7 @@ function main() {
       ),
     ),
   );
-  console.log(`| cloned rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  $print(`| cloned rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]\n`);
   const found = $findBack(
     $zipEnds(
       $iter(v),
@@ -89,10 +89,10 @@ function main() {
     ),
     ([x]) => x < 3,
   );
-  console.log(`| rfind ${found == null ? "None" : `Some((${found[0]}, ${found[1]}))`}`);
+  $print(`| rfind ${found == null ? "None" : `Some((${found[0]}, ${found[1]}))`}\n`);
   const w = [4, 5, 6];
   const second = $nthBack($rev($zipEnds($iter(v), $iter(w))), 1);
-  console.log(`| rev nth_back ${second == null ? "None" : `Some((${second[0]}, ${second[1]}))`}`);
+  $print(`| rev nth_back ${second == null ? "None" : `Some((${second[0]}, ${second[1]}))`}\n`);
   const a = ds(1, 4);
   let b;
   try {
@@ -133,7 +133,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`| len ${n}`);
+  $print(`| len ${n}\n`);
   let tmp$1;
   try {
     tmp$1 = $iter(a);
@@ -184,7 +184,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
+  $print(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}\n`);
   let tmp$3;
   try {
     tmp$3 = $iter(b);
@@ -234,8 +234,8 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(
-    `| next_back of the shorter first ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`,
+  $print(
+    `| next_back of the shorter first ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}\n`,
   );
   let tmp$5;
   try {
@@ -252,7 +252,7 @@ function main() {
     throw error;
   }
   const shorter = Math.min(tmp$5.end - tmp$5.at, Math.max(w.length - 1, 0));
-  console.log(`| len of a skip ${shorter}`);
+  $print(`| len of a skip ${shorter}\n`);
   let tmp$6;
   try {
     tmp$6 = $iter(ds(1, 4));
@@ -326,7 +326,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`| longer first [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+    $print(`| longer first [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]\n`);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -410,7 +410,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`| longer second [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+    $print(`| longer second [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]\n`);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -567,11 +567,11 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(
-    `| held ${back == null ? "None" : `Some((${back[0]}, ${back[1]}))`} ${front == null ? "None" : `Some((${front[0]}, ${front[1]}))`} ${arg}`,
+  $print(
+    `| held ${back == null ? "None" : `Some((${back[0]}, ${back[1]}))`} ${front == null ? "None" : `Some((${front[0]}, ${front[1]}))`} ${arg}\n`,
   );
   it.return();
-  console.log("| dropped");
+  $print("| dropped\n");
   r = $catchUnwind(() => {
     const zip = $held(
       $zipEnds(
@@ -603,7 +603,7 @@ function main() {
       }
     }
   });
-  console.log(`| panics ${r.TAG === "Err"}`);
+  $print(`| panics ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     const nextBack = $nextBack(
       $zipEnds(
@@ -626,7 +626,7 @@ function main() {
     }
     return nextBack != null ? map(nextBack) : undefined;
   });
-  console.log(`| cloned panics ${r.TAG === "Err"}`);
+  $print(`| cloned panics ${r.TAG === "Err"}\n`);
   try {
     for (const item of a) {
       dDrop_drop(item);
@@ -640,6 +640,6 @@ function main() {
       }
     }
   }
-  console.log("| end");
+  $print("| end\n");
 }
 //# sourceMappingURL=case.js.map

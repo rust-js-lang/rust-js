@@ -48,7 +48,7 @@ function paired(name) {
 }
 
 function main() {
-  console.log(`${renamed("old")}`);
+  $print(`${renamed("old")}\n`);
   const list = {
     value: 1,
     next: { value: 2 },
@@ -58,10 +58,10 @@ function main() {
     $print(`${node.value} `);
     node = node.next;
   }
-  console.log("");
-  console.log(`${scaled(3)}`);
-  console.log(
-    `${counted(1)} ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])})`)(paired("old"))}`,
+  $print("\n");
+  $print(`${scaled(3)}\n`);
+  $print(
+    `${counted(1)} ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])})`)(paired("old"))}\n`,
   );
   function shifted(by) {
     const captured = by;
@@ -69,6 +69,6 @@ function main() {
     by = (by + 10) | 0;
     return (((at() * 100) | 0) + by) | 0;
   }
-  console.log(`${shifted(1)}`);
+  $print(`${shifted(1)}\n`);
 }
 //# sourceMappingURL=case.js.map

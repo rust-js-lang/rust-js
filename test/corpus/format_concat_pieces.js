@@ -28,32 +28,32 @@ const N = 3;
 function show(n, f, a, b) {
   const value = pair(n);
   const value$1 = pair(1);
-  console.log("pairs " + `(${value[0]}, ${value[1]}) and ` + `(${value$1[0]}, ${value$1[1]})!`);
-  console.log("n is " + `${N}` + "!");
-  console.log("n + 1 is " + "4" + "!");
-  console.log("x is " + `${n}` + "!");
-  console.log(`${b} then ` + `${a}` + ` and ${$debugStr(b)}`);
-  console.log(`[${$toFixed(f, 2).padStart(8)}] ` + `${$toFixed(f, n)} ${n}`);
-  console.log("{" + `${n}}` + " " + `${$pad(a, 4, "<")}|`);
-  console.log(`{${n}} ` + `${$pad(a, 4, "<")}|`);
-  console.log(`<${n}>`);
-  console.log(`lit and ${n}`);
-  console.log(`<a>\n${n}` + "</a>");
-  console.log(
+  $print("pairs " + `(${value[0]}, ${value[1]}) and ` + `(${value$1[0]}, ${value$1[1]})!\n`);
+  $print("n is " + `${N}` + "!\n");
+  $print("n + 1 is " + "4" + "!\n");
+  $print("x is " + `${n}` + "!\n");
+  $print(`${b} then ` + `${a}` + ` and ${$debugStr(b)}\n`);
+  $print(`[${$toFixed(f, 2).padStart(8)}] ` + `${$toFixed(f, n)} ${n}\n`);
+  $print("{" + `${n}}` + " " + `${$pad(a, 4, "<")}|\n`);
+  $print(`{${n}} ` + `${$pad(a, 4, "<")}|\n`);
+  $print(`<${n}>\n`);
+  $print(`lit and ${n}\n`);
+  $print(`<a>\n${n}` + "</a>\n");
+  $print(
     "x is " +
       `${n}
 ` +
       "1" +
-      "!",
+      "!\n",
   );
 }
 
 function main() {
-  console.log(`${react(31, "https://react.dev/errors/31")}`);
-  console.log("no " + "placeholder");
+  $print(`${react(31, "https://react.dev/errors/31")}\n`);
+  $print("no " + "placeholder\n");
   show(7, 3.14159, "a", "b");
-  console.log("a{b");
-  console.log("p is " + `${pointDisplay_fmt({ x: 1, y: -2 })}`);
+  $print("a{b\n");
+  $print("p is " + `${pointDisplay_fmt({ x: 1, y: -2 })}\n`);
   let n = 0;
 
   function bump() {
@@ -63,9 +63,9 @@ function main() {
 
   const value = bump();
   const value$1 = bump();
-  console.log(
+  $print(
     `${value == null ? "None" : `Some(${value})`} ` +
-      `${value$1 == null ? "None" : `Some(${value$1})`}`,
+      `${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
   let s = "";
   const one = n;
@@ -73,7 +73,7 @@ function main() {
   s += "w " + `${one}`;
   s += " l " + `${two}\n`;
   $print(s);
-  console.log("e " + `${one}\n` + "tail");
+  $print("e " + `${one}\n` + "tail\n");
   throw new Error("bad " + `${two}`);
 }
 //# sourceMappingURL=case.js.map

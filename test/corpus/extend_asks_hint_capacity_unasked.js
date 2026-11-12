@@ -52,6 +52,6 @@ function main() {
       true,
     ),
   );
-  console.log(`${v.length}`);
+  $print(`${v.length}\n`);
 }
 //# sourceMappingURL=case.js.map

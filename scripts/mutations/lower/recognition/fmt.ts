@@ -145,4 +145,17 @@ export const mutations: Mutation[] = [
     replace: "        if super::is_file_handle(self.tcx, ty) && !ty.is_ref() {\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
   },
+  {
+    name: "arguments-of-a-text-unread",
+    breaks: "a `println!` of a text alone, `Arguments::from_str(\"done\\n\")`, is taken to leave its line unended, so a program of `println!`s alone prints each line by `$print` (#1599)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "    matches!(tcx.item_name(id).as_str(), \"from_str\" | \"from_str_nonconst\")\n",
+    replace: "    matches!(tcx.item_name(id).as_str(), \"from_str_x\")\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^drop_scopes.rs$"
+    ],
+    snapshots: true
+  },
 ];

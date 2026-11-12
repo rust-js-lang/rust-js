@@ -16,7 +16,7 @@ function main() {
       }),
       (d) => d % 2 === 0,
     );
-    console.log(`| held map rfind ${found == null ? "None" : `Some(${found})`}`);
+    $print(`| held map rfind ${found == null ? "None" : `Some(${found})`}\n`);
     const v = [1, 2, 3];
     const h = 8;
     try {
@@ -27,12 +27,12 @@ function main() {
         }),
         (d) => d % 2 === 1,
       );
-      console.log(`| borrowed map rfind ${found == null ? "None" : `Some(${found})`}`);
+      $print(`| borrowed map rfind ${found == null ? "None" : `Some(${found})`}\n`);
       const _unread = v.map((x) => {
         $print(`collect ${x} `);
         return (x * 2) >>> 0;
       });
-      console.log("| collected, unread");
+      $print("| collected, unread\n");
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

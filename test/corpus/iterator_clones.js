@@ -21,21 +21,21 @@ function main() {
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const x = 5;
   const one = { items: $iter([x]) };
-  console.log(
-    `${Delayed.total(one, { next: $next }, clone, u32Borrow)} ${Delayed.total(one, { next: $next }, clone, u32Borrow)}`,
+  $print(
+    `${Delayed.total(one, { next: $next }, clone, u32Borrow)} ${Delayed.total(one, { next: $next }, clone, u32Borrow)}\n`,
   );
   const v = [1, 2, 3];
   const many = { items: $iter(v) };
-  console.log(
-    `${Delayed.total(many, { next: $next }, clone, u32Borrow)} ${Delayed.total(many, { next: $next }, clone, u32Borrow)}`,
+  $print(
+    `${Delayed.total(many, { next: $next }, clone, u32Borrow)} ${Delayed.total(many, { next: $next }, clone, u32Borrow)}\n`,
   );
   const owned = { items: $iter([4, 6]) };
-  console.log(
-    `${Delayed.total(owned, { next: $next }, clone, u32Borrow)} ${Delayed.total(owned, { next: $next }, clone, u32Borrow)}`,
+  $print(
+    `${Delayed.total(owned, { next: $next }, clone, u32Borrow)} ${Delayed.total(owned, { next: $next }, clone, u32Borrow)}\n`,
   );
   const moved = { items: $iter([7, 8]) };
-  console.log(
-    `${Delayed.total(moved, { next: $next }, clone, u32Borrow)} ${Delayed.total(moved, { next: $next }, clone, u32Borrow)}`,
+  $print(
+    `${Delayed.total(moved, { next: $next }, clone, u32Borrow)} ${Delayed.total(moved, { next: $next }, clone, u32Borrow)}\n`,
   );
 
   // Stepped through, then cloned: each goes on from where it was.
@@ -46,14 +46,14 @@ function main() {
   const next = $next(copy);
   const value = $next(it);
   const value$1 = $next(copy);
-  console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  $print(
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
   const a = $iter([7, 8, 9]);
   $next(a);
   const b = $iter(a.items.slice(a.at, a.end));
-  console.log(
-    `[${Array.from(b).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
+  $print(
+    `[${Array.from(b).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}\n`,
   );
 
   // Owned items a clone copies: changing one doesn't change the other.
@@ -63,10 +63,10 @@ function main() {
     row.push(0);
     $print(`[${row.join(", ")}] `);
   }
-  console.log(
+  $print(
     `[${Array.from(again)
       .map((item) => `[${item.join(", ")}]`)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
 }
 //# sourceMappingURL=case.js.map

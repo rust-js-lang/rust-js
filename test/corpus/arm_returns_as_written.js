@@ -56,11 +56,11 @@ function main() {
       const kind = kinds[i];
       $print(`${check(name, kind)} `);
     }
-    console.log(
+    $print(
       `[${log
         .splice(0)
         .map((item) => $debugStr(item))
-        .join(", ")}]`,
+        .join(", ")}]\n`,
     );
   }
 }

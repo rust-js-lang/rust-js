@@ -46,9 +46,9 @@ function main() {
   const self = { value: full };
   const writeStr = $writeTry(() => fullWrite_writeStr(self, "x"));
   full = self.value;
-  console.log(`${writeStr === undefined ? "Ok(())" : "Err(Error)"}`);
+  $print(`${writeStr === undefined ? "Ok(())" : "Err(Error)"}\n`);
   const shown = iterator_inspect([3], show, { next: countdownIterator_next });
-  console.log(`${inspectDebug_fmt(shown, undefined, countdownDebug)}`);
-  console.log(` ${shown.reduce((a, b) => (a + b) >>> 0, 0)}`);
+  $print(`${inspectDebug_fmt(shown, undefined, countdownDebug)}\n`);
+  $print(` ${shown.reduce((a, b) => (a + b) >>> 0, 0)}\n`);
 }
 //# sourceMappingURL=case.js.map

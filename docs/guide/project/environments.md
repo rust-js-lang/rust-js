@@ -100,7 +100,9 @@ node -e 'import("./src/lib.js").then((m) => console.log(m.totalArea([1, 2])))'
   `env::args()` is `process.argv.slice(1)`, `env::current_dir()` is
   `process.cwd()`, `process::exit(code)` is `process.exit(code)`, and
   `fs::canonicalize(path)` is `fs.realpathSync.native(path)`.
-- **`println!` is `console.log`**, and `print!` is `process.stdout.write`.
+- **`println!` is `console.log`**, and `print!` is `process.stdout.write`;
+  in a browser, which has no stream, a line at a time to `console.log`, a
+  part `print!` leaves held till its line ends.
 - **Node is what rust-js's JS is tested on**, and what it promises. Bun
   imports the same JS, and `bun test` runs rust-js's tests ([ADR 0095](../../decisions/0095-node-runtime.md)).
 - **Give your package `"type": "module"`**, so Node loads the `.js` files

@@ -96,21 +96,21 @@ function main() {
     vecExtend,
   );
   fill($cellOf(v), $iterator([3], quietIterator_next), vecExtend);
-  console.log(`vec [${v.join(", ")}]`);
+  $print(`vec [${v.join(", ")}]\n`);
   const s = new Set();
   fill(
     $cellOf(s),
     $iterator([4], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     hashSetExtend,
   );
-  console.log(`set ${s.size}`);
+  $print(`set ${s.size}\n`);
   const w = outer($iterator([2], quietIterator_next), vecExtend, { default: () => [] });
   const t = outer(
     $iterator([3], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     hashSetExtend,
     { default: () => new Set() },
   );
-  console.log(`outer [${w.join(", ")}] ${t.size}`);
+  $print(`outer [${w.join(", ")}] ${t.size}\n`);
   let text = "z";
   const c = { value: text };
   letters(c, 3, {
@@ -121,10 +121,10 @@ function main() {
     },
   });
   text = c.value;
-  console.log(`text ${text}`);
+  $print(`text ${text}\n`);
   const b = { v: [9] };
   Buf.fill(b, $lazyRange(0, 3));
   Buf.fill(b, $iterator([2], quietIterator_next));
-  console.log(`buf [${b.v.join(", ")}]`);
+  $print(`buf [${b.v.join(", ")}]\n`);
 }
 //# sourceMappingURL=case.js.map

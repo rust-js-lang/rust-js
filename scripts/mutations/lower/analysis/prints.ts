@@ -137,4 +137,30 @@ export const mutations: Mutation[] = [
       "stderr_inside"
     ]
   },
+  {
+    name: "format-args-block-unread",
+    breaks: "a `println!` whose `format_args!` is a block, of arguments, is taken to leave its line unended, so a program of `println!`s alone prints each line by `$print` (#1599)",
+    file: "src/lower/analysis/prints.rs",
+    find: "                ExprKind::Block { block } => match thir[block].expr {\n                    Some(value) => at = value,\n",
+    replace: "                ExprKind::Block { block } => match thir[block].expr {\n                    Some(_) if true => break,\n                    Some(value) => at = value,\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^alias_reads.rs$"
+    ],
+    snapshots: true
+  },
+  {
+    name: "stream-write-leaves-nothing-unended",
+    breaks: "a write to `io::stdout()`, which may leave its line unended, isn't taken to, so a `println!` after it is `console.log`'s, past what the runtime holds in a browser (#1599)",
+    file: "src/lower/analysis/prints.rs",
+    find: "            None => recognition.writes_stream(id, generics.skip_binder(), error),\n",
+    replace: "            None => false && recognition.writes_stream(id, generics.skip_binder(), error),\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^io_writers.rs$"
+    ],
+    snapshots: true
+  },
 ];

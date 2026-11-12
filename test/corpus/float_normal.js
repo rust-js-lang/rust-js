@@ -24,7 +24,7 @@ function main() {
       `${$isNormal(x, 1.1754943508222875e-38) ? 1 : 0}${$isNormal(x, 1.1754943508222875e-38, true) ? 1 : 0} `,
     );
   }
-  console.log("");
+  $print("\n");
   const f64s = [1, 0, 2.2250738585072014e-308, 1e-310, 5e-324, 1e-40, NaN, -Infinity];
   for (let i = 0; i < f64s.length; i++) {
     const x = f64s[i];
@@ -32,7 +32,7 @@ function main() {
       `${$isNormal(x, 2.2250738585072014e-308) ? 1 : 0}${$isNormal(x, 2.2250738585072014e-308, true) ? 1 : 0} `,
     );
   }
-  console.log("");
+  $print("\n");
   for (const x of [1, 0, Math.fround(1e-40), NaN, -Infinity]) {
     let kind;
     switch ($classify(x, 1.1754943508222875e-38)) {
@@ -54,6 +54,6 @@ function main() {
     }
     $print(`${kind} ${$classify(x, 1.1754943508222875e-38)} `);
   }
-  console.log(`${$classify(5e-324, 2.2250738585072014e-308) === "Subnormal"}`);
+  $print(`${$classify(5e-324, 2.2250738585072014e-308) === "Subnormal"}\n`);
 }
 //# sourceMappingURL=case.js.map

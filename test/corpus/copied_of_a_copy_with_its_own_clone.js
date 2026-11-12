@@ -26,7 +26,7 @@ function pDebug_fmt(p) {
 
 export const pClone = { clone: pClone_clone };
 function pClone_clone(p) {
-  console.log(`clone ${p[0]}`);
+  $print(`clone ${p[0]}\n`);
   return [(p[0] + 100) & 255];
 }
 
@@ -91,11 +91,11 @@ function main() {
     );
   const copied = Array.from(makeCopied($iter(ps)));
   $index(copied, 0)[0] = 9;
-  console.log(
-    `copied [${copied.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]`,
+  $print(
+    `copied [${copied.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
   const back = ps.toReversed().map((item) => [item[0]]);
-  console.log(`back [${back.map((item) => pDebug_fmt(item)).join(", ")}]`);
+  $print(`back [${back.map((item) => pDebug_fmt(item)).join(", ")}]\n`);
   const makeCopied$1 = (it) =>
     $cloning(
       $mapEnds(it, (item) => [item[0]]),
@@ -104,7 +104,7 @@ function main() {
   for (const p of makeCopied$1($iter(ps))) {
     $print(`${p[0]} `);
   }
-  console.log("");
+  $print("\n");
   const makeCopied$2 = (it) =>
     $cloning(
       $mapEnds(it, (item) => [item[0]]),
@@ -115,76 +115,76 @@ function main() {
   const later = $clone(it);
   const collect = Array.from(it);
   const value$1 = Array.from(later);
-  console.log(
-    `cloned iterator [${collect.map((item) => pDebug_fmt(item)).join(", ")}] [${value$1.map((item) => pDebug_fmt(item)).join(", ")}]`,
+  $print(
+    `cloned iterator [${collect.map((item) => pDebug_fmt(item)).join(", ")}] [${value$1.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `generic [${copiedInGenericCode(ps, pCopy)
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `generic to_vec [${toVecOf(ps, pCopy)
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `generic cloned [${clonedOf(ps.slice(1), pCopy)
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `generic repeat [${repeatedOf(ps.slice(0, 1), pCopy, 1)
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `generic of a derive [${toVecOf([[[3]]], { copy: (value) => [[value[0][0]]] })
       .map((item) => plainDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   const value$2 = ps[0] == null ? ps[0] : [ps[0][0]];
-  console.log(`option ${value$2 == null ? "None" : `Some(${pDebug_fmt(value$2)})`}`);
+  $print(`option ${value$2 == null ? "None" : `Some(${pDebug_fmt(value$2)})`}\n`);
   const one = [4];
   const value$3 = one == null ? one : [one[0]];
-  console.log(`option of a &mut ${value$3 == null ? "None" : `Some(${pDebug_fmt(value$3)})`}`);
+  $print(`option of a &mut ${value$3 == null ? "None" : `Some(${pDebug_fmt(value$3)})`}\n`);
   const value = ps.at(-1);
   const value$4 = value == null ? value : pClone_clone(value);
-  console.log(`option cloned ${value$4 == null ? "None" : `Some(${pDebug_fmt(value$4)})`}`);
+  $print(`option cloned ${value$4 == null ? "None" : `Some(${pDebug_fmt(value$4)})`}\n`);
 
   const item = [0];
   const into = Array.from({ length: 3 }, () => [item[0]]);
   $copyFromSlice(into, ps, (item) => [item[0]]);
   into[1][0] = 7;
-  console.log(
-    `copy_from_slice [${into.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]`,
+  $print(
+    `copy_from_slice [${into.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
 
-  console.log(
+  $print(
     `cloned [${Array.from($mapEnds($iter(ps), (item) => pClone_clone(item)))
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `to_vec [${ps
       .map((item) => pClone_clone(item))
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   const extended = [];
   const items = ps.slice(1);
   for (let i = 0; i < items.length; i++) {
     extended.push(pClone_clone(items[i]));
   }
-  console.log(`extend_from_slice [${extended.map((item) => pDebug_fmt(item)).join(", ")}]`);
+  $print(`extend_from_slice [${extended.map((item) => pDebug_fmt(item)).join(", ")}]\n`);
 
   const [ones, others] = $partition(
     ps.map((item) => [item[0]]),
     (p) => p[0] === 1,
   );
   $index(ones, 0)[0] = 8;
-  console.log(
-    `partition [${ones.map((item) => pDebug_fmt(item)).join(", ")}] [${others.map((item) => pDebug_fmt(item)).join(", ")}]`,
+  $print(
+    `partition [${ones.map((item) => pDebug_fmt(item)).join(", ")}] [${others.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
   const slice = ps.slice(1);
   const array = $unwrapOk(
@@ -193,7 +193,7 @@ function main() {
     (e) => "TryFromSliceError(())",
   );
   array[0][0] = 6;
-  console.log(`array of a slice [${array.map((item) => pDebug_fmt(item)).join(", ")}]`);
+  $print(`array of a slice [${array.map((item) => pDebug_fmt(item)).join(", ")}]\n`);
   const repeated = $repeatItems(
     ps.slice(0, 2),
     3,
@@ -202,23 +202,23 @@ function main() {
     (item) => pClone_clone(item),
   );
   $index(repeated, 2)[0] = 5;
-  console.log(`repeat [${repeated.map((item) => pDebug_fmt(item)).join(", ")}]`);
+  $print(`repeat [${repeated.map((item) => pDebug_fmt(item)).join(", ")}]\n`);
 
-  console.log(
+  $print(
     `array clone [${cloned(ps, { clone: (value) => value.map((item) => pClone_clone(item)) })
       .map((item) => pDebug_fmt(item))
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   const value$5 = cloned([[5], 6], { clone: (value) => [pClone_clone(value[0]), value[1]] });
-  console.log(`tuple clone (${pDebug_fmt(value$5[0])}, ${value$5[1]})`);
+  $print(`tuple clone (${pDebug_fmt(value$5[0])}, ${value$5[1]})\n`);
   const value$6 = cloned([6], { clone: (value) => (value == null ? value : pClone_clone(value)) });
-  console.log(`option clone ${value$6 == null ? "None" : `Some(${pDebug_fmt(value$6)})`}`);
-  console.log(
-    `generic derive ${wrappedDebug_fmt(cloned([[7]], { clone: (value) => [pClone_clone(value[0])] }), pDebug)}`,
+  $print(`option clone ${value$6 == null ? "None" : `Some(${pDebug_fmt(value$6)})`}\n`);
+  $print(
+    `generic derive ${wrappedDebug_fmt(cloned([[7]], { clone: (value) => [pClone_clone(value[0])] }), pDebug)}\n`,
   );
   const plain = [[8]];
   const copy = cloned(plain, { clone: (value) => [[value[0][0]]] });
   copy[0][0] = 0;
-  console.log(`derive of no parameters ${plainDebug_fmt(copy)} ${plainDebug_fmt(plain)}`);
+  $print(`derive of no parameters ${plainDebug_fmt(copy)} ${plainDebug_fmt(plain)}\n`);
 }
 //# sourceMappingURL=case.js.map

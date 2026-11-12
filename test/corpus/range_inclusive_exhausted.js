@@ -22,15 +22,15 @@ export function entry() {
 }
 
 function show(r) {
-  console.log(
-    `${((r.exhausted ?? r).start << 24) >> 24}..=${((r.exhausted ?? r).end << 24) >> 24}${r.exhausted !== undefined || r.start > 127 || r.end < -128 ? " (exhausted)" : ""} ${((r.exhausted ?? r).start << 24) >> 24} ${((r.exhausted ?? r).end << 24) >> 24} ${!(r.start <= r.end)} ${r.start <= 0 && 0 <= r.end} ${((r.exhausted ?? r).start << 24) >> 24 === -128 && ((r.exhausted ?? r).end << 24) >> 24 === 127 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}`,
+  $print(
+    `${((r.exhausted ?? r).start << 24) >> 24}..=${((r.exhausted ?? r).end << 24) >> 24}${r.exhausted !== undefined || r.start > 127 || r.end < -128 ? " (exhausted)" : ""} ${((r.exhausted ?? r).start << 24) >> 24} ${((r.exhausted ?? r).end << 24) >> 24} ${!(r.start <= r.end)} ${r.start <= 0 && 0 <= r.end} ${((r.exhausted ?? r).start << 24) >> 24 === -128 && ((r.exhausted ?? r).end << 24) >> 24 === 127 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}\n`,
   );
 }
 
 function main() {
   const r = { start: 127, end: 127 };
   const next = $rangeInclusiveNext(r);
-  console.log(`${next == null ? "None" : `Some(${next})`}`);
+  $print(`${next == null ? "None" : `Some(${next})`}\n`);
   show(r);
   const range = { ...r };
   const value = $rangeInclusiveNext(r);
@@ -38,39 +38,39 @@ function main() {
     ((range.exhausted ?? range).start << 24) >> 24,
     ((range.exhausted ?? range).end << 24) >> 24,
   ];
-  console.log(`${value == null ? "None" : `Some(${value})`} (${value$1[0]}, ${value$1[1]})`);
+  $print(`${value == null ? "None" : `Some(${value})`} (${value$1[0]}, ${value$1[1]})\n`);
 
   const back = { start: -128, end: -128 };
   const nextBack = $rangeInclusiveNextBack(back);
-  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`}`);
+  $print(`${nextBack == null ? "None" : `Some(${nextBack})`}\n`);
   show(back);
 
   const u = { start: 250, end: 255 };
   const nth = $rangeInclusiveNth(u, 10);
-  console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${(u.exhausted ?? u).start & 255}..=${(u.exhausted ?? u).end & 255}${u.exhausted !== undefined || u.start > 255 || u.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${nth == null ? "None" : `Some(${nth})`} ${(u.exhausted ?? u).start & 255}..=${(u.exhausted ?? u).end & 255}${u.exhausted !== undefined || u.start > 255 || u.end < 0 ? " (exhausted)" : ""}\n`,
   );
   let v = { start: 1, end: 5 };
   const value$2 = $rangeInclusiveNth(v, 9);
-  console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${(v.exhausted ?? v).start & 255}..=${(v.exhausted ?? v).end & 255}${v.exhausted !== undefined || v.start > 255 || v.end < 0 ? " (exhausted)" : ""} ${!(v.start <= v.end)}`,
+  $print(
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${(v.exhausted ?? v).start & 255}..=${(v.exhausted ?? v).end & 255}${v.exhausted !== undefined || v.start > 255 || v.end < 0 ? " (exhausted)" : ""} ${!(v.start <= v.end)}\n`,
   );
   let w = { start: 1, end: 5 };
   const nthBack = $nthBack($iterator(w, $rangeInclusiveNext, false, $rangeInclusiveNextBack), 1);
-  console.log(
-    `${nthBack == null ? "None" : `Some(${nthBack})`} ${(w.exhausted ?? w).start & 255}..=${(w.exhausted ?? w).end & 255}${w.exhausted !== undefined || w.start > 255 || w.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${nthBack == null ? "None" : `Some(${nthBack})`} ${(w.exhausted ?? w).start & 255}..=${(w.exhausted ?? w).end & 255}${w.exhausted !== undefined || w.start > 255 || w.end < 0 ? " (exhausted)" : ""}\n`,
   );
 
   const wide = { start: 4294967294, end: 4294967295 };
   const value$3 = $rangeInclusiveNext(wide);
   const value$4 = $rangeInclusiveNext(wide);
-  console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${(wide.exhausted ?? wide).start >>> 0}..=${(wide.exhausted ?? wide).end >>> 0}${wide.exhausted !== undefined || wide.start > 4294967295 || wide.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${(wide.exhausted ?? wide).start >>> 0}..=${(wide.exhausted ?? wide).end >>> 0}${wide.exhausted !== undefined || wide.start > 4294967295 || wide.end < 0 ? " (exhausted)" : ""}\n`,
   );
   const big = { start: 9223372036854775807n, end: 9223372036854775807n };
   const value$5 = $rangeInclusiveNext(big);
-  console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${BigInt.asIntN(64, (big.exhausted ?? big).start)}..=${BigInt.asIntN(64, (big.exhausted ?? big).end)}${big.exhausted !== undefined || big.start > 9223372036854775807n || big.end < -9223372036854775808n ? " (exhausted)" : ""} ${BigInt.asIntN(64, (big.exhausted ?? big).start)}`,
+  $print(
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${BigInt.asIntN(64, (big.exhausted ?? big).start)}..=${BigInt.asIntN(64, (big.exhausted ?? big).end)}${big.exhausted !== undefined || big.start > 9223372036854775807n || big.end < -9223372036854775808n ? " (exhausted)" : ""} ${BigInt.asIntN(64, (big.exhausted ?? big).start)}\n`,
   );
 
   const map = new $BTreeMap([
@@ -79,7 +79,7 @@ function main() {
     [127, "max"],
   ]);
   const range$1 = { ...r };
-  console.log(
+  $print(
     `[${$treeRange(
       map,
       $cmp,
@@ -92,11 +92,11 @@ function main() {
     )
       .slice()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   const fresh = { start: -128, end: 127 };
   const range$2 = { start: fresh.start, end: fresh.end };
-  console.log(
+  $print(
     `${
       $treeRange(
         map,
@@ -108,7 +108,7 @@ function main() {
           ? { TAG: "Excluded", _0: ((range$2.exhausted ?? range$2).start << 24) >> 24 }
           : { TAG: "Included", _0: fresh.end },
       ).length
-    } ${fresh.start === ((r.exhausted ?? r).start << 24) >> 24 && fresh.end === ((r.exhausted ?? r).end << 24) >> 24 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}`,
+    } ${fresh.start === ((r.exhausted ?? r).start << 24) >> 24 && fresh.end === ((r.exhausted ?? r).end << 24) >> 24 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}\n`,
   );
 
   // Used up by a fold, through `by_ref()`: exhausted at its last, as
@@ -116,29 +116,29 @@ function main() {
   const f = { start: 1, end: 3 };
   const all = $lent($iterator(f, $rangeInclusiveNext)).reduce((a, b) => (a + b) >>> 0, 0);
   const copy = { ...f };
-  console.log(
-    `${all} ${(f.exhausted ?? f).start & 255}..=${(f.exhausted ?? f).end & 255}${f.exhausted !== undefined || f.start > 255 || f.end < 0 ? " (exhausted)" : ""} ${(copy.exhausted ?? copy).start & 255}..=${(copy.exhausted ?? copy).end & 255}${copy.exhausted !== undefined || copy.start > 255 || copy.end < 0 ? " (exhausted)" : ""} ${!(f.start <= f.end)} ${((f.exhausted ?? f).start & 255) === ((copy.exhausted ?? copy).start & 255) && ((f.exhausted ?? f).end & 255) === ((copy.exhausted ?? copy).end & 255) && (f.exhausted !== undefined || f.start > 255 || f.end < 0) === (copy.exhausted !== undefined || copy.start > 255 || copy.end < 0)}`,
+  $print(
+    `${all} ${(f.exhausted ?? f).start & 255}..=${(f.exhausted ?? f).end & 255}${f.exhausted !== undefined || f.start > 255 || f.end < 0 ? " (exhausted)" : ""} ${(copy.exhausted ?? copy).start & 255}..=${(copy.exhausted ?? copy).end & 255}${copy.exhausted !== undefined || copy.start > 255 || copy.end < 0 ? " (exhausted)" : ""} ${!(f.start <= f.end)} ${((f.exhausted ?? f).start & 255) === ((copy.exhausted ?? copy).start & 255) && ((f.exhausted ?? f).end & 255) === ((copy.exhausted ?? copy).end & 255) && (f.exhausted !== undefined || f.start > 255 || f.end < 0) === (copy.exhausted !== undefined || copy.start > 255 || copy.end < 0)}\n`,
   );
   const g = { start: 1, end: 4 };
-  console.log(
-    `${$lent($iterator(g, $rangeInclusiveNext)).some((x) => x === 4)} ${(g.exhausted ?? g).start & 255}..=${(g.exhausted ?? g).end & 255}${g.exhausted !== undefined || g.start > 255 || g.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${$lent($iterator(g, $rangeInclusiveNext)).some((x) => x === 4)} ${(g.exhausted ?? g).start & 255}..=${(g.exhausted ?? g).end & 255}${g.exhausted !== undefined || g.start > 255 || g.end < 0 ? " (exhausted)" : ""}\n`,
   );
   const h = { start: 1, end: 4 };
-  console.log(
-    `${$lent($iterator(h, $rangeInclusiveNext)).some((x) => x === 2)} ${(h.exhausted ?? h).start & 255}..=${(h.exhausted ?? h).end & 255}${h.exhausted !== undefined || h.start > 255 || h.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${$lent($iterator(h, $rangeInclusiveNext)).some((x) => x === 2)} ${(h.exhausted ?? h).start & 255}..=${(h.exhausted ?? h).end & 255}${h.exhausted !== undefined || h.start > 255 || h.end < 0 ? " (exhausted)" : ""}\n`,
   );
   let k = { start: 1, end: 3 };
-  console.log(
-    `${$iterator(k, $rangeInclusiveNextBack).reduce((a, x) => (((a * 10) & 255) + x) & 255, 0)} ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""} ${(k.exhausted ?? k).start & 255}`,
+  $print(
+    `${$iterator(k, $rangeInclusiveNextBack).reduce((a, x) => (((a * 10) & 255) + x) & 255, 0)} ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""} ${(k.exhausted ?? k).start & 255}\n`,
   );
   let c = { start: "x", end: "z" };
-  console.log(
-    `${$lent($iterator(c, $rangeInclusiveNext)).reduce((s, x) => s + x, "")} ${$debugStr((c.exhausted ?? c).start, "'")}..=${$debugStr((c.exhausted ?? c).end, "'")}${c.exhausted !== undefined ? " (exhausted)" : ""}`,
+  $print(
+    `${$lent($iterator(c, $rangeInclusiveNext)).reduce((s, x) => s + x, "")} ${$debugStr((c.exhausted ?? c).start, "'")}..=${$debugStr((c.exhausted ?? c).end, "'")}${c.exhausted !== undefined ? " (exhausted)" : ""}\n`,
   );
   const last = { start: "\u{10ffff}", end: "\u{10ffff}" };
   const value$6 = $rangeInclusiveNext(last);
-  console.log(
-    `${value$6 == null ? "None" : `Some(${$debugStr(value$6, "'")})`} ${$debugStr((last.exhausted ?? last).start, "'")}..=${$debugStr((last.exhausted ?? last).end, "'")}${last.exhausted !== undefined ? " (exhausted)" : ""}`,
+  $print(
+    `${value$6 == null ? "None" : `Some(${$debugStr(value$6, "'")})`} ${$debugStr((last.exhausted ?? last).start, "'")}..=${$debugStr((last.exhausted ?? last).end, "'")}${last.exhausted !== undefined ? " (exhausted)" : ""}\n`,
   );
 
   // Collected through `by_ref()`: as std's `SpecFromIter` takes it, by its
@@ -146,8 +146,8 @@ function main() {
   // whose `next` is a `find`, a `try_fold`; a string's always by `fold`.
   const a = { start: 1, end: 3 };
   v = $foldToArray($lent($iterator(a, $rangeInclusiveNext)));
-  console.log(
-    `[${v.join(", ")}] ${(a.exhausted ?? a).start & 255}..=${(a.exhausted ?? a).end & 255}${a.exhausted !== undefined || a.start > 255 || a.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `[${v.join(", ")}] ${(a.exhausted ?? a).start & 255}..=${(a.exhausted ?? a).end & 255}${a.exhausted !== undefined || a.start > 255 || a.end < 0 ? " (exhausted)" : ""}\n`,
   );
   const b = { start: 1, end: 3 };
   w = $foldToArray(
@@ -157,29 +157,29 @@ function main() {
       true,
     ),
   );
-  console.log(
-    `[${w.join(", ")}] ${(b.exhausted ?? b).start & 255}..=${(b.exhausted ?? b).end & 255}${b.exhausted !== undefined || b.start > 255 || b.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `[${w.join(", ")}] ${(b.exhausted ?? b).start & 255}..=${(b.exhausted ?? b).end & 255}${b.exhausted !== undefined || b.start > 255 || b.end < 0 ? " (exhausted)" : ""}\n`,
   );
   c = { start: 1, end: 3 };
   const odd = Array.from($lent($iterator(c, $rangeInclusiveNext)).filter((x) => x % 2 === 1));
-  console.log(
-    `[${odd.join(", ")}] ${(c.exhausted ?? c).start & 255}..=${(c.exhausted ?? c).end & 255}${c.exhausted !== undefined || c.start > 255 || c.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `[${odd.join(", ")}] ${(c.exhausted ?? c).start & 255}..=${(c.exhausted ?? c).end & 255}${c.exhausted !== undefined || c.start > 255 || c.end < 0 ? " (exhausted)" : ""}\n`,
   );
   const d = { start: "x", end: "z" };
-  console.log(
+  $print(
     `${$lent($iterator(d, $rangeInclusiveNext))
       .filter((x) => x !== "y")
       .reduce(
         (n) => n + 1,
         0,
-      )} ${$debugStr((d.exhausted ?? d).start, "'")}..=${$debugStr((d.exhausted ?? d).end, "'")}${d.exhausted !== undefined ? " (exhausted)" : ""}`,
+      )} ${$debugStr((d.exhausted ?? d).start, "'")}..=${$debugStr((d.exhausted ?? d).end, "'")}${d.exhausted !== undefined ? " (exhausted)" : ""}\n`,
   );
   const e = { start: 1, end: 3 };
   for (const x of $lent($iterator(e, $rangeInclusiveNext)).map((x) => (x + 1) & 255)) {
     $print(`${x} `);
   }
-  console.log(
-    `${(e.exhausted ?? e).start & 255}..=${(e.exhausted ?? e).end & 255}${e.exhausted !== undefined || e.start > 255 || e.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${(e.exhausted ?? e).start & 255}..=${(e.exhausted ?? e).end & 255}${e.exhausted !== undefined || e.start > 255 || e.end < 0 ? " (exhausted)" : ""}\n`,
   );
   const t = { start: 1, end: 3 };
   const text = Array.from(
@@ -188,20 +188,20 @@ function main() {
       true,
     ),
   ).join("");
-  console.log(
-    `${text} ${(t.exhausted ?? t).start & 255}..=${(t.exhausted ?? t).end & 255}${t.exhausted !== undefined || t.start > 255 || t.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `${text} ${(t.exhausted ?? t).start & 255}..=${(t.exhausted ?? t).end & 255}${t.exhausted !== undefined || t.start > 255 || t.end < 0 ? " (exhausted)" : ""}\n`,
   );
   k = { start: 1, end: 4 };
   const two = $foldToArray($lent($iterator(k, $rangeInclusiveNext)).take(2));
-  console.log(
-    `[${two.join(", ")}] ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""}`,
+  $print(
+    `[${two.join(", ")}] ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""}\n`,
   );
 
   // Stepped to its end below its type's last: no wrap, not exhausted.
   const s = { start: 1, end: 3 };
   while ($rangeInclusiveNext(s) != null) {}
-  console.log(
-    `${(s.exhausted ?? s).start & 255}..=${(s.exhausted ?? s).end & 255}${s.exhausted !== undefined || s.start > 255 || s.end < 0 ? " (exhausted)" : ""} ${!(s.start <= s.end)} ${(s.exhausted ?? s).start & 255}`,
+  $print(
+    `${(s.exhausted ?? s).start & 255}..=${(s.exhausted ?? s).end & 255}${s.exhausted !== undefined || s.start > 255 || s.end < 0 ? " (exhausted)" : ""} ${!(s.start <= s.end)} ${(s.exhausted ?? s).start & 255}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

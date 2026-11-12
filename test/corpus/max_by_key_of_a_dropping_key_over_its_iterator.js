@@ -49,7 +49,7 @@ function main() {
       dDrop_drop(k);
     },
   );
-  console.log(`| max_by_key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| max_by_key ${m == null ? "None" : `Some(${m})`}\n`);
   const k$1 = ["key"];
   const f$1 = (x) => (x + zero(k$1)) >>> 0;
   m = $maxByKey(
@@ -64,7 +64,7 @@ function main() {
       dDrop_drop(k$1);
     },
   );
-  console.log(`| empty ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| empty ${m == null ? "None" : `Some(${m})`}\n`);
   const k$2 = ["key"];
   const f$2 = (x) => (x + zero(k$2)) >>> 0;
   m = $minByKey(
@@ -79,7 +79,7 @@ function main() {
       dDrop_drop(k$2);
     },
   );
-  console.log(`| min_by_key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| min_by_key ${m == null ? "None" : `Some(${m})`}\n`);
   const k$3 = ["key"];
   const f$3 = (x) => (x + zero(k$3)) >>> 0;
   m = $minByKey(
@@ -94,7 +94,7 @@ function main() {
       dDrop_drop(k$3);
     },
   );
-  console.log(`| min empty ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| min empty ${m == null ? "None" : `Some(${m})`}\n`);
   const k$4 = ["key"];
   let r = $catchUnwind(() => {
     function f(x) {
@@ -116,7 +116,7 @@ function main() {
       },
     );
   });
-  console.log(`| key panics ${r.TAG === "Err"}`);
+  $print(`| key panics ${r.TAG === "Err"}\n`);
   const k$5 = ["key"];
   r = $catchUnwind(() => {
     function f(x) {
@@ -138,6 +138,6 @@ function main() {
       },
     );
   });
-  console.log(`| first key panics ${r.TAG === "Err"}`);
+  $print(`| first key panics ${r.TAG === "Err"}\n`);
 }
 //# sourceMappingURL=case.js.map

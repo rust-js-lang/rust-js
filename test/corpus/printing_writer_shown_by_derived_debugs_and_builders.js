@@ -185,9 +185,9 @@ function main() {
     $out("\n");
   });
   let s = holderDebug_fmt({ grid: [30], n: 31 });
-  console.log(`format ${s}`);
+  $print(`format ${s}\n`);
   s = builtDebug_fmt([[32, 33]], { alternate: true });
-  console.log(`format ${s}`);
+  $print(`format ${s}\n`);
   $print("held ");
   $printing(() => {
     $out(pairDebug_fmt([[40], [41]], { width: 4, align: "Right" }));

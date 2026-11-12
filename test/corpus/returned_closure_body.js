@@ -25,6 +25,6 @@ function main() {
   for (const name of ["a", "b", "a", "c", "b"]) {
     $print(`${warnOnce(name)} `);
   }
-  console.log(`${didWarn?.size ?? 0}`);
+  $print(`${didWarn?.size ?? 0}\n`);
 }
 //# sourceMappingURL=case.js.map

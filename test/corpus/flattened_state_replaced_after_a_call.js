@@ -50,9 +50,9 @@ function describe(chunk) {
 
 function main() {
   const chunk = new ReactPromise("pending", 1);
-  console.log(`${fulfilledWas(chunk, 3)} | ${describe(chunk)}`);
-  console.log(`${fulfilledWas(chunk, 5)} | ${describe(chunk)}`);
-  console.log(`${resetWasFulfilled(chunk, 7)} | ${describe(chunk)}`);
-  console.log(`${resetWasFulfilled(chunk, 9)} | ${describe(chunk)}`);
+  $print(`${fulfilledWas(chunk, 3)} | ${describe(chunk)}\n`);
+  $print(`${fulfilledWas(chunk, 5)} | ${describe(chunk)}\n`);
+  $print(`${resetWasFulfilled(chunk, 7)} | ${describe(chunk)}\n`);
+  $print(`${resetWasFulfilled(chunk, 9)} | ${describe(chunk)}\n`);
 }
 //# sourceMappingURL=case.js.map

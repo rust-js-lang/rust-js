@@ -7,6 +7,7 @@ import {
   $fmtWritten,
   $formatting,
   $out,
+  $print,
   $printing,
   $sink,
   $writeExpectErr,
@@ -76,10 +77,10 @@ function main() {
     }),
     "a refused write fails",
   );
-  console.log(`Error an error occurred when formatting an argument [${buf}]`);
+  $print(`Error an error occurred when formatting an argument [${buf}]\n`);
   buf += ` and ${fineDisplay_fmt([1])}`;
   const r = undefined;
-  console.log(`${r === undefined ? "Ok(())" : "Err(Error)"} [${buf}]`);
+  $print(`${r === undefined ? "Ok(())" : "Err(Error)"} [${buf}]\n`);
   $printing(() => {
     try {
       $out("line ");

@@ -131,8 +131,8 @@ function main() {
     const v = [];
     const read = countedRead.readToEnd({ value: counted(left, most) }, v);
     const mapErr = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-    console.log(
-      ` = ${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${mapErr._0})`} len ${v.length} cap ${$capacity(v, 1)}`,
+    $print(
+      ` = ${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${mapErr._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
     );
   }
   for (const [room, left] of [
@@ -146,8 +146,8 @@ function main() {
     const v = $withCapacity(room);
     const read = countedRead.readToEnd({ value: counted(left, 99) }, v);
     const value = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-    console.log(
-      ` = ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} len ${v.length} cap ${$capacity(v, 1)}`,
+    $print(
+      ` = ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
     );
   }
   $print("read_to_string:");
@@ -165,7 +165,7 @@ function main() {
     true,
   );
   const value = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(` = ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${s}`);
+  $print(` = ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${s}\n`);
   let s$1 = "";
   const bad = flakyRead.readToString(
     {
@@ -185,8 +185,8 @@ function main() {
     true,
   );
   const value$1 = bad.TAG === "Err" ? { TAG: "Err", _0: bad._0.kind } : bad;
-  console.log(
-    `invalid: ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${$debugStr(s$1)}`,
+  $print(
+    `invalid: ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${$debugStr(s$1)}\n`,
   );
   $print("borrowed unused:");
   let unused = "";
@@ -203,7 +203,7 @@ function main() {
     true,
   );
   const value$2 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(` = ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`} ${unused}`);
+  $print(` = ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`} ${unused}\n`);
   $print("boxed:");
   let boxed = "";
   read = countedRead.readToString(
@@ -219,7 +219,7 @@ function main() {
     true,
   );
   const value$3 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(` = ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${boxed}`);
+  $print(` = ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${boxed}\n`);
   $print("held:");
   const held = ["", 7];
   read = countedRead.readToString(
@@ -235,8 +235,8 @@ function main() {
     true,
   );
   const value$4 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(
-    ` = ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${value$4._0})`} ${held[0]} ${held[1]}`,
+  $print(
+    ` = ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${value$4._0})`} ${held[0]} ${held[1]}\n`,
   );
   $print("take's:");
   let s$2 = "";
@@ -253,8 +253,8 @@ function main() {
     true,
   );
   const value$5 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(
-    ` = ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${$byteLen(s$2)}`,
+  $print(
+    ` = ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${$byteLen(s$2)}\n`,
   );
 
   const buf = new Array(5).fill(0);
@@ -264,7 +264,7 @@ function main() {
   };
   read = $writeTry(() => flakyRead.readExact({ value: flaky }, buf));
   const arg = $unwrapOk($fromUtf8(buf), undefined, $debugUtf8Error);
-  console.log(`read_exact: ${$ioResultDebug(read)} ${$debugStr(arg)}`);
+  $print(`read_exact: ${$ioResultDebug(read)} ${$debugStr(arg)}\n`);
   const buf$1 = new Array(5).fill(0);
   const value$6 = {
     errors: [],
@@ -273,8 +273,8 @@ function main() {
   read = $writeTry(() => flakyRead.readExact({ value: value$6 }, buf$1));
   const value$7 =
     read === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: [read.kind, $ioErrorDisplay(read)] };
-  console.log(
-    `past the end: ${value$7.TAG === "Ok" ? "Ok(())" : `Err((${value$7._0[0]}, ${$debugStr(value$7._0[1])}))`} [${buf$1.join(", ")}]`,
+  $print(
+    `past the end: ${value$7.TAG === "Ok" ? "Ok(())" : `Err((${value$7._0[0]}, ${$debugStr(value$7._0[1])}))`} [${buf$1.join(", ")}]\n`,
   );
   const buf$2 = new Array(5).fill(0);
   const value$8 = {
@@ -284,8 +284,8 @@ function main() {
   read = $writeTry(() => flakyRead.readExact({ value: value$8 }, buf$2));
   const value$9 =
     read === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: [read.kind, $ioErrorDisplay(read)] };
-  console.log(
-    `failing: ${value$9.TAG === "Ok" ? "Ok(())" : `Err((${value$9._0[0]}, ${$debugStr(value$9._0[1])}))`}`,
+  $print(
+    `failing: ${value$9.TAG === "Ok" ? "Ok(())" : `Err((${value$9._0[0]}, ${$debugStr(value$9._0[1])}))`}\n`,
   );
 
   let v = [];
@@ -299,8 +299,8 @@ function main() {
     v,
   );
   const value$10 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(
-    `read_to_end failing: ${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${value$10._0})`} [${v.join(", ")}]`,
+  $print(
+    `read_to_end failing: ${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${value$10._0})`} [${v.join(", ")}]\n`,
   );
 
   const bytes = $grownVec(
@@ -322,13 +322,13 @@ function main() {
     ),
     (grown) => Array.from(grown),
   );
-  console.log(`bytes: [${bytes.join(", ")}]`);
+  $print(`bytes: [${bytes.join(", ")}]\n`);
   $print("take:");
   v = [];
   read = TakeRead.readToEnd({ value: read_take(counted(100, 99), 40n, countedRead) }, v);
   const value$11 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(
-    ` = ${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${value$11._0})`} len ${v.length} cap ${$capacity(v, 1)}`,
+  $print(
+    ` = ${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${value$11._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
   );
   $print("chain:");
   v = [];
@@ -338,23 +338,19 @@ function main() {
     $followedReadBuf(countedRead, countedRead),
   ).readToEnd({ value: chain }, v);
   const value$12 = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
-  console.log(
-    ` = ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${value$12._0})`} len ${v.length} cap ${$capacity(v, 1)}`,
+  $print(
+    ` = ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${value$12._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
   );
 
   $print("generic:");
   const result = slurp(counted(6, 99), countedRead);
   const value$13 = result.TAG === "Err" ? { TAG: "Err", _0: result._0.kind } : result;
-  console.log(
-    ` ${value$13.TAG === "Ok" ? `Ok(${$debugStr(value$13._0)})` : `Err(${value$13._0})`}`,
-  );
+  $print(` ${value$13.TAG === "Ok" ? `Ok(${$debugStr(value$13._0)})` : `Err(${value$13._0})`}\n`);
   const reader = counted(10, 99);
   $print("dyn:");
   const result$1 = firstThree({ value: reader, impl: countedRead });
   const value$14 = result$1.TAG === "Err" ? { TAG: "Err", _0: result$1._0.kind } : result$1;
-  console.log(
-    ` ${value$14.TAG === "Ok" ? `Ok([${value$14._0.join(", ")}])` : `Err(${value$14._0})`}`,
-  );
+  $print(` ${value$14.TAG === "Ok" ? `Ok([${value$14._0.join(", ")}])` : `Err(${value$14._0})`}\n`);
   v = [];
   let whole;
   const result$2 = wholeRead.readToEnd(
@@ -370,8 +366,8 @@ function main() {
   );
   const value$15 = result$2.TAG === "Err" ? { TAG: "Err", _0: result$2._0.kind } : result$2;
   const value$16 = $fromUtf8(v, true);
-  console.log(
-    `its own: ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${value$15._0})`} ${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugUtf8Error(value$16._0, true)})`}`,
+  $print(
+    `its own: ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${value$15._0})`} ${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugUtf8Error(value$16._0, true)})`}\n`,
   );
   let s$3 = "";
   let tmp;
@@ -395,9 +391,9 @@ function main() {
     true,
   );
   const value$17 = result$3.TAG === "Err" ? { TAG: "Err", _0: result$3._0.kind } : result$3;
-  console.log(
-    `its own string: ${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${value$17._0})`} ${$debugStr(s$3)}`,
+  $print(
+    `its own string: ${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${value$17._0})`} ${$debugStr(s$3)}\n`,
   );
-  console.log(`${$unwrapOk(slurp(undefined, wholeRead), undefined, $ioErrorDebug)}`);
+  $print(`${$unwrapOk(slurp(undefined, wholeRead), undefined, $ioErrorDebug)}\n`);
 }
 //# sourceMappingURL=case.js.map

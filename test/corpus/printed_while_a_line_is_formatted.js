@@ -7,6 +7,7 @@ import {
   $formatting,
   $live,
   $out,
+  $print,
   $printing,
   $roomFor,
   $sink,
@@ -121,7 +122,7 @@ function main() {
     $out(noisyDisplay_fmt([3]));
     $out(" ");
   });
-  console.log("then");
+  $print("then\n");
   shown([4], noisyDisplay);
   const caught = $catchUnwind(() => {
     $printing(() => {
@@ -130,7 +131,7 @@ function main() {
       $out(" after\n");
     });
   });
-  console.log(`caught ${caught.TAG === "Err"}`);
-  console.log("plain 6");
+  $print(`caught ${caught.TAG === "Err"}\n`);
+  $print("plain 6\n");
 }
 //# sourceMappingURL=case.js.map

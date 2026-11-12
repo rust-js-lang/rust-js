@@ -119,13 +119,13 @@ function main() {
     for (const fail of [false, true]) {
       const chunk = new ReactPromise("pending", 1);
       initialized(chunk, fail);
-      console.log(`${describe(chunk)}`);
+      $print(`${describe(chunk)}\n`);
     }
     const chunk = new ReactPromise("pending", 2);
     const r = $catchUnwind(() => {
       initialized(chunk, false);
     });
-    console.log(`| ${r.TAG === "Err"} ${describe(chunk)}`);
+    $print(`| ${r.TAG === "Err"} ${describe(chunk)}\n`);
   }
 }
 //# sourceMappingURL=case.js.map

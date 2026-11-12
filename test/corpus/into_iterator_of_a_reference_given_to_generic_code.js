@@ -44,24 +44,24 @@ function all(word, IRefIntoIterator) {
   const c = Array.from(
     $reserveHint($folded($lazyChain("x"[Symbol.iterator](), IRefIntoIterator.intoIter(word))), 1),
   ).join("");
-  console.log(`${c}`);
-  console.log(`${$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}`);
-  console.log(
+  $print(`${c}\n`);
+  $print(`${$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}\n`);
+  $print(
     `${
       ["Less", "Equal", "Greater"][
         $iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) + 1
       ]
-    }`,
+    }\n`,
   );
-  console.log(`${!$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}`);
+  $print(`${!$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}\n`);
   const partialCmp = $iterCmp("ab"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp);
-  console.log(
-    `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`}`,
+  $print(
+    `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`}\n`,
   );
-  console.log(`${$iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) < 0}`);
+  $print(`${$iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) < 0}\n`);
   const v = ["z"];
   $extend(v, $grownBy(v, IRefIntoIterator.intoIter(word), 4, false, undefined, true));
-  console.log(`[${v.map((item) => $debugStr(item, "'")).join(", ")}]`);
+  $print(`[${v.map((item) => $debugStr(item, "'")).join(", ")}]\n`);
   const zz = $grownVec(
     $roomForHint(
       $lazyZip(
@@ -73,8 +73,8 @@ function all(word, IRefIntoIterator) {
     ),
     (grown) => Array.from(grown),
   );
-  console.log(
-    `[${zz.map((item) => `((${item[0][0]}, ${$debugStr(item[0][1], "'")}), ${$debugStr(item[1], "'")})`).join(", ")}]`,
+  $print(
+    `[${zz.map((item) => `((${item[0][0]}, ${$debugStr(item[0][1], "'")}), ${$debugStr(item[1], "'")})`).join(", ")}]\n`,
   );
   return z;
 }
@@ -84,42 +84,42 @@ function more(word, IRefIntoIterator) {
     $roomForHint($lazyZip([1, 2], IRefIntoIterator.intoIter(word)), 8, false),
     (grown) => Array.from(grown),
   );
-  console.log(`[${z.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
+  $print(`[${z.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]\n`);
   const s = Array.from($reserveHint($folded(IRefIntoIterator.intoIter(word)), 1)).join("");
-  console.log(`${s}`);
+  $print(`${s}\n`);
   const w = ["x", "y", "z"];
   $keepCapacity(w);
   const out = $grownVec(
     $roomForHint($splicing(w, 1, 2, IRefIntoIterator.intoIter(word)), 4, false),
     (grown) => $collectDropping(grown),
   );
-  console.log(
-    `[${w.map((item) => $debugStr(item, "'")).join(", ")}] [${out.map((item) => $debugStr(item, "'")).join(", ")}]`,
+  $print(
+    `[${w.map((item) => $debugStr(item, "'")).join(", ")}] [${out.map((item) => $debugStr(item, "'")).join(", ")}]\n`,
   );
   const d = [];
   $extend(d, $grownBy(d, IRefIntoIterator.intoIter(word), 4, true, undefined, true));
-  console.log(`[${d.map((item) => $debugStr(item, "'")).join(", ")}]`);
+  $print(`[${d.map((item) => $debugStr(item, "'")).join(", ")}]\n`);
   const b = new $BTreeSet();
   $extendMap(b, IRefIntoIterator.intoIter(word), true);
-  console.log(
+  $print(
     `{${Array.from($sortedKeys(b, $cmp))
       .map((item) => $debugStr(item, "'"))
-      .join(", ")}}`,
+      .join(", ")}}\n`,
   );
   let t = ">";
   t += Array.from(IRefIntoIterator.intoIter($reserveHint(word, 1, undefined, t))).join("");
-  console.log(`${t}`);
+  $print(`${t}\n`);
   for (const c of IRefIntoIterator.intoIter(word)) {
     $print(c);
   }
-  console.log("");
+  $print("\n");
 }
 
 function main() {
-  console.log(
+  $print(
     `[${all(["abc"], refWordIntoIterator)
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
   more(["abc"], refWordIntoIterator);
 }

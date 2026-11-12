@@ -8,19 +8,19 @@ export function entry() {
 
 function main() {
   const n = 7;
-  console.log("hello");
-  console.log(`n = ${n}, twice = ${n * 2}`);
-  console.log("");
+  $print("hello\n");
+  $print(`n = ${n}, twice = ${n * 2}\n`);
+  $print("\n");
   $print("a");
   $print(`b ${n}`);
-  console.log(" c");
-  console.log("ends here");
-  console.error(`warn [${[1, 2].join(", ")}]`);
+  $print(" c\n");
+  $print("ends here\n");
+  $eprint(`warn [${[1, 2].join(", ")}]\n`);
   $eprint("partial ");
-  console.error("done");
-  console.log("100% {literal} %s %d");
+  $eprint("done\n");
+  $print("100% {literal} %s %d\n");
   const name = "x";
-  console.log(`${$pad(name, 5, ">")}|${"12".padEnd(4)}|${$pad("mid", 7, "^")}|`);
-  console.log('tab\tquote" backslash\\ unicode é 🦀');
+  $print(`${$pad(name, 5, ">")}|${"12".padEnd(4)}|${$pad("mid", 7, "^")}|\n`);
+  $print('tab\tquote" backslash\\ unicode é 🦀\n');
 }
 //# sourceMappingURL=case.js.map

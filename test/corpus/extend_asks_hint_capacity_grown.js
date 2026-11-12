@@ -114,22 +114,22 @@ function extended(c, items, CExtendU32, IIntoIterInPlace) {
 }
 
 function main() {
-  console.log(`${pushedFirst()}`);
-  console.log(`${collectedFirst([1, 2, 3, 4, 5])}`);
+  $print(`${pushedFirst()}\n`);
+  $print(`${collectedFirst([1, 2, 3, 4, 5])}\n`);
   const v = [1, 2];
   $grew(v, 4, v.length, v.push(3));
-  console.log(`${given(v)}`);
+  $print(`${given(v)}\n`);
   const w = $withCapacity(1);
   $grew(w, 4, w.length, w.push(0));
   lent(w);
-  console.log(`${$capacity(w, 4)}`);
+  $print(`${$capacity(w, 4)}\n`);
   const b = { v: [] };
   Buf.fill(b, $lazyRange(0, 3));
   Buf.fill(
     b,
     $iterator([3], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
   );
-  console.log(`${$capacity(b.v, 4)}`);
+  $print(`${$capacity(b.v, 4)}\n`);
   const c = [];
   extended(
     $cellOf(c),
@@ -146,6 +146,6 @@ function main() {
       },
     },
   );
-  console.log(`${$capacity(c, 4)}`);
+  $print(`${$capacity(c, 4)}\n`);
 }
 //# sourceMappingURL=case.js.map

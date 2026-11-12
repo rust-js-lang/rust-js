@@ -46,20 +46,20 @@ function counted() {
 function main() {
   const point = moved(5);
   const value = moved(-2);
-  console.log(`${pointDebug_fmt(point)} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(value)}`);
+  $print(`${pointDebug_fmt(point)} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(value)}\n`);
   const arg = NAMES.join(",");
-  console.log(`${LIMIT} ${GREETING} ${arg}`);
+  $print(`${LIMIT} ${GREETING} ${arg}\n`);
   const sum = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`[${PRIMES.join(", ")}] ${sum} [${EMPTY.join(", ")}]`);
-  console.log(
-    `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
+  $print(`[${PRIMES.join(", ")}] ${sum} [${EMPTY.join(", ")}]\n`);
+  $print(
+    `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})\n`,
   );
-  console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
-  console.log(`${pointDebug_fmt(CORNER)} [${Shapes.SIDES.join(", ")}] ${Shapes.NAME}`);
+  $print(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}\n`);
+  $print(`${pointDebug_fmt(CORNER)} [${Shapes.SIDES.join(", ")}] ${Shapes.NAME}\n`);
   for (let i = 0; i < NAMES.length; i++) {
     const name = NAMES[i];
     $print(`${name} `);
   }
-  console.log("");
+  $print("\n");
 }
 //# sourceMappingURL=case.js.map

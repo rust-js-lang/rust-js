@@ -330,10 +330,12 @@ firstPart("print! without a process writes whole lines, and loses none", () => {
     .replace(/^export /gm, "")
     .replace(/^\/\/# sourceMappingURL=.*$/m, "");
   runInNewContext(`${runtime}\n${code}\nentry();`, context);
-  expect(lines).toEqual(["log ab", "error x", "log "]);
+  // Each line as native's: `cd`, ended by a `print!("\n")`, a line of its
+  // own, through what's held (#1599).
+  expect(lines).toEqual(["log ab", "error x", "log cd"]);
   // The task ends: what no line end wrote is written.
   for (const task of tasks) task();
-  expect(lines).toEqual(["log ab", "error x", "log ", "log cdleft"]);
+  expect(lines).toEqual(["log ab", "error x", "log cd", "log left"]);
 });
 
 // A crate root may enable the features rust-js enables for itself, and

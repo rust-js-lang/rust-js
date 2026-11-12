@@ -44,14 +44,14 @@ function main() {
         dDrop_drop(y);
         dDrop_drop(x);
       }
-      console.log("| forward");
+      $print("| forward\n");
       const n = $trustedZipEnds(
         $mapEnds($iter(a), (item) => dClone_clone(item)),
         $mapEnds($iter(b), (item) => dClone_clone(item)),
         dDrop_drop,
         dDrop_drop,
       ).len();
-      console.log(`| len ${n}`);
+      $print(`| len ${n}\n`);
       const nextBack = $nextBack(
         $trustedZipEnds(
           $mapEnds($iter(a), (item) => dClone_clone(item)),
@@ -67,7 +67,7 @@ function main() {
         return result;
       }
       const last = nextBack != null ? map(nextBack) : undefined;
-      console.log(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
+      $print(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}\n`);
       const r = Array.from(
         $rev(
           $trustedZipEnds(
@@ -83,7 +83,7 @@ function main() {
           return result;
         }),
       );
-      console.log(`| rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+      $print(`| rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]\n`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

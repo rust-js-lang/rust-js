@@ -23,25 +23,25 @@ export function entry() {
 }
 
 function main() {
-  console.log("an error occurred when formatting an argument");
-  console.log("Error");
+  $print("an error occurred when formatting an argument\n");
+  $print("Error\n");
 
   const e = $unwrapErr($parseInt("x", -2147483648, 2147483647));
   const c = e;
   const arg = $parseErrorKind(c);
-  console.log(`${c} ${arg} ${e === c}`);
+  $print(`${c} ${arg} ${e === c}\n`);
 
   const chars = $chars("héllo");
   $next(chars);
-  console.log(
+  $print(
     `Chars([${Array.from($restStr(chars))
       .map((item) => $debugStr(item, "'"))
-      .join(", ")}])`,
+      .join(", ")}])\n`,
   );
-  console.log(
+  $print(
     `Chars([${Array.from($restStr($chars("")))
       .map((item) => $debugStr(item, "'"))
-      .join(", ")}])`,
+      .join(", ")}])\n`,
   );
 
   let it = $charIndices("aé😀b");
@@ -49,38 +49,38 @@ function main() {
   while ($next(it) != null) {
     $print(` ${$charIndicesOffset(it)}`);
   }
-  console.log("");
+  $print("\n");
   it = $charIndices("aé😀b");
   $nextBack(it);
   $next(it);
-  console.log(`${$charIndicesOffset(it)} ${$debugStr($restStr(it))}`);
+  $print(`${$charIndicesOffset(it)} ${$debugStr($restStr(it))}\n`);
 
   const buf = [0, 0];
   for (const ch of ["a", "é", "😀"]) {
     const units = $encodeCharUtf16(ch, buf);
-    console.log(`${ch} ${units.length} [${units.join(", ")}]`);
+    $print(`${ch} ${units.length} [${units.join(", ")}]\n`);
   }
 
   let s = "héllo wörld";
   const drained = $strDrain(s, 1, 7);
   s = drained[0];
   let d = $iter(drained[1]);
-  console.log(`${$debugStr($restStr(d))}`);
+  $print(`${$debugStr($restStr(d))}\n`);
   $next(d);
-  console.log(`${$debugStr($restStr(d))}`);
+  $print(`${$debugStr($restStr(d))}\n`);
   const rest = Array.from(d).join("");
-  console.log(`${rest} ${s}`);
+  $print(`${rest} ${s}\n`);
 
   s = "héllo wörld";
   const drained$1 = $strDrain(s, 1, 10);
   s = drained$1[0];
   d = $iter(drained$1[1]);
   const nextBack = $nextBack(d);
-  console.log(
-    `${nextBack == null ? "None" : `Some(${$debugStr(nextBack, "'")})`} Drain(${$debugStr($restStr(d))})`,
+  $print(
+    `${nextBack == null ? "None" : `Some(${$debugStr(nextBack, "'")})`} Drain(${$debugStr($restStr(d))})\n`,
   );
-  console.log(`${$debugStr($restStr(d))}`);
+  $print(`${$debugStr($restStr(d))}\n`);
   const back = $rest(d).toReversed().join("");
-  console.log(`${back} ${s}`);
+  $print(`${back} ${s}\n`);
 }
 //# sourceMappingURL=case.js.map

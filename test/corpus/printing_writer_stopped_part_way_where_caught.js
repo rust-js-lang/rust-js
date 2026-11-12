@@ -62,7 +62,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(`${r.TAG === "Err"}`);
+  $print(`${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -70,7 +70,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(`${r.TAG === "Err"}`);
+  $print(`${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -78,7 +78,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(`${r.TAG === "Err"}`);
+  $print(`${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $print("before ");
     $printing(() => {
@@ -86,7 +86,7 @@ function main() {
       $out("\n");
     });
   });
-  console.log(`${r.TAG === "Err"}`);
+  $print(`${r.TAG === "Err"}\n`);
   $printing(() => {
     $out("x ");
     $out(guardedDisplay_fmt([[3]]));

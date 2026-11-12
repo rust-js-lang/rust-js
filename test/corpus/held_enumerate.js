@@ -196,7 +196,7 @@ function main() {
   };
   const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
   const sizeHint = positionsIterator_sizeHint(even);
-  console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+  $print(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})\n`);
   const next = positionsIterator_next(even);
   const nextBack = positionsDoubleEndedIterator_nextBack(
     even,
@@ -204,12 +204,12 @@ function main() {
     { next_back: $nextBack },
     intoIterExactSizeIterator,
   );
-  console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`}`,
+  $print(
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`}\n`,
   );
-  console.log(`${positionsDebug_fmt(even, undefined, intoIterDebug)}`);
-  console.log(`${positionsDebug_fmt(even, { alternate: true }, intoIterDebug)}`);
-  console.log(
+  $print(`${positionsDebug_fmt(even, undefined, intoIterDebug)}\n`);
+  $print(`${positionsDebug_fmt(even, { alternate: true }, intoIterDebug)}\n`);
+  $print(
     `[${positionsDoubleEndedIterator_rfold(
       even,
       [],
@@ -220,7 +220,7 @@ function main() {
       { next: $next },
       { next_back: $nextBack },
       intoIterExactSizeIterator,
-    ).join(", ")}]`,
+    ).join(", ")}]\n`,
   );
   // An array's, which the crate's types holding an `Enumerate` makes
   // explicit too, from its back, as itertools' combinations step theirs.
@@ -228,12 +228,12 @@ function main() {
   for (const [i, x] of indices.map((x, i) => [i, x]).toReversed()) {
     $print(`${i}:${x} `);
   }
-  console.log("");
+  $print("\n");
   const rest = $iter([1, 2, 3]);
   const value = lastDoubled($iter(rest));
   const value$1 = $next(rest);
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  $print(
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
   const numbered = { iter: iterator_enumerate({ start: 5, end: 8 }, { next: $rangeNext }) };
   const value$2 = enumerateDoubleEndedIterator_nextBack(
@@ -242,16 +242,16 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   const value$3 = $next(numbered.iter);
-  console.log(
-    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`,
+  $print(
+    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}\n`,
   );
   const value$4 = $next(numbered.iter);
-  console.log(`${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
+  $print(`${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}\n`);
   const wrap = { inner: $iter([4, 5]) };
   const lastTripled = Wrap.lastTripled(wrap, { next: $next }, { next_back: $nextBack });
   const value$5 = $next(wrap.inner);
-  console.log(
-    `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+  $print(
+    `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$5 == null ? "None" : `Some(${value$5})`}\n`,
   );
   // Of a range, stepped as it is by its dictionaries.
   const counted = { inner: { start: 1, end: 4 } };
@@ -261,8 +261,8 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   const value$7 = $rangeNext(counted.inner);
-  console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+  $print(
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}\n`,
   );
   // A range given as it is, stepped from its back by its dictionaries.
   const big = positions({ start: 1, end: 20 }, (x) => x > 16, { next: $rangeNext });
@@ -274,8 +274,8 @@ function main() {
     { len: $rangeLen },
   );
   const value$10 = positionsIterator_next(big);
-  console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
+  $print(
+    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

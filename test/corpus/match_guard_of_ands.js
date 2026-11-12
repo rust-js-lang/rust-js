@@ -89,12 +89,12 @@ function main() {
     ]) {
       $print(`${compared(name, n, m)} `);
     }
-    console.log("");
+    $print("\n");
   }
   let log = [];
   for (let code = 0; code < 4; code++) {
     const value = called(code, log);
-    console.log(`${value} [${log.join(", ")}]`);
+    $print(`${value} [${log.join(", ")}]\n`);
   }
   log = [];
   for (let code = 0; code < 4; code++) {
@@ -106,6 +106,6 @@ function main() {
       cased(code, a, b, log);
     }
   }
-  console.log(`[${log.join(", ")}]`);
+  $print(`[${log.join(", ")}]\n`);
 }
 //# sourceMappingURL=case.js.map

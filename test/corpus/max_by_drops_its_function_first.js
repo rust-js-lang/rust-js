@@ -75,7 +75,7 @@ function closures() {
     }
   }
   let m = result;
-  console.log(`| max_by ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| max_by ${m == null ? "None" : `Some(${m})`}\n`);
   const g$1 = ["f"];
   const iter$1 = it(3);
   const f$1 = (a, b) => $cmp((a + zero(g$1)) >>> 0, b);
@@ -92,7 +92,7 @@ function closures() {
     }
   }
   m = result$1;
-  console.log(`| min_by ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| min_by ${m == null ? "None" : `Some(${m})`}\n`);
 }
 
 function plain() {
@@ -108,7 +108,7 @@ function plain() {
     }
   }
   let m = result;
-  console.log(`| max_by it ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| max_by it ${m == null ? "None" : `Some(${m})`}\n`);
   const iter$1 = it(3);
   let result$1;
   try {
@@ -121,7 +121,7 @@ function plain() {
     }
   }
   m = result$1;
-  console.log(`| min_by_key it ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| min_by_key it ${m == null ? "None" : `Some(${m})`}\n`);
   const g = ["f"];
   const f = (a, b) => $cmp((a + zero(g)) >>> 0, b);
   let value;
@@ -135,7 +135,7 @@ function plain() {
     }
   }
   m = value;
-  console.log(`| max_by f ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| max_by f ${m == null ? "None" : `Some(${m})`}\n`);
   const g$1 = ["f"];
   const f$1 = (a) => (a + zero(g$1)) >>> 0;
   let value$1;
@@ -149,7 +149,7 @@ function plain() {
     }
   }
   m = value$1;
-  console.log(`| max_by_key f ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| max_by_key f ${m == null ? "None" : `Some(${m})`}\n`);
 }
 
 function edges() {
@@ -170,7 +170,7 @@ function edges() {
   }
   const value = result;
   let m = value;
-  console.log(`| empty ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| empty ${m == null ? "None" : `Some(${m})`}\n`);
   const iter$1 = it(0);
   let result$1;
   try {
@@ -183,7 +183,7 @@ function edges() {
     }
   }
   m = result$1;
-  console.log(`| empty key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| empty key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$1 = ["f"];
   const f$1 = (a, b) => $cmp((a[0] + zero(g$1)) >>> 0, b[0]);
   const value$1 = $maxBy(
@@ -203,7 +203,7 @@ function edges() {
     return result;
   }
   m = value$1 != null ? map(value$1) : undefined;
-  console.log(`| items ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| items ${m == null ? "None" : `Some(${m})`}\n`);
   const minByKey = $minByKey(
     $closing($iterator(items(3), itemsIterator_next), (it) => {
       dDrop_drop(it.of._held);
@@ -219,7 +219,7 @@ function edges() {
     return result;
   }
   m = minByKey != null ? map$1(minByKey) : undefined;
-  console.log(`| items key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| items key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$2 = ["f"];
   let r = $catchUnwind(() => {
     function f$2(a, b) {
@@ -246,7 +246,7 @@ function edges() {
     }
     return value$2 != null ? map$2(value$2) : undefined;
   });
-  console.log(`| panic ${r.TAG === "Err"}`);
+  $print(`| panic ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     const maxByKey = $maxByKey(
       $closing($iterator(items(4), itemsIterator_next), (it) => {
@@ -269,7 +269,7 @@ function edges() {
     }
     return maxByKey != null ? map$3(maxByKey) : undefined;
   });
-  console.log(`| panic key ${r.TAG === "Err"}`);
+  $print(`| panic key ${r.TAG === "Err"}\n`);
   let g$3$live = true;
   const g$3 = ["f"];
   const value$2 = [[5], [7]];
@@ -302,7 +302,7 @@ function edges() {
     return result;
   }
   m = value$3 != null ? map$2(value$3) : undefined;
-  console.log(`| vec key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| vec key ${m == null ? "None" : `Some(${m})`}\n`);
   let g$4$live = true;
   const g$4 = ["f"];
   let tmp$1;
@@ -334,7 +334,7 @@ function edges() {
     return result;
   }
   m = value$4 != null ? map$3(value$4) : undefined;
-  console.log(`| vec empty key ${m == null ? "None" : `Some(${m})`}`);
+  $print(`| vec empty key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$5 = ["f"];
   r = $catchUnwind(() => {
     let g$16$0$live = true;
@@ -374,7 +374,7 @@ function edges() {
     }
     return value$1 != null ? map$1(value$1) : undefined;
   });
-  console.log(`| vec first step panics ${r.TAG === "Err"}`);
+  $print(`| vec first step panics ${r.TAG === "Err"}\n`);
 }
 
 function main() {

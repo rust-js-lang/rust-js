@@ -59,7 +59,7 @@ function tableDebug_fmt(table) {
 
 // Made for what it prints.
 function loud(n) {
-  console.log(`made ${n}`);
+  $print(`made ${n}\n`);
   return n;
 }
 
@@ -78,8 +78,8 @@ function main() {
   const slot$2 = { value: slot };
   const second = swapIn(slot$2, "y");
   slot = slot$2.value;
-  console.log(
-    `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
+  $print(
+    `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}\n`,
   );
   let head;
 
@@ -104,8 +104,8 @@ function main() {
   const value = pop();
   const value$1 = pop();
   const value$2 = pop();
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+  $print(
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}\n`,
   );
   let items = [1, 2];
   let text = "hi";
@@ -115,8 +115,8 @@ function main() {
   text = "";
   const itemsTaken = old$1;
   const textTaken = old$2;
-  console.log(
-    `[${itemsTaken.join(", ")}] [${items.join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
+  $print(
+    `[${itemsTaken.join(", ")}] [${items.join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}\n`,
   );
 
   const min = Math.min(3, 7);
@@ -128,11 +128,11 @@ function main() {
   const version = ($cmp(right[0], left[0]) || $cmp(right[1], left[1])) < 0 ? right : left;
   const value$3 =
     ($cmp(right$1[0], left$1[0]) || $cmp(right$1[1], left$1[1])) < 0 ? left$1 : right$1;
-  console.log(
-    `${min} ${max} ${"b" < "a" ? "a" : "b"} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$3)}`,
+  $print(
+    `${min} ${max} ${"b" < "a" ? "a" : "b"} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$3)}\n`,
   );
-  console.log(
-    `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
+  $print(
+    `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}\n`,
   );
 
   function inspect(x) {
@@ -144,38 +144,34 @@ function main() {
       return item;
     })
     .map((x) => (x * 2) | 0);
-  console.log(`[${doubled.join(", ")}]`);
+  $print(`[${doubled.join(", ")}]\n`);
   const r = { TAG: "Ok", _0: "abc" };
   const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
-  console.log(
-    `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+  $print(
+    `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}\n`,
   );
   const cell = [1];
   cell.push(2);
-  console.log(`[${cell.join(", ")}] 5`);
+  $print(`[${cell.join(", ")}] 5\n`);
   const front = [1];
   const back = [2, 3];
   $append(front, back);
   const queue = [9].slice();
   const more = [8, 7].slice();
   $append(queue, more);
-  console.log(
-    `[${front.join(", ")}] [${back.join(", ")}] [${queue.join(", ")}] [${more.join(", ")}]`,
-  );
-  console.log(
-    `${$displayF64(2 ** 3)} ${$displayF32(Math.fround(2 ** 0.5))} ${$displayF64(Math.expm1(1e-10))} ${$displayF64(Math.log1p(1e-10))}`,
+  $print(`[${front.join(", ")}] [${back.join(", ")}] [${queue.join(", ")}] [${more.join(", ")}]\n`);
+  $print(
+    `${$displayF64(2 ** 3)} ${$displayF32(Math.fround(2 ** 0.5))} ${$displayF64(Math.expm1(1e-10))} ${$displayF64(Math.log1p(1e-10))}\n`,
   );
 
-  console.log(`${pointDebug_fmt({ x: 1, label: "a", tags: [2, 3] })}`);
-  console.log(
-    `${secretDebug_fmt([4])} ${pairDebug_fmt([5, "six"])} ${bagDebug_fmt([[1, 2]])} ${bagDebug_fmt([[]])}`,
+  $print(`${pointDebug_fmt({ x: 1, label: "a", tags: [2, 3] })}\n`);
+  $print(
+    `${secretDebug_fmt([4])} ${pairDebug_fmt([5, "six"])} ${bagDebug_fmt([[1, 2]])} ${bagDebug_fmt([[]])}\n`,
   );
   const table = new $BTreeMap();
   table.set("k", 7);
   const value$5 = ["a", "b"];
   const value$6 = [new $BTreeMap()];
-  console.log(
-    `${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}`,
-  );
+  $print(`${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}\n`);
 }
 //# sourceMappingURL=case.js.map

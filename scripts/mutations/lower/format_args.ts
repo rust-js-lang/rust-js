@@ -162,8 +162,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `println!` while a value with a destructor is live may throw, so its drop is a `try`/`finally` round a print whose stream never fails",
     file: "src/lower/format_args.rs",
-    find: "                            vec![line],\n                        )\n                        .never_throws(),\n",
-    replace: "                            vec![line],\n                        ),\n",
+    find: "                vec![line],\n            )\n            .never_throws(),\n",
+    replace: "                vec![line],\n            ),\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_params.rs$"],
     snapshots: true,
   },
@@ -174,4 +174,17 @@ export const mutations: Mutation[] = [
     find: "            Std::ToString if !arguments => \"a Display implementation returned an error unexpectedly: Error\",\n",
     replace: "            Std::ToString => \"a Display implementation returned an error unexpectedly: Error\",\n",
     tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
-  },];
+  },
+  {
+    name: "whole-line-logged-past-a-held-part",
+    breaks: "a whole line printed where a print may leave the stream's line unended is `console.log`'s, which a browser's console logs before the part held, `b` then `a` of `print!(\"a\"); println!(\"b\")` (#1599)",
+    file: "src/lower/format_args.rs",
+    find: "        if self.krate.prints.leaves_unended(error) {\n",
+    replace: "        if false && self.krate.prints.leaves_unended(error) {\n",
+    tests: [
+      "test/stream-order.test.ts",
+      "-t",
+      "line_printed_after_a_part_left_unended"
+    ]
+  },
+];

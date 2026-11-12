@@ -53,7 +53,7 @@ function main() {
   }
   try {
     const value = found?.[0];
-    console.log(`| rfind ${value == null ? "None" : `Some(${value})`}`);
+    $print(`| rfind ${value == null ? "None" : `Some(${value})`}\n`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -85,7 +85,7 @@ function main() {
     );
     try {
       const value = back?.[0];
-      console.log(`| next_back ${value == null ? "None" : `Some(${value})`}`);
+      $print(`| next_back ${value == null ? "None" : `Some(${value})`}\n`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -98,7 +98,7 @@ function main() {
     const front = $next(it);
     try {
       const value = front?.[0];
-      console.log(`| next ${value == null ? "None" : `Some(${value})`}`);
+      $print(`| next ${value == null ? "None" : `Some(${value})`}\n`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -115,7 +115,7 @@ function main() {
       it.return();
     }
   }
-  console.log("| dropped");
+  $print("| dropped\n");
   function inspect$1(d) {
     $print(`see ${d[0]} `);
   }
@@ -131,7 +131,7 @@ function main() {
       return result;
     }),
   );
-  console.log(`| rev [${reversed.join(", ")}]`);
+  $print(`| rev [${reversed.join(", ")}]\n`);
   function inspect$2(d) {
     $print(`see ${d[0]} `);
   }
@@ -152,7 +152,7 @@ function main() {
   }
   try {
     const value = found?.[0];
-    console.log(`| rev rfind ${value == null ? "None" : `Some(${value})`}`);
+    $print(`| rev rfind ${value == null ? "None" : `Some(${value})`}\n`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -181,7 +181,7 @@ function main() {
       return result;
     }
     const first = next != null ? map(next) : undefined;
-    console.log(`| rev next ${first == null ? "None" : `Some(${first})`}`);
+    $print(`| rev next ${first == null ? "None" : `Some(${first})`}\n`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -189,6 +189,6 @@ function main() {
       it.return();
     }
   }
-  console.log("| end");
+  $print("| end\n");
 }
 //# sourceMappingURL=case.js.map

@@ -12,15 +12,12 @@ import { join } from "node:path";
 import { mergedStreams } from "./programs";
 import { buildCompiler, fixture, root } from "./support";
 
-// Whose browser run isn't yet as native's: a `println!` after a `print!`'s
-// part is logged before it (#1599).
-const browserKnown = new Set(["printed_while_a_line_is_formatted.rs", "eprinted_while_formatting.rs"]);
-
 const cases = [
   "printed_while_a_line_is_formatted.rs",
   "eprinted_while_formatting.rs",
   "stderr_between_a_writers_lines.rs",
   "stderr_inside_a_std_values_debug.rs",
+  "line_printed_after_a_part_left_unended.rs",
 ];
 
 for (const name of cases) {
@@ -29,7 +26,6 @@ for (const name of cases) {
     const dir = fixture(`stream-order-${name}`);
     const { native, js, nativeLines, browserLines } = mergedStreams(join(root, "test/corpus", name), dir);
     expect(js).toBe(native);
-    if (browserKnown.has(name)) expect(browserLines).not.toEqual(nativeLines);
-    else expect(browserLines).toEqual(nativeLines);
+    expect(browserLines).toEqual(nativeLines);
   }, 300_000);
 }

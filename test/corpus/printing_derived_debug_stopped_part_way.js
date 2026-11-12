@@ -6,6 +6,7 @@ import {
   $debugStruct,
   $debugTuple,
   $out,
+  $print,
   $printing,
   $sink,
 } from "@rust-js/std";
@@ -73,7 +74,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -81,7 +82,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -89,7 +90,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -97,7 +98,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -105,7 +106,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
     $printing(() => {
       $out("x ");
@@ -113,7 +114,7 @@ function main() {
       $out(" y\n");
     });
   });
-  console.log(` caught ${r.TAG === "Err"}`);
+  $print(` caught ${r.TAG === "Err"}\n`);
   $printing(() => {
     $out("x ");
     $out(holderDebug_fmt({ first: [1], second: [2] }, { alternate: true }));

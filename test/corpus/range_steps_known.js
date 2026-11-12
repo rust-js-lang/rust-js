@@ -20,57 +20,55 @@ function main() {
   for (let i = 0; i < 10; i += 3) {
     $print(`${i} `);
   }
-  console.log("");
+  $print("\n");
   const step = $step((1 << 30) >>> 0);
   const it = $lazyRange(0, 4294967295, step);
   $roomFor(Math.ceil(4294967295 / step), 4);
   const big = Array.from(it);
   const arg = $next($lazyRange(4000000000, 4294967295));
-  console.log(`[${big.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
-  console.log(
+  $print(`[${big.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}\n`);
+  $print(
     `${$rangeLen({ start: 5, end: 20 })} ${$rangeLen({ start: 0, end: 4294967295 })} ${$rangeLen({
       start: 7,
       end: 3,
-    })}`,
+    })}\n`,
   );
   const last = $rangeLast({ start: 3, end: 9 });
   const value = $rangeLast({ start: 3, end: 3 });
   const value$1 = Array.from($lazyRange(0, 10, 4)).at(-1);
-  console.log(
-    `${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  $print(
+    `${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
   const step$1 = $step((1 << 20) >>> 0);
   const value$2 = $rangeLast({ start: 0, end: 4294967295 });
   const step$2 = $step((1 << 20) >>> 0);
   const value$3 = Array.from($lazyRange(0, 4294967295, step$1)).at(-1);
-  console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$lazyRange(0, 4294967295, step$2).reduce((n) => n + 1, 0)}`,
+  $print(
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$lazyRange(0, 4294967295, step$2).reduce((n) => n + 1, 0)}\n`,
   );
   const nth = Array.from(
     $lent($lazyRange(2, 100, 5))
       .drop(3)
       .take(1),
   )[0];
-  console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${$lazyRange(1, 11, 3).reduce((n) => n + 1, 0)}`,
+  $print(
+    `${nth == null ? "None" : `Some(${nth})`} ${$lazyRange(1, 11, 3).reduce((n) => n + 1, 0)}\n`,
   );
   const step$3 = $step((1 << 30) >>> 0);
   const it$1 = $lazyRangeBack(0, 4294967295, step$3);
   $roomFor(Math.ceil(4294967295 / step$3), 4);
-  console.log(`[${Array.from(it$1).join(", ")}]`);
+  $print(`[${Array.from(it$1).join(", ")}]\n`);
   const step$4 = $step((1 << 30) >>> 0);
   const it$2 = $lazyRangeBack(0, 4294967295, step$4, true);
   $roomFor(Math.ceil(4294967296 / step$4), 4);
-  console.log(`[${Array.from(it$2).join(", ")}]`);
+  $print(`[${Array.from(it$2).join(", ")}]\n`);
   const step$5 = $step((1 << 31) >>> 0);
-  console.log(
-    `[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]`,
+  $print(`[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]\n`);
+  $print(
+    `[${Array.from($lazyRangeBack(1, 10, 3, true)).join(", ")}] [${Array.from($lazyRangeBack(1, 10, 3)).join(", ")}]\n`,
   );
-  console.log(
-    `[${Array.from($lazyRangeBack(1, 10, 3, true)).join(", ")}] [${Array.from($lazyRangeBack(1, 10, 3)).join(", ")}]`,
-  );
-  console.log(
-    `[${Array.from($lazyRangeBack(5, 5, 2)).join(", ")}] [${Array.from($lazyRangeBack(-5, 5, 4, true)).join(", ")}]`,
+  $print(
+    `[${Array.from($lazyRangeBack(5, 5, 2)).join(", ")}] [${Array.from($lazyRangeBack(-5, 5, 4, true)).join(", ")}]\n`,
   );
 }
 //# sourceMappingURL=case.js.map

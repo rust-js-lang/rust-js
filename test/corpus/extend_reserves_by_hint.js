@@ -46,7 +46,7 @@ function main() {
       s += piece;
     },
   );
-  console.log(`chars ${s}`);
+  $print(`chars ${s}\n`);
   s = "";
   $extendText(
     $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
@@ -56,7 +56,7 @@ function main() {
       s += piece;
     },
   );
-  console.log(`strings ${s}`);
+  $print(`strings ${s}\n`);
   s = "";
   const cs = ["x", "y"];
   $extendText(
@@ -72,7 +72,7 @@ function main() {
       s += piece;
     },
   );
-  console.log(`char refs ${s}`);
+  $print(`char refs ${s}\n`);
   const m = new Map();
   $extendMap(
     m,
@@ -98,7 +98,7 @@ function main() {
     ),
     false,
   );
-  console.log(`map ${m.size}`);
+  $print(`map ${m.size}\n`);
   const set = new Set();
   $extendMap(
     set,
@@ -110,7 +110,7 @@ function main() {
     ),
     true,
   );
-  console.log(`set ${set.size}`);
+  $print(`set ${set.size}\n`);
   const b = new $BTreeMap();
   $extendMap(
     b,
@@ -125,6 +125,6 @@ function main() {
     $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     true,
   );
-  console.log(`btrees ${b.size} ${bs.size}`);
+  $print(`btrees ${b.size} ${bs.size}\n`);
 }
 //# sourceMappingURL=case.js.map

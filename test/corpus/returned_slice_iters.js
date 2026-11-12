@@ -39,65 +39,63 @@ function bag() {
 }
 function main() {
   const b = bag();
-  console.log(`[${Array.from(Bag.items(b).map((x) => (x * 2) | 0)).join(", ")}]`);
-  console.log(`[${Array.from($rev($filterEnds(Bag.items(b), (x) => x > 1))).join(", ")}]`);
+  $print(`[${Array.from(Bag.items(b).map((x) => (x * 2) | 0)).join(", ")}]\n`);
+  $print(`[${Array.from($rev($filterEnds(Bag.items(b), (x) => x > 1))).join(", ")}]\n`);
   const it$1 = Bag.items(b);
   const len = it$1.end - it$1.at;
   const count = Bag.items(b).reduce((n) => n + 1, 0);
   const last = Array.from(Bag.items(b)).at(-1);
   const value = Array.from($lent(Bag.items(b)).drop(2).take(1))[0];
-  console.log(
-    `${len} ${count} ${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`}`,
+  $print(
+    `${len} ${count} ${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`}\n`,
   );
   const sum = Bag.items(b).reduce((a, b) => (a + b) | 0, 0);
   const max = $max(Bag.items(b));
   const value$1 = $position($lent(Bag.items(b)), (x) => x === 3);
-  console.log(
-    `${sum} ${max == null ? "None" : `Some(${max})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  $print(
+    `${sum} ${max == null ? "None" : `Some(${max})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`,
   );
   const it$2 = Bag.items(b);
-  console.log(`[${it$2.items.slice(it$2.at, it$2.end).join(", ")}]`);
-  console.log(
-    `[${Array.from($lazyZip(Bag.items(b), Bag.items(b).drop(1)).map(([a, c]) => (a - c) | 0)).join(", ")}]`,
+  $print(`[${it$2.items.slice(it$2.at, it$2.end).join(", ")}]\n`);
+  $print(
+    `[${Array.from($lazyZip(Bag.items(b), Bag.items(b).drop(1)).map(([a, c]) => (a - c) | 0)).join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `[${Array.from($rev($enumerate(Bag.items(b))).take(2))
       .map((item) => `(${item[0]}, ${item[1]})`)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(
+  $print(
     `[${$rest(Bag.items(b))
       .toReversed()
       .filter((_, i) => i % 2 === 0)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
-  console.log(`[${$rest(refBagIntoIterator_intoIter(b)).toReversed().slice(1).join(", ")}]`);
+  $print(`[${$rest(refBagIntoIterator_intoIter(b)).toReversed().slice(1).join(", ")}]\n`);
   const it = Bag.items(b);
   $next(it);
-  console.log(
-    `[${it.items.slice(it.at, it.end).join(", ")}] [${$rest(it).toReversed().join(", ")}]`,
-  );
+  $print(`[${it.items.slice(it.at, it.end).join(", ")}] [${$rest(it).toReversed().join(", ")}]\n`);
   for (const [i, x] of $rev($enumerate(refBagIntoIterator_intoIter(b)))) {
     $print(`${i}:${x} `);
   }
-  console.log("");
-  console.log(`[${$rest(Bag.owned(bag())).toReversed().join(", ")}]`);
-  console.log(`[${Array.from($rev($mapEnds(Bag.owned(bag()), (x) => (x + 1) | 0))).join(", ")}]`);
+  $print("\n");
+  $print(`[${$rest(Bag.owned(bag())).toReversed().join(", ")}]\n`);
+  $print(`[${Array.from($rev($mapEnds(Bag.owned(bag()), (x) => (x + 1) | 0))).join(", ")}]\n`);
   const o = Bag.owned(bag());
   const nextBack = $nextBack(o);
   const next = $next(o);
-  console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} [${o.items.slice(o.at, o.end).join(", ")}]`,
+  $print(
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} [${o.items.slice(o.at, o.end).join(", ")}]\n`,
   );
   const value$2 = $maxByKey($rest(Bag.items(b)).toReversed(), (x) => (x % 3) | 0, $cmp);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  $print(`${value$2 == null ? "None" : `Some(${value$2})`}\n`);
   const value$3 = $rposition(Bag.items(b), (x) => x < 3);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  $print(`${value$3 == null ? "None" : `Some(${value$3})`}\n`);
   const held = Bag.items(b);
-  console.log(
+  $print(
     `[${Array.from($rev($enumerate(held)))
       .map((item) => `(${item[0]}, ${item[1]})`)
-      .join(", ")}]`,
+      .join(", ")}]\n`,
   );
 }
 //# sourceMappingURL=case.js.map

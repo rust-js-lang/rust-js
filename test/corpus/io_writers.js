@@ -4,6 +4,7 @@ import {
   $cellOf,
   $debugUtf8Error,
   $dynWriter,
+  $eprint,
   $fromUtf8,
   $print,
   $printBytes,
@@ -41,7 +42,7 @@ function main() {
   $writeText(buf, "7");
   buf.push(10);
   $print($unwrapOk($fromUtf8(buf.slice(), true), undefined, (e) => $debugUtf8Error(e, true)));
-  console.log(`${buf.length}`);
+  $print(`${buf.length}\n`);
 
   render($cellOf(undefined), 2, $stdoutWriter);
   shout({ impl: $stdoutWriter }, "stdout");
@@ -62,13 +63,13 @@ function main() {
   shout(intoVec, "vec");
   const value = undefined;
   const written = $printBytes([119, 114, 111, 116, 101, 10], 0);
-  console.log(`${written}`);
+  $print(`${written}\n`);
   $printBytes($utf8Bytes("é whole\n"), 0);
   // A character split between two writes, and a byte that's no text.
   $printBytes([195], 0);
   $printBytes([169, 10, 255, 10], 0);
   const err = undefined;
-  console.error("to stderr");
+  $eprint("to stderr\n");
   shout({ value: err, impl: $stderrWriter }, "err");
 }
 //# sourceMappingURL=case.js.map

@@ -243,6 +243,10 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 `format!` is a template literal; `println!` is `console.log`, `eprintln!`
 `console.error`, and `print!` writes without a newline
 ([0087](../decisions/0087-printing.md), [0132](../decisions/0132-std-odds.md)).
+Where the program may leave a stream's line unended, a `print!` or a write
+to `io::stdout()`, each line it prints there is `$print(..)`, which keeps
+what's held before it, as a browser's console takes whole lines
+([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).
 
 - **Every placeholder option is Rust's:** width, fill, alignment, sign, `#`,
   `0`, precision, `{:x}`, `{:b}`, `{:o}`, `{:e}`, positional and named

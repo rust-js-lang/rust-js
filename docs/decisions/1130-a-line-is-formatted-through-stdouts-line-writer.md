@@ -504,3 +504,25 @@ native merged and in a browser's order; mutation
 `std-debug-whole-beside-stderr`. The `library` rewrites of #1490's cases
 stay listed: a crate whose writers are a library's doesn't see them print
 (the cross-crate rest).
+
+## Amendment (2026-11-13, #1599): a whole line after a held part
+
+A browser has no stream: the runtime writes a stream's text a line at a
+time to `console.log` or `console.error`, holding a part `print!` leaves
+unended till its line ends. A whole line `println!` printed was a direct
+`console.log`, which went past what was held: `print!("a");
+println!("b")` showed `b`, then `a` at the task's end, where native's
+line is `ab`. Now, where a print of the crate's may leave a stream's line
+unended (`Prints::unended`: a `print!` or `eprint!` whose `format_args!`'s
+last piece isn't text ending with a newline, or can't be told, or a write
+to the stream's `io::Write`), each line printed there is `$print(text)`
+or `$eprint(text)`, which keeps what's held before it
+(`stream_printed`, one place for both streams' whole lines). A program
+that leaves no line unended prints as before. 77 corpus snapshots move,
+each a `console.log(line)` become `$print(`line\n`)`, none of output;
+the corpus's console-only test now expects native's lines, `cd` its own
+where it was `cdleft`. Held by `test/stream-order.test.ts`'s browser
+comparison, all five cases now, and the case
+`line_printed_after_a_part_left_unended`. A library's `print!` before a
+program's `println!` is #1608's.
+

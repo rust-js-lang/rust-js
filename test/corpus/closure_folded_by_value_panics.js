@@ -34,7 +34,7 @@ function case$(name, run) {
   const r = $catchUnwind(() => {
     run([9]);
   });
-  console.log(`${r.TAG === "Err" ? "panicked" : ""}`);
+  $print(`${r.TAG === "Err" ? "panicked" : ""}\n`);
 }
 
 function main() {

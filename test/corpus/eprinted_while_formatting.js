@@ -66,7 +66,7 @@ function main() {
     $out(droppingDisplay_fmt(undefined));
     $out(" y\n");
   });
-  console.log(`out ${err2Display_fmt(["e"])}`);
+  $print(`out ${err2Display_fmt(["e"])}\n`);
   $eprint("err line ");
   $eprint(loudDisplay_fmt(["f"]));
   $eprint("\n");
@@ -77,7 +77,7 @@ function main() {
       $out(" after\n");
     });
   });
-  console.log(`caught ${caught.TAG === "Err"}`);
+  $print(`caught ${caught.TAG === "Err"}\n`);
   $print("no newline at the end");
 }
 //# sourceMappingURL=case.js.map

@@ -48,7 +48,7 @@ function main() {
     0,
     (acc, [x, y]) => (((((acc * 10) >>> 0) + x) >>> 0) + y) >>> 0,
   );
-  console.log(`| plain ${plain}`);
+  $print(`| plain ${plain}\n`);
   const value = $iter(ds(1, 4));
   let tmp;
   try {
@@ -84,7 +84,7 @@ function main() {
       return result;
     },
   );
-  console.log(`| rfold ${sum}`);
+  $print(`| rfold ${sum}\n`);
   const value$1 = $iter(ds(1, 3));
   let tmp$1;
   try {
@@ -128,7 +128,7 @@ function main() {
     throw error;
   }
   value$2.return();
-  console.log(`| first of rev ${last == null ? "None" : `Some(${last})`}`);
+  $print(`| first of rev ${last == null ? "None" : `Some(${last})`}\n`);
   const value$3 = $iter(ds(1, 5));
   let tmp$2;
   try {
@@ -188,7 +188,7 @@ function main() {
     throw error;
   }
   zip.return();
-  console.log(`| rfind ${found == null ? "None" : `Some((${found[0]}, ${found[1]}))`}`);
+  $print(`| rfind ${found == null ? "None" : `Some((${found[0]}, ${found[1]}))`}\n`);
   let calls = 0;
   const folded = $foldBack(
     $rev(
@@ -210,7 +210,7 @@ function main() {
       return result;
     },
   );
-  console.log(`| mapped ${folded} ${calls}`);
+  $print(`| mapped ${folded} ${calls}\n`);
   const r = $catchUnwind(() => {
     const sides = ds(1, 5);
     try {
@@ -269,7 +269,7 @@ function main() {
     accDrop_drop(rfold);
     return result;
   });
-  console.log(`| panicking drop ${r.TAG === "Err"}`);
-  console.log("| end");
+  $print(`| panicking drop ${r.TAG === "Err"}\n`);
+  $print("| end\n");
 }
 //# sourceMappingURL=case.js.map

@@ -16,6 +16,6 @@ function main() {
     const value = f(l);
     $print(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} `);
   }
-  console.log("");
+  $print("\n");
 }
 //# sourceMappingURL=case.js.map

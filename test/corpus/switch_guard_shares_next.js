@@ -100,7 +100,7 @@ function main() {
     const value = caught.TAG === "Ok" ? caught._0 : undefined;
     $print(`${value == null ? "None" : `Some(${value})`}/${fiber.lanes} `);
   }
-  console.log(`${held(undefined, false)}`);
+  $print(`${held(undefined, false)}\n`);
   for (const tag of [A, B, C]) {
     for (const [legacy, lanes] of [
       [false, 0],
@@ -116,7 +116,7 @@ function main() {
       $print(`${value == null ? "None" : `Some(${value})`}/${fiber.lanes} `);
     }
   }
-  console.log("");
+  $print("\n");
   for (const tag of [A, B, C, 9]) {
     for (const [onB, onC] of [
       [false, false],
@@ -130,7 +130,7 @@ function main() {
       };
       $print(`${earlyBailout(fiber, onB, onC)} `);
     }
-    console.log("");
+    $print("\n");
   }
 }
 //# sourceMappingURL=case.js.map

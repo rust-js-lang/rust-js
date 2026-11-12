@@ -161,8 +161,8 @@ function main() {
     $fmtPrintFailed(error, text$1, false);
   }
   $print(text$1);
-  console.log(
-    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error")}`,
+  $print(
+    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error")}\n`,
   );
   let text$2 = "";
   try {
@@ -188,8 +188,8 @@ function main() {
     $fmtPrintFailed(error, text$4, false);
   }
   $print(text$4);
-  console.log(
-    `${$debugStr($fmtOrPanic(() => passedDisplay_fmt([[4]]), "a formatting trait implementation returned an error when the underlying stream did not: Error"))}`,
+  $print(
+    `${$debugStr($fmtOrPanic(() => passedDisplay_fmt([[4]]), "a formatting trait implementation returned an error when the underlying stream did not: Error"))}\n`,
   );
   let text$5 = "";
   try {
@@ -199,8 +199,8 @@ function main() {
     $fmtPrintFailed(error, text$5, false);
   }
   $print(text$5);
-  console.log(
-    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error") + $fmtOrPanic(() => lastDisplay_fmt([[7]]), "a formatting trait implementation returned an error when the underlying stream did not: Error")}`,
+  $print(
+    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error") + $fmtOrPanic(() => lastDisplay_fmt([[7]]), "a formatting trait implementation returned an error when the underlying stream did not: Error")}\n`,
   );
   $printing(() => {
     try {
@@ -224,6 +224,6 @@ function main() {
     () => keptLoudDisplay_fmt([[3]]),
     "a formatting trait implementation returned an error when the underlying stream did not: Error",
   );
-  console.log(`${s}`);
+  $print(`${s}\n`);
 }
 //# sourceMappingURL=case.js.map

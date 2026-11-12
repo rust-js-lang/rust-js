@@ -63,8 +63,8 @@ function main() {
   const byte = { value: 33, impl: { fmt: String } };
   const boxed = { value: { x: 1, y: 2 }, impl: pointDisplay };
   const value = describe({ value: "text", impl: display });
-  console.log(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}`);
-  console.log(`${boxed.impl.fmt(boxed.value)}`);
+  $print(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}\n`);
+  $print(`${boxed.impl.fmt(boxed.value)}\n`);
 
   const all = [
     { value: 1.5, impl: { fmt: $displayF64 } },
@@ -75,37 +75,37 @@ function main() {
     const d = all[i];
     $print(`${d.impl.fmt(d.value)} `);
   }
-  console.log("");
+  $print("\n");
 
   const counter = [{ value: 1 }];
   const shown = { value: counter, impl: counterDisplay };
   counter[0].value = 2;
-  console.log(`${shown.impl.fmt(shown.value)}`);
+  $print(`${shown.impl.fmt(shown.value)}\n`);
 
   const value$1 = lookup("one");
   if (value$1.TAG === "Ok") {
     const n = value$1._0;
-    console.log(`found ${n}`);
+    $print(`found ${n}\n`);
   } else {
     const e = value$1._0;
-    console.log(`error ${e.impl.Display().fmt(e.value)}`);
+    $print(`error ${e.impl.Display().fmt(e.value)}\n`);
   }
   const value$2 = lookup("two");
   if (value$2.TAG === "Ok") {
     const n = value$2._0;
-    console.log(`found ${n}`);
+    $print(`found ${n}\n`);
   } else {
     const e = value$2._0;
     const value = e.impl.Display().fmt(e.value);
     const value$1 = e.impl.source(e.value) == null;
-    console.log(
-      `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$1}`,
+    $print(
+      `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$1}\n`,
     );
   }
   const fromString = { value: "made", impl: $stringError() };
   const fromStr = { value: "also made", impl: $stringError() };
-  console.log(
-    `${fromString.impl.Display().fmt(fromString.value)} ${fromStr.impl.Debug().fmt(fromStr.value)}`,
+  $print(
+    `${fromString.impl.Display().fmt(fromString.value)} ${fromStr.impl.Debug().fmt(fromStr.value)}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

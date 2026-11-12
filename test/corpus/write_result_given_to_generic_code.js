@@ -57,7 +57,7 @@ function report(what, result, TDebug) {
     $print(text);
   } else {
     const e = result._0;
-    console.log(`${what}: ${$ioErrorDisplay(e)}`);
+    $print(`${what}: ${$ioErrorDisplay(e)}\n`);
   }
 }
 
@@ -263,9 +263,9 @@ function main() {
   report("flush", $writeTagged(undefined), unitDebug);
   let s = "";
   s += "y";
-  console.log(`${shown($writeTagged(undefined), unitDebug, { fmt: (value) => "Error" })} ${s}`);
+  $print(`${shown($writeTagged(undefined), unitDebug, { fmt: (value) => "Error" })} ${s}\n`);
   let tmp$1;
-  console.log(
+  $print(
     `${shown(
       $writeTagged(
         $writeTry(() =>
@@ -284,26 +284,26 @@ function main() {
       ),
       unitDebug,
       { fmt: (value) => $ioErrorDebug(value) },
-    )}`,
+    )}\n`,
   );
 
   // Given back: made `Ok` or `Err` in generic code, a `fmt::Error` too.
   const made = $writeOf(passed($writeTagged(undefined)));
-  console.log(`${made === undefined} ${$ioResultDebug(made)}`);
+  $print(`${made === undefined} ${$ioResultDebug(made)}\n`);
   const failed = $writeOf(
     passed($writeTagged(new $IoError("Other", { value: "no", impl: $stringError() }))),
   );
   if (failed !== undefined) {
-    console.log(`${$ioErrorDisplay(failed)} ${failed !== undefined}`);
+    $print(`${$ioErrorDisplay(failed)} ${failed !== undefined}\n`);
   }
   let r = $writeOf(errOf(undefined));
-  console.log(`${r === undefined ? "Ok(())" : "Err(Error)"} ${r !== undefined}`);
-  console.log(
-    `${$ioResultDebug($writeTry(() => tail(false)))} ${$ioResultDebug($writeTry(() => tail(true)))}`,
+  $print(`${r === undefined ? "Ok(())" : "Err(Error)"} ${r !== undefined}\n`);
+  $print(
+    `${$ioResultDebug($writeTry(() => tail(false)))} ${$ioResultDebug($writeTry(() => tail(true)))}\n`,
   );
   const value = tried(false);
-  console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$ioErrorDebug(value._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$ioErrorDebug(result._0)})`))(tried(true))}`,
+  $print(
+    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$ioErrorDebug(value._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$ioErrorDebug(result._0)})`))(tried(true))}\n`,
   );
 
   // A closure's, called by generic code until it's `Ok`.
@@ -332,7 +332,7 @@ function main() {
       5,
     ),
   );
-  console.log(`${$ioResultDebug(r)} ${n}`);
+  $print(`${$ioResultDebug(r)} ${n}\n`);
   let m = 0;
   r = $writeOf(
     retried(
@@ -355,13 +355,13 @@ function main() {
       2,
     ),
   );
-  console.log(`${$ioResultDebug(r)} ${m}`);
+  $print(`${$ioResultDebug(r)} ${m}\n`);
 
   // A trait's generic method's, directly and through generic code; a
   // generic method's; a `fn` pointer's.
-  console.log(`${checkerCheck_check(undefined, $writeTagged($writeText(v, "a\n")), unitDebug)}`);
+  $print(`${checkerCheck_check(undefined, $writeTagged($writeText(v, "a\n")), unitDebug)}\n`);
   let tmp$2;
-  console.log(
+  $print(
     `${through(
       undefined,
       $writeTry(() =>
@@ -378,20 +378,20 @@ function main() {
         ),
       ),
       checkerCheck,
-    )}`,
+    )}\n`,
   );
   const held = $writeOf(Holder.ok({}));
-  console.log(`${$ioResultDebug(held)}`);
+  $print(`${$ioResultDebug(held)}\n`);
   const f = shown__ErrorFn;
-  console.log(`${f(new $FmtError())} ${f(undefined)}`);
+  $print(`${f(new $FmtError())} ${f(undefined)}\n`);
 
   // Held by generic code as a type parameter's value, and given back.
-  console.log(
-    `${$ioResultDebug($writeTry(() => heldBack(false)))} ${$ioResultDebug($writeTry(() => heldBack(true)))}`,
+  $print(
+    `${$ioResultDebug($writeTry(() => heldBack(false)))} ${$ioResultDebug($writeTry(() => heldBack(true)))}\n`,
   );
   const value$1 = after(false);
-  console.log(
-    `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$ioErrorDebug(value$1._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$ioErrorDebug(result._0)})`))(after(true))}`,
+  $print(
+    `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$ioErrorDebug(value$1._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$ioErrorDebug(result._0)})`))(after(true))}\n`,
   );
   let tmp$3;
   const kept = $writeTry(() =>
@@ -413,7 +413,7 @@ function main() {
       ),
     ),
   );
-  console.log(`${kept !== undefined}`);
+  $print(`${kept !== undefined}\n`);
   const value$2 = $writeTry(() => forward($writeText(v, "z\n")));
   let tmp$4;
   const result = $writeTry(() =>
@@ -433,11 +433,11 @@ function main() {
       ),
     ),
   );
-  console.log(
+  $print(
     `${$ioResultDebug(value$2)} ${((result) =>
       result.TAG === "Ok" ? "Ok(())" : `Err(${result._0})`)(
       result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: result.kind },
-    )}`,
+    )}\n`,
   );
 
   // A `Display` whose result generic code passes on.
@@ -459,8 +459,8 @@ function main() {
       text = value;
     },
   };
-  console.log(
-    `${$writeTry(() => receiver.impl.writeFmt(receiver, shownDisplay_fmt([true]))) === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(text)}`,
+  $print(
+    `${$writeTry(() => receiver.impl.writeFmt(receiver, shownDisplay_fmt([true]))) === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(text)}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -49,6 +49,13 @@ pub(in crate::lower) struct Prints {
     /// may print, which a std value's `Debug` writes piece by piece too
     /// (#1490).
     pub(in crate::lower) stopping: IndexSet<DefId>,
+    /// Of stdout and of stderr, whether a print of the crate's may leave
+    /// the stream's line unended: a `print!` or `eprint!` whose text may not
+    /// end with a newline, or a write to the stream's `io::Write`, of any
+    /// bytes. A browser's console takes whole lines, so where one may be
+    /// left unended a whole line is printed through what the runtime holds
+    /// (#1599).
+    pub(in crate::lower) unended: [bool; 2],
 }
 
 impl Prints {
@@ -62,6 +69,12 @@ impl Prints {
     /// an `fmt::Arguments` given on, which may hold any value, may (#1565).
     pub(in crate::lower) fn any_writer_prints(&self) -> bool {
         !self.types.is_empty()
+    }
+
+    /// May a print of the crate's leave stdout's line, or of `error`,
+    /// stderr's, unended?
+    pub(in crate::lower) fn leaves_unended(&self, error: bool) -> bool {
+        self.unended[usize::from(error)]
     }
 
     /// May `body` run while a line is formatted?
@@ -125,6 +138,9 @@ pub(super) fn prints<'tcx>(
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
 ) -> Prints {
     let mut found = printing_writers(recognition, all_bodies, runs, unwinding);
+    for error in [false, true] {
+        found.unended[usize::from(error)] = all_bodies.iter().any(|body| leaves_unended(recognition, body, error));
+    }
     let failing = unwinding.1;
     found.through_sink.extend(
         (all_bodies.iter())
@@ -485,5 +501,65 @@ fn prints_to<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error
             return false;
         };
         recognition.writes_stream(id, args.skip_binder(), error)
+    })
+}
+
+/// Whether `body` may leave stdout's line, or of `error`, stderr's,
+/// unended: a `print!`'s or `eprint!`'s whose text's last piece isn't text
+/// ending with a newline, or can't be told; or a write to the stream's
+/// `io::Write`, which writes any bytes (#1599).
+fn leaves_unended<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
+    let tcx = recognition.tcx;
+    let thir = &body.thir;
+    let made: crate::collections::IndexMap<thir::ExprId, Vec<crate::lower::format_args::Piece>> =
+        (super::debug::format_calls(tcx, thir).into_iter())
+            .map(|(call, pieces, _)| (call, pieces))
+            .collect();
+    let ends_its_line = |arg: thir::ExprId| {
+        let mut at = arg;
+        loop {
+            at = crate::lower::strip(thir, at);
+            match thir[at].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => at = arg,
+                // `format_args!`'s block, `{ let args = ..; Arguments::new(..) }`.
+                ExprKind::Block { block } => match thir[block].expr {
+                    Some(value) => at = value,
+                    None => break,
+                },
+                _ => break,
+            }
+        }
+        // A text alone, `println!("done")`'s, `Arguments::from_str("done\n")`.
+        if let ExprKind::Call { fun, ref args, .. } = thir[at].kind
+            && let ty::FnDef(id, _) = *thir[fun].ty.kind()
+            && crate::lower::recognition::is_arguments_from_str(tcx, id)
+            && let [text] = args[..]
+        {
+            let mut text = text;
+            loop {
+                text = crate::lower::strip(thir, text);
+                match thir[text].kind {
+                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => text = arg,
+                    _ => break,
+                }
+            }
+            return matches!(thir[text].kind, ExprKind::Literal { lit, .. }
+                if matches!(lit.node, rustc_ast::LitKind::Str(s, _) if s.as_str().ends_with('\n')));
+        }
+        made.get(&at).is_some_and(|pieces| {
+            matches!(pieces.last(), Some(crate::lower::format_args::Piece::Text(text)) if text.ends_with('\n'))
+        })
+    };
+    thir.exprs.iter().any(|expr| {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            return false;
+        };
+        let ty::FnDef(id, generics) = *thir[fun].ty.kind() else {
+            return false;
+        };
+        match crate::lower::recognition::print_of(tcx, id) {
+            Some(stream) => stream == error && !args.first().is_some_and(|&arg| ends_its_line(arg)),
+            None => recognition.writes_stream(id, generics.skip_binder(), error),
+        }
     })
 }

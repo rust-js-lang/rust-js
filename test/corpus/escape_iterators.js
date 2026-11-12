@@ -17,16 +17,16 @@ function main() {
   const shown = $escapeDefault("é");
   const parts = Array.from($escapeDebug("\n", false));
   const length = Array.from($escapeUnicode("é")).length;
-  console.log(`${shown} [${parts.map((item) => $debugStr(item, "'")).join(", ")}] ${length}`);
+  $print(`${shown} [${parts.map((item) => $debugStr(item, "'")).join(", ")}] ${length}\n`);
   for (const c of Array.from($escapeUnicode("x"))) {
     $print(c);
   }
-  console.log("");
+  $print("\n");
   const quoted = $escapeDebug('a\n"é', true);
   const tabs = Array.from($escapeDefault("tab\t")).length;
   const marks = Array.from(
     "x́"[Symbol.iterator]().flatMap((c) => $iter(Array.from($escapeUnicode(c)))),
   ).join("");
-  console.log(`${quoted} ${tabs} ${marks}`);
+  $print(`${quoted} ${tabs} ${marks}\n`);
 }
 //# sourceMappingURL=case.js.map

@@ -58,7 +58,7 @@ function said(what) {
     () => what(),
     "a formatting trait implementation returned an error when the underlying stream did not: Error",
   );
-  console.log(`${text}`);
+  $print(`${text}\n`);
 }
 
 function twice(what) {
@@ -76,7 +76,7 @@ function twice(what) {
 }
 
 function never(what) {
-  console.log("never formatted");
+  $print("never formatted\n");
 }
 
 function passedOn(what) {
@@ -145,17 +145,17 @@ function main() {
   const value$6 = [12];
   const counted = () => `${value$5} ${noisyDebug_fmt(value$6)}`;
   twice(counted);
-  console.log(`effect ran ${effect.value}`);
+  $print(`effect ran ${effect.value}\n`);
 
   const value$7 = bump(effect);
   const value$8 = effect.value;
   const bumped = () => `${value$7} then ${value$8}`;
   effect.value = 10;
   twice(bumped);
-  console.log(`bumped ${effect.value}`);
+  $print(`bumped ${effect.value}\n`);
 
   const caught = $catchUnwind(() => said(() => panicsDebug_fmt(undefined)));
-  console.log(` caught ${caught.TAG === "Err"}`);
+  $print(` caught ${caught.TAG === "Err"}\n`);
 
   const failed = $catchUnwind(() =>
     said(() => {
@@ -173,7 +173,7 @@ function main() {
     message.impl.typeId() === "alloc::string::String" || message.impl === $panicMessage
       ? message.value
       : undefined;
-  console.log(` ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}`);
+  $print(` ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}\n`);
 
   let out = "";
   const out$1 = { value: out };
@@ -191,8 +191,8 @@ function main() {
     }),
   );
   out = out$1.value;
-  console.log(`${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(out)}`);
+  $print(`${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(out)}\n`);
 
-  console.log(`Some(${$debugStr("plain")}) Some(${$debugStr("1")})`);
+  $print(`Some(${$debugStr("plain")}) Some(${$debugStr("1")})\n`);
 }
 //# sourceMappingURL=case.js.map

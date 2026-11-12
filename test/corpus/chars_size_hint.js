@@ -25,8 +25,8 @@ function show(name, s) {
   $print(` (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   $next(chars);
   const value = $sizeHint(chars);
-  console.log(
-    ` (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${$debugStr($restStr(chars))}`,
+  $print(
+    ` (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${$debugStr($restStr(chars))}\n`,
   );
 
   const indices = $charIndices(s);
@@ -35,8 +35,8 @@ function show(name, s) {
   $print(`  indices: (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   $nextBack(indices);
   const value$2 = $sizeHint(indices);
-  console.log(
-    ` (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) at ${$charIndicesOffset(indices)}`,
+  $print(
+    ` (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) at ${$charIndicesOffset(indices)}\n`,
   );
 }
 
@@ -50,6 +50,6 @@ function main() {
   const lower = ["xy", "ü", "語😀"]
     .map((s) => $sizeHint($chars(s))[0])
     .reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`lower bounds: ${lower}`);
+  $print(`lower bounds: ${lower}\n`);
 }
 //# sourceMappingURL=case.js.map

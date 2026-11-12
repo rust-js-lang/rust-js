@@ -25,18 +25,18 @@ function greeting() {
 
 function main() {
   const cell = {};
-  console.log(`${cell.value == null ? "None" : `Some(${cell.value})`}`);
+  $print(`${cell.value == null ? "None" : `Some(${cell.value})`}\n`);
   cell.value = 1;
   const value = { TAG: "Ok" };
-  console.log(`${value.TAG === "Ok" ? "Ok(())" : `Err(${value._0})`}`);
+  $print(`${value.TAG === "Ok" ? "Ok(())" : `Err(${value._0})`}\n`);
   const unset = cell.value === undefined;
   if (unset) {
     cell.value = 2;
   }
   const value$1 = unset ? { TAG: "Ok" } : { TAG: "Err", _0: 2 };
-  console.log(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}`);
+  $print(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}\n`);
   const value$2 = cell.value;
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${$getOrInit(cell, () => 3)}`);
+  $print(`${value$2 == null ? "None" : `Some(${value$2})`} ${$getOrInit(cell, () => 3)}\n`);
 
   const lazy = {};
   let calls = 0;
@@ -47,52 +47,52 @@ function main() {
     });
     $print(`${text} `);
   }
-  console.log(`${calls}`);
+  $print(`${calls}\n`);
 
   const taken = {};
   const old = taken.value;
   taken.value = undefined;
-  console.log(`${old == null}`);
+  $print(`${old == null}\n`);
   $getOrInit(taken, () => ({ name: "a" }));
   const config = taken.value;
   if (config != null) {
     config.name += "b";
   }
-  console.log(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}`);
+  $print(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}\n`);
   const old$1 = taken.value;
   taken.value = undefined;
   const name = old$1?.name;
-  console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${taken.value == null}`);
+  $print(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${taken.value == null}\n`);
 
   const count = { value: 5 };
   const value$3 = $unwrap(count.value == null ? undefined : count);
   value$3.value = (value$3.value + 1) | 0;
-  console.log(`${count.value == null ? "None" : `Some(${count.value})`}`);
+  $print(`${count.value == null ? "None" : `Some(${count.value})`}\n`);
 
   // `()` and `None` look like `None` in JS: what's set is still there.
   let unit;
   const get = unit;
   unit = $some(undefined);
   const value$4 = { TAG: "Ok" };
-  console.log(
-    `${get == null ? "None" : "Some(())"} ${value$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit == null ? "None" : "Some(())"}`,
+  $print(
+    `${get == null ? "None" : "Some(())"} ${value$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit == null ? "None" : "Some(())"}\n`,
   );
   const nothing = {};
   const getOrInit = $getOrInit(nothing, () => undefined);
-  console.log(
-    `${getOrInit == null ? "None" : `Some(${getOrInit})`} ${nothing.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`}`,
+  $print(
+    `${getOrInit == null ? "None" : `Some(${getOrInit})`} ${nothing.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`}\n`,
   );
   const unset$1 = nothing.value === undefined;
   if (unset$1) {
     nothing.value = 1;
   }
   const value$5 = unset$1 ? { TAG: "Ok" } : { TAG: "Err", _0: 1 };
-  console.log(
-    `${value$5.TAG === "Ok" ? "Ok(())" : `Err(${value$5._0 == null ? "None" : `Some(${value$5._0})`})`}`,
+  $print(
+    `${value$5.TAG === "Ok" ? "Ok(())" : `Err(${value$5._0 == null ? "None" : `Some(${value$5._0})`})`}\n`,
   );
 
   const lock = {};
-  console.log(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`);
+  $print(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}\n`);
   $getOrInitLock(lock, () => [1, 2]);
   const value$6 = [3];
   const unset$2 = lock.value === undefined;
@@ -100,12 +100,12 @@ function main() {
     lock.value = value$6;
   }
   const set = unset$2 ? { TAG: "Ok" } : { TAG: "Err", _0: value$6 };
-  console.log(
-    `${set.TAG === "Ok" ? "Ok(())" : `Err([${set._0.join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`,
+  $print(
+    `${set.TAG === "Ok" ? "Ok(())" : `Err([${set._0.join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}\n`,
   );
-  console.log(`${greeting()} ${greeting()}`);
+  $print(`${greeting()} ${greeting()}\n`);
   const shown = {};
-  console.log(
+  $print(
     `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
       "OnceCell(",
       [
@@ -118,7 +118,7 @@ function main() {
             ),
       ],
       ")",
-    )}`,
+    )}\n`,
   );
   const value$7 = [1];
   const unset$3 = shown.value === undefined;
@@ -130,7 +130,7 @@ function main() {
     undefined,
     (e) => `[${e.join(", ")}]`,
   );
-  console.log(
+  $print(
     `OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
       "OnceCell(",
       [
@@ -143,14 +143,14 @@ function main() {
             ),
       ],
       ")",
-    )}`,
+    )}\n`,
   );
   const copy = { value: shown.value };
   $getOrInit(copy, () => []);
-  console.log(`${$eq(copy, shown)} ${$eq(copy, {})}`);
-  console.log(
-    `OnceCell(${unit == null ? "<uninit>" : "()"}) OnceCell(${nothing.value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`,
+  $print(`${$eq(copy, shown)} ${$eq(copy, {})}\n`);
+  $print(
+    `OnceCell(${unit == null ? "<uninit>" : "()"}) OnceCell(${nothing.value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})\n`,
   );
-  console.log(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`);
+  $print(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}\n`);
 }
 //# sourceMappingURL=case.js.map
