@@ -279,16 +279,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `failing_consumer`'s JS, of `value`: what `format!` or `print!`
-    /// writes, or `to_string()`'s string, made in `body` (ADR 0364).
+    /// writes, or `to_string()`'s string of an `of` (ADR 0364). std's
+    /// `to_string()` of an `Arguments` is `fmt::format`'s, and panics as it
+    /// does (#1565).
     pub(in crate::lower) fn failing_values(
         &mut self,
         known: Std,
-        mut body: Vec<Stmt>,
+        of: Option<rustc_middle::ty::Ty<'tcx>>,
         value: Expr,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> Expr {
         let js_span = self.js_span(span);
+        let mut body = Vec::new();
         if let Std::Print { error } = known {
             let (text, caught) = (self.fresh(Role::Text), self.fresh(Role::Error));
             append_written(&Expr::var(&text), value, true, js_span, &mut body);
@@ -303,8 +306,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![Expr::var(&text)],
             );
         }
+        let arguments = of.is_some_and(|ty| self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments));
         let message = match known {
-            Std::ToString => "a Display implementation returned an error unexpectedly: Error",
+            Std::ToString if !arguments => "a Display implementation returned an error unexpectedly: Error",
             _ => "a formatting trait implementation returned an error when the underlying stream did not: Error",
         };
         body.push(StmtKind::Return(Some(value)).at(js_span));

@@ -537,9 +537,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(join(vec![Expr::str("unpaired surrogate found: "), hex]));
         }
         // `format_args!`'s text (ADR 0034), which its `Display` writes as it
-        // is, whatever width the `Formatter` has, as strum's derive asks.
+        // is, whatever width the `Formatter` has, as strum's derive asks: of
+        // one given on, as any shown is, the function that makes it, called
+        // here (#1565).
         if self.is_lang_adt(ty, LangItem::FormatArguments) {
-            return Ok(value);
+            return Ok(Expr::call(value, Vec::new()));
         }
         // A `Wrapping` shows its number, as both its `Display` and its
         // `Debug` do (ADR 0175).

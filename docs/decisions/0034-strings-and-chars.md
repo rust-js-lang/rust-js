@@ -170,3 +170,72 @@ pairs, each made whole wherever one `char` was read. Both are lazy now:
 JS's own string iterator where only the front is stepped, and the
 runtime's `$chars(s)` or `$charIndices(s)` otherwise
 ([1117](1117-a-strings-chars-are-lazy.md)).
+
+## Amendment: an `Arguments` given on is a function of its text (2026-11-13, #1565)
+
+A `format_args!` was its text, made where the macro is written. That's
+right where std formats it at once, in `format!`, `print!`, `write!` and
+`panic!`. It's wrong where the `Arguments` is a value given on: passed to
+a function, stored, or returned. Rust formats such a value where it's
+written, inside the callee, and as often as it's written. In JS its
+writers ran once, before the callee's first statement:
+`said(format_args!("{:?}", noisy))` printed `<noisy>said: N` where native
+Rust prints `said: <noisy>N`. A value written twice ran its writers once, a
+writer's panic came before the callee's output, and a `Cell` a writer
+reads was read early. The metamorphic net's `loud` rewrites found it, as
+their `metamorph_loud(format_args!(..))` counts before it formats. Results
+change, so Rust's behavior is kept (ADR 0262). The lead approved the design
+on the issue, on the user's behalf.
+
+**One fact from MIR, `mir::arguments_use`, says which an `Arguments` a body
+makes is.** It's `InPlace`, its text as before, where each use of it is std's
+by value (`format`, `_print`, a `write_fmt`, `panic_fmt`), its `as_str()`, or
+a holder std alone is given, `assert_eq!`'s `Some(args)`. Otherwise it's
+`GivenOn`: a function of its text, `said(() => noisyDebug_fmt(value))`. One
+form per place: a parameter, a field, or any place the body didn't make its
+text in holds the function (`holds_text`). std's formatting, given one by
+value, calls it where it formats (`arguments_formatted`), and so does
+`{}` of one (`display_shown`). The call is taken to print or fail where any
+of the crate's writers may, as a `dyn`'s value is.
+
+**Only the formatting is deferred, not the operands.** `format_args!`
+evaluates its operands where it's written, in order. The function captures
+them already evaluated, each held in a `const` but a variable or a
+constant, `const value = bump(effect)`. Its writers alone run when it's
+called. An operand's effect happens once, where the macro is written, and
+a `Cell` a writer reads shows what it holds when it's written.
+
+A function of one whose writer may fail makes its text piece by piece, and
+what it made before the `Err` goes with it, `$fmtWritten`, as one made in
+place writes it: `put(out, format_args!("a{:?}b", bad))` leaves `[aB`.
+`fmt_failures.rs` takes a function giving a write's result that formats an
+`Arguments` it didn't make to fail where a dictionary's may. `as_str()` of a
+literal given on calls its function. `as_str()` of a parameter's stays
+refused (#1091's amendment).
+
+No field of a library's contract changes: an `Arguments` crossing a
+library boundary is a function on both sides, made by the same compiler,
+so ADR 1129 asks no row.
+
+`format!`, `print!`, `write!` and `panic!` are byte for byte as they were.
+Of the corpus, `fmt_arguments_as_str` and `fmt_result_map_err` change (their
+`Arguments` given on), and so does `user_fmt_traits`: strum's
+`Display::fmt(&format_args!(..), f)` lends it to std's `Display`, a use other
+than as text, so its operand is held. Corpus case
+`format_args_given_on_formatted_where_written` runs against native Rust in
+both builds. It covers a callee that prints before formatting, one that
+formats twice, one that never does, one given through two functions, an
+operand with an effect, a `Cell` set between making and formatting, one
+held in a struct, one made in a loop, a call operand with an effect
+formatted twice, a writer that panics (caught), one that fails through
+`write_fmt`, and `as_str()` of a literal and of one made with a value.
+test/architecture-mir.test.ts holds `arguments_use` the one answer. The
+metamorphic net's `loud` rewrites of #1533's and #1557's cases now run as
+Rust does. Mutations: `given-on-arguments-made-whole`,
+`given-on-operands-made-late`, `given-on-arguments-uncalled`,
+`given-on-failing-partial-lost`, `arguments-given-to-crate-taken-in-place`,
+`assert-message-given-on` and `as-str-lent-given-on`;
+`fmt-as-str-of-formatted` is refitted. Readability: role fallbacks 270.9
+to 271 in 10,000 lines, blessed: an operand held where it's made, of a
+`format_args!` given on, is named `value` where its maker says nothing of
+it, `const value = [1]` of `Noisy(1)`.

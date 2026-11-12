@@ -195,9 +195,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // text, `from_str("plain")`'s, or `None` of one made with
             // arguments, `new(..)`'s, as native Rust's (#1091). Of one made
             // elsewhere, a parameter's, nothing says which: refused.
+            // Of a literal's given on, a function of its text (#1565), called.
             Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {
-                Some(true) => lower(|_, _, values, _| Ok(values.next().expect("the arguments"))),
-                Some(false) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),
+                Some((true, made)) => {
+                    let text = super::arguments_use::holds_text(&this.recognition(), _state.body, made);
+                    lower(move |this, _, values, _| {
+                        let value = values.next().expect("the arguments");
+                        Ok(match text {
+                            true => value,
+                            false => Value::Expr(Expr::call(this.value_expr(value, span)?, Vec::new())),
+                        })
+                    })
+                }
+                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),
                 None => lower(move |this, _, _, _| {
                     Err(this.unsupported(
                         span,

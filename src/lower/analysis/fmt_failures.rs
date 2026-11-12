@@ -90,6 +90,12 @@ pub(super) fn failing_fns<'tcx>(
         // `Debug`'s field or a `Debug` builder's step, `entry(&bad)`, which
         // std formats through the object, a call no call names (#1557).
         let mut shows = dyn_formatted(tcx, body);
+        // An `fmt::Arguments` it was given, or read from a place, which may
+        // hold any value, formatted where it's written (#1565): its writers'
+        // `Err` may be what a write of it gives, as a dictionary's may.
+        if formats_given_arguments(tcx, body) {
+            calls.push((caller, Callee::Unknown));
+        }
         // Each function it names, as its THIR names it, or a body of MIR
         // alone, a library's the crate compiles (ADR 0914), its MIR.
         for (callee, args, _) in crate::lower::instances::calls_of(body) {
@@ -324,6 +330,49 @@ fn makes_err<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, of: impl Fn(ty::Ty<'tcx
         ExprKind::NamedConst { def_id, args, .. } => of(expr.ty) && constant_may_be_err(tcx, def_id, args),
         _ => false,
     })
+}
+
+/// Whether `body`, which gives a write's result, reads an `fmt::Arguments`
+/// it didn't make: a parameter's, a capture's, a field's or one behind a
+/// reference, of its THIR; or of a body of MIR alone, a parameter's.
+fn formats_given_arguments<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+    let arguments = |ty: ty::Ty<'tcx>| {
+        ty.walk().filter_map(|part| part.as_type()).any(|part| {
+            matches!(part.kind(), ty::Adt(adt, _)
+                if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::FormatArguments))
+        })
+    };
+    if !matches!(
+        tcx.def_kind(body.def_id),
+        rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+    ) {
+        return false;
+    }
+    let output = tcx
+        .fn_sig(body.def_id)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder()
+        .output();
+    if !is_write_result_type(tcx, output) {
+        return false;
+    }
+    if body.root().is_some() {
+        return (body.thir.exprs.iter()).any(|expr| {
+            arguments(expr.ty)
+                && matches!(
+                    expr.kind,
+                    ExprKind::VarRef { .. }
+                        | ExprKind::UpvarRef { .. }
+                        | ExprKind::Field { .. }
+                        | ExprKind::Deref { .. }
+                )
+        });
+    }
+    let Some(mir) = &body.mir else {
+        return false;
+    };
+    (mir.body.args_iter()).any(|arg| arguments(mir.body.local_decls[arg].ty))
 }
 
 /// Each value `body` makes a `&dyn Debug` or a `&dyn Display`, as std's

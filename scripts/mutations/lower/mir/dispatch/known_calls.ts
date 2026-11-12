@@ -154,4 +154,5 @@ export const mutations: Mutation[] = [
     replace: "        let own = true;\n",
     tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to what Option::as_mut lends through another's"],
   },
+
 ];

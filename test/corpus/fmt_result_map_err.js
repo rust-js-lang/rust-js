@@ -45,7 +45,7 @@ function smallWrite_writeStr(small, s) {
 
 function make(cap, args) {
   const v = { text: "", cap };
-  const result = $writeTry(() => smallWrite_writeStr(v, args));
+  const result = $writeTry(() => smallWrite_writeStr(v, args()));
   const result$1 = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: [result, cap] };
   if (result$1.TAG === "Err") {
     return result$1;
@@ -69,7 +69,7 @@ function main() {
   const errorDebug = { fmt: (value) => "Error" };
   let text = "";
   try {
-    const value = make(8, "1-2");
+    const value = make(8, () => "1-2");
     text +=
       value.TAG === "Ok"
         ? `Ok(${$debugStr(value._0)})`
@@ -81,7 +81,7 @@ function main() {
   $print(text);
   let text$1 = "";
   try {
-    const value = make(2, "10-20");
+    const value = make(2, () => "10-20");
     text$1 +=
       value.TAG === "Ok"
         ? `Ok(${$debugStr(value._0)})`

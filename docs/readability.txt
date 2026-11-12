@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2381
-lines	308399
+files	2384
+lines	309033
 temporaries	0	0
 labeled blocks	0	0
 while (true)	219	7.1
-$iter	2702	87.6
-Iterator.from	261	8.5
+$iter	2702	87.4
+Iterator.from	261	8.4
 return;	317	10.3
-renamed x$1	14977	485.6
-role fallbacks	8356	270.9
+renamed x$1	14998	485.3
+role fallbacks	8368	270.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -825,6 +825,7 @@ test/corpus/for_binding_set_by_its_closure.js	39	0	0	0	0	0	0	0	0
 test/corpus/for_each_changes_items_in_place.js	49	0	0	0	0	0	0	4	0
 test/corpus/for_left_drops_its_rest_where_it_ends.js	208	0	0	4	4	0	0	26	13
 test/corpus/for_returning_in_an_if.js	104	0	0	0	0	0	0	0	0
+test/corpus/format_args_given_on_formatted_where_written.js	199	0	0	0	0	0	0	17	9
 test/corpus/format_args_order.js	37	0	0	0	0	0	0	4	3
 test/corpus/format_argument_unwinds.js	31	0	0	0	0	0	0	2	3
 test/corpus/format_arguments_beside_an_address.js	58	0	0	0	0	0	0	2	2
@@ -1788,6 +1789,7 @@ test/corpus/remainder_sign.js	23	0	0	0	0	0	0	0	0
 test/corpus/repeat_count_panics.js	130	0	0	0	1	0	0	0	5
 test/corpus/repeat_drops.js	237	0	0	1	0	0	0	7	3
 test/corpus/repeat_n_and_peek_mut.js	111	0	0	0	3	0	0	0	1
+test/corpus/repeat_n_drops_what_it_holds.js	255	0	0	0	0	0	0	0	2
 test/corpus/repeat_n_hint_held.js	190	0	0	0	0	1	0	26	15
 test/corpus/repeat_own_steps_clone_none.js	299	0	0	1	0	0	1	15	22
 test/corpus/repeats_stepped_from_their_backs.js	297	0	0	0	0	0	0	2	4
@@ -2230,7 +2232,7 @@ test/corpus/use_renames_own_item.js	13	0	0	0	0	0	0	0	0
 test/corpus/user_as_mut.js	49	0	0	0	0	0	0	0	2
 test/corpus/user_collections.js	69	0	0	0	4	2	0	0	0
 test/corpus/user_deref.js	75	0	0	0	0	0	0	2	1
-test/corpus/user_fmt_traits.js	154	0	0	0	0	0	0	0	0
+test/corpus/user_fmt_traits.js	155	0	0	0	0	0	0	0	1
 test/corpus/user_fmt_write.js	62	0	0	0	0	0	0	0	0
 test/corpus/user_from_str.js	127	0	0	0	0	0	0	30	16
 test/corpus/user_hash.js	101	0	0	0	0	0	0	5	5
@@ -2292,6 +2294,7 @@ test/corpus/wrapping_rem_zero.js	15	0	0	0	0	0	0	0	0
 test/corpus/wrapping_type.js	68	0	0	0	0	0	0	7	0
 test/corpus/wrapping_unary.js	12	0	0	0	0	0	0	0	0
 test/corpus/wrapping_written_through_a_reference.js	32	0	0	0	0	0	0	0	1
+test/corpus/write_error_drops_as_a_return.js	179	0	0	0	0	0	0	4	0
 test/corpus/write_result_constant.js	106	0	0	0	0	0	0	0	0
 test/corpus/write_result_given_to_generic_code.js	454	0	0	0	0	0	1	21	11
 test/corpus/write_result_items.js	197	0	0	0	0	0	0	16	10

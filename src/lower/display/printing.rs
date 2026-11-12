@@ -20,7 +20,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// May showing a value of `ty` print as it's formatted?
     pub(in crate::lower) fn shown_may_print(&self, ty: Ty<'tcx>) -> bool {
-        self.krate.prints.shown_may_print(ty)
+        // An `fmt::Arguments` given on may hold any value (#1565).
+        let arguments = |did| self.tcx.is_lang_item(did, LangItem::FormatArguments);
+        self.krate.prints.shown_may_print(ty, arguments)
     }
 
     /// Does `writer`, a writer of the crate's, write its text through a

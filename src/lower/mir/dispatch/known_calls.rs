@@ -215,7 +215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if matches!(known, Std::Print { .. }) {
                 self.flush(state, out)?;
             }
-            return Ok(Value::Expr(self.failing_values(known, Vec::new(), value, span, out)));
+            return Ok(Value::Expr(self.failing_values(known, first_ty(), value, span, out)));
         }
         // One whose `Some` is boxed where it looks like `None` (ADR 0051).
         if self.refuses_boxed_option(known, output) {

@@ -30,6 +30,7 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
     "src/lower/mir/std_calls.rs": "what a write wrote before it failed, no drop",
     "src/lower/format_args.rs": "a formatting failure caught, no drop",
     "src/lower/display/printing.rs": "a formatting failure caught as a line is printed through stdout's, no drop (#1490)",
+    "src/lower/mir/given_arguments.rs": "what an `Arguments` given on made before its writer failed, no drop (#1565)",
   };
   // `StmtKind::TryCatch(..)` made, `.at(..)` after its arguments: not a
   // pattern, which never is.

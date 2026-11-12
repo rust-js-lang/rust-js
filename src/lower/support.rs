@@ -217,7 +217,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Option` is its value or `undefined` (ADR 0030), or a box where
             // the value looks like `None` (ADR 0051).
             ty::Adt(..) if let Some(inner) = self.option_of(ty) => return self.unsupported_in(inner, seen),
-            // `format_args!`'s pieces are strings by the time JS sees them.
+            // `format_args!`'s pieces are strings by the time JS sees them, an
+            // `Arguments` given on a function of its text (#1565).
             ty::Adt(_, _)
                 if self.is_lang_adt(ty, LangItem::FormatArguments)
                     || self.is_lang_adt(ty, LangItem::FormatArgument) =>

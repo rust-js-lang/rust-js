@@ -125,8 +125,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let fmt = self.tcx.associated_item_def_ids(fmt_trait)[0];
-        crate::lower::recognition::formatted_parts(ty)
-            .any(|part| self.call_may_fail(fmt, self.tcx.mk_args(&[part.into()])))
+        // An `fmt::Arguments` given on may hold any value (#1565).
+        crate::lower::recognition::formatted_parts(ty).any(|part| {
+            self.is_lang_adt(part, LangItem::FormatArguments)
+                || self.call_may_fail(fmt, self.tcx.mk_args(&[part.into()]))
+        })
     }
 
     /// A call's value, of a function that returns a `fmt::Result` and may
@@ -901,7 +904,13 @@ fn shown_number(value: Expr) -> Expr {
 
 /// `target += written`: piece by piece, `pieces`, where what it writes may
 /// fail, so what came before it is written (ADR 0187).
-pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
+pub(in crate::lower) fn append_written(
+    target: &Expr,
+    written: Expr,
+    pieces: bool,
+    js_span: js::Span,
+    out: &mut Vec<Stmt>,
+) {
     let parts = match pieces {
         true => printing::line_parts(written),
         false => vec![written],

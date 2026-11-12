@@ -304,6 +304,12 @@ What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](../decisions/0034-strings-and-chars.md)).
+- **A `format_args!` given on is formatted where it's written:** passed
+  to a function, stored or returned, an `fmt::Arguments` is a function of
+  its text, `said(() => noisyDebug_fmt(value))`, its operands evaluated
+  where the macro is, and its `Display`s and `Debug`s run where the
+  callee formats it, as often as it does
+  ([0034](../decisions/0034-strings-and-chars.md), amended, #1565).
 - **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
   `LowerExp`, `Pointer` and the like,** given the placeholder's options
   ([0165](../decisions/0165-other-fmt-traits.md)).

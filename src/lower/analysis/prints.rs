@@ -55,6 +55,12 @@ impl Prints {
         self.through_sink.contains(&writer)
     }
 
+    /// May any writer of the crate's print as it formats: what may run in
+    /// an `fmt::Arguments` given on, which may hold any value, may (#1565).
+    pub(in crate::lower) fn any_writer_prints(&self) -> bool {
+        !self.types.is_empty()
+    }
+
     /// May `body` run while a line is formatted?
     pub(in crate::lower) fn runs_while_formatting(&self, body: DefId) -> bool {
         self.while_formatting.contains(&body)
@@ -63,13 +69,13 @@ impl Prints {
     /// May showing a value of `ty` print as it's formatted: a type of the
     /// crate's one of whose writers may, or one made of one, `Vec<Loud>`;
     /// or a type only a caller, or a `dyn`, says, where any writer may.
-    pub(in crate::lower) fn shown_may_print(&self, ty: ty::Ty<'_>) -> bool {
+    pub(in crate::lower) fn shown_may_print(&self, ty: ty::Ty<'_>, arguments: impl Fn(DefId) -> bool) -> bool {
         !self.types.is_empty()
             && ty
                 .walk()
                 .filter_map(|part| part.as_type())
                 .any(|part| match part.kind() {
-                    ty::Adt(adt, _) => self.types.contains(&adt.did()),
+                    ty::Adt(adt, _) => self.types.contains(&adt.did()) || arguments(adt.did()),
                     ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
                     _ => false,
                 })

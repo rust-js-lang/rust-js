@@ -167,4 +167,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_params.rs$"],
     snapshots: true,
   },
-];
+  {
+    name: "arguments-to-string-display-message",
+    breaks: "`to_string()` of an `Arguments` whose writer fails panics with `ToString`'s message, where std's `fmt::format` gives its own (#1565)",
+    file: "src/lower/format_args.rs",
+    find: "            Std::ToString if !arguments => \"a Display implementation returned an error unexpectedly: Error\",\n",
+    replace: "            Std::ToString => \"a Display implementation returned an error unexpectedly: Error\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
+  },];

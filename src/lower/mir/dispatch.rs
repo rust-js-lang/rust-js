@@ -616,7 +616,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.krate.nulled_params.record(caller, callee.0, &declared, &given_on);
         }
         self.record_bound(state, callee, operands);
+        // An `fmt::Arguments` given on is a function that makes its text,
+        // its operands evaluated now; std's formatting given one calls it
+        // (#1565).
+        let known = self.recognition().classify(callee.0, callee.1);
+        let given_on = self.makes_arguments_given_on(state, known, destination);
         let mut values = self.take_operands(state, operands, out)?;
+        if given_on {
+            self.arguments_operands_held(state, &mut values, out)?;
+        }
+        self.arguments_formatted(state, callee.0, (operands, arg_tys), &mut values, span)?;
         // Of another crate's, one its crate's calls each give `null` or a
         // value, which its body tests `!== null`: what may be `undefined`
         // given it `?? null`, as its contract says.
@@ -631,6 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
+            made if given_on => self.arguments_given_on(made, span),
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
         }

@@ -63,3 +63,14 @@ test("a builder is streamed where the sink fact says, and the fact is `prints.rs
   expect(prints).toContain("failing.contains(&body.def_id)");
   expect(prints).not.toMatch(/failing_fns|makes_err|fmt_failures::/);
 });
+
+// Whether an `fmt::Arguments` a body makes is its text or a function of it
+// is one fact from MIR, `mir::arguments_use` (#1565): the lowering asks it
+// where the `Arguments` is made and where std is given one, and nowhere
+// reconstructs it from the JS a `format_args!` became.
+test("an Arguments' text or function is `mir::arguments_use`'s answer alone", () => {
+  const lower = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const asking = lower.filter((file) => /\barguments_use\(|\bholds_text\(/.test(read(file)));
+  expect(asking).toEqual(["src/lower/mir/arguments_use.rs", "src/lower/mir/given_arguments.rs", "src/lower/mir/std_calls.rs"]);
+  expect(read("src/lower/mir/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
+});

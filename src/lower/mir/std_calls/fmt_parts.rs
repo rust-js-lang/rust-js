@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
         at: rustc_middle::mir::BasicBlock,
-    ) -> Option<bool> {
+    ) -> Option<(bool, rustc_middle::mir::Local)> {
         use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
         let local_of = |operand: &Operand<'tcx>| operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local);
         let TerminatorKind::Call { args, .. } = &body.basic_blocks[at].terminator().kind else {
@@ -134,12 +134,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(func) => {
                 let (def_id, args) = func.const_fn_def()?;
                 match self.recognition().classify(def_id, args)? {
-                    Std::FmtStr => Some(true),
-                    Std::FmtNew => Some(false),
+                    Std::FmtStr => Some((true, made.local)),
+                    Std::FmtNew => Some((false, made.local)),
                     _ => None,
                 }
             }
-            Err(Rvalue::Use(Operand::Constant(_), _)) => Some(true),
+            Err(Rvalue::Use(Operand::Constant(_), _)) => Some((true, made.local)),
             Err(_) => None,
         }
     }

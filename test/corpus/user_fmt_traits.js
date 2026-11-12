@@ -101,7 +101,8 @@ function bitsBinary_fmt(bits, options) {
 
 export const circleDisplay = { fmt: circleDisplay_fmt };
 function circleDisplay_fmt(circle, options) {
-  return `circle of ${circle[0]}`;
+  const value = circle[0];
+  return `circle of ${value}`;
 }
 
 function main() {

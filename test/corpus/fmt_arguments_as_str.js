@@ -18,18 +18,18 @@ function messageDisplay_fmt(message) {
 // anyhow's `format_err`, given what `as_str()` said where the arguments
 // were made.
 function message(text, args) {
-  return text != null ? { TAG: "Literal", _0: text } : { TAG: "Formatted", _0: args };
+  return text != null ? { TAG: "Literal", _0: text } : { TAG: "Formatted", _0: args() };
 }
 
 function main() {
   const count = 3;
-  const plain = "plain";
-  const items = `${count} items`;
+  const plain = () => "plain";
+  const items = () => `${count} items`;
   // A constant argument rustc writes into the literal.
-  const constant = "3 items";
-  console.log(`${messageDisplay_fmt(message(plain, plain))}`);
+  const constant = () => "3 items";
+  console.log(`${messageDisplay_fmt(message(plain(), plain))}`);
   console.log(`${messageDisplay_fmt(message(undefined, items))}`);
-  console.log(`${messageDisplay_fmt(message(constant, constant))}`);
+  console.log(`${messageDisplay_fmt(message(constant(), constant))}`);
   console.log(`None Some(${$debugStr("plain")})`);
   console.log(`Some(${$debugStr("")}) Some(${$debugStr("one")})`);
 }

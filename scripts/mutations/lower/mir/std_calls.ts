@@ -676,8 +676,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_str()` of arguments made with a value to format is `Some` of their text, so `format_args!(\"{count} items\").as_str()` is `Some(\"3 items\")` where native Rust's is `None`, and anyhow's `format_err` takes the literal's way (#1091)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                Some(false) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),\n",
-    replace: "                Some(false) => lower(|_, _, values, _| Ok(values.next().expect(\"the arguments\"))),\n",
+    find: "                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),\n",
+    replace: "                Some((false, _)) => lower(|_, _, values, _| Ok(values.next().expect(\"the arguments\"))),\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
   },
   {
