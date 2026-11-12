@@ -264,3 +264,41 @@ runs as native Rust in both builds and through `METAMORPHIC=all`, and the
 mutations `constant-write-result-tagged`, `constant-fmt-error-unmade`,
 `constant-err-unread`, `constant-ok-as-err` and
 `writer-held-result-unchecked` put each back.
+
+## Amendment: a derived `Debug`'s field and a builder's step that fail (2026-11-13, #1557)
+
+`fmt_failures.rs` followed a `{}` or `{:?}` of a value to its type's `fmt`,
+but a derived `Debug`'s field and a `Debug` builder's `field` or `entry`
+take the value as a `&dyn Debug`, an unsizing no call names. So a `Debug`
+that showed a part returning `Err` was taken never to fail. Its caller's
+`write!` into a `String` was `s += ..`, its result always `Ok`, and the
+error was thrown out of the program. **An unsizing of a `T` to `dyn Debug`
+or `dyn Display` is now a call of `T`'s `fmt`, as formatting it is, and so
+is a builder's `entries` of `D`** (`dyn_formatted`).
+
+The text written before the failing part was still lost: the derived
+`Debug`'s and the builder's text was one expression, `` `Holder { n: 1, bad:
+${bad()} }` ``. The lead decided (option A on the issue, for the user) that
+one rule covers this: a writer that may stop part-way writes through a
+sink. `prints.rs`' writer set, renamed `through_sink`, also takes a writer
+that may fail (`fmt_failures`' answer, read and never recomputed) and that
+writes through a `Debug` builder or a derived `Debug`
+(`writes_debug_builder`). That writer's text is a `$sink()`, a string of its
+own outside a line, and its builders are #1533's model (ADR 1130, amended),
+which keeps what each part wrote before its `Err` and skips the steps after
+it. Writers that neither print nor fail are as they were. A crate's
+`Debug` of a generic `T`, whose dictionary may fail where the crate's
+writes do, is now among them, as a `{:?}` of a `T` already was:
+`fmt_result_map_err`'s `Full<T>` streams.
+
+A std value's own `Debug` of a failing part, `Some(Bad)` or `(1, Bad)`, is
+still one expression and still loses `Some(`. That is filed as #1561, the
+`Err` twin of #1530.
+
+Corpus case `failing_debug_part_keeps_what_was_written` runs against native
+Rust in both builds. It covers a failing field first, in the middle and
+last; a tuple struct; an enum's variant; one of more than five fields; and a
+builder's `entry`, `field` (with `finish_non_exhaustive`), map `entry` and
+`entries`, each with the failing part at every place, in `{:?}` and
+`{:#?}`. Mutations `dyn-formatted-unseen`, `builder-entries-unseen` and
+`failing-builders-not-through-a-sink`.

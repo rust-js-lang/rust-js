@@ -16,7 +16,7 @@ use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{
     StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def,
-    is_write_result_type, of_files, of_io_reading,
+    is_write_result_type, of_files, of_io_reading, std_item,
 };
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -85,6 +85,11 @@ pub(super) fn failing_fns<'tcx>(
         if makes_err(tcx, body, |ty| of_write_error(tcx, ty)) {
             erring.insert(caller);
         }
+        // What it shows, each a fmt trait and the type of the value shown.
+        // A value made a `&dyn Debug` or a `&dyn Display`, a derived
+        // `Debug`'s field or a `Debug` builder's step, `entry(&bad)`, which
+        // std formats through the object, a call no call names (#1557).
+        let mut shows = dyn_formatted(tcx, body);
         // Each function it names, as its THIR names it, or a body of MIR
         // alone, a library's the crate compiles (ADR 0914), its MIR.
         for (callee, args, _) in crate::lower::instances::calls_of(body) {
@@ -110,18 +115,23 @@ pub(super) fn failing_fns<'tcx>(
                 failing.insert(caller);
                 continue;
             }
-            // `{}` of a value, or its `to_string()`: its trait's `fmt`,
-            // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
+            // `{}` of a value, or its `to_string()`.
             if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
-                let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
-                for part in args.types().next().into_iter().flat_map(formatted_parts) {
-                    match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {
-                        Some(Callee::Unseen) if library => unseen.push(caller),
-                        Some(callee) => calls.push((caller, callee)),
-                        None => {}
-                    }
-                }
+                shows.extend(args.types().next().map(|shown| (fmt_trait, shown)));
                 continue;
+            }
+            // A `Debug` builder's `entries(items)`, of each item's type, a
+            // map's key's and value's, all but the items' own (#1557).
+            if crate::lower::recognition::builder_step(tcx, callee)
+                == Some(crate::lower::recognition::BuilderStep::Entries)
+            {
+                let debug = std_item(tcx, StdItem::Debug);
+                let tys: Vec<ty::Ty<'tcx>> = args.types().collect();
+                shows.extend(
+                    tys.iter()
+                        .take(tys.len().saturating_sub(1))
+                        .map(|&shown| (debug, shown)),
+                );
             }
             let declared = tcx
                 .fn_sig(callee)
@@ -220,6 +230,18 @@ pub(super) fn failing_fns<'tcx>(
                 }
             }
         }
+        // Each shown, its trait's `fmt`, and that of each type it holds, as
+        // std's `Vec<T>` calls `T`'s.
+        for (fmt_trait, shown) in shows {
+            let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
+            for part in formatted_parts(shown) {
+                match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {
+                    Some(Callee::Unseen) if library => unseen.push(caller),
+                    Some(callee) => calls.push((caller, callee)),
+                    None => {}
+                }
+            }
+        }
     }
     // A writer's `write` may fail where it makes an `Err`, or calls what
     // gives one, as a function that may fail may.
@@ -302,6 +324,50 @@ fn makes_err<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, of: impl Fn(ty::Ty<'tcx
         ExprKind::NamedConst { def_id, args, .. } => of(expr.ty) && constant_may_be_err(tcx, def_id, args),
         _ => false,
     })
+}
+
+/// Each value `body` makes a `&dyn Debug` or a `&dyn Display`, as std's
+/// derived `Debug` and its builders are given a field: the trait, and the
+/// value's type. Of its THIR, or of a body of MIR alone, a library's the
+/// crate compiles (ADR 0914), its MIR's unsizing casts.
+fn dyn_formatted<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<(DefId, ty::Ty<'tcx>)> {
+    let fmt_traits = [StdItem::Debug, StdItem::Display].map(|item| std_item(tcx, item));
+    let formatted = |to: ty::Ty<'tcx>, from: ty::Ty<'tcx>| {
+        let ty::Dynamic(traits, ..) = to.peel_refs().kind() else {
+            return None;
+        };
+        let principal = traits.principal_def_id()?;
+        fmt_traits.contains(&principal).then(|| (principal, from.peel_refs()))
+    };
+    if body.root().is_some() {
+        return (body.thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::PointerCoercion {
+                    cast: ty::adjustment::PointerCoercion::Unsize,
+                    source,
+                    ..
+                } => formatted(expr.ty, body.thir[source].ty),
+                _ => None,
+            })
+            .collect();
+    }
+    let Some(mir) = &body.mir else {
+        return Vec::new();
+    };
+    let decls = &mir.body.local_decls;
+    (mir.body.basic_blocks.iter().flat_map(|block| &block.statements))
+        .filter_map(|statement| match &statement.kind {
+            rustc_middle::mir::StatementKind::Assign(assign) => match &assign.1 {
+                rustc_middle::mir::Rvalue::Cast(
+                    rustc_middle::mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _),
+                    operand,
+                    to,
+                ) => formatted(*to, operand.ty(decls, tcx)),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect()
 }
 
 /// Whether a `Result` constant `def_id` of `args` may be an `Err`: its

@@ -18,7 +18,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Printing(text, _) => Ok(text),
             Value::DynDebug(from, _, value) => {
                 let pretty = self.writer_pretty();
-                self.refuse_stopped_in_place(self.pointee(from), span)?;
                 self.debug_string_with(value, self.pointee(from), span, &pretty)
             }
             Value::List(items, at) => Ok(Expr::array(
@@ -170,7 +169,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::DynDebug(from, _, value) => (value, self.pointee(from)),
                     value => (self.value_expr(value, span)?, ty),
                 };
-                self.refuse_stopped_in_place(ty, span)?;
                 // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`.
                 let value = match step == BuilderStep::Entries {
                     true => crate::lower::iterators::iterated(value),
@@ -178,11 +176,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 typed.push((value, ty));
             }
-            let Some((kind, type_name, mut steps, parts)) = state.built.swap_remove(&root) else {
+            let Some((kind, type_name, mut steps, taken)) = state.built.swap_remove(&root) else {
                 return Err(self.unsupported(span, "this `Debug` builder, from its MIR"));
             };
-            match (step, parts) {
-                (BuilderStep::Finish { non_exhaustive }, None) => {
+            match (step, taken) {
+                // Written as it's taken, by std's builder's model (#1533).
+                // Kept: a loop's exit, its `finish`, may be lowered before
+                // the steps its body makes (#1026).
+                (step, Taken::Streamed(builder)) => {
+                    let call = self.streamed_step(kind, &builder, (step, typed, generic_args), span, out)?;
+                    self.flush(state, out)?;
+                    out.push(StmtKind::Expr(call).at(self.js_span(span)));
+                    state
+                        .built
+                        .insert(root, (kind, type_name, steps, Taken::Streamed(builder)));
+                }
+                (BuilderStep::Finish { non_exhaustive }, Taken::Kept) => {
                     let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
                     self.flush(state, out)?;
                     self.append_to_writer(state, &name, written, false, self.js_span(span), out);
@@ -191,10 +200,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // struct's or a tuple's is its name alone (ADR 0532).
                 // Kept: a loop's exit, its `finish`, may be lowered before the
                 // steps its body makes (#1026).
-                (BuilderStep::Finish { non_exhaustive }, Some(parts)) => {
+                (BuilderStep::Finish { non_exhaustive }, Taken::Parts(parts)) => {
                     state
                         .built
-                        .insert(root, (kind, type_name.clone(), Vec::new(), Some(parts.clone())));
+                        .insert(root, (kind, type_name.clone(), Vec::new(), Taken::Parts(parts.clone())));
                     let all = vec![crate::lower::display::BuilderPart::Many(Expr::var(&parts))];
                     let written = self.builder_assembled(kind, type_name.clone(), all, non_exhaustive);
                     let written = match (kind, type_name) {
@@ -207,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     self.append_to_writer(state, &name, written, false, self.js_span(span), out);
                 }
-                (step, Some(parts)) => {
+                (step, Taken::Parts(parts)) => {
                     let part = self.builder_part(kind, (step, typed, generic_args), span, out)?;
                     // Many, each pushed, `$extend(parts, texts)`, as a call's
                     // spread of more than JS's bound of arguments throws (#334).
@@ -221,11 +230,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     };
                     out.push(StmtKind::Expr(push).at(self.js_span(span)));
-                    state.built.insert(root, (kind, type_name, steps, Some(parts)));
+                    state.built.insert(root, (kind, type_name, steps, Taken::Parts(parts)));
                 }
-                (step, None) => {
+                (step, Taken::Kept) => {
                     steps.push((step, typed, generic_args));
-                    state.built.insert(root, (kind, type_name, steps, None));
+                    state.built.insert(root, (kind, type_name, steps, Taken::Kept));
                 }
             }
             return Ok(Some(Value::Expr(Expr::undefined())));
@@ -305,19 +314,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => None,
                 };
+                // Of a writer that writes through the line, std's builder's
+                // model, which writes each piece as it's taken, its opening
+                // now (#1533).
+                if self.writes_through_a_sink(state) {
+                    let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
+                    let (made, role) = self.streamed_builder(kind, sink, type_name);
+                    let builder = self.fresh(role);
+                    self.flush(state, out)?;
+                    out.push(StmtKind::Const(builder.clone(), made).at(self.js_span(span)));
+                    let taken = Taken::Streamed(builder);
+                    state.built.insert(destination.local, (kind, None, Vec::new(), taken));
+                    return Ok(Some(Value::Expr(Expr::undefined())));
+                }
                 // Held in a variable, which a branch may step or not: the
                 // array its steps add their parts to (ADR 0532).
                 let held = (state.body.var_debug_info.iter()).any(
                     |info| matches!(info.value, mir::VarDebugInfoContents::Place(p) if p.local == destination.local),
                 );
-                let parts = held.then(|| self.fresh(Role::Parts));
-                if let Some(parts) = &parts {
-                    self.flush(state, out)?;
-                    out.push(StmtKind::Let(parts.clone(), Some(Expr::array(Vec::new()))).at(self.js_span(span)));
-                }
+                let taken = match held {
+                    true => {
+                        let parts = self.fresh(Role::Parts);
+                        self.flush(state, out)?;
+                        out.push(StmtKind::Let(parts.clone(), Some(Expr::array(Vec::new()))).at(self.js_span(span)));
+                        Taken::Parts(parts)
+                    }
+                    false => Taken::Kept,
+                };
                 state
                     .built
-                    .insert(destination.local, (kind, type_name, Vec::new(), parts));
+                    .insert(destination.local, (kind, type_name, Vec::new(), taken));
                 return Ok(Some(Value::Expr(Expr::undefined())));
             }
             let name = name.clone();
@@ -334,18 +360,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let values = (values.into_iter())
                 .map(|v| self.shown_in_place(v, span))
                 .collect::<R<Vec<_>>>()?;
-            let pretty = self.writer_pretty();
-            let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
-            self.flush(state, out)?;
             let js_span = self.js_span(span);
+            // A derived `Debug`'s, of a writer that writes through the line:
+            // std's builder's model, each field written as it's shown (#1533).
+            let streamed = match self.writes_through_a_sink(state) {
+                true => self.streamed_derived(operation, &name, &values, js_span),
+                false => None,
+            };
+            let mut written_out = Vec::new();
+            match streamed {
+                Some(written) => {
+                    self.flush(state, out)?;
+                    written_out = written;
+                }
+                None => {
+                    let pretty = self.writer_pretty();
+                    let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
+                    self.flush(state, out)?;
+                    self.append_to_writer(state, &name, written, pieces, js_span, &mut written_out);
+                }
+            }
             // Of what may fail whose result is kept, not given on as the
             // writer's, `let r = write!(f, "{:?}", inner)`: the write's result as a
             // value, `$writeTry(..)`, what was written before its error
             // added to the writer's text, as a `String`'s is (ADR 0187,
             // #1524). Given on, its error is the writer's own, thrown on.
             if fails && result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected {
-                let mut written_out = Vec::new();
-                self.append_to_writer(state, &name, written, pieces, js_span, &mut written_out);
                 let caught = self.fresh(Role::Error);
                 let partial = Expr::call_helper("$fmtPartial", vec![Expr::var(&caught)]);
                 let mut handler = Vec::new();
@@ -354,7 +394,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tried = vec![StmtKind::TryCatch(written_out, Some(caught), handler).at(js_span)];
                 return Ok(Some(Value::Expr(self.fmt_try(tried))));
             }
-            self.append_to_writer(state, &name, written, pieces, js_span, out);
+            out.extend(written_out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         Ok(None)
@@ -752,7 +792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.tcx.typeck_root_def_id(self.item),
             false => self.item,
         };
-        state.writer.is_some() && self.writes_through_the_line(owner)
+        state.writer.is_some() && self.writes_through_sink(owner)
     }
 
     /// `written` written to the writer's own text, `name`: through its sink,
@@ -771,33 +811,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => crate::lower::display::write_to_sink(&Expr::var(name), written, pieces, js_span, out),
             false => crate::lower::display::append_written(&Expr::var(name), written, pieces, js_span, out),
         }
-    }
-}
-
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Refused: a value of `ty`, whose `Debug` may stop part-way
-    /// where a panic may be caught, shown by a derived `Debug` or a
-    /// builder's step of a writer that writes through the line, which makes
-    /// its text whole before the writer's own reaches the line, so what the
-    /// writer wrote before it would be lost (`stops_shown`, #1530). One that
-    /// prints and never stops is written as the line has it, its prints
-    /// marked where they ran (#1495, #1521).
-    fn refuse_stopped_in_place(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
-        let Some(part) = self
-            .writes_through_the_line(self.item)
-            .then(|| self.krate.prints.stops_shown(ty))
-            .flatten()
-        else {
-            return Ok(());
-        };
-        let shown = match part == ty.peel_refs() {
-            true => format!("`{part}`, whose `Debug`"),
-            false => format!("`{}` whose part `{part}`'s `Debug`", ty.peel_refs()),
-        };
-        Err(self.unsupported(
-            span,
-            &format!("a derived `Debug` or a `Debug` builder's step of a {shown} may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what was written before it (#1530)"),
-        ))
     }
 }
 

@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "fmt-error-formatted-unseen",
     breaks: "`{}` of a value whose `Display` fails isn't one that may fail",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "                    match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {",
-    replace: "                    match None::<Callee> {",
+    find: "                match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {",
+    replace: "                match None::<Callee> {",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's format of a `dyn Display`, which no consumer compiles, is taken to succeed: `write!(out, \"[{t}]\")` of its consumer's value that fails throws past `shown` (#1392)",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "                        Some(Callee::Unseen) if library => unseen.push(caller),\n",
+    find: "                    Some(Callee::Unseen) if library => unseen.push(caller),\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_formatter_given_a_failing_one$"],
   },
@@ -254,5 +254,21 @@ export const mutations: Mutation[] = [
     find: "                    .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))\n",
     replace: "                    .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
+  },
+  {
+    name: "dyn-formatted-unseen",
+    breaks: "a value made a `&dyn Debug`, a derived `Debug`'s field or a builder's `entry`, isn't seen formatted, so a writer showing one that gives `Err` is taken never to fail, and its caller's `write!` gives `Ok` (#1557)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        let mut shows = dyn_formatted(tcx, body);\n",
+    replace: "        let mut shows: Vec<(DefId, ty::Ty<'tcx>)> = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^failing_debug_part_keeps_what_was_written\\.rs$"],
+  },
+  {
+    name: "builder-entries-unseen",
+    breaks: "a builder's `entries` of items whose `Debug` gives `Err` isn't seen formatted, so its writer is taken never to fail (#1557)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        .map(|&shown| (debug, shown)),\n",
+    replace: "                        .map(|&shown| (debug, shown))\n                        .filter(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^failing_debug_part_keeps_what_was_written\\.rs$"],
   },
 ];

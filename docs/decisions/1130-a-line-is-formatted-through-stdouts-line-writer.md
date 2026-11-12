@@ -328,3 +328,79 @@ writes, shown as before in a crate that catches, and one that may panic
 by an index, kept. test/runtime-print.test.ts shows the decided
 difference: a line cut short where nothing catches the panic lacks the
 partial line native Rust writes at exit.
+
+## Amendment: a `Debug` builder of a writer that prints is written as it's taken (2026-11-13, #1533)
+
+A builder's text was assembled whole at its `finish`, `` `[${Array.from(iter,
+show).join(", ")}]` ``. So whatever the writer printed between the builder's
+pieces landed before all of them. The metamorphic net's `loud` rewrite found
+`entries(iter)` of an iterator that prints as it steps: `x <step 1><step
+2>[1, 2] y` where Rust's stdout has `x [<step 1>1<step 2>, 2] y`. A probe
+found three more shapes of the same fault: a field's argument that prints
+as it's made, `field("a", &{ print!("<a>"); v })`; a held builder stepped in
+a loop that prints; and `entries` of items that print as they drop. The
+lead approved the design on the issue, on the user's behalf.
+
+**Where a writer writes through its sink, its builders are std's, step by
+step.** The choice reads the sink's one fact, `writes_through_a_sink`
+(`prints.rs`' `through_sink`), where the builder's made. `f.debug_list()` is
+`const list = $debugList(f, options?.alternate)`, which writes `[` at once,
+as `debug_list_new` does. `list.entry(() => text)` and `list.entries(items,
+show, drop?)` write each separator and entry as it's taken: `entries` steps
+the iterator one item at a time, with `$entriesShown`'s drops and closing.
+`list.finish()` and `list.finishNonExhaustive()` write the close. The same
+holds for `$debugStruct(f, name, ..)`'s `field(name, () => text)`,
+`$debugTuple`, `$debugSet` and `$debugMap` (`entry(() => key, () => value)`,
+`entries`). A derived `Debug` (`debug_struct_field2_finish` and the rest) of
+such a writer is written through `$debugStruct` or `$debugTuple` too, each
+field as it's shown. Writers that don't write through a sink keep the
+assembled form, byte for byte.
+
+**The model, `src/runtime/debug_builders.js`, is core's `fmt/builders.rs`.**
+It keeps `has_fields` as a count. `{:#?}`'s `PadAdapter` is `$padded`, now
+given the adapter's state, so a field's name and its value of many lines are
+padded as one, and a print's mark at a line's start stays before the indent.
+std's `result` short-circuits: a step whose `show` throws a write's error
+writes what its part wrote before it (`error.written`, through the adapter)
+and records the error, and no later step is taken. That is why a step's
+text is a function, as std's own `field_with` and `entry_with` are; its
+writer is never run. `entries` still steps its iterator, as std's `for entry
+in entries` does, and `finish` throws the error. A panic goes on, and what
+the part wrote before it, the captures the panic left open
+(`$unfinishedAbove`), is written through the adapter first, as
+`PadAdapter` wrote it.
+
+**#1530's derived and builder half is lifted.** Since what came before a
+part that stops is already in the writer's capture,
+`refuse_stopped_in_place` is gone: a derived `Debug` or a builder of a part
+that prints and panics, where it's caught, is written as Rust's stdout
+keeps it, `x Holder { first: !Grid(1), second: !Grid(`. A std value's
+`Debug` (`Vec`, `Option`, a tuple, a map) is still one expression, so
+`stops_composed` stays and #1530 narrows to it.
+
+Proof (the model's, per #1458): the corpus cases
+`printing_builder_written_step_by_step` and
+`printing_derived_debug_stopped_part_way`, each against native Rust in both
+builds. They cover each builder × `{:?}`/`{:#?}`, `entries`' stepping, a
+field argument's print, a held builder in a loop, `entries` twice with a
+print between, entries that drop, a map's `entries`, `finish_non_exhaustive`
+with and without fields, an unnamed tuple's `(1,)`, empty lists, a builder
+nested in another's field (`PadAdapter` across), a derived `Debug` of
+printing fields (and of more than five), a `format!` of one, one inside a
+`Vec`, a failing step followed by printing statements and steps (`result`
+short-circuiting, `entries` stepping on), and a derived `Debug` and a held
+builder whose part panics part-way, caught, in `{:?}` and `{:#?}`.
+test/runtime-print.test.ts holds the model's edges, and
+test/architecture-mir.test.ts holds that the choice is the sink fact's
+alone. Mutations: `builder-step-after-error-taken`,
+`builder-entries-stop-stepping-after-error`,
+`builder-separator-before-first`, `builder-pretty-unpadded`,
+`builder-adapter-state-fresh`, `builder-error-partial-lost`,
+`builder-panicked-part-unpadded`, `builder-unnamed-tuple-without-comma`,
+`builder-non-exhaustive-empty-spaced`, `derived-debug-assembled-through-a-sink`,
+`streamed-step-non-exhaustive-finished` and
+`builder-assembled-in-a-printing-writer`. `stopped-in-place-unrefused` is
+removed with the refusal it held. Readability: renamed `x$1` 487.1 to
+487.2 in 10,000 lines, blessed: a builder is held by its kind's word,
+`list`, which a writer whose own parameter is `list` names `list$1`
+(`debug_entries_drop_as_std`'s `List`).

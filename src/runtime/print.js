@@ -75,10 +75,11 @@ function $unmarked(text) {
 // `text` as std's `PadAdapter` writes it, `{:#?}`'s parts': four spaces
 // before each of its lines' first character, a blank line's too; a print's
 // mark at a line's start stays before them, as the print, made before its
-// writer writes the line, doesn't go through the adapter (#1521).
-function $padded(text) {
+// writer writes the line, doesn't go through the adapter (#1521). Of a part
+// written in pieces, a builder's field's name, then its value (#1533), the
+// adapter's state, whether it's at a line's start, kept between them.
+function $padded(text, adapter = { onNewline: true }) {
   let padded = "";
-  let lineStart = true;
   for (const [at, part] of text.split($markOf().split).entries()) {
     if (at % 2 === 1) {
       padded += part;
@@ -86,9 +87,9 @@ function $padded(text) {
     }
     for (const line of part.split(/(?<=\n)/)) {
       if (line === "") continue;
-      if (lineStart) padded += "    ";
+      if (adapter.onNewline) padded += "    ";
       padded += line;
-      lineStart = line.endsWith("\n");
+      adapter.onNewline = line.endsWith("\n");
     }
   }
   return padded;
@@ -102,6 +103,14 @@ function $closeAbove(depth) {
     if ($captures.length > 0) $captures.at(-1).text += left.text;
     else $toLine(left.text);
   }
+}
+// The text of the writers above `depth` a panic left unfinished, closed:
+// what they wrote, in the order they wrote it, for the writer at `depth` to
+// write as its own, a builder's through `{:#?}`'s adapter (#1533).
+function $unfinishedAbove(depth) {
+  if ($captures.length <= depth) return "";
+  $closeAbove(depth + 1);
+  return $captures.pop().text;
 }
 // Text for the line: printed where no line is formatted, as `print!`
 // prints, so a `format!`'s writer's print comes before what's printed

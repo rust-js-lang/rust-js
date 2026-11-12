@@ -227,46 +227,79 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (DebugBuilder::List | DebugBuilder::Set | DebugBuilder::Map, BuilderStep::Entries) => {
                 let items = values.next().expect("the entries").0;
-                let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
-                let iterable = *tys.last().expect("the entries' type");
-                let items = self.iterable_items(items, iterable, span, out)?;
-                let shown = if kind == DebugBuilder::Map {
-                    let pair = Expr::var("entry");
-                    let key = self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
-                    let value = self.debug_string_with(Expr::index(pair, Expr::int(1)), tys[1], span, &pretty)?;
-                    join(vec![key, Expr::str(": "), value])
-                } else {
-                    self.debug_string_with(Expr::var("entry"), tys[0], span, &pretty)?
+                let entries = self.entries_shown(kind, items, generic_args, span, out)?;
+                let shown = match &entries.shows[..] {
+                    [key, value] => join(vec![key.clone(), Expr::str(": "), value.clone()]),
+                    [shown] => shown.clone(),
+                    _ => unreachable!("a show, or a key's and a value's"),
                 };
                 let each = Expr::arrow(
                     vec!["entry".into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
-                // Of what holds what drops, its items or the crate's iterator
-                // with a `Drop`, or an iterator whose steps may panic: each
-                // shown as it's stepped, then dropped, as std's `for entry in
-                // entries { self.entry(&entry) }` drops it, and as a panic
-                // showing it unwinds; closed, what's left of it dropped where
-                // a step or a show throws, and the crate's iterator at its
-                // end, `$entriesShown` (#1141, #1147, #1148). Of another, a
-                // collection's, `Array.from` of it, which nothing tells apart.
-                let item = self.iterable_item(iterable);
-                let drops = |ty| self.drops(ty) != crate::lower::drops::Drops::Nothing;
-                let throws = drops(iterable)
-                    || drops(item)
-                    || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));
-                BuilderPart::Many(match throws {
+                BuilderPart::Many(match entries.closed {
                     true => {
-                        let it = self.js_iterator(items);
-                        let it = self.closing(it, iterable, span)?;
-                        let mut args = vec![it, each];
-                        args.extend(self.std_drop_function(item, span)?);
+                        let mut args = vec![entries.items, each];
+                        args.extend(entries.drop);
                         Expr::call_helper("$entriesShown", args)
                     }
-                    false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items, each]),
+                    false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![entries.items, each]),
                 })
             }
             _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
+        })
+    }
+
+    /// What a `Debug` builder of `kind`'s `entries(items)` steps and shows,
+    /// as pretty as this writer is (ADR 0137): each entry's text of `entry`,
+    /// a map's key's and value's apart; and of what holds what drops, its
+    /// items or the crate's iterator with a `Drop`, or an iterator whose
+    /// steps may panic, the iterator closed and its items' drop: each shown
+    /// as it's stepped, then dropped, as std's `for entry in entries {
+    /// self.entry(&entry) }` drops it, and as a panic showing it unwinds;
+    /// closed, what's left of it dropped where a step or a show throws, and
+    /// the crate's iterator at its end (#1141, #1147, #1148). Of another, a
+    /// collection's, the items as they are, which nothing tells apart.
+    pub(in crate::lower) fn entries_shown(
+        &mut self,
+        kind: DebugBuilder,
+        items: Expr,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<EntriesShown> {
+        let pretty = self.writer_pretty();
+        let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
+        let iterable = *tys.last().expect("the entries' type");
+        let items = self.iterable_items(items, iterable, span, out)?;
+        let shows = if kind == DebugBuilder::Map {
+            let pair = Expr::var("entry");
+            let key = self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
+            let value = self.debug_string_with(Expr::index(pair, Expr::int(1)), tys[1], span, &pretty)?;
+            vec![key, value]
+        } else {
+            vec![self.debug_string_with(Expr::var("entry"), tys[0], span, &pretty)?]
+        };
+        let item = self.iterable_item(iterable);
+        let drops = |ty| self.drops(ty) != crate::lower::drops::Drops::Nothing;
+        let closed =
+            drops(iterable) || drops(item) || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));
+        if !closed {
+            return Ok(EntriesShown {
+                items,
+                shows,
+                closed,
+                drop: None,
+            });
+        }
+        let it = self.js_iterator(items);
+        let items = self.closing(it, iterable, span)?;
+        let drop = self.std_drop_function(item, span)?;
+        Ok(EntriesShown {
+            items,
+            shows,
+            closed,
+            drop,
         })
     }
 
@@ -615,4 +648,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Err(self.unsupported(span, &format!("`{{}}` of a `{ty}`")))
     }
+}
+
+/// What a `Debug` builder's `entries(items)` steps and shows
+/// (`entries_shown`): the items, each entry's text of `entry`, a map's key's
+/// and value's apart, and whether it's closed where a step or a show throws,
+/// with the drop of each item, if it has one.
+pub(in crate::lower) struct EntriesShown {
+    pub(in crate::lower) items: Expr,
+    pub(in crate::lower) shows: Vec<Expr>,
+    pub(in crate::lower) closed: bool,
+    pub(in crate::lower) drop: Option<Expr>,
 }

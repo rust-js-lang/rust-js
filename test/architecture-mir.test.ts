@@ -42,3 +42,24 @@ test("what a call's Result is given to is asked of `mir::result_use` alone", () 
   expect(["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs") && /fn given_on\b/.test(read(file)))).toEqual([]);
   for (const file of ["src/lower/mir/writer.rs", "src/lower/mir/dispatch.rs"]) expect(read(file)).toContain("result_use(");
 });
+
+// Whether a writer's `Debug` builders and derived `Debug` are written step
+// by step, std's builders' model, or assembled at `finish`, is one fact,
+// `prints.rs`' `through_sink` (#1533, #1557): its writers that may print,
+// and those whose builder's step may fail, `fmt_failures`' answer, which it
+// reads, never recomputes. The lowering reads it through
+// `writes_through_a_sink` alone, where a builder's made, and only
+// `display/streamed.rs` names the builders' helpers.
+test("a builder is streamed where the sink fact says, and the fact is `prints.rs`' alone", () => {
+  const lower = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  expect(lower.filter((file) => /\.through_sink\b/.test(read(file)))).toEqual(["src/lower/analysis/prints.rs"]);
+  expect(lower.filter((file) => /prints\.writes_through_sink\(/.test(read(file)))).toEqual(["src/lower/display/printing.rs"]);
+  expect(lower.filter((file) => /Taken::Streamed\(/.test(read(file)))).toEqual(["src/lower/mir/writer.rs"]);
+  expect(lower.filter((file) => /"\$debug(List|Set|Map|Struct|Tuple)"/.test(read(file)))).toEqual(["src/lower/display/streamed.rs"]);
+  const writer = read("src/lower/mir/writer.rs");
+  const made = writer.indexOf("let taken = Taken::Streamed(builder);");
+  expect(writer.lastIndexOf("if self.writes_through_a_sink(state) {", made)).toBeGreaterThan(writer.lastIndexOf("fn ", made));
+  const prints = read("src/lower/analysis/prints.rs");
+  expect(prints).toContain("failing.contains(&body.def_id)");
+  expect(prints).not.toMatch(/failing_fns|makes_err|fmt_failures::/);
+});

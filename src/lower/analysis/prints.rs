@@ -28,9 +28,13 @@ use super::may_run::Runs;
 /// What `prints` found of a crate.
 #[derive(Default)]
 pub(in crate::lower) struct Prints {
-    /// The writers that may print to stdout as they format, whose text is
-    /// written through the line they're formatting into (`$sink()`).
-    pub(in crate::lower) writers: IndexSet<DefId>,
+    /// The writers whose text is written through a sink (`$sink()`), piece
+    /// by piece: those that may print to stdout as they format, through the
+    /// line they're formatting into; and those whose `Debug` builder's step
+    /// or derived `Debug`'s field may give a write's `Err`, `fmt_failures`'
+    /// answer, so what they wrote before it is kept, as std's builders write
+    /// it (#1557).
+    pub(in crate::lower) through_sink: IndexSet<DefId>,
     /// The bodies that may run while a line is formatted: those writers and
     /// what each may run. A print of one is written through stdout's line
     /// (`$out`), and a writer's text it makes for anything but that line,
@@ -45,9 +49,10 @@ pub(in crate::lower) struct Prints {
 }
 
 impl Prints {
-    /// Does `writer` write its text through the line it formats into?
-    pub(in crate::lower) fn writer_prints(&self, writer: DefId) -> bool {
-        self.writers.contains(&writer)
+    /// Does `writer` write its text through a sink, piece by piece: the
+    /// line it formats into, where it prints, or a string of its own?
+    pub(in crate::lower) fn writes_through_sink(&self, writer: DefId) -> bool {
+        self.through_sink.contains(&writer)
     }
 
     /// May `body` run while a line is formatted?
@@ -59,7 +64,7 @@ impl Prints {
     /// crate's one of whose writers may, or one made of one, `Vec<Loud>`;
     /// or a type only a caller, or a `dyn`, says, where any writer may.
     pub(in crate::lower) fn shown_may_print(&self, ty: ty::Ty<'_>) -> bool {
-        !self.writers.is_empty()
+        !self.types.is_empty()
             && ty
                 .walk()
                 .filter_map(|part| part.as_type())
@@ -101,7 +106,33 @@ impl Prints {
 /// what may run while one does; and the types of those that may stop
 /// part-way, by a panic or an `Err`, where the crate catches a panic
 /// (`stopping`, #1521).
+///
+/// And the writers that write through a sink as they may fail by a
+/// builder's step or a derived `Debug`'s field (`through_sink`, #1557).
 pub(super) fn prints<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    runs: &Runs<'_, 'tcx>,
+    unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
+) -> Prints {
+    let mut found = printing_writers(recognition, all_bodies, runs, unwinding);
+    let failing = unwinding.1;
+    found.through_sink.extend(
+        (all_bodies.iter())
+            .filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())
+            .filter(|body| {
+                (crate::lower::instances::calls_of(body).into_iter())
+                    .any(|(callee, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
+            })
+            .map(|body| body.def_id),
+    );
+    found
+}
+
+/// The writers that may print as they format, or stop part-way where a
+/// panic may be caught, what may run while one does, and the types of
+/// those; `prints`'.
+fn printing_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
@@ -161,7 +192,7 @@ pub(super) fn prints<'tcx>(
         match runs.of(writer) {
             Some(run) => {
                 if stops || printing.contains(&writer) || run.iter().any(|id| printing.contains(id)) {
-                    found.writers.insert(writer);
+                    found.through_sink.insert(writer);
                     found.while_formatting.insert(writer);
                     found.while_formatting.extend(run);
                 }
@@ -170,7 +201,7 @@ pub(super) fn prints<'tcx>(
             // runs may be any body that prints.
             None => {
                 unfollowed = true;
-                found.writers.insert(writer);
+                found.through_sink.insert(writer);
                 found.while_formatting.insert(writer);
             }
         }
@@ -178,7 +209,11 @@ pub(super) fn prints<'tcx>(
     if unfollowed {
         found.while_formatting.extend(printing.iter().copied());
     }
-    found.types = found.writers.iter().filter_map(|&writer| type_of(writer)).collect();
+    found.types = found
+        .through_sink
+        .iter()
+        .filter_map(|&writer| type_of(writer))
+        .collect();
     // The types a `Debug` of which may stop part-way, which a `Debug` that
     // shows them among other parts can't write as the line has it (#1530).
     found.stopping = (stops.iter())
@@ -195,7 +230,7 @@ pub(super) fn prints<'tcx>(
     // point.
     loop {
         let more: Vec<DefId> = (writers.iter())
-            .filter(|body| !found.writers.contains(&body.def_id))
+            .filter(|body| !found.through_sink.contains(&body.def_id))
             .filter(|body| {
                 body.thir.exprs.iter().any(|expr| {
                     (expr.ty.walk().filter_map(|part| part.as_type()))
@@ -208,7 +243,7 @@ pub(super) fn prints<'tcx>(
             return found;
         }
         for writer in more {
-            found.writers.insert(writer);
+            found.through_sink.insert(writer);
             found.while_formatting.insert(writer);
             found.while_formatting.extend(runs.of(writer).unwrap_or_default());
             found.types.extend(type_of(writer));

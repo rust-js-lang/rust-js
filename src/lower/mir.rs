@@ -533,15 +533,28 @@ impl<'tcx> State<'_, 'tcx> {
 }
 
 /// A `Debug` builder's kind, a `DebugStruct` say, its type's name, and
-/// each step, `field` and the like, of its arguments and their types; or of
-/// one held in a variable, the array its steps add their parts to as
-/// they're taken (ADR 0532).
+/// each step, `field` and the like, of its arguments and their types, kept
+/// till its `finish`; and where its steps go as they're taken.
 type Built<'tcx> = (
     DebugBuilder,
     Option<Expr>,
     Vec<(BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
-    Option<String>,
+    Taken,
 );
+
+/// Where a `Debug` builder's steps go as they're taken.
+#[derive(Clone)]
+enum Taken {
+    /// Kept, each, till its `finish`, which writes them all (ADR 0136).
+    Kept,
+    /// Of one held in a variable, the array its steps add their parts to
+    /// (ADR 0532).
+    Parts(String),
+    /// Of a writer that writes through the line, std's builder's model, the
+    /// runtime's, held in this variable, which writes each piece as it's
+    /// taken, as std's does (#1533).
+    Streamed(String),
+}
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {

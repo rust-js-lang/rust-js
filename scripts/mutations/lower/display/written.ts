@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder's `entries` of an `Option` or a range shows nothing",
     file: "src/lower/display/written.rs",
-    find: "                let items = self.iterable_items(items, iterable, span, out)?;\n",
+    find: "        let items = self.iterable_items(items, iterable, span, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
   },
@@ -280,17 +280,17 @@ export const mutations: Mutation[] = [
     name: "debug-entries-unclosed",
     breaks: "a `Debug` builder's `entries(it)` lists `it` by `Array.from`, which closes nothing where its step panics (#1141)",
     file: "src/lower/display/written.rs",
-    find: "                BuilderPart::Many(match throws {\n",
-    replace: "                BuilderPart::Many(match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
+    find: "        if !closed {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(consumer_closes_what_it_steps_on_a_panic|debug_entries_closed_where_nothing_prints).rs$"],
   },
   {
     name: "debug-entries-items-undropped",
     breaks:
       "a `Debug` builder's `entries` never drops the entries it shows, std's `for entry in entries` drops each after showing it (#1148)",
     file: "src/lower/display/written.rs",
-    find: "                        args.extend(self.std_drop_function(item, span)?);\n",
-    replace: "",
+    find: "        let drop = self.std_drop_function(item, span)?;\n",
+    replace: "        let drop = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
   },
   {
@@ -298,8 +298,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder's `entries` of the crate's iterator with a `Drop`, or of a `Vec` whose show panics, never closes it, so it's never dropped, nor what's left of the `Vec` (#1147, #1148)",
     file: "src/lower/display/written.rs",
-    find: "                        let it = self.closing(it, iterable, span)?;\n",
-    replace: "",
+    find: "        let items = self.closing(it, iterable, span)?;\n",
+    replace: "        let items = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
   },
   {
@@ -307,8 +307,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder's `entries` of an adapter that makes what drops, `iter().map(|&n| D(n))`, isn't asked of its items, so it's listed by `Array.from`, which drops none (#1148)",
     file: "src/lower/display/written.rs",
-    find: "                    || drops(item)\n",
-    replace: "",
+    find: "            drops(iterable) || drops(item) || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));\n",
+    replace: "            drops(iterable) || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
   },
   {

@@ -612,6 +612,13 @@ pub(in crate::lower) fn makes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> b
     name.as_str().starts_with("debug_") && !name.as_str().ends_with("_finish")
 }
 
+/// Whether `def_id`, a `Formatter`'s method, writes through a `Debug`
+/// builder: one that makes one, `debug_list()`, or a derived `Debug`'s,
+/// which writes one whole, `debug_struct_field2_finish`.
+pub(in crate::lower) fn writes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_formatter_method(tcx, def_id) && tcx.item_name(def_id).as_str().starts_with("debug_")
+}
+
 /// Whether `def_id` is a method of std's `Formatter`, its own.
 fn is_formatter_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {

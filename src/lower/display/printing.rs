@@ -23,10 +23,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.prints.shown_may_print(ty)
     }
 
-    /// Does `writer`, a writer of the crate's, write its text through the
-    /// line it formats into, as it may print?
-    pub(in crate::lower) fn writes_through_the_line(&self, writer: DefId) -> bool {
-        self.krate.prints.writer_prints(writer)
+    /// Does `writer`, a writer of the crate's, write its text through a
+    /// sink, piece by piece: the line it formats into, as it may print, or a
+    /// string of its own, as a builder's step may fail (#1557)?
+    pub(in crate::lower) fn writes_through_sink(&self, writer: DefId) -> bool {
+        self.krate.prints.writes_through_sink(writer)
     }
 
     /// `text`, a `format_args!`'s whose formatting may print, made for

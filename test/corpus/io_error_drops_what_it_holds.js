@@ -4,6 +4,7 @@ import {
   $IoError,
   $cleanup,
   $collectDropping,
+  $debugStruct,
   $dropItems,
   $fmtPrintFailed,
   $fmtWritten,
@@ -62,7 +63,13 @@ export const randErrorDebug = {
 
 function randErrorDebug_fmt(randError) {
   const f = $sink();
-  f.write(`RandError { inner: ${randError.inner.impl.Debug().fmt(randError.inner.value)} }`);
+  try {
+    const struct = $debugStruct(f, "RandError");
+    struct.field("inner", () => randError.inner.impl.Debug().fmt(randError.inner.value));
+    struct.finish();
+  } catch (error) {
+    throw $fmtWritten(error, f.done());
+  }
   return f.done();
 }
 

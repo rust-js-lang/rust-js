@@ -9,8 +9,8 @@ import {
   $collectVec,
   $collecting,
   $collectsInPlace,
+  $debugList,
   $dropEach,
-  $entriesShown,
   $folded,
   $heapExtend,
   $heapFrom,
@@ -92,9 +92,9 @@ function repeated(d, n, CFromIteratorU32) {
 export const listedDebug = { fmt: listedDebug_fmt };
 function listedDebug_fmt(listed) {
   const f = $sink();
-  f.write(
-    `[${$entriesShown($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry)).join(", ")}]`,
-  );
+  const list = $debugList(f);
+  list.entries($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry));
+  list.finish();
   return f.done();
 }
 

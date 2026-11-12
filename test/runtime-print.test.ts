@@ -98,3 +98,41 @@ fn main() {
   expect([native.stdout, native.outcome]).toEqual(["x half", { panic: "in the middle" }]);
   expect([ran.stdout, ran.outcome]).toEqual(["", { panic: "in the middle" }]);
 }, underLoad(120_000));
+
+// std's `Debug` builders, step by step through a writer's sink (#1533,
+// #1557): each piece written as it's taken, outside a line the sink a
+// string of the writer's own. A step's `Err` keeps what its part wrote,
+// through `{:#?}`'s adapter, and no later step is taken, its value never
+// made, though `entries` steps on; `finish` throws it. Core's
+// `fmt/builders.rs` is the model; the corpus's grids hold it to native
+// Rust, this its own edges.
+test("a streamed builder writes as std's, and stops its steps at an error", () => {
+  const module = join(fixture("runtime-debug-builders"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $debugList, $debugMap, $debugStruct, $debugTuple, $sink, $fmtError } = await import(${JSON.stringify(module)});
+const seen = [];
+const shown = (make) => {
+  const f = $sink();
+  try {
+    make(f);
+    seen.push("ok " + JSON.stringify(f.done()));
+  } catch (error) {
+    seen.push("err " + JSON.stringify(f.done() + error.written));
+  }
+};
+const bad = () => {
+  try { $fmtError(); } catch (error) { error.written = "B\\nb"; throw error; }
+};
+shown((f) => { const s = $debugStruct(f, "S", true); s.field("a", () => "1"); s.field("b", bad); s.field("c", () => seen.push("shown c")); s.finish(); });
+shown((f) => { const l = $debugList(f); l.entry(bad); l.entries([1, 2], (n) => { seen.push("shown " + n); return String(n); }, (n) => seen.push("drop " + n)); l.finish(); });
+shown((f) => { const t = $debugTuple(f, ""); t.field(() => "1"); t.finish(); });
+shown((f) => { const t = $debugTuple(f, "", true); t.field(() => "1"); t.finishNonExhaustive(); });
+shown((f) => { const m = $debugMap(f, true); m.entry(() => "k", () => "v\\nw"); m.finishNonExhaustive(); });
+shown((f) => { const s = $debugStruct(f, "E"); s.finishNonExhaustive(); });
+console.log(seen.join("|"));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe(
+    'err "S {\\n    a: 1,\\n    b: B\\n    b"|drop 1|drop 2|err "[B\\nb"|ok "(1,)"|ok "(\\n    1,\\n    ..\\n)"|ok "{\\n    k: v\\n    w,\\n    ..\\n}"|ok "E { .. }"\n',
+  );
+});

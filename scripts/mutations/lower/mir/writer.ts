@@ -146,18 +146,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder held in a variable is taken as a chain, its steps in a branch or a loop lost",
     file: "src/lower/mir/writer.rs",
-    find: '                let parts = held.then(|| self.fresh(Role::Parts));',
-    replace:
-      '                let parts = held.then(|| self.fresh(Role::Parts)).filter(|_| false);',
+    find: "                let taken = match held {\n",
+    replace: "                let taken = match held && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
   },
   {
     name: "builder-held-step-not-added",
     breaks: "a held `Debug` builder's step adds nothing to its parts",
     file: "src/lower/mir/writer.rs",
-    find: "                    out.push(StmtKind::Expr(push).at(self.js_span(span)));\n                    state.built.insert(root, (kind, type_name, steps, Some(parts)));",
+    find: "                    out.push(StmtKind::Expr(push).at(self.js_span(span)));\n                    state.built.insert(root, (kind, type_name, steps, Taken::Parts(parts)));",
     replace:
-      "                    let _ = push;\n                    state.built.insert(root, (kind, type_name, steps, Some(parts)));",
+      "                    let _ = push;\n                    state.built.insert(root, (kind, type_name, steps, Taken::Parts(parts)));",
     tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
   },
   {
@@ -276,7 +275,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` builder held in a variable is forgotten at its `finish`, which a loop's exit lowers before its body's steps, refused (#1026)",
     file: "src/lower/mir/writer.rs",
-    find: "                        .insert(root, (kind, type_name.clone(), Vec::new(), Some(parts.clone())));\n",
+    find: "                        .insert(root, (kind, type_name.clone(), Vec::new(), Taken::Parts(parts.clone())));\n",
     replace: "                        .get(&root);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
   },
@@ -319,17 +318,9 @@ export const mutations: Mutation[] = [
     name: "writer-text-not-through-the-line",
     breaks: "a writer that prints gives back its text whole, so a print it makes after writing comes before that text (#1490)",
     file: "src/lower/mir/writer.rs",
-    find: "        state.writer.is_some() && self.writes_through_the_line(owner)\n",
-    replace: "        state.writer.is_some() && self.writes_through_the_line(owner) && false\n",
+    find: "        state.writer.is_some() && self.writes_through_sink(owner)\n",
+    replace: "        state.writer.is_some() && self.writes_through_sink(owner) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
-  },
-  {
-    name: "stopped-in-place-unrefused",
-    breaks: "a derived `Debug` of a value whose `Debug` prints and may panic where it's caught is let through, and the line loses what the struct wrote before the field, `Holder { first: !Grid(1), second: ` (#1530)",
-    file: "src/lower/mir/writer.rs",
-    find: "            .then(|| self.krate.prints.stops_shown(ty))\n",
-    replace: "            .then(|| None::<Ty<'tcx>>)\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a derived Debug of what may print and panic"],
   },
   {
     name: "printing-text-of-a-write-unseen",
@@ -362,5 +353,13 @@ export const mutations: Mutation[] = [
     find: "                self.append_to_writer(state, &name, partial, false, js_span, &mut handler);\n",
     replace: "                let _ = partial;\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_kept_by_a_writer.rs$"],
+  },
+  {
+    name: "builder-assembled-in-a-printing-writer",
+    breaks: "a `Debug` builder of a writer that writes through a sink is assembled at its `finish`, so what the writer prints between its steps lands before its text, `<step 1><step 2>[1, 2]` (#1533)",
+    file: "src/lower/mir/writer.rs",
+    find: "                if self.writes_through_a_sink(state) {\n                    let sink = Expr::var(&state.writer.as_ref().expect(\"a writer\").1);\n",
+    replace: "                if false {\n                    let sink = Expr::var(&state.writer.as_ref().expect(\"a writer\").1);\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step\\.rs$"],
   },
 ];

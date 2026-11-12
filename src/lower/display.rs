@@ -5,6 +5,7 @@
 
 mod debug;
 mod printing;
+mod streamed;
 mod written;
 
 pub(super) use printing::write_to_sink;

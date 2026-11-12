@@ -5,8 +5,8 @@ import {
   $BTreeSet,
   $chars,
   $cmp,
+  $debugList,
   $debugStr,
-  $entriesShown,
   $extend,
   $extendMap,
   $extendText,
@@ -80,9 +80,9 @@ export function listedDebug(IIterator, IItemDebug) {
 }
 function listedDebug_fmt(listed, IIterator, IItemDebug) {
   const f = $sink();
-  f.write(
-    `[${$entriesShown($given(listed[0](), IIterator, true), (entry) => IItemDebug.fmt(entry)).join(", ")}]`,
-  );
+  const list = $debugList(f);
+  list.entries($given(listed[0](), IIterator, true), (entry) => IItemDebug.fmt(entry));
+  list.finish();
   return f.done();
 }
 

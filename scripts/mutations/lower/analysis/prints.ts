@@ -100,11 +100,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stopping-writers-outside-a-line-streamed",
-    breaks: "a writer that may panic, shown only in a `format!`, where nothing it wrote is kept, is taken to write through stdout's line, and a builder's `entries` of it is refused (#1496)",
+    breaks: "a writer that may panic, shown only in a `format!`, where nothing it wrote is kept, is taken to write through stdout's line, its text written through a sink it needn't have (#1496, #1533)",
     file: "src/lower/analysis/prints.rs",
     find: "                stops.retain(|id| in_a_line.contains(id));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(debug_entries_drop_as_std|debug_entries_closed_where_nothing_prints).rs$"],
+    snapshots: true,
   },
   {
     name: "printed-types-unseen",
@@ -121,5 +122,13 @@ export const mutations: Mutation[] = [
     find: "        .filter(|body| body.def_id.is_local())\n        .collect();\n    let ran",
     replace: "        .collect();\n    let ran",
     tests: ["test/crates.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],
+  },
+  {
+    name: "failing-builders-not-through-a-sink",
+    breaks: "a writer whose builder's step or derived `Debug`'s field may give `Err` makes its text whole, so what it wrote before the `Err` is lost, `Holder { n: 1, bad: ` (#1557)",
+    file: "src/lower/analysis/prints.rs",
+    find: ".filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
+    replace: ".filter(|body| false && failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
+    tests: ["test/corpus.test.ts", "-t", "^failing_debug_part_keeps_what_was_written\\.rs$"],
   },
 ];

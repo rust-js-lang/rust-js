@@ -4,8 +4,10 @@ import {
   $advanceSlice,
   $catchable,
   $closing,
+  $debugList,
+  $debugMap,
+  $debugSet,
   $dropEach,
-  $entriesShown,
   $formatting,
   $given,
   $givenDrop,
@@ -45,75 +47,80 @@ function itDrop_drop(it, dropI) {
 export const listDebug = { fmt: listDebug_fmt };
 function listDebug_fmt(list) {
   const f = $sink();
-  f.write(
-    `[${$entriesShown(
-      list[0].values().map((n) => [n]),
-      (entry) => dDebug_fmt(entry),
-      dDrop_drop,
-    ).join(", ")}]`,
+  const list$1 = $debugList(f);
+  list$1.entries(
+    list[0].values().map((n) => [n]),
+    (entry) => dDebug_fmt(entry),
+    dDrop_drop,
   );
+  list$1.finish();
   return f.done();
 }
 
 export const ownedDebug = { fmt: ownedDebug_fmt };
 function ownedDebug_fmt(owned) {
   const f = $sink();
-  f.write(
-    `{${$entriesShown($closing(Iterator.from(owned[0]()), $dropEach(dDrop_drop)), (entry) => dDebug_fmt(entry), dDrop_drop).join(", ")}}`,
+  const set = $debugSet(f);
+  set.entries(
+    $closing(Iterator.from(owned[0]()), $dropEach(dDrop_drop)),
+    (entry) => dDebug_fmt(entry),
+    dDrop_drop,
   );
+  set.finish();
   return f.done();
 }
 
 export const steppedDebug = { fmt: steppedDebug_fmt };
 function steppedDebug_fmt(stepped) {
   const f = $sink();
-  f.write(
-    `[${$entriesShown(
-      $closing(
-        $iterator(
-          stepped[0](),
-          (iterator) =>
-            itIterator_next(
-              iterator,
-              { next: $next, advanceBy: $advanceSlice },
-              $dropEach(dDrop_drop),
-              dDrop_drop,
-            ),
-          true,
-        ),
-        (it) => {
-          try {
-            itDrop_drop(it.of, $dropEach(dDrop_drop));
-          } finally {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          }
-        },
+  const list = $debugList(f);
+  list.entries(
+    $closing(
+      $iterator(
+        stepped[0](),
+        (iterator) =>
+          itIterator_next(
+            iterator,
+            { next: $next, advanceBy: $advanceSlice },
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+        true,
       ),
-      (entry) => dDebug_fmt(entry),
-      dDrop_drop,
-    ).join(", ")}]`,
+      (it) => {
+        try {
+          itDrop_drop(it.of, $dropEach(dDrop_drop));
+        } finally {
+          for (const item of it.of[0]) {
+            dDrop_drop(item);
+          }
+        }
+      },
+    ),
+    (entry) => dDebug_fmt(entry),
+    dDrop_drop,
   );
+  list.finish();
   return f.done();
 }
 
 export const pairsDebug = { fmt: pairsDebug_fmt };
 function pairsDebug_fmt(pairs) {
   const f = $sink();
-  f.write(
-    `{${$entriesShown(
-      $closing(Iterator.from(pairs[0]()), (vec) => {
-        for (const item of vec) {
-          dDrop_drop(item[1]);
-        }
-      }),
-      (entry) => `${entry[0]}: ${dDebug_fmt(entry[1])}`,
-      (value) => {
-        dDrop_drop(value[1]);
-      },
-    ).join(", ")}}`,
+  const map = $debugMap(f);
+  map.entries(
+    $closing(Iterator.from(pairs[0]()), (vec) => {
+      for (const item of vec) {
+        dDrop_drop(item[1]);
+      }
+    }),
+    (entry) => String(entry[0]),
+    (entry) => dDebug_fmt(entry[1]),
+    (value) => {
+      dDrop_drop(value[1]);
+    },
   );
+  map.finish();
   return f.done();
 }
 
@@ -131,9 +138,13 @@ export function listedDebug(IIterator, IItemDebug, dropF, dropI, dropIItem) {
 }
 function listedDebug_fmt(listed, IIterator, IItemDebug, dropF, dropI, dropIItem) {
   const f = $sink();
-  f.write(
-    `[${$entriesShown($closing($given(listed[0](), IIterator, true), $givenDrop(dropI), false), (entry) => IItemDebug.fmt(entry), dropIItem).join(", ")}]`,
+  const list = $debugList(f);
+  list.entries(
+    $closing($given(listed[0](), IIterator, true), $givenDrop(dropI), false),
+    (entry) => IItemDebug.fmt(entry),
+    dropIItem,
   );
+  list.finish();
   return f.done();
 }
 

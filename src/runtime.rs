@@ -235,6 +235,7 @@ helpers! {
     Pretty,
     TryFromInt,
     Print,
+    DebugBuilders,
     Process,
     Fs,
     Alloc,
@@ -810,6 +811,9 @@ impl Helper {
             // as a browser's `console` only writes lines, and what's left when
             // the task ends (ADR 0087).
             Helper::Print => include_str!("runtime/print.js"),
+            // std's `Debug` builders, written step by step through a printing
+            // writer's sink (#1533).
+            Helper::DebugBuilders => include_str!("runtime/debug_builders.js"),
             Helper::Process => include_str!("runtime/process.js"),
             // std's files, through Node's fs (#1156).
             Helper::Fs => include_str!("runtime/fs.js"),

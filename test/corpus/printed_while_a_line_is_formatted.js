@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $debugList,
   $formatting,
   $live,
   $out,
@@ -40,7 +41,9 @@ function gridDebug_fmt(grid) {
   $roomFor(grid[0], 4);
   const cells = Array.from({ length: grid[0] }, (_, value) => [value]);
   try {
-    f.write(`[${Array.from(cells, (entry) => loudDebug_fmt(entry)).join(", ")}]`);
+    const list = $debugList(f);
+    list.entries(cells, (entry) => loudDebug_fmt(entry));
+    list.finish();
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
