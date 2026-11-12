@@ -9,9 +9,11 @@ import {
   $debugStr,
   $eq,
   $iterator,
+  $lazyChain,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $roomForHint,
   $slice,
   $take,
 } from "@rust-js/std";
@@ -123,13 +125,19 @@ function main() {
   const selection = { rows: { start: 0, end: 0 }, columns: { start: 0n, end: 0n }, label: "" };
   console.log(`${selectionDebug_fmt(selection)}`);
   console.log(
-    `${Math.max(selection.rows.end - selection.rows.start, 0)} ${selection.columns.start} [${[
-      ...$iterator({ start: selection.rows.start, end: selection.rows.end }, $rangeNext),
-      ...$iterator(
-        { start: Number(BigInt.asUintN(32, selection.columns.start)), end: 2 },
-        $rangeNext,
+    `${Math.max(selection.rows.end - selection.rows.start, 0)} ${selection.columns.start} [${Array.from(
+      $roomForHint(
+        $lazyChain(
+          $iterator({ start: selection.rows.start, end: selection.rows.end }, $rangeNext),
+          $iterator(
+            { start: Number(BigInt.asUintN(32, selection.columns.start)), end: 2 },
+            $rangeNext,
+          ),
+        ),
+        4,
+        true,
       ),
-    ].join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(`.. ${$byteLen(selection.label)}`);
 

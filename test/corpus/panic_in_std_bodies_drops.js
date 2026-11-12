@@ -11,6 +11,7 @@ import {
   $live,
   $next,
   $rangeNext,
+  $roomFor,
   $unwindsOn,
   iterator_fuse,
   iterator_inspect,
@@ -26,7 +27,9 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  return Array.from($iterator(r, $rangeNext).map((value) => [value]));
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function boom(d, at) {

@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "zip-len-the-longer",
     breaks: "`len()` of a zip made here is the longer of its sides' (#740)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            return Ok(Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]));\n",
-    replace: "            return Ok(Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]));\n",
+    find: "                (Some(a), Some(b)) => Expr::int(a.min(b)),\n                _ => Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]),\n",
+    replace: "                (Some(a), Some(b)) => Expr::int(a.max(b)),\n                _ => Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]),\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {
@@ -514,5 +514,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {\n            return Ok(items);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code.rs$"],
+  },
+  {
+    name: "chain-uncounted",
+    breaks: "a chain's count isn't the sum of its halves', so a collect of one asks the room its hint asks, never `$roomFor(n + 2, size)` (#1441)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            r::chained_sources(self.tcx, ty),\n",
+    replace: "            r::chained_sources(self.tcx, ty).filter(|_| false),\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
   },
 ];

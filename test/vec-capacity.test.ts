@@ -518,7 +518,33 @@ pub fn filtered<T: Copy>(x: T, n: usize) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function counted(x, n, TSize) {");
-  expect(js).toContain("$roomForHint(");
+  expect(js).toContain("$roomFor(");
   expect(js).toContain("export function ofItems(x, items) {");
   expect(js).toContain("export function filtered(x, n) {");
+});
+
+// A collect counted by the program checks its room only where its count may
+// pass the limit: of literal bounds, or a literal \`take(n)\`, none, its
+// collect as it reads, \`[...a, ...b]\`; of a count it reads, \`$roomFor(n,
+// size)\` first, a chain's the sum of its halves' (#1441).
+test("a collect whose count surely fits checks no room", () => {
+  const dir = fixture("collect-room-surely-fits");
+  writeFileSync(join(dir, "lib.rs"), `pub fn literal() -> Vec<usize> {
+    (0..2).chain(5..7).collect()
+}
+
+pub fn chained(n: usize) -> usize {
+    (0..n).chain(0..2).map(|_| [0u64; 4]).collect::<Vec<_>>().len()
+}
+
+pub fn taken(n: usize) -> usize {
+    (0..n).zip(0..8).take(3).map(|_| [0u64; 4]).collect::<Vec<_>>().len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const body = (name: string) => js.slice(js.indexOf(`export function ${name}(`), js.indexOf("\n}\n", js.indexOf(`export function ${name}(`)));
+  expect(body("literal")).toContain("return [...$lazyRange(0, 2), ...$lazyRange(5, 7)];");
+  expect(body("chained")).toContain("$roomFor(Math.max(n - 0, 0) + 2, 32);");
+  expect(body("taken")).not.toContain("$roomFor");
 });

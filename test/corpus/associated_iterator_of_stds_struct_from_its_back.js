@@ -104,32 +104,36 @@ function main() {
   console.log(`${folded(tensSource)}`);
   console.log(
     `[${Array.from(
-      $rev(
-        $knowing(
-          tensSource_items(3),
-          (iterator) =>
-            mapDoubleEndedIterator_nextBack(iterator, {
-              next_back: $rangeNextBack,
-              nthBack: $rangeNthBack,
-            }),
-          (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-          undefined,
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            mapDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-              undefined,
-              undefined,
-              undefined,
-              unwind,
-              ends,
-            ),
+      $roomForHint(
+        $rev(
+          $knowing(
+            tensSource_items(3),
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
         ),
+        4,
+        true,
       ),
     ).join(", ")}]`,
   );

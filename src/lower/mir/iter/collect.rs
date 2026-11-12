@@ -97,6 +97,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let iter_ty = receiver.peel_refs();
+        let unmapped = self.mapped_range(&it, iter_ty, item).is_none();
+        // Or one whose count the program gives through adapters that keep
+        // it, a zip's, a chain's, a `take(n)`'s of a range (#1441), but a map
+        // of a range made its array, which asks its room itself:
+        // `counted_range`'s, or a range's array mapped, `$range(a, b,
+        // size)`, where nothing it holds drops as it unwinds.
+        let range_array = !unmapped && self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none();
+        let program_counted = self.recognition().counted_by_program(iter_ty)
+            && !range_array
+            && !(self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
+                && self.counted_range_parts(&it, iter_ty, item).is_some());
         let runs_code = |ty: Ty<'tcx>| crate::lower::recognition::steps_run_code(self.tcx, self.typing_env, ty);
         use crate::lower::recognition as r;
         // A count no array bounds: not a `step_by(n)` of an array's items,
@@ -118,19 +129,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let counted = item.is_some()
             && self.is_vec_like(output)
-            && iter_ty.walk().any(|part| part.as_type().is_some_and(given_count))
+            && (iter_ty.walk().any(|part| part.as_type().is_some_and(given_count)) && unmapped || program_counted)
             && (crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty) || !runs_code(iter_ty))
             && !crate::lower::iterators::is_stepped_items(&it)
             && self.range_kind(iter_ty).is_none()
-            && self.mapped_range(&it, iter_ty, item).is_none()
             && !self.compiled_struct(iter_ty, &it);
         let mut held = Vec::new();
+        // A count whose reading runs code, a bound's call, isn't read again
+        // where it's made: the room its hint asks instead, once it's made,
+        // so each bound runs once, in Rust's order (#1441).
         let count = match counted {
-            true => Some(self.counted_in_place(&it, iter_ty, &mut held)),
+            true => Some(match self.counted_in_place(&it, iter_ty, &mut held) {
+                Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),
+                count => count,
+            }),
             false => None,
         };
+        // None where it surely fits, of no more items than its form says
+        // that fit, `(0..2).chain(5..7)`'s, kept as it reads (#1441).
+        let bound = crate::lower::iterators::count_bound(&it).or_else(|| match &count {
+            Some(Ok(len)) => folded_count(len),
+            _ => None,
+        });
+        let surely_fits = count.is_some()
+            && item.is_some_and(|item| bound.is_some_and(|bound| self.room_size_of(&Expr::int(bound), item).is_none()));
         // The room it asks of a count it reads, none where that surely fits.
         let room = match (&count, item) {
+            _ if surely_fits => None,
             (Some(Ok(len)), Some(item)) => self.room_size_of(len, item).map(|size| (len.clone(), size)),
             _ => None,
         };
@@ -144,23 +169,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // value made before an `unwrap`'s check or under a guard, whose
         // hint, as each runtime form's is, is std's (#1046).
         let by_hint = match &count {
+            _ if surely_fits => false,
             Some(Ok(_)) => room.is_some(),
             Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,
-            // Of a type parameter's items, of one counted by the program it
-            // doesn't read, a zip's, a chain's or a held map's of a range,
-            // the room its hint asks by their size, `TSize`, which std's
-            // `SpecFromIter` reserves of a `TrustedLen` first
-            // (`counted_by_program`, #1436); not of a range's own or a map's
-            // made in place, `counted_range`'s. Of items of a type known
-            // here, where its count surely fits, as it isn't yet, #1441.
-            None => {
-                item.is_some_and(|item| self.layout(item).is_none())
-                    && self.is_vec_like(output)
-                    && self.recognition().counted_by_program(iter_ty)
-                    && self.range_kind(iter_ty).is_none()
-                    && !(self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
-                        && self.counted_range_parts(&it, iter_ty, item).is_some())
-            }
+            None => false,
         };
         let it = match room {
             // Of a count it reads, of one that drops nothing, as a panic
@@ -952,6 +964,28 @@ struct UnwindingCollect {
     drop: Option<Expr>,
     rest_first: Option<Expr>,
     in_place: InPlace,
+}
+
+/// A count `counted_in_place` read, of literals alone, its value: the fewer
+/// or the more of two, `Math.min(8, 3)`, a sum or a difference (#1441).
+fn folded_count(count: &Expr) -> Option<i128> {
+    use crate::js::ExprKind;
+    match &count.kind {
+        ExprKind::Call(callee, args) => {
+            let (ExprKind::Member(math, name), [a, b]) = (&callee.kind, &args[..]) else {
+                return None;
+            };
+            let (a, b) = (folded_count(a)?, folded_count(b)?);
+            match (&math.kind, name.as_str()) {
+                (ExprKind::Var(math), "min") if math == "Math" => Some(a.min(b)),
+                (ExprKind::Var(math), "max") if math == "Math" => Some(a.max(b)),
+                _ => None,
+            }
+        }
+        ExprKind::Binary(Op::Add, a, b) => Some(folded_count(a)? + folded_count(b)?),
+        ExprKind::Binary(Op::Sub, a, b) => Some(folded_count(a)? - folded_count(b)?),
+        _ => count.as_int(),
+    }
 }
 
 /// Whether std collects a collect into a `Vec` in place: known here, or as

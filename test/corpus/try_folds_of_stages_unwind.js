@@ -15,6 +15,7 @@ import {
   $live,
   $mapEnds,
   $rangeNext,
+  $roomFor,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
@@ -29,7 +30,9 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  return Array.from($iterator(r, $rangeNext).map((value) => [value]));
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function boom(at) {

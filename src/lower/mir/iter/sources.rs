@@ -156,7 +156,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let a = self.counted_before_stepping(zip.a, a_ty, made).ok_or(Unknown)?;
             let b = self.counted_before_stepping(zip.b, b_ty, made).ok_or(Unknown)?;
-            return Ok(Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]));
+            return Ok(match (a.as_int(), b.as_int()) {
+                (Some(a), Some(b)) => Expr::int(a.min(b)),
+                _ => Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]),
+            });
+        }
+        // A chain made here, the sum of its halves', as std's `Chain`'s is
+        // (#1441).
+        if let (Some((a_ty, b_ty)), Some((a, b))) = (
+            r::chained_sources(self.tcx, ty),
+            crate::lower::iterators::chain_parts(it),
+        ) {
+            let a = self.counted_before_stepping(a, a_ty, made).ok_or(Unknown)?;
+            let b = self.counted_before_stepping(b, b_ty, made).ok_or(Unknown)?;
+            return Ok(match (a.as_int(), b.as_int()) {
+                (Some(a), Some(b)) => Expr::int(a + b),
+                _ => Expr::bin(Op::Add, a, b),
+            });
         }
         // A `skip(n)` or a `take(n)` made knowing its back where it's made,
         // `$skipping` or `$taking`, or a `rev()` of one, as its maker marked

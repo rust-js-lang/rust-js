@@ -9,7 +9,6 @@ import {
   $rangeFromNext,
   $rangeFromStep,
   $reserveHint,
-  $roomForHint,
   $stepBy,
 } from "@rust-js/std";
 
@@ -77,9 +76,7 @@ function main() {
 
   const firsts = Array.from($iterator({ start: 254 }, $rangeFromStep(0, 255)).take(4));
   console.log(`[${firsts.join(", ")}]`);
-  const stepped = Array.from(
-    $roomForHint($stepBy($iterator({ start: 250 }, $rangeFromStep(0, 255)), 3).take(4), 1, false),
-  );
+  const stepped = Array.from($stepBy($iterator({ start: 250 }, $rangeFromStep(0, 255)), 3).take(4));
   console.log(`[${stepped.join(", ")}]`);
   const skipped = Array.from($iterator({ start: 250 }, $rangeFromStep(0, 255)).drop(3).take(5));
   console.log(`[${skipped.join(", ")}]`);

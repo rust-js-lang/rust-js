@@ -6,11 +6,10 @@ import {
   $collectDropping,
   $collectResults,
   $dropItems,
-  $iterator,
   $lazyChain,
   $lazyRange,
   $lazyZip,
-  $rangeNextBack,
+  $range,
   $repeating,
   $repeatingN,
   $roomFor,
@@ -36,17 +35,12 @@ function loudDrop_drop(loud) {
 }
 
 function dropping(x, n, TClone, TSize, dropT) {
+  let it;
   let collect;
   try {
-    collect = $collectDropping(
-      $roomForHint(
-        $lazyRange(1, n).map(() => TClone.clone(x)),
-        TSize,
-        true,
-      ),
-      dropT,
-      true,
-    );
+    it = $lazyRange(1, n).map(() => TClone.clone(x));
+    $roomFor(Math.max(n - 1, 0), TSize);
+    collect = $collectDropping(it, dropT, true);
   } catch (error) {
     $cleanup(() => {
       dropT?.(x);
@@ -74,55 +68,31 @@ function mapped(x, n, TCopy, TSize) {
 }
 
 function fromOne(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyRange(1, n).map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  return $range(1, n, TSize).map(() => (TCopy ? TCopy.copy(x) : x)).length;
 }
 
 function reversed(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $iterator({ start: 0, end: n }, $rangeNextBack).map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  return $range(0, n, TSize)
+    .toReversed()
+    .map(() => (TCopy ? TCopy.copy(x) : x)).length;
 }
 
 function enumerated(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyRange(0, n)
-        .map((x, i) => [i, x])
-        .map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  return $range(0, n, TSize)
+    .map((x, i) => [i, x])
+    .map(() => (TCopy ? TCopy.copy(x) : x)).length;
 }
 
 function zipped(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyZip($lazyRange(0, n), $lazyRange(0, n)).map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  const it = $lazyZip($lazyRange(0, n), $lazyRange(0, n)).map(() => (TCopy ? TCopy.copy(x) : x));
+  $roomFor(Math.min(Math.max(n - 0, 0), Math.max(n - 0, 0)), TSize);
+  return Array.from(it).length;
 }
 
 function chained(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyChain($lazyRange(0, n), $lazyRange(0, 2)).map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  const it = $lazyChain($lazyRange(0, n), $lazyRange(0, 2)).map(() => (TCopy ? TCopy.copy(x) : x));
+  $roomFor(Math.max(n - 0, 0) + 2, TSize);
+  return Array.from(it).length;
 }
 
 function repeated(x, n, TCopy, TSize) {
@@ -142,15 +112,11 @@ function taken(x, n, TCopy, TSize) {
 }
 
 function rangeTaken(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyRange(0, 4294967295)
-        .map(() => (TCopy ? TCopy.copy(x) : x))
-        .take(n),
-      TSize,
-      true,
-    ),
-  ).length;
+  const it = $lazyRange(0, 4294967295)
+    .map(() => (TCopy ? TCopy.copy(x) : x))
+    .take(n);
+  $roomFor(Math.min(4294967295, n), TSize);
+  return Array.from(it).length;
 }
 
 function stepped(x, n, TCopy, TSize) {
@@ -160,13 +126,7 @@ function stepped(x, n, TCopy, TSize) {
 }
 
 function inclusive(x, n, TCopy, TSize) {
-  return Array.from(
-    $roomForHint(
-      $lazyRange(0, n + 1).map(() => (TCopy ? TCopy.copy(x) : x)),
-      TSize,
-      true,
-    ),
-  ).length;
+  return $range(0, n + 1, TSize).map(() => (TCopy ? TCopy.copy(x) : x)).length;
 }
 
 function held(x, n, TCopy, TSize) {

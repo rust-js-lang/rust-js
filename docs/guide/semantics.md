@@ -1026,8 +1026,11 @@ Differences:
   `reserve(n)`, `vec![x; n]`, `resize`, `resize_with` and a slice's
   `repeat`, `$roomFor(n, TSize)` (#1432), and a `collect()` of what the
   program counts, a range's, a `repeat_n`'s, a `take(n)`'s, a `step_by`'s,
-  through adapters that keep it, `$roomForHint(it, TSize, true)` (#1436);
-  a collect of a collection's items takes none; and a generic hash table's
+  through adapters that keep it, a zip's or a chain's (#1436); of items of
+  a type known here too, a collect of such a count checks its room first,
+  `$roomFor(n, 4)`, or the room its hint asks where reading its count
+  would run code, and nothing where it surely fits, `(0..2).chain(5..7)`
+  as it reads (#1441); a collect of a collection's items takes none; and a generic hash table's
   room, of its `with_capacity`, `reserve`, or a collect or `extend` by
   what the program counts, by its entries' layout, `$tableRoomFor(n,
   KVSize, KVAlign)` (#1437). By their count alone, as if they had no size,

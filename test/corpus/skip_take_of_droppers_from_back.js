@@ -20,7 +20,7 @@ import {
   $nextBack,
   $nthDropping,
   $rev,
-  $roomForHint,
+  $roomFor,
   $sizeHint,
   $skipping,
   $taking,
@@ -57,15 +57,9 @@ function dDrop_drop(d) {
 }
 
 function ds(make, TSize, dropT) {
-  return $collectDropping(
-    $roomForHint(
-      $lazyRange(1, 6).map((item) => make(item)),
-      TSize,
-      true,
-    ),
-    dropT,
-    true,
-  );
+  const it = $lazyRange(1, 6).map((item) => make(item));
+  $roomFor(5, TSize);
+  return $collectDropping(it, dropT, true);
 }
 
 function inPlace() {

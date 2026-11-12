@@ -13,6 +13,7 @@ import {
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $rangeInclusiveNth,
+  $roomForHint,
   $treeRange,
 } from "@rust-js/std";
 
@@ -149,7 +150,13 @@ function main() {
     `[${v.join(", ")}] ${(a.exhausted ?? a).start & 255}..=${(a.exhausted ?? a).end & 255}${a.exhausted !== undefined || a.start > 255 || a.end < 0 ? " (exhausted)" : ""}`,
   );
   const b = { start: 1, end: 3 };
-  w = $foldToArray($lent($iterator(b, $rangeInclusiveNext)).map((x) => (x * 2) & 255));
+  w = $foldToArray(
+    $roomForHint(
+      $lent($iterator(b, $rangeInclusiveNext)).map((x) => (x * 2) & 255),
+      1,
+      true,
+    ),
+  );
   console.log(
     `[${w.join(", ")}] ${(b.exhausted ?? b).start & 255}..=${(b.exhausted ?? b).end & 255}${b.exhausted !== undefined || b.start > 255 || b.end < 0 ? " (exhausted)" : ""}`,
   );

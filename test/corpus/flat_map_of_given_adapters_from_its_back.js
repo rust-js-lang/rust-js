@@ -150,94 +150,11 @@ function byPath() {
 function others() {
   console.log(
     `[${Array.from(
-      $rev(
-        $lazyChain(
-          $knowing(
-            sized(3),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
-          ),
-          $knowing(
-            sized(2),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
-          ),
-        ),
-      ),
-    ).join(", ")}]`,
-  );
-  console.log(
-    `[${Array.from(
-      $rev(
-        $trustedZipEnds(
-          $knowing(
-            sized(3),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
-          ),
-          $knowing(
+      $roomForHint(
+        $rev(
+          $lazyChain(
             $knowing(
-              named(3),
+              sized(3),
               (iterator) =>
                 mapDoubleEndedIterator_nextBack(iterator, {
                   next_back: $rangeNextBack,
@@ -261,30 +178,121 @@ function others() {
                   ends,
                 ),
             ),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
+            $knowing(
+              sized(2),
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
           ),
         ),
+        4,
+        true,
+      ),
+    ).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from(
+      $roomForHint(
+        $rev(
+          $trustedZipEnds(
+            $knowing(
+              sized(3),
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
+            $knowing(
+              $knowing(
+                named(3),
+                (iterator) =>
+                  mapDoubleEndedIterator_nextBack(iterator, {
+                    next_back: $rangeNextBack,
+                    nthBack: $rangeNthBack,
+                  }),
+                (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+                undefined,
+                undefined,
+                (iterator, init, f, broke, unwind, ends) =>
+                  mapDoubleEndedIterator_tryRfold(
+                    iterator,
+                    init,
+                    f,
+                    { next: $rangeNext },
+                    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                    $tryOf(broke),
+                    undefined,
+                    undefined,
+                    undefined,
+                    unwind,
+                    ends,
+                  ),
+              ),
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
+          ),
+        ),
+        8,
+        true,
       ),
     )
       .map((item) => `(${item[0]}, ${item[1]})`)
@@ -292,34 +300,38 @@ function others() {
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $enumerate(
-          $knowing(
-            sized(4),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
+      $roomForHint(
+        $rev(
+          $enumerate(
+            $knowing(
+              sized(4),
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
           ),
         ),
+        8,
+        true,
       ),
     )
       .map((item) => `(${item[0]}, ${item[1]})`)
@@ -467,35 +479,39 @@ function others() {
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $mapEnds(
-          $knowing(
-            named(4),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
+      $roomForHint(
+        $rev(
+          $mapEnds(
+            $knowing(
+              named(4),
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
+            (x) => (x * 2) >>> 0,
           ),
-          (x) => (x * 2) >>> 0,
         ),
+        4,
+        true,
       ),
     ).join(", ")}]`,
   );
@@ -819,32 +835,36 @@ function main() {
   }
   console.log(
     `[${Array.from(
-      $rev(
-        $knowing(
-          pairs(3),
-          (iterator) =>
-            mapDoubleEndedIterator_nextBack(iterator, {
-              next_back: $rangeNextBack,
-              nthBack: $rangeNthBack,
-            }),
-          (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-          undefined,
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            mapDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-              undefined,
-              undefined,
-              undefined,
-              unwind,
-              ends,
-            ),
+      $roomForHint(
+        $rev(
+          $knowing(
+            pairs(3),
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
         ),
+        4,
+        true,
       ),
     ).join(", ")}]`,
   );

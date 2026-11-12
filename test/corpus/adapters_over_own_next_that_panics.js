@@ -21,6 +21,7 @@ import {
   $next,
   $nextBack,
   $rangeNext,
+  $roomFor,
   $roomForHint,
   $sizeHint,
   $skipping,
@@ -215,8 +216,10 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
 }
 
 function own(r, at) {
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
   return {
-    items: $iter(Array.from($iterator(r, $rangeNext).map((value) => [value]))),
+    items: $iter(Array.from(it)),
     at,
   };
 }

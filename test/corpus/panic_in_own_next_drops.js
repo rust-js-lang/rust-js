@@ -13,6 +13,7 @@ import {
   $live,
   $next,
   $rangeNext,
+  $roomFor,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -62,7 +63,9 @@ function madeIterator_next(made) {
 }
 
 function ds(r) {
-  return Array.from($iterator(r, $rangeNext).map((value) => [value]));
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function run(name, f) {

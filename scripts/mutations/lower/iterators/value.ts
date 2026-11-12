@@ -207,4 +207,12 @@ export const mutations: Mutation[] = [
     replace: "    source.facts = source.facts.without(Known::IterMappedAsItIs);\n",
     tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
   },
+  {
+    name: "count-bound-of-a-take-unread",
+    breaks: "a literal `take(n)` bounds no count, so a collect of one checks its room though it surely fits (#1441)",
+    file: "src/lower/iterators/value.rs",
+    find: "        (\"take\", [n]) => match (literal(n), count_bound(source)) {\n",
+    replace: "        (\"take_\", [n]) => match (literal(n), count_bound(source)) {\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
+  },
 ];

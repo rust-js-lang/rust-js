@@ -751,8 +751,9 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
     }
 }
 
-/// `$lazyRange(a, b, s)`'s bounds and step, each read once where it's used.
-fn lazy_range_parts(e: &Expr) -> Option<(Expr, Option<Expr>, Option<Expr>)> {
+/// `$lazyRange(a, b, s)`'s bounds and step, each read once where it's used;
+/// its owner's reader of the form, a collect's `count_bound`'s too (#1441).
+pub(in crate::lower) fn lazy_range_parts(e: &Expr) -> Option<(Expr, Option<Expr>, Option<Expr>)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };

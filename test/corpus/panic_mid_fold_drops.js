@@ -28,6 +28,7 @@ import {
   $rangeNextBack,
   $reduce,
   $rev,
+  $roomFor,
   $skipping,
   $stepBy,
   $unwindsOn,
@@ -41,7 +42,9 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function ds(r) {
-  return Array.from($iterator(r, $rangeNext).map((value) => [value]));
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 function boom(d, at) {
   if (d[0] === at) {

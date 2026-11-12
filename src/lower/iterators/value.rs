@@ -385,6 +385,80 @@ pub(in crate::lower) fn zip_parts(e: &Expr) -> Option<ZipParts<'_>> {
     Some(ZipParts { a, b, drop_a, by_index })
 }
 
+/// No more items than `e` gives, read of its form alone where it's sure: a
+/// range's of literal bounds, a number's, a `u64`'s or a `char`'s, made
+/// there (`stepped_range`, `$lazyRange(a, b)`); through what gives no more
+/// than its source, a `rev()`, an `enumerate()`, a `map(f)`, a lent one, a
+/// `take(n)` of no more than `n` too; a chain's, the sum; a zip's, the
+/// fewer. `None` of another. Whether a collect's room surely fits, so it
+/// needn't be checked (#1441).
+pub(in crate::lower) fn count_bound(e: &Expr) -> Option<i128> {
+    let literal = |e: &Expr| -> Option<i128> {
+        match &e.kind {
+            js::ExprKind::Str(s) if s.chars().count() == 1 => s.chars().next().map(|c| i128::from(u32::from(c))),
+            _ => e.as_int().or_else(|| e.as_bigint()),
+        }
+    };
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    // A range's numbers its maker wrote, stepped by its kind's step, from
+    // the front or the back, made knowing its back too.
+    if e.facts.has(Known::IterRange)
+        && let [range, step, ..] = &args[..]
+        && let (js::ExprKind::Object(bounds, ..), Some(next)) = (&range.kind, step.helper_name())
+        && let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..]
+        && s == "start"
+        && f == "end"
+    {
+        let inclusive = next.contains("Inclusive");
+        return Some((literal(end)? - literal(start)? + i128::from(inclusive)).max(0));
+    }
+    // Of `$lazyRange(a, b, s)`, no more than `b - a`, of any step.
+    if let Some((start, Some(end), _)) = crate::lower::std_types::range::lazy_range_parts(e) {
+        return Some((literal(&end)? - literal(&start)?).max(0));
+    }
+    match (callee.helper_name(), &args[..]) {
+        (Some("$taking"), [source, n, ..]) => {
+            return match (literal(n), count_bound(source)) {
+                (Some(n), Some(bound)) => Some(n.min(bound)),
+                (n, bound) => n.or(bound),
+            };
+        }
+        (Some("$rev" | "$knowing" | "$enumerate" | "$lent" | "$mapEnds"), [source, ..]) => return count_bound(source),
+        (Some("$lazyChain"), [a, b, ..]) => return Some(count_bound(a)? + count_bound(b)?),
+        (Some("$lazyZip" | "$trustedZip" | "$zipEnds" | "$trustedZipEnds"), [a, b, ..]) => {
+            return match (count_bound(a), count_bound(b)) {
+                (Some(a), Some(b)) => Some(a.min(b)),
+                (a, b) => a.or(b),
+            };
+        }
+        _ => {}
+    }
+    let js::ExprKind::Member(source, name) = &callee.kind else {
+        return None;
+    };
+    match (name.as_str(), &args[..]) {
+        ("map", [_]) => count_bound(source),
+        ("take", [n]) => match (literal(n), count_bound(source)) {
+            (Some(n), Some(bound)) => Some(n.min(bound)),
+            (n, bound) => n.or(bound),
+        },
+        _ => None,
+    }
+}
+
+/// A chain made here, `$lazyChain(a, b)`: its two halves.
+pub(in crate::lower) fn chain_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match (callee.helper_name(), args.as_slice()) {
+        (Some("$lazyChain"), [a, b, ..]) => Some((a, b)),
+        _ => None,
+    }
+}
+
 /// `$zipEnds(a, b, dropA, dropB)`, or of a zip `by_index`
 /// `$trustedZipEnds`: a zip of sides made knowing their backs and lengths,
 /// which knows its own, as std's `Zip` is double-ended and exact-sized

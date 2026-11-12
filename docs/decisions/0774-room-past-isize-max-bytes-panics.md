@@ -432,9 +432,8 @@ panics `capacity overflow` (ADR 0262's third case).
   test/architecture-generic-facts.test.ts holds of every corpus snapshot
   (#1443 lists six older ones).
 - **Of items of a type known here**, the same shapes, a zip's, a chain's, a
-  held map's of a range, a `take(n)` of a range, still check no room:
-  they'd need to know a count that surely fits, `(0..4).rev()`'s, so as not
-  to check it (#1441).
+  held map's of a range, a `take(n)` of a range, checked no room; amended
+  below (#1441).
 
 Tests: corpus case `collect_room_of_generic_items` (each shape past
 `isize::MAX` bytes on wasm32 and native both and within it, of items with
@@ -475,3 +474,43 @@ changed, `map_entry_hashes_its_key_once`'s generic tables given their
 layouts. Mutations `table-room-of-capacity-unasked`,
 `table-entry-layout-of-a-param-unread`, `table-room-of-a-collect-unasked`
 and `table-room-of-an-extend-unasked`, caught; three refitted.
+
+## Amendment: a collect counted by the program checks room where its count may pass it (2026-11-12, #1441)
+
+Of items of a type known here, a collect of a zip's, a chain's, a held
+map's of a range or a `take(n)` of a range checked no room, and ran on
+making the array where std panics `capacity overflow` (ADR 0262's third
+case). It now goes the way a counted collect does (`collected_counted`),
+for each `counted_by_program` accepts, items of a type parameter's too,
+which folds #1436's fallback into it:
+
+- **Where its count surely fits, nothing**, its collect as it reads,
+  `[...$lazyRange(0, 2), ...$lazyRange(5, 7)]`: no more items than its form
+  says, read by the iterators' owner (`count_bound`: a range's of literal
+  bounds, numbers, `u64`s or `char`s, through a `rev()`, an `enumerate()`, a
+  `map(f)`, a lent one, a literal `take(n)`, a chain's sum, a zip's fewer),
+  or a count read of literals alone (`folded_count`, `Math.min(8, 3)`), that
+  fits (`room_fits`).
+- **Where it reads a count that may not fit, `$roomFor(n, size)`** first,
+  `counted_in_place`'s, a chain's now the sum of its halves'
+  (`chain_parts`).
+- **Where reading its count would run code**, a bound's call, or it's held
+  where its count can't be read, **the room its hint asks**, `$roomForHint`,
+  once it's made: each bound runs once, in Rust's order, before any item
+  is made. Of a bound that's a conversion, `Number(BigInt.asUintN(..))`,
+  that's this form too, `Array.from($roomForHint($lazyChain(a, b), ..))`.
+
+Tests: corpus case `collect_room_counted_by_the_program` (each shape past
+`isize::MAX` bytes on wasm32 and native both, one within it, a literal
+chain kept as it reads, and bounds that print, run once in Rust's order,
+before any item), against native Rust in each build; vec-capacity.test.ts's
+forms of a literal chain, a counted chain and a literal `take(n)`; 22
+corpus snapshots changed, each a collect of a count that may pass the
+limit given its check. A range's array mapped, `$range(a, b, size)`, and
+`counted_range`'s, which ask their room themselves, are left to their
+own forms. Mutations `collect-count-of-a-call-read-again`,
+`collect-counted-by-program-uncounted`,
+`collect-room-checked-where-it-surely-fits`, `chain-uncounted` and
+`count-bound-of-a-take-unread`, caught; two refitted, and #1436's
+`collect-counted-by-program-unroomed`, whose fallback this replaces,
+removed.

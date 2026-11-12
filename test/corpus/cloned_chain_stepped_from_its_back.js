@@ -88,42 +88,46 @@ function main() {
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $knowing(
-          chainClone_clone(own, rangeClone, rangeClone),
-          (iterator) =>
-            chainDoubleEndedIterator_nextBack(
-              iterator,
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            ),
-          undefined,
-          undefined,
-          (iterator, k) =>
-            chainDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            ),
-          (iterator, init, f, broke, unwind, ends) =>
-            chainDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-              undefined,
-              undefined,
-              unwind,
-              ends,
-            ),
+      $roomForHint(
+        $rev(
+          $knowing(
+            chainClone_clone(own, rangeClone, rangeClone),
+            (iterator) =>
+              chainDoubleEndedIterator_nextBack(
+                iterator,
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              ),
+            undefined,
+            undefined,
+            (iterator, k) =>
+              chainDoubleEndedIterator_nthBack(
+                iterator,
+                k,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              ),
+            (iterator, init, f, broke, unwind, ends) =>
+              chainDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
         ),
+        4,
+        true,
       ),
     ).join(", ")}]`,
   );
