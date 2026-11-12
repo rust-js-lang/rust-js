@@ -857,17 +857,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // What a call that names no place lends, `$unwrap(o.as_mut())`:
                     // a cell made at each call, whose pointers differ where
-                    // Rust's are one place's (#1497).
+                    // Rust's are one place's (#1497); not a place's handle it
+                    // lends, `as_mut`'s of a cell local (#1502).
                     if let js::ExprKind::Member(of, key) = &target.kind
                         && key == js::HELD
                         && let js::ExprKind::Call(callee, _) = &of.kind
                         && !callee.helper_name().is_some_and(crate::runtime::names_a_place)
+                        && !crate::lower::pointers::lends_a_place_handle(of)
                     {
                         return Err(refuse(
                             tcx,
                             span,
                             Refused::Memory(
-                                "a raw pointer to what a `&mut` a call lends refers to, `o.as_mut()`'s, which JS holds in a cell made at each call, a place on no record (#1502)",
+                                "a raw pointer to what a `&mut` a call lends refers to, `o.as_mut()`'s, which JS holds in a cell made at each call, a place on no record (#1513)",
                             ),
                         ));
                     }

@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "                if destination.projection.is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_replace_dropped.rs$"],
   },
+  {
+    name: "option-as-mut-the-cell-itself",
+    breaks: "`Option::as_mut` of a cell local lends the cell, at its start, not a handle at the `Some` payload's offset (#1502)",
+    file: "src/lower/mir/dispatch/known_calls.rs",
+    find: "        if own\n            && self.krate.stored_places.asks()\n",
+    replace: "        if false\n            && self.krate.stored_places.asks()\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
+  },
+  {
+    name: "option-as-mut-handle-of-a-handle",
+    breaks: "`as_mut` of an `Option` read through a handle a call gave makes a place's handle on that handle, made again at each call, so two pointers to one place differ (#1502)",
+    file: "src/lower/mir/dispatch/known_calls.rs",
+    find: "        let own = matches!(values, [Value::Ref(place)] if fixed_place(place));\n",
+    replace: "        let own = true;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to what Option::as_mut lends through another's"],
+  },
 ];

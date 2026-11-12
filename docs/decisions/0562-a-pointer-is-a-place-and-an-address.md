@@ -1569,3 +1569,25 @@ no place, a parameter's box or one read out of a field, naming #1527.
 Mutations dyn-pair-without-its-place and pair-place-unread; the corpus
 case address_of_a_field_given_to_generic_code's `&mut dyn` section, and the
 `dyn-ref` rewrite off metamorphic-known.txt.
+
+## Amendment: what `Option::as_mut` lends is a handle on the `Option`'s place (#1502)
+
+`Option::as_mut` of an `Option` local lent an accessor on the variable,
+`{ get value() { return o; }, .. }`, a cell made at each call, so a raw
+pointer made of it was refused (#1497's refusal). Now, in a crate that asks
+an address, an `Option` local of an unboxed payload a `&mut` to is a cell,
+whose `&mut` goes to `as_mut`, is a cell itself (`lent_by_option_as_mut`,
+src/lower/pointers.rs), and `as_mut` lends a handle on its place at the
+`Some` payload's offset, `o.value == null ? undefined : $ptr(o, "value",
+4)` (`option_as_mut`, mir/dispatch/known_calls.rs): the same each call, so
+two pointers compare equal, a write through one is the `Option`'s, and its
+address is the payload's, past the tag or at a niche's start. The
+refusal lets a lend through where it's such a handle
+(`lends_a_place_handle`), and the runtime takes a key's handle at another
+offset (#1484) for a place, as its key's (`$isPlaceHandle`). A payload in a
+`$some` box, an `Option` of an `Option` of an object, stays refused, now
+naming #1513. Proof: the corpus case address_of_what_option_as_mut_lends,
+run natively on wasm32, over a payload of each width, a `bool`, a
+`NonZeroU32`, a reference and a `#[repr(C)]` struct, and an `Option` whose
+own address nothing asks. Mutations option-as-mut-the-cell-itself,
+option-as-mut-local-no-cell, placed-lend-refused and offset-handle-not-a-place.

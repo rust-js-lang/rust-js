@@ -13,6 +13,14 @@ const $items = new WeakMap();
 // `root` and `at`, of a place reached through more than one field or item:
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
+// Whether `handle` is one `$ptr` made on a place, its key's handle or one at
+// another offset of the key (#1484): a place, not a handle of its own.
+function $isPlaceHandle(handle) {
+  if (handle === null || typeof handle !== "object" || handle.of === undefined) return false;
+  const made = $places.get(handle.of)?.get(handle.at);
+  return made === handle || made?.others?.get(handle.offset) === handle;
+}
+
 function $ptr(object, key, offset, root, at) {
   // What a `&mut dyn`'s pair of a place JS can't share refers to, its `value`:
   // the place's handle it was made with, `$withPlace`'s (#1519).
@@ -22,7 +30,7 @@ function $ptr(object, key, offset, root, at) {
   // What a place's handle refers to, its `value`, at its start: that
   // handle, the same place, never a place of the handle object's own, which
   // would be an address made up (#1474).
-  if (key === "value" && !offset && root === undefined && object !== null && typeof object === "object" && object.of !== undefined && $places.get(object.of)?.get(object.at) === object) {
+  if (key === "value" && !offset && root === undefined && object !== null && typeof object === "object" && $isPlaceHandle(object)) {
     return object;
   }
   // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
@@ -532,7 +540,7 @@ function $offsetIn(pointer, range) {
     pointer.at === "value" &&
     pointer.of !== null &&
     typeof pointer.of === "object" &&
-    $places.get(pointer.of.of)?.get(pointer.of.at) !== pointer.of &&
+    !$isPlaceHandle(pointer.of) &&
     Object.getOwnPropertyDescriptor(pointer.of, "value")?.get !== undefined
   ) {
     throw $unsupported("rust-js does not support the address of what a `&mut` refers to through a handle on no place it records, a `&mut dyn`'s (#1527)");

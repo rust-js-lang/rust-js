@@ -787,4 +787,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_field_given_to_generic_code.rs$"],
   },
+  {
+    name: "offset-handle-not-a-place",
+    breaks: "a key's handle at another offset isn't taken as a place, so a pointer through it is refused (#1502)",
+    file: "src/runtime/pointers.js",
+    find: "  return made === handle || made?.others?.get(handle.offset) === handle;\n",
+    replace: "  return made === handle;\n",
+    tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
+  },
 ];

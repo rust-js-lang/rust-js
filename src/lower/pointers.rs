@@ -26,7 +26,7 @@ mod casts;
 mod catalog;
 mod into_copies;
 mod lending;
-pub(in crate::lower) use lending::made_once_of;
+pub(in crate::lower) use lending::{lends_a_place_handle, made_once_of};
 mod rewritten;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;
@@ -402,7 +402,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         pointed.read_only = self.read_only_refs(body);
         self.lent_as_pointers(body, &mut pointed);
+        self.lent_by_option_as_mut(body, &mut pointed);
         pointed
+    }
+
+    /// In a crate that asks an address, each `Option` local of a payload a
+    /// `&mut` to is a cell, unboxed, whose `&mut` goes to `Option::as_mut`: a
+    /// cell itself, so the handle `as_mut` lends has a place, its `value`, at
+    /// the `Some` payload's offset (#1502).
+    fn lent_by_option_as_mut(&self, body: &mir::Body<'tcx>, pointed: &mut Pointed) {
+        if !self.krate.stored_places.asks() {
+            return;
+        }
+        for data in body.basic_blocks.iter() {
+            let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+                continue;
+            };
+            let Some((def_id, _)) = func.const_fn_def() else {
+                continue;
+            };
+            let Some(mir::Operand::Move(given) | mir::Operand::Copy(given)) = args.first().map(|arg| &arg.node) else {
+                continue;
+            };
+            if self.tcx.item_name(def_id).as_str() != "as_mut" || !given.projection.is_empty() {
+                continue;
+            }
+            let Some(of) = made_once_of(body, given.local) else {
+                continue;
+            };
+            let ty = body.local_decls[of.local].ty;
+            if of.projection.is_empty()
+                && let Some(item) = self.option_of(ty)
+                && self.mut_ref_form(item).is_cell()
+                && !self.boxed_payload(item)
+            {
+                pointed.locals.insert(of.local);
+            }
+        }
     }
 
     /// `Pointed::read_only`: each reference or box whose pointers are each

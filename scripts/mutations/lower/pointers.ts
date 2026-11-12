@@ -650,4 +650,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
   },
+  {
+    name: "option-as-mut-local-no-cell",
+    breaks: "an `Option` local whose `&mut` goes to `as_mut` isn't a cell, so its lend has no place, refused (#1502)",
+    file: "src/lower/pointers.rs",
+    find: "        self.lent_by_option_as_mut(body, &mut pointed);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
+  },
 ];

@@ -22,7 +22,11 @@ for (const [name, source, message, crate] of [
   // A pointer made of what `Option::as_mut()` lends, a cell made at each
   // call: two pointers to one place would differ, so it's refused (#1497,
   // #1502).
-  ["a raw pointer to what Option::as_mut lends", "pub fn f(o: &mut Option<Option<(u8, u32)>>) -> bool { let at = &raw const *o.as_mut().unwrap(); at == &raw const *o.as_mut().unwrap() }", "a raw pointer to what a `&mut` a call lends refers to, `o.as_mut()`'s, which JS holds in a cell made at each call, a place on no record (#1502)"],
+  // Of an `Option` reached through another's `as_mut`, no local's own place,
+  // whose handle would be made again at each call: refused, never two
+  // pointers to one place that differ (#1502, #1513).
+  ["a raw pointer to what Option::as_mut lends through another's", "pub fn f() -> bool { let mut alone = Some(Some(10u32)); let one = &raw mut *(*alone.as_mut().unwrap()).as_mut().unwrap(); let two = &raw mut *(*alone.as_mut().unwrap()).as_mut().unwrap(); one as usize == two as usize }", "which JS holds in a cell made at each call, a place on no record (#1513)"],
+  ["a raw pointer to what Option::as_mut lends", "pub fn f(o: &mut Option<Option<(u8, u32)>>) -> bool { let at = &raw const *o.as_mut().unwrap(); at == &raw const *o.as_mut().unwrap() }", "a raw pointer to what a `&mut` a call lends refers to, `o.as_mut()`'s, which JS holds in a cell made at each call, a place on no record (#1513)"],
   // A local whose address is taken, moved out and assigned again: the
   // value moved holds its object, so the write can't be over it, and
   // another object would be at another address (#1484).

@@ -817,4 +817,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_of_a_field_given_to_generic_code.rs$"],
   },
+  {
+    name: "placed-lend-refused",
+    breaks: "a raw pointer to what `as_mut` lends as a place's handle is refused as a cell made at each call (#1502)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        && !crate::lower::pointers::lends_a_place_handle(of)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
+  },
 ];

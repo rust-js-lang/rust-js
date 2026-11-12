@@ -124,6 +124,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(item) = self.option_of(receiver) else {
             return Ok(None);
         };
+        // Its place a local's own, `o.value` of a cell local, not one read
+        // through a handle a call gave, made again at each call (#1502).
+        let own = matches!(values, [Value::Ref(place)] if fixed_place(place));
         let place = match values {
             [Value::Ref(place)] if fixed_place(place) => place.clone(),
             [handle] if self.is_cell(given) => {
@@ -140,6 +143,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         };
         let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
+        // In a crate that asks an address, of a cell local's `Option`, its
+        // payload unboxed: a handle on its place at the `Some` payload's
+        // offset, `$ptr(o, "value", 4)`, never the cell itself, at its start
+        // (#1502).
+        if own
+            && self.krate.stored_places.asks()
+            && !self.boxed_payload(item)
+            && self.mut_ref_form(item).is_cell()
+            && let js::ExprKind::Member(cell, key) = &place.kind
+            && key == js::HELD
+            && matches!(cell.kind, js::ExprKind::Var(_))
+            && let Some(at) =
+                self.variant_field_offset(receiver, rustc_abi::VariantIdx::from_u32(1), rustc_abi::FieldIdx::ZERO)
+        {
+            let handle = Expr::call_helper(
+                "$ptr",
+                vec![(**cell).clone(), Expr::str(js::HELD), Expr::int(i128::from(at))],
+            );
+            return Ok(Some(Expr::cond(none, Expr::undefined(), handle)));
+        }
         let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
         let some = self.value_expr(Value::Ref(held.unwrap_or(place)), span)?;
         Ok(Some(Expr::cond(none, Expr::undefined(), some)))

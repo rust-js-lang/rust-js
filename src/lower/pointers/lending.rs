@@ -157,3 +157,22 @@ pub(in crate::lower) fn made_once_of<'tcx>(body: &mir::Body<'tcx>, local: Local)
         _ => None,
     }
 }
+
+/// Whether `lent`, the JS of what a call lends, is a place's handle, `$ptr(o,
+/// "value", 4)` that `Option::as_mut` of a cell local lends (#1502), through
+/// `unwrap` and the `undefined` of a `None`: whose pointer is
+/// that handle (ADR 0562, #1479).
+pub(in crate::lower) fn lends_a_place_handle(lent: &crate::js::Expr) -> bool {
+    use crate::js::ExprKind;
+    match &lent.kind {
+        ExprKind::Call(callee, args) => match callee.helper_name() {
+            Some("$ptr") => true,
+            Some("$unwrap") => args.first().is_some_and(lends_a_place_handle),
+            _ => false,
+        },
+        ExprKind::Cond(_, some, none) | ExprKind::Cond(_, none, some) if matches!(none.kind, ExprKind::Undefined) => {
+            lends_a_place_handle(some)
+        }
+        _ => false,
+    }
+}
