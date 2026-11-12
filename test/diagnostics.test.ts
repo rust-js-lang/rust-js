@@ -183,6 +183,12 @@ for (const [name, source, message, crate] of [
   // A `&mut` to an object is the object, whose place a one-item slice's
   // `s[0] = other` would replace (#1336).
   ["slice::from_mut of an object", "pub fn f() -> usize { let mut v = vec![1u8]; std::slice::from_mut(&mut v).len() }", "`slice::from_mut` of a `std::vec::Vec<u8>`, an object, whose place `s[0] = other` would replace (#1336)"],
+  // Each refusal of an open issue names it: a `dyn Iterator`'s hint
+  // (#1476), a `Cow`'s `AsRef` given to generic code (#1481), and generic
+  // code's `BuildHasher` methods (#1482).
+  ["a dyn Iterator's size_hint", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { let it: Box<dyn Iterator<Item = &u32>> = Box::new(v.iter().filter(|x| **x > 1)); it.size_hint() }", "a `dyn Iterator`'s, whose form carries no hint (#1476)"],
+  ["a Cow given as an AsRef<str>", "use std::borrow::Cow;\nfn upper<T: AsRef<str>>(t: T) -> String { t.as_ref().to_uppercase() }\npub fn f() -> String { upper(Cow::Borrowed(\"cow\")) }", "implementation evidence for `<std::borrow::Cow<'_, str> as std::convert::AsRef<str>>` (#1481)"],
+  ["a BuildHasher's method in generic code", "use std::hash::{BuildHasher, BuildHasherDefault, DefaultHasher};\nfn built<B: BuildHasher>(b: &B) -> B::Hasher { b.build_hasher() }\npub fn f() -> DefaultHasher { built(&BuildHasherDefault::<DefaultHasher>::default()) }", "calling `std::hash::BuildHasher::build_hasher` (#1482)"],
   // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now
   // (#1418).
   ["a BufReader's Debug", "use std::io::{BufReader, Cursor};\npub fn f() -> String { format!(\"{:?}\", BufReader::new(Cursor::new(vec![1u8]))) }", "which shows its inner and how much of its buffer is filled (#1418)"],

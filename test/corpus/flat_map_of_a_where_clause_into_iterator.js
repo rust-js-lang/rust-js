@@ -38,42 +38,52 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
     [TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       flat(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
-        const iter = iterator_flatMap(
-          self,
-          (x) => x,
-          TIterator,
-          SelfItemIntoIterator,
-          false,
-          SelfItemConstSize,
-          SelfItemIntoIterOneShot,
-          dropT,
-          dropTItem,
-          undefined,
-          dropTItem,
-          dropTItemItem,
-          dropTItemIntoIter,
-        );
         return $collectDropping(
-          $roomForHint(iter, TItemItemSize, false, false, dropTItemItem),
+          $roomForHint(
+            iterator_flatMap(
+              self,
+              (x) => x,
+              TIterator,
+              SelfItemIntoIterator,
+              false,
+              SelfItemConstSize,
+              SelfItemIntoIterOneShot,
+              dropT,
+              dropTItem,
+              undefined,
+              dropTItem,
+              dropTItemItem,
+              dropTItemIntoIter,
+            ),
+            TItemItemSize,
+            false,
+            false,
+            dropTItemItem,
+          ),
           dropTItemItem,
           true,
         );
       },
       flattened(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
-        const iter = iterator_flatten(
-          self,
-          TIterator,
-          SelfItemIntoIterator,
-          false,
-          SelfItemConstSize,
-          SelfItemIntoIterOneShot,
-          dropT,
-          dropTItem,
-          dropTItemItem,
-          dropTItemIntoIter,
-        );
         return $collectDropping(
-          $roomForHint(iter, TItemItemSize, false, false, dropTItemItem),
+          $roomForHint(
+            iterator_flatten(
+              self,
+              TIterator,
+              SelfItemIntoIterator,
+              false,
+              SelfItemConstSize,
+              SelfItemIntoIterOneShot,
+              dropT,
+              dropTItem,
+              dropTItemItem,
+              dropTItemIntoIter,
+            ),
+            TItemItemSize,
+            false,
+            false,
+            dropTItemItem,
+          ),
           dropTItemItem,
           true,
         );

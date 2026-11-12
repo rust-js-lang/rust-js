@@ -78,10 +78,13 @@ function tIsT_is(self, dropT) {
 
 function backwards(it, IIterator, IDoubleEndedIterator, IsI, dropI) {
   it = IsI.is(it);
-  const iter = $rev(
-    $closing($given(it, IIterator, false, IDoubleEndedIterator), $givenDrop(dropI), false),
+  return $collectDropping(
+    $roomForHint(
+      $rev($closing($given(it, IIterator, false, IDoubleEndedIterator), $givenDrop(dropI), false)),
+      4,
+      false,
+    ),
   );
-  return $collectDropping($roomForHint(iter, 4, false));
 }
 
 function length(it, IExactSizeIterator, IsI, dropI) {

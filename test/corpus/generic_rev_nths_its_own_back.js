@@ -51,12 +51,17 @@ function backsDoubleEndedIterator_nthBack(backs, n) {
 }
 
 function skipped(it, dropI) {
-  const iter = $skipping($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  });
-  return $collectDropping($roomForHint(iter, 4, false));
+  return $collectDropping(
+    $roomForHint(
+      $skipping($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }),
+      4,
+      false,
+    ),
+  );
 }
 
 function skippedLast(it, dropI) {
@@ -80,12 +85,17 @@ function skippedLast(it, dropI) {
 }
 
 function stepped(it, dropI) {
-  const iter = $stepBy($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  });
-  return $collectDropping($roomForHint(iter, 4, false));
+  return $collectDropping(
+    $roomForHint(
+      $stepBy($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }),
+      4,
+      false,
+    ),
+  );
 }
 
 function steppedCount(it, dropI) {

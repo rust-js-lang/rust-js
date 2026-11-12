@@ -866,8 +866,16 @@ export const mutations: Mutation[] = [
     name: "hint-refusal-names-no-cause",
     breaks: "a refusal of `size_hint()` lost to an adapter made in place inside another doesn't say so, nor #1427",
     file: "src/lower/iterators/knowing.rs",
-    find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)\",\n",
-    replace: "            true => \"\",\n",
+    find: "                \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)\"\n",
+    replace: "                \"\"\n",
     tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held"],
+  },
+  {
+    name: "dyn-hint-refusal-names-no-issue",
+    breaks: "a refusal of a `dyn Iterator`'s `size_hint()` doesn't say why, nor #1476",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            (false, true) => \", a `dyn Iterator`'s, whose form carries no hint (#1476)\",\n",
+    replace: "            (false, true) => \"\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a dyn Iterator's size_hint"],
   },
 ];

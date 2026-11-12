@@ -1331,14 +1331,15 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const iter = $holding(
-      take.map(f),
-      () => {
-        dDrop_drop(g);
-      },
-      "after",
+    const v = $collectDropping(
+      $holding(
+        take.map(f),
+        () => {
+          dDrop_drop(g);
+        },
+        "after",
+      ),
     );
-    const v = $collectDropping(iter);
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collected by next", (g) => {

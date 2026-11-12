@@ -73,83 +73,137 @@ function run(name, f) {
 }
 
 function main() {
-  run("bytes", () => {
-    const iter = iterator_fuse(
-      own(20, none, (n) => n & 255),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 1, false)).length;
-  });
-  run("words", () => {
-    const iter = iterator_fuse(
-      own(20, none, (n) => n),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 4, false)).length;
-  });
-  run("words, half hinted", () => {
-    const iter = iterator_fuse(
-      own(20, half, (n) => n),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 4, false)).length;
-  });
-  run("words, all hinted", () => {
-    const iter = iterator_fuse(
-      own(20, all, (n) => n),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 4, false)).length;
-  });
-  run("big", () => {
-    const iter = iterator_fuse(
-      own(5, none, (n) => new Array(2000).fill(n & 255)),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 2000, false)).length;
-  });
-  run("of no size", () => {
-    const iter = iterator_fuse(
-      own(10, none, () => {}),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 0, false)).length;
-  });
-  run("peeked", () => {
-    const iter = iterator_peekable(
-      own(10, none, (n) => n & 65535),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 2, false)).length;
-  });
+  run(
+    "bytes",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(20, none, (n) => n & 255),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          1,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "words",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(20, none, (n) => n),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          4,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "words, half hinted",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(20, half, (n) => n),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          4,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "words, all hinted",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(20, all, (n) => n),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          4,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "big",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(5, none, (n) => new Array(2000).fill(n & 255)),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          2000,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "of no size",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_fuse(
+            own(10, none, () => {}),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            false,
+            ownDrop_drop,
+          ),
+          0,
+          false,
+        ),
+      ).length,
+  );
+  run(
+    "peeked",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_peekable(
+            own(10, none, (n) => n & 65535),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            ownDrop_drop,
+          ),
+          2,
+          false,
+        ),
+      ).length,
+  );
   run("dropping, a hint panics as it grows", () => {
     const it = own(9, none, (value) => [value]);
     it.panicsAt = 5;
-    const iter = iterator_fuse(
-      it,
-      {
-        next: (iterator) => ownIterator_next(iterator, dDrop_drop),
-        sizeHint: (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
-      },
-      false,
-      ownDrop_drop,
-      dDrop_drop,
-    );
     const collect = $collectDropping(
-      $roomForHint(iter, 4, false, false, dDrop_drop),
+      $roomForHint(
+        iterator_fuse(
+          it,
+          {
+            next: (iterator) => ownIterator_next(iterator, dDrop_drop),
+            sizeHint: (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
+          },
+          false,
+          ownDrop_drop,
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );
@@ -229,19 +283,26 @@ function main() {
         ),
       ).length,
   );
-  run("flat-mapped, its inner's left counted", () => {
-    const iter = iterator_flatMap(
-      own(4, none, (n) => n),
-      (n) => new Array(10).fill(n),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      false,
-      undefined,
-      false,
-      ownDrop_drop,
-    );
-    return $collectDropping($roomForHint(iter, 4, false)).length;
-  });
+  run(
+    "flat-mapped, its inner's left counted",
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_flatMap(
+            own(4, none, (n) => n),
+            (n) => new Array(10).fill(n),
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            false,
+            undefined,
+            false,
+            ownDrop_drop,
+          ),
+          4,
+          false,
+        ),
+      ).length,
+  );
   run(
     "chained",
     () =>
@@ -377,8 +438,13 @@ function main() {
  * (#733).
  */
 function collected(it, dropI) {
-  const iter = $closing(Iterator.from(it), dropI, false).filter((n) => n % 3 !== 0);
-  return $collectDropping($roomForHint(iter, 4, false));
+  return $collectDropping(
+    $roomForHint(
+      $closing(Iterator.from(it), dropI, false).filter((n) => n % 3 !== 0),
+      4,
+      false,
+    ),
+  );
 }
 
 function text(it, dropI) {

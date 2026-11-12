@@ -141,11 +141,12 @@ function ranged(t, HeldSize, HeldAlign) {
  * asked (#1443).
  */
 function listed(iters, HItemIntoIterator, dropH, dropHItemIntoIter) {
-  const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
-    iter: $held(HItemIntoIterator.intoIter(i)),
-  }));
   return $collectDropping(
-    $folded(iter),
+    $folded(
+      $closing(Iterator.from(iters), dropH, false).map((i) => ({
+        iter: $held(HItemIntoIterator.intoIter(i)),
+      })),
+    ),
     (held) => {
       heldDrop_drop(held, dropHItemIntoIter);
       dropHItemIntoIter?.(held.iter);

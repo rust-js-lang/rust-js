@@ -1,13 +1,15 @@
-//! Std's calls rust-js refuses that an open issue covers, so a refusal of
-//! one names it, `(#1452)`, as a refusal names what's left to do (guide
-//! limitations.md; `refusal::words`). Known here, as only recognition
-//! spells std's names; the issues are the refusal's.
+//! Std's calls rust-js refuses that an open issue covers, and std's impls
+//! whose dictionary it doesn't make, so a refusal of one names it,
+//! `(#1452)`, as a refusal names what's left to do (guide limitations.md;
+//! `refusal::words`). Known here, as only recognition spells std's names;
+//! the issues are the refusal's.
 
-use super::{StdItem, is_std_def};
+use super::{StdItem, is_std_def, std_path};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt};
 
-/// A refused call of std's that an open issue covers.
+/// A refused call of std's, or a dictionary of std's impl not made, that
+/// an open issue covers.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum OpenCall {
     /// `Into::into`, `TryInto::try_into` or `From::from` in a form not
@@ -20,6 +22,13 @@ pub(crate) enum OpenCall {
     /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
     /// answer: a reader's of the crate's own (#1297, ADR 0425).
     OwnReader,
+    /// A `BuildHasher` method not of std's `BuildHasherDefault` or
+    /// `RandomState`, which are recognised: a type parameter's, generic
+    /// code's, or another builder's (#1482).
+    BuildHasher,
+    /// `AsRef` or `Borrow` of a `Cow`, given to generic code: std's impl,
+    /// which derefs to what it borrowed or owns, has no dictionary (#1481).
+    CowBorrow,
 }
 
 /// The open issue's family `id`, a refused call, is of, if one is.
@@ -40,10 +49,27 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
     {
         return Some(OpenCall::OwnReader);
     }
+    if tcx
+        .trait_of_assoc(id)
+        .is_some_and(|trait_id| std_path(tcx, trait_id) == "std::hash::BuildHasher")
+    {
+        return Some(OpenCall::BuildHasher);
+    }
     let path = tcx.def_path_str(id);
     let spawns = matches!(
         tcx.item_name(id).as_str(),
         "spawn" | "spawn_scoped" | "scope" | "spawn_unchecked"
     );
     (spawns && path.starts_with("std::thread::")).then_some(OpenCall::Thread)
+}
+
+/// The open issue's family a dictionary of `tr` rust-js doesn't make is of,
+/// if one is.
+pub(crate) fn open_evidence<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> Option<OpenCall> {
+    let of_cow = matches!(tr.self_ty().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::borrow::Cow");
+    (of_cow
+        && [StdItem::AsRef, StdItem::Borrow]
+            .into_iter()
+            .any(|item| is_std_def(tcx, tr.def_id, item)))
+    .then_some(OpenCall::CowBorrow)
 }

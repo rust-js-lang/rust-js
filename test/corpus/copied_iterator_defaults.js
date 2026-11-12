@@ -117,10 +117,13 @@ function tTotals(TIterator, dropT) {
       return result;
     },
     doubled(self) {
-      const iter = $closing($given(self, TIterator), $givenDrop(dropT), false).map(
-        (x) => (x * 2) & 255,
+      return $collectDropping(
+        $roomForHint(
+          $closing($given(self, TIterator), $givenDrop(dropT), false).map((x) => (x * 2) & 255),
+          1,
+          false,
+        ),
       );
-      return $collectDropping($roomForHint(iter, 1, false));
     },
     looped(self) {
       let n = 0;

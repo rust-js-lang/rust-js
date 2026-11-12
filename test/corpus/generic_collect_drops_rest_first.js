@@ -53,55 +53,73 @@ function ds() {
 
 function fused(src, IFused, dropI) {
   BOOM = 3;
-  const iter = iterator_fuse(
-    iterator_map(
-      src,
-      (x) => {
-        const result = [(x[0] + 100) >>> 0];
-        dDrop_drop(x);
-        return result;
-      },
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      dropI,
-      dDrop_drop,
-      undefined,
+  const v = $collectDropping(
+    $roomForHint(
+      iterator_fuse(
+        iterator_map(
+          src,
+          (x) => {
+            const result = [(x[0] + 100) >>> 0];
+            dDrop_drop(x);
+            return result;
+          },
+          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          dropI,
+          dDrop_drop,
+          undefined,
+          dDrop_drop,
+        ),
+        { next: $next, fold: $foldOf },
+        false,
+        (map) => {
+          map.return();
+        },
+        dDrop_drop,
+      ),
+      4,
+      false,
+      false,
       dDrop_drop,
     ),
-    { next: $next, fold: $foldOf },
-    false,
-    (map) => {
-      map.return();
-    },
     dDrop_drop,
+    true,
   );
-  const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   $dropItems(v, dDrop_drop);
   return v.length;
 }
 
 function peeked(src, dropI) {
   BOOM = 3;
-  const iter = iterator_peekable(
-    iterator_map(
-      src,
-      (x) => {
-        const result = [(x[0] + 100) >>> 0];
-        dDrop_drop(x);
-        return result;
-      },
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      dropI,
-      dDrop_drop,
-      undefined,
+  const v = $collectDropping(
+    $roomForHint(
+      iterator_peekable(
+        iterator_map(
+          src,
+          (x) => {
+            const result = [(x[0] + 100) >>> 0];
+            dDrop_drop(x);
+            return result;
+          },
+          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          dropI,
+          dDrop_drop,
+          undefined,
+          dDrop_drop,
+        ),
+        { next: $next, fold: $foldOf },
+        (map) => {
+          map.return();
+        },
+        dDrop_drop,
+      ),
+      4,
+      false,
+      false,
       dDrop_drop,
     ),
-    { next: $next, fold: $foldOf },
-    (map) => {
-      map.return();
-    },
     dDrop_drop,
+    true,
   );
-  const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   $dropItems(v, dDrop_drop);
   return v.length;
 }

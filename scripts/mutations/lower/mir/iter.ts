@@ -890,4 +890,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "held-iterator-spilled",
+    breaks: "an iterator a collect that closes it is given is held in a `const iter` though nothing after reads it, `const iter = chain(..); $collectDropping($roomForHint(iter, 4, false))` (#1154)",
+    file: "src/lower/mir/iter.rs",
+    find: "            return Ok(Some(consumers::unheld(held, result, made)));\n",
+    replace: "            return Ok(Some(result));\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
+    snapshots: true,
+  },
 ];

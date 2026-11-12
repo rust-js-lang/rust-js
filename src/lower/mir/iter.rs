@@ -577,7 +577,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // dropped by closing it: dropped, nothing after (#660).
         if result.facts.has(js::Known::ClosesWhatItSteps) && self.dropped_by_closing(receiver_ty) {
             made.extend(call);
-            return Ok(Some(result));
+            return Ok(Some(consumers::unheld(held, result, made)));
         }
         // Its result before what's dropped after it, held where it's a value;
         // a `()`, `for_each`'s, the call's statement (#1079).

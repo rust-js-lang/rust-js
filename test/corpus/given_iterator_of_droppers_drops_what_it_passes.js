@@ -72,16 +72,19 @@ const Held = {
   },
 
   stepped(held, IIterator, dropI) {
-    const iter = $stepBy(
-      $closing($given(held[0], IIterator), $givenDrop(dropI), false),
-      2,
-      dDrop_drop,
-    ).map((d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    });
-    return $collectDropping($roomForHint(iter, 4, false));
+    return $collectDropping(
+      $roomForHint(
+        $stepBy($closing($given(held[0], IIterator), $givenDrop(dropI), false), 2, dDrop_drop).map(
+          (d) => {
+            const result = d[0];
+            dDrop_drop(d);
+            return result;
+          },
+        ),
+        4,
+        false,
+      ),
+    );
   },
 };
 

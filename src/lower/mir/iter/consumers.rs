@@ -512,3 +512,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper(helper, args))
     }
 }
+
+/// `result`, of a call given `held`, an iterator held first so it can be
+/// dropped after, where nothing after reads it: the iterator back in its
+/// one place, `$collectDropping($roomForHint(chain(..), 4, false))`, its
+/// `const iter = chain(..)` gone, where `made` ends in it and it's the
+/// first `result` evaluates, the first argument of calls of what does
+/// nothing, so it's made when it was (#1154).
+pub(super) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
+    let js::ExprKind::Var(name) = &held.kind else {
+        return result;
+    };
+    let Some(StmtKind::Const(spilled, value)) = made.last().map(|stmt| &stmt.kind) else {
+        return result;
+    };
+    fn first(e: &Expr, name: &str) -> bool {
+        match &e.kind {
+            js::ExprKind::Var(var) => var == name,
+            js::ExprKind::Call(callee, args) => {
+                !callee.has_effects() && args.first().is_some_and(|arg| first(arg, name))
+            }
+            _ => false,
+        }
+    }
+    let mut reads = 0;
+    result.visit_vars(&mut |var| reads += usize::from(var == name.as_str()));
+    if spilled != name || reads != 1 || !first(&result, name) {
+        return result;
+    }
+    let value = value.clone();
+    let Some(put) = result.substitute(&|var| (var == name.as_str()).then(|| value.clone())) else {
+        return result;
+    };
+    made.pop();
+    put
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `const iter = made(); collect(iter)`, `collect`'s argument `before`
+    /// first where it's given.
+    fn held(before: Option<Expr>) -> (Expr, Vec<Stmt>) {
+        let made = vec![StmtKind::Const("iter".into(), Expr::call(Expr::var("made"), vec![])).at(js::Span::NONE)];
+        let args = before.into_iter().chain([Expr::var("iter"), Expr::int(4)]).collect();
+        (Expr::call(Expr::var("hinted"), args), made)
+    }
+
+    #[test]
+    fn a_held_iterator_read_first_is_put_back() {
+        let (result, mut made) = held(None);
+        let put = unheld(Expr::var("iter"), result, &mut made);
+        assert!(made.is_empty());
+        let (expected, _) = held(None);
+        let expected = expected.substitute(&|var| (var == "iter").then(|| Expr::call(Expr::var("made"), vec![])));
+        assert!(Some(put) == expected);
+    }
+
+    #[test]
+    fn a_held_iterator_read_after_a_call_stays_held() {
+        let (result, mut made) = held(Some(Expr::call(Expr::var("first"), vec![])));
+        let kept = unheld(Expr::var("iter"), result.clone(), &mut made);
+        assert_eq!(made.len(), 1);
+        assert!(kept == result);
+    }
+}

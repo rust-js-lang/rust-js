@@ -106,14 +106,15 @@ function main() {
     $roomFor(n, 4);
     return new Array(n).fill(x);
   }
-  const iter$1 = $holding(
-    tmp$2.flatMap(f$3),
-    () => {
-      console.log(`drop ${c[0]}`);
-    },
-    "alone",
+  const flat = $collectDropping(
+    $holding(
+      tmp$2.flatMap(f$3),
+      () => {
+        console.log(`drop ${c[0]}`);
+      },
+      "alone",
+    ),
   );
-  const flat = $collectDropping(iter$1);
   console.log(`[${flat.join(", ")}] flattened`);
   let d$live = true;
   const d = [4];
@@ -133,14 +134,15 @@ function main() {
     const k = d;
     return x !== k[0] ? (x * 10) >>> 0 : undefined;
   }
-  const iter$2 = $holding(
-    tmp$3.map(f$4).filter((item) => item != null),
-    () => {
-      console.log(`drop ${d[0]}`);
-    },
-    "before",
+  const kept = $collectDropping(
+    $holding(
+      tmp$3.map(f$4).filter((item) => item != null),
+      () => {
+        console.log(`drop ${d[0]}`);
+      },
+      "before",
+    ),
   );
-  const kept = $collectDropping(iter$2);
   console.log(`[${kept.join(", ")}] kept`);
   let e$live = true;
   const e = [5];
@@ -160,11 +162,11 @@ function main() {
     const k = e;
     return (x + k[0]) >>> 0 < 8;
   }
-  const iter$3 = $holding($lazyTakeWhile(tmp$4, f$5), () => {
+  const iter$1 = $holding($lazyTakeWhile(tmp$4, f$5), () => {
     console.log(`drop ${e[0]}`);
   });
-  const small = Array.from(iter$3);
-  iter$3.return();
+  const small = Array.from(iter$1);
+  iter$1.return();
   console.log(`[${small.join(", ")}] taken`);
   let f$live = true;
   const f = [6];

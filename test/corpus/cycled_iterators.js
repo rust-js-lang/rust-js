@@ -58,9 +58,14 @@ function counterIterator_next(counter) {
 }
 
 function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
-  const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
   return $collectDropping(
-    $roomForHint(iter$1, IItemSize, false, false, dropIItem),
+    $roomForHint(
+      $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n),
+      IItemSize,
+      false,
+      false,
+      dropIItem,
+    ),
     dropIItem,
     true,
   );

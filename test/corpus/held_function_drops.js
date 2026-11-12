@@ -68,14 +68,15 @@ function kept(f, v, dropF) {
     throw error;
   }
   const f$1 = (x) => f(x);
-  const iter = $holding(
-    tmp.map(f$1),
-    () => {
-      dropF?.(f);
-    },
-    "after",
+  return $collectDropping(
+    $holding(
+      tmp.map(f$1),
+      () => {
+        dropF?.(f);
+      },
+      "after",
+    ),
   );
-  return $collectDropping(iter);
 }
 
 function countBy(it, f, dropF) {

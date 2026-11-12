@@ -423,20 +423,25 @@ function main() {
     ),
   );
   run("fuse collect", () => {
-    const iter = iterator_fuse(
-      own({ start: 40, end: 44 }, 42),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-      false,
-      (own) => {
-        console.log("drop own");
-        for (const item of own.items) {
-          dDrop_drop(item);
-        }
-      },
-      dDrop_drop,
-    );
     const collect = $collectDropping(
-      $roomForHint(iter, 4, false, false, dDrop_drop),
+      $roomForHint(
+        iterator_fuse(
+          own({ start: 40, end: 44 }, 42),
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          false,
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );
@@ -1023,19 +1028,24 @@ function main() {
     return collect.length;
   });
   run("peekable collect", () => {
-    const iter = iterator_peekable(
-      own({ start: 180, end: 184 }, 182),
-      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-      (own) => {
-        console.log("drop own");
-        for (const item of own.items) {
-          dDrop_drop(item);
-        }
-      },
-      dDrop_drop,
-    );
     const collect = $collectDropping(
-      $roomForHint(iter, 4, false, false, dDrop_drop),
+      $roomForHint(
+        iterator_peekable(
+          own({ start: 180, end: 184 }, 182),
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

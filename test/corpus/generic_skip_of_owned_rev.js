@@ -25,12 +25,17 @@ function noisyDrop_drop(noisy) {
 }
 
 function skipped(it, dropI) {
-  const iter = $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop).map((n) => {
-    const result = n[0];
-    noisyDrop_drop(n);
-    return result;
-  });
-  return $collectDropping($roomForHint(iter, 4, false));
+  return $collectDropping(
+    $roomForHint(
+      $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop).map((n) => {
+        const result = n[0];
+        noisyDrop_drop(n);
+        return result;
+      }),
+      4,
+      false,
+    ),
+  );
 }
 
 function nthOf(it, dropI) {

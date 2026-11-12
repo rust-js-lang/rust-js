@@ -25,8 +25,9 @@ function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
 function firstTwo(items, IIterator, IClone, dropI) {
-  const iter = $closing($given(items, IIterator), $givenDrop(dropI), false).take(2);
-  const v = $collectDropping($roomForHint(iter, 4, false));
+  const v = $collectDropping(
+    $roomForHint($closing($given(items, IIterator), $givenDrop(dropI), false).take(2), 4, false),
+  );
   console.log("collected");
   return v;
 }

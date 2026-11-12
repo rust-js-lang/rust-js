@@ -2492,3 +2492,20 @@ step, and generic code's `collect()` of a `HashSet`, a `BTreeSet`, a
 `VecDeque` or an `Option` given as an `IntoIterator` is given its
 iterator. Without it the whole corpus, 2,249 cases, runs as native Rust;
 its mutation `fold-to-array-of-an-iterable-unstepped` is gone with it.
+
+## Amendment (2026-11-12, #1154): a held iterator nothing after reads is put back
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; readability. An
+iterator a std method takes by value and rust-js drops after it is held
+first, `const iter = chain(..)`, so the drop after the call can name it
+(`consumed_call`). Where the call closes it, `$collectDropping`, which
+drops it, nothing comes after, and the name was left read once:
+`const iter = chain(..); const counted = $collectDropping($roomForHint(iter,
+4, false))`. `unheld` (mir/iter/consumers.rs) puts it back where it's read,
+`$collectDropping($roomForHint(chain(..), 4, false))`, where the statement
+holding it is the last made, it's read once, and it's what the call
+evaluates first: each call's first argument down to it, of a callee that
+does nothing, so it's made when it was. Seventeen snapshots changed, each
+that alone. Mutations `held-iterator-spilled` (snapshots) and
+`held-iterator-put-anywhere` (the unit tests `lower::mir::iter::consumers::tests`: one
+read after a call stays held) hold it.

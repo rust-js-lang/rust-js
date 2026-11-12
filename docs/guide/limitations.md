@@ -193,7 +193,7 @@ std's pointer, a `Cow`, `Bound`, `Poll` and `ControlFlow`, hash as std's
 impls write them, a crate's own `Hash` inside called as std calls it (ADR
 0463, amended; #1289).
 
-- A `BuildHasher` method generic code calls of its type parameter: `fn h<S: std::hash::BuildHasher>(s: &S) -> u64 { s.hash_one(5u32) } println!("{}", h(&std::hash::RandomState::new()));`
+- A `BuildHasher` method generic code calls of its type parameter (#1482): `fn h<S: std::hash::BuildHasher>(s: &S) -> u64 { s.hash_one(5u32) } println!("{}", h(&std::hash::RandomState::new()));`
 - `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
 
 ## Panics, processes and I/O
