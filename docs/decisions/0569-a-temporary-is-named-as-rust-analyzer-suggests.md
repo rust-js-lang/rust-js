@@ -358,3 +358,13 @@ which #890's step 4 makes `Derived(temp, suffix)` named after its base.
 The corpus, the committed std and every snapshot are unchanged, which
 holds that each word is the one its caller wrote; 29 mutations whose
 anchors named a word are re-anchored, and catch as before.
+
+## Amendment (2026-11-12, #890's measure): role fallbacks are counted
+
+#890's design gates its steps on how often a name falls back to a role's
+word. `scripts/readability.ts` now counts it, "role fallbacks": a
+`const` or `let` named `value`, `tmp`, `arg`, `result`, `option` or
+`fallback`, or one of them given apart, `value$3`. `docs/readability.txt`
+gains that column alone, each file's count beside its others as they
+were: 8,505 of 301,704 lines, 281.9 in 10,000. Steps 3 to 5 must lower
+it, and no change may raise it.

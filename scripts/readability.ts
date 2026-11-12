@@ -13,6 +13,10 @@ export const SHAPES: [string, RegExp][] = [
   ["Iterator.from", /Iterator\.from/],
   ["return;", /^\s*return;$/],
   ["renamed x$1", /\b[A-Za-z_]\w*\$\d+\b/],
+  // A name the compiler fell back to, a role's word where nothing that
+  // made the value named it (#890's measure, ADR 0569): steps 3 to 5
+  // lower it, none raises it.
+  ["role fallbacks", /\b(const|let) (value|tmp|arg|result|option|fallback)(\$\d+)?\b/],
 ];
 
 /** How many of `lines` have each shape, and how many lines there are. */

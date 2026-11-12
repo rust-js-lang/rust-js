@@ -90,10 +90,11 @@ test("each shape is a line's, and the gate counts them all", async () => {
     "Iterator.from",
     "return;",
     "renamed x$1",
+    "role fallbacks",
   ]);
-  const lines = ["  bb36: {", "  while (true) {", "  const _3 = x;", "  return;", "  const it = $iter(v);", "  const x$1 = Iterator.from(xs);"];
+  const lines = ["  bb36: {", "  while (true) {", "  const _3 = x;", "  return;", "  const it = $iter(v);", "  const x$1 = Iterator.from(xs);", "  const value$2 = f();"];
   const { counts } = (await import("../scripts/readability")).measure(lines);
-  expect([...counts.values()]).toEqual([1, 1, 1, 1, 1, 1, 1]);
+  expect([...counts.values()]).toEqual([1, 1, 1, 1, 1, 1, 2, 1]);
   const blessed = readFileSync(baseline, "utf8");
   expect(blessed.split("\n").filter((line) => SHAPES.some(([name]) => line.startsWith(`${name}\t`))).length).toBe(SHAPES.length);
 });
