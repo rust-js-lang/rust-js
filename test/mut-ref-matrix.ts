@@ -203,7 +203,13 @@ impl Task {
 
 /** Each operation through `r`, a `&mut` of the pointee, `alt` its other
  * value as the holder writes it, and `change` what changes one in place. */
-type Op = (r: string, alt: string, change: (place: string) => string, field?: (place: string) => string) => string | undefined;
+type Op = (
+  r: string,
+  alt: string,
+  change: (place: string) => string,
+  field: ((place: string) => string) | undefined,
+  ty: string,
+) => string | undefined;
 
 const operations: Record<string, Op> = {
   changed: (r, _, change) => change(`(*${r})`),
@@ -245,12 +251,28 @@ const operations: Record<string, Op> = {
         };
         by();
         by();`,
+  // Std's impls a `&mut` meets by its type alone, which method resolution
+  // picks where a person sees one method (#1459, #1486, #1487): `Borrow<T>
+  // for &mut T`, a `&` to what it's to; `BorrowMut<T> for T`, the `&mut`
+  // itself; and what gives a `&mut` back as it's given, `identity`.
+  borrowed: (r, _, change, __, ty) => `let b: &${ty} = std::borrow::Borrow::borrow(&${r});
+        println!("borrowed {b:?}");
+        ${change(`(*${r})`)}`,
+  borrowed_mut: (r, _, change, __, ty) => `let b: &mut ${ty} = std::borrow::BorrowMut::borrow_mut(&mut *${r});
+        ${change("(*b)")}`,
+  given_back: (r, _, change) => `let s = std::convert::identity(&mut *${r});
+        ${change("(*s)")}`,
 };
 
 /** Where the `&mut` is held, and how the program makes it: `op` is the
  * operation's statements through `r`. A generic holder has no field to
  * write. */
-type Holder = { generic: boolean; program: (p: Pointee, name: string, op: string) => { items: string; main: string } };
+type Holder = {
+  generic: boolean;
+  /** What a generic holder names the pointee's type. */
+  ty?: string;
+  program: (p: Pointee, name: string, op: string) => { items: string; main: string };
+};
 
 const holders: Record<string, Holder> = {
   local: {
@@ -430,6 +452,7 @@ impl Owner${camel(name)} {
   },
   generic_fn: {
     generic: true,
+    ty: "T",
     program: (p, name, op) => ({
       items: `fn ${name}<T: std::fmt::Debug + Default + Change>(r: &mut T) {
     ${op}
@@ -442,6 +465,7 @@ impl Owner${camel(name)} {
   },
   trait_default: {
     generic: true,
+    ty: "Self",
     program: (p, name, op) => ({
       items: `trait Ops${camel(name)}: std::fmt::Debug + Default + Change + Sized {
     // Named apart from the pointee's own, a \`Range\`'s \`take\`.
@@ -507,9 +531,14 @@ export function programs(): Record<string, string> {
         // changed by its trait; it has no field to write.
         const alt = h.generic ? "Change::other()" : p.alt;
         const changed = h.generic ? (place: string) => `${place.replace(/^\(\*(\w+)\)$/, "$1")}.change();` : p.change;
+        // Nor, of a type parameter, a `BorrowMut<T> for T` to ask: std's
+        // impl for every type has no dictionary generic code is given,
+        // refused ("implementation evidence for `<T as BorrowMut<T>>`").
         const left =
-          (h.generic && operation === "field_write") || operation in (p.refused ?? {}) || `${operation}@${holder}` in (p.refused ?? {});
-        const body = left ? undefined : op("r", alt, changed, p.field);
+          (h.generic && (operation === "field_write" || operation === "borrowed_mut")) ||
+          operation in (p.refused ?? {}) ||
+          `${operation}@${holder}` in (p.refused ?? {});
+        const body = left ? undefined : op("r", alt, changed, p.field, h.ty ?? p.ty);
         if (body === undefined) continue;
         const made = h.program(p, operation, body);
         items.push(made.items);
