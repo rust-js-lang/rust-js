@@ -308,3 +308,19 @@ hashes; a `Discriminant` is hashed directly now, and with that filter gone
 the whole corpus and every crate pair still pass, no other std type
 reaching it but `NonNull`, which rust-js refuses. The filter stays, as
 std's rule.
+
+## Amendment (2026-11-12, #1477): `finish` takes the hasher itself
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. A std hasher's dictionary, `$sipHasher`, read every
+method's receiver as the hasher's cell, `{ value }`. That holds for the
+`&mut self` writes, but `finish` takes `&self`, which generic code gives as
+the hasher itself, as it gives any `&`: `fn by_value<H: Hasher>(mut h: H)`
+given a `DefaultHasher` called `HHasher.finish(h)` and threw `Cannot read
+properties of undefined (reading 'finish')` where native Rust returns the
+hash. std's `impl Hasher for &mut H`, `$throughBox`'s `finish: [1]`, gave
+it the hasher too, so `&mut DefaultHasher` given by value threw the same.
+`$sipHasher`'s `finish` is now the hasher's own. Found probing #1477's
+methods; the corpus case `generic_hasher_given_a_std_hasher` (by value,
+`&mut`, `&`, `Box`, `&mut &mut` and a `BuildHasherDefault`'s, against
+wasm32's native Rust) and mutation `sip-finish-of-its-cell` hold it.

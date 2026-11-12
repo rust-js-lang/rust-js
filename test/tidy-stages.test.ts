@@ -143,7 +143,6 @@ function forgettable(): string[] {
  * made of one. A list that only shrinks: a name leaves it with its fix. */
 const unrecognizedDiffers: Record<string, string> = Object.fromEntries(
   [
-    "std::hash::Hasher::finish",
     "std::hash::Hasher::write",
     "std::hash::Hasher::write_u8",
     "std::hash::Hasher::write_u32",
@@ -401,9 +400,9 @@ test("a std function's call without its recogniser is refused, and what a compil
   expect(without.kind).toBe("rejected");
   expect(without.error).toContain(`rust-js does not support calling \`${sqrt}\` yet`);
   expect(readFileSync(listed, "utf8").split("\n")).not.toContain(sqrt);
-  const named = variants([], [], ["std::hash::Hasher::finish", sqrt]).map((variant) => variant.name);
+  const named = variants([], [], ["std::hash::Hasher::write", sqrt]).map((variant) => variant.name);
   expect(named).toContain(`without the recogniser of ${sqrt}`);
-  expect(named).not.toContain("without the recogniser of std::hash::Hasher::finish");
+  expect(named).not.toContain("without the recogniser of std::hash::Hasher::write");
 });
 
 // A name that's no case is the test above's to report.

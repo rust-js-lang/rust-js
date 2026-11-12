@@ -167,7 +167,12 @@ class $KeyHasher extends $Hasher {
     return hasher.finish();
   }
 }
-// A std hasher's dictionary, of its `&mut`, `{ value }`: its own methods.
+// A std hasher's dictionary: its own methods, each `&mut self` one's of its
+// `&mut`, `{ value }`, and `finish`'s, of its `&self`, the hasher itself, as
+// generic code gives a `&` (#1477).
 const $sipHasher = /* @__PURE__ */ Object.fromEntries(
-  /* @__PURE__ */ ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
+  /* @__PURE__ */ ["write", "finish", ...$hasherProvided].map((name) => [
+    name,
+    name === "finish" ? (hasher) => hasher.finish() : (hasher, ...args) => hasher.value[name](...args),
+  ]),
 );

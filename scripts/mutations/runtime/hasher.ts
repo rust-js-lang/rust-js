@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
   },
+  {
+    name: "sip-finish-of-its-cell",
+    breaks: "a std hasher's dictionary's `finish`, of its `&self`, reads the hasher's cell where generic code gives the hasher itself, and throws (#1477)",
+    file: "src/runtime/hasher.js",
+    find: "    name === \"finish\" ? (hasher) => hasher.finish() : (hasher, ...args) => hasher.value[name](...args),\n",
+    replace: "    name === \"finish\" ? (hasher) => hasher.value.finish() : (hasher, ...args) => hasher.value[name](...args),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_hasher_given_a_std_hasher.rs$"],
+  },
 ];
