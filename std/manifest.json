@@ -225,7 +225,15 @@
           "io"
         ],
         "export": "cursorDefault",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
       },
       {
         "key": "core::io::cursor::{impl#9}::default",
@@ -234,7 +242,15 @@
           "io"
         ],
         "export": "cursorDefault_default",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
       },
       {
         "key": "core::io::cursor::{impl#8}",
@@ -266,12 +282,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -289,12 +307,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -1652,6 +1672,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -1669,6 +1690,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -2109,12 +2131,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -2132,12 +2156,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -2520,12 +2546,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -2543,12 +2571,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -4894,12 +4924,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -4917,12 +4949,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -5304,12 +5338,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -5327,12 +5363,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -5800,12 +5838,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -5823,12 +5863,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -6074,10 +6116,17 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
             ]
           }
         ]
@@ -6094,10 +6143,17 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
             ]
           }
         ]
@@ -6868,18 +6924,21 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 2,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -6897,18 +6956,21 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 2,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7190,6 +7252,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7207,6 +7270,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7644,12 +7708,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7667,12 +7733,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7894,6 +7962,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -7911,6 +7980,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -8532,6 +8602,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -8549,6 +8620,7 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -9119,12 +9191,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -9142,12 +9216,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -9369,12 +9445,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -9392,12 +9470,14 @@
           {
             "index": 0,
             "marks": [
+              "drop",
               "clone"
             ]
           },
           {
             "index": 1,
             "marks": [
+              "drop",
               "clone"
             ]
           }
@@ -14031,7 +14111,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "d96ada69e5421802"
+      "hash": "090486ffe73b305e"
     },
     {
       "file": "iter.js.map",
@@ -14039,7 +14119,7 @@
     },
     {
       "file": "io.js",
-      "hash": "090f2127d519be71"
+      "hash": "58a084c9055d0a3f"
     },
     {
       "file": "io.js.map",

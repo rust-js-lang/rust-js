@@ -933,3 +933,25 @@ with items that print their drops, against native Rust in both builds.
 Mutations `slice-views-of-drops-refused`, `moves-of-drops-refused`,
 `btree-ends-of-drops-refused`, `peek-mut-of-drops-refused` and
 `insert-mut-past-its-end-keeps-its-item`.
+
+## Amendment (2026-11-12, #1517): a derived `Clone` or `Default` that makes a type parameter's field first drops it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. `drops_nothing_derived` took every derived `Clone` and
+`Default` to drop nothing, so a library's derived impl, std's compiled
+`Chain::clone` among them, was given no drop of its type parameters. But
+each makes its value field by field, and where a later field's `clone` or
+`default` panics, the fields already made are dropped as it unwinds:
+`Countdown(2).chain(Countdown(1)).clone()` whose `b`'s clone panics drops
+the clone of `a`, `drop 12`, before the panic is caught. Now a `Clone` or a
+`Default` of a type with a field of a type parameter's before another field
+(`makes_a_param_field_first`) may drop, and is given drops; std's compiled
+`chainClone_clone(chain, AClone, BClone, dropA, dropB)` drops what it cloned
+in its cleanup, as do `Zip`'s and `Peekable`'s. One whose only such field is
+its last makes nothing first and is unchanged. The std package's manifest
+marks them; a consumer passes the drops. Corpus case
+`derived_clone_of_std_drops_what_it_cloned` against native Rust in both
+builds; mutations `derived-clone-drops-nothing` and
+`derived-clone-of-its-last-field-drops`, caught by
+`std-package.test.ts`'s check that the committed std is what the compiler
+compiles.

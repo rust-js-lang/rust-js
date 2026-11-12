@@ -429,7 +429,7 @@ export function cursorPartialEq_eq(cursor, other, TPartialEq) {
   return cursor.pos === other.pos && TPartialEq.eq(cursor.inner, other.inner);
 }
 
-export function cursorDefault_default(TDefault) {
+export function cursorDefault_default(TDefault, dropT) {
   return { inner: TDefault.default(), pos: 0n };
 }
 
@@ -678,9 +678,14 @@ export function cursorPartialEq(TPartialEq) {
   );
 }
 
-export function cursorDefault(TDefault) {
-  return $traitImpl($cursorDefault, [TDefault], () => ({
-    default: () => cursorDefault_default(TDefault),
+export function cursorDefault(TDefault, dropT) {
+  return $traitImpl($cursorDefault, [TDefault, dropT], () => ({
+    default() {
+      return cursorDefault_default(TDefault, dropT);
+    },
+    $drop(cursor) {
+      dropT?.(cursor.inner);
+    },
   }));
 }
 //# sourceMappingURL=io.js.map

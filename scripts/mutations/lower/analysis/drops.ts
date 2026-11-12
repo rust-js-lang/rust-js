@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
       "                        if let Some(own) = callers_items.iter().position(|&own| own == item).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
+  {
+    name: "derived-clone-drops-nothing",
+    breaks: "a derived `Clone` that clones a type parameter's field before another is taken to drop nothing, so std's compiled `Chain::clone` is given no drop of its `a` and drops none of its clone where `b`'s clone panics (#1517)",
+    file: "src/lower/analysis/drops.rs",
+    find: "    if makes && crate::lower::generic_facts::makes_a_param_field_first(tcx, trait_ref.self_ty()) {\n        return false;\n    }\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

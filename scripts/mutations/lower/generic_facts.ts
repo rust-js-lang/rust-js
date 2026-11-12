@@ -207,4 +207,12 @@ export const mutations: Mutation[] = [
     replace: "            true => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_its_own_type_parameter_through_std_impls.rs$"],
   },
+  {
+    name: "derived-clone-of-its-last-field-drops",
+    breaks: "a derived `Clone` whose only field of a type parameter's is its last is taken to drop it, so it's given drops nothing calls, `Fuse::clone`'s (#1517)",
+    file: "src/lower/generic_facts.rs",
+    find: "        (fields.iter().rev().skip(1)).any(|field| field.ty(tcx, args).skip_normalization().has_param())\n",
+    replace: "        (fields.iter()).any(|field| field.ty(tcx, args).skip_normalization().has_param())\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

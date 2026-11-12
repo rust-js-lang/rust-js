@@ -22,6 +22,7 @@
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `src/lower/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
+//! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
@@ -553,4 +554,15 @@ pub(in crate::lower) fn given_a_drop_of<'tcx>(
     params_may_drop
         && matches!(item.kind(), ty::Param(param)
             if given.is_none_or(|given| given(tcx.typeck_root_def_id(owner), param.index)))
+}
+
+/// Whether a value of `ty`, a struct or an enum, has a variant with a field
+/// of a type parameter's before another field, which a derived `Clone` or
+/// `Default` makes first, and drops as a later one panics (#1517).
+pub(in crate::lower) fn makes_a_param_field_first<'tcx>(tcx: rustc_middle::ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, args) = ty.kind() else { return false };
+    adt.variants().iter().any(|variant| {
+        let fields = &variant.fields.raw;
+        (fields.iter().rev().skip(1)).any(|field| field.ty(tcx, args).skip_normalization().has_param())
+    })
 }

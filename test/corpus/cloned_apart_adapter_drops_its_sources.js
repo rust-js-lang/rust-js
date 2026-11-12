@@ -191,7 +191,13 @@ function main() {
     again = $collectDropping(
       $rev(
         $knowing(
-          chainClone_clone(both, countdownClone, countdownClone),
+          chainClone_clone(
+            both,
+            countdownClone,
+            countdownClone,
+            countdownDrop_drop,
+            countdownDrop_drop,
+          ),
           (iterator) =>
             chainDoubleEndedIterator_nextBack(
               iterator,
@@ -268,7 +274,11 @@ function main() {
   let copy;
   try {
     copy = $collectDropping(
-      $roomForHint(mapClone_clone(mapped, countdownClone, { clone: (value) => value }), 4, false),
+      $roomForHint(
+        mapClone_clone(mapped, countdownClone, { clone: (value) => value }, countdownDrop_drop),
+        4,
+        false,
+      ),
     );
   } catch (error) {
     $cleanup(() => {

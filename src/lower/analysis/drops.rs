@@ -238,16 +238,20 @@ fn item_may_drop<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, runs: &impl Fn(Ty<'tcx>,
 
 /// Is `imp` a derive whose body drops nothing of what it's given or makes:
 /// `Clone`'s, `Debug`'s, `Default`'s and the comparisons', or serde's, whose
-/// codecs rust-js writes (ADR 0077)?
+/// codecs rust-js writes (ADR 0077)? Not a `Clone` or a `Default` that makes
+/// a field of a type parameter's before another, which drops it where the
+/// later one's `clone` or `default` panics, as std's derived `Chain::clone`
+/// drops its `a`'s clone where its `b`'s panics (#1517).
 pub(super) fn drops_nothing_derived(tcx: TyCtxt<'_>, imp: DefId) -> bool {
     if !known_derive(tcx, imp) {
         return false;
     }
-    let tr = tcx
-        .impl_trait_ref(imp)
-        .instantiate_identity()
-        .skip_normalization()
-        .def_id;
+    let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+    let tr = trait_ref.def_id;
+    let makes = tcx.is_lang_item(tr, LangItem::Clone) || is_std_def(tcx, tr, StdItem::Default);
+    if makes && crate::lower::generic_facts::makes_a_param_field_first(tcx, trait_ref.self_ty()) {
+        return false;
+    }
     [
         LangItem::Clone,
         LangItem::Copy,
