@@ -450,3 +450,22 @@ build) and `adapter_shown_and_cloned_generically` (a `cloned()` whose
 `{:?}` the crate asks, ADR 0932, amended), against native Rust;
 mutation `into-iter-given-on-in-place`, caught. No other corpus case's JS
 changed.
+
+## Amendment (2026-11-12, #1491): JS's own adapter is never std's struct
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior preserved. Whether a value of a compiled adapter's type is std's
+struct or what the recognizers made in place was its maker's mark,
+`made_in_place`. A map of a map given to generic code that asks its `len()`
+is made knowing its length by its source too, and that source, the inner
+`.map(..)`, asked on its own, is a sub-expression with no mark of its own:
+taken for std's struct, it was wrapped `$knowing(.., mapExactSizeIterator_len)`
+and asked a `len` JS's `.map` hasn't, `TypeError: it.len is not a function`.
+`compiled_struct` now also says no of a value whose form is JS's own
+adapter, `it.map(f)` and the like of a JS iterator (`iterators::is_js_adapter`),
+which only the recognizers make; such a map is made knowing its length as
+any in place is, `$mapEnds`. Corpus case `map_of_a_map_given_for_its_len`
+against native Rust in both builds; the metamorphic net's
+`generic-instances` of `counted_where_made_runs_each_part_once` off
+test/metamorphic-known.txt; mutation `js-adapter-taken-for-compiled-struct`,
+and `in-place-rev-a-struct` re-anchored.

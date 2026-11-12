@@ -804,6 +804,15 @@ pub(in crate::lower) fn binding_made(e: &Expr) -> bool {
 /// `$iter`, an `ITERATOR_HELPERS`' own, a range's `$iterator` or a
 /// `$lazyChain`'s generator, a collection's `values()`, `keys()` or
 /// `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
+/// Whether `e` is a call of JS's own adapter, `it.map(f)`, `filter`,
+/// `flatMap`, `take` or `drop`, of a JS iterator: what the recognizers make
+/// in place, never std's compiled struct, whatever marks it carries (#1491).
+pub(in crate::lower) fn is_js_adapter(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, _)
+        if matches!(&callee.kind, js::ExprKind::Member(object, name)
+            if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && is_js_iterator(object)))
+}
+
 pub(super) fn is_js_iterator(e: &Expr) -> bool {
     if e.facts.has(js::Known::Iterator) {
         return true;
