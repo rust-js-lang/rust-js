@@ -149,27 +149,7 @@ function eventSerialize_serialize(event, json) {
     json.beginObject();
     json.key("type");
     json.string("placed");
-    json.key("orderId");
-    json.int(event._0.orderId);
-    json.key("itemName");
-    json.string(event._0.itemName);
-    json.key("qty");
-    json.int(event._0.qty);
-    if (event._0.note != null) {
-      json.key("note");
-      json.string(event._0.note);
-    }
-    json.key("price");
-    json.number(event._0.price);
-    json.key("tags");
-    json.beginArray();
-    for (const item of event._0.tags) {
-      json.element();
-      json.string(item);
-    }
-    json.endArray();
-    json.key("ok");
-    json.bool(event._0.paid);
+    json.flat(event._0, orderSerialize_serialize, "Event::Placed");
     json.endObject();
   }
 }

@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2380
-lines	308247
+files	2381
+lines	308399
 temporaries	0	0
 labeled blocks	0	0
 while (true)	219	7.1
-$iter	2690	87.3
+$iter	2702	87.6
 Iterator.from	261	8.5
 return;	317	10.3
-renamed x$1	14968	485.6
-role fallbacks	8349	270.9
+renamed x$1	14977	485.6
+role fallbacks	8356	270.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -26,7 +26,7 @@ test/corpus/adapters_own_nth_fold.js	256	0	0	0	0	0	0	6	4
 test/corpus/adapters_own_work_that_panics.js	572	0	0	0	8	0	0	14	17
 test/corpus/address_kept_when_assigned_again.js	254	0	0	0	0	0	0	24	13
 test/corpus/address_of_a_byte_view_of_a_stored_array.js	53	0	0	0	0	0	0	0	0
-test/corpus/address_of_a_field_given_to_generic_code.js	86	0	0	0	0	0	0	0	0
+test/corpus/address_of_a_field_given_to_generic_code.js	113	0	0	0	0	0	0	3	0
 test/corpus/address_of_a_field_through_a_reference.js	60	0	0	0	0	0	0	0	0
 test/corpus/address_of_a_field_where_its_object_is_stored.js	124	0	0	0	0	0	0	0	0
 test/corpus/address_of_a_local_moved_out.js	209	0	0	0	0	0	0	5	7
@@ -624,6 +624,7 @@ test/corpus/dyn_generic.js	91	0	0	0	0	0	0	6	0
 test/corpus/dyn_iterator_drop_panics.js	58	0	0	0	1	0	0	0	1
 test/corpus/dyn_iterator_drops.js	408	0	0	1	2	1	1	6	7
 test/corpus/dyn_iterator_lent_of_a_dropping_value.js	45	0	0	0	0	0	0	0	1
+test/corpus/dyn_iterator_size_hints.js	145	0	0	0	12	0	0	6	7
 test/corpus/dyn_iterators.js	88	0	0	0	5	0	0	0	1
 test/corpus/dyn_mut.js	129	0	0	0	0	0	0	4	1
 test/corpus/dyn_of_a_generic_impl_written_whole.js	196	0	0	0	0	0	0	7	3
@@ -2389,4 +2390,4 @@ test/snapshots/versions/versions.js	221	0	0	0	3	0	2	4	5
 test/snapshots/web_forms/web_forms.js	290	0	0	0	0	2	0	2	0
 test/snapshots/webapi_events/webapi-events.js	300	0	0	0	0	0	0	3	0
 test/snapshots/wide/wide.js	251	0	0	0	0	0	0	3	6
-test/snapshots/wire/wire.js	539	0	0	0	0	0	0	2	0
+test/snapshots/wire/wire.js	519	0	0	0	0	0	0	2	0

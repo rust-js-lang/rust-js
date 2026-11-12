@@ -885,74 +885,84 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// Merge a struct payload into an internally tagged object. Unwrap its
-    /// serialization representation first, rather than exposing wrapper fields.
-    fn write_internal_fields(
+    /// An internally tagged newtype variant's payload, `value`, as serde's
+    /// `TaggedSerializer` writes it (#1540): by its own writer, given the
+    /// entries' adapter `within` the variant, `json.flat(value, writer,
+    /// "E::A")`, which writes a struct's or a map's entries after the tag,
+    /// opened first (`opening`), `()` as the tag alone, a variant as an entry
+    /// of its name, and serde's own error for anything else. An `Option`,
+    /// which no writer tells from `()`, is serde's error from its type,
+    /// returned before anything's opened (`tagged_optional`).
+    #[allow(clippy::too_many_arguments)]
+    fn write_tagged_payload(
         &mut self,
         value: Expr,
         json: &str,
         ty: Ty<'tcx>,
+        within: String,
         opening: Vec<Stmt>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        if self.tagged_optional(ty, span)? {
+            let message = format!("cannot serialize tagged newtype variant {within} containing an optional");
+            out.push(
+                StmtKind::Throw(Expr::call(Expr::helper("$jsonError"), vec![Expr::str(message)])).at(js::Span::NONE),
+            );
+            return Ok(());
+        }
+        let writer = self.json_writer(ty, span)?;
+        out.extend(opening);
+        self.emit(json, "flat", vec![value, writer, Expr::str(within)], out);
+        Ok(())
+    }
+
+    /// Whether `ty`, an internally tagged newtype variant's payload, is an
+    /// `Option` as serde writes one: itself, or what a `Box`, an `Rc`, a
+    /// newtype struct or a `transparent` one holds, each written as what it
+    /// holds. Refused where the type doesn't say: a type parameter's, or a
+    /// payload serde's derive doesn't write, whose `Option` a writer can't
+    /// tell, which #1568 is for.
+    fn tagged_optional(&mut self, ty: Ty<'tcx>, span: Span) -> R<bool> {
         let ty = ty.peel_refs();
-        let ty::Adt(adt, args) = *ty.kind() else {
-            return Err(self.unsupported(span, "an internally tagged newtype variant of this"));
+        let refused = |this: &Self, what: &str| {
+            Err(this.unsupported(span, &format!("an internally tagged newtype variant of {what} (#1568)")))
         };
-        if !adt.is_struct() {
-            return Err(self.unsupported(span, "an internally tagged newtype variant of this"));
+        if self.option_of(ty).is_some() {
+            return Ok(true);
         }
-        let variant = adt.non_enum_variant();
-        let attrs = self.serde_attrs(adt.did())?;
-        // Its fields are walked only where serde's derive writes them: a
-        // hand-written `Serialize`, or one through `#[serde(into)]`, is given
-        // serde's tagged serializer, which this doesn't make (#1548, #1540).
-        let hand_written =
-            (self.serialize_fn(ty)).is_some_and(|f| !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)));
-        if hand_written || attrs.into {
-            return Err(self.unsupported(
-                span,
-                "an internally tagged newtype variant whose payload isn't written by serde's derive of its fields (#1540)",
-            ));
-        }
-        let fields: Vec<_> = variant
-            .fields
-            .iter()
-            .enumerate()
-            .map(|(i, field)| (self.project(value.clone(), ty, i), self.field_ty(field, args)))
-            .collect();
-        if attrs.transparent || (variant.ctor_kind() == Some(CtorKind::Fn) && fields.len() == 1) {
-            let (field, value, ty) = self
-                .written_field(variant, &fields)?
-                .into_iter()
-                .next()
-                .ok_or_else(|| self.unsupported(span, "an internally tagged newtype variant of this"))?;
-            // Its own writer would be given serde's tagged serializer, which
-            // this doesn't make (#1536).
-            if self.serde_attrs(field)?.serialize_with.is_some() {
-                return Err(self.unsupported(
-                    span,
-                    "an internally tagged newtype variant whose field has its own writer (#1540)",
-                ));
+        match *ty.kind() {
+            // Of a type parameter, whose writer a caller gives.
+            _ if self.serde_evidence(ty, true).is_some() => refused(self, "a type parameter"),
+            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.counted_rc(ty).is_some() => {
+                self.tagged_optional(args.type_at(0), span)
             }
-            return self.write_internal_fields(value, json, ty, opening, span, out);
-        }
-        match variant.ctor_kind() {
-            // The struct counts what it writes before the tagged serializer
-            // opens it, `{"t":"A"` (`skip_counts`).
-            None => {
-                let counts = self.skip_counts(variant, &fields, span)?;
-                out.extend(counts);
-                out.extend(opening);
-                self.write_struct_tag(json, adt, &attrs, out);
-                self.write_fields(json, variant, &fields, attrs.rename_all, span, out)
+            ty::Adt(adt, args)
+                if adt.is_struct()
+                    && let Some(f) = self.serialize_fn(ty) =>
+            {
+                let attrs = self.serde_attrs(adt.did())?;
+                if !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)) || attrs.into {
+                    return refused(self, "a payload that isn't written by serde's derive of its fields");
+                }
+                let variant = adt.non_enum_variant();
+                if !attrs.transparent && !(variant.ctor_kind() == Some(CtorKind::Fn) && variant.fields.len() == 1) {
+                    return Ok(false);
+                }
+                for field in &variant.fields {
+                    let field_attrs = self.serde_attrs(field.did)?;
+                    if field_attrs.skip_serializing {
+                        continue;
+                    }
+                    if field_attrs.serialize_with.is_some() {
+                        return refused(self, "a payload whose field has its own writer");
+                    }
+                    let field_ty = self.field_ty(field, args);
+                    return self.tagged_optional(field_ty, span);
+                }
+                Ok(false)
             }
-            Some(CtorKind::Const) => {
-                out.extend(opening);
-                Ok(())
-            }
-            Some(CtorKind::Fn) => Err(self.unsupported(span, "an internally tagged tuple struct")),
+            _ => Ok(false),
         }
     }
 
@@ -1217,7 +1227,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it, or its field's (#1536).
         let codec = self.newtype_variant_codec(variant, true, span)?;
         if codec.is_some() && matches!(tagging, Tagging::Internal(_)) {
-            return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer (#1540)"));
+            return Err(self.unsupported(span, "an internally tagged newtype variant with its own writer (#1568)"));
         }
         // A tuple or struct variant's count of what it writes: before it's
         // opened, or adjacently tagged, before its content, which serde
@@ -1289,11 +1299,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "string", vec![Expr::str(name)], &mut opening);
                 match kind {
                     Some(CtorKind::Const) | None => out.extend(opening),
-                    // A newtype variant of a struct: the struct's fields, beside
-                    // the tag, opened after the struct's count.
+                    // A newtype variant: its payload, after the tag, as serde's
+                    // `TaggedSerializer` writes it (`write_tagged_payload`).
                     Some(CtorKind::Fn) if fields.len() == 1 => {
                         let (inner, inner_ty) = fields[0].clone();
-                        self.write_internal_fields(inner, json, inner_ty, opening, span, out)?;
+                        let enum_name = self.tcx.item_name(self.tcx.parent(variant.def_id));
+                        let within = format!("{enum_name}::{}", variant.name);
+                        self.write_tagged_payload(inner, json, inner_ty, within, opening, span, out)?;
                     }
                     Some(CtorKind::Fn) => return Err(self.unsupported(span, "an internally tagged tuple variant")),
                 }

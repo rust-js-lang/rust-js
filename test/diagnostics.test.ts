@@ -482,7 +482,9 @@ for (const [name, source, message, crate] of [
   ["writing a Cow<str>", 'pub fn f(c: &std::borrow::Cow<str>) -> String { serde_json::to_string(c).unwrap() }', "serializing `std::borrow::Cow<'_, str>`", "serde"],
   ["writing a Duration", 'pub fn f(d: &std::time::Duration) -> String { serde_json::to_string(d).unwrap() }', "serializing `std::time::Duration`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
-  ["an internally tagged newtype variant of a map", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E { M(std::collections::BTreeMap<String, u32>) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serializing", "serde"],
+  // A map's is written since #1540; a type parameter's isn't, as its type
+  // can't say whether it's an `Option`, which serde refuses there (#1568).
+  ["an internally tagged newtype variant of a type parameter", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E<T> { M(T) }\npub fn f(e: &E<u32>) -> String { serde_json::to_string(e).unwrap() }', "an internally tagged newtype variant of a type parameter (#1568)", "serde"],
 ] as [string, string, string, string?][]) {
   test(`${name} reports a source location and preserves existing output`, () => {
     const dir = fixture("diagnostic");

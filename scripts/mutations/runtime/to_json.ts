@@ -10,4 +10,16 @@ export const mutations: Mutation[] = [
     replace: "this.text += $jsonNumber(x);",
     tests: ["test/serde.test.ts", "-t", "an f32 is written"],
   },
+  {
+    name: "tagged-error-said-as-flatten",
+    breaks: "an internally tagged newtype variant of what isn't a struct or a map says flatten's `can only flatten structs and maps`, not serde's `cannot serialize tagged newtype variant E::A containing ..` (#1540)",
+    file: "src/runtime/to_json.js",
+    find: "      within === undefined\n",
+    replace: "      true\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "TaggedSerializer writes it"
+    ]
+  },
 ];

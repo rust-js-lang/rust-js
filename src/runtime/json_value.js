@@ -186,8 +186,8 @@ function $toJsonValue(value, write) {
       stack[stack.length - 1].key = k;
     },
     endObject: () => put({ TAG: "Object", _0: stack.pop().entries }),
-    flat(v, writeFlat) {
-      writeFlat(v, $jsonFlat(builder));
+    flat(v, writeFlat, within) {
+      writeFlat(v, $jsonFlat(builder, within));
     },
     // Where a protocol call began, and back to it where it failed: what
     // it opened dropped, its key with it (#1545).

@@ -1134,3 +1134,116 @@ pub fn report() -> String {
   expect((await import(lib)).report()).toBe(expected);
 });
 
+// An internally tagged enum's newtype variant is written as serde's
+// `TaggedSerializer` writes it: its payload's entries after the tag, a
+// struct's, a map's, a `Box`'s or a newtype's of one, `()` as the tag
+// alone, a variant as an entry of its name; and serde's own error, verbatim,
+// for what isn't a struct or a map, an `Option` among them, from its type.
+// A map's payload walked `HashMap`'s private `base`, and a `Box`'s or a
+// `Vec`'s panicked the compiler (#1540).
+test("serde: an internally tagged newtype variant is written as serde's TaggedSerializer writes it", async () => {
+  const dir = fixture("serde-tagged-payloads");
+  writeFileSync(join(dir, "cases.rs"), `use serde::Serialize;
+use std::collections::{BTreeMap, HashMap};
+#[derive(Serialize)]
+pub struct Body { pub n: i32 }
+#[derive(Serialize)]
+#[serde(tag = "kind")]
+pub struct Tagged { pub n: i32 }
+#[derive(Serialize)]
+pub struct Unit;
+#[derive(Serialize)]
+pub struct Wrap(pub Body);
+#[derive(Serialize)]
+pub struct WrapOption(pub Option<Body>);
+#[derive(Serialize)]
+#[serde(transparent)]
+pub struct Clear { pub o: Option<i32> }
+#[derive(Serialize)]
+pub enum Inner { U, N(i32), T(i32, i32), S { a: i32 } }
+#[derive(Serialize)]
+#[serde(tag = "t")]
+pub enum InnerTagged { X { a: i32 } }
+#[derive(Serialize)]
+#[serde(tag = "t")]
+pub enum E {
+    Body(Body),
+    Tagged(Tagged),
+    Map(HashMap<String, i32>),
+    Ordered(BTreeMap<String, i32>),
+    Json(serde_json::Map<String, serde_json::Value>),
+    Value(serde_json::Value),
+    Boxed(Box<Body>),
+    Wrapped(Wrap),
+    Unit(()),
+    UnitStruct(Unit),
+    Inner(Inner),
+    Nested(InnerTagged),
+    Int(i32),
+    Float(f64),
+    Bool(bool),
+    Char(char),
+    Text(String),
+    List(Vec<i32>),
+    Pair((i32, i32)),
+    Optional(Option<Body>),
+    WrappedOptional(WrapOption),
+    Clear(Clear),
+    BoxedOptional(Box<Option<i32>>),
+}
+#[derive(Serialize)]
+#[serde(tag = "t", rename = "Renamed")]
+pub enum F {
+    #[serde(rename = "b")]
+    B(i32),
+}
+macro_rules! write {
+    ($out:ident, $value:expr) => {
+        let value = $value;
+        $out.push_str(&format!("{:?}\\n", serde_json::to_string(&value).map_err(|e| e.to_string())));
+        $out.push_str(&format!("{:?}\\n", serde_json::to_value(&value).map(|v| v.to_string()).map_err(|e| e.to_string())));
+    };
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    let mut json = serde_json::Map::new();
+    json.insert("k".to_string(), serde_json::json!(1));
+    write!(out, E::Body(Body { n: 1 }));
+    write!(out, E::Tagged(Tagged { n: 1 }));
+    write!(out, E::Map(HashMap::from([("k".to_string(), 3)])));
+    write!(out, E::Ordered(BTreeMap::from([("k".to_string(), 3), ("j".to_string(), 4)])));
+    write!(out, E::Json(json));
+    write!(out, E::Value(serde_json::json!({"v": [1, 2]})));
+    write!(out, E::Value(serde_json::json!(null)));
+    write!(out, E::Value(serde_json::json!(5)));
+    write!(out, E::Value(serde_json::json!("s")));
+    write!(out, E::Value(serde_json::json!([1])));
+    write!(out, E::Boxed(Box::new(Body { n: 2 })));
+    write!(out, E::Wrapped(Wrap(Body { n: 3 })));
+    write!(out, E::Unit(()));
+    write!(out, E::UnitStruct(Unit));
+    write!(out, E::Inner(Inner::U));
+    write!(out, E::Inner(Inner::N(1)));
+    write!(out, E::Inner(Inner::T(1, 2)));
+    write!(out, E::Inner(Inner::S { a: 1 }));
+    write!(out, E::Nested(InnerTagged::X { a: 1 }));
+    write!(out, E::Int(1));
+    write!(out, E::Float(1.5));
+    write!(out, E::Bool(true));
+    write!(out, E::Char('c'));
+    write!(out, E::Text("s".to_string()));
+    write!(out, E::List(vec![1]));
+    write!(out, E::Pair((1, 2)));
+    write!(out, E::Optional(None));
+    write!(out, E::Optional(Some(Body { n: 4 })));
+    write!(out, E::WrappedOptional(WrapOption(Some(Body { n: 5 }))));
+    write!(out, E::Clear(Clear { o: None }));
+    write!(out, E::BoxedOptional(Box::new(Some(6))));
+    write!(out, F::B(1));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

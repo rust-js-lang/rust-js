@@ -177,18 +177,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "internal-newtype-struct-writer-ignored",
-    breaks: "an internally tagged newtype variant of a newtype struct whose field names its own writer is written as its type is, not refused (#1536)",
-    file: "src/lower/serde.rs",
-    find: "            if self.serde_attrs(field)?.serialize_with.is_some() {\n",
-    replace: "            if false {\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "own writer|own reader"
-    ]
-  },
-  {
     name: "skip-count-uncalled",
     breaks: "a crate's own skip predicate is called once, as a field's written, not first to count what's written: one that answers differently the second time writes `{\"n\":7}` for `{}` (#1543)",
     file: "src/lower/serde.rs",
@@ -225,18 +213,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "skip-count-of-an-internal-newtype-unwritten",
-    breaks: "an internally tagged newtype variant's struct doesn't count its skip predicates (#1543)",
-    file: "src/lower/serde.rs",
-    find: "                let counts = self.skip_counts(variant, &fields, span)?;\n                out.extend(counts);\n                out.extend(opening);\n",
-    replace: "                out.extend(opening);\n",
-    tests: [
-      "test/serde-attributes.test.ts",
-      "-t",
-      "skip predicate is called as"
-    ]
-  },
-  {
     name: "skip-count-of-std-made",
     breaks: "std's skip predicates, which only ask what they're given, are counted too, a statement of no effect where the guide's `Order` has none (#1543)",
     file: "src/lower/serde.rs",
@@ -246,30 +222,6 @@ export const mutations: Mutation[] = [
       "test/docs.test.ts"
     ],
     snapshots: true
-  },
-  {
-    name: "internal-payload-by-hand-walked",
-    breaks: "an internally tagged newtype variant's payload with a hand-written `Serialize` is written as its Rust fields, `source` for `wire`, not refused (#1548)",
-    file: "src/lower/serde.rs",
-    find: "        if hand_written || attrs.into {\n",
-    replace: "        if attrs.into {\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "internally tagged payload written by hand"
-    ]
-  },
-  {
-    name: "internal-payload-into-walked",
-    breaks: "an internally tagged newtype variant's payload with `#[serde(into)]` is written as its own fields, not as what it converts into, not refused (#1548)",
-    file: "src/lower/serde.rs",
-    find: "        if hand_written || attrs.into {\n",
-    replace: "        if hand_written {\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "internally tagged payload written through into"
-    ]
   },
   {
     name: "codec-selected-without-type-args",
@@ -293,6 +245,102 @@ export const mutations: Mutation[] = [
       "test/serde.test.ts",
       "-t",
       "impl rustc selects"
+    ]
+  },
+  {
+    name: "tagged-optional-unasked",
+    breaks: "an internally tagged newtype variant of an `Option` is written as what it holds, or as the tag alone, where serde returns `containing an optional` (#1540)",
+    file: "src/lower/serde.rs",
+    find: "        if self.tagged_optional(ty, span)? {\n",
+    replace: "        if false && self.tagged_optional(ty, span)? {\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "TaggedSerializer writes it"
+    ]
+  },
+  {
+    name: "tagged-optional-not-through-a-box",
+    breaks: "an `Option` a `Box` holds, an internally tagged newtype variant's payload, isn't serde's error (#1540)",
+    file: "src/lower/serde.rs",
+    find: "                self.tagged_optional(args.type_at(0), span)\n",
+    replace: "                Ok(false)\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "TaggedSerializer writes it"
+    ]
+  },
+  {
+    name: "tagged-optional-not-through-a-newtype",
+    breaks: "an `Option` a newtype or `transparent` struct holds, an internally tagged newtype variant's payload, isn't serde's error (#1540)",
+    file: "src/lower/serde.rs",
+    find: "                    return self.tagged_optional(field_ty, span);\n",
+    replace: "                    return Ok(false);\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "TaggedSerializer writes it"
+    ]
+  },
+  {
+    name: "tagged-payload-of-a-parameter-written",
+    breaks: "an internally tagged newtype variant of a type parameter is written, though its type can't say whether it's an `Option` (#1568)",
+    file: "src/lower/serde.rs",
+    find: "            _ if self.serde_evidence(ty, true).is_some() => refused(self, \"a type parameter\"),\n",
+    replace: "            _ if self.serde_evidence(ty, true).is_some() => Ok(false),\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged newtype variant of a type parameter"
+    ]
+  },
+  {
+    name: "tagged-payload-by-hand-written",
+    breaks: "an internally tagged newtype variant's payload written by hand is written by its own impl, whose `serialize_none` no writer tells from `()` (#1568)",
+    file: "src/lower/serde.rs",
+    find: "                if !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)) || attrs.into {\n",
+    replace: "                if attrs.into {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged payload written by hand"
+    ]
+  },
+  {
+    name: "tagged-payload-through-into-written",
+    breaks: "an internally tagged newtype variant's payload with `#[serde(into)]` is written, as its own fields, not what it converts into (#1568)",
+    file: "src/lower/serde.rs",
+    find: "                if !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)) || attrs.into {\n",
+    replace: "                if !super::recognition::serde_derived(self.tcx, self.tcx.parent(f)) {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged payload written through into"
+    ]
+  },
+  {
+    name: "tagged-payload-field-writer-written",
+    breaks: "an internally tagged newtype variant of a newtype struct whose field has its own writer is written as its type is (#1568)",
+    file: "src/lower/serde.rs",
+    find: "                    if field_attrs.serialize_with.is_some() {\n",
+    replace: "                    if false {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "internally tagged newtype struct's field's own writer"
+    ]
+  },
+  {
+    name: "tagged-error-of-renamed-names",
+    breaks: "an internally tagged newtype variant's error names its enum and variant as they're serialized, `Renamed::b`, where serde names them as they're written in Rust, `F::B` (#1540)",
+    file: "src/lower/serde.rs",
+    find: "                        let within = format!(\"{enum_name}::{}\", variant.name);\n",
+    replace: "                        let within = format!(\"{}::{name}\", { let _ = enum_name; self.serde_attrs(self.tcx.parent(variant.def_id))?.rename.unwrap_or_default() });\n",
+    tests: [
+      "test/serde.test.ts",
+      "-t",
+      "TaggedSerializer writes it"
     ]
   },
 ];

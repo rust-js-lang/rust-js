@@ -102,6 +102,26 @@ $toJson(order, orderSerialize_serialize, false);
   so it's refused (#1540); its fields were written instead, `source`
   where its own impl writes `wire`. Results change, so the program is
   refused (ADR 0262).
+  **Amended again (#1540): written as serde's `TaggedSerializer` writes
+  it.** The payload is written by its own writer, given the adapter a
+  flattened field's is (`$jsonFlat`, one adapter, told the variant it's
+  `within`): `json.flat(value, writer, "E::A")`. A struct's, a map's
+  (`HashMap`, `BTreeMap`, `serde_json::Map`, a `Value`'s object), a
+  `Box`'s or a newtype's of one, its entries after the tag; `()` and a unit
+  struct, the tag alone; a variant, an entry of its name; anything else,
+  serde's own error, verbatim, `cannot serialize tagged newtype variant
+  E::A containing an integer`, by the enum's and variant's Rust names. An
+  `Option`, which no writer tells from `()`, is that error from its type,
+  through a `Box`, an `Rc`, a newtype or a `transparent` struct, returned
+  as native returns it. A map was walked as std's struct, its private
+  `base`, and a `Box`'s or a `Vec`'s panicked the compiler. Results change,
+  so Rust's behavior is kept (ADR 0262). Refused, naming #1568: a type
+  parameter's payload and one serde's derive doesn't write, whose `Option`
+  its type can't tell, which #1568's markers (B) are for.
+  The wire example's `Event::Placed(Order)` is one call of `Order`'s
+  writer where it wrote `Order`'s fields again, 22 lines to 1; its renames
+  are as many, so the readability gate's `renamed x$1` share moves from
+  485.6 to 485.7 in 10,000 lines by the lines gone alone, blessed for it.
 
 **Each type is written as serde writes it:**
 

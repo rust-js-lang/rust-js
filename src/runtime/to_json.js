@@ -38,17 +38,27 @@ function $jsonWriter(pretty) {
       this.text += JSON.stringify(k) + (pretty ? ": " : ":");
     },
     endObject() { close(this, "}"); },
-    // `#[serde(flatten)]`: `value`'s entries, among the object's own.
-    flat(value, write) { write(value, $jsonFlat(this)); },
+    // `#[serde(flatten)]`: `value`'s entries, among the object's own; or,
+    // `within` an internally tagged newtype variant, `E::A`, after its tag.
+    flat(value, write, within) { write(value, $jsonFlat(this, within)); },
   };
 }
 // serde's `FlatMapSerializer`: a struct's or a map's entries go into the
 // object `into` is writing; a variant is an entry of its name; `None` and
-// `()` are nothing; and anything else can't be flattened.
-function $jsonFlat(into) {
+// `()` are nothing; and anything else can't be flattened. `within` an
+// internally tagged newtype variant, `E::A`, it's serde's `TaggedSerializer`,
+// which writes them after the tag the same way, and says what else it can't
+// write in its own words (#1540); an `Option`, which this can't tell from
+// `()`, is told by its type where it's written.
+function $jsonFlat(into, within) {
   let depth = 0;
   const top = (what) => {
-    if (depth === 0) throw $jsonError(`can only flatten structs and maps (got ${what})`);
+    if (depth > 0) return;
+    throw $jsonError(
+      within === undefined
+        ? `can only flatten structs and maps (got ${what})`
+        : `cannot serialize tagged newtype variant ${within} containing ${what}`,
+    );
   };
   const flat = {
     null() { if (depth > 0) into.null(); },
@@ -70,7 +80,7 @@ function $jsonFlat(into) {
     beginObject() { if (depth++ > 0) into.beginObject(); },
     key(k) { into.key(k); },
     endObject() { if (--depth > 0) into.endObject(); },
-    flat(value, write) { write(value, $jsonFlat(this)); },
+    flat(value, write, within) { write(value, $jsonFlat(this, within)); },
   };
   return flat;
 }
