@@ -92,6 +92,28 @@ pub(super) fn drop_params<'tcx>(
             }
         }
     }
+    // A std function that gives back std's iterator struct, compiled, which
+    // closing drops (ADR 0871), `repeat_n`'s `RepeatN<T>`: given a drop for each
+    // type parameter it holds that isn't `Copy`, as the struct's close drops
+    // its fields, though its maker's body drops none (#1458). Not the
+    // crate's own, whose callers give it what its body's calls ask.
+    for &id in fns.iter() {
+        if id.is_local() || !matches!(tcx.def_kind(id), DefKind::Fn) || tcx.trait_of_assoc(id).is_some() {
+            continue;
+        }
+        let made = tcx.fn_sig(id).instantiate_identity().skip_binder().output();
+        if !crate::lower::recognition::is_compiled_std_iterator(tcx, made) {
+            continue;
+        }
+        let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
+        for param in &tcx.generics_of(id).own_params {
+            if crate::lower::generic_facts::holds_type_parameter(made, param.index)
+                && crate::lower::traits::given_a_drop(tcx, typing_env, param)
+            {
+                given.insert((id, param.index));
+            }
+        }
+    }
     // A library's own function, `@rust-js/std`'s bodies too, is given what
     // its crate's calls and its body's drops give it; a consumer that gives
     // one more compiles it itself (ADR 0914).

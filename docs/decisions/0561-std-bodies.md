@@ -559,3 +559,28 @@ linker where a name of the module's has it, `Chain as Chain$1`. The
 corpus's JS is the same; held by the mutation
 `std-exports-reserved-everywhere` of `refused_drops_and_displays.rs` and
 `consumer_drops_what_is_left.rs`, which #1156's `take` changed without it.
+
+## Amendment (2026-11-13, #1458): a std maker of a compiled struct is given its type parameters' drops
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): preserve. A compiled
+std struct that closing drops (ADR 0871) drops its fields when it's
+closed, by drops its maker gives it. A trait's provided maker,
+`Iterator::take`, is given `Self`'s drop by the rule for a trait's default
+body. A free function that makes one, `repeat_n`'s `RepeatN<T>`, was
+given none, as its body drops nothing but where it makes no items:
+compiled, `repeat_n(L(1), 0)` would never drop `L(1)`, nor a `RepeatN`
+closed before its end the element it holds. A std function that gives back a compiled std iterator
+is now given a drop for each type parameter it holds that isn't `Copy`
+(`analysis/drops.rs`; whether the struct holds it is `generic_facts.rs`'s
+`holds_type_parameter`), so the struct's close drops it. The crate's own
+functions are left as they are: their callers give what their bodies'
+calls ask.
+
+No compiled std free function makes an iterator before `RepeatN` is
+compiled, so this changes no output: the committed std, every corpus
+snapshot and the plain build are byte-identical with it. Its case and
+mutation are `RepeatN`'s, in the commit that compiles it: with
+`std-maker-given-no-drop` applied and std rebuilt, the case fails in the
+build of std's bodies (`repeat_n(L(1), 0)` never drops `L(1)`) and the
+twin net's consumers table fails 14 of its 80 batches, std's bodies
+leaving `L(7)` undropped where the runtime's helpers drop it.

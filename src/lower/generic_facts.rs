@@ -23,6 +23,7 @@
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
+//! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
@@ -534,6 +535,15 @@ pub(in crate::lower) fn may_hold_for_some<'tcx>(
 /// typed answer of one apart (`recognition::kind_of`, ADR 1124).
 pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
+}
+
+/// Whether `ty` holds the type parameter of index `index`, itself or in
+/// any type it's made of, as `repeat_n`'s `RepeatN<T>` holds its `T`, which
+/// a std maker of a compiled iterator is given the drop of (#1458).
+pub(in crate::lower) fn holds_type_parameter(ty: Ty<'_>, index: u32) -> bool {
+    ty.walk()
+        .filter_map(|part| part.as_type())
+        .any(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
 }
 
 /// Whether a caller gives function `DefId`'s type parameter of an index
