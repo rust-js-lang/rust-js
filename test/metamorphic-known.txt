@@ -20,11 +20,14 @@ plain std library refcell_borrow_while_mut.rs
 plain std boxed address_of_an_option_payload.rs
 
 #difference 11 a panic's message downcasts as a `&str` and a `String` both, so a loud rewrite's call in the branch of a downcast that native Rust takes runs in the other, or not at all: a formatted `panic!`'s payload, a `String` natively, is a `&str` too (a loud drop's `thread::panicking()`, answered since #1285, reaches it), and a literal's, a `&str`, a `String` too (lock_poisoning's `message`, #1438)
-plain std loud-drop extend_by_a_dyn_iterator_asks_its_hint.rs
 plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs
+plain std loud-drop extend_by_a_dyn_iterator_asks_its_hint.rs
 plain std loud lock_poisoning.rs
 plain std loud-call lock_poisoning.rs
 plain std loud-drop lock_poisoning.rs
+plain std loud unwrap_dropping.rs
+plain std loud-call unwrap_dropping.rs
+plain std loud-drop unwrap_dropping.rs
 
 #1490 P0: a print made while println! formats its arguments comes before the line, where Rust's stdout puts it inside the line
 plain std library eprinted_while_formatting.rs
@@ -62,6 +65,21 @@ plain std loud-drop drop_guard_restores_nullable_fields.rs
 plain std loud drop_guard_restores_taken_fields.rs
 plain std loud-call drop_guard_restores_taken_fields.rs
 plain std loud-drop drop_guard_restores_taken_fields.rs
+plain std loud-drop let_chain_else_inside_if.rs
+plain std loud refcell_field_derive_meets.rs
+plain std loud-drop refcell_field_derive_meets.rs
+plain std loud refcell_variant_derive_meets.rs
+plain std loud-drop refcell_variant_derive_meets.rs
+plain std loud thread_local_lazy_where_observable.rs
+plain std loud-call thread_local_lazy_where_observable.rs
+plain std loud-drop thread_local_lazy_where_observable.rs
+plain std loud thread_local_made_by_constructor.rs
+plain std loud-call thread_local_made_by_constructor.rs
+plain std loud-drop thread_local_made_by_constructor.rs
+plain std loud-call thread_local_set_of_a_field_borrow.rs
+plain std loud thread_local_with_in_place.rs
+plain std loud-call thread_local_with_in_place.rs
+plain std loud-drop thread_local_with_in_place.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
