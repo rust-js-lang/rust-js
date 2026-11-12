@@ -5,6 +5,7 @@ import {
   $collectResults,
   $debugStr,
   $dynReader,
+  $followedReadBuf,
   $ioErrorDebug,
   $ioErrorDisplay,
   $iterator,
@@ -12,6 +13,7 @@ import {
   $readerDefaults,
   $repeatReader,
   $sliceReader,
+  $takeReadBuf,
   $unwrapErr,
   $unwrapOk,
   $writeCaught,
@@ -71,9 +73,12 @@ function main() {
   // A chain of two slices.
   const TakeBufRead = takeBufRead($sliceReader);
   const ChainBufRead = chainBufRead($sliceReader, $sliceReader);
-  const TakeRead$1 = $readerDefaults(takeRead($repeatReader));
-  const TakeRead = $readerDefaults(takeRead($sliceReader));
-  const ChainRead = $readerDefaults(chainRead($sliceReader, $sliceReader));
+  const TakeRead$1 = $readerDefaults(takeRead($repeatReader), $takeReadBuf($repeatReader));
+  const TakeRead = $readerDefaults(takeRead($sliceReader), $takeReadBuf($sliceReader));
+  const ChainRead = $readerDefaults(
+    chainRead($sliceReader, $sliceReader),
+    $followedReadBuf($sliceReader, $sliceReader),
+  );
   const a = [97, 98];
   const b = [99, 100, 10, 101, 102];
   const chained = read_chain(a, b, $sliceReader, $sliceReader);
@@ -286,7 +291,7 @@ function main() {
   const through = read_take(read_chain(a, b, $sliceReader, $sliceReader), 3n, ChainRead);
   let t$2 = "";
   $unwrapOk(
-    $readerDefaults(takeRead(ChainRead)).readToString(
+    $readerDefaults(takeRead(ChainRead), $takeReadBuf(ChainRead)).readToString(
       { value: through },
       {
         get value() {

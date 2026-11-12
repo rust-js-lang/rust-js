@@ -9,6 +9,7 @@ import {
   $debugStr,
   $dynReader,
   $emptyReader,
+  $followedReadBuf,
   $grownVec,
   $ioErrorDebug,
   $ioErrorDisplay,
@@ -20,6 +21,7 @@ import {
   $roomFor,
   $roomForHint,
   $sliceReader,
+  $takeReadBuf,
   $unwrapErr,
   $unwrapOk,
   $utf8Bytes,
@@ -514,7 +516,12 @@ function throughOthers() {
   const BufReaderRead$2 = $bufReader($sliceReader);
   const BufReaderRead$1 = $bufReader(BufReaderRead$2);
   const BufReaderRefMutRead = $mutReader(BufReaderRead$2);
-  const BufReaderRead = $bufReader($readerDefaults(chainRead($sliceReader, $sliceReader)));
+  const BufReaderRead = $bufReader(
+    $readerDefaults(
+      chainRead($sliceReader, $sliceReader),
+      $followedReadBuf($sliceReader, $sliceReader),
+    ),
+  );
   const c = read_chain([97, 98], [99, 100], $sliceReader, $sliceReader);
   let r = { inner: c, buf: new Array(8192).fill(0), pos: 0, filled: 0 };
   console.log(
@@ -546,7 +553,7 @@ function throughOthers() {
   };
   const v = [];
   console.log(
-    `${$unwrapOk($bufReader($readerDefaults(takeRead($repeatReader))).readToEnd({ value: r }, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk($bufReader($readerDefaults(takeRead($repeatReader), $takeReadBuf($repeatReader))).readToEnd({ value: r }, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   console.log(`[${v.join(", ")}]`);
 

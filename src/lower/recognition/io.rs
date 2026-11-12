@@ -154,6 +154,18 @@ pub(crate) fn is_std_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             && is_compiled_std_type(tcx, ty))
 }
 
+/// Of one of `is_std_reader`'s, its sources, a `Take<T>`'s `T` or a
+/// `Chain<T, U>`'s `T` and `U`, and whether it's a `Chain`: what its
+/// `read_buf`, which std's provided `read_to_end` reads into, reads (#1340).
+pub(crate) fn std_reader_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(bool, Vec<Ty<'tcx>>)> {
+    let ty::Adt(adt, args) = ty.kind() else { return None };
+    match std_path(tcx, adt.did()) {
+        "std::io::Take" => Some((false, args.types().take(1).collect())),
+        "std::io::Chain" => Some((true, args.types().take(2).collect())),
+        _ => None,
+    }
+}
+
 /// Whether `id` is std's impl of `io::Read` or `BufRead` for one of
 /// `is_std_reader`'s: one that has a dictionary, as a reader of the
 /// crate's own doesn't (#1297). Not a `Take`'s `Seek`, not compiled.

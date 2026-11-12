@@ -12,7 +12,7 @@ pub(crate) use fmt::is_byte_slice;
 mod io;
 pub(crate) use io::{
     ByteSource, IoOp, fs_type, in_io_dictionary, is_buf_reader, is_file_handle, is_std_reader, is_std_reader_impl,
-    of_files, of_io_reading,
+    of_files, of_io_reading, std_reader_sources,
 };
 mod iterators;
 mod js_items;

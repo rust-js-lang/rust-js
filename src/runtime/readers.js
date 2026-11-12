@@ -18,6 +18,36 @@ function $readInto(buf, from, n) {
   for (let i = 0; i < n; i++) buf[i] = from[i];
 }
 
+// core's `BorrowedBuf` and its `BorrowedCursor` (core/src/io/borrowed_buf.rs)
+// as `default_read_to_end` reads into one, `{ buf, filled, init }`: `buf`
+// its bytes, `filled` how many are read, `init` its one flag of whether all
+// of it is initialized. A reader's `read_buf(cursor)` fills it from
+// `filled` and may set `init` (#1340).
+const $readBufDone = { TAG: "Ok", _0: undefined };
+// `cursor.capacity()`: what's left to fill.
+function $unfilled(cursor) {
+  return cursor.buf.length - cursor.filled;
+}
+// `cursor.append(&from[..n])`: copied, filled, its `init` as it was.
+function $cursorAppend(cursor, from, n) {
+  for (let i = 0; i < n; i++) cursor.buf[cursor.filled + i] = from[i];
+  cursor.filled += n;
+}
+// alloc's `default_read_buf(|b| self.read(b), cursor)`, a reader's whose own
+// isn't written: `cursor.ensure_init()`, then its `read` of all of it.
+function $defaultReadBuf(reader, r, cursor) {
+  // Flags, not a state: core's `BorrowedBuf` has one `init` flag, which this mirrors.
+  cursor.init = true;
+  const read = reader.read(r, $view(cursor.buf, cursor.filled));
+  if (read.TAG === "Err") return read;
+  cursor.filled += read._0;
+  return $readBufDone;
+}
+// A reader's `read_buf`: its own where std writes one, else the default.
+function $readBufOf(reader) {
+  return reader.readBuf ?? ((r, cursor) => $defaultReadBuf(reader, r, cursor));
+}
+
 // `Seek`'s provided `seek_relative(offset)`: `seek(SeekFrom::Current(offset))`
 // of `reader`, its `Err` thrown, an `io::Result<()>`'s (ADR 0462).
 function $defaultSeekRelative(reader, r, offset) {
@@ -35,6 +65,14 @@ const $sliceReader = {
     $readInto(buf, r.value, amt);
     r.value = $part(r.value, amt);
     return { TAG: "Ok", _0: amt };
+  },
+  // Its `read_buf`: what fits appended, `cursor.append(a)`, which leaves the
+  // cursor's initialized flag as it was.
+  readBuf(r, cursor) {
+    const amt = Math.min($unfilled(cursor), r.value.length);
+    $cursorAppend(cursor, r.value, amt);
+    r.value = $part(r.value, amt);
+    return $readBufDone;
   },
   // One that can't fill `buf` empties the slice first, and fills nothing.
   readExact(r, buf) {
@@ -113,6 +151,8 @@ const $dequeReader = {
 const $emptyReader = {
   Read: () => $emptyReader,
   read: () => ({ TAG: "Ok", _0: 0 }),
+  // `fn read_buf(&mut self, _cursor) { Ok(()) }`.
+  readBuf: () => $readBufDone,
   readExact(r, buf) {
     if (buf.length !== 0) throw $readExactEof();
   },
@@ -135,6 +175,13 @@ const $repeatReader = {
   read(r, buf) {
     buf.fill(r.value.byte);
     return { TAG: "Ok", _0: buf.length };
+  },
+  // Its `read_buf`: all of what's left written, `write_filled`, and advanced
+  // past, its `init` flag as it was.
+  readBuf(r, cursor) {
+    cursor.buf.fill(r.value.byte, cursor.filled);
+    cursor.filled = cursor.buf.length;
+    return $readBufDone;
   },
   readExact(r, buf) {
     buf.fill(r.value.byte);
@@ -165,6 +212,14 @@ function $cursorReader(TAsRef) {
       $readInto(buf, from, n);
       moved(r.value, n);
       return { TAG: "Ok", _0: n };
+    },
+    // Its `read_buf`: `Cursor::split(self).1`'s, a slice's, moved past.
+    readBuf(r, cursor) {
+      const from = rest(r.value);
+      const n = Math.min($unfilled(cursor), from.length);
+      $cursorAppend(cursor, from, n);
+      moved(r.value, n);
+      return $readBufDone;
     },
     // One that can't fill `buf` puts the cursor at its end.
     readExact(r, buf) {
@@ -255,6 +310,21 @@ function $bufReader(R) {
       $readInto(buf, rem._0, n);
       reader.consume(r, n);
       return { TAG: "Ok", _0: n };
+    },
+    // Its `read_buf`: of a reader as large as its buffer with none buffered,
+    // its inner's at once; else what's buffered, read as a slice is.
+    readBuf(r, cursor) {
+      const b = r.value;
+      if (b.pos === b.filled && $unfilled(cursor) >= b.buf.length) {
+        discard(b);
+        return $readBufOf(R)(inner(b), cursor);
+      }
+      const rem = reader.fillBuf(r);
+      if (rem.TAG === "Err") return rem;
+      const n = Math.min($unfilled(cursor), rem._0.length);
+      $cursorAppend(cursor, rem._0, n);
+      reader.consume(r, n);
+      return $readBufDone;
     },
     // What's buffered fills `buf` or `default_read_exact` reads it.
     readExact(r, buf) {
@@ -368,6 +438,7 @@ function $mutReader(reader) {
   const through = {
     Read: () => through,
     read: (r, buf) => reader.read(r.value, buf),
+    readBuf: (r, cursor) => $readBufOf(reader)(r.value, cursor),
     readExact: (r, buf) => reader.readExact(r.value, buf),
     readToEnd: (r, v) => reader.readToEnd(r.value, v),
     readToString: (r, s) => reader.readToString(r.value, s),
@@ -387,6 +458,7 @@ function $mutReader(reader) {
 const $dynReader = {
   Read: () => $dynReader,
   read: (r, buf) => r.value.impl.read(r.value, buf),
+  readBuf: (r, cursor) => $readBufOf(r.value.impl)(r.value, cursor),
   readExact: (r, buf) => r.value.impl.readExact(r.value, buf),
   readToEnd: (r, v) => r.value.impl.readToEnd(r.value, v),
   readToString: (r, s) => r.value.impl.readToString(r.value, s),
@@ -426,18 +498,190 @@ function $readByte(r, RRead) {
   }
 }
 
+// A field of a struct std's body reads through `&mut`, given as a box,
+// `{ value }`, that writes it back.
+function $fieldBox(of, field) {
+  return {
+    get value() {
+      return of[field];
+    },
+    set value(value) {
+      of[field] = value;
+    },
+  };
+}
+
+// `impl Read for Take<T>`'s `read_buf` (alloc/src/io/util.rs), over `{
+// inner, limit }`, `T` its inner's `Read` dictionary: none at its limit;
+// past it, a cursor of its limit read, initialized as the whole was, whose
+// being initialized after makes the whole so; else its inner's of the whole.
+function $takeReadBuf(TRead) {
+  const innerReadBuf = $readBufOf(TRead);
+  return (r, buf) => {
+    const take = r.value;
+    if (take.limit === 0n) return $readBufDone;
+    if (take.limit < BigInt($unfilled(buf))) {
+      const limit = Number(take.limit);
+      const isInit = buf.init;
+      const slicedBuf = { buf: $view(buf.buf, buf.filled, buf.filled + limit), filled: 0, init: false };
+      // Flags, not a state: core's `BorrowedBuf` has one `init` flag, which this mirrors.
+      if (isInit) slicedBuf.init = true;
+      const result = innerReadBuf($fieldBox(take, "inner"), slicedBuf);
+      const didInitUpToLimit = slicedBuf.init;
+      const filled = slicedBuf.filled;
+      if (didInitUpToLimit && !isInit) {
+        buf.buf.fill(0, buf.filled + limit);
+        // Flags, not a state: core's `BorrowedBuf` has one `init` flag, which this mirrors.
+        buf.init = true;
+      }
+      buf.filled += filled;
+      take.limit -= BigInt(filled);
+      return result;
+    }
+    const written = buf.filled;
+    const result = innerReadBuf($fieldBox(take, "inner"), buf);
+    take.limit -= BigInt(buf.filled - written);
+    return result;
+  };
+}
+
+// `impl Read for Chain<T, U>`'s `read_buf`, over `{ first, second,
+// doneFirst }`: its first's till that writes nothing, then its second's.
+function $followedReadBuf(TRead, URead) {
+  const firstReadBuf = $readBufOf(TRead);
+  const secondReadBuf = $readBufOf(URead);
+  return (r, buf) => {
+    const chain = r.value;
+    if ($unfilled(buf) === 0) return $readBufDone;
+    if (!chain.doneFirst) {
+      const oldLen = buf.filled;
+      const read = firstReadBuf($fieldBox(chain, "first"), buf);
+      if (read.TAG === "Err") return read;
+      if (buf.filled !== oldLen) return $readBufDone;
+      // Flags, not a state: std's `Chain`'s `done_first` field, as its body sets it.
+      chain.doneFirst = true;
+    }
+    return secondReadBuf($fieldBox(chain, "second"), buf);
+  };
+}
+
+const $DEFAULT_BUF_SIZE = 8 * 1024;
+const $PROBE_SIZE = 32;
+
+// alloc's `default_read_to_end(r, buf, size_hint)` (alloc/src/io/read.rs),
+// line by line, `size_hint` none, as `Take`'s and `Chain`'s provided
+// methods give it: a 32-byte probe read where fewer are spare, `try_reserve`
+// of 32 where the spare room is less, then reads of its spare room, at
+// most `max_read_size`, which doubles where a read fills it and is
+// uncapped where the reader's `read_buf` leaves its buffer uninitialized
+// (`$readBufOf`'s). So the capacity it leaves `buf` is std's (#1340). Of a
+// `buf` whose capacity isn't known, its reads, and its growth not kept.
+// Its proof: corpus case read_to_end_capacity_of_std_readers.
+function $defaultReadToEnd(reader, r, buf, sizeHint) {
+  if ($capacityUnknown(buf)) return $readToEndUnkept(reader, r, buf);
+  const readBuf = $readBufOf(reader);
+  const startLen = buf.length;
+  const startCap = $capacity(buf);
+  // Optionally limit the maximum bytes read on each iteration.
+  let maxReadSize =
+    sizeHint === undefined ? $DEFAULT_BUF_SIZE : Math.ceil((sizeHint + 1024) / $DEFAULT_BUF_SIZE) * $DEFAULT_BUF_SIZE;
+  // Tracks how many bytes are initialized in the buffer.
+  let initUntil = buf.length;
+
+  const smallProbeRead = () => {
+    const probe = new Array($PROBE_SIZE).fill(0);
+    while (true) {
+      const read = reader.read(r, probe);
+      if (read.TAG === "Ok") {
+        // `buf.extend_from_slice(&probe[..n])`.
+        $reserve(buf, read._0, 1);
+        for (let i = 0; i < read._0; i++) buf.push(probe[i]);
+        return read;
+      }
+      if (read._0.kind === "Interrupted") continue;
+      return read;
+    }
+  };
+  const spare = () => $capacity(buf) - buf.length;
+
+  // Avoid inflating empty/small vecs before we have determined that
+  // there's anything to read.
+  if ((sizeHint === undefined || sizeHint === 0) && spare() < $PROBE_SIZE) {
+    const read = smallProbeRead();
+    if (read.TAG === "Err") return read;
+    if (read._0 === 0) return { TAG: "Ok", _0: 0 };
+  }
+
+  while (true) {
+    if (spare() < $PROBE_SIZE && $capacity(buf) === startCap) {
+      // The buffer might be an exact fit.
+      const read = smallProbeRead();
+      if (read.TAG === "Err") return read;
+      if (read._0 === 0) return { TAG: "Ok", _0: buf.length - startLen };
+      initUntil = buf.length;
+      continue;
+    }
+
+    // Avoid unnecessarily short reads by ensuring there's at least
+    // PROBE_SIZE space available.
+    if (spare() < $PROBE_SIZE) {
+      $reserve(buf, $PROBE_SIZE, 1);
+      initUntil = buf.length;
+    }
+
+    const bufLen = initUntil > buf.length + $PROBE_SIZE ? initUntil - buf.length : Math.min(maxReadSize, spare());
+    const wasInit = initUntil >= buf.length + bufLen;
+    const readBuf_ = { buf: new Array(bufLen).fill(0), filled: 0, init: wasInit };
+
+    let result;
+    while (true) {
+      result = readBuf(r, readBuf_);
+      if (result.TAG === "Err" && result._0.kind === "Interrupted") continue;
+      break;
+    }
+
+    const bytesRead = readBuf_.filled;
+    const isInit = readBuf_.init;
+    if (isInit) initUntil = buf.length + bufLen;
+    for (let i = 0; i < bytesRead; i++) buf.push(readBuf_.buf[i]);
+
+    // Now that all data is pushed to the vector, we can fail without data loss.
+    if (result.TAG === "Err") return result;
+
+    if (bytesRead === 0) return { TAG: "Ok", _0: buf.length - startLen };
+
+    // Use heuristics to determine the max read size if no initial size hint
+    // was provided.
+    if (sizeHint === undefined) {
+      if (!isInit) maxReadSize = Infinity;
+      else if (bytesRead === maxReadSize) maxReadSize *= 2;
+    }
+  }
+}
+
+// What `default_read_to_end` reads of a `buf` whose capacity isn't known:
+// what's there, by its reader's `read`, its growth not kept.
+function $readToEndUnkept(reader, r, v) {
+  const len = v.length;
+  const chunk = new Array($DEFAULT_BUF_SIZE).fill(0);
+  let all = 0;
+  while (true) {
+    const read = reader.read(r, chunk);
+    if (read.TAG === "Err") {
+      if (read._0.kind === "Interrupted") continue;
+      return $grewUnsized(v, len, read);
+    }
+    if (read._0 === 0) return $grewUnsized(v, len, { TAG: "Ok", _0: all });
+    for (let i = 0; i < read._0; i++) v.push(chunk[i]);
+    all += read._0;
+  }
+}
+
 // std's provided `read_exact`, `read_to_end` and `read_to_string` (#1156)
 // of a reader of std's own whose impl doesn't write them, a `Chain`'s or a
-// `Take`'s: `default_read_exact`, `default_read_to_end` and
-// `default_read_to_string` over its `read`, an interrupted read tried again;
-// what it writes itself kept. Given std's readers alone, whose sources are
-// std's: how much each `read` asks for, which a reader of the crate's own
-// would see and std asks as a 32-byte probe, then its spare capacity, isn't
-// std's (#1297). Nor is the capacity `default_read_to_end` leaves a `Vec`
-// it grows, of those reads and of what each source's `read_buf` leaves
-// initialized: one grown past its room is one whose growth isn't kept,
-// `$grewUnsized`'s, whose `capacity()` is refused, #1180's error naming
-// #1340, the coordinator's decision for the user (A). One dictionary of
+// `Take`'s, given its `read_buf`, `$takeReadBuf`'s or `$followedReadBuf`'s:
+// `default_read_exact`, `default_read_to_end` (`$defaultReadToEnd`) and
+// `default_read_to_string`, what it writes itself kept. One dictionary of
 // each reader's.
 const $readerDefaulted = new WeakMap();
 
@@ -458,31 +702,18 @@ function $defaultReadExact(reader, r, buf) {
   if (at < buf.length) throw $readExactEof();
 }
 
-function $readerDefaults(reader) {
+function $readerDefaults(reader, readBuf) {
   let made = $readerDefaulted.get(reader);
   if (made !== undefined) return made;
-  const readToEnd = (r, v) => {
-    const len = v.length;
-    const chunk = new Array(8192).fill(0);
-    let all = 0;
-    while (true) {
-      const read = reader.read(r, chunk);
-      if (read.TAG === "Err") {
-        if (read._0.kind === "Interrupted") continue;
-        return $grewUnsized(v, len, read);
-      }
-      if (read._0 === 0) return $grewUnsized(v, len, { TAG: "Ok", _0: all });
-      for (let i = 0; i < read._0; i++) v.push(chunk[i]);
-      all += read._0;
-    }
-  };
+  const withReadBuf = { ...reader, readBuf };
+  const readToEnd = (r, v) => $defaultReadToEnd(withReadBuf, r, v, undefined);
   made = {
     readExact: (r, buf) => $defaultReadExact(reader, r, buf),
     readToEnd,
     // All of it read by `default_read_to_end`, not the reader's own, then
     // kept where it's UTF-8.
     readToString: (r, s) => $appendToString(s, (b) => readToEnd(r, b)),
-    ...reader,
+    ...withReadBuf,
   };
   $readerDefaulted.set(reader, made);
   return made;

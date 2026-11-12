@@ -5,6 +5,7 @@ import {
   $appendToString,
   $bigMin,
   $cleanup,
+  $followedReadBuf,
   $formatted,
   $grew,
   $index,
@@ -18,6 +19,7 @@ import {
   $readerDefaults,
   $slice,
   $strPop,
+  $takeReadBuf,
   $traitImpl,
   $unwindsOn,
   $view,
@@ -597,7 +599,10 @@ export function chainRead(TRead, URead, dropT, dropU) {
 export function chainBufRead(TBufRead, UBufRead, dropT, dropU) {
   return $traitImpl($chainBufRead, [TBufRead, UBufRead, dropT, dropU], () => ({
     Read() {
-      return $readerDefaults(chainRead(TBufRead.Read(), UBufRead.Read(), dropT, dropU));
+      return $readerDefaults(
+        chainRead(TBufRead.Read(), UBufRead.Read(), dropT, dropU),
+        $followedReadBuf(TBufRead.Read(), UBufRead.Read()),
+      );
     },
     fillBuf(arg0) {
       return chainBufRead_fillBuf(arg0.value, TBufRead, UBufRead, dropT, dropU);
@@ -633,7 +638,7 @@ export function takeRead(TRead, dropT) {
 export function takeBufRead(TBufRead, dropT) {
   return $traitImpl($takeBufRead, [TBufRead, dropT], () => ({
     Read() {
-      return $readerDefaults(takeRead(TBufRead.Read(), dropT));
+      return $readerDefaults(takeRead(TBufRead.Read(), dropT), $takeReadBuf(TBufRead.Read()));
     },
     fillBuf(arg0) {
       return takeBufRead_fillBuf(arg0.value, TBufRead, dropT);

@@ -701,8 +701,8 @@ export const mutations: Mutation[] = [
     name: "std-reader-read-no-defaults",
     breaks: "a `Chain`'s or a `Take`'s `Read` dictionary is its impl's alone, without std's defaults, so its `read_exact` isn't there (#1156)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                    true => Expr::call_helper(\"$readerDefaults\", vec![made]),\n",
-    replace: "                    true => made,\n",
+    find: "                Ok(Expr::call_helper(\"$readerDefaults\", vec![made, read_buf]))\n",
+    replace: "                Ok(made)\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
   {

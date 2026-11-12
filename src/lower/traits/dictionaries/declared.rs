@@ -111,10 +111,11 @@ pub(super) fn is_impl_call(e: &Expr) -> bool {
         return true;
     }
     // A runtime maker's of one, std's reader's defaults over a `Chain`'s
-    // `Read`, `$readerDefaults(chainRead(..))`: that one's (#1156).
+    // `Read`, `$readerDefaults(chainRead(..), $followedReadBuf(..))`: that
+    // one's (#1156, #1340).
     if let js::ExprKind::Call(callee, given) = &e.kind
         && callee.helper_name().is_some()
-        && let [made] = given.as_slice()
+        && let [made, ..] = given.as_slice()
     {
         return is_impl_call(made);
     }

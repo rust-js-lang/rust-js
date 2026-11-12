@@ -9,12 +9,11 @@ import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
 // A `Vec` a `Chain`'s or a `Take`'s std-default `read_to_end`,
-// `$readerDefaults`', grows past its room has a capacity std gives of reads
-// it makes otherwise, so `capacity()` refuses, #1180's error naming #1340,
-// never another number; one it fits keeps std's capacity, as does one a
-// `Chain`'s own `read_to_end` grows, each source's reserving (#1338). The
-// coordinator's decision for the user (A).
-test("capacity() of a Vec a take's or a chain's std-default read_to_end grew is refused", async () => {
+// `$readerDefaults`', grows past its room has std's capacity, alloc's
+// `default_read_to_end` ported (`$defaultReadToEnd`), of each source's
+// `read_buf` (#1340); one it fits keeps std's, as does one a `Chain`'s own
+// `read_to_end` grows, each source's reserving (#1338).
+test("capacity() of a Vec a take's or a chain's std-default read_to_end grew is std's", async () => {
   const dir = fixture("reader-defaults-capacity");
   writeFileSync(
     join(dir, "lib.rs"),
@@ -47,12 +46,6 @@ pub fn chained() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.grownByTake, lib.grownByTakeOfChain]) {
-    expect(() => f()).toThrow(
-      "rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep",
-    );
-    expect(() => f()).toThrow("(#1340)");
-  }
-  // Native Rust: 100 and 8.
-  expect([lib.fitted(), lib.chained()]).toEqual([100, 8]);
+  // Native Rust: 128, 36, 100 and 8.
+  expect([lib.grownByTake(), lib.grownByTakeOfChain(), lib.fitted(), lib.chained()]).toEqual([128, 36, 100, 8]);
 });

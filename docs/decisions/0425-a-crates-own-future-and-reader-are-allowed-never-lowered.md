@@ -527,3 +527,55 @@ entries in the OS's order, each one's path, name, type and length; metadata
 of a file and a directory; `set_len`, its position kept, past an `off_t`, of
 a reader; syncs; `remove_dir` of a full one and of none) run as native Rust
 in both builds and through `METAMORPHIC=all`.
+
+## Amendment: a `Chain`'s and a `Take`'s `read_to_end` is alloc's, ported (2026-11-12, #1340)
+
+A `Take`'s `read_to_end` and `read_to_string`, and a `Chain`'s
+`read_to_string`, are std's provided methods, alloc's
+`default_read_to_end`. It reads through `BorrowedBuf` and `MaybeUninit`,
+which compiled std can't take as memory, so it's ported by hand,
+`$defaultReadToEnd` (src/runtime/readers.js), line for line in alloc's
+order, so a toolchain's diff is easy to follow:
+
+- the 32-byte `small_probe_read` where fewer are spare, and its exact-fit
+  probe at `start_cap`; `try_reserve(PROBE_SIZE)` where the spare room is
+  less; each read of `buf_len`, `init_until`'s or `min(max_read_size,
+  spare)`; `max_read_size` doubled where a read fills it, or uncapped where
+  the reader's `read_buf` leaves its buffer uninitialized. Std's `Vec`
+  growth is `$reserve`'s.
+- each std reader's `read_buf`, which decides that last, ported too: a
+  default `read_buf`, a reader's whose own std doesn't write, initializes
+  the whole cursor; a slice's, a `Cursor`'s and a `BufReader`'s copy what
+  fits and leave the flag; a `repeat`'s fills it and leaves the flag;
+  `Empty`'s reads nothing; a `Take`'s slices the cursor to its limit and
+  initializes the whole where its inner did that slice; a `Chain`'s is its
+  first's till that writes nothing, then its second's. A `Take`'s or a
+  `Chain`'s is given its sources' `Read` by the lowering,
+  `$readerDefaults(made, $takeReadBuf(TRead))`.
+
+A `Vec` whose capacity wasn't known before keeps it unknown, as before.
+So the capacity of a `Vec` a `Take`'s or a `Chain`'s default grows is
+std's, its `capacity()` no longer refused. Read sizes a reader of the
+crate's own would see are std's too, for #1297 to use once such a reader
+is given a dictionary.
+
+Its proof is corpus case `read_to_end_capacity_of_std_readers`, a grid
+against native Rust in each build: `repeat`, a slice, a slice into a
+`Vec` with room, a `Cursor`, a `BufReader`, a chain of slices, each
+`take(n)`, and a take's and a chain's `read_to_string`, at counts across
+the probe and growth edges (0, 1, 31, 32, 33, 50, 64, 100, 4095, 4096,
+4097, 5000, 8192, 8193). test/lowering-readers.test.ts's capacities are
+now std's, 128, 36, 100 and 8.
+
+Of std's sources alone, every `read_buf` but a default one leaves the
+cursor's flag uninitialized, and a default one is a reader's of the
+crate's own, refused (#1297): so `max_read_size` is uncapped after the
+first read whatever its doubling, and the first probe of no size hint is
+the loop's exact-fit probe. Those branches change only how large each
+read is, which only a crate's own reader would see, never a capacity:
+their mutations would survive every program rust-js compiles today, so
+none is listed till #1297 gives a crate's reader a dictionary. Mutations
+`read-to-end-unreserved` and `chain-read-buf-second-at-once`, caught;
+`std-reader-read-no-defaults` and
+`reader-defaults-over-its-own-read-to-end` refitted, and
+`reader-defaults-capacity-kept`, whose refusal is gone, removed.

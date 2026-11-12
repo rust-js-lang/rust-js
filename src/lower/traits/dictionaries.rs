@@ -168,10 +168,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // for (ADR 0425, amended; never a reader of the crate's own, #1297).
             None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) => {
                 let made = (self.impl_dictionary(tr, span)?).ok_or_else(|| self.no_evidence(span, tr))?;
-                Ok(match is_std_def(self.tcx, tr.def_id, StdItem::IoRead) {
-                    true => Expr::call_helper("$readerDefaults", vec![made]),
-                    false => made,
-                })
+                if !is_std_def(self.tcx, tr.def_id, StdItem::IoRead) {
+                    return Ok(made);
+                }
+                // And its `read_buf`, of its sources' `Read`, which std's
+                // `default_read_to_end` reads into: `$takeReadBuf(TRead)` or
+                // `$followedReadBuf(TRead, URead)` (#1340).
+                let (chain, sources) = crate::lower::recognition::std_reader_sources(self.tcx, tr.self_ty())
+                    .expect("a `Chain` or a `Take`, `is_std_reader`'s");
+                let read_bufs = (sources.into_iter())
+                    .map(|source| self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [source]), span))
+                    .collect::<R<Vec<_>>>()?;
+                let read_buf = Expr::call_helper(if chain { "$followedReadBuf" } else { "$takeReadBuf" }, read_bufs);
+                Ok(Expr::call_helper("$readerDefaults", vec![made, read_buf]))
             }
             None => Err(self.unsupported(
                 span,

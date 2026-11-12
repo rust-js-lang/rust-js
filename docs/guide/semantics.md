@@ -930,13 +930,15 @@ What's refused is in [the limitations](limitations.md).
   capacity too, but of one that reads its library's private state, which
   a copy can't reach, whose `Vec`s' capacities are unknown. Of a `Vec` whose growth isn't kept, a `collect()` std makes in
   place of a source no variable holds, `f().into_iter().map(g)`'s, or, in the plain build, an `impl Iterator` function's
-  chain's, whose JS helpers keep no link to it (#1428, won't-fix), a string's `into_bytes()`, one generic code grew by an
-  iterator whose JS hint isn't std's, `chars().skip(n)` given to it, or
-  one a `Chain`'s or a `Take`'s `read_to_end`, std's default over its
-  `read`, grew past its room (#1340), `capacity()` throws an error
-  naming #1180, never another number. A slice's, a `Cursor`'s or a
+  chain's, whose JS helpers keep no link to it (#1428, won't-fix), a string's `into_bytes()` (#1261, won't-fix), or one
+  generic code grew by an iterator whose JS hint isn't std's, `chars().skip(n)` given to it, `capacity()` throws an error
+  naming its issue, never another number. A slice's, a `Cursor`'s or a
   `VecDeque`'s `read_to_end` reserves what it adds first, as std's does,
-  so its capacity is native Rust's (#1338).
+  so its capacity is native Rust's (#1338); a `Chain`'s or a `Take`'s
+  provided `read_to_end` and `read_to_string` are alloc's
+  `default_read_to_end`, its 32-byte probes, `try_reserve(32)` and reads
+  of its spare room, by each source's `read_buf`, so its capacity is
+  native Rust's too (#1340).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what
@@ -1094,10 +1096,10 @@ Differences:
   doesn't write itself, `read_exact`, `read_to_end` and `read_to_string`,
   is std's default over its `read`, `$readerDefaults(chainRead(..))`,
   declared once where a body reads it twice. `bytes()` reads each byte as
-  std's body does: one `read` of a one-byte buffer, `$readByte`. The
-  capacity of a `Vec` a chain's or a take's default `read_to_end` grows
-  past its room is std's of reads it makes otherwise, so its `capacity()`
-  is refused (#1340)
+  std's body does: one `read` of a one-byte buffer, `$readByte`. A chain's
+  or a take's default `read_to_end` reads as alloc's `default_read_to_end`
+  does, by its sources' `read_buf`, so the capacity of the `Vec` it grows
+  is std's (#1340)
   ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-chain-take-and-bytes-are-read-1156)).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
