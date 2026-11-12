@@ -171,6 +171,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.places.insert(local, value);
                 continue;
             }
+            // A format argument made here, `Argument::new_debug(&v)`, as a
+            // `&dyn Debug` is: kept for its `Arguments::new`, which formats
+            // it by its spec, what it's made of held here where making it does
+            // something; never made a value, which isn't one (#1294).
+            if !named && let Value::Fmt(_, _, subject) = &mut value {
+                if subject.has_effects() {
+                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    *subject = self.spill("value", made_once, &mut made);
+                }
+                state.places.insert(local, value);
+                continue;
+            }
             // A `&mut` to a place, a call's argument held before another that
             // changes what it reads, `&mut lanes[index]` before `{ index += 1;
             // 10 }`: the place, fixed here, `$index(ps, i).x`'s object named

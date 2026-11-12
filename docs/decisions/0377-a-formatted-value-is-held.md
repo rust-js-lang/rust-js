@@ -72,3 +72,19 @@ read twice is held everywhere else (MIR tidy's `applied_values`, named by
 - A function called at once reads what its body does, to
   `read_past_calls`; and a name a callback binds is its own in its body,
   to `Expr::substitute_in_callbacks`, which no longer gives up on one.
+
+## Amendment: a format argument kept across a flush (#1294)
+
+A format argument made before a flush was made a value, and its
+`Arguments::new` refused it: "this format argument, from its MIR". In a
+crate that asks an address, the next argument's borrow, `&pairs`, is
+recorded where it's made, and that flushes what's made before it. So
+`println!("{v:?} {pairs:?} {text}")` of locals was refused beside any
+case that asked an address. A pending `Argument::new_debug(&v)` is now
+kept across a flush, as a `&dyn Debug` is: what it's made of is held where
+making it does something, and the format writes it by its spec. Corpus
+case format_arguments_beside_an_address (a `Vec`'s, a tuple list's and a
+`String`'s locals, a width from another argument, arguments made by calls
+that print, beside a pointer's address) against native Rust in both
+builds; mutation format-argument-flushed-as-a-value, caught. All 6 of
+#1294's neighbour pairs run as native Rust.

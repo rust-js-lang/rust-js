@@ -24,14 +24,6 @@ plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 #1474 P2: a &mut to a number std lends from inside its storage is refused in a crate that asks addresses: its handle has no place
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
 
-#1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address
-plain std btree_given_in_order.rs beside address_of_a_field_where_its_object_is_stored.rs
-plain std deque_range_mut.rs beside address_of_a_field_through_a_reference.rs
-plain std generic_mut_moved_out_other_ways.rs beside address_of_a_nested_field_through_a_deref.rs static_mut_pointers.rs
-plain std text_edits.rs beside address_of_an_item_moved_in_its_vec.rs
-plain std deque_range_mut.rs beside address_of_an_item_std_lends.rs
-plain std let_else_returns_in_arms.rs beside generic_fmt_traits.rs uninit_slice_cast.rs
-
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
