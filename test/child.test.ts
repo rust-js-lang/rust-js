@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { compileFailure, processTree, run, runSync, type Exit } from "./child";
+import { compileFailure, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { execute, nativeCommand, nativeShare } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -153,6 +153,28 @@ test("a run that holds more than its memory cap is stopped, its children too", a
   expect([p.overgrown, p.timedOut, Date.now() - started < 30_000]).toEqual([true, false, true]);
   expect(processTree(process.pid).length).toBeGreaterThan(0);
 }, underLoad(60_000));
+
+// What a run holds is each process's footprint where it's more than its
+// resident set: under memory pressure macOS's compressor holds most of a
+// process's pages, which `rss` leaves out, 400 MB of ones seen as 10 MB,
+// so a memory cap by `rss` alone let a variant past its share (#1499).
+test("what a run holds counts what the memory compressor holds of it", async () => {
+  expect(treeBytes([{ pid: 1, bytes: 10 << 20 }], new Map([[1, 400 << 20]]))).toBe(400 << 20);
+  expect(treeBytes([{ pid: 1, bytes: 10 << 20 }, { pid: 2, bytes: 5 << 20 }], new Map([[2, 1 << 20]]))).toBe(15 << 20);
+  if (process.platform !== "darwin") return;
+  // A process holding 64 MB it wrote: its footprint says so, by pid.
+  const hold = `const a = new Uint8Array(64 << 20).fill(1); await Bun.sleep(30000); a[0];`;
+  const p = Bun.spawn([process.execPath, "-e", hold]);
+  let held = 0;
+  for (let i = 0; i < 50 && held < 64 << 20; i++) {
+    await Bun.sleep(100);
+    held = footprints([p.pid]).get(p.pid) ?? 0;
+  }
+  p.kill("SIGKILL");
+  await p.exited;
+  expect(held).toBeGreaterThanOrEqual(64 << 20);
+  expect(footprints([])).toEqual(new Map());
+}, underLoad(30_000));
 
 // A run's command goes with the process that ran it: one SIGKILLed, by a
 // `timeout -s KILL` or an agent's stopped task, left a compile running in

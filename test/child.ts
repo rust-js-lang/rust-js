@@ -145,6 +145,30 @@ export function processTree(pid: number): { pid: number; bytes: number; command:
   return tree;
 }
 
+/** What each of `pids` holds, in bytes, where it's more than its
+ * resident set: on macOS, its physical footprint, which counts the pages
+ * the memory compressor holds of it, as `ps`' `rss` doesn't. Under memory
+ * pressure the compressor takes most of what a process holds, 400 MB of
+ * ones seen as 10 MB resident, so a watch of `rss` alone let a variant
+ * past its share (#1499). One `footprint` of them all, by pid alone, a
+ * process gone by then left out. Elsewhere, none: `rss` is it. */
+export function footprints(pids: number[]): Map<number, number> {
+  const held = new Map<number, number>();
+  if (process.platform !== "darwin" || pids.length === 0) return held;
+  const args = pids.flatMap((pid) => ["--pid", String(pid)]);
+  const out = Bun.spawnSync(["footprint", ...args, "-f", "bytes", "--noCategories"]).stdout.toString();
+  for (const [, pid, bytes] of out.matchAll(/\[(\d+)\]: .*Footprint: (\d+) B/g)) held.set(Number(pid), Number(bytes));
+  return held;
+}
+
+/** What `tree`, a process and what it started (`processTree`), holds
+ * together, in bytes: each its resident set or, where it's more, its
+ * footprint (`footprints`). The one measure of what a run holds, which a
+ * memory cap stops it by and a part's peak is. */
+export function treeBytes(tree: { pid: number; bytes: number }[], held: Map<number, number> = footprints(tree.map(({ pid }) => pid))): number {
+  return tree.reduce((sum, { pid, bytes }) => sum + Math.max(bytes, held.get(pid) ?? 0), 0);
+}
+
 /** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
 async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>, memoryCap?: number): Promise<Exit> {
   const p = Bun.spawn(guarded(cmd), { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
@@ -168,7 +192,7 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
       ? undefined
       : setInterval(() => {
           const tree = processTree(p.pid);
-          if (tree.reduce((sum, at) => sum + at.bytes, 0) <= memoryCap) return;
+          if (treeBytes(tree) <= memoryCap) return;
           overgrown = true;
           for (const { pid } of tree.reverse()) {
             try {

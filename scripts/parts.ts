@@ -27,7 +27,7 @@
 import { freemem, totalmem } from "node:os";
 import { join } from "node:path";
 
-import { processTree, stopGroup } from "../test/child";
+import { footprints, processTree, stopGroup, treeBytes } from "../test/child";
 import { atOnce } from "./shard";
 import { passed } from "./test-summary";
 
@@ -119,11 +119,15 @@ export async function runParts(file: string, { parts: indices, count }: { parts:
   for (const signal of signals) process.on(signal, stopped);
   const sampler = setInterval(() => {
     lowest = Math.min(lowest, freemem());
-    for (const part of parts) {
+    // Each running part's tree, then what each holds, of one `footprint`
+    // of them all (`treeBytes`, #1499).
+    const trees = parts.flatMap((part) => {
       const runner = runners.get(part.index);
-      if (runner === undefined) continue;
-      const tree = processTree(runner);
-      const bytes = tree.reduce((sum, p) => sum + p.bytes, 0);
+      return runner === undefined ? [] : [{ part, runner, tree: processTree(runner) }];
+    });
+    const footprinted = footprints(trees.flatMap(({ tree }) => tree.map(({ pid }) => pid)));
+    for (const { part, runner, tree } of trees) {
+      const bytes = treeBytes(tree, footprinted);
       part.running = held(tree, runner);
       if (bytes > part.peak) [part.peak, part.heldBy] = [bytes, part.running];
     }
