@@ -422,3 +422,34 @@ made a cell and wrote it back. `test/corpus/mut_ref_of_a_boxed_iterator_is_the_i
 `mut-ref-of-a-boxed-iterator-a-cell` (`lower/representation/mut_ref.ts`),
 `mut-ref-of-a-boxed-iterator-unsupported` (`lower/support.ts`) and
 `write-through-a-boxed-iterator-lost` (`lower/mir/assign.ts`).
+
+## Amendment: what gives what it's given reads through a `&mut`'s cell its result isn't behind (2026-11-12, #1486)
+
+`s.as_ref()` of an `s: &mut String` is std's forwarding impl, `AsRef<U> for
+&mut T`, its receiver a `&&mut String`; `r.borrow()` of an `r: &mut i32` is
+`Borrow<T> for &mut T`. The recogniser answers both `Std::Same`, the same JS
+value, which is right of a `&mut` to an object, the object itself, and wrong
+of one to text or a number, a cell: the `&str` it gives is the text in it.
+`fn show(s: &mut String) -> usize { let b: &str = s.as_ref(); b.len() }`
+printed 0, and `println!("{b}")` `[object Object]`, with no error.
+
+`Same` says a call's result is its argument; it never said the two are held
+alike. `same_as` (`representation/mut_ref.rs`) now does, of the argument's
+type and the result's: the value as it is where both are behind a `&mut`'s
+cell or neither is, and where only the argument is and the result is a `&`,
+what's in the cell, `through_refs`' read. What's given on as a `&mut` keeps
+its cell: `identity(&r)`'s `&&mut i32`, `Box::new(&mut *r)`'s box, and
+`r.borrow()` to a `&&mut i32`, std's `Borrow<T> for T`. Rust's behaviour is
+preserved (ADR 0262's "results change").
+
+Found by compiling 195 one-probe programs of #1477's 21 trait methods in
+shapes the corpus doesn't write, each against native Rust, which
+[finding wrong answers](../finding-wrong-answers.md) lists.
+`test/corpus/as_ref_and_borrow_through_a_mut.rs` (a `&mut String`'s
+`as_ref()` and `borrow()` as a parameter, a local, a field and a closure's
+parameter, through a `&` to it and written out; a `&mut` to an `i32`, a
+`bool`, a `char` and an enum borrowed; a `&mut Vec`'s, unchanged; generic
+code given a `&mut` as its `K: Borrow<i32>`; and the three that keep the
+cell) runs against native Rust in both builds. Mutations
+`same-through-a-mut-the-cell`, `same-of-a-ref-to-a-mut-read-through` and
+`same-into-what-owns-a-mut-read-through` (`lower/representation/mut_ref.ts`).

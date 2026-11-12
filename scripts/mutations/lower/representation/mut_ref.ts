@@ -4,6 +4,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "same-through-a-mut-the-cell",
+    breaks: "`s.as_ref()` of an `s: &mut String`, std's `AsRef<str> for &mut T`, gives the `&mut`'s cell where its `&str` is the text in it: a length of 0, `[object Object]` shown (#1486)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            true => self.through_refs(value, given).0,\n",
+    replace: "            true => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
+  },
+  {
+    name: "same-of-a-ref-to-a-mut-read-through",
+    breaks: "`identity(&r)` of an `r: &mut i32` gives the number in `r`'s cell where its `&&mut i32` is the cell: `**same` read of a number, `undefined` (#1486)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
+    replace: "        match shared && self.has_cell_layer(given) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
+  },
+  {
+    name: "same-into-what-owns-a-mut-read-through",
+    breaks: "`Box::new(&mut *r)` of an `r: &mut i32` holds the number in `r`'s cell where it holds the `&mut`: `**boxed += 1` writes no place (#1486)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
+    replace: "        match self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
+  },
+  {
     name: "mut-ref-to-a-shared-ref-the-object",
     breaks: "`*m.as_mut().unwrap() = &other` of an `Option<&HashMap<..>>` is `$assign(map, other)`, copying `other` into the map the reference was to (#1021)",
     file: "src/lower/representation/mut_ref.rs",

@@ -397,6 +397,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (value, ty)
     }
 
+    /// What a call that gives what it's given gives (`Std::Same`), of a
+    /// `given` and an `output`: the value as it is, where both are behind a
+    /// `&mut`'s cell or neither is. Where only what it's given is, std's
+    /// `AsRef` or `Borrow` of a `&mut T`, `s.as_ref()` of an `s: &mut
+    /// String`, its `&` is to what's in the cell, its `value` (#1486).
+    pub(in crate::lower) fn same_as(&self, value: Expr, given: Ty<'tcx>, output: Ty<'tcx>) -> Expr {
+        let shared = matches!(output.kind(), ty::Ref(_, _, Mutability::Not));
+        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {
+            true => self.through_refs(value, given).0,
+            false => value,
+        }
+    }
+
     /// Is one of the references `ty` is behind a `&mut` cell, so that its JS
     /// value is an object, not what it points at (ADR 0099)?
     pub(in crate::lower) fn has_cell_layer(&self, mut ty: Ty<'tcx>) -> bool {

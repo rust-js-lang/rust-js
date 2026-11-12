@@ -604,7 +604,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An `Rc` is the JS reference itself: the garbage collector does
             // its counting, so a clone is the same object.
-            Std::Same | Std::Format => arg(),
+            Std::Format => arg(),
+            Std::Same => {
+                let value = arg();
+                match tys.first() {
+                    Some(&given) => self.same_as(value, given, output),
+                    None => value,
+                }
+            }
             // Whether this thread unwinds: the runtime's cleanup's depth (#1285).
             Std::Panicking => Expr::call_helper("$panicking", Vec::new()),
             // `x.to_owned()` of a `T: Clone`: `x.clone()`'s copy.
