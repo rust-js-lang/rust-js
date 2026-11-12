@@ -117,10 +117,10 @@ node.sortIndex
 
 ## What holds it
 
-- `test/architecture.test.ts`, "a JS key the compiler or the runtime
+- `test/architecture-names.test.ts`, "a JS key the compiler or the runtime
   writes is camelCase": no `snake_case` literal is a JS key in lowering,
   nor a key or a method in a runtime helper.
-- `test/architecture.test.ts`, "a snake_case name is made camelCase by
+- `test/architecture-names.test.ts`, "a snake_case name is made camelCase by
   camel_case alone": no other module splits a name on `_`.
 - The corpus's cases of std traits' dictionaries, `generic_as_ref.rs`,
   `hash_values.rs`, `generic_writers.rs` and the rest, run in Node.
