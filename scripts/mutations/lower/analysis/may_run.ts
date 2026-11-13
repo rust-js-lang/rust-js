@@ -201,4 +201,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
     snapshots: true,
   },
+  {
+    name: "may-run-drop-asked-in-foreign-terms",
+    breaks: "what dropping a type in a caller's terms runs, `<Buf<SIZE> as Measured>::Metadata`'s, is asked in the walked body's env, which hasn't `SIZE`, where rustc crashes in a program that may catch a panic (#1608, #1618)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "                && crate::lower::generic_facts::params_owned_by(tcx, id, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
+  },
 ];

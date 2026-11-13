@@ -517,15 +517,33 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A field's type, of an ADT given `args`: a projection in it, `K::Value`,
     /// is the type it stands for, `Option<u32>`, where that's known, as in
     /// rustc's own types of places. Only a type with one is normalized, which
-    /// erases its lifetimes, so one without stays the type it was.
+    /// erases its lifetimes, so one without stays the type it was; and only
+    /// where the env gives each const parameter in it its type: of a type in
+    /// another body's terms, `<Buf<SIZE> as Measured>::Metadata` asked where
+    /// `SIZE` isn't, rustc crashes, so it stays as written, as a projection
+    /// that can't be normalized does (#1618).
     pub(in crate::lower) fn field_ty(&self, field: &ty::FieldDef, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
         let ty = field.ty(self.tcx, args).skip_normalization();
-        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) {
+        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) || !self.consts_typed(ty) {
             return ty;
         }
         self.tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
+    }
+
+    /// Whether the env gives each const parameter `ty` names its type, a
+    /// `ConstArgHasType` of it among its bounds, as normalizing asks
+    /// (#1618).
+    fn consts_typed(&self, ty: Ty<'tcx>) -> bool {
+        let bounds = self.typing_env.param_env.caller_bounds();
+        ty.walk().all(|part| match part.as_const().map(|c| c.kind()) {
+            Some(ty::ConstKind::Param(param)) => bounds.iter().any(|clause| {
+                matches!(clause.kind().skip_binder(), ty::ClauseKind::ConstArgHasType(c, _)
+                    if matches!(c.kind(), ty::ConstKind::Param(p) if p == param))
+            }),
+            _ => true,
+        })
     }
 
     /// `TypeId`, which rust-js holds as its type's key, a string (ADR 0331).

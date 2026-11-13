@@ -402,3 +402,21 @@ selection erases what a binder binds itself (`traits::select`, #1224), so
 no case panics without the walk's own erasing, every case of the corpus
 that reaches it, 2,244, `iterator_passed_through_a_chain_of_impls`' `F:
 for<'a> Fn(&'a T::Item) -> bool` among them, each its snapshot.
+
+## Amendment (2026-11-13, #1618): a field's projection where the env types its consts
+
+A field's projection, `K::Value`, is normalized where it's asked
+(`Recognition::field_ty`, the one place). Asked of a type in another
+body's terms, a callee's declared `Held<'_, Buf<SIZE>>` walked for its
+cells, or a body's `Held<'_, Buf<SIZE>>` asked whether it's a JS object
+in the crate's monomorphized env, `<Buf<SIZE> as Measured>::Metadata` was
+normalized where `SIZE`'s type isn't, and rustc crashed, `cannot find
+SIZE in param-env`, in powerfmt's `Metadata<'_, WriteBuffer<SIZE>>`
+shape. Now it's normalized only where the env gives each const parameter
+in it its type (`consts_typed`, a `ConstArgHasType` among its bounds);
+elsewhere it stays as written, as a projection that can't be normalized
+already does. A type parameter's needs no such check: normalizing one the
+env hasn't fails, it doesn't crash. Corpus case
+`const_generic_impl_reached_by_a_trait_default_where_caught`, against
+native in both builds, which also holds #1608's `params_owned_by` in
+`may_run`; two mutations, and `field-projection-kept` retargeted.

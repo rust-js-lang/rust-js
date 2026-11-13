@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field whose type is `K::Value` stays that projection where its struct is used, and a value of the struct is an error",
     file: "src/lower/recognition/types.rs",
-    find: "        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) {\n            return ty;\n        }",
+    find: "        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) || !self.consts_typed(ty) {\n            return ty;\n        }",
     replace: "        if true {\n            return ty;\n        }",
     tests: ["test/corpus.test.ts", "-t", "associated_type_fields"],
   },
@@ -565,5 +565,13 @@ export const mutations: Mutation[] = [
     find: "            ty::FnDef(def_id, _) => !self.is_std(*def_id),\n",
     replace: "            ty::FnDef(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
+  },
+  {
+    name: "field-normalized-where-consts-untyped",
+    breaks: "a field's projection in another body's terms, `<Buf<SIZE> as Measured>::Metadata`, is normalized in an env that hasn't `SIZE`'s type, where rustc crashes, `cannot find SIZE in param-env` (#1618)",
+    file: "src/lower/recognition/types.rs",
+    find: "has_aliases(&ty) || !self.consts_typed(ty) {",
+    replace: "has_aliases(&ty) {",
+    tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
   },
 ];

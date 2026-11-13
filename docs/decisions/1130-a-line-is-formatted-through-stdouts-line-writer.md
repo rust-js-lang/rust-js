@@ -590,5 +590,6 @@ And a drop is asked where its type's parameters are the walked body's
 own (`generic_facts::params_owned_by`, its catalogue's): powerfmt's `SmartDisplay::fmt` reaches
 `Metadata::new` holding `<WriteBuffer<SIZE> as SmartDisplay>::Metadata`,
 whose `SIZE` that body's env hasn't, and rustc crashed; its parts are
-asked then, as a type parameter's drop is. No case holds it yet: the
-same shape crashes lowering too, #1618, whose case will.
+asked then, as a type parameter's drop is. Held by corpus case
+`const_generic_impl_reached_by_a_trait_default_where_caught` since
+#1618 fixed the same shape's crash in lowering (ADR 0106, amended).
