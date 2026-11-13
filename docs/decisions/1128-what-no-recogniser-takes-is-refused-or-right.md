@@ -135,7 +135,9 @@ reader's refused without their recognisers. Mutations
 `known-receivers-mut-given-to-stds-dictionary`,
 `dyns-mut-kept-from-its-own-dictionary` and
 `librarys-mut-kept-from-its-own-dictionary`
-(`lower/mir/assign/boxed_args.ts`).
+(`lower/mir/assign/boxed_args.ts`). The `dyn`'s went on 2026-11-13: its
+caller's `known_by_a_dictionary` of the `dyn` admits the call too, and no
+JS changed without it (ADR 1004's last amendment).
 
 ## Amendment: a formatting trait's `fmt` is never the trait call's, and `Borrow::borrow` is right without its recogniser (2026-11-12, #1477)
 

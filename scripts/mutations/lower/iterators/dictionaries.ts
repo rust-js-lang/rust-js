@@ -342,22 +342,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
   {
-    name: "back-as-front-dictionary-backless",
-    breaks: "std's compiled `Rev` of a `repeat_n` is given no `next_back` of it, and is refused (#1139)",
-    file: "src/lower/iterators/dictionaries.rs",
-    find: "                    || self.knows_its_back(ty)\n                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>\n",
-    replace: "                    || self.knows_its_back(ty) =>\n",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
-  },
-  {
-    name: "back-as-front-dictionary-lengthless",
-    breaks: "std's compiled code asking a `repeat_n`'s length is given no `len` of it, and is refused (#1139)",
-    file: "src/lower/iterators/dictionaries.rs",
-    find: "                    || self.knows_its_length(ty)\n                    || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>\n",
-    replace: "                    || self.knows_its_length(ty) =>\n",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
-  },
-  {
     name: "box-dictionary-passes-folds",
     breaks: "a `Box<I>`'s dictionary of `I`'s passes on `I`'s own `count` and `fold`, which std's `Box<I>` never calls (#1611)",
     file: "src/lower/iterators/dictionaries.rs",

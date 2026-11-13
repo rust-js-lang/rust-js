@@ -367,7 +367,10 @@ crate-wide. So the points table showed it beside a "hint given" case,
 its loop, where a panic leaves the accumulator as Rust leaves its result.
 `test/corpus/fold_whose_rest_panics_as_dropped_leaks_its_result.rs` holds
 the sum against native Rust in both builds; mutation
-`fold-by-steps-closing-at-its-end`. #1330's points rows are off the list.
+`fold-by-steps-closing-at-its-end`. #1330's points rows are off the list. (That mutation went on
+2026-11-13: since #830, `$taking`'s own fold takes that sum, and nothing
+reaches `$foldBy`'s `ownNext` with a close a program sees; ADR 1004's last
+amendment.)
 Whether a `take` is `$taking` by its type crate-wide or by the function
 that makes it, #1330's other defect, which changes no answer now, is
 #1333's.

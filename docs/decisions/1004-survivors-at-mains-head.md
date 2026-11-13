@@ -280,3 +280,46 @@ mutation. Every other kind a type holds is std's struct where it's held
 (ADR 0871), whatever the set says of it. Mutations `held-cycle-of-array-generated`,
 `held-cycle-clone-refused` and `held-cycle-debug-refused` are refitted to
 `held_cycle`.
+
+## Amendment: the iterator survivors at main's head of 2026-11-13
+
+Main's per-push and nightly runs left seven mutations surviving in the
+iterators. Each was probed with one sweep: every corpus case, plain and
+with std's iterator structs, and every crate pair and triple, compiled by
+the compiler as it is and by one with the six compiler mutations applied.
+The JS and the refusals were compared byte for byte, with only the paths
+of the sweep's own folders scrubbed. The compiler's are 4,951 compiles.
+
+- `by-ref-back-lost` changes three cases' JS:
+  `backs_given_behind_impls.rs` in both builds, and
+  `held_adapters_by_ref.rs` with std's iterator structs. Its `by_ref()`
+  is lent, then made knowing its back, `$knowing($lent(it), ..)`, where
+  it's lent as it's made knowing, `$lent($knowing(it, ..))`. Both run as
+  native Rust does, so its tests now name `backs_given_behind_impls.rs`,
+  whose snapshot catches it.
+- Five change no JS of any of them, and go:
+  - `back-as-front-dictionary-backless` and
+    `back-as-front-dictionary-lengthless`: a `repeat_n`'s, or a `take(n)`
+    of a `repeat`'s, `next_back` and `len` in a dictionary. The match's
+    arms before them now answer both. A probe of 21 such uses through
+    generic code's `DoubleEndedIterator` and `ExactSizeIterator`, `rev()`,
+    `zip`, `enumerate`, `skip`, `step_by` and `nth_back`, runs as native
+    Rust does under both mutations, in both builds.
+  - `dyns-mut-kept-from-its-own-dictionary`: a `dyn`'s receiver kept
+    from `gives_a_mut`. Its caller's `known_by_a_dictionary` of the
+    call's `Self`, a `dyn`, also admits the call.
+  - `rev-made-in-place-unmarked` and `deref-mut-dictionary-where-known`.
+- `fold-by-steps-closing-at-its-end` is the runtime's, so the sweep
+  can't show it. Since ec5671273 (#830) gave `$taking` its own fold, its
+  case's sum folds by that and never reaches `$foldBy`. Over the corpus,
+  in both builds, `$foldBy` steps by `ownNext` 202 times:
+  - 200 are of a `$Steps` made with no close, the crate's own iterator's
+    `$iterator`, so closing it early or late can't be told apart.
+  - 2 are of a `filter` of an array's items, whose close drops nothing.
+
+  Four probes, about 40 shapes, found no program that reaches it with a
+  close a program sees: the crate's own iterator whose own `Drop` panics,
+  folded, summed and passed to generic code, its rest's items whose drops
+  panic, behind `take`, `map`, `filter`, `skip`, `inspect`, a `Box` and a
+  `dyn`. It goes. `$foldBy`'s `ownNext` stays, as std's order of a fold
+  that steps a `$Steps` closed at its end.

@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/tidy-stages.test.ts", "-t", "is refused without its recogniser"],
   },
   {
-    name: "dyns-mut-kept-from-its-own-dictionary",
-    breaks: "`h.write_u16(1)` of an `h: &mut dyn Hasher` is refused, its `&mut` taken for a known type's, where the `dyn`'s dictionary is its own (#1487)",
-    file: "src/lower/mir/assign/boxed_args.rs",
-    find: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))\n",
-    replace: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!compiled && given.iter().any(a_mut)))\n",
-    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
-  },
-  {
     name: "mir-borrowed-result-given-value",
     breaks:
       "a `&mut` whose borrow a call's result holds is given the number, not a handle on its place",

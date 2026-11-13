@@ -156,12 +156,12 @@ export const mutations: Mutation[] = [
   {
     name: "by-ref-back-lost",
     breaks:
-      "`by_ref()` of an iterator that knows its back is lent as `$lent(Iterator.from(it))`, the same iterator, as `Iterator.from` gives it back, read less plainly than `it`",
+      "`by_ref()` of an iterator that knows its back is lent, then made knowing it, `$knowing($lent(it), ..)`, where it's lent as it's made knowing it, `$lent($knowing(it, ..))`, as std's `&mut I` passes on `I`'s back and length",
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {\n",
     replace: "            Some(IterMethod::ByRef) if false => {\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(back_steps|backs_given_behind_impls).rs$"],
   },
   {
     name: "rev-range-chain-refused",
@@ -726,16 +726,6 @@ export const mutations: Mutation[] = [
     find: "                let it = match in_place {\n                    true => it.in_place(),\n                    false => it,\n                };\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
     replace: "                let _ = in_place;\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rev-made-in-place-unmarked",
-    breaks:
-      "a `rev()` made in place isn't marked so before it's made knowing its back, so the map it reverses, `v.iter().map(f).rev().nth_back(1)`'s, is taken as std's struct, `$knowing` of its compiled back (#730)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        let reversed = match in_place {\n            true => reversed.in_place(),\n            false => reversed,\n        };\n",
-    replace: "        let _ = in_place;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
     snapshots: true,
   },
   {

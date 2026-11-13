@@ -122,21 +122,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "deref-mut-dictionary-where-known",
-    breaks:
-      "a guard's `*g += 1`, its type known, calls a dictionary of std's `DerefMut` where it's written in place",
-    file: "src/lower/traits/routes.rs",
-    find: "        || tcx.is_lang_item(trait_id, LangItem::DerefMut)\n        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator);",
-    replace:
-      "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator);",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(refcell_borrows|locks|user_deref|generic_deref_mut).rs$",
-    ],
-    snapshots: true,
-  },
-  {
     name: "sum-dictionary-written-everywhere",
     breaks:
       "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
