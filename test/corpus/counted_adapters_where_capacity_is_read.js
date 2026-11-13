@@ -71,7 +71,7 @@ function main() {
   );
   const w = $grownVec(
     $roomForHint(
-      $mapEnds($taking($iter(Array.from(n.values())), 2), (s) => s + "!"),
+      $taking($iter(Array.from(n.values())), 2).map((s) => s + "!"),
       12,
       false,
     ),

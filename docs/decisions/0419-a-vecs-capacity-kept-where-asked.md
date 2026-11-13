@@ -765,3 +765,38 @@ against native Rust in both builds, and a diagnostics row the refusal of
 a cycle's take of an array's map. Mutations `hint-kept-not-through-rev`,
 `hint-kept-not-through-take`, `hint-kept-by-form-unasked` and
 `hint-kept-through-an-arrays-map` (`lower/recognition/lengths.ts`).
+
+## Amendment (2026-11-13, #1573): no length made of what's known by its hint
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal becomes
+Rust's behavior.
+
+A `Vec` grown by an `ExactSizeIterator` that isn't `TrustedLen`, in a
+crate that reads a `Vec`'s capacity, was made knowing its length where
+it's collected (`grows_by_exact_len`, #1200), so its JS hint is std's.
+A variable that holds it shows nothing of what made it, so
+`let it = (0..n).rev().step_by(2); it.collect::<Vec<_>>()` was refused,
+"as an `ExactSizeIterator`, which rust-js can't count". Its runtime form,
+`$lazyRangeBack`, already gives std's `StepBy` hint (#1046). So a value
+whose hint is known as it's made (`adapted_hint_known`) isn't made
+knowing its length there; it grows by its hint, as std's does.
+
+`test/corpus/held_step_by_of_a_reversed_range_grows_as_std.rs` holds its
+capacities, of 0 to 1,000 items, against native Rust in both builds.
+#1573's second pair is off test/neighbours-known.txt. Mutation
+`exact-length-made-though-hint-known` (`lower/iterators/hint_asks.ts`).
+A counted `take(n)`'s map and an inspected array's map, whose hints
+`$Steps` keeps, now read `.map(f)` where they were `$mapEnds(.., f)`
+(`counted_adapters_where_capacity_is_read`,
+`vec_grown_by_iterators_whose_hint_is_stds`), their capacities std's.
+What a hint that runs the crate's own was kept from, `!reaches_own`, is
+`adapted_hint_known`'s answer now, the crate's iterator's hint and its
+adapters' known as they're made: the term is gone, its mutation
+`exact-size-collect-of-own-hint-remade` with it, the whole corpus the
+same without it.
+
+An `inspect` of a `Vec`'s `IntoIter`, a chain's part a temporary holds,
+stays refused. Its JS, `values().map(f)`, knows no hint, and its maker
+makes it no `$mapEnds`, as a counted map's is. Accepting it as it is gave
+capacity 16 where std's is 15 (`(0..10)`'s `Vec` inspected and chained
+with five more).

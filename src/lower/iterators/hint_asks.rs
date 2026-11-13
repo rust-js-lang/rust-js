@@ -496,9 +496,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && item.is_some_and(|item| item.has_param() || sized(item))
             && self.collects_in_place(Some(iter_ty), item) == Some(false);
         // Of an `ExactSizeIterator`, it's given knowing its length, whose
-        // hint then is std's (#1200); not one whose hint runs the crate's
-        // own, which it asks as it is.
-        let exact = kept && !reaches_own && self.recognition().grows_by_exact_len(iter_ty);
+        // hint then is std's (#1200); not one whose hint is known as it's
+        // made (`adapted_hint_known`), the crate's own's too, which it asks
+        // as it is (#1573).
+        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);
         if kept && !exact {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }

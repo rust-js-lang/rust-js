@@ -258,8 +258,8 @@ export const mutations: Mutation[] = [
     name: "exact-size-collect-unknowing",
     breaks: "in a crate that reads a capacity, a `Vec` collected of an `ExactSizeIterator` that isn't `TrustedLen`, `b.iter().skip(1)`, is grown by JS's own `drop(n)`'s hint, none, its capacity 64 where std's is 39 (#1200)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        let exact = kept && !reaches_own && self.recognition().grows_by_exact_len(iter_ty);\n",
-    replace: "        let exact = false && kept && !reaches_own && self.recognition().grows_by_exact_len(iter_ty);\n",
+    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
+    replace: "        let exact = false && kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
   },
   {
@@ -271,15 +271,7 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
     snapshots: true,
   },
-  {
-    name: "exact-size-collect-of-own-hint-remade",
-    breaks: "a collect whose hint runs the crate's own, which JS asks as it is, is remade knowing its length, `$mapEnds(..)` of a length it asks of its hint (#1200)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "        let exact = kept && !reaches_own && self.recognition().grows_by_exact_len(iter_ty);\n",
-    replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "generic-growth-lost-unread",
     breaks:
@@ -395,5 +387,13 @@ export const mutations: Mutation[] = [
     find: "            true => 0,\n            false => 1,\n",
     replace: "            true => 1,\n            false => 1,\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "exact-length-made-though-hint-known",
+    breaks: "a `Vec` grown by what isn't `TrustedLen` whose hint is known std's as it's made, a held `step_by(n)` of a reversed range, `$lazyRangeBack`, is made knowing its length where it's collected, which the variable that holds it can't be, and refused (#1573)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
+    replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
   },
 ];
