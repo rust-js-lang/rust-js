@@ -562,7 +562,6 @@ test("the runtime steps what may be a Rust iterator by its stepping helpers alon
   const steps = /(for \(const [^)]* of (items|it|iter|entries|iterable|replacement|units|source)\)|Array\.from\((items|it|iter|entries|iterable|replacement|units|source)[,)]|\.\.\.(items|it|iter|entries|iterable|replacement|units|source)\b)/;
   const never: Record<string, [number, string]> = {
     "src/runtime/btree.js": [4, "a B-tree made of a collect's array or another tree's entries"],
-    "src/runtime/cycle.js": [1, "the array a cycle keeps"],
     "src/runtime/extract_if.js": [1, "a map's entries"],
     "src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
     "src/runtime/hashed_map.js": [3, "a map or a set made of a collect's array or another's entries or items, or a map's entries given handles"],

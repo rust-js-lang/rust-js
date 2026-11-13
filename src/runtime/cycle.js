@@ -1,14 +1,19 @@
 // `it.cycle()` of std's iterator over an array: what it has left, `items`,
 // gone over again and again, a clone of each item it owns that needs one
 // (ADR 0181); none at all of one with none left, as Rust's. Its hint
-// Rust's, none of no items, else without end (#1179).
+// Rust's, none of no items, else without end (#1179). A `$Steps`, as the
+// compiler takes every `cycle()` to be, so a `take(n)` of it is `$taking`,
+// whose hint is std's `Take`'s of it, which a `Vec` grows by: JS's own
+// `take` of a generator knows none, and grew one by doubling, 8 where std's
+// is 7 (#1572).
 function $cycle(items, clone = (item) => item) {
-  const cycled = (function* () {
-    if (items.length === 0) return;
-    while (true) {
-      for (const item of items) yield clone(item);
-    }
-  })();
+  let at = 0;
+  const cycled = new $Steps(() => {
+    if (items.length === 0) return { done: true, value: undefined };
+    const item = items[at];
+    at = (at + 1) % items.length;
+    return { done: false, value: clone(item) };
+  });
   cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);
   return cycled;
 }

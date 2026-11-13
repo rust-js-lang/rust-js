@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-none-gives-one",
     breaks: "`cycle()` of an iterator with nothing left gives an item, where Rust's gives none",
     file: "src/runtime/cycle.js",
-    find: "  if (items.length === 0) return;\n",
-    replace: "  if (items.length === 0) yield undefined;\n",
+    find: "    if (items.length === 0) return { done: true, value: undefined };\n",
+    replace: "    if (items.length === 0) return { done: false, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
   {
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/cycle.js",
     find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(cycle_size_hint|cycle_taken_grows_as_std).rs$"],
   },
   {
     name: "cycle-of-unwinding-clone-keeps-given",
@@ -97,5 +97,13 @@ export const mutations: Mutation[] = [
     find: "    const iter = $unwinds(() => clone(cycled.iter), drop && (() => drop(orig)));\n",
     replace: "    const iter = clone(cycled.iter);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "cycle-of-items-js-own-iterator",
+    breaks: "`$cycle` is JS's own iterator, not a `$Steps`, so its `take(n)` is JS's own, which knows no hint, and a `Vec` collected from it grows by doubling, 8 where std's is 7 (#1635)",
+    file: "src/runtime/cycle.js",
+    find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return cycled;\n}",
+    replace: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return Iterator.from({ next: cycled.next });\n}",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_taken_grows_as_std.rs$"],
   },
 ];

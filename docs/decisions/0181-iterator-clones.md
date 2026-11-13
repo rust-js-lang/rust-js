@@ -102,3 +102,25 @@ Held by corpus case `cycle_of_an_items_iterator_clones_its_item.rs`,
 against native Rust in both builds: a `cycle()` of an `Option`'s
 `into_iter()` and of `once(x)` of a type whose `Clone` prints, and a clone
 beside the original. Mutation `items-iterator-clone-uncloned`.
+
+## Amendment (2026-11-13, #1635): `$cycle` is a `$Steps`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+The compiler takes every `cycle()` to be a `$Steps` that asks its
+source's hint (#1179), so a `take(n)` of one is `$taking`, whose hint is
+std's `Take`'s. But `$cycle`, the cycle of an array's items, was JS's own
+generator: its `take(n)` was JS's own, which knows no hint. A `Vec`
+collected from `a.iter().cycle().take(7)`, in a crate that reads a
+`Vec`'s capacity, grew by doubling, capacity 8 where native Rust's is 7,
+and 16 where it's 10.
+
+`$cycle` is now a `$Steps` that steps its items in turn, so its `take(n)`
+is `$taking` and its hint std's. Its JS is unchanged. Other sources of a
+`take(n)`, `repeat`, `repeat_n`, `repeat_with`, `from_fn`, `successors`,
+ranges and a `cycle()` of an owned `Vec`'s items, were std's already.
+
+`test/corpus/cycle_taken_grows_as_std.rs` holds its capacities against
+native Rust in both builds. Mutation `cycle-of-items-js-own-iterator`,
+and `cycle-of-items-hintless` tests it too (`runtime/cycle.ts`).
