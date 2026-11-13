@@ -484,9 +484,6 @@ for (const [name, source, message, crate] of [
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).
-  // Refused where the plain build makes the runtime's form; the build of
-  // std's bodies compiles std's struct (#1579).
-  ["a clone of a repeat_n", 'pub fn f() -> usize { let a = std::iter::repeat_n(5u8, 3); a.clone().count() + a.count() }', "cloning `std::iter::RepeatN<u8>` (#1579)"],
   ["an internally tagged newtype variant of a type parameter", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E<T> { M(T) }\npub fn f(e: &E<u32>) -> String { serde_json::to_string(e).unwrap() }', "an internally tagged newtype variant of a type parameter (#1568)", "serde"],
 ] as [string, string, string, string?][]) {
   test(`${name} reports a source location and preserves existing output`, () => {

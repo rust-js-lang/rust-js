@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
+  {
+    name: "repeat-n-clone-counts-from-the-start",
+    breaks: "a `repeat_n`'s clone counts from its first count, not what it has left, so a clone made part way gives more items than std's (#1579)",
+    file: "src/runtime/repeating.js",
+    find: "$repeatingN(clone(value), left, clone, drop) :",
+    replace: "$repeatingN(clone(value), count, clone, drop) :",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
+  },
+  {
+    name: "repeat-n-clone-of-done-clones",
+    breaks: "a done `repeat_n`'s clone clones the value it gave away, `clone 2`, where std's clone of its `None` clones nothing (#1579)",
+    file: "src/runtime/repeating.js",
+    find: "(left > 0 ? $repeatingN(clone(value), left, clone, drop) : $repeatingN(undefined, 0))",
+    replace: "$repeatingN(clone(value), left, clone, drop)",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
+  },
 ];

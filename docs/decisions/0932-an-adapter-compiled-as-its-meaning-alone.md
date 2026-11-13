@@ -211,3 +211,23 @@ consumers tables, pits `$cycleOf` against std's `Cycle`. Mutations:
 The plain build refuses `cycle()` of a `Vec`'s or an array's items with a
 destructor, as it did before, and the case leaves it out; the build of
 std's bodies compiles it.
+
+## Amendment (2026-11-13, #1579): the plain build clones a `RepeatN`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal becomes
+Rust's behavior.
+
+The plain build refused `clone()` of a `RepeatN`, which its runtime form,
+`$repeatingN`, couldn't clone; the build of std's bodies cloned std's
+struct. `$repeatingN` now carries std's derived `Clone` of its count and
+its `Option` of its value (repeat_n.rs:68): its count copied, what it has
+left, and its value cloned while it has one left; once it's done, a clone
+of no value, which drops nothing. A `repeat_n`'s clone is `$clone` of it,
+as a `repeat`'s is (`std_impls/clones.rs`).
+
+`test/corpus/repeat_n_cloned.rs` clones one before it's stepped, part
+way, done, of a count of none and dropped unstepped, of an item that
+prints its clones and drops, against native Rust in both builds.
+Mutations: `repeat-n-clone-refused` (`lower/std_impls/clones.ts`),
+replacing `repeat-n-clone-refusal-unnamed`; `repeat-n-clone-counts-from-the-start`
+and `repeat-n-clone-of-done-clones` (`runtime/repeating.ts`).

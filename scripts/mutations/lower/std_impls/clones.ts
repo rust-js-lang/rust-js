@@ -470,8 +470,8 @@ export const mutations: Mutation[] = [
     name: "repeat-clone-refused",
     breaks: "a `repeat`'s `clone()` is refused, where std's derived `Clone` clones its value (#1139)",
     file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Adt(..) if crate::lower::recognition::is_repeat(self.tcx, ty) => {\n",
-    replace: "            ty::Adt(..) if false && crate::lower::recognition::is_repeat(self.tcx, ty) => {\n",
+    find: "                if crate::lower::recognition::is_repeat(self.tcx, ty)\n",
+    replace: "                if false && crate::lower::recognition::is_repeat(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
   {
@@ -515,11 +515,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
   {
-    name: "repeat-n-clone-refusal-unnamed",
-    breaks: "the refusal of a `repeat_n`'s `clone()` doesn't name #1579, which tracks it",
+    name: "repeat-n-clone-refused",
+    breaks: "`clone()` of a `repeat_n(x, n)` is refused in the plain build, whose `$repeatingN` clones it as std's derived `Clone` does (#1579)",
     file: "src/lower/std_impls/clones.rs",
-    find: "            true => self.unsupported(span, &format!(\"cloning `{ty}` (#1579)\")),\n",
-    replace: "            true => self.unsupported(span, &format!(\"cloning `{ty}`\")),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a clone of a repeat_n"],
+    find: "                    || crate::lower::recognition::is_repeat_n(self.tcx, ty) =>\n",
+    replace: "                    || false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
   },
 ];

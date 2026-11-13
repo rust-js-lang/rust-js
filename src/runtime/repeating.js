@@ -109,5 +109,9 @@ function $repeatingN(value, count, clone = (value) => value, drop) {
   };
   $forward(it, undefined, { advanceBy, last, count: countLeft });
   $backAsFront(it, () => left);
+  // Its clone, std's derived `Clone` of its count and its `Option` of its
+  // value: a clone of its value where it has one left, none where it's
+  // done, which drops nothing (repeat_n.rs:68, #1579).
+  $cloning(it, () => (left > 0 ? $repeatingN(clone(value), left, clone, drop) : $repeatingN(undefined, 0)));
   return $owns(it, "nth", "last", "count");
 }

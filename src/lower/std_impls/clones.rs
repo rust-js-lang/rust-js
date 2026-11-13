@@ -599,9 +599,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cycle` a struct holds: the one it carries, of clones of what
             // it started with and what it steps (ADR 0544).
             ty::Adt(..) if self.held_cycle(ty).is_some() => Ok(Expr::call_helper("$clone", vec![place])),
-            // A `repeat(x)`'s: the one it carries, std's derived `Clone`, a
-            // `$repeating` of a clone of its value (repeat.rs:71, #1139).
-            ty::Adt(..) if crate::lower::recognition::is_repeat(self.tcx, ty) => {
+            // A `repeat(x)`'s and a `repeat_n(x, n)`'s: the one it carries,
+            // std's derived `Clone`, of a clone of its value, a `repeat_n`'s
+            // count copied (repeat.rs:71, repeat_n.rs:68, #1139, #1579).
+            ty::Adt(..)
+                if crate::lower::recognition::is_repeat(self.tcx, ty)
+                    || crate::lower::recognition::is_repeat_n(self.tcx, ty) =>
+            {
                 Ok(Expr::call_helper("$clone", vec![place]))
             }
             // std's iterator over an array is a `$iter` that knows where it is
@@ -635,13 +639,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The refusal of a clone of `ty`, naming the issue that tracks it: a
-    /// `repeat_n`'s, whose runtime form, `$repeatingN`, has none (#1579).
+    /// The refusal of a clone of `ty`.
     fn uncloned(&self, ty: Ty<'tcx>, span: Span) -> rustc_span::ErrorGuaranteed {
-        match crate::lower::recognition::is_repeat_n(self.tcx, ty) {
-            true => self.unsupported(span, &format!("cloning `{ty}` (#1579)")),
-            false => self.unsupported(span, &format!("cloning `{ty}`")),
-        }
+        self.unsupported(span, &format!("cloning `{ty}`"))
     }
 
     /// Whether a clone of `ty` is its parts', by its shape: of a type of the
