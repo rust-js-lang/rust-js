@@ -509,7 +509,10 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if (heap[parent] > heap[index]) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
+  // Its reads keep their checks: MIR knows no relation a caller gives
+  // between parameters, `index < heap.len()`, nor `push`'s effect on a
+  // length (#1700); the swap of two in bounds is JS's own.
+  expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if ($index(heap, parent) > $index(heap, index)) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
   expect(js).toContain("function item(items, i) {\n  return items[i];\n}");
   // Called where nothing bounds it too, named as a value, or a JS caller's.
   expect(js).toContain("function other(items, i) {\n  return $index(items, i);\n}");

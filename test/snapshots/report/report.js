@@ -136,7 +136,7 @@ export function table(input) {
     out += `${$pad(team, 6, ">")}: n=${members.length} avg=${$toFixed(avg, 1).padStart(6)} best=${best}\n`;
   }
   const ages = rows.map((r) => r.age);
-  const gaps = $windows(ages, 2).map((w) => (($index(w, 1) | 0) - ($index(w, 0) | 0)) | 0);
+  const gaps = $windows(ages, 2).map((w) => (($index(w, 1) | 0) - (w[0] | 0)) | 0);
   out += `[${gaps.join(", ")}]\n`;
   out += `${rows.every((r) => r.score > 50)} ${rows.some((r) => r.team === "red")} ${((value) => (value == null ? "None" : `Some(${value})`))($position(rows, (r) => r.age > 40))}\n`;
   return out;

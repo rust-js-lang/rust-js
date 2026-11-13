@@ -14,9 +14,9 @@ pub(super) fn parameter_intervals<'tcx>(
     graph: &crate::lower::call_graph::CallGraph,
     bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
     only_called: &IndexMap<rustc_span::def_id::DefId, Vec<rustc_hir::HirId>>,
-) -> IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>> {
+) -> IndexMap<rustc_span::def_id::DefId, Given> {
     use crate::lower::call_graph::Callee;
-    let mut given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>> = IndexMap::default();
+    let mut given: IndexMap<rustc_span::def_id::DefId, Given> = IndexMap::default();
     let mut calls_seen: IndexMap<rustc_span::def_id::DefId, usize> = IndexMap::default();
     for component in graph.sccs.iter().rev() {
         for &function in component {
@@ -38,12 +38,41 @@ pub(super) fn parameter_intervals<'tcx>(
                     continue;
                 };
                 *calls_seen.entry(callee).or_insert(0) += 1;
-                let passed: Vec<Option<Interval>> = args.iter().map(|arg| walk.operand(&arg.node, state)).collect();
+                // Each argument's interval, and each argument below another
+                // slice argument's length.
+                let roots: Vec<Option<Local>> = (args.iter())
+                    .map(|arg| arg.node.place().and_then(|p| p.as_local()).map(|l| state.root(l)))
+                    .collect();
+                let mut below: Vec<(usize, usize, bool)> = Vec::new();
+                for (index, x) in roots.iter().enumerate() {
+                    for (of, slice) in roots.iter().enumerate() {
+                        let (Some(x), Some(slice)) = (*x, *slice) else { continue };
+                        let strict = match (
+                            state.below.contains(&(x, Term::Len(slice), true)),
+                            state.below.contains(&(x, Term::Len(slice), false)),
+                        ) {
+                            (true, _) => true,
+                            (false, true) => false,
+                            _ => continue,
+                        };
+                        below.push((index, of, strict));
+                    }
+                }
+                let passed = Given {
+                    intervals: args.iter().map(|arg| walk.operand(&arg.node, state)).collect(),
+                    below,
+                };
                 match given.get_mut(&callee) {
                     Some(known) => {
-                        for (known, passed) in known.iter_mut().zip(passed) {
+                        for (known, passed) in known.intervals.iter_mut().zip(passed.intervals) {
                             *known = known.zip(passed).map(|(a, b)| a.join(b));
                         }
+                        known.below = (known.below.iter())
+                            .filter_map(|&(index, of, strict)| {
+                                let there = passed.below.iter().find(|&&(i, o, _)| (i, o) == (index, of))?.2;
+                                Some((index, of, strict && there))
+                            })
+                            .collect();
                     }
                     None => {
                         given.insert(callee, passed);
@@ -54,7 +83,7 @@ pub(super) fn parameter_intervals<'tcx>(
     }
     (only_called.keys())
         .map(|&function| (function, given_of(function, only_called, &given, &calls_seen)))
-        .filter(|(_, intervals)| intervals.iter().any(Option::is_some))
+        .filter(|(_, given)| given.intervals.iter().any(Option::is_some) || !given.below.is_empty())
         .collect()
 }
 
@@ -66,14 +95,14 @@ pub(super) fn parameter_intervals<'tcx>(
 fn given_of(
     function: rustc_span::def_id::DefId,
     only_called: &IndexMap<rustc_span::def_id::DefId, Vec<rustc_hir::HirId>>,
-    given: &IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
+    given: &IndexMap<rustc_span::def_id::DefId, Given>,
     calls_seen: &IndexMap<rustc_span::def_id::DefId, usize>,
-) -> Vec<Option<Interval>> {
+) -> Given {
     let every_call_seen = only_called
         .get(&function)
         .is_some_and(|calls| calls_seen.get(&function).copied().unwrap_or(0) >= calls.len());
     match every_call_seen {
         true => given.get(&function).cloned().unwrap_or_default(),
-        false => Vec::new(),
+        false => Given::default(),
     }
 }

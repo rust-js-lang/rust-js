@@ -220,3 +220,63 @@ held: THIR still decides, and MIR's proof is compared in the shadow.
 Mutations `intervals-minus-one-may-wrap`, `intervals-range-next-unknown`,
 `intervals-range-written-kept`, `ranges-field-writes-unseen` and
 `ranges-reborrows-unfollowed`, caught.
+
+## M3, step 1 landed: bounds asserts decided by MIR (2026-11-14)
+
+MIR's intervals decide each slice's and array's bounds `assert`
+(`bounds_proved`), by the block it ends, of the very body proved. THIR's
+`in_bounds` is the shadow's alone for these asserts. Indexes made through
+calls, a `Vec`'s `v[i]` and `swap`, are THIR's still, and are a later
+step. Six of the eight gaps that held the switch are recovered through
+MIR's precision. Two are lost for now, approved as readability costs and
+pinned in their tests:
+- #1700: `Vec::push`'s effect on a length;
+- #1701: the parent's relations in a closure's captures.
+
+What the walk learned:
+- **Relations between values:**
+  - `min` and `max` are below what either, or both, operands are below
+    (`recognition::integer_min_max`, by diagnostic items);
+  - `x / c` and `x >> c` of what's never negative are below what `x` is
+    below;
+  - `x + c` that never wraps is recorded, so a sum computed again is the
+    first one, and `x + c < y` gives `x < y`: `items[i + 1]` under
+    `i + 1 < len`;
+  - `s <= len` and `s != len` give `s < len`;
+  - a cast that keeps its value is a copy;
+  - a comparison's relation reaches every copy of what it compares;
+  - a narrowed length raises its slice's least;
+  - `i - c` keeps `i`'s relations wherever it's computed exactly.
+- **Intervals from relations:** a value below a length is at most what
+  an allocation holds less one, so `i + 1` of `i < len` never wraps.
+- **Joins:** a join keeps a relation one side has where the other side's
+  intervals show it (`i = 0` before a loop), weakening `<` to `<=` where
+  only one side is strict. A way no value takes, `i > 0` of `i = 0`, is
+  no longer taken with what was known before it.
+- **Loops:**
+  - `rev()` and `step_by(n)` of a range;
+  - `a..=b` (`RangeInclusive::new`, a lang item);
+  - a slice's `iter()` or `iter_mut()` with `enumerate()`, and `rev()` of
+    that: each index below the slice's length, of an iterator only
+    `next()` steps (`recognition/loop_ranges.rs`).
+- **Callers:** a relation between parameters at every call of a function
+  only calls reach, `item(items, i)` under `i < items.len()`
+  (`Given::below`).
+- **Slices:**
+  - a `&mut [T]` reborrowed, `v.swap(0, i)`, isn't taken as lent, since
+    no write through it changes its length;
+  - `&raw const (fake) (*v)` of a bounds check is the slice `v`;
+  - a rest value's `Deref` is the same array.
+
+The concept splits, each in a commit of its own: `intervals/state.rs`;
+and, as new files, `recognition/loop_ranges.rs` and `intervals/ranges.rs`.
+
+A range's record says what bounds its values as one `End`: below `b`,
+at most `b`, a slice's items, or a slice's indexes. Two `bool` flags
+could have said it in states no range is.
+
+Measured: the corpus, all 2481 cases passing against native, has 31
+outputs changed: 53 checks left out that THIR kept, and 19 kept that it
+left out, each a precision gap with no wrong answer. Snapshots: 3 checks
+left out, in collections, numbers and report. The guide's output is
+unchanged, and the readability gate holds. Twenty-one mutations, caught.

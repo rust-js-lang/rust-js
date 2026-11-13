@@ -23,9 +23,6 @@ function bump(lanes, index) {
 
 function bumpPlain(lanes, index) {
   const value = index;
-  if (value >= 4) {
-    throw new Error(`index out of bounds: the len is 4 but the index is ${value}`);
-  }
   index++;
   const place = { value: lanes[value] };
   addTo(place, 20);

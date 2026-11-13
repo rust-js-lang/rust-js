@@ -75,11 +75,7 @@ pub(super) fn stepped_ranges<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Inde
     uses.visit_body(body);
     // A temporary `&mut` of a range, `next()`'s argument alone.
     (body.local_decls.indices())
-        .filter(|&local| {
-            let ty = body.local_decls[local].ty;
-            matches!(ty.kind(), ty::Adt(adt, item) if tcx.is_lang_item(adt.did(), LangItem::Range)
-                && item.types().next().is_some_and(|item| item.is_integral()))
-        })
+        .filter(|&local| range_of_integers(tcx, body.local_decls[local].ty))
         .filter(|&range| {
             (uses.uses[range].iter()).all(|&(context, at, projected)| match context {
                 PlaceContext::NonUse(_) | PlaceContext::NonMutatingUse(_) => true,

@@ -63,6 +63,10 @@ pub(super) struct State {
     /// A `for` loop's range of integers, by the local holding it, a `&mut`
     /// of it, or the `Option` its `next()` gave.
     pub(super) ranges: IndexMap<Local, Ranged>,
+    /// `t = x + c` of a constant at least one that never wraps, by `t`:
+    /// what `x` is and `c`. Of `t < y`, `x < y` too; and `x + c` again
+    /// is `t`, `items[i + 1]` under `i + 1 < len`.
+    pub(super) sums: IndexMap<Local, (Local, i128)>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -72,7 +76,30 @@ pub(super) struct State {
 pub(super) struct Ranged {
     pub(super) held: Held,
     pub(super) least: i128,
-    pub(super) end: Value,
+    pub(super) end: End,
+}
+
+/// What a range's values are bounded by.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum End {
+    /// `a..b`: each value below `b`.
+    Below(Value),
+    /// `a..=b`: each value at most `b`.
+    AtMost(Value),
+    /// A slice's iterator, `s.iter()`: its items, no integer of them.
+    Items(Local),
+    /// Enumerated, `s.iter().enumerate()`: each index below its length.
+    Indexes(Local),
+}
+
+impl End {
+    /// Whether it's of `local`, which a write of it makes stale.
+    pub(super) fn of(self, local: Local) -> bool {
+        match self {
+            End::Below(Value::Local(l)) | End::AtMost(Value::Local(l)) | End::Items(l) | End::Indexes(l) => l == local,
+            End::Below(Value::Constant(_)) | End::AtMost(Value::Constant(_)) => false,
+        }
+    }
 }
 
 /// What holds a range: a local, the range; a `&mut` of it, lent to its
@@ -122,10 +149,50 @@ impl State {
             comparisons,
             copies: both(&self.copies, &other.copies),
             lens: both(&self.lens, &other.lens),
-            below: self.below.intersection(&other.below).copied().collect(),
+            below: self.below_joined(other),
             least,
             empties: both(&self.empties, &other.empties),
             ranges,
+            sums: (self.sums.iter())
+                .filter(|&(k, v)| other.sums.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
+        }
+    }
+
+    /// Each relation of `self` or `other` that holds of the other too: in
+    /// both, strictly where both are strict; or in one, and of the other's
+    /// intervals, `i = 0` at most a length before a loop, `i < len` past
+    /// its back edge, at a loop's head `i <= len`.
+    pub(super) fn below_joined(&self, other: &State) -> IndexSet<(Local, Term, bool)> {
+        let mut joined = IndexSet::default();
+        for (one, two) in [(self, other), (other, self)] {
+            for &(x, y, strict) in &one.below {
+                let there = match (two.below.contains(&(x, y, true)), two.below.contains(&(x, y, false))) {
+                    (true, _) => Some(true),
+                    (false, true) => Some(false),
+                    _ => two.below_by_intervals(x, y),
+                };
+                if let Some(there) = there {
+                    joined.insert((x, y, strict && there));
+                }
+            }
+        }
+        joined
+    }
+
+    /// Whether `x` is below `y`, strictly, as their intervals alone say:
+    /// `x`'s most below, or at most, `y`'s least.
+    pub(super) fn below_by_intervals(&self, x: Local, y: Term) -> Option<bool> {
+        let most = self.intervals[x]?.hi;
+        let least = match y {
+            Term::Len(slice) => self.least.get(&slice).copied().unwrap_or(0),
+            Term::Int(l) => self.intervals[l]?.lo,
+        };
+        match (most < least, most <= least) {
+            (true, _) => Some(true),
+            (false, true) => Some(false),
+            _ => None,
         }
     }
 
@@ -142,7 +209,8 @@ impl State {
         self.least.shift_remove(&local);
         self.empties.retain(|&holder, &mut of| holder != local && of != local);
         self.ranges.shift_remove(&local);
-        self.ranges.retain(|_, ranged| ranged.end != Value::Local(local));
+        self.ranges.retain(|_, ranged| !ranged.end.of(local));
+        self.sums.retain(|&sum, &mut (of, _)| sum != local && of != local);
     }
 
     /// What `local` is a copy or a reborrow of, else itself.
@@ -161,6 +229,21 @@ impl State {
             .collect();
         for l in [local, root].into_iter().chain(copies) {
             self.intervals[l] = Some(interval);
+        }
+    }
+
+    /// `x` below `y`, strictly or not: of what `x` copies and of each copy
+    /// of that too, as a comparison of one tells of them all.
+    pub(super) fn related(&mut self, x: Local, y: Term, strict: bool) {
+        let root = self.root(x);
+        let copies: Vec<Local> = (self.copies.iter())
+            .filter(|&(_, &of)| of == root)
+            .map(|(&copy, _)| copy)
+            .collect();
+        for l in [x, root].into_iter().chain(copies) {
+            if y != Term::Int(l) && y != Term::Len(l) {
+                self.below.insert((l, y, strict));
+            }
         }
     }
 

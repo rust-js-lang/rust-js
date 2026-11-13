@@ -30,9 +30,6 @@ function main() {
   const t = { count: 70 };
   const refs = [x, y];
   const i = 1;
-  if (i >= 2) {
-    throw new Error(`index out of bounds: the len is 2 but the index is ${i}`);
-  }
   const item$1 = refs[i];
   const held = [
     {

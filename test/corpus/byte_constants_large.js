@@ -803,12 +803,11 @@ function sum(bytes, TAsRefU8Slice) {
 
 function report(name, bytes) {
   const value = $index(bytes, 0);
-  const value$1 = $index(bytes, (bytes.length - 1) >>> 0);
-  const value$2 = $slice(bytes, 0, 4);
+  const value$1 = $slice(bytes, 0, 4);
   const collect = bytes.toReversed().slice(0, 3);
   const arg = sum(bytes, { asRef: (value) => value });
   console.log(
-    `${name}: ${bytes.length} ${value} ${value$1} [${value$2.join(", ")}] [${collect.join(", ")}] ${arg}`,
+    `${name}: ${bytes.length} ${value} ${bytes[(bytes.length - 1) >>> 0]} [${value$1.join(", ")}] [${collect.join(", ")}] ${arg}`,
   );
 }
 

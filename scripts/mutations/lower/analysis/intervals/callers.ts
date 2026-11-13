@@ -12,4 +12,12 @@ export const mutations: Mutation[] = [
     replace: "        true | false if given.contains_key(&function) => given.get(&function).cloned().unwrap_or_default(),\n        true => Vec::new(),\n",
     tests,
   },
+  {
+    name: "intervals-callers-relations-unpassed",
+    breaks: "a relation between arguments isn't passed, so `item(items, i)` under `i < items.len()` keeps its check",
+    file: "src/lower/analysis/intervals/callers.rs",
+    find: "                        below.push((index, of, strict));\n",
+    replace: "                        let _ = (index, of, strict);\n",
+    tests: ["test/lowering-functions.test.ts","-t","a function only calls reach is what its calls give it"],
+  },
 ];

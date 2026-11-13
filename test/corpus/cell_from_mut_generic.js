@@ -136,7 +136,7 @@ function main() {
 
   const numbers = [10, 20];
   const cells = $mutItems(numbers);
-  $index(cells, 1).value = ($index(cells, 0).value + 1) & 65535;
+  $index(cells, 1).value = (cells[0].value + 1) & 65535;
   console.log(`[${numbers.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

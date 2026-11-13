@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function pair(v, k) {
-  return k < v.length ? [$index(v, k), $index(v, k + 1)] : [0, 0];
+  return k < v.length ? [v[k], $index(v, k + 1)] : [0, 0];
 }
 
 function main() {

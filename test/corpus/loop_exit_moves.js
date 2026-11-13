@@ -30,7 +30,7 @@ function shadowed(words) {
   let count = words.length;
   let i = 0;
   while (true) {
-    if (i === words.length || $index(words, i) === "stop") {
+    if (i === words.length || words[i] === "stop") {
       break;
     }
     i = (i + 1) >>> 0;
@@ -92,7 +92,7 @@ function setInLoop(values) {
   let found;
   while (true) {
     if ($index(values, i) % 7 === 0) {
-      found = $index(values, i);
+      found = values[i];
       break;
     }
     i = (i + 1) >>> 0;
@@ -118,7 +118,7 @@ function firstBig(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) > 10) {
-      return ($index(values, i) * 2) | 0;
+      return (values[i] * 2) | 0;
     }
     i = (i + 1) >>> 0;
   }
@@ -129,7 +129,7 @@ function firstEven(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) % 2 === 0) {
-      return ($index(values, i) + 1) | 0;
+      return (values[i] + 1) | 0;
     }
     i = (i + 1) >>> 0;
   }

@@ -45,9 +45,6 @@ function add(a, b) {
 
 function addAt(lanes, index) {
   const value = index;
-  if (value >= 4) {
-    throw new Error(`index out of bounds: the len is 4 but the index is ${value}`);
-  }
   const value$1 = {
     impl: tGetMutT,
     get value() {

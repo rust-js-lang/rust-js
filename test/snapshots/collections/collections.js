@@ -220,7 +220,7 @@ export function arrays(i) {
   const a = [1, 2, 3];
   const b = a.slice();
   a[$at(a, i)] = 9;
-  return [$index(a, i), $index(b, i)];
+  return [a[i], b[i]];
 }
 
 /**

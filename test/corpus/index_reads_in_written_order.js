@@ -16,9 +16,9 @@ function tupleAlts(t) {
 function sliceAlts(s) {
   return (
     $index(s, 3) === 1 &&
-    ($index(s, 0) === 2 || $index(s, 0) === 3) &&
-    ($index(s, 1) === 4 || $index(s, 1) === 5) &&
-    ($index(s, 2) === 6 || $index(s, 2) === 7)
+    (s[0] === 2 || s[0] === 3) &&
+    (s[1] === 4 || s[1] === 5) &&
+    (s[2] === 6 || s[2] === 7)
   );
 }
 

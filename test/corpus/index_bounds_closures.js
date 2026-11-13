@@ -24,7 +24,7 @@ function equal(next, prev) {
 
 function equalInClosure(next, prev) {
   for (let i = 0; i < prev.length && i < next.length; i++) {
-    if (!same(next[i], prev[i])) {
+    if (!same($index(next, i), $index(prev, i))) {
       return false;
     }
   }
@@ -43,7 +43,7 @@ function nested(a, b) {
 
 function later(items, i) {
   if (i < items.length) {
-    const read = () => (items[i] + 1) >>> 0;
+    const read = () => ($index(items, i) + 1) >>> 0;
     return (read() + read()) >>> 0;
   } else {
     return 0;
@@ -53,7 +53,7 @@ function later(items, i) {
 function inANestedClosure(items, i) {
   if (i < items.length) {
     function outer() {
-      const inner = () => items[i];
+      const inner = () => $index(items, i);
       return (inner() * 2) >>> 0;
     }
     return outer();

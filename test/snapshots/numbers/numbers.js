@@ -162,7 +162,7 @@ export function zeros(a) {
 
 export function panics(i) {
   const d = ((i | 0) - 1) | 0;
-  return $remEuclid($index([7, -2147483648], i % 2), d, -2147483648);
+  return $remEuclid([7, -2147483648][i % 2], d, -2147483648);
 }
 
 export function report() {

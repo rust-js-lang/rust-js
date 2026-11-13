@@ -118,15 +118,11 @@ function main() {
   }
   pairs[0][1] = 9;
   const kept = $index(pairs, 1).slice();
-  const value$1 = pairs.length;
-  if (1 >= value$1) {
-    throw new Error(`index out of bounds: the len is ${value$1} but the index is 1`);
-  }
   pairs[1][0] = 3;
   pairs[$at(pairs, 2)] = [6, 6];
-  const value$2 = pairs.length;
-  if (3 >= value$2) {
-    throw new Error(`index out of bounds: the len is ${value$2} but the index is 3`);
+  const value$1 = pairs.length;
+  if (3 >= value$1) {
+    throw new Error(`index out of bounds: the len is ${value$1} but the index is 3`);
   }
   const last = pairs[3];
   last[0] = 1;

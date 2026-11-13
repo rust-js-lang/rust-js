@@ -390,8 +390,9 @@ pub fn equal(next: &[u32], prev: &[u32]) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("same(next[i], prev[i])");
-  expect(js).not.toContain("$index");
+  // In a closure, its reads keep their checks: the parent's relations
+  // aren't carried into a closure's captures yet (#1701).
+  expect(js).toContain("same($index(next, i), $index(prev, i))");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.equal([1, 2, 3], [1, 2, 3])).toBe(true);
   expect(lib.equal([1, 2], [1, 2, 3])).toBe(true);

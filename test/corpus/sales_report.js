@@ -68,7 +68,7 @@ function main() {
   console.log(`[${items.map((item) => $debugStr(item)).join(", ")}]`);
   const units = all.map((s) => s.units);
   const diffs = $windows(units, 2).map((w) =>
-    BigInt.asIntN(64, BigInt($index(w, 1)) - BigInt($index(w, 0))),
+    BigInt.asIntN(64, BigInt($index(w, 1)) - BigInt(w[0])),
   );
   console.log(`[${diffs.join(", ")}]`);
   const running = Array.from(

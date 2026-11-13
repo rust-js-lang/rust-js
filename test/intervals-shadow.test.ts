@@ -181,3 +181,43 @@ pub fn main() {
 }
 `)).toEqual([]);
 });
+
+test("MIR decides a bounds check: `v[i >> 1]` below what `i` is below, of a `&mut [T]` a reborrow lends, `v.swap(0, i)`'s; a relation a loop's head keeps of what its entry's intervals show", () => {
+  const dir = fixture("mir-decides");
+  writeFileSync(join(dir, "case.rs"), `pub fn halves(v: &mut [u32], i: usize) -> u32 {
+    if i < v.len() {
+        v.swap(0, i);
+        v[i >> 1] + v[i]
+    } else {
+        0
+    }
+}
+pub fn before_zero(v: &[u32]) -> u32 {
+    let mut i = 0;
+    let mut seen = 0;
+    while i < v.len() && v[i] != 0 {
+        i += 1;
+    }
+    if i > 0 {
+        seen = v[i - 1];
+    }
+    seen
+}
+pub fn every_other(v: &[u32]) -> u32 {
+    let mut total = 0;
+    for i in (0..v.len()).step_by(2) {
+        total += v[i];
+    }
+    total
+}
+`);
+  const out = runSync([compiler, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
+  expect(out.code, out.stderr).toBe(0);
+  const js = readFileSync(join(dir, "case.js"), "utf8");
+  expect(js).toContain("return (v[i >>> 1] + v[i]) >>> 0;");
+  // `i <= v.len()` at the loop's head, of `i = 0` by its interval and
+  // `i + 1` past `i < v.len()`: past the loop, `v[i - 1]` of `i > 0`.
+  expect(js).toContain("seen = v[i - 1];");
+  // A range's `step_by(2)`: each value below its end.
+  expect(js).toContain("total = (total + v[i]) >>> 0;");
+});

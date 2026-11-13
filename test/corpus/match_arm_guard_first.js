@@ -46,8 +46,7 @@ function node(name, hidden, children) {
     sibling: undefined,
   };
   for (const pair of $windows(children, 2)) {
-    const node = $index(pair, 1);
-    $index(pair, 0).sibling = node;
+    pair[0].sibling = $index(pair, 1);
   }
   return made;
 }

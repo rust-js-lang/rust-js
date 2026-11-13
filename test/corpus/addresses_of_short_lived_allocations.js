@@ -44,7 +44,7 @@ function main() {
   spans.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   $storedItems(spans, 8);
   const apart = $windows(spans, 2).every(
-    (w) => ($index(w, 0)[0] + $index(w, 0)[1]) >>> 0 <= $index(w, 1)[0],
+    (w) => ($index(w, 0)[0] + w[0][1]) >>> 0 <= $index(w, 1)[0],
   );
   $storedItems(spans, 8);
   console.log(`${spans.length} ${apart}`);

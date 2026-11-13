@@ -34,10 +34,9 @@ function writtenInValue(v, i) {
     i = (i + 1) >>> 0;
     return i;
   }
+  v[0] = next();
   const value$1 = next();
-  v[$at(v, 0)] = value$1;
-  const value$2 = next();
-  v[$at(v, i)] = value$2;
+  v[$at(v, i)] = value$1;
   return i;
 }
 

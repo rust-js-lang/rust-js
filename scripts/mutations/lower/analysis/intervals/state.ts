@@ -12,4 +12,12 @@ export const mutations: Mutation[] = [
     replace: "        for l in [root].into_iter().chain(copies.into_iter().take(0)) {\n",
     tests,
   },
+  {
+    name: "intervals-join-drops-what-intervals-show",
+    breaks: "a join drops a relation one side has and the other's intervals show, `s = 0` before a loop, so `a[s - 1]` of a counter down from a length keeps its check",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "                    _ => two.below_by_intervals(x, y),\n",
+    replace: "                    _ => None,\n",
+    tests: ["test/intervals-shadow.test.ts"],
+  },
 ];

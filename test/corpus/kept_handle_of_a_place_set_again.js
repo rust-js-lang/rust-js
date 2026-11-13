@@ -13,9 +13,6 @@ function keep(r) {
 function main() {
   const c = [1, 2, 3];
   let k = 0;
-  if (k >= 3) {
-    throw new Error(`index out of bounds: the len is 3 but the index is ${k}`);
-  }
   const k$1 = k;
   const t = $unwrap(
     keep({
@@ -34,9 +31,6 @@ function main() {
   const a = [1, 2, 3];
   let i = 0;
   const value = i;
-  if (value >= 3) {
-    throw new Error(`index out of bounds: the len is 3 but the index is ${value}`);
-  }
   i = 2;
   a[value] = (a[value] + 20) >>> 0;
   console.log(`[${a.join(", ")}] ${i}`);

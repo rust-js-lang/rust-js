@@ -11,8 +11,11 @@ use super::*;
 /// proved.
 #[derive(Default)]
 pub(crate) struct Intervals {
-    given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
+    given: IndexMap<rustc_span::def_id::DefId, Given>,
     bodies: Vec<(Proofs, IndexMap<Span, bool>)>,
+    /// Each body's address, of `bodies`' each: what's asked of a block is
+    /// of the body proved, never another's.
+    proved: Vec<usize>,
 }
 
 /// What `--intervals-shadow` records: each line.
@@ -27,10 +30,6 @@ pub(in crate::lower) fn given_parameters<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
 ) {
-    // Until MIR decides a check (#1672 M3), only the shadow asks it.
-    if crate::lower::session::caches(tcx).intervals_shadow.is_none() {
-        return;
-    }
     let listed: Vec<(rustc_span::def_id::DefId, &Body<'tcx>)> = bodies.iter().map(|(&id, &body)| (id, body)).collect();
     let graph = crate::lower::call_graph::call_graph(tcx, &listed);
     let only_called = crate::lower::analysis::only_called::only_called(tcx);
@@ -49,10 +48,8 @@ pub(in crate::lower) fn body_proofs<'tcx>(
     let caches = crate::lower::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
     // Of a body with no bounds check and no `+`, `-` or `*`, nothing to
-    // prove, its walk left out; of every body, until MIR decides a check
-    // (#1672 M3), where the session records no shadow.
-    let asks = caches.intervals_shadow.is_some()
-        && (body.basic_blocks.iter()).any(|data| {
+    // prove, its walk left out.
+    let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)
@@ -76,7 +73,9 @@ pub(in crate::lower) fn body_proofs<'tcx>(
             }
         }
     }
-    caches.intervals.borrow_mut().bodies.push((proofs, exact));
+    let mut intervals = caches.intervals.borrow_mut();
+    intervals.bodies.push((proofs, exact));
+    intervals.proved.push(std::ptr::from_ref(body).addr());
     ProofsScope { tcx }
 }
 
@@ -88,7 +87,9 @@ pub(in crate::lower) struct ProofsScope<'tcx> {
 impl Drop for ProofsScope<'_> {
     fn drop(&mut self) {
         let caches = crate::lower::session::caches(self.tcx);
-        caches.intervals.borrow_mut().bodies.pop();
+        let mut intervals = caches.intervals.borrow_mut();
+        intervals.bodies.pop();
+        intervals.proved.pop();
     }
 }
 
@@ -145,4 +146,14 @@ pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {
         .as_ref()
         .map(|s| s.borrow().lines.iter().map(String::as_str).collect())
         .unwrap_or_default()
+}
+
+/// Whether MIR proves the bounds check `block`'s `assert` makes, of
+/// `body`, never fails (#1672 M3): none of a body not the one being
+/// lowered, whose proofs aren't these.
+pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.bounds.contains(&block))
 }

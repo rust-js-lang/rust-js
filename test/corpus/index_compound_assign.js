@@ -23,7 +23,7 @@ function spawned(root, index, entangled) {
 
 function plain(v, index, lane) {
   v[$at(v, index)] ^= lane;
-  v[0] = (v[$at(v, 0)] + lane) | 0;
+  v[0] = (v[0] + lane) | 0;
 }
 
 function main() {

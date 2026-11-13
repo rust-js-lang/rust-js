@@ -41,8 +41,7 @@ function swapIn(s, new$) {
 
 function double(item, TAdd) {
   const s = $oneItemOf(item);
-  const value = TAdd.add($index(s, 0), $index(s, 0));
-  s[$at(s, 0)] = value;
+  s[0] = TAdd.add($index(s, 0), s[0]);
 }
 
 function main() {
@@ -122,7 +121,7 @@ function main() {
     },
   });
   const n$1 = $index(s, 0);
-  s[$at(s, 0)] = n$1 != null ? (n$1 * 10) >>> 0 : undefined;
+  s[0] = n$1 != null ? (n$1 * 10) >>> 0 : undefined;
   console.log(`${o == null ? "None" : `Some(${o})`}`);
   let none;
   const value$1 = $oneItemOf({

@@ -110,8 +110,7 @@ function main() {
   exact.items.remainder[$at(exact.items.remainder, 0)] = 0;
   console.log(`[${v.join(", ")}]`);
   for (const chunk of $rchunksMut(v, 4, false)) {
-    const value = $index(chunk, 0);
-    chunk[$at(chunk, 0)] = -value | 0;
+    chunk[0] = -$index(chunk, 0) | 0;
   }
   for (const chunk of $rchunksMut(v, 5, true)) {
     chunk[$at(chunk, 4)] = 99;
@@ -128,8 +127,7 @@ function main() {
   }
   console.log(`[${words.join(", ")}]`);
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, 2, false, false)) {
-    const value = $index(part, 0);
-    part[$at(part, 0)] = -value | 0;
+    part[0] = -$index(part, 0) | 0;
   }
   console.log(`[${words.join(", ")}]`);
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, true, false)) {
@@ -203,7 +201,7 @@ function main() {
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
   }
   head$1[0].x = value$2;
-  tail$1[$at(tail$1, 0)] = { x: 0 };
+  tail$1[0] = { x: 0 };
   const result$1 = $view(points, 1);
   $swap(result$1, 0, 1);
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
