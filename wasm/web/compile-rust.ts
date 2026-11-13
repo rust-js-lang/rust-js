@@ -27,18 +27,24 @@ const rustDir = join(import.meta.dir, "rust");
 const repository = join(import.meta.dir, "../..");
 const virtual = "/wasm/web/rust";
 
-/** The crate's `.rs` files under `dir`, its components/ too, as the shim's directories. */
+/** The crate's `.rs` files under `dir`, its components/ too, and the CSS
+ * Modules its bindings read (ADR 1133), as the shim's directories. */
 function sourcesIn(dir: string): Map<string, Inode> {
   const entries = new Map<string, Inode>();
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) entries.set(entry.name, new Directory(sourcesIn(join(dir, entry.name))));
-    else if (entry.name.endsWith(".rs")) entries.set(entry.name, new File(readFileSync(join(dir, entry.name))));
+    else if (entry.name.endsWith(".rs") || entry.name.endsWith(".module.css")) entries.set(entry.name, new File(readFileSync(join(dir, entry.name))));
   }
   return entries;
 }
 
+/** A crate's files of their texts, by their names, as the shim's. */
+export function textFiles(texts: Record<string, string>): Map<string, Inode> {
+  return new Map(Object.entries(texts).map(([name, text]) => [name, new File(new TextEncoder().encode(text))]));
+}
+
 /** Every file under a shim directory, by its path from there. */
-function filesIn(dir: Directory, prefix = "", found = new Map<string, Uint8Array>()): Map<string, Uint8Array> {
+export function filesIn(dir: Directory, prefix = "", found = new Map<string, Uint8Array>()): Map<string, Uint8Array> {
   for (const [name, entry] of dir.contents) {
     if (entry instanceof Directory) filesIn(entry, `${prefix}${name}/`, found);
     else if (entry instanceof File) found.set(`${prefix}${name}`, entry.data);
@@ -47,25 +53,25 @@ function filesIn(dir: Directory, prefix = "", found = new Map<string, Uint8Array
 }
 
 /**
- * Compile ./rust/lib.rs, with the react, webapi and js crates. With `manifest`,
- * write the compiler's manifest there, its paths the real ones. Throws
- * rustc's errors.
+ * Run rust-js.wasm on the crate of `sources` at `virtualDir`, its root
+ * `lib.rs` and its JS `lib.js` beside it, with the react, webapi and js
+ * crates, `args` its own besides: its exit, what it said, and the crate's
+ * directory as it left it. Each run a fresh instance: rustc keeps global
+ * state, and a failed compile ends in a trap.
  */
-export async function compileRust(job: { manifest?: string } = {}) {
+export async function runRustJs(
+  virtualDir: string,
+  sources: Map<string, Inode>,
+  out = new PreopenDirectory("/out", new Map()),
+  args: string[] = [],
+) {
   buildReactCrate();
   const crate = (name: string) => new File(readFileSync(join(cratesDir, name)), { readonly: true });
-  const sources = sourcesIn(rustDir);
   const sysroot = new Map<string, Inode>(
     sysrootFiles().map((name) => [name, new File(readFileSync(join(sysrootDir, name)), { readonly: true })]),
   );
   const dir = (entries: Record<string, Inode>) => new Directory(new Map(Object.entries(entries)));
-  const crateDir = new PreopenDirectory(virtual, sources);
-  // What the last build wrote, for the compiler to say what of it this one
-  // leaves stale (ADR 0375): its manifest, of the compiler's own paths.
-  const published = job.manifest ?? join(cratesDir, "playground-manifest.json");
-  const virtualPath = (path: string) => path.startsWith(repository + "/") ? path.slice(repository.length) : path;
-  const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
-  const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
+  const crateDir = new PreopenDirectory(virtualDir, sources);
   const stderr: string[] = [];
   const fds = [
     new OpenFile(new File([])), // stdin
@@ -76,14 +82,14 @@ export async function compileRust(job: { manifest?: string } = {}) {
     new PreopenDirectory("/crates", new Map(reactLibs.map((lib) => [`lib${lib}.rmeta`, crate(`lib${lib}.rmeta`)]))),
     out,
   ];
-  const args = [
-    "rust-js", `${virtual}/lib.rs`, "-o", `${virtual}/lib.js`, "--manifest", "/out/manifest.json",
+  const argv = [
+    "rust-js", `${virtualDir}/lib.rs`, "-o", `${virtualDir}/lib.js`, ...args,
     "--", "--target", target, "--sysroot", "/sysroot",
     ...reactLibs.flatMap((lib) => ["--extern", `${lib}=/crates/lib${lib}.rmeta`]), "-L", "/crates",
   ];
   // RUSTC_ICE=0: don't name a crash-report file after the process id (WASI has none).
   // Without options, the shim logs every call it handles.
-  const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
+  const wasi = new WASI(argv, ["RUSTC_ICE=0"], fds, { debug: false });
   const instance = await WebAssembly.instantiate(await WebAssembly.compile(readFileSync(wasmPath)), {
     wasi_snapshot_preview1: wasi.wasiImport,
   });
@@ -94,6 +100,22 @@ export async function compileRust(job: { manifest?: string } = {}) {
     // Errors end in a trap: panics can't unwind on wasm32-wasip1.
     exit = `trap (${e instanceof Error ? e.message : String(e)})`;
   }
+  return { exit, stderr, crateDir };
+}
+
+/**
+ * Compile ./rust/lib.rs, with the react, webapi and js crates. With `manifest`,
+ * write the compiler's manifest there, its paths the real ones. Throws
+ * rustc's errors.
+ */
+export async function compileRust(job: { manifest?: string } = {}) {
+  // What the last build wrote, for the compiler to say what of it this one
+  // leaves stale (ADR 0375): its manifest, of the compiler's own paths.
+  const published = job.manifest ?? join(cratesDir, "playground-manifest.json");
+  const virtualPath = (path: string) => path.startsWith(repository + "/") ? path.slice(repository.length) : path;
+  const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
+  const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
+  const { exit, stderr, crateDir } = await runRustJs(virtual, sourcesIn(rustDir), out, ["--manifest", "/out/manifest.json"]);
   if (exit !== 0) throw new Error(`rust-js failed on wasm/web/rust/lib.rs (exit ${exit}):\n${stderr.join("\n")}`);
   // Warnings, on success.
   if (stderr.length > 0) console.warn(stderr.join("\n"));

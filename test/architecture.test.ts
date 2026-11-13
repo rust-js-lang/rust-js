@@ -938,7 +938,9 @@ test("an app's Rust is compiled one way, rust-js build", () => {
   expect(importers).toEqual([]);
   expect(read("scripts/package-compiler.ts")).not.toContain("bin:");
   const cli = read("tooling/cli.js");
-  expect(cli).toContain('if (command !== "build" && command !== "clippy" && command !== "test")');
+  expect(cli).toContain('if (command !== "build" && command !== "clippy" && command !== "test" && command !== "bindings")');
+  // And `rust-js bindings`, which prints a CSS Module's binding once (ADR 1133).
+  expect(cli).toContain("printBindings(");
   expect(cli).toContain("clippyApp(");
   expect(cli).toContain("testApp(");
   expect(read("tooling/build.js")).toContain('builder.inTarget("test"');

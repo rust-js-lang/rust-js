@@ -526,6 +526,20 @@ fn run() -> ExitCode {
             }
             return ExitCode::SUCCESS;
         }
+        // A CSS Module's binding, printed once for the app to keep (ADR 1133).
+        Ok(command::Command::CssModuleBinding(specifier)) => {
+            let printed = css_modules::binding_of_file(&specifier);
+            return match printed {
+                Ok(binding) => {
+                    print!("{binding}");
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("error: rust-js: {error}");
+                    ExitCode::FAILURE
+                }
+            };
+        }
         Ok(command::Command::RuntimeModule) => {
             print!("{}", runtime::package_module());
             return ExitCode::SUCCESS;

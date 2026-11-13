@@ -14,6 +14,8 @@ There's no watch mode and no bundler plugin: run `rust-js build` again
 after you change the Rust ([ADR 0412](../../decisions/0412-rust-js-build-is-its-own-process.md)).
 Two other commands lint it, `rust-js clippy` ([below](#linting-with-clippy)),
 and run its `#[test]`s as JS, by the test runner it names, `rust-js test` ([Testing](testing.md#rust-tests-compiled-to-javascript)).
+`rust-js bindings ./site.module.css` prints a CSS Module's binding once,
+for the app to keep ([Read a CSS Module's classes](modules.md#read-a-css-modules-classes)).
 
 ## What you need
 

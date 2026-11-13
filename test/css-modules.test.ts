@@ -156,3 +156,31 @@ test("a CSS Module of ICSS, of @value, or that doesn't parse is refused, naming 
     expect(errors).toContain(why);
   }
 });
+
+// `rust-js bindings ./site.module.css` prints the binding the check reads,
+// once: compiled against the file it's of, it passes, as rustfmt writes it,
+// and a class no Rust name says is left to a note.
+test("`rust-js bindings` prints the binding its check passes, formatted", () => {
+  const dir = fixture("css-module-printed");
+  writeFileSync(join(dir, "site.module.css"), ".codeBlock { color: red }\n.card-title:hover {}\n.type {}\n.\\31 0 {}\n.a-b {}\n.aB {}\n@keyframes spin {}\n");
+  const bindings = (specifier: string) =>
+    Bun.spawnSync(["node", join(root, "tooling/cli.js"), "bindings", specifier], { cwd: dir, stderr: "pipe", env: { ...process.env, RUST_JS_COMPILER: compiler } });
+  const printed = bindings("./site.module.css");
+  expect(printed.stderr.toString()).toBe("");
+  const binding = printed.stdout.toString();
+  expect(binding).toContain('    #[cfg_attr(rust_js, rust_js::link_name = "get type")]\n    pub fn r#type(&self) -> String {');
+  expect(binding).toContain("// No getter is written of `10`, `a-b`, `aB`:");
+  writeFileSync(join(dir, "lib.rs"), `${binding}\npub fn classes() -> String {\n    format!("{} {}", STYLES.code_block(), STYLES.r#type())\n}\n`);
+  const compiled = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], { cwd: root, stderr: "pipe" });
+  expect(compiled.stderr.toString()).toBe("");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("`${STYLES.codeBlock} ${STYLES.type}`");
+  const formatted = Bun.spawnSync(["rustfmt", "--edition", "2024", "--check", join(dir, "lib.rs")], { stderr: "pipe" });
+  expect([formatted.exitCode, formatted.stdout.toString()]).toEqual([0, ""]);
+  // A plain stylesheet, and a path not as a binding names it.
+  writeFileSync(join(dir, "site.css"), ".plain {}\n");
+  for (const specifier of ["./site.css", "site.module.css"]) {
+    expect(bindings(specifier).stderr.toString()).toContain(
+      `\`${specifier}\` isn't a CSS Module of the app's: name it as its binding does, from the crate root's JS, \`./site.module.css\``,
+    );
+  }
+});

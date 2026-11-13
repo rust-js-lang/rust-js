@@ -894,6 +894,15 @@ export function cardClasses(wide) {
   checked.
 - **The file is what the build read**, so a save of it checks the program
   again, and a class it deletes that the program reads is the error.
+- **`rust-js bindings ./site.module.css`**, run where the crate root's JS
+  is, prints this binding of each class the file exports, once, for the app
+  to keep and trim to what it reads: each getter's name the class's, snake
+  case, `code_block`, `r#type`. A class no Rust name says, `10` or `self`,
+  or two that would share one, is left to a note: name its getter
+  yourself. It's never printed again; the check keeps it right.
+- **The browser's compiler**, the playground's, reads the file from its
+  virtual file system as it reads the crate's sources, and checks it as
+  the native compiler does; where it isn't there, it's the same error.
 - **What's refused**: a `#[rust_js::css_module]` that isn't a struct; its
   `static` bound to anything but a `.module.css` file's default export;
   a binding of it that isn't a getter; a file that isn't there, or that

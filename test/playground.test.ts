@@ -36,6 +36,51 @@ test.skipIf(!existsSync(wasm))("rust-js.wasm compiles the playground as the nati
     .toBe(source.split("\n").findIndex(l => l.includes("<span")));
 }, 300_000);
 
+// A CSS Module's binding is checked against the file as the WASI compiler
+// reads it, through its virtual file system, as the native compiler does
+// (ADR 1133): a class the file exports, a class it doesn't, and no file.
+test.skipIf(!existsSync(wasm))("rust-js.wasm checks a CSS Module's binding against the file in its file system", async () => {
+  const { filesIn, runRustJs, textFiles } = await import("../wasm/web/compile-rust.ts");
+  const lib = (key: string) => `use std::marker::PhantomData;
+
+use js::JsObject;
+
+#[cfg_attr(rust_js, rust_js::css_module)]
+pub struct Styles(PhantomData<JsObject>);
+
+impl Styles {
+    #[cfg_attr(rust_js, rust_js::link_name = "get ${key}")]
+    pub fn code_block(&self) -> String {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "./site.module.css#default"]
+    pub safe static STYLES: &'static Styles;
+}
+
+pub fn code() -> String {
+    STYLES.code_block()
+}
+`;
+  const compile = async (key: string, css?: string) => {
+    const texts: Record<string, string> = { "lib.rs": lib(key), ...(css === undefined ? {} : { "site.module.css": css }) };
+    const ran = await runRustJs("/app", textFiles(texts));
+    const js = filesIn(ran.crateDir.dir).get("lib.js");
+    return { exit: ran.exit, said: ran.stderr.join("\n"), js: js ? new TextDecoder().decode(js) : "" };
+  };
+  const css = ".codeBlock { color: red }\n.card-title { color: blue }\n";
+  const read = await compile("codeBlock", css);
+  expect([read.exit, read.said]).toEqual([0, ""]);
+  expect(read.js).toContain('import STYLES from "./site.module.css";');
+  expect(read.js).toContain("return STYLES.codeBlock;");
+  const misspelled = await compile("codeBlok", css);
+  expect(misspelled.said).toContain("rust-js: `./site.module.css` exports no class `codeBlok`; its classes are `card-title` and `codeBlock`");
+  const absent = await compile("codeBlock");
+  expect(absent.said).toContain("rust-js: the classes of `./site.module.css`, which `STYLES` reads, can't be said: there's no file /app/site.module.css");
+}, 300_000);
+
 test.skipIf(!existsSync(wasm))("the playground loads, compiles, runs tests and shows errors, as React components", async () => {
   run(["bun", "run", "site"]);
   const server = Bun.spawn(["bun", "wasm/web/preview.ts"], { cwd: root, env: { ...process.env, PORT: "0" }, stdout: "pipe" });

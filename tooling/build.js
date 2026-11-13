@@ -242,10 +242,17 @@ export function createNativeBuilder({ root, rustJs }) {
   /** A crate's checks of its JS as `files` are, a build's (ADR 0117): what
    * they say goes to `warn`; one that fails the build throws. */
   const checks = async ({ input, files, warn }) => {
-    await run(compilerCommand, [...compilerArgs, "--checks", input, ...files], root, {}, warn);
+    const call = builder.compilerCall(["--checks", input, ...files]);
+    await run(call.command, call.args, root, {}, warn);
   };
 
   const builder = {
+    /** The compiler's command and arguments, `args` given it, as a
+     * release's package runs it, through Node, or as it is.
+     * @param {string[]} args */
+    compilerCall(args) {
+      return { command: compilerCommand, args: [...compilerArgs, ...args] };
+    },
     /** `use` run with the app's target for `purpose` (`targetDirOf`),
      * made this compiler's first (`holdTarget`), and the app's cache held
      * to its cap after (`boundAppCache`).
@@ -411,6 +418,26 @@ export async function testApp({ app, packageNames = [], features = [], noDefault
     exit ||= code;
   }
   return exit;
+  });
+}
+
+/**
+ * `rust-js bindings ./site.module.css` (ADR 1133): the binding of a CSS
+ * Module's classes, printed once for the app to keep, the form the
+ * compiler checks against the file. Run where the crate root's JS is, the
+ * path as the binding names it. Its exit code.
+ * @param {{ app: string, specifier: string }} options
+ * @returns {Promise<number>}
+ */
+export async function printBindings({ app, specifier }) {
+  const compiler = await findCompiler(app);
+  if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+  const builder = createNativeBuilder({ root: app, rustJs: compiler });
+  const { command, args } = builder.compilerCall(["--css-module-binding", specifier]);
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd: app, stdio: "inherit" });
+    child.on("error", reject);
+    child.on("close", (code) => resolve(code ?? 1));
   });
 }
 

@@ -68,6 +68,119 @@ fn icss_rule(rule: &CssRule) -> Option<&'static str> {
     })
 }
 
+/// The binding of the CSS Module `specifier` names, `./site.module.css`,
+/// read where it's run, as a binding's `link_name` names it: from the crate
+/// root's JS, where `rust-js bindings` is run (ADR 1133).
+pub fn binding_of_file(specifier: &str) -> Result<String, String> {
+    if !crate::program::is_relative_specifier(specifier) || !specifier.ends_with(".module.css") {
+        return Err(format!(
+            "`{specifier}` isn't a CSS Module of the app's: name it as its binding does, from the crate root's JS, `./site.module.css`"
+        ));
+    }
+    let source = std::fs::read_to_string(specifier).map_err(|error| format!("reading {specifier}: {error}"))?;
+    let name = std::path::Path::new(specifier)
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy();
+    let keys =
+        exported_keys(&source, &name).map_err(|why| format!("the classes of `{specifier}` can't be said: {why}"))?;
+    Ok(binding(specifier, &keys))
+}
+
+/// The binding of a CSS Module of `keys`, imported as `specifier`, `./site.module.css`, as
+/// `rust-js bindings` prints it, once (ADR 1133): the struct of its classes,
+/// a getter of each, and the module's default import, the form the check
+/// reads. A class no Rust name says, or two that would have one name, is
+/// left to a note, read by `get []` or a getter of the program's own name.
+pub fn binding(specifier: &str, keys: &[String]) -> String {
+    let mut named: Vec<(String, &str)> = Vec::new();
+    let mut unnamed: Vec<&str> = Vec::new();
+    for key in keys {
+        match rust_name(key) {
+            Some(name) => named.push((name, key)),
+            None => unnamed.push(key),
+        }
+    }
+    // Two classes one name would say: neither is the getter's.
+    let shared: Vec<String> = named
+        .iter()
+        .filter(|(name, _)| named.iter().filter(|(other, _)| other == name).count() > 1)
+        .map(|(name, _)| name.clone())
+        .collect();
+    named.retain(|(name, key)| {
+        let kept = !shared.contains(name);
+        if !kept {
+            unnamed.push(key);
+        }
+        kept
+    });
+    let mut out = String::from("use std::marker::PhantomData;\n\nuse js::JsObject;\n\n");
+    out.push_str(&format!("/// The classes of `{specifier}`.\n"));
+    out.push_str(
+        "#[cfg_attr(rust_js, rust_js::css_module)]\npub struct Styles(PhantomData<JsObject>);\n\nimpl Styles {\n",
+    );
+    for (at, (name, key)) in named.iter().enumerate() {
+        if at > 0 {
+            out.push('\n');
+        }
+        out.push_str(&format!(
+            "    #[cfg_attr(rust_js, rust_js::link_name = \"get {key}\")]\n    pub fn {name}(&self) -> String {{\n        unreachable!()\n    }}\n"
+        ));
+    }
+    out.push_str("}\n");
+    if !unnamed.is_empty() {
+        unnamed.sort();
+        let listed: Vec<String> = unnamed.iter().map(|key| format!("`{key}`")).collect();
+        out.push_str(&format!(
+            "\n// No getter is written of {}: name each yourself, or read it by\n// `#[cfg_attr(rust_js, rust_js::link_name = \"get []\")]`.\n",
+            listed.join(", ")
+        ));
+    }
+    out.push_str(&format!(
+        "\nunsafe extern \"Rust\" {{\n    #[link_name = \"{specifier}#default\"]\n    pub safe static STYLES: &'static Styles;\n}}\n"
+    ));
+    out
+}
+
+/// A class's Rust name, `code_block` of `codeBlock` and of `code-block`, a
+/// keyword raw, `r#type`; or none, of one no Rust name says, `10`, `self`.
+fn rust_name(key: &str) -> Option<String> {
+    let mut name = String::new();
+    let mut previous: Option<char> = None;
+    for c in key.chars() {
+        if !c.is_alphanumeric() {
+            if !name.is_empty() && !name.ends_with('_') {
+                name.push('_');
+            }
+        } else {
+            if c.is_uppercase() && previous.is_some_and(|p| p.is_lowercase() || p.is_numeric()) && !name.ends_with('_')
+            {
+                name.push('_');
+            }
+            name.extend(c.to_lowercase());
+        }
+        previous = Some(c);
+    }
+    let name = name.trim_end_matches('_').to_string();
+    if name.is_empty() || name.starts_with(|c: char| c.is_numeric()) || UNRAW.contains(&name.as_str()) {
+        return None;
+    }
+    Some(match KEYWORDS.contains(&name.as_str()) {
+        true => format!("r#{name}"),
+        false => name,
+    })
+}
+
+/// Rust's keywords, strict and reserved, each a name only raw, `r#type`.
+const KEYWORDS: [&str; 48] = [
+    "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "do", "dyn", "else", "enum",
+    "extern", "false", "final", "fn", "for", "gen", "if", "impl", "in", "let", "loop", "macro", "match", "mod", "move",
+    "mut", "override", "priv", "pub", "ref", "return", "static", "struct", "trait", "true", "try", "type", "typeof",
+    "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
+];
+/// The keywords no raw name says.
+const UNRAW: [&str; 4] = ["self", "super", "crate", "_"];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,5 +208,26 @@ mod tests {
         ] {
             assert!(exported_keys(css, "x.module.css").is_err(), "{css}");
         }
+    }
+
+    /// Each class a getter, its Rust name snake_case, a keyword's raw;
+    /// those no Rust name says, or two would share, left to a note.
+    #[test]
+    fn a_binding_names_each_class_once() {
+        let keys: Vec<String> = ["codeBlock", "card-title", "type", "10", "self", "a-b", "aB"]
+            .iter()
+            .map(|key| key.to_string())
+            .collect();
+        let printed = binding("./site.module.css", &keys);
+        assert!(printed.contains("rust_js::link_name = \"get codeBlock\")]\n    pub fn code_block(&self) -> String {"));
+        assert!(
+            printed.contains("rust_js::link_name = \"get card-title\")]\n    pub fn card_title(&self) -> String {")
+        );
+        assert!(printed.contains("rust_js::link_name = \"get type\")]\n    pub fn r#type(&self) -> String {"));
+        assert!(printed.contains("// No getter is written of `10`, `a-b`, `aB`, `self`:"));
+        assert!(
+            printed
+                .contains("#[link_name = \"./site.module.css#default\"]\n    pub safe static STYLES: &'static Styles;")
+        );
     }
 }

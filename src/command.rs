@@ -36,6 +36,10 @@ pub(crate) enum Command {
     /// `--knowns`: each fact an expression may carry and its role, a line
     /// each, what `--without-known` may name (ADR 1127).
     Knowns,
+    /// `--css-module-binding <./x.module.css>`: the binding of a CSS
+    /// Module's classes, the form its check reads, on stdout, which `rust-js
+    /// bindings` prints (ADR 1133).
+    CssModuleBinding(String),
 }
 
 /// A crate's checks: its root, whose `Cargo.toml` names them, and the JS
@@ -130,6 +134,12 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--prepare-passes") if args.len() == 1 => return Ok(Command::PreparePasses),
         Some("--knowns") if args.len() == 1 => return Ok(Command::Knowns),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
+        Some("--css-module-binding") => {
+            return match args.as_slice() {
+                [_, specifier] => Ok(Command::CssModuleBinding(specifier.clone())),
+                _ => Err("usage: rust-js --css-module-binding <./x.module.css>".into()),
+            };
+        }
         Some("--checks") => {
             let [input, files @ ..] = &args[1..] else {
                 return Err("usage: rust-js --checks <input.rs> <file.js>..".into());
