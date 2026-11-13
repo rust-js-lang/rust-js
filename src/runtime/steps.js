@@ -312,9 +312,13 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 
 // What the runtime's adapters step `items` by: a `$Steps` as it is, closed
 // where Rust's adapter drops it, not at its end, as JS's own close it, so a
-// held chain's `b` is its owner's to drop (#243); else its iterator.
+// held chain's `b` is its owner's to drop (#243); an array, a `Vec`'s
+// `IntoIter`'s form, its `$iter`, which knows its length, its back and so
+// std's hint, as a chain sums it where it grows a `Vec` (#1658); else its
+// iterator.
 function $stepsOf(items) {
-  return items instanceof $Steps ? items : items[Symbol.iterator]();
+  if (items instanceof $Steps) return items;
+  return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
 }
 
 // `it.filter(keep)` of items with a destructor, each it doesn't keep

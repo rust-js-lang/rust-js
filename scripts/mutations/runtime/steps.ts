@@ -193,8 +193,8 @@ export const mutations: Mutation[] = [
     name: "steps-of-js-protocol",
     breaks: "the runtime's own adapters step an iterator rust-js makes by JS's protocol, closed at its end, so a held chain's `b` is dropped at its end, not by its owner (#243, bw8)",
     file: "src/runtime/steps.js",
-    find: "  return items instanceof $Steps ? items : items[Symbol.iterator]();\n",
-    replace: "  return items[Symbol.iterator]();\n",
+    find: "  if (items instanceof $Steps) return items;\n  return Array.isArray(items)",
+    replace: "  return Array.isArray(items)",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
   {
@@ -388,5 +388,13 @@ export const mutations: Mutation[] = [
     find: "      if (!broke(folded)) {\n        ended = true;\n        this.return();\n",
     replace: "      if (!broke(folded)) {\n        ended = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
+  },
+  {
+    name: "steps-of-an-array-hintless",
+    breaks: "a `Vec` given as a chain's side is stepped as JS's own array iterator, whose hint is none, so a `Vec` grown by the chain in a crate that reads its capacity grows by the other side's alone, 18 where std's is 14 (#1658)",
+    file: "src/runtime/steps.js",
+    find: "  return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();\n",
+    replace: "  return items[Symbol.iterator]();\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_side_of_a_chain_counts_in_its_hint.rs$"],
   },
 ];

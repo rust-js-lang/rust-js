@@ -800,3 +800,22 @@ stays refused. Its JS, `values().map(f)`, knows no hint, and its maker
 makes it no `$mapEnds`, as a counted map's is. Accepting it as it is gave
 capacity 16 where std's is 15 (`(0..10)`'s `Vec` inspected and chained
 with five more).
+
+## Amendment (2026-11-13, #1658): a `Vec` side of a chain counts in its hint
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+A `Vec` grown by a chain one of whose sides isn't `TrustedLen` grows by
+the sum of its sides' hints, as std's `Chain::size_hint` sums them. A
+`Vec` given as the other side is its array in JS, which the runtime's
+chain stepped by `$stepsOf`, JS's own array iterator, whose hint is none,
+so `v.into_iter().skip(1).chain(vec![1, 2, 3, 4, 5])` grew to 18 where
+std's capacity is 14, in the plain build. `$stepsOf`, what every runtime
+adapter steps a side by, now gives an array's `$iter`, which knows its
+length, its back and so std's hint: a chain's sum and a zip's fewer are
+std's.
+
+`test/corpus/vec_side_of_a_chain_counts_in_its_hint.rs` holds it against
+native Rust in both builds, a `Vec` first and second, an empty one, and a
+zip. Mutation `steps-of-an-array-hintless` (`runtime/steps.ts`).
