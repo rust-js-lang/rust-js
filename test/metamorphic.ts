@@ -15,7 +15,8 @@ import { join } from "node:path";
 import { cases, corpus, directives } from "./corpus-cases";
 import { root, target } from "./support";
 import { runSync } from "./child";
-import { compileJs, runJs, runNative, runtimes } from "./programs";
+import { compileJs, runJs, runNative, runtimes, type Run } from "./programs";
+import { same } from "./oracle";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
  * name bound once moved into a box, an `Option`, an `Rc<RefCell>`, a
@@ -249,4 +250,49 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
     known.push({ issue, builds, rewrite, name });
   }
   return known;
+}
+
+/** A loud rewrite's line of a drop, `~loud 20 drop Circle(3)`: its count,
+ * and what it dropped. */
+const loudDrop = /^(~loud \d+ )(drop .*)$/;
+
+/** Whether the JS's run, `ran`, agrees with native Rust's, `runs`, its
+ * first and its runs again, up to the order of a hash table's drops, which
+ * std leaves to `RandomState`'s seed and rust-js gives in insertion order
+ * (difference 5): where some of native's runs put another line than its
+ * first, each block of such lines in a row is a hash table's iteration only
+ * where every line of it, the JS's too, is a loud drop, and the JS's are
+ * then the same drops, in any order, each count where native's is. Every
+ * other line, standard error and the outcome, as `agree` asks: so a drop
+ * native's runs all put in one place, one no hash table orders, is wrong
+ * anywhere else. Of a hash table of four, 24 orders, which `nativeTries`
+ * runs again seldom hit (#1453). */
+export function agreesUpToHashOrder(runs: Run[], ran: Run): boolean {
+  const [first] = runs;
+  if (first === undefined || typeof ran.outcome === "string") return false;
+  const sameRun = (run: Run) =>
+    typeof run.outcome !== "string" && same(run.outcome, ran.outcome as never) && run.bytes.stderr.equals(ran.bytes.stderr);
+  if (!runs.every(sameRun)) return false;
+  const lines = runs.map((run) => run.stdout.split("\n"));
+  const js = ran.stdout.split("\n");
+  if (lines.some((l) => l.length !== js.length)) return false;
+  const varies = js.map((_, i) => lines.some((l) => l[i] !== lines[0][i]));
+  for (let i = 0; i < js.length; ) {
+    if (!varies[i]) {
+      if (js[i] !== lines[0][i]) return false;
+      i++;
+      continue;
+    }
+    let end = i;
+    while (end < js.length && varies[end]) end++;
+    const drops = (l: string[]) => l.slice(i, end).map((line) => line.match(loudDrop));
+    const block = [js, ...lines].map(drops);
+    if (block.some((b) => b.some((m) => m === null))) return false;
+    const [ours, theirs] = [block[0], block[1]] as RegExpMatchArray[][];
+    if (ours.some((m, k) => m[1] !== theirs[k][1])) return false;
+    const sorted = (b: RegExpMatchArray[]) => b.map((m) => m[2]).sort().join("\n");
+    if (block.some((b) => sorted(b as RegExpMatchArray[]) !== sorted(theirs))) return false;
+    i = end;
+  }
+  return true;
 }

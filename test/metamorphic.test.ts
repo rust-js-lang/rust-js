@@ -16,7 +16,7 @@ import { join } from "node:path";
 
 import { corpus } from "./corpus-cases";
 import { runSync } from "./child";
-import { buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, fixture, root } from "./support";
@@ -151,8 +151,8 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
     // random seed (std's `RandomState`), which a loud rewrite shows, the
     // JS's is right where it's one of them: native run again, up to
     // `nativeTries` times, till one agrees with it (the loud triage's class
-    // (b), ADR 0939, amended).
-    if (againAgrees(again, ran)) continue;
+    // (b), ADR 1104, amended).
+    if (againAgrees(again, native, ran)) continue;
     const [a, b] = [native.stdout.split("\n"), ran.stdout.split("\n")];
     const at = a.findIndex((line, i) => line !== b[i]);
     problems.set(
@@ -172,15 +172,62 @@ const nativeTries = 8;
 
 /** Whether one of native Rust's runs again, `again`, up to `nativeTries`,
  * agrees with the JS's, `ran`: a program whose output std leaves to a
- * random seed, a `HashMap`'s order, has more than one right answer. */
-function againAgrees(again: (() => Run | string) | undefined, ran: Run): boolean {
+ * random seed, a `HashMap`'s order, has more than one right answer. Or,
+ * of them all, `native` first, where they differ only in a hash table's
+ * drops, the JS's are those drops in another order (`agreesUpToHashOrder`,
+ * #1453). */
+function againAgrees(again: (() => Run | string) | undefined, native: Run, ran: Run): boolean {
   if (again === undefined) return false;
+  const runs = [native];
   for (let i = 0; i < nativeTries; i++) {
-    const native = again();
-    if (typeof native !== "string" && agree(ran, native)) return true;
+    const rerun = again();
+    if (typeof rerun === "string") continue;
+    if (agree(ran, rerun)) return true;
+    runs.push(rerun);
   }
-  return false;
+  return agreesUpToHashOrder(runs, ran);
 }
+
+
+// A hash table's drops, whose order std's seed picks, agree in any order;
+// nothing else does (#1453): a drop no hash table orders, swapped, doesn't.
+const run = (lines: string[], outcome: Run["outcome"] = { value: null }): Run => {
+  const stdout = `${lines.join("\n")}\n`;
+  return { stdout, stderr: "", bytes: { stdout: Buffer.from(stdout), stderr: Buffer.from("") }, outcome };
+};
+const natives = [
+  ["~loud 1 drop Holder", "~loud 2 drop Circle(3)", "~loud 3 drop Dot", "~loud 4 drop Rect", "end"],
+  ["~loud 1 drop Holder", "~loud 2 drop Rect", "~loud 3 drop Circle(3)", "~loud 4 drop Dot", "end"],
+  ["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Rect", "~loud 4 drop Circle(3)", "end"],
+].map((lines) => run(lines));
+
+test("a hash table's drops agree in another order", () => {
+  const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"]);
+  expect(agreesUpToHashOrder(natives, js)).toBe(true);
+});
+
+test("a drop no hash table orders, swapped into one's, doesn't agree", () => {
+  const js = run(["~loud 1 drop Dot", "~loud 2 drop Holder", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"]);
+  expect(agreesUpToHashOrder(natives, js)).toBe(false);
+});
+
+test("a hash table's drops agree only with their counts in place", () => {
+  const js = run(["~loud 1 drop Holder", "~loud 3 drop Dot", "~loud 2 drop Circle(3)", "~loud 4 drop Rect", "end"]);
+  expect(agreesUpToHashOrder(natives, js)).toBe(false);
+});
+
+test("a hash table's iteration that prints, not drops, doesn't agree reordered", () => {
+  const printed = [
+    ["Circle(3)", "Dot", "end"],
+    ["Dot", "Circle(3)", "end"],
+  ].map((lines) => run(lines));
+  expect(agreesUpToHashOrder(printed, run(["Dot", "Circle(3)", "end"]))).toBe(false);
+});
+
+test("a hash table's drops in another order with another outcome don't agree", () => {
+  const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"], { panic: "x" });
+  expect(agreesUpToHashOrder(natives, js)).toBe(false);
+});
 
 const caseTimeout = 900_000;
 

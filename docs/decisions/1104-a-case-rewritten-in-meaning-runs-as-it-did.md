@@ -471,3 +471,24 @@ Rust is run again, up to eight times (`nativeTries`). The rewrite runs
 as Rust does if one run agrees (`againAgrees`). Native output that
 doesn't vary still disagrees every time, so a wrong answer is found as
 before; of two orders a seed picks, one is missed 1 time in 256.
+
+## Amendment (2026-11-13, #1453): a hash table's drops, compared as a set
+
+Eight runs again don't cover a hash table of four: `value_keys.rs`'s loud
+rewrite drops a map's four keys, 24 orders, so its insertion order was
+one of native's runs about 30% of the time, and the nightly flaked on it
+either listed or not. Now, where no run again agrees, all of native's
+runs, its first and those again, are compared with the JS's up to a hash
+table's order (`agreesUpToHashOrder`): the lines some run puts other than
+the first does are the seed's, and each block of them in a row is taken
+for a hash table's iteration only where every line of it, of each run and
+the JS's, is a loud drop; the JS's block is then the same drops, in any
+order, each loud count in its place. Every other line, standard error and
+the outcome are compared as before. So a drop that native's runs all put
+in one place, one no hash table orders, still disagrees: a compiler that
+drops a struct's two fields in reverse (`drop_ladder`'s `.rev()`, run by
+hand against a program with a four-key map) was rejected over native's 7
+orders in 9 runs, and the compiler as it is accepted. A hash table's
+iteration that prints, not drops, isn't reordered. Held by
+`metamorphic.test.ts`' five tests of it; `value_keys.rs` ran as Rust does
+three times in a row.
