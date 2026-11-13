@@ -388,6 +388,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "        let body = state.body.source.def_id();\n",
     replace: "        let body = self.item;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/writer-sink.test.ts", "-t", "each of callables' writes is native Rust's, in the plain build"],
   },
 ];
