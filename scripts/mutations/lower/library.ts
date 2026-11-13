@@ -409,4 +409,12 @@ export const mutations: Mutation[] = [
       "^two crates: (rc_counted_by_a_consumers_call)$"
     ]
   },
+  {
+    name: "library-written-into-marks-left-out",
+    breaks: "a library's function's type parameter it writes into a writer through its dictionary isn't marked `written_into`, so a consumer gives it a dictionary with no `fmtInto` (#1652)",
+    file: "src/lower/library.rs",
+    find: "        param(&mut params, index).marks.insert(ParamFact::WrittenInto);\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "library"],
+  },
 ];

@@ -384,4 +384,12 @@ export const mutations: Mutation[] = [
     replace: "                    false && id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())\n",
     tests: ["test/crates.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
   },
+  {
+    name: "library-written-into-types-unlisted",
+    breaks: "a library's contract lists none of its types whose dictionaries carry `fmtInto`, so a consumer writing one through generic code is refused (#1652, #1688)",
+    file: "src/lower/library/exports.rs",
+    find: "        written_into: sorted_keys(tcx, written.local_adts(tcx).iter()),\n",
+    replace: "        written_into: Vec::new(),\n",
+    tests: ["test/writer-sink.test.ts", "-t", "library"],
+  },
 ];

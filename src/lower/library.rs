@@ -127,6 +127,12 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// What it, and the libraries it uses, show of a `dyn Debug` they're
     /// given (#1335).
     pub(super) dyn_debug_shown: super::analysis::Shown,
+    /// The type parameters each function writes into a writer through
+    /// their formatting dictionaries, and the types whose dictionaries carry
+    /// `fmtInto` (#1652).
+    pub(super) written: &'a super::analysis::WrittenParams<'tcx>,
+    /// Whether it makes a `dyn` of a formatting trait (#1652).
+    pub(super) makes_fmt_dyns: bool,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
     /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
     /// amended), and which are stepped by a trait (ADR 0548).
@@ -251,6 +257,9 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
         if counted {
             param(&mut params, index).marks.insert(ParamFact::Counted);
         }
+    }
+    for index in contracts.written.of_fn(id) {
+        param(&mut params, index).marks.insert(ParamFact::WrittenInto);
     }
     for (&index, &shown) in contracts.shown_params.get(&id).into_iter().flatten() {
         let marks = &mut param(&mut params, index).marks;
@@ -887,6 +896,39 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// crate may be handed, or an `io::Error` holding one (ADR 0462, amended)?
     pub(super) fn makes_dropping_errors(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_errors)
+    }
+
+    /// Is `adt` a library's type whose formatting dictionaries its contract
+    /// doesn't say carry `fmtInto` (#1652, #1688)? Not `@rust-js/std`'s,
+    /// whose dictionaries are made where they're given.
+    pub(super) fn lacks_fmt_into(&self, adt: DefId) -> bool {
+        !adt.is_local()
+            && self
+                .library(adt.krate)
+                .is_some_and(|library| !library.builtin && !library.written_into.contains(&key(self.tcx, adt)))
+    }
+
+    /// Does any of the libraries write a `dyn` it's given into a writer a
+    /// piece at a time (#1652)?
+    pub(super) fn writes_dyns_given(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.dyn_written_into)
+    }
+
+    /// May any of the libraries make a `dyn` whose dictionary carries no
+    /// `fmtInto` (#1652, #1688)?
+    pub(super) fn makes_fmt_dyns(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_fmt_dyns)
+    }
+
+    /// The type parameters `id`, a library's function, writes into a writer
+    /// through their formatting dictionaries, by index, as its manifest says
+    /// (#1652): none of another.
+    pub(super) fn written_marks(&self, id: DefId) -> Vec<u32> {
+        let item = (self.library(id.krate)).and_then(|library| library.items.get(&key(self.tcx, id)));
+        (item.into_iter().flat_map(|item| item.calling.params.iter()))
+            .filter(|param| param.has(crate::library::ParamFact::WrittenInto))
+            .map(|param| param.index)
+            .collect()
     }
 
     /// Is `adt`, a library's type, one of whose writers may print to

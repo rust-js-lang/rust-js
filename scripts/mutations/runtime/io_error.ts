@@ -98,4 +98,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
   },
+  {
+    name: "io-error-written-error-whole",
+    breaks: "an `io::Error` holding an error, written into a writer under `{:>8}`, writes the error's text whole, not its `fmtInto`'s pieces (#1652)",
+    file: "src/runtime/io_error.js",
+    find: "  if (e.error !== undefined) return e.error.impl.Display().fmtInto(f, e.error.value, options);\n",
+    replace: "  if (e.error !== undefined) return f.write(e.error.impl.Display().fmt(e.error.value));\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "io-error-written-os-whole",
+    breaks: "an OS error written into a writer writes its message and number in one piece, where std's `write!` writes four (#1652)",
+    file: "src/runtime/io_error.js",
+    find: "    f.write(\" (os error \");\n    $writeInteger(f, e.code);\n    return f.write(\")\");\n",
+    replace: "    return f.write(` (os error ${e.code})`);\n",
+    tests: ["test/writer-sink.test.ts", "-t", "serde_json's error and an OS error"],
+  },
+  {
+    name: "io-error-written-message-unpadded",
+    breaks: "an `io::Error` of std's message written into a writer under a width writes no fill chars (#1652)",
+    file: "src/runtime/io_error.js",
+    find: "  if (e.message) return $writePadded(f, e.message, options);\n",
+    replace: "  if (e.message) return f.write(e.message);\n",
+    tests: ["test/writer-sink.test.ts", "-t", "serde_json's error and an OS error"],
+  },
 ];

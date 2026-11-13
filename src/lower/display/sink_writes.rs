@@ -21,6 +21,9 @@ pub(in crate::lower) enum SinkWrite {
     /// A std function that writes its pieces into the sink, given it first,
     /// `$writeInteger(f, n, options)`: `pad_integral`'s or `pad`'s.
     Helper(&'static str, Vec<Expr>),
+    /// A dictionary's entry that writes its pieces into the sink, given it
+    /// first, `TDisplay.fmtInto(f, t, options)` (`fmt_into`).
+    Call(Expr, Vec<Expr>),
 }
 
 impl SinkWrite {
@@ -32,6 +35,10 @@ impl SinkWrite {
             SinkWrite::Helper(name, mut args) => {
                 args.insert(0, sink.clone());
                 Expr::call_helper(name, args)
+            }
+            SinkWrite::Call(callee, mut args) => {
+                args.insert(0, sink.clone());
+                Expr::call(callee, args)
             }
         };
         StmtKind::Expr(call).at(js_span)
@@ -76,6 +83,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || spec.align.is_some()
             || spec.fill != ' ';
         let options_given = || options_object(spec, &width, &precision);
+        // A `T`'s or a `dyn`'s, its dictionary's `fmtInto`.
+        let given = match options {
+            true => options_given(),
+            false => Expr::undefined(),
+        };
+        if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), given, span)? {
+            return Ok(Some(vec![write]));
+        }
         // `pad`'s fast path: no width and no precision, its one `write_str`.
         let padded = |text: Expr| match width.is_none() && precision.is_none() {
             true => SinkWrite::Str(text),
@@ -172,12 +187,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         options: Expr,
         span: Span,
     ) -> R<Option<Vec<SinkWrite>>> {
+        if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), options.clone(), span)? {
+            return Ok(Some(vec![write]));
+        }
         let int = shown_num(ty).filter(|num| !num.float());
         let debug_hex = self.debug_hex();
         let given = |value: Expr| vec![value, options.clone()];
         Ok(Some(vec![match kind {
             Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),
-            Std::FmtDisplay | Std::FmtDebug if let Some(num) = shown_num(ty).filter(|num| num.float()) => {
+            // `pad_integral(true, "0x", digits)`, by the options as it runs.
+            Std::FmtRadix(radix) if let Some(num) = int => {
+                if value.has_effects() {
+                    return Ok(None);
+                }
+                let digits = radix.digits(value, num);
+                SinkWrite::Helper(
+                    "$writeIntegral",
+                    vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options],
+                )
+            }
+            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_)
+                if let Some(num) = shown_num(ty).filter(|num| num.float()) =>
+            {
                 SinkWrite::Helper(
                     "$writeFloat",
                     vec![

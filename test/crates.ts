@@ -32,8 +32,8 @@ export const triples = join(root, "test", "crates", "triples");
  * `//@ crate-name: core`; one named `std` is given to a `#![no_std]` crate
  * alone, as another's `std` is std's (ADR 1054). Where `refused` is given,
  * the app's compile is refused instead, saying each of them: what the
- * native program prints. */
-export function chain(cases: string, name: string, files: string[], refused?: string[], throws?: string): string {
+ * native program prints. Each rust-js compile is given `env`. */
+export function chain(cases: string, name: string, files: string[], refused?: string[], throws?: string, env: Record<string, string> = {}): string {
   const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
   const out = join(dir, "js");
   const source = (file: string) => join(cases, name, `${file}.rs`);
@@ -60,7 +60,7 @@ export function chain(cases: string, name: string, files: string[], refused?: st
       ...used.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
       "--", "--crate-name", crate, ...metadata,
       ...given(i).flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`]),
-      ...used.flatMap((u) => ["-L", `dependency=${join(out, u)}`])]);
+      ...used.flatMap((u) => ["-L", `dependency=${join(out, u)}`])], 600_000, env);
   };
   if (refused) {
     crates.slice(0, -1).forEach(compile);

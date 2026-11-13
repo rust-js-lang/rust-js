@@ -12,6 +12,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { chain, contract } from "./crates";
 import { helpersModule } from "./packages-of";
 import { compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, fixture, root } from "./support";
@@ -27,10 +28,18 @@ const builds: [string, string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
-for (const [build, flags] of builds) {
-  test(`each write is native Rust's, in the ${build} build`, () => {
-    const dir = fixture(`writer-sink-${build}`);
-    const file = join(root, "test/writer-sink.rs");
+/** The cases: test/writer-sink.rs, and test/writer-sink-generic.rs, generic
+ * code's values and `dyn`s (step 5), apart, as a `dyn` written into a
+ * writer frames every writer of its crate. */
+const cases: [string, string][] = [
+  ["", "test/writer-sink.rs"],
+  ["generic code's and dyns' ", "test/writer-sink-generic.rs"],
+];
+
+for (const [build, flags] of builds) for (const [which, path] of cases) {
+  test(`each of ${which}writes is native Rust's, in the ${build} build`, () => {
+    const dir = fixture(`writer-sink-${build}-${which === "" ? "own" : "generic"}`);
+    const file = join(root, path);
     const native = runNative(file, dir, "2021");
     if (typeof native === "string") throw new Error(native);
     const compiled = compileJs(file, dir, "2021", false, piecewise, flags);
@@ -239,4 +248,70 @@ test("a writer shown into a writer writes through the sink its first $sink() cla
   const after = std.$sink();
   after.write("x");
   expect(after.done()).toBe("x");
+});
+
+/** Pairs of crates, a library and its consumer, whose writes into a writer
+ * are followed a piece at a time, which test/crates.test.ts's pairs, each
+ * compiled as it is, aren't till ADR 1135's last step. */
+const piecewisePairs = join(root, "test", "crates", "piecewise");
+
+/** `cases/name`'s crates, as `chain` compiles them, where writes into a
+ * writer are followed a piece at a time. */
+function piecewiseChain(cases: string, name: string, refused?: string[]) {
+  return chain(cases, name, ["dep", "app"], refused, undefined, piecewise);
+}
+
+// Step 5: a library's generic writer writes what a consumer gives it by
+// the dictionary the consumer gives, whose `fmtInto` its contract asks for
+// (`written_into` of the parameter); and a consumer writes the library's
+// type through its own generic code by the library's dictionary, which its
+// contract lists (`written_into`).
+test("a library's generic writer, and a library's type written through generic code, write a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "writer_into_a_librarys_generic_writer");
+  const library = contract(out);
+  expect(library.written_into.length).toBe(1);
+  const framed = library.items.find((item: { export: string }) => item.export === "framed");
+  const written = framed.params.filter((param: { marks: string[] }) => param.marks.includes("written_into"));
+  expect(written.map((param: { index: number }) => param.index)).toEqual([1]);
+}, underLoad(300_000));
+
+// A library's type its contract doesn't list, written through generic
+// code, is refused, naming #1688.
+test("a library's type whose dictionary carries no fmtInto, written through generic code, is refused", () => {
+  const native = piecewiseChain(piecewisePairs, "writer_into_of_a_librarys_type", [
+    "writing a `dep::Meters` into a writer of the crate's own or a generic one through generic code or a `dyn`",
+    "#1688",
+    "app.rs:11:5",
+  ]);
+  expect(native).toBe("<6m>\n");
+}, underLoad(300_000));
+
+// A type of the consumer's given only to the library's generic writer,
+// which the consumer writes into nothing itself: its writer is framed, as
+// what the library's parameter is given is written a piece at a time.
+test("a consumer's type given only to a library's generic writer writes a piece at a time", () => {
+  piecewiseChain(piecewisePairs, "own_type_into_a_librarys_generic_writer");
+}, underLoad(300_000));
+
+test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {
+  expect(await recorded((f, std) => std.$writeJsonError(f, { message: "expected value", line: 0, column: 0 }))).toEqual(["sexpected value"]);
+  expect(await recorded((f, std) => std.$writeJsonError(f, { message: "EOF", line: 2, column: 15 }))).toEqual([
+    "sEOF",
+    "s at line ",
+    "s2",
+    "s column ",
+    "s15",
+  ]);
+  expect(await recorded((f, std) => std.$writeIoError(f, { code: 2, message: "No such file or directory", kind: "NotFound" }))).toEqual([
+    "sNo such file or directory",
+    "s (os error ",
+    "s2",
+    "s)",
+  ]);
+  expect(await recorded((f, std) => std.$writeIoError(f, { message: "failed to fill whole buffer", kind: "UnexpectedEof" }, { width: 30 }))).toEqual([
+    "sfailed to fill whole buffer",
+    "c ",
+    "c ",
+    "c ",
+  ]);
 });

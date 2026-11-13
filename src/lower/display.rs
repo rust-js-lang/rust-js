@@ -5,6 +5,7 @@
 
 mod composed;
 mod debug;
+mod fmt_into;
 mod printing;
 mod sink_debug;
 mod sink_writes;

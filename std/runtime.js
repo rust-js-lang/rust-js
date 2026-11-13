@@ -7161,12 +7161,13 @@ export function $append(items, other) {
 // 0141): its value is its message (ADR 0063), shown by `{:?}` as Rust shows
 // it, `ParseIntError { kind: InvalidDigit }`, its type's name, and by `{}`
 // as its text, given the placeholder's options as std's `fmt` of it applies
-// them; its `type_id` `type`, which a downcast compares (ADR 0331).
+// them, `pad`, whose writes it writes into a writer (#1652); its `type_id`
+// `type`, which a downcast compares (ADR 0331).
 export function $parseErrorDyn(type) {
   const name = type.slice(type.lastIndexOf("::") + 2);
   return {
     Debug: () => ({ fmt: (value) => $debugParseError(value, name) }),
-    Display: () => ({ fmt: (value, options) => $formatted(value, options) }),
+    Display: () => ({ fmt: (value, options) => $formatted(value, options), fmtInto: $writePadded }),
     source: () => undefined,
     typeId: () => type,
   };
@@ -7358,7 +7359,7 @@ export function $trimMatches(s, p, start = true, end = true) {
 export function $jsonErrorDyn(type) {
   return {
     Debug: () => ({ fmt: $debugJsonError }),
-    Display: () => ({ fmt: $displayJsonError }),
+    Display: () => ({ fmt: $displayJsonError, fmtInto: $writeJsonError }),
     source: () => undefined,
     typeId: () => type,
   };
@@ -17626,6 +17627,17 @@ export function $toJsonValue(value, write) {
 export function $displayJsonError(e) {
   return e.line === 0 ? e.message : `${e.message} at line ${e.line} column ${e.column}`;
 }
+// Its `Display` into a writer, as serde_json's writes it: its code's message
+// one `write_str`, then where it has a line, `write!`'s pieces of it and its
+// column (#1652).
+export function $writeJsonError(f, e) {
+  f.write(e.message);
+  if (e.line === 0) return;
+  f.write(" at line ");
+  $writeInteger(f, e.line);
+  f.write(" column ");
+  $writeInteger(f, e.column);
+}
 export function $debugJsonError(e) {
   return `Error(${$debugStr(e.message)}, line: ${e.line}, column: ${e.column})`;
 }
@@ -17699,11 +17711,12 @@ export function $jsonLocked(cell, write, exclusive) {
 // `dyn Error`'s dictionary, whose `value` is the message (ADR 0141).
 // Its `type_id` is std's private `StringError`'s, which no program can
 // name, so no downcast finds it: a key no type's name is (ADR 0331). Its
-// `Display` is its message's, `pad`, given the `Formatter`'s options (#1689).
+// `Display` is its message's, `pad`, given the `Formatter`'s options (#1689);
+// written into a writer, `pad`'s writes (#1652).
 export function $stringError() {
   return {
     Debug: () => ({ fmt: (message) => $debugStr(message) }),
-    Display: () => ({ fmt: (message, options) => $formatted(message, options) }),
+    Display: () => ({ fmt: (message, options) => $formatted(message, options), fmtInto: $writePadded }),
     source: () => undefined,
     typeId: () => "<std's StringError>",
   };
@@ -19282,6 +19295,20 @@ export function $ioErrorDisplay(e, options) {
   if (e.message) return $formatted(e.message, options);
   return $ioKindText(e.kind);
 }
+// `{}` of one into a writer, as std's writes it: the OS's message and
+// `write!`'s pieces of its number; its error's, given the options; its
+// message's `pad`; or its kind's words, one `write_str` (#1652).
+export function $writeIoError(f, e, options) {
+  if (e.code !== undefined) {
+    f.write(e.message);
+    f.write(" (os error ");
+    $writeInteger(f, e.code);
+    return f.write(")");
+  }
+  if (e.error !== undefined) return e.error.impl.Display().fmtInto(f, e.error.value, options);
+  if (e.message) return $writePadded(f, e.message, options);
+  return f.write($ioKindText(e.kind));
+}
 // `{:?}` of one, std's `Os { code, kind, message }`, `Custom { kind, error
 // }` or `Kind(..)`, pretty where `options` say.
 export function $ioErrorDebug(e, options) {
@@ -19310,7 +19337,7 @@ export function $ioResultDebug(result, options) {
 export function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
-    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options) }),
+    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options), fmtInto: $writeIoError }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
     typeId: () => type,

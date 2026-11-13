@@ -189,30 +189,8 @@ pub(super) fn prints<'tcx>(
 /// writer's (`$writingInto`). Never `types` or `while_formatting`, which
 /// route what's printed.
 fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
-    use crate::lower::recognition::{WriteCall, is_fmt_argument};
     let tcx = recognition.tcx;
-    let shown_by = |body: &Body<'tcx>| -> Vec<ty::Ty<'tcx>> {
-        (crate::lower::instances::calls_of(body).into_iter())
-            .filter_map(|(callee, args, _)| {
-                let shown = is_fmt_argument(tcx, callee)
-                    || matches!(
-                        recognition.write_call(callee, false),
-                        WriteCall::Display | WriteCall::Debug | WriteCall::OtherFmt
-                    );
-                shown.then(|| args.types().next()).flatten()
-            })
-            // And what's made a `&dyn Debug`, a builder's step's, a derived
-            // `Debug`'s field's, which std's `Debug` of it shows.
-            .chain((body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
-                ExprKind::PointerCoercion {
-                    cast: ty::adjustment::PointerCoercion::Unsize,
-                    source,
-                    ..
-                } => Some(body.thir[source].ty),
-                _ => None,
-            }))
-            .collect()
-    };
+    let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
         .filter(|body| body.def_id.is_local() && recognition.formatter_param(body.def_id).is_some())
         .collect();
@@ -236,6 +214,18 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
         .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))
         .map(|ty| (ty, false))
         .collect();
+    // And what's given a library's function's parameter it writes into a
+    // writer through its dictionary, as its manifest says (#1652, step 5).
+    for body in all_bodies {
+        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+            if callee.is_local() {
+                continue;
+            }
+            for index in recognition.foreign.written_marks(callee) {
+                shown.extend((args.get(index as usize).and_then(|arg| arg.as_type())).map(|ty| (ty, false)));
+            }
+        }
+    }
     let mut found: IndexSet<DefId> = IndexSet::default();
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
@@ -275,6 +265,34 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
         }
     }
     found
+}
+
+/// The types `body`, a writer shown into a writer, shows: each a `write!`
+/// into its `Formatter`, or any `fmt` it gives its `Formatter`, shows, and
+/// each it makes a `&dyn Debug` of, which std's `Debug` of it shows.
+pub(super) fn shown_by<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
+    use crate::lower::recognition::{WriteCall, is_fmt_argument};
+    let tcx = recognition.tcx;
+    (crate::lower::instances::calls_of(body).into_iter())
+        .filter_map(|(callee, args, _)| {
+            let shown = is_fmt_argument(tcx, callee)
+                || matches!(
+                    recognition.write_call(callee, false),
+                    WriteCall::Display | WriteCall::Debug | WriteCall::OtherFmt
+                );
+            shown.then(|| args.types().next()).flatten()
+        })
+        // And what's made a `&dyn Debug`, a builder's step's, a derived
+        // `Debug`'s field's, which std's `Debug` of it shows.
+        .chain((body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
+            ExprKind::PointerCoercion {
+                cast: ty::adjustment::PointerCoercion::Unsize,
+                source,
+                ..
+            } => Some(body.thir[source].ty),
+            _ => None,
+        }))
+        .collect()
 }
 
 /// The writers that may print as they format, or stop part-way where a
@@ -809,7 +827,10 @@ fn leaves_unended<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, 
 /// `format_args!` it's given where it's made: not what the rest of the body
 /// formats, a `println!`'s. `None` where an `Arguments` is given made
 /// elsewhere, a local's, of which every type the body shows is asked.
-fn written_arguments<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> Option<Vec<ty::Ty<'tcx>>> {
+pub(super) fn written_arguments<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    body: &Body<'tcx>,
+) -> Option<Vec<ty::Ty<'tcx>>> {
     struct Arguments<'a, 'tcx> {
         tcx: ty::TyCtxt<'tcx>,
         thir: &'a Thir<'tcx>,

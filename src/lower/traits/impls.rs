@@ -759,6 +759,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props.extend(self.dictionary_drop(tr.self_ty(), span)?);
         props.extend(self.item_drops(tr, false, span)?);
         props.extend(self.item_facts(tr, span)?);
+        if let Some(fmt_into) = self.impl_fmt_into(tr, &props, span)? {
+            props.push(fmt_into);
+        }
         let object = match is_hasher(self.tcx, tr.def_id) {
             true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),
             // A reader of the crate's own: std's provided `read_exact`,

@@ -21,6 +21,8 @@ pub(in crate::lower) fn exports<'tcx>(
         drop_params: _,
         shown_params: _,
         dyn_debug_shown,
+        written,
+        makes_fmt_dyns,
         no_drops: _,
         type_facts: _,
         // `associated`'s.
@@ -215,6 +217,9 @@ pub(in crate::lower) fn exports<'tcx>(
             .into_iter()
             .collect(),
         leaves_unended: prints.unended,
+        written_into: sorted_keys(tcx, written.local_adts(tcx).iter()),
+        dyn_written_into: written.dyn_written,
+        makes_fmt_dyns: *makes_fmt_dyns && !written.dyn_written,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
         dyns_drop_nothing: program
             .as_ref()

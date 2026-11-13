@@ -3,14 +3,14 @@
 // The library ABI a contract is of: `src/library.rs`' `VERSION`, its
 // authority, mirrored here across the compiler's boundary; every library
 // a test builds and reads holds the two equal.
-export const LIBRARY_ABI = 34;
+export const LIBRARY_ABI = 35;
 
 // The facts a contract's sets hold, by name: `src/library.rs`' `ItemFact`,
 // `ParamFact` and `FieldFact`, their authority, mirrored here across the
 // compiler's boundary, as `LIBRARY_ABI` is; test/manifest.test.ts reads
 // both and holds them equal (#1638).
 export const ITEM_FACTS = ["fails", "takes_location", "arguments", "this", "rest", "lazy", "variable"];
-export const PARAM_FACTS = ["drop", "copy", "clone", "no_drop", "unboxed", "shown_pretty", "shown_hex", "counted"];
+export const PARAM_FACTS = ["drop", "copy", "clone", "no_drop", "unboxed", "shown_pretty", "shown_hex", "counted", "written_into"];
 export const FIELD_FACTS = ["quiet", "rust_functions"];
 
 function validCompiler(value) {

@@ -1,0 +1,49 @@
+// Mutations of src/lower/analysis/written_params.rs (ADR 0093): which
+// dictionaries carry `fmtInto` (#1652, step 5 of ADR 1135).
+import type { Mutation } from "../../../mutations";
+
+const sink = ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"];
+const pairs = ["test/writer-sink.test.ts", "-t", "library"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "written-params-calls-unfollowed",
+    breaks: "a generic writer given on to another, `passed_on`'s `T` to `shown_once`, is given a dictionary with no `fmtInto`, which it calls",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                true => found.of_fn(callee).collect(),\n",
+    replace: "                true => Vec::new(),\n",
+    tests: sink,
+  },
+  {
+    name: "written-params-dyn-made-unseen",
+    breaks: "a value made a `Box<dyn Display>`, `7`, has a dictionary with no `fmtInto`, which a `write!` of the `dyn` into a writer calls",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                        found.give(tcx, owner, made_of);\n",
+    replace: "",
+    tests: sink,
+  },
+  {
+    name: "written-params-dyn-written-own-impls-left",
+    breaks: "an error of the crate's own made a `Box<dyn Error>` by `?`'s conversion, which no coercion shows, has a `Display` dictionary with no `fmtInto`",
+    file: "src/lower/analysis/written_params.rs",
+    find: "        self.dyn_written || self.adts.contains(&adt)\n",
+    replace: "        self.adts.contains(&adt)\n",
+    tests: sink,
+  },
+  {
+    name: "written-params-library-marks-unread",
+    breaks: "a consumer's type given a library's generic writer that writes it into a writer has a dictionary with no `fmtInto`",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                false => foreign.written_marks(callee),\n",
+    replace: "                false => Vec::new(),\n",
+    tests: pairs,
+  },
+  {
+    name: "written-params-library-type-unrefused",
+    breaks: "a library's type its contract doesn't say carries `fmtInto`, written through generic code, compiles to a call of an entry it hasn't (#1688)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "    if let Some(lacked) = lacked {\n",
+    replace: "    if let Some(lacked) = lacked.filter(|_| false) {\n",
+    tests: pairs,
+  },
+];

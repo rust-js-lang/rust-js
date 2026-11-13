@@ -131,6 +131,9 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// What's shown with options of each type it gives a parameter shown
     /// so, pretty or in hex, whose writers then take them (#1331).
     pub(in crate::lower) shown: &'a analysis::ShownParams<'tcx>,
+    /// Which types' formatting dictionaries carry `fmtInto`, as a writer's
+    /// generic code or a `dyn` writes them into a writer (#1652).
+    pub(in crate::lower) written: &'a analysis::WrittenParams<'tcx>,
     /// Which writers print as they format, and what may run while one
     /// does (#1490).
     pub(in crate::lower) prints: &'a analysis::prints::Prints,

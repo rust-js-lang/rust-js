@@ -4,7 +4,7 @@
 function $jsonErrorDyn(type) {
   return {
     Debug: () => ({ fmt: $debugJsonError }),
-    Display: () => ({ fmt: $displayJsonError }),
+    Display: () => ({ fmt: $displayJsonError, fmtInto: $writeJsonError }),
     source: () => undefined,
     typeId: () => type,
   };

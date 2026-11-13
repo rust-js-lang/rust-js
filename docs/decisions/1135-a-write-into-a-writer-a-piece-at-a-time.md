@@ -85,8 +85,9 @@ $writeInteger(f, n);
 - **What isn't followed yet is refused, naming #1652**: a map's or a
   set's `Debug`, a derived `Debug` of more than five fields, a write
   through a `Formatter` a struct holds, a closure or `fn` pointer given the
-  `Formatter`, a `dyn` or generic value, and an `Arguments` made
-  elsewhere.
+  `Formatter`, a `dyn`'s `Debug`, and an `Arguments` made elsewhere. A
+  library's type or `dyn` whose contract doesn't say its dictionary
+  carries `fmtInto` is refused naming #1688 (step 5).
 
 ## Landing
 
@@ -143,7 +144,44 @@ go.
    `test/writer-sink.rs` against native Rust in both builds, the runtime's
    unit tests of the adapter and the steps, and the grid's `Log` column,
    now 1,368 cases, every value but a map's, a set's and a generic field's.
-5. A generic or `dyn` value's `fmt` through its dictionary into the sink.
+5. A generic or `dyn` value's `fmt` through its dictionary into the sink
+   (landed). Each formatting dictionary, `Display`'s, `Debug`'s, a
+   radix's, `LowerExp`'s and `UpperExp`'s, may carry one more entry,
+   `fmtInto(f, x, options)`, which writes `x` into the sink `f` a piece at
+   a time, as std's `fmt` of it does: of an impl of the crate's own,
+   `$writingInto(f, pointDisplay_fmt, x, options)`, a generic impl's
+   writer given its dictionaries after, `$writingInto(f, duoDisplay_fmt,
+   x, options, TDisplay)`; of a std value's, its writes as `sink_writes`
+   says, `fmtInto: $writePadded` where that's one helper of the value and
+   its options; of std's errors made `dyn Error`s, the runtime's
+   (`$stringError`, `$parseErrorDyn`, `$ioErrorDyn`'s `$writeIoError`,
+   `$jsonErrorDyn`'s `$writeJsonError`). A `T` is written by its caller's
+   dictionary, `TDisplay.fmtInto(f, t, options)`, and a pair `dyn`'s
+   `Display` by its pair's, `d.impl.fmtInto(f, d.value, options)`.
+   `analysis::written_params`, in `shown_params`' shape (#1331), says
+   which dictionaries carry it: each function's type parameters it writes
+   so, by its own `write!` into a writer, as a framed writer, or by what it
+   gives them to, to a fixed point; the types that reach one; and, where a
+   `dyn` is written so, crate-wide to start, every impl of the crate's own
+   and every value it makes a `dyn` of. A dictionary nothing writes so
+   carries none, so no other JS changes. A library's contract says it, as
+   two `summary` facts and one `closed-world` one (ABI 35, ADR 1129): a
+   parameter's `written_into`, of which a consumer's call gives the
+   dictionaries with `fmtInto`, and which frames the writers of the
+   consumer's types it gives; `Library.written_into`, its types whose
+   dictionaries carry it; `dyn_written_into`, whether it writes a `dyn`
+   it's given so, which makes the consumer's `dyn`s carry it; and
+   `makes_fmt_dyns`. A library's type its contract doesn't list, written
+   through generic code, and a `dyn` written so where a library makes
+   ones that may not carry it, are refused, naming #1688; a library
+   compiled before ABI 35 is refused by its version. A `dyn`'s `Debug`
+   isn't followed yet, as std's errors' `Debug`s aren't, and stays
+   refused (#1652). Proof: test/writer-sink-generic.rs against native Rust
+   in both builds and its metamorphic rewrites (50, each the same), the
+   formatting grid's `Pair<u8>` now in its `Log` column, three crate pairs
+   (a library's generic writer given a consumer's type, a library's type
+   written through a consumer's generic code, and one refused), the
+   runtime's unit tests of the errors' writes, and 26 mutations.
 6. An `Arguments` passed on, a writing function, so either's and
    arrayvec's own `write_fmt` pass it on.
 

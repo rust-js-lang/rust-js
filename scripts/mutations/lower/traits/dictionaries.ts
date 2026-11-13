@@ -906,8 +906,8 @@ export const mutations: Mutation[] = [
     name: "std-debug-dictionary-drops-nothing",
     breaks: "a `Box<dyn Debug>` of a `Vec<Point>`, std's `Debug` dictionary, drops none of its points (#1578)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n                props.extend(self.dictionary_drop(ty, span)?);\n",
-    replace: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n",
+    find: "                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n                props.extend(self.dictionary_drop(ty, span)?);\n",
+    replace: "                // Its type's drop, as an impl's dictionary has it: a `Box<dyn\n                // Debug>` of a `Vec<Point>` drops its points (#1578).\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -918,8 +918,8 @@ export const mutations: Mutation[] = [
     name: "std-display-dictionary-drops-nothing",
     breaks: "a `Box<dyn Display>` of an `Rc<Point>` or a `Box<Point>`, std's `Display` dictionary, never drops its point (#1578)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                let mut props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                props.extend(self.dictionary_drop(ty, span)?);\n                return Ok(Expr::object(props));\n            }\n            // `ToString` is std's",
-    replace: "                let props = vec![Prop::Field(\"fmt\".into(), fmt)];\n                return Ok(Expr::object(props));\n            }\n            // `ToString` is std's",
+    find: "                props.extend(self.std_fmt_into(Std::FmtDisplay, ty, span)?);\n                props.extend(self.dictionary_drop(ty, span)?);\n",
+    replace: "                props.extend(self.std_fmt_into(Std::FmtDisplay, ty, span)?);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

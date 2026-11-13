@@ -57,6 +57,7 @@ m6-react's to see first (#1462).
 | `ParamFact::NoDrop` | summary | it takes no destructor: a call that gives one is refused | |
 | `ParamFact::ShownPretty` | summary | it's shown pretty, here or by what it's given to: a writer of a type given it takes whether | |
 | `ParamFact::ShownHex` | summary | it's shown in hex, as `ShownPretty` | |
+| `ParamFact::WrittenInto` | summary | it's written into a writer a piece at a time through its formatting dictionaries, here or by what it's given to: a call gives each with its `fmtInto` (#1652) | |
 | `ItemFact::Fails` | summary | it may return `Err(fmt::Error)` | |
 | `ItemFact::TakesLocation` | linkage | `#[track_caller]`: its calls give it their location | |
 | `ItemFact::Rest` | linkage | `#[rust_js::rest]`: its last parameter is JS's rest, which its calls spread | |
@@ -91,6 +92,9 @@ m6-react's to see first (#1462).
 | `Library.printing_types` | closed-world | its types one of whose writers may print to stdout as it formats (`Prints::types`) | writes a line that shows one through stdout's line, and its writers that show one through a sink, as of its own types (ADR 1130, amended, #1608) |
 | `Library.stopping_types` | closed-world | its types a std value's `Debug` shows piece by piece (`Prints::stopping`) | writes a std value's `Debug` of one through std's builders (ADR 1130, amended, #1608) |
 | `Library.stopping_where_caught` | closed-world | its types one of whose writers may stop part-way by a panic, were a consumer to catch it (`Prints::stopping_where_caught`) | one that catches a panic and shows one in stdout's line is refused, naming #1530 (ADR 1130, amended, #1608) |
+| `Library.written_into` | summary | its types whose formatting impls' dictionaries carry `fmtInto`, which writes a value into a writer a piece at a time (`WrittenParams::local_adts`) | |
+| `Library.dyn_written_into` | summary | whether it writes a `dyn` of a formatting trait it's given into a writer a piece at a time, so a consumer's values made one carry `fmtInto` | |
+| `Library.makes_fmt_dyns` | closed-world | whether it makes a `dyn` of a formatting trait whose dictionary may carry no `fmtInto` | one that writes a `dyn` into a writer a piece at a time is refused, naming #1688 (ADR 1135, step 5) |
 | `Library.leaves_unended` | closed-world | whether its prints may leave stdout's line, and stderr's, unended | prints each whole line through what the runtime holds, `$print` (ADR 1130, amended, #1599, #1608) |
 | `Library.dictionary_consts` | closed-world | a program's: the trait constants its own generic code reads, which its dictionaries carry | one that reads another is refused (#597) |
 | `Library.dyns_drop_nothing` | closed-world | a program's: its own traits whose `dyn`s drop nothing | one that makes a `dyn` of what drops is refused (#597) |

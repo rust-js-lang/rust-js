@@ -140,6 +140,27 @@ pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> O
 /// those values, `a, b`, which `lower/passed_on.rs` binds where they're
 /// what the closure took (ADR 0605, amended).
 pub fn passes_on_after<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> Option<(&'e Expr, &'e [Expr])> {
+    let (callee, args) = passing_call(body, statement)?;
+    let (leading, given) = args.split_at(args.len().checked_sub(params.len())?);
+    let names = given_names(params, given)?;
+    (!names.iter().any(|name| callee.mentions_var(name))).then_some((callee, leading))
+}
+
+/// `passes_on`, of a call given values after what the function's given,
+/// `(x, y) => g(x, y, a)`: its callee and those values, `a`, none of which
+/// names a parameter, as a generic impl's writer is given its dictionaries
+/// after its value and options (`fmtInto`, #1652).
+pub fn passes_on_before<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> Option<(&'e Expr, &'e [Expr])> {
+    let (callee, args) = passing_call(body, statement)?;
+    let (given, trailing) = (args.len() >= params.len()).then(|| args.split_at(params.len()))?;
+    let names = given_names(params, given)?;
+    let named = |e: &Expr| names.iter().any(|name| e.mentions_var(name));
+    (!named(callee) && !trailing.iter().any(named)).then_some((callee, trailing))
+}
+
+/// The one call a function's `body` returns, or of `statement`, makes: its
+/// callee and arguments.
+fn passing_call(body: &[Stmt], statement: bool) -> Option<(&Expr, &[Expr])> {
     let call = match body {
         [
             Stmt {
@@ -158,8 +179,13 @@ pub fn passes_on_after<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool
     let ExprKind::Call(callee, args) = &call.kind else {
         return None;
     };
-    let (leading, given) = args.split_at(args.len().checked_sub(params.len())?);
-    let names: Option<Vec<&str>> = (params.iter())
+    Some((callee, args))
+}
+
+/// The names of `params` where `given` passes each on in order, a rest
+/// parameter spread.
+fn given_names<'p>(params: &'p [Pattern], given: &[Expr]) -> Option<Vec<&'p str>> {
+    (params.iter())
         .zip(given)
         .map(|(param, arg)| match (param, &arg.kind) {
             (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),
@@ -168,8 +194,7 @@ pub fn passes_on_after<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool
             }
             _ => None,
         })
-        .collect();
-    (!names?.iter().any(|name| callee.mentions_var(name))).then_some((&**callee, leading))
+        .collect()
 }
 
 /// An arrow of one call, `() => { f(); }`, as `() => f()`, which gives

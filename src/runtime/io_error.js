@@ -77,6 +77,20 @@ function $ioErrorDisplay(e, options) {
   if (e.message) return $formatted(e.message, options);
   return $ioKindText(e.kind);
 }
+// `{}` of one into a writer, as std's writes it: the OS's message and
+// `write!`'s pieces of its number; its error's, given the options; its
+// message's `pad`; or its kind's words, one `write_str` (#1652).
+function $writeIoError(f, e, options) {
+  if (e.code !== undefined) {
+    f.write(e.message);
+    f.write(" (os error ");
+    $writeInteger(f, e.code);
+    return f.write(")");
+  }
+  if (e.error !== undefined) return e.error.impl.Display().fmtInto(f, e.error.value, options);
+  if (e.message) return $writePadded(f, e.message, options);
+  return f.write($ioKindText(e.kind));
+}
 // `{:?}` of one, std's `Os { code, kind, message }`, `Custom { kind, error
 // }` or `Kind(..)`, pretty where `options` say.
 function $ioErrorDebug(e, options) {
@@ -105,7 +119,7 @@ function $ioResultDebug(result, options) {
 function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
-    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options) }),
+    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options), fmtInto: $writeIoError }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
     typeId: () => type,

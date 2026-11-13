@@ -215,12 +215,12 @@ type Sink = (typeof sinks)[number];
  * `value`, so `write!` into a writer of the crate's own writes it a piece
  * at a time (#1652): every value's but an integer's exponent, which std
  * writes as a float's and `sink_writes` doesn't yet, a map's or a set's, and
- * `Asked`'s `Debug` of a `fmt::Alignment`, and `Pair<T>`'s generic field (step 5). The rest are written to a
+ * `Asked`'s `Debug` of a `fmt::Alignment`. The rest are written to a
  * `String`. */
 const pieced = (spec: Spec, value: Value) =>
   ["integer", "pointer"].includes(value.kind) && ["e", "E"].includes(spec.trait)
     ? false
-    : !["HashMap", "HashSet"].includes(value.kind) && !["Asked", "Pair<u8>"].includes(value.ty);
+    : !["HashMap", "HashSet"].includes(value.kind) && value.ty !== "Asked";
 
 export type FormatCase = Row & { spec: Spec; value: Value; sink: Sink };
 

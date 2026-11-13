@@ -72,8 +72,16 @@ export const mutations: Mutation[] = [
     name: "sink-given-float-refused",
     breaks: "a float's `fmt` given a framed writer's `Formatter` is refused (#1652)",
     file: "src/lower/display/sink_writes.rs",
-    find: "            Std::FmtDisplay | Std::FmtDebug if let Some(num) = shown_num(ty).filter(|num| num.float()) => {\n",
-    replace: "            Std::FmtDisplay | Std::FmtDebug if let Some(num) = shown_num(ty).filter(|num| num.float() && false) => {\n",
+    find: "                if let Some(num) = shown_num(ty).filter(|num| num.float()) =>\n",
+    replace: "                if let Some(num) = shown_num(ty).filter(|num| num.float() && false) =>\n",
     tests,
+  },
+  {
+    name: "sink-given-radix-prefix-dropped",
+    breaks: "`{:#06x}` of a `T` written by its dictionary's `fmtInto` writes no `0x` (#1652)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "                    vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options],\n",
+    replace: "                    vec![Expr::bool(true), Expr::str(\"\"), digits, options],\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
   },
 ];

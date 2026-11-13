@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         is_std_method(self.tcx, id, StdItem::Error, "source")
     }
 
-    pub(super) fn dyn_trait_ref(&self, ty: Ty<'tcx>, self_ty: Ty<'tcx>) -> Option<ty::TraitRef<'tcx>> {
+    pub(in crate::lower) fn dyn_trait_ref(&self, ty: Ty<'tcx>, self_ty: Ty<'tcx>) -> Option<ty::TraitRef<'tcx>> {
         match self.pointee(ty).kind() {
             // `dyn for<'a> AsStr<'a, 'a>`: its lifetimes erased, as a
             // dictionary is the same for any.

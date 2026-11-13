@@ -91,8 +91,13 @@ use std::path::Path;
 /// list, never one a consumer's analysis of its body makes (#1612).
 /// 34: `printing_types`, `stopping_types`, `stopping_where_caught` and
 /// `leaves_unended`, what its writers and prints do to a consumer's line
-/// (#1608).
-pub const VERSION: u32 = 34;
+/// (#1608). 35: which type parameters each function writes into a writer
+/// through their formatting dictionaries, `written_into` of a parameter;
+/// its types whose formatting dictionaries carry `fmtInto`,
+/// `written_into`; whether it writes a `dyn` it's given so,
+/// `dyn_written_into`; and whether it makes a `dyn` whose dictionary may
+/// carry none, `makes_fmt_dyns` (#1652, step 5 of ADR 1135).
+pub const VERSION: u32 = 35;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -286,6 +291,11 @@ pub enum ParamFact {
     /// pointee holds it, is `{ value, strong, weak }`. A consumer whose call
     /// counts what it gives otherwise compiles its own (#1234; library ABI 31).
     Counted,
+    /// It's written into a writer a piece at a time through its formatting
+    /// dictionaries, here or by what it's given to: a consumer's call gives
+    /// each of them with its `fmtInto` (#1652, step 5 of ADR 1135; library
+    /// ABI 35).
+    WrittenInto,
 }
 
 impl TypeParam {
@@ -472,6 +482,22 @@ pub struct Library {
     /// (#1608, #1599).
     #[serde(default, skip_serializing_if = "leaves_nothing_unended")]
     pub leaves_unended: [bool; 2],
+    /// Its types whose formatting impls' dictionaries carry `fmtInto`,
+    /// which writes a value into a writer a piece at a time, by key (#1652,
+    /// step 5 of ADR 1135): a consumer that writes another of its types so,
+    /// through generic code or a `dyn`, is refused (#1688).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub written_into: Vec<String>,
+    /// Whether it writes a `dyn` of a formatting trait it's given into a
+    /// writer a piece at a time: a consumer's values made such a `dyn`
+    /// carry `fmtInto` (#1652).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub dyn_written_into: bool,
+    /// Whether it makes a `dyn` of a formatting trait whose dictionary may
+    /// carry no `fmtInto`, as it writes none so itself: a consumer that
+    /// writes a `dyn` into a writer a piece at a time is refused (#1688).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub makes_fmt_dyns: bool,
     /// A program's, `--tested`'s: the keys of the trait constants its
     /// dictionaries carry, those its own generic code reads, as `rust-js
     /// build` writes them (ADRs 0106, 1076, amended, #597). A consumer that
@@ -813,6 +839,12 @@ pub struct Exports {
     pub stopping_where_caught: IndexSet<String>,
     /// Whether it may leave stdout's line, and stderr's, unended (#1608).
     pub leaves_unended: [bool; 2],
+    /// Its types whose formatting dictionaries carry `fmtInto`, by key (#1652).
+    pub written_into: IndexSet<String>,
+    /// Whether it writes a `dyn` it's given into a writer piecewise (#1652).
+    pub dyn_written_into: bool,
+    /// Whether it makes a `dyn` whose dictionary may lack `fmtInto` (#1652).
+    pub makes_fmt_dyns: bool,
     /// A program's dictionaries' constants, by key; None of a library's,
     /// which carry every one (#597).
     pub dictionary_consts: Option<IndexSet<String>>,
@@ -928,6 +960,9 @@ impl Exports {
             stopping_types,
             stopping_where_caught,
             leaves_unended,
+            written_into,
+            dyn_written_into,
+            makes_fmt_dyns,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,
@@ -972,6 +1007,9 @@ impl Exports {
             stopping_types: stopping_types.into_iter().collect(),
             stopping_where_caught: stopping_where_caught.into_iter().collect(),
             leaves_unended,
+            written_into: written_into.into_iter().collect(),
+            dyn_written_into,
+            makes_fmt_dyns,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,

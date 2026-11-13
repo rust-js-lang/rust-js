@@ -487,7 +487,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let text = self.radix_text(Expr::var("value"), num, radix, &pretty);
             let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(text)).at(js::Span::NONE)]);
-            return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
+            let mut props = vec![Prop::Field("fmt".into(), fmt)];
+            props.extend(self.std_fmt_into(Std::FmtRadix(radix), ty, span)?);
+            return Ok(Expr::object(props));
         }
         let default = is_std_def(self.tcx, tr.def_id, StdItem::Default);
         let clone = self.tcx.is_lang_item(tr.def_id, LangItem::Clone);
@@ -530,6 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Return(Some(shown)).at(js::Span::NONE));
                 let fmt = Expr::arrow(params, body);
                 let mut props = vec![Prop::Field("fmt".into(), fmt)];
+                props.extend(self.std_fmt_into(Std::FmtDebug, ty, span)?);
                 // Its type's drop, as an impl's dictionary has it: a `Box<dyn
                 // Debug>` of a `Vec<Point>` drops its points (#1578).
                 props.extend(self.dictionary_drop(ty, span)?);
@@ -575,6 +578,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if display {
                 let fmt = self.display_fn(ty, span)?;
                 let mut props = vec![Prop::Field("fmt".into(), fmt)];
+                props.extend(self.std_fmt_into(Std::FmtDisplay, ty, span)?);
                 props.extend(self.dictionary_drop(ty, span)?);
                 return Ok(Expr::object(props));
             }

@@ -68,6 +68,7 @@ pub(in crate::lower) use intervals::{LeftOut, Shadow, shadow_body, shadow_check,
 mod unwinding;
 pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};
 mod wholes;
+mod written_params;
 pub(super) use wholes::{Wholes, whole_locals};
 
 pub(super) use foreign_bodies::foreign_bodies;
@@ -114,6 +115,7 @@ use validation::{
     reject_rest_misuse, reject_static_references, reject_unsupported,
 };
 pub(super) use validation::{init_of, is_thread_local};
+pub(super) use written_params::WrittenParams;
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.
@@ -258,6 +260,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub prints: prints::Prints,
     /// The type parameters each function shows with options, and each type it gives one (#1331).
     pub shown_params: ShownParams<'tcx>,
+    /// The type parameters each function writes into a writer through their
+    /// formatting dictionaries, and each type that reaches one (#1652).
+    pub written_params: WrittenParams<'tcx>,
     /// Whether it reads a function's identity, of which its libraries'
     /// JS may merge two where Rust has two (`Foreign::merges_identities`,
     /// #1052).
@@ -1103,6 +1108,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&never_but_through_whats_shown, &failing),
         library,
     );
+    let written_params = written_params::written_params(&recognition, all_bodies, &prints, &foreign);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function
@@ -1179,6 +1185,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         writer_facts,
         prints,
         shown_params,
+        written_params,
         reads_fn_identity,
         quiet_locals,
         quiet_library_keys,

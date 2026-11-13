@@ -248,8 +248,8 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-dyn-made-unseen",
     breaks: "a type a framed writer's builder step makes a `&dyn Debug`, `Unit`, doesn't write through a sink, so the step is refused (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "                } => Some(body.thir[source].ty),\n",
-    replace: "                } => None.or(Some(body.thir[source].ty)).filter(|_| false),\n",
+    find: "            } => Some(body.thir[source].ty),\n",
+    replace: "            } => None.or(Some(body.thir[source].ty)).filter(|_| false),\n",
     tests: ["test/writer-sink.test.ts"],
   },
   {
@@ -259,5 +259,13 @@ export const mutations: Mutation[] = [
     find: "        .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))\n",
     replace: "        .flat_map(|body| shown_by(body))\n",
     tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "written-into-writers-library-params-unseen",
+    breaks: "a consumer's type given only a library's generic writer that writes it into a writer isn't framed, so its dictionary's `fmtInto` is refused (#1652)",
+    file: "src/lower/analysis/prints.rs",
+    find: "            for index in recognition.foreign.written_marks(callee) {\n",
+    replace: "            for index in recognition.foreign.written_marks(callee).into_iter().filter(|_| false) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a consumer's type given only"],
   },
 ];

@@ -247,8 +247,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`move |value| counted(&this, value)` of rest arguments given on as one array, `(...value) => counted(this$, value)`, is `counted.bind(null, this$)`, which gives `counted` each argument where it reads one array (#502, ADR 0605, amended)",
     file: "src/js/stmt_walk.rs",
-    find: "            _ => None,\n        })\n        .collect();\n    (!names?",
-    replace: "            (Pattern::Rest(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),\n            _ => None,\n        })\n        .collect();\n    (!names?",
+    find: "            _ => None,\n        })\n        .collect()\n}\n",
+    replace: "            (Pattern::Rest(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),\n            _ => None,\n        })\n        .collect()\n}\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
   },
   {

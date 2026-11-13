@@ -202,7 +202,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.super_evidence(from, ty::TraitRef::new(self.tcx, any, [ty]), dictionary)
     }
 
-    pub(super) fn super_evidence(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>, value: Expr) -> Option<Expr> {
+    pub(in crate::lower) fn super_evidence(
+        &self,
+        from: ty::TraitRef<'tcx>,
+        to: ty::TraitRef<'tcx>,
+        value: Expr,
+    ) -> Option<Expr> {
         let route = self.evidence_query().super_route(from, to)?;
         Some(route.into_iter().fold(value, |dictionary, name| {
             Expr::call(Expr::member(dictionary, name), Vec::new())
