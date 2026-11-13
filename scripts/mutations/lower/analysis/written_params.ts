@@ -126,4 +126,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "derived-debug-makes-fmt-dyns",
+    breaks: "a library's derived `Debug` of more than five fields, whose `&dyn Debug`s never leave it, is taken to make a `dyn` a consumer may write, so a consumer's `dyn` written into a writer is refused (#1688)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "        .filter(|body| !derived(body))\n",
+    replace: "        .filter(|body| !derived(body) || true)\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a consumer's dyn written beside a library's derived Debug of six fields"],
+  },
 ];

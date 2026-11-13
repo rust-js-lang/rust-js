@@ -164,8 +164,16 @@ pub(super) fn written_params<'tcx>(
                 if traits.principal_def_id().is_some_and(|id| recognition.is_pair_trait(id)))
         })
     };
+    // Not a derived `Debug`'s, whose `&dyn Debug`s of its fields std's
+    // `debug_struct_fields_finish` alone is given, which never leave it.
+    let derived = |body: &Body<'tcx>| {
+        (tcx.opt_parent(body.def_id)).is_some_and(|imp| {
+            tcx.def_kind(imp) == rustc_hir::def::DefKind::Impl { of_trait: true } && tcx.is_automatically_derived(imp)
+        })
+    };
     found.makes_dyns = all_bodies
         .iter()
+        .filter(|body| !derived(body))
         .any(|body| body.thir.exprs.iter().any(|expr| fmt_dyn(expr.ty)));
     // Of each body, what it writes into a writer: a `write!` into one's
     // values, and a writer's shown into one, what it shows; and where a

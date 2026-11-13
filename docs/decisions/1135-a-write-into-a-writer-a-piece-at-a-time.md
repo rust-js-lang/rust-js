@@ -368,6 +368,12 @@ go.
      `Debug` of a `&ParseIntError`, is its derived `Debug`'s pieces, its
      kind one `write_str` (`$writeDebugParseError`). Proof:
      test/writer-sink-rest.rs; 2 mutations.
+   - A library's derived `Debug` of more than five fields makes `&dyn
+     Debug`s of its fields that only std's `debug_struct_fields_finish` is
+     given, which never leave it: it no longer counts as making a `dyn` a
+     consumer may write (`makes_fmt_dyns`), so a consumer's `dyn` written
+     into a writer beside it isn't refused (#1688's second case, chrono's).
+     Proof: a piecewise pair; 1 mutation.
 
 ## Alternatives
 

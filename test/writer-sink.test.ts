@@ -384,6 +384,14 @@ test("a library's published type is written into a consumer's writer a piece at 
   expect(contract(out).written_into.length).toBe(1);
 }, underLoad(300_000));
 
+// A library's derived `Debug` of more than five fields makes `&dyn Debug`s
+// of them that never leave it: it makes no `dyn` a consumer may write, so
+// a consumer's `dyn` written into a writer isn't refused (#1688).
+test("a consumer's dyn written beside a library's derived Debug of six fields writes a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "dyn_written_beside_a_librarys_derived_debug");
+  expect(contract(out).makes_fmt_dyns ?? false).toBe(false);
+}, underLoad(300_000));
+
 // A type of the consumer's given only to the library's generic writer,
 // which the consumer writes into nothing itself: its writer is framed, as
 // what the library's parameter is given is written a piece at a time.
