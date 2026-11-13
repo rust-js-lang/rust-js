@@ -522,4 +522,21 @@ export const mutations: Mutation[] = [
     replace: "                    || false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
   },
+  {
+    name: "clone-shows-hand-written-unseen",
+    breaks: "a hand-written `clone` that changes nothing in place doesn't show, so `cycle()` of an array's items of one clones each as it's given, `[Shown(17), Shown(17)]` where std gives `[Shown(7), Shown(17)]` (#1630)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "                if self.has_user_impl(self.clone_trait(), ty) && !self.is_derived_impl(self.clone_trait(), ty) =>\n",
+    replace: "                if false && self.has_user_impl(self.clone_trait(), ty) && !self.is_derived_impl(self.clone_trait(), ty) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_owned_items_as_std_cycles.rs$"],
+  },
+  {
+    name: "clone-shows-everything",
+    breaks: "every clone shows, so `cycle()` of a `Vec`'s `Vec`s, whose clone can't be told made sooner, is `$cycleOf`'s, not `$cycle`'s (#1630)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {\n",
+    replace: "    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {\n        if !seen.is_empty() || seen.is_empty() {\n            return true;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
+    snapshots: true,
+  },
 ];

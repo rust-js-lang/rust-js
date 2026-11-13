@@ -26,6 +26,7 @@
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
 //! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `src/lower/generic_facts.rs params_owned_by` |
 //! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `src/lower/generic_facts.rs boxed_steps_given` |
+//! | whether a clone of it is its caller's, which may run any code, so a `cycle()` of an array's items of it clones as std's `Cycle` does (#1630) | Given | `src/lower/generic_facts.rs clone_given_by_caller` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
@@ -582,6 +583,13 @@ pub(in crate::lower) fn boxed_steps_given<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
 ) -> bool {
     crate::lower::recognition::is_unknown_where(tcx, ty, typing_env)
+}
+
+/// Whether a clone of `ty` is what its caller gives: of a type parameter,
+/// a `dyn`'s or an opaque type's, which may run any code, so a clone of it
+/// shows (`clone_shows`, #1630).
+pub(in crate::lower) fn clone_given_by_caller(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Param(_) | ty::Dynamic(..) | ty::Alias(..))
 }
 
 /// Whether a caller gives function `DefId`'s type parameter of an index

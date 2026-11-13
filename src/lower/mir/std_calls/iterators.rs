@@ -196,12 +196,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }),
             // `cycle()` of another iterator than std's over an array, cloned
             // (ADR 0491); and one a struct holds, of an array's too, which
-            // keeps both it cycles (ADR 0544).
+            // keeps both it cycles (ADR 0544); and of an array's items it
+            // owns whose clone or drop shows (`clone_shows`), `Cycle::new`'s clone of all
+            // of them, its first round theirs, moved, and each round after a
+            // clone of all again, the one it ends dropped, as std's (#1583).
             Std::Step(StepOp::Cycle)
                 if this.held_cycle(output).is_some()
-                    || !arg_tys
-                        .first()
-                        .is_some_and(|t| this.array_source(t.peel_refs()).is_some()) =>
+                    || arg_tys.first().is_none_or(|t| match this.array_source(t.peel_refs()) {
+                        None => true,
+                        Some(owns) => {
+                            owns && this.iterator_item(t.peel_refs()).is_some_and(|item| {
+                                this.clone_shows(item) || this.drops(item) != crate::lower::drops::Drops::Nothing
+                            })
+                        }
+                    }) =>
             {
                 lower(move |this, _, values, _| {
                     Ok(Value::Expr({
@@ -336,18 +344,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // (#118, #1186).
                             StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
                             StepOp::Offset => Expr::call_helper("$charIndicesOffset", vec![it]),
+                            // Of items it borrows, or whose clone and drop
+                            // don't show: each round of what it has left, a
+                            // clone of each it owns that's told apart from it
+                            // (`$cycle`).
                             StepOp::Cycle => {
                                 let iter_ty = arg_tys[0].peel_refs();
                                 let owns = this.array_source(iter_ty).expect("matched");
-                                // Its items, owned, which it would drop as it's dropped.
-                                if owns
-                                    && this
-                                        .iterator_item(iter_ty)
-                                        .is_some_and(|item| this.drops(item) != crate::lower::drops::Drops::Nothing)
-                                {
-                                    return Err(this
-                                        .unsupported(span, "`cycle()` of an array's items with a destructor (#1583)"));
-                                }
                                 let it = match it.reads_same() || is_stepped_items(&it) {
                                     true => it,
                                     false => this.spill(Role::It, it, out),

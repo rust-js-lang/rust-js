@@ -309,6 +309,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a clone of `ty` shows, beyond what changes in place, which
+    /// `needs_clone` asks: a hand-written `clone` of it, or of a part a
+    /// derived one or std's clones, whose value or effects may differ from
+    /// what it was given; an `Rc`'s or a `Weak`'s that counts one more; a
+    /// type only a caller knows. Not a `Copy` value's bits
+    /// (`copy_clone_runs_code` asks whether those are its clone). Where it
+    /// doesn't, a clone made later can't be told from one made sooner: a
+    /// `cycle()`'s of an array's items (#1630).
+    pub(in crate::lower) fn clone_shows(&self, ty: Ty<'tcx>) -> bool {
+        self.clone_shows_in(ty, &mut Vec::new())
+    }
+
+    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        if self.is_copy(ty) {
+            return self.copy_clone_runs_code(ty);
+        }
+        if seen.contains(&ty) {
+            return false;
+        }
+        seen.push(ty);
+        let shows = match ty.kind() {
+            ty::Ref(..) => false,
+            _ if crate::lower::generic_facts::clone_given_by_caller(ty) => true,
+            ty::Tuple(parts) => parts.iter().any(|part| self.clone_shows_in(part, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.clone_shows_in(*item, seen),
+            ty::Closure(_, args) => {
+                (args.as_closure().upvar_tys().iter()).any(|upvar| self.clone_shows_in(upvar, seen))
+            }
+            ty::Adt(..) if self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() => true,
+            ty::Adt(..)
+                if self.has_user_impl(self.clone_trait(), ty) && !self.is_derived_impl(self.clone_trait(), ty) =>
+            {
+                true
+            }
+            ty::Adt(adt, args) if !self.is_std(adt.did()) => adt
+                .all_fields()
+                .any(|f| self.clone_shows_in(self.field_ty(f, args), seen)),
+            ty::Adt(_, args) => args.types().any(|arg| self.clone_shows_in(arg, seen)),
+            _ => false,
+        };
+        seen.pop();
+        shows
+    }
+
     /// Is `ty`, one of the crate's own or a library's (ADR 0100), inside
     /// itself, through its fields or what a std type holds? A std type that
     /// holds one is cloned in place.

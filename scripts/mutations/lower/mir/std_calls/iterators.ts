@@ -102,15 +102,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
-    name: "cycle-array-drops-allowed",
-    breaks:
-      "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
-    file: "src/lower/mir/std_calls/iterators.rs",
-    find: '                                    return Err(this\n                                        .unsupported(span, "`cycle()` of an array\'s items with a destructor (#1583)"));\n',
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
-  },
-  {
     name: "peek-mut-of-numbers-unhandled",
     breaks:
       "`peek_mut` of numbers gives the number, which a write changes nowhere",
@@ -133,8 +124,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "                if this.held_cycle(output).is_some()\n                    || !arg_tys\n",
-    replace: "                if !arg_tys\n",
+    find: "                if this.held_cycle(output).is_some()\n                    || arg_tys.first().is_none_or(",
+    replace: "                if arg_tys.first().is_none_or(",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -226,11 +217,19 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
   },
   {
-    name: "cycle-of-dropping-items-refusal-unnamed",
-    breaks: "the refusal of `cycle()` of an array's items with a destructor doesn't name #1583, which tracks it",
+    name: "cycle-of-owned-clones-cloned-as-given",
+    breaks: "`cycle()` of an array's items it owns whose clone shows is `$cycle`'s, a clone of each as it's given, its first round too, `[C(13), C(13)]` where std moves the first, `[C(3), C(23)]` (#1583)",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "with a destructor (#1583)\"));\n",
-    replace: "with a destructor\"));\n",
-    tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items with a destructor"],
+    find: "                            this.clone_shows(item) || this.drops(item) != crate::lower::drops::Drops::Nothing\n",
+    replace: "                            this.drops(item) != crate::lower::drops::Drops::Nothing\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_owned_items_as_std_cycles.rs$"],
+  },
+  {
+    name: "cycle-of-owned-drops-left",
+    breaks: "`cycle()` of an array's items it owns with a destructor that no clone shows is `$cycle`'s, which never drops what it holds (#1583)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                            this.clone_shows(item) || this.drops(item) != crate::lower::drops::Drops::Nothing\n",
+    replace: "                            this.clone_shows(item)\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_owned_items_as_std_cycles.rs$"],
   },
 ];
