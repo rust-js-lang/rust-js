@@ -147,16 +147,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let at = |index: &Expr| Expr::index(items.clone(), index.clone());
         let first = |index: &Expr| index.as_int() == Some(0);
         let (i, j) = match known {
-            Std::Index => return Ok(Value::Expr(Expr::indexed(items.clone(), exprs.remove(0)))),
+            Std::Index => return Ok(Value::Expr(at(&exprs[0]))),
             Std::Comb(Comb::Remove) => {
                 let i = exprs.remove(0);
-                // What it removed, where it's read.
-                let read = !self.result_unread(state);
-                let spliced = |i| Expr::call(Expr::member(items.clone(), "splice"), vec![i, Expr::int(1)]);
-                return Ok(Value::Expr(match (first(&i), read) {
-                    (true, _) => Expr::call(Expr::member(items.clone(), "shift"), Vec::new()),
-                    (false, true) => Expr::index(spliced(i), Expr::int(0)),
-                    (false, false) => spliced(i),
+                // What it removed, `[0]`, which a value nothing reads leaves
+                // out (`Expr::read_alone`, ADR 1141).
+                let spliced = Expr::call(Expr::member(items.clone(), "splice"), vec![i.clone(), Expr::int(1)]);
+                return Ok(Value::Expr(match first(&i) {
+                    true => Expr::call(Expr::member(items.clone(), "shift"), Vec::new()),
+                    false => Expr::index(spliced, Expr::int(0)),
                 }));
             }
             Std::Comb(Comb::Insert) => {

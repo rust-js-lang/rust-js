@@ -8,21 +8,11 @@ export const mutations: Mutation[] = [
     breaks:
       "a `remove(i)` in bounds whose item is read gives the array it spliced, `[3]`, not the item, `3`",
     file: "src/lower/mir/bounds.rs",
-    find: "                    (false, true) => Expr::index(spliced(i), Expr::int(0)),\n",
-    replace: "                    (false, true) => spliced(i),\n",
+    find: "                    false => Expr::index(spliced, Expr::int(0)),\n",
+    replace: "                    false => spliced,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
   },
-  {
-    name: "removed-item-unread-indexed",
-    breaks:
-      "a `remove(i)` in bounds whose item nothing reads is `v.splice(i, 1)[0];`, reading what it removed for nothing",
-    file: "src/lower/mir/bounds.rs",
-    find: "                    (false, false) => spliced(i),\n",
-    replace:
-      "                    (false, false) => Expr::index(spliced(i), Expr::int(0)),\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "removed-first-spliced",
     breaks:

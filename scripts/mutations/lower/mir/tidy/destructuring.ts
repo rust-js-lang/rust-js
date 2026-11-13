@@ -34,16 +34,7 @@ export const mutations: Mutation[] = [
     replace: "                    let root = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_part_set_through_a_dyn.rs$"],
   },
-  {
-    name: "indexed-item-a-part",
-    breaks:
-      "an item Rust's index reads of a temporary, `_5[0]` of `completedSegments.borrow()[0]`, is taken apart as a tuple's part, `const [contentSegment] = $borrow(completedSegments);` (ADR 0598, amended)",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                && !e.facts.has(js::Known::Indexed)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^an_index_is_no_pattern.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "assigned-parts-left-apart",
     breaks:

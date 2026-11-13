@@ -425,3 +425,11 @@ temporaries are named (`named_flags`). The one left named after MIR's
 local, `_12$0$live`, was a flag read by nothing, which now goes (ADR
 0372, amended, #841); with `$some` pure, no snapshot has a name derived
 from a positional temporary.
+
+## Amendment: no `const` takes a momentary guard's value apart
+
+rd439's name for the one name a `const` takes apart, `const { value: _4 }
+= $borrow(cell)`, is gone: a momentary borrow is the cell itself, checked
+where it's taken ([1141](1141-checked-where-called.md)), its value read
+as `cell.value`, `const chunk = cell.value;`, and a counted guard is a
+named `const`. Switched off, it failed none of the corpus's cases.

@@ -268,12 +268,6 @@ knowns! {
     /// Never a binding's `js::get(o, &1.0)`, which a getter may answer
     /// (#756).
     Part,
-    /// An item read by the index the program wrote, `v[i]`, a slice's or a
-    /// `Vec`'s `Index::index` the ranges show in bounds, read unchecked
-    /// (`Expr::indexed`, `mir::bounds`): one item, never a part a pattern
-    /// names, so tidy's destructuring reads it as written, `const first =
-    /// $borrow(cell)[0];`, never `const [first] = ..` (ADR 0598, amended).
-    Indexed,
     /// An iterator's value as `lower::iterators::value` wrote it, which only
     /// that module reads (ADR 1092, #730): a JS iterator of the value it
     /// steps, `$iterator(value, next, ..)` or `$given(value, ..)`.
@@ -396,7 +390,7 @@ impl Known {
             | Known::Literal
             | Known::RunsInItsCall
             | Known::BindingIterator => Role::Permits,
-            Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
+            Known::Else | Known::Guard | Known::Written | Known::Valued => Role::AsWritten,
             Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Evidence => Role::Warns,
             // `Iterator` among them: what isn't known to be one is taken
             // for an array, not for either (by_ref_steps, ADR 1127).
