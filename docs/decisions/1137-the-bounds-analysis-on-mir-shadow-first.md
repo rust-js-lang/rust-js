@@ -65,3 +65,34 @@ interval of each side alone can't prove. That part is M2b's, kept small,
   out an array's index tested against its literal length nowhere in the
   corpus, and every slice's needs `i < len(s)`. So a mutation of the bounds
   proof waits for M2b and its test.
+
+## M2b-1 (2026-11-13): the small relational part
+
+Kept small, as the plan says.
+- **What's tracked.** Each local that holds a slice's length, by the slice,
+  through copies and reborrows (`&v`, `&(*s)`): from `PtrMetadata` and from
+  std's `len()`, as recognition's `slice_length` takes it. Each `x < y` and `x <= y`, where `y` is a slice's length
+  or an integer local. A least length per slice, from std's `is_empty()`
+  switched on, a constant compared with the length (`b.len() > 4`), and a
+  switch of the length (`match list.len() { 1 => .. }`).
+- **What a relation proves.** A bounds check is proved by `index < len(s)`
+  or by an index below the least. A subtraction `a - b` with `b <= a`
+  known, or `b < a`, is at least zero or one. `t = i - c` keeps `i`'s
+  relations, strictly where `c >= 1`.
+- **Two fixes of M2a's walk, each found by its test.** A bound widens only
+  at a loop's head, a back edge's target, so what a loop's test narrows
+  stays narrowed past it. And a `falseEdge`'s or `falseUnwind`'s real
+  target alone is followed, never the imaginary one, which joined an arm
+  of a `match` with another's state.
+
+Measured: 305 lines across 2,453 cases, 18 bounds and 287 wraps, where
+M2a left 401. The bounds lines left are each a precision gap, as read:
+`for i in 0..n` through `Range::next`, a closure's captured index, and two
+slices of one length. Most wrap lines are of parameters, which THIR bounds
+by what each call site gives a function only calls reach. That is M2b-2's,
+over a call graph built from MIR (change 4 M3's).
+
+`test/intervals-shadow.test.ts` holds each source. Mutations
+`intervals-bounds-unproved`, `intervals-relation-unrecorded`,
+`intervals-empty-unknown`, `intervals-widen-everywhere` and
+`intervals-imaginary-edges`, caught.

@@ -36,12 +36,35 @@ pub fn main() {
 `)).toEqual([]);
 });
 
-test("a slice's index tested against its length is logged, a relational fact MIR's intervals lack", () => {
+test("a slice's index tested against its length, or its first under `!is_empty()`, is proved by MIR's relations", () => {
   expect(shadowOf(`pub fn get(s: &[u32], i: usize) -> u32 {
     if i < s.len() { s[i] } else { 0 }
 }
-pub fn main() {
-    println!("{}", get(&[1, 2, 3], 1));
+pub fn first(s: &[u32]) -> u32 {
+    if !s.is_empty() { s[0] } else { 0 }
 }
-`)).toEqual(["bounds get"]);
+pub fn main() {
+    println!("{} {}", get(&[1, 2, 3], 1), first(&[4]));
+}
+`)).toEqual([]);
+});
+
+test("a slice's least length from a constant, a switch of its length, and an index less one are proved", () => {
+  expect(shadowOf(`pub fn colon(b: &[u8]) -> bool {
+    b.len() > 4 && b[4] == b':'
+}
+pub fn first_of(list: &[u32]) -> u32 {
+    match list.len() {
+        0 => 0,
+        1 => list[0],
+        _ => list[0] + 1,
+    }
+}
+pub fn before(path: &[u32], i: usize) -> u32 {
+    if i > 0 && i < path.len() { path[i - 1] } else { 0 }
+}
+pub fn main() {
+    println!("{} {} {}", colon(b"abcd:"), first_of(&[1]), before(&[1, 2], 1));
+}
+`)).toEqual([]);
 });

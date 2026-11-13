@@ -13,6 +13,7 @@
 //! type's.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::recognition::{SliceLength, slice_length};
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
     self, AssertKind, BasicBlock, BinOp, Body, CastKind, Local, Location, Operand, Rvalue, StatementKind,
@@ -64,15 +65,32 @@ enum Value {
     Constant(i128),
 }
 
+/// What a relation's greater side is: a slice's length, by the local the
+/// slice is (`Len`), or an integer local.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum Term {
+    Len(Local),
+    Int(Local),
+}
+
 /// What's known at a point: each integer local's interval, none where it
 /// isn't; each `bool` local's comparison; and each local that's a copy of
 /// another neither has been written since, `_7 = copy _3`, which MIR
-/// compares in its place, so a comparison is of what it copies.
+/// compares in its place, so a comparison is of what it copies, or a
+/// reborrow of it, `_9 = &_1`, whose length is the same. And the small
+/// relational part (ADR 1137, M2b): each local that holds a slice's
+/// length, by the slice; each `x < y` and `x <= y` known, strict or not;
+/// the least each slice's length is; and each `bool` that's a slice's
+/// `is_empty()`.
 #[derive(Clone, PartialEq)]
 struct State {
     intervals: IndexVec<Local, Option<Interval>>,
     comparisons: IndexMap<Local, Comparison>,
     copies: IndexMap<Local, Local>,
+    lens: IndexMap<Local, Local>,
+    below: IndexSet<(Local, Term, bool)>,
+    least: IndexMap<Local, i128>,
+    empties: IndexMap<Local, Local>,
 }
 
 impl State {
@@ -87,14 +105,23 @@ impl State {
             .filter(|&(local, comparison)| other.comparisons.get(local) == Some(comparison))
             .map(|(&local, &comparison)| (local, comparison))
             .collect();
-        let copies = (self.copies.iter())
-            .filter(|&(local, of)| other.copies.get(local) == Some(of))
-            .map(|(&local, &of)| (local, of))
+        let both = |a: &IndexMap<Local, Local>, b: &IndexMap<Local, Local>| -> IndexMap<Local, Local> {
+            (a.iter())
+                .filter(|&(k, v)| b.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect()
+        };
+        let least = (self.least.iter())
+            .filter_map(|(&k, &n)| other.least.get(&k).map(|&m| (k, n.min(m))))
             .collect();
         State {
             intervals,
             comparisons,
-            copies,
+            copies: both(&self.copies, &other.copies),
+            lens: both(&self.lens, &other.lens),
+            below: self.below.intersection(&other.below).copied().collect(),
+            least,
+            empties: both(&self.empties, &other.empties),
         }
     }
 
@@ -105,6 +132,24 @@ impl State {
         self.comparisons
             .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));
         self.copies.retain(|&copy, &mut of| copy != local && of != local);
+        self.lens.retain(|&holder, &mut of| holder != local && of != local);
+        self.below
+            .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
+        self.least.shift_remove(&local);
+        self.empties.retain(|&holder, &mut of| holder != local && of != local);
+    }
+
+    /// What `local` is a copy or a reborrow of, else itself.
+    fn root(&self, local: Local) -> Local {
+        self.copies.get(&local).copied().unwrap_or(local)
+    }
+
+    /// The slice whose length `local` holds, itself or what it copies.
+    fn length_of(&self, local: Local) -> Option<Local> {
+        self.lens
+            .get(&local)
+            .or_else(|| self.lens.get(&self.root(local)))
+            .copied()
     }
 }
 
@@ -146,7 +191,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             intervals: IndexVec::from_elem_n(None, self.body.local_decls.len()),
             comparisons: IndexMap::default(),
             copies: IndexMap::default(),
+            lens: IndexMap::default(),
+            below: IndexSet::default(),
+            least: IndexMap::default(),
+            empties: IndexMap::default(),
         });
+        // A loop's heads, each the target of an edge back from a block it
+        // dominates: where what still moves widens, and nowhere else, so
+        // what a switch narrows past the head stays narrowed.
+        let dominators = self.body.basic_blocks.dominators();
+        let heads: IndexSet<BasicBlock> = (self.body.basic_blocks.iter_enumerated())
+            .flat_map(|(from, data)| data.terminator().successors().map(move |to| (from, to)))
+            .filter(|&(from, to)| dominators.dominates(to, from))
+            .map(|(_, to)| to)
+            .collect();
         let mut work: Vec<BasicBlock> = vec![mir::START_BLOCK];
         while let Some(block) = work.pop() {
             let Some(mut state) = entry[block].clone() else {
@@ -161,7 +219,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 let joined = match &entry[target] {
                     Some(old) => {
                         let mut joined = old.join(&out);
-                        if visits[target] >= VISITS_BEFORE_WIDENING {
+                        if heads.contains(&target) && visits[target] >= VISITS_BEFORE_WIDENING {
                             self.widen(old, &mut joined);
                         }
                         joined
@@ -219,9 +277,10 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
             if let TerminatorKind::Assert { msg, .. } = &data.terminator().kind
                 && let AssertKind::BoundsCheck { len, index } = &**msg
-                && let (Some(len), Some(index)) = (self.operand(len, &state), self.operand(index, &state))
-                && 0 <= index.lo
-                && index.hi < len.lo
+                && (self.below_length(&state, len, index)
+                    || (self.operand(len, &state))
+                        .zip(self.operand(index, &state))
+                        .is_some_and(|(len, index)| 0 <= index.lo && index.hi < len.lo))
             {
                 proofs.bounds.insert(block);
             }
@@ -277,7 +336,38 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// What `a op b` is, where it stays in the integers it's of; none where
     /// it may wrap, which is then its type's range.
     fn arithmetic(&self, op: BinOp, a: &Operand<'tcx>, b: &Operand<'tcx>, state: &State) -> Option<Interval> {
+        // Of `a - b` where `b <= a` is known, or `b < a`: at least none,
+        // or one, `n - i` under `i < n`, or `len - i` under `i < len`.
+        let local = |o: &Operand<'tcx>| o.place().and_then(|p| p.as_local()).map(|l| state.root(l));
+        let at_least = match (op, local(a), local(b)) {
+            (BinOp::Sub, Some(a), Some(b)) => {
+                let greater = |strict: bool| {
+                    state.below.contains(&(b, Term::Int(a), strict))
+                        || state
+                            .lens
+                            .get(&a)
+                            .is_some_and(|&slice| state.below.contains(&(b, Term::Len(slice), strict)))
+                };
+                if greater(true) {
+                    Some(1)
+                } else if greater(false) {
+                    Some(0)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
         let (a, b) = (self.operand(a, state)?, self.operand(b, state)?);
+        let mut result = Self::bare(op, a, b)?;
+        if let Some(least) = at_least {
+            result.lo = result.lo.max(least);
+        }
+        Some(result)
+    }
+
+    /// `a op b` of intervals alone.
+    fn bare(op: BinOp, a: Interval, b: Interval) -> Option<Interval> {
         Some(match op {
             BinOp::Add => Interval {
                 lo: a.lo.checked_add(b.lo)?,
@@ -321,9 +411,15 @@ impl<'tcx> Walk<'_, 'tcx> {
             intervals: IndexVec::from_elem_n(None, self.body.local_decls.len()),
             comparisons: IndexMap::default(),
             copies: IndexMap::default(),
+            lens: IndexMap::default(),
+            below: IndexSet::default(),
+            least: IndexMap::default(),
+            empties: IndexMap::default(),
         }
     }
 
+    /// `statement`'s write, what it writes worked out first, of what's known
+    /// before it, then the local written forgotten and set.
     fn statement(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
         let StatementKind::Assign(assign) = &statement.kind else {
             return;
@@ -332,40 +428,97 @@ impl<'tcx> Walk<'_, 'tcx> {
         let Some(local) = place.as_local() else {
             return;
         };
-        state.forget(local);
         if self.lent.contains(&local) {
+            state.forget(local);
             return;
         }
-        let ty = place.ty(&self.body.local_decls, self.tcx).ty;
-        let range = self.range(ty);
+        let range = self.range(place.ty(&self.body.local_decls, self.tcx).ty);
+        let fits = |r: &Interval| range.is_some_and(|t| t.lo <= r.lo && r.hi <= t.hi);
+        let unlent = |of: &mir::Place<'tcx>| of.as_local().filter(|of| !self.lent.contains(of));
+        let (mut comparison, mut copy_of, mut length_of) = (None, None, None);
+        // `t = i - c` of a constant at least none: below what `i` is, and
+        // strictly where `c` is one or more, `path[i - 1]` under `i < len`.
+        let mut below_as: Vec<(Term, bool)> = Vec::new();
+        if let Rvalue::BinaryOp(BinOp::Sub, operands) = rvalue
+            && let Some(i) = operands.0.place().and_then(|p| p.as_local())
+            && let Some(c) = self.operand(&operands.1, state).filter(|c| c.lo >= 0)
+        {
+            let i = state.root(i);
+            below_as = (state.below.iter())
+                .filter(|&&(x, _, _)| x == i)
+                .map(|&(_, y, strict)| (y, strict || c.lo >= 1))
+                .collect();
+        }
         let interval = match rvalue {
-            Rvalue::Use(operand, _) => self.operand(operand, state),
-            Rvalue::BinaryOp(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul), operands) => self
-                .arithmetic(*op, &operands.0, &operands.1, state)
-                .filter(|r| range.is_some_and(|t| t.lo <= r.lo && r.hi <= t.hi)),
+            Rvalue::Use(operand, _) => {
+                if let Operand::Copy(of) | Operand::Move(of) = operand {
+                    copy_of = unlent(of).map(|of| state.root(of));
+                }
+                self.operand(operand, state)
+            }
+            // A reborrow, `&_1` or `&(*_1)`: of the same slice, its length.
+            Rvalue::Ref(_, _, of) if matches!(of.projection.as_slice(), [] | [mir::PlaceElem::Deref]) => {
+                copy_of = Some(of.local)
+                    .filter(|of| !self.lent.contains(of))
+                    .map(|of| state.root(of));
+                None
+            }
+            Rvalue::BinaryOp(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul), operands) => {
+                self.arithmetic(*op, &operands.0, &operands.1, state).filter(fits)
+            }
             Rvalue::BinaryOp(
                 op @ (BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne),
                 operands,
             ) => {
-                if let (Some(a), Some(b)) = (self.value(&operands.0, state), self.value(&operands.1, state)) {
-                    state.comparisons.insert(local, Comparison { op: *op, a, b });
+                if let (Some(a), Some(b)) = (self.value(&operands.0, state), self.value(&operands.1, state))
+                    && a != Value::Local(local)
+                    && b != Value::Local(local)
+                {
+                    comparison = Some(Comparison { op: *op, a, b });
                 }
                 None
             }
-            Rvalue::Cast(CastKind::IntToInt, operand, _) => self
-                .operand(operand, state)
-                .filter(|r| range.is_some_and(|t| t.lo <= r.lo && r.hi <= t.hi)),
-            Rvalue::UnaryOp(mir::UnOp::PtrMetadata, operand) => self.length(operand.ty(self.body, self.tcx)),
+            Rvalue::Cast(CastKind::IntToInt, operand, _) => self.operand(operand, state).filter(fits),
+            Rvalue::UnaryOp(mir::UnOp::PtrMetadata, operand) => {
+                if let Operand::Copy(of) | Operand::Move(of) = operand {
+                    length_of = unlent(of).map(|of| state.root(of));
+                }
+                self.length(operand.ty(self.body, self.tcx))
+            }
             _ => None,
         };
+        state.forget(local);
         state.intervals[local] = interval.or(range).filter(|_| range.is_some());
-        if let Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) = rvalue
-            && let Some(of) = of.as_local()
-            && !self.lent.contains(&of)
-        {
-            let of = state.copies.get(&of).copied().unwrap_or(of);
+        if let Some(c) = comparison {
+            state.comparisons.insert(local, c);
+        }
+        if let Some(of) = copy_of.filter(|&of| of != local) {
             state.copies.insert(local, of);
         }
+        if let Some(of) = length_of.filter(|&of| of != local) {
+            state.lens.insert(local, of);
+        }
+        for (y, strict) in below_as {
+            if y != Term::Len(local) && y != Term::Int(local) {
+                state.below.insert((local, y, strict));
+            }
+        }
+    }
+
+    /// Whether `index` is below `len`'s slice's length, as the relations
+    /// known say: a local below it, strictly, or one below its least.
+    fn below_length(&self, state: &State, len: &Operand<'tcx>, index: &Operand<'tcx>) -> bool {
+        let Some(holder) = len.place().and_then(|p| p.as_local()) else {
+            return false;
+        };
+        let Some(slice) = state.length_of(holder) else {
+            return false;
+        };
+        let least = state.least.get(&slice).copied().unwrap_or(0);
+        let in_least = self.operand(index, state).is_some_and(|i| 0 <= i.lo && i.hi < least);
+        let related = (index.place().and_then(|p| p.as_local()))
+            .is_some_and(|i| state.below.contains(&(state.root(i), Term::Len(slice), true)));
+        in_least || related
     }
 
     /// An array's length, of a pointer or reference to one, as its type
@@ -389,24 +542,60 @@ impl<'tcx> Walk<'_, 'tcx> {
         let terminator = self.body.basic_blocks[block].terminator();
         match &terminator.kind {
             TerminatorKind::SwitchInt { discr, targets } => {
-                let tested = discr
-                    .place()
-                    .and_then(|p| p.as_local())
-                    .and_then(|l| state.comparisons.get(&l).copied());
+                let switched = discr.place().and_then(|p| p.as_local());
+                let tested = switched.and_then(|l| state.comparisons.get(&l).copied());
+                // A slice's `is_empty()` switched on: of its `false`, a length
+                // of one at least.
+                let emptied = switched.and_then(|l| state.empties.get(&l).copied());
+                // An integer switched on: each value on its way, and of the
+                // rest, its least and most passed over each listed.
+                let integer = switched.filter(|&l| self.range(self.body.local_decls[l].ty).is_some());
+                let values: Vec<u128> = targets.iter().map(|(value, _)| value).collect();
                 let mut out = Vec::new();
                 for (value, target) in targets.iter() {
                     let mut narrowed = state.clone();
                     if let Some(c) = tested {
                         self.narrow(c, value != 0, &mut narrowed);
                     }
+                    if let Some(slice) = emptied
+                        && value == 0
+                    {
+                        let least = narrowed.least.entry(slice).or_insert(0);
+                        *least = (*least).max(1);
+                    }
+                    if let Some(l) = integer
+                        && let Ok(v) = i128::try_from(value)
+                    {
+                        narrowed.intervals[l] = Some(Interval { lo: v, hi: v });
+                        // Of a slice's length, `match list.len() { 1 => .. }`.
+                        if let Some(slice) = narrowed.length_of(l) {
+                            let least = narrowed.least.entry(slice).or_insert(0);
+                            *least = (*least).max(v);
+                        }
+                    }
                     out.push((target, narrowed));
                 }
                 let mut otherwise = state.clone();
                 if let Some(c) = tested
-                    && targets.iter().count() == 1
-                    && targets.iter().all(|(value, _)| value == 0)
+                    && values == [0]
                 {
                     self.narrow(c, true, &mut otherwise);
+                }
+                if let Some(l) = integer
+                    && let Some(mut known) = otherwise.intervals[l].or_else(|| self.range(self.body.local_decls[l].ty))
+                {
+                    let listed = |n: i128| u128::try_from(n).is_ok_and(|n| values.contains(&n));
+                    while known.lo < known.hi && listed(known.lo) {
+                        known.lo += 1;
+                    }
+                    while known.lo < known.hi && listed(known.hi) {
+                        known.hi -= 1;
+                    }
+                    otherwise.intervals[l] = Some(known);
+                    if let Some(slice) = otherwise.length_of(l) {
+                        let least = otherwise.least.entry(slice).or_insert(0);
+                        *least = (*least).max(known.lo);
+                    }
                 }
                 out.push((targets.otherwise(), otherwise));
                 out
@@ -425,13 +614,43 @@ impl<'tcx> Walk<'_, 'tcx> {
                 vec![(*target, on)]
             }
             TerminatorKind::Call {
-                destination, target, ..
+                func,
+                args,
+                destination,
+                target,
+                ..
             } => {
                 let mut after = state.clone();
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
+                    // std's `len()` and `is_empty()` of a slice, a `Vec` or
+                    // text, by what it's given, `&v` the `v` it lends.
+                    let of = (args.first())
+                        .and_then(|arg| arg.node.place())
+                        .and_then(|p| p.as_local())
+                        .filter(|of| !self.lent.contains(of))
+                        .map(|of| state.root(of));
+                    // As recognition takes them (`slice_length`), never by name.
+                    if let Some((callee, callee_args)) = func.const_fn_def()
+                        && let Some(of) = of
+                    {
+                        match slice_length(self.tcx, callee, callee_args) {
+                            Some(SliceLength::Len) => {
+                                after.lens.insert(local, of);
+                            }
+                            Some(SliceLength::IsEmpty) => {
+                                after.empties.insert(local, of);
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 target.map(|t| vec![(t, after)]).unwrap_or_default()
+            }
+            // A match candidate's and a loop's marks, rustc's: their real way
+            // alone, the imaginary one no run takes.
+            TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {
+                vec![(*real_target, state.clone())]
             }
             _ => terminator.successors().map(|t| (t, state.clone())).collect(),
         }
@@ -453,6 +672,29 @@ impl<'tcx> Walk<'_, 'tcx> {
             Value::Constant(n) => Some(Interval { lo: n, hi: n }),
             Value::Local(l) => state.intervals[l].or_else(|| self.range(self.body.local_decls[l].ty)),
         };
+        // `x < y` or `x <= y` known, `y` a slice's length where a local
+        // holds one, else an integer local.
+        let term = |v: Value, state: &State| match v {
+            Value::Local(l) => Some(state.length_of(l).map_or(Term::Int(l), Term::Len)),
+            Value::Constant(_) => None,
+        };
+        let related = match op {
+            BinOp::Lt | BinOp::Le => Some((c.a, c.b, op == BinOp::Lt)),
+            BinOp::Gt | BinOp::Ge => Some((c.b, c.a, op == BinOp::Gt)),
+            _ => None,
+        };
+        if let Some((Value::Local(x), y, strict)) = related
+            && let Some(y) = term(y, state)
+        {
+            state.below.insert((x, y, strict));
+        }
+        // A constant below a slice's length, `b.len() > 4`: its least.
+        if let Some((Value::Constant(c), Value::Local(holder), strict)) = related
+            && let Some(slice) = state.length_of(holder)
+        {
+            let least = state.least.entry(slice).or_insert(0);
+            *least = (*least).max(c + i128::from(strict));
+        }
         let (Some(a), Some(b)) = (get(c.a, state), get(c.b, state)) else {
             return;
         };
