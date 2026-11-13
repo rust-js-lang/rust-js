@@ -1076,7 +1076,10 @@ test("a dyn Iterator's drop is its own, run once, never Iterator.prototype's Sym
   const given = counted();
   given.next();
   const carried = $droppingIterator(given, () => given.return());
-  expect(carried).toBe(given);
+  // Stepped as Rust's, a \`$Steps\` of what it was given, whose adapters are
+  // std's, not JS's helpers, which close it as their function throws (#1690).
+  expect(carried).not.toBe(given);
+  expect(carried.next()).toEqual({ done: false, value: 2 });
   $disposeIterator(carried);
   expect(closed).toBe(1);
   const again = $droppingIterator(carried, () => $disposeIterator(carried));

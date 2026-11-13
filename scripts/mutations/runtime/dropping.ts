@@ -55,8 +55,8 @@ export const mutations: Mutation[] = [
     name: "iterator-dyn-reboxed-in-place",
     breaks: "a `dyn Iterator` that carries a drop boxed again carries the new one in its place, whose drop disposes itself, again and again (#1420)",
     file: "src/runtime/dropping.js",
-    find: "  const own = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;\n",
-    replace: "  const own = it;\n",
+    find: "  const lent = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;\n",
+    replace: "  const lent = it;\n",
     tests: ["test/runtime-package.test.ts", "-t", "a dyn Iterator's drop is its own"],
   },
   {
@@ -66,5 +66,13 @@ export const mutations: Mutation[] = [
     find: "    once();\n    return step;\n",
     replace: "    return step;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
+  {
+    name: "dropping-iterator-js-helpers",
+    breaks: "a `dyn Iterator` carrying a drop keeps JS's own iterator helpers, which close it as their function throws, dropping what the box holds before the fold's total (#1690)",
+    file: "src/runtime/dropping.js",
+    find: "  const own = lent instanceof $Steps ? lent : $stepsAround(lent);\n",
+    replace: "  const own = lent;\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_summed_drops_its_rest_after_the_total.rs$"],
   },
 ];

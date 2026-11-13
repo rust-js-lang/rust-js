@@ -379,3 +379,28 @@ Case C of ADR 0262. Crate pair `library_filter_map_of_a_boxed_iterator`
 checks it against native Rust: dropped part stepped, taken, broken out of,
 counted and collected. Mutation `boxed-dyn-iterator-source-unclosed` is
 caught.
+
+## Amendment: a `dyn Iterator` carrying a drop steps as Rust's (2026-11-13, #1690)
+
+A JS iterator made a `dyn Iterator` of a value with a destructor carried
+its drop on its own `return` (`$droppingIterator`), but kept JS's own
+iterator helpers. By the JS spec, `map`, `filter`, `take`, `drop`,
+`flatMap` and `reduce` close what they step as their function throws. That
+ran the box's drop of what it still holds while the throw was still on
+its way: before the fold's accumulator, which std's `fold` moves into each
+step, and before a closure's capture. And a panic of one of those drops was
+dropped by `IteratorClose` instead of aborting.
+
+**It's now a `$Steps`** (`$stepsAround`), whose own adapters are std's:
+they pass a panic on and leave what they step to the fold that consumes
+it, which drops the accumulator, then closes it, as cleanup that aborts on
+a second panic. A binding's JS iterator, which carries no drop, keeps JS's
+helpers. Case (ADR 0262): results change (drop order, and an abort), so
+Rust's are kept. The iterator tables' `boxed dyn` source (ADR 1136) passes
+494 of its 502 listed case-builds now. The 8 left, `step_by.step_by` over
+the box, want a `Vec`'s `into_iter()` made a `dyn Iterator` to keep its
+slice steps, its `nth` dropping what it passes as one slice; they stay
+under #1690. Corpus cases
+`boxed_iterator_summed_drops_its_rest_after_the_total` and
+`boxed_iterator_drop_panicking_as_it_unwinds_aborts`, each failing before;
+mutation `dropping-iterator-js-helpers`, caught.

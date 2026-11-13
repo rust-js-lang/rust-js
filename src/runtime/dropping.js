@@ -48,7 +48,13 @@ function $droppingOnce(f, drop) {
 // allocation holding it: one of its own that steps it carries the new drop,
 // which drops the one it holds, its own kept.
 function $droppingIterator(it, drop) {
-  const own = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;
+  const lent = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;
+  // Stepped as Rust's, `$Steps`: its `map`, `filter`, `take`, `drop` and
+  // `flatMap` std's adapters, which close what they step only where Rust
+  // drops it, not JS's own helpers, which close it as their function
+  // throws, dropping what the box holds before the fold's accumulator and
+  // what a closure took (#1690).
+  const own = lent instanceof $Steps ? lent : $stepsAround(lent);
   // Run once, wherever it's dropped first: its `Box`'s drop, or a consumer
   // that took it by value closing it as it ends, `count()`'s, `collect()`'s,
   // a `for`'s that breaks, as std's drops the `Box` it was given. A drop
@@ -67,6 +73,18 @@ function $droppingIterator(it, drop) {
     return step;
   };
   return own;
+}
+
+// `it`, a JS iterator, stepped as a `$Steps`: its `next`, its `return`, and
+// its hint, where it knows one (#1690).
+function $stepsAround(it) {
+  const steps = new $Steps(
+    () => it.next(),
+    () => it.return?.(),
+  );
+  steps.from = [it];
+  steps.sizeHint = () => $sizeHint(it);
+  return steps;
 }
 
 // A `dyn Iterator` dropped: the drop it carries, `$droppingIterator`'s, if
