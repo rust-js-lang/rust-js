@@ -16,6 +16,7 @@ import { join } from "node:path";
 
 import { corpus } from "./corpus-cases";
 import { runSync } from "./child";
+import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
@@ -153,6 +154,13 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
     // `nativeTries` times, till one agrees with it (the loud triage's class
     // (b), ADR 1104, amended).
     if (againAgrees(again, native, ran)) continue;
+    // A variant Miri finds undefined behaviour in, a loud rewrite's `Drop`
+    // of a value `raw_pointers` reads twice through a pointer, has no answer
+    // to compare: skipped, its reason tallied (#1453).
+    if (undefinedVariant(variant, made.program, edition)) {
+      tally(rewrite, name, "undefined");
+      return { problems: new Map() };
+    }
     const [a, b] = [native.stdout.split("\n"), ran.stdout.split("\n")];
     const at = a.findIndex((line, i) => line !== b[i]);
     problems.set(
@@ -163,6 +171,14 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
   // The program that goes wrong, which a failure's reduced from (#1088):
   // not a `library` variant's, two crates.
   return { problems, program: made.library === undefined ? variant : undefined };
+}
+
+/** Whether `variant`, a rewrite's program of `unsafe` code, `text`, is one
+ * Miri finds undefined behaviour in, where it's installed, as the nightly's
+ * net has it: a program with no answer to compare. Asked only of one whose
+ * JS disagrees. */
+function undefinedVariant(variant: string, text: string, edition: string): boolean {
+  return mayBeUndefined(text) && miriInstalled() && undefinedBehaviour(variant, edition) !== undefined;
 }
 
 /** How often a native run is run again, where the JS's disagrees with it,
@@ -271,7 +287,9 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
       for (const [build] of builds) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
         const problem = found?.problems.get(build);
-        if (listedAs !== undefined && problem === undefined) {
+        // One whose native output its seed decides, difference 5's, runs as
+        // Rust does where a seed agrees: listed, it may (#1453).
+        if (listedAs !== undefined && problem === undefined && listedAs.issue !== "difference 5") {
           problems.push(`${build} ${rewrite} ${name} runs as Rust does now: take it off test/metamorphic-known.txt (#${listedAs.issue})`);
         } else if (listedAs === undefined && problem !== undefined) {
           // With its program reduced (#1088), where it's one crate.
