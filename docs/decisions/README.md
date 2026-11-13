@@ -130,6 +130,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1139 A closure gives back what Rust's does: a spawning one `undefined`](1139-a-closure-gives-back-what-rusts-does.md) *(#1685: supersedes 0257; React reads an effect's result as its cleanup)*
 - [1140 A JS stack overflow is caught where a program asks: `js::catch_stack_overflow`](1140-catch-stack-overflow.md) *(#1692: the fourth case's decided exception; amends 0262 and 0692)*
 - [1141 A momentary borrow and `Vec::remove` are checked where they're called, then JS's own](1141-checked-where-called.md) *(after #1692: no call where nothing fails; amends 0328 and 0576)*
+- [1142 The React Compiler net: every component and hook rust-js emits compiles](1142-the-react-compiler-net.md) *(per push Babel over the guide, examples/ and test/react-compiler/; nightly over the React tests' programs; known by open `react-compiler` issue or a hand-written witness; found #1723)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place; a library's struct of functions is one too)*

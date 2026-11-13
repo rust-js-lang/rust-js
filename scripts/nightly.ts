@@ -84,6 +84,14 @@ export const jobs: Record<string, Part[]> = {
     cores: 3,
     timeout: 20 * minutes,
   })),
+  // React Compiler over the React tests' programs (ADR 1142).
+  "react-compiler": parts("react-compiler", perCores(4), (i) => ({
+    cmd: ["bun", "scripts/react-compiler-sweep.ts", `${i}/${perCores(4)}`],
+    env: { ...compiler },
+    after: ["build"],
+    cores: 4,
+    timeout: 40 * minutes,
+  })),
   // Every corpus case rewritten each way that keeps its meaning (#939, ADR
   // 1104).
   metamorphic: parts("metamorphic", cores, (i) => ({

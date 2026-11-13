@@ -50,6 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts"],
   },
-
-
+  {
+    name: "react-compiler-net-catches-a-skip",
+    breaks: "a component that changes its props in place writes React's, which React Compiler refuses, \"This value cannot be modified\", and skips the component: the net catches it (ADR 1142, #1723)",
+    file: "src/lower/copies/kept.rs",
+    find: "            if !name.is_empty() && copy.kind != Expr::var(&name).kind {\n",
+    replace: "            if false && copy.kind != Expr::var(&name).kind {\n",
+    tests: ["test/react-compiler.test.ts", "-t", "compiles every component"],
+  },
 ];

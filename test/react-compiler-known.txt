@@ -1,0 +1,13 @@
+# React Compiler failures the net (test/react-compiler.test.ts, ADR 1142)
+# knows: source, function, reason, and why, tab-separated. Why is an
+# open `react-compiler` issue, `#1702`, or `as hand-written: <file>.jsx`,
+# JS a person would write, under test/react-compiler/, failing the same.
+# A source `sweep:<test file>` is of the nightly sweep of the lowering
+# tests' programs (scripts/react-compiler-sweep.ts).
+test/react-compiler/listener_shadowing_its_local.rs	Keys	[InferMutationAliasingEffects] Expected value kind to be initialized	#1702
+sweep:jsx-syntax	Edited	This value cannot be modified	as hand-written: hand-written/written_in_render.jsx
+sweep:jsx-syntax	Live	This value cannot be modified	as hand-written: hand-written/written_in_render.jsx
+sweep:jsx-syntax	List	Cannot access refs during render	as hand-written: hand-written/ref_read_in_render.jsx
+sweep:jsx-syntax	Normal	Cannot access refs during render	as hand-written: hand-written/ref_read_in_render.jsx
+sweep:jsx-syntax	Ticker	Expected the first argument to be an inline function expression	as hand-written: hand-written/memo_of_a_named_function.jsx
+sweep:jsx-syntax	Titles	(BuildHIR::lowerExpression) Handle BigIntLiteral expressions	#1729
