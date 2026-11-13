@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "extreme-passed-over-kept",
     breaks: "an item `max_by` passes over, later than what it keeps, isn't dropped",
     file: "src/runtime/max_by.js",
-    find: "    passed(item);\n    return kept;\n",
+    find: "    drop?.(item);\n    return kept;\n",
     replace: "    return kept;\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "extreme-fold-unwind-lost",
     breaks: "a `max_by_key` gives its fold no `unwind`, so a key's panic drops what's left before the one it kept (#423)",
     file: "src/runtime/max_by.js",
-    find: "    () => $foldDropping(it, first.value, keep, drop && unwind),\n",
-    replace: "    () => $foldDropping(it, first.value, keep),\n",
+    find: "    () => $foldDropping(it, first.value, keep, drop && unwind, given),\n",
+    replace: "    () => $foldDropping(it, first.value, keep, undefined, given),\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {
@@ -130,12 +130,14 @@ export const mutations: Mutation[] = [
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+
+
   {
-    name: "extreme-passed-drop-panic-drops-kept",
-    breaks: "where what `min_by` passes over panics as it drops, the one it keeps is dropped as it unwinds, which rustc leaks (#785)",
+    name: "extreme-keeps-what-it-gave-back",
+    breaks: "`max()` whose iterator's drop panics after its fold still holds the item it gave back, so the panic drops it, where std's leaks it (#1655)",
     file: "src/runtime/max_by.js",
-    find: "        () => drop?.(value),\n        () => {\n          holding = false;\n        },\n",
-    replace: "        () => drop?.(value),\n",
-    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+    find: "    () => $foldDropping(it, first.value, keep, drop && unwind, given),\n",
+    replace: "    () => $foldDropping(it, first.value, keep, drop && unwind),\n",
+    tests: ["test/corpus.test.ts", "-t", "^extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs$"],
   },
 ];

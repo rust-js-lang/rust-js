@@ -21916,19 +21916,14 @@ export function $extremeBy(items, compare, max, boxed, drop, ends) {
     );
     // Where the one passed over panics as it drops, the one kept is
     // leaked, as rustc leaks what `max_by(v1, v2)` returns while a later
-    // drop unwinds (ADR 0465's #648 amendment), a pair's too (#776).
-    const passed = (value) =>
-      $unwinds(
-        () => drop?.(value),
-        () => {
-          holding = false;
-        },
-      );
+    // drop unwinds (ADR 0465's #648 amendment), a pair's too (#776): the
+    // fold's `ends`, `given`, marks it given back as that panic unwinds
+    // (#1655).
     if (later) {
-      passed(kept);
+      drop?.(kept);
       return (held = item);
     }
-    passed(item);
+    drop?.(item);
     return kept;
   };
   if (ends !== undefined) {
@@ -21959,8 +21954,18 @@ export function $extremeBy(items, compare, max, boxed, drop, ends) {
   }
   held = first.value;
   holding = drop !== undefined;
+  // At the fold's end, before what it steps is closed, the one kept is
+  // given back: its `ends`, which runs then, and after a stage's panic has
+  // dropped it. Std's fold drops `self` once it has what it folded, so where
+  // that drop panics, the one kept is leaked, never dropped, as rustc leaks
+  // what a function gives back as a later drop unwinds (#648, #1655).
+  const given =
+    drop &&
+    (() => {
+      holding = false;
+    });
   held = $unwinds(
-    () => $foldDropping(it, first.value, keep, drop && unwind),
+    () => $foldDropping(it, first.value, keep, drop && unwind, given),
     () => holding && drop(held),
   );
   return boxed ? $some(held) : held;

@@ -2557,3 +2557,29 @@ in both builds. It extends each collection by the crate's iterator with
 its own `fold`, by a `skip` and a `map` of it, and a `String` by one of
 `char`s. `own_fold_and_nth`'s `loud` rewrite found it. Generic code's
 `extend` by a dictionary is #1511.
+
+## Amendment: an extreme's kept item leaked as its iterator's drop panics (2026-11-13, #1655)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+Std's `max()`, `max_by(f)` and `max_by_key(f)`, and the `min`s, are a
+`reduce`, whose fold gives back the item it kept, then drops `self`. Where
+that drop panics, the kept item is leaked, as #648 says rustc leaks what a
+function gives back while a later drop unwinds. `$extremeBy` stepped the
+crate's iterator, closed, to its end, which closed it inside the fold, and
+dropped what it kept on any throw, so `drop K 3` printed where native Rust
+prints nothing. It now gives the fold an `ends`, which each fold runs at
+its end before it closes what it steps (`$closedAfter`), and which marks
+the kept item given back. A panic in a step or in `f` still drops it
+first, before what's left. The same `ends` leaks the kept item where
+what's passed over panics as it drops (#785), which a handler of its own
+did; that handler is gone, its mutation
+`extreme-passed-drop-panic-drops-kept` with it, a passed-over item's
+panicking drop, over the crate's own `fold`, a plain iterator and a
+`Vec`'s, the same as native Rust without it.
+
+`test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs`
+holds it against native Rust in both builds: each of the six, of a type
+parameter's, of one item and none, a step's panic, and no panic.
+Mutation `extreme-keeps-what-it-gave-back` (`runtime/max_by.ts`).
