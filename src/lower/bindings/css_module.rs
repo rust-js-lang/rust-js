@@ -62,8 +62,8 @@ pub(in crate::lower) fn refuse_unverified(tcx: TyCtxt<'_>, js_modules: &dyn JsMo
                 continue;
             }
         };
-        let keys = match js_modules.css_module_keys(&file) {
-            Ok(keys) => keys,
+        let exported = match js_modules.css_module_keys(&file) {
+            Ok(exported) => exported,
             Err(why) => {
                 let message =
                     format!("rust-js: the classes of `{file}`, which `{static_name}` reads, can't be said: {why}");
@@ -71,13 +71,21 @@ pub(in crate::lower) fn refuse_unverified(tcx: TyCtxt<'_>, js_modules: &dyn JsMo
                 continue;
             }
         };
+        let keys = &exported.keys;
         for getter in getters(tcx, classes.did()) {
             match js_form(tcx, getter) {
                 JsForm::Get(class) if is_method(tcx, getter) && keys.contains(&class) => {}
+                // A name Turbopack exports and the others don't (#1621).
+                JsForm::Get(class) if is_method(tcx, getter) && exported.turbopack_only.contains(&class) => {
+                    let message = format!(
+                        "rust-js: `{file}`'s `{class}` is exported by Turbopack, but not by webpack's css-loader or Vite, so an app they build would read `undefined`: read it by `\"get []\"`, as an `Option<String>`"
+                    );
+                    refuse(link_name_span(tcx, getter), message);
+                }
                 JsForm::Get(class) if is_method(tcx, getter) => {
                     let message = format!(
                         "rust-js: `{file}` exports no class `{class}`; its classes are {}",
-                        listed(&keys)
+                        listed(keys)
                     );
                     refuse(link_name_span(tcx, getter), message);
                 }

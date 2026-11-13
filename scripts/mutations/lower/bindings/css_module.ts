@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "        if marked(tcx, def) && tcx.def_kind(def) != DefKind::Struct && false {\n",
     tests: ["test/css-modules.test.ts", "-t", "refused, saying what to write"],
   },
+  {
+    name: "css-module-turbopack-only-unnamed",
+    breaks: "a getter of a key Turbopack alone exports, `vtName`, is refused as one the file doesn't export, not naming which bundlers do (#1621)",
+    file: "src/lower/bindings/css_module.rs",
+    find: "                JsForm::Get(class) if is_method(tcx, getter) && exported.turbopack_only.contains(&class) => {\n",
+    replace: "                JsForm::Get(class) if is_method(tcx, getter) && false && exported.turbopack_only.contains(&class) => {\n",
+    tests: ["test/css-modules-parity.test.ts"],
+  },
 ];

@@ -32,10 +32,24 @@ pub trait JsModules {
 
     /// The keys the CSS Module a binding imports exports, `specifier`'s,
     /// `./site.module.css`, relative to the crate root's JS as each
-    /// binding's module is (ADR 0028), sorted (`css_modules::exported_keys`);
+    /// binding's module is (ADR 0028), those every bundler exports and those
+    /// Turbopack alone does (`css_modules::exported_keys`);
     /// or why they can't be said, a file not found or not read, its path
     /// named.
-    fn css_module_keys(&self, specifier: &str) -> Result<Vec<String>, String>;
+    fn css_module_keys(&self, specifier: &str) -> Result<Exported, String>;
+}
+
+/// A CSS Module's keys, as the parity fixture finds the bundlers export
+/// them (`test/css-modules-parity.test.ts`, #1621): `keys`, those Turbopack,
+/// webpack's css-loader and Vite each export, its classes, ids and
+/// keyframes, which a binding may read; and `turbopack_only`, a view
+/// transition's or a counter style's name, which Turbopack alone exports,
+/// so a binding of one, built by the others, would read `undefined`. A
+/// grid's or a container's names, which Lightning CSS's own default
+/// exports, none of them does.
+pub struct Exported {
+    pub keys: Vec<String>,
+    pub turbopack_only: Vec<String>,
 }
 
 /// Normalized Rust source retained independently of the frontend.

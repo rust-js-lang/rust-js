@@ -70,9 +70,31 @@ and browser compilers would disagree.
 - **Pinned**: `lightningcss = "=1.0.0-alpha.72"`, `default-features =
   false`: none of `bundler`, `nodejs`, `sourcemap`, `browserslist`, `visitor`,
   `into_owned`, `serde`, `jsonschema`, `substitute_variables` or `cli` the crate
-  offers; its parser, printer and CSS Modules only. Its config is
-  `css_modules::Config::default()`: classes, `@keyframes`, grid, container
-  and custom identifiers scoped, `--dashed` ones not.
+  offers; its parser, printer and CSS Modules only.
+- **The keys are what every bundler exports** (#1621), as the parity
+  fixture finds them, `test/css-modules-parity.test.ts`: each construct a
+  file of its own, built by Next 16.4's Turbopack, Next's webpack
+  (css-loader) and Vite 8, each out of the box, `asIs`, their keys against
+  rust-js's. They agree on classes, ids and keyframes (defined, or only
+  named by `animation`), whatever holds them: nesting, `@media`,
+  `@supports`, `@layer`, `@container`, `:global(..)` beside a local,
+  `composes`, escapes and non-ASCII names. They disagree on custom
+  identifiers: a view transition's or a counter style's name, which
+  Turbopack alone exports. No bundler exports a grid's or a container's
+  names, which Lightning CSS's default does. So the config is `grid`,
+  `container` and `custom_idents` off (`container` is moot without
+  `custom_idents`, kept as Next sets it), and a list's named counter
+  style, which Lightning CSS exports whatever `custom_idents` says, is
+  made a predefined one before the keys are read. A second list, with
+  `custom_idents` on, is Turbopack's: a getter of a key only it has is
+  refused naming who exports it, "exported by Turbopack, but not by
+  webpack's css-loader or Vite", saying to read it by `"get []"`. Case
+  ([0262](0262-when-rust-and-js-disagree.md)): results change, a class
+  read `undefined` built by the others, so it's refused. Next's webpack
+  also refuses a rule of no local class, `:global(.a) {}`, and `:local(.a)`
+  alone, its CSS Modules pure; their keys agree where it builds. It adds
+  `__checksum` to a module a server component imports, its own, no
+  class of the file's.
 - **Refused, never listed short** (#1617): ICSS's `:export { .. }` and
   `:import(..)`, which Lightning CSS reads as unknown pseudo-classes and
   exports nothing of, where css-loader exports `:export`'s names; and
@@ -112,7 +134,11 @@ and browser compilers would disagree.
   names it, so what it prints is what the check finds. It's never run by
   a build: the check keeps what it printed right, and nothing regenerates
   it.
-- Still to come on #1512: the parity fixture, Turbopack, webpack's
-  css-loader and Vite, `asIs`, which settles which constructs' keys count,
-  ids, grid and container names among them, and refuses the rest. Until it
-  lands the config is Lightning CSS's default, Turbopack's parser's.
+- The parity fixture runs with the suite, some 6 s: three builds of 32
+  small files. A bundler's upgrade that changes what it exports fails it,
+  and the keys are decided again. 3c66a534b to this change used Lightning
+  CSS's default config, which accepted a getter of a key no bundler, or
+  only Turbopack, exports (#1621, P0).
+- A bundler configured otherwise, css-loader's `exportLocalsConvention`
+  or Vite's `css.modules`, isn't seen: the keys are each one's out of
+  the box.

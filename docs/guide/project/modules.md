@@ -889,6 +889,12 @@ export function cardClasses(wide) {
 - **A class is its key as the file exports it**, as the bundler names
   it as it is (`asIs`): `"get card-title"` is `STYLES["card-title"]`. The
   getter's Rust name is the program's own.
+- **The keys are what every bundler exports**, Next's Turbopack and
+  webpack and Vite, each out of the box: classes, ids and keyframes,
+  wherever they're nested. A view transition's or a counter style's name,
+  which Turbopack alone exports, is refused naming who does, as an app
+  another builds would read `undefined`; read it by `"get []"`. A grid's
+  or a container's names, which none exports, aren't keys.
 - **A class by a name known as the program runs** is the dynamic read,
   `"get []"`, `fn class(&self, name: &str) -> Option<String>`, which isn't
   checked.

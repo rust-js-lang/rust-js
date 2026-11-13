@@ -161,7 +161,7 @@ impl program::JsModules for LocalJs {
     /// source, as `reached` finds a binding's file: the first that's there,
     /// read, and so what the build read, which loads nothing of the crate's,
     /// as a style doesn't (`loads`).
-    fn css_module_keys(&self, specifier: &str) -> Result<Vec<String>, String> {
+    fn css_module_keys(&self, specifier: &str) -> Result<program::Exported, String> {
         let mut looked = Vec::new();
         for root in [&self.output, &self.input] {
             let file = specifier_file(parent_dir(&absolute(root)?), specifier)?;
