@@ -308,7 +308,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct of no fields a library's optimized MIR names as a constant, `const RangeFull` of base64's `&mut buf[..]`, is refused, \"this constant, from its MIR\" (#474)",
     file: "src/lower/mir/operands.rs",
-    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()) =>\n",
+    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) =>\n",
     replace: "                && false =>\n",
     tests: ["test/crates.test.ts", "-t", "unit_struct_of_instance"],
   },
@@ -370,5 +370,13 @@ export const mutations: Mutation[] = [
     find: "                    Some(crossing) => self.form_back(Form::Box, crossing, read),\n",
     replace: "                    Some(_) => read,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "zero-sized-struct-of-fields-as-fieldless",
+    breaks: "a zero-sized constant of a struct with fields, std's `Args` in a library's drop, is made as a struct of none, given no field values, and rust-js crashes, each field once (#1707)",
+    file: "src/lower/mir/operands.rs",
+    find: "adt.is_struct() && adt.all_fields().next().is_none()",
+    replace: "adt.is_struct()",
+    tests: ["test/crates.test.ts", "-t", "never crashes its consumer"],
   },
 ];

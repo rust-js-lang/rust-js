@@ -139,6 +139,18 @@ for (const name of readdirSync(pairs).sort()) {
     chain(pairs, name, ["dep", "app"]);
   }, 300_000);
 }
+// A library's drop given std's `Args` as one zero-sized constant, a struct
+// whose fields are of no size themselves on some platforms: compiled, or
+// refused where its value is no plain one, never a crash (#1707).
+test("a zero-sized constant of a struct with fields, std's `Args` in a library's drop, never crashes its consumer", () => {
+  const cases = join(pairs, "..", "zero_sized");
+  try {
+    chain(cases, "args_in_a_librarys_drop", ["dep", "app"], ["this constant, from its MIR"]);
+  } catch {
+    chain(cases, "args_in_a_librarys_drop", ["dep", "app"]);
+  }
+}, 300_000);
+
 for (const name of readdirSync(triples).sort()) {
   test(`three crates: ${name}`, () => {
     chain(triples, name, ["dep", "mid", "app"]);

@@ -1757,3 +1757,22 @@ middle library's generic functions calling the first's with its `Up`,
 against native Rust; no corpus snapshot changes. Mutation
 `copy-call-unused`, caught.
 
+
+## Amendment: a zero-sized constant of a struct with fields (2026-11-14, #1707)
+
+The optimized MIR a consumer compiles a library's body from may hold a
+zero-sized constant of a struct, `const RangeFull`'s. It was made as a
+struct of no fields, given none of their values, so one whose fields are
+of no size themselves crashed rust-js ("each field once"): std's `Args`, of
+`std::env::args()` in a library's `Drop`, on a platform where it's zero-
+sized. Now a struct of no fields is made as before. One of fields is its one
+value, each field its own (`zero_sized_js`, as a constant of it is written),
+and is refused where that's no plain value, `Args`', std's own iterator, with
+"this constant, from its MIR". A refusal, not a crash. Held by
+`test/crates.test.ts`' "a zero-sized constant of a struct with fields, std's
+`Args` in a library's drop, never crashes its consumer", which accepts
+either the refusal or a compile that runs as native does, as `Args` is
+zero-sized on some platforms only; mutation
+`zero-sized-struct-of-fields-as-fieldless`, caught. Found by the metamorphic
+net's `library` rewrite of
+`raw_pointer_to_a_local_with_a_destructor_sees_its_writes` (#1704).

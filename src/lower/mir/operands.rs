@@ -540,9 +540,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a consumer compiles (ADR 0914), `const RangeFull` of `&mut
             // buf[..]`, which no value tree says as JS: as making one is.
             None if matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _))
-                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()) =>
+                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) =>
             {
                 return self.adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, c.span);
+            }
+            // And one whose fields are of no size themselves, `std::env::
+            // Args`' of a library's inlined `drop`: its one value, each field
+            // its own, as a constant of it is written (#1707).
+            None if matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _))
+                && let Some(value) =
+                    crate::lower::representation::zero_sized_js(tcx, &self.krate.flattened.keyed, ty) =>
+            {
+                return Ok(value);
             }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };
