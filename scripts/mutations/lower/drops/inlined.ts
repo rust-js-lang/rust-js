@@ -493,4 +493,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,
   },
+  {
+    name: "emptied-scopes-kept",
+    breaks: "a scope a do-nothing `Drop`'s body left nothing to drop in keeps its `try`, its `catch` that throws on through `$unwindsOn` and an empty `if ($live()) {}` (#1594)",
+    file: "src/lower/drops/inlined.rs",
+    find: "                js::each_block_mut(body, &mut crate::lower::drops::emptied_scopes);\n",
+    replace: "",
+    tests: ["test/lowering-drop-guards-empty.test.ts"],
+  },
 ];

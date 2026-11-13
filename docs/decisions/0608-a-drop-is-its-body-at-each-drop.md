@@ -376,3 +376,27 @@ it survived every case of the corpus that reaches the inliner, 595 of
 them, their JS each its snapshot, `future_size_unwinds`' `Big` and
 `map_stepped_from_its_back`'s `Noisy` too: no drop of nothing to do
 leaves an empty `finally` for it to find now. Case A, as before.
+
+## Amendment: a scope its drop's body left nothing in is none (2026-11-13, #1594)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, nothing ran
+where the scope was left.
+
+A `Drop` impl's body written where it's dropped, one that does nothing,
+left its scope's `try { try { .. } catch (error) { throw
+$unwindsOn(error); } } finally { if ($live()) {} }`, one level per guard,
+the `finally` running nothing. Once each drop is written in place
+(`inlined_drops`), each scope whose `finally` is left empty is its body
+alone (`drops::emptied_scopes`), as a person writes it: `$unwindsOn` only
+readies the drops after it for an abort, and there are none. What its body
+declares is then declared where the `try` was, only where no statement
+beside it names it: a function's names are each its own, so none does in
+any case found (two scopes' `x` are `x` and `x$1`), and the check holds
+it where a shape no case has would.
+
+`test/lowering-drop-guards-empty.test.ts` holds two do-nothing guards and
+one whose drop prints, whose scope stays. Two snapshots change,
+`guard_field_written_by_a_swap_or_in_an_expression` and
+`map_stepped_from_its_back`, each run against native in both builds.
+Mutation `emptied-scopes-kept`, caught.
+

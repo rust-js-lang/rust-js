@@ -573,6 +573,56 @@ pub(in crate::lower) fn aborting_finally(stmt: &mut Stmt) {
     *dropped = vec![StmtKind::If(live, std::mem::take(dropped), None).at(span)];
 }
 
+/// Of `stmts`, each scope's `try` whose drops a `Drop` impl's body, written
+/// where it's dropped (ADR 0608), left nothing of: `try { try { body } catch
+/// (error) { throw $unwindsOn(error); } } finally { if ($live()) {} }`
+/// (`aborting_finally`'s), its body alone, as nothing runs where the scope
+/// is left, and a person writes none of it (#1594). What its body declares
+/// where it is is then declared where the `try` was: only where nothing
+/// else there names it, so no declaration meets another, and none hides
+/// what the statements after it read.
+pub(in crate::lower) fn emptied_scopes(stmts: &mut Vec<Stmt>) {
+    let mut at = 0;
+    while at < stmts.len() {
+        let StmtKind::Try(body, dropped) = &stmts[at].kind else {
+            at += 1;
+            continue;
+        };
+        let nothing = match dropped.as_slice() {
+            [] => true,
+            [
+                Stmt {
+                    kind: StmtKind::If(_, then, None),
+                    ..
+                },
+            ] => then.is_empty() && live_guarded(dropped),
+            _ => false,
+        };
+        let left: &[Stmt] = match body.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::TryCatch(inner, ..),
+                    ..
+                },
+            ] if is_aborting(body) => inner,
+            _ => body,
+        };
+        let others = |name: &str| {
+            (stmts.iter().enumerate())
+                .filter(|&(i, _)| i != at)
+                .any(|(_, s)| js::mentions_in(std::slice::from_ref(s), name) > 0)
+        };
+        let apart = (left.iter())
+            .all(|s| !matches!(s.kind, StmtKind::Function(_)) && js::declared_here(s).iter().all(|name| !others(name)));
+        if !nothing || !apart {
+            at += 1;
+            continue;
+        }
+        let left = left.to_vec();
+        stmts.splice(at..=at, left);
+    }
+}
+
 /// Whether `body` begins with a `catch_unwind`, `$catchUnwind(f)` or what's
 /// made of it, whose catch aborts on a stack overflow (`$catchable`).
 pub(in crate::lower) fn catches_unwind(body: &[Stmt]) -> bool {

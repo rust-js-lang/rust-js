@@ -137,6 +137,8 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         each_function(item, &mut |_, body| {
             if js::mentions_in(body, name) > 0 {
                 *body = bodies.next().expect("one made of each");
+                // A scope its body left nothing to drop in, none (#1594).
+                js::each_block_mut(body, &mut crate::lower::drops::emptied_scopes);
             }
         });
     }
