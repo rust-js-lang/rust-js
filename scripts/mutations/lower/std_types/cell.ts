@@ -800,13 +800,6 @@ export const mutations: Mutation[] = [
     replace: "            Std::Borrow { mutable, lock: false } if false && call.momentary => {\n",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
   },
-  {
-    name: "momentary-shared-borrow-refused-beside-shared",
-    breaks: "a momentary shared borrow is refused where another shared borrow is held, `RefCell already borrowed`, where Rust's lends it",
-    file: "src/lower/std_types/cell.rs",
-    find: "                    false => (Expr::bin(Op::Lt, borrows, Expr::int(0)), \"$alreadyMutablyBorrowed\"),\n",
-    replace: "                    false => (borrows, \"$alreadyMutablyBorrowed\"),\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
-  },
+
 ];
 

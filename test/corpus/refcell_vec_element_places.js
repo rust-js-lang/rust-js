@@ -2,8 +2,8 @@
 
 import {
   $alreadyBorrowed,
-  $alreadyMutablyBorrowed,
   $at,
+  $borrow,
   $borrowMut,
   $catchUnwind,
   $index,
@@ -96,8 +96,8 @@ function count(root, index) {
   if (root.counts.borrows) {
     $alreadyBorrowed();
   }
-  const counts = root.counts;
-  counts[$at(counts, index)] = (counts[index] + 1) & 255;
+  const borrowMut = root.counts;
+  borrowMut[$at(borrowMut, index)] = (borrowMut[index] + 1) & 255;
 }
 
 function meets(root) {
@@ -139,9 +139,6 @@ function main() {
   console.log(`${out.TAG === "Err"}`);
   out = $catchUnwind(() => meets(r));
   count(r, 1);
-  if (r.counts.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`${out.TAG === "Err"} [${r.counts.join(", ")}]`);
+  console.log(`${out.TAG === "Err"} [${$borrow(r.counts).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

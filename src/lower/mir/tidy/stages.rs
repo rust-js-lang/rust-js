@@ -1096,6 +1096,10 @@ pub(super) const STAGES: &[Stage] = &[
             // the program wrote of a loop it labeled: that label, `outer:`
             // (D1, the user's decision).
             pass("written loop labels", |b, h| written_loop_breaks(b, &h.written.loops)),
+            // A momentary borrow evaluated first in its statement: its check first (ADR 1141).
+            pass("borrow checks first", |b, _| {
+                js::statement_lists(b, &mut js::borrow_checks_first)
+            }),
             // Last, once no pass reads them: each cleanup guarded.
             GUARDED_CLEANUPS,
         ],

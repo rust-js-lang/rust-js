@@ -4,6 +4,7 @@ import {
   $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
+  $borrowMut,
   $byteLen,
   $catchUnwind,
   $index,
@@ -70,10 +71,7 @@ function main() {
   console.log(`two segments: ${caught.TAG === "Err"}`);
   const [first, last] = firstAndLast(boundary);
   console.log(`${first} ${last}`);
-  if (boundary.completedSegments.borrows) {
-    $alreadyBorrowed();
-  }
-  boundary.completedSegments.length = 0;
+  $borrowMut(boundary.completedSegments).length = 0;
   caught = $catchUnwind(() => firstAndLast(boundary));
   console.log(`none: ${caught.TAG === "Err"}`);
 }

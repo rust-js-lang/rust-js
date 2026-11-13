@@ -2,6 +2,7 @@
 
 import {
   $alreadyMutablyBorrowed,
+  $borrow,
   $borrowMut,
   $refCellSwap,
   $replaceWith,
@@ -19,20 +20,14 @@ function pairDebug_fmt(pair) {
 function main() {
   const a = { a: 1, b: 2 };
   const cell = { ...a };
-  if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  const before = { ...cell };
+  const before = { ...$borrow(cell) };
   $take($borrowMut(cell), { a: 5, b: 6 });
   if (cell.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
   console.log(`${pairDebug_fmt(a)} ${pairDebug_fmt(before)} ${pairDebug_fmt(cell)}`);
   const other = { a: 7, b: 8 };
-  if (other.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  const snapshot = { ...other };
+  const snapshot = { ...$borrow(other) };
   $refCellSwap(cell, other, true);
   if (cell.borrows < 0) {
     $alreadyMutablyBorrowed();

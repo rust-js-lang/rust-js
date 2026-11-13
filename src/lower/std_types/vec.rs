@@ -47,12 +47,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: rustc_span::Span,
         out: &mut Vec<Stmt>,
     ) -> Expr {
-        let mut once = |cx: &mut Self, value: Expr, role: Role| match value.reads_same() {
-            true => value,
-            false => cx.spill(role, value, out),
+        // A momentary borrow's, its check first, then its cell, as the
+        // bounds' is (`js::borrow_checks`).
+        let items = match items.momentary_cell() {
+            Some((cell, mutable)) if cell.reads_same() && !cell.has_effects() => {
+                out.push(Stmt::borrow_check(cell.clone(), mutable, self.js_span(span)));
+                cell.clone()
+            }
+            _ if items.reads_same() => items,
+            _ => self.spill(Role::Items, items, out),
         };
-        let items = once(self, items, Role::Items);
-        let at = once(self, at, Role::Index);
+        let at = match at.reads_same() {
+            true => at,
+            false => self.spill(Role::Index, at, out),
+        };
         let past = Expr::bin(Op::Ge, at.clone(), Expr::member(items.clone(), "length"));
         let refused = Expr::call_helper("$removeOutOfBounds", vec![items.clone(), at.clone()]);
         let js_span = self.js_span(span);

@@ -738,24 +738,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (`locked`).
             Std::Borrow { mutable, lock: true } => locked("$locked", arg(), mutable),
             // Held only while nothing can ask: checked, not counted
-            // (rd218), where it's taken, with no call where it's free, as
-            // React's replayElement's catch has room for none (#1692):
-            // `if (cell.borrows) $alreadyBorrowed();`, then the cell.
+            // (rd218), its check written first in its statement where it's
+            // evaluated first there (`js::borrow_checks`, ADR 1141).
             Std::Borrow { mutable, lock: false } if call.momentary => {
                 crate::decisions::record("refcell-borrow", "momentary");
-                let cell = arg();
-                let cell = match cell.reads_same() && !cell.has_effects() {
-                    true => cell,
-                    false => self.spill(Role::Cell, cell, out),
-                };
-                let borrows = Expr::member(cell.clone(), "borrows");
-                let (taken, refused) = match mutable {
-                    true => (borrows, "$alreadyBorrowed"),
-                    false => (Expr::bin(Op::Lt, borrows, Expr::int(0)), "$alreadyMutablyBorrowed"),
-                };
-                let refused = StmtKind::Expr(Expr::call_helper(refused, Vec::new())).at(js_span);
-                out.push(StmtKind::If(taken, vec![refused], None).at(js_span));
-                cell
+                Expr::momentary_borrow(arg(), mutable)
             }
             Std::Borrow { mutable, lock: false } => {
                 crate::decisions::record("refcell-borrow", "counted");

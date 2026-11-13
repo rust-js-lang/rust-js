@@ -369,14 +369,3 @@ N, the one read of the same item. Held by corpus
 `an_index_is_no_pattern.rs` against native Rust, `test/lowering-parts
 .test.ts`, "an item read by its index is no pattern", run, and the
 mutations `index-in-bounds-a-part` and `indexed-item-a-part`.
-
-## Amendment: no index read of a momentary borrow's temporary is left
-
-`Known::Indexed` and `Expr::indexed` are gone. A momentary borrow is the
-cell itself, checked where it's taken ([1141](1141-checked-where-called.md)),
-so `completed_segments.borrow()[0]` is `completedSegments[0]` of the
-cell, no temporary of `$borrow(..)`; a counted guard is always a named
-`const` with its `finally`. No temporary an index reads is left for the
-destructuring to take as a part: switched off, the fact failed none of
-the corpus's cases. A tuple's part of a temporary, `const [first] =
-pair(n);`, is as before.

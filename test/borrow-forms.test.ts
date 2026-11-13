@@ -1,8 +1,8 @@
 // What a borrow used for a moment and `Vec::remove` are, written as a
 // person writes them, with no call where nothing fails (#1692, ADR 1141):
 // a momentary borrow, held only while nothing can ask (rd218), checked
-// where it's taken, `if (nodes.borrows) $alreadyBorrowed();`, then the
-// cell; a remove's bounds checked where it's called, then JS's own
+// first where it's evaluated first in its statement, `if (nodes.borrows)
+// $alreadyBorrowed();`, then the cell, else the call as before; a remove's bounds checked where it's called, then JS's own
 // `splice`, its item read only where something takes it. A guard held
 // while code of the program's runs, a `Drop`'s, is counted as before.
 // Each answer is native Rust's.
@@ -45,6 +45,33 @@ pub fn already_borrowed() -> String {
     let result = catch_unwind(AssertUnwindSafe(|| consume(&nodes, 0)));
     drop(held);
     result.err().map_or(String::new(), message)
+}
+
+fn summed(cell: &RefCell<Vec<u32>>) -> u32 {
+    let mut total = 0;
+    let mut i = 0;
+    while i < cell.borrow().len() {
+        total += cell.borrow()[i];
+        i += 1;
+    }
+    total
+}
+
+fn guarded(cell: &RefCell<Vec<u32>>, look: bool) -> bool {
+    look && !cell.borrow().is_empty()
+}
+
+fn chosen(cell: &RefCell<Vec<u32>>, look: bool) -> usize {
+    if look { cell.borrow().len() } else { 0 }
+}
+
+pub fn loops_and_short_circuits() -> String {
+    let cell = RefCell::new(vec![1, 2, 3]);
+    let total = summed(&cell);
+    let held = cell.borrow_mut();
+    let (look, length) = (guarded(&cell, false), chosen(&cell, false));
+    drop(held);
+    format!("{total} {look} {length}")
 }
 
 struct Pusher<'a>(&'a RefCell<Vec<u32>>);
@@ -113,6 +140,19 @@ test("a momentary borrow and Vec::remove are checked where they're called, then 
   expect(ran(dir, "removed")).toBe("1 [3, 4]\n");
   expect(ran(dir, "out_of_bounds")).toBe("removal index (is 3) should be < len (is 1)\n");
   expect(ran(dir, "already_borrowed")).toBe("RefCell already borrowed\n");
+});
+
+// A momentary borrow a loop's test evaluates again, or a short circuit's
+// or a conditional's branch evaluates only where it's taken, is the call,
+// as before (ADR 0328): the loop's header as Rust's, and no check where
+// Rust doesn't borrow, a mutable borrow held then.
+test("a momentary borrow in a loop's test or a branch is the call, as before", () => {
+  const dir = compiled("borrow-forms-tests");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (let i = 0; i < $borrow(cell).length; i++) {\n");
+  expect(js).toContain("  return look && $borrow(cell).length !== 0;\n");
+  expect(js).toContain("  return look ? $borrow(cell).length : 0;\n");
+  expect(ran(dir, "loops_and_short_circuits")).toBe("6 false 0\n");
 });
 
 // A guard held while a `Drop` of the program's runs, which may borrow its

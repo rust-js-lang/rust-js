@@ -9,6 +9,7 @@
 //! is what lets the source map point from JS back to Rust.
 
 mod applied;
+mod borrow_checks;
 mod expr_walk;
 mod imports;
 mod known;
@@ -28,6 +29,7 @@ pub use self::{
         applied_blocks, applied_call, applied_closures, applied_tried, called_body, read_where_made, returns,
         returns_replaced, tried_extent, tried_set_where_made,
     },
+    borrow_checks::borrow_checks_first,
     expr_walk::*,
     imports::{Import, ImportFrom, Package, Reexport},
     known::{Known, Role, forget as forget_known, found_names as known_found, remembering},

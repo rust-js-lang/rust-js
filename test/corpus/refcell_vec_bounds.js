@@ -89,10 +89,7 @@ function settleTask(queue, at, task) {
     $alreadyMutablyBorrowed();
   }
   if (at < queue.length) {
-    if (queue.borrows) {
-      $alreadyBorrowed();
-    }
-    queue[at] = task;
+    $borrowMut(queue)[at] = task;
     if (queue.borrows) {
       $alreadyBorrowed();
     }

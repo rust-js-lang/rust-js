@@ -30,10 +30,7 @@ export function main() {
   const f = [1.5, NaN];
   const g = [];
   merge(f, g);
-  if (g.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`${g.length}`);
+  console.log(`${$borrow(g).length}`);
   merge(f, f);
 }
 //# sourceMappingURL=case.js.map

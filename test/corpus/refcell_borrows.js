@@ -71,17 +71,13 @@ function main() {
       $unborrow(value$1._0);
     }
   }
-  const value$2 = [7];
   if (cell.borrows) {
     $alreadyBorrowed();
   }
-  $assign(cell, value$2);
+  $assign(cell, [7]);
   const number = 5;
   const text = "t";
-  if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`[${cell.join(", ")}] ${number} ${text}`);
+  console.log(`[${$borrow(cell).join(", ")}] ${number} ${text}`);
   const grid = [1, 2, 3];
   grid[0] = 3;
   grid[1] = (grid[1] + 3) | 0;
@@ -101,39 +97,45 @@ function main() {
   }
   shared.value += "b";
   for (let i = 0; i < 2; i++) {
+    let tmp;
     try {
       if (shared.borrows) {
         $alreadyBorrowed();
       }
+      tmp = shared;
     } catch (error) {
       if (writing$live) {
         $unborrow(writing);
       }
       throw error;
     }
-    shared.value += "c";
+    tmp.value += "c";
   }
+  let borrow;
   try {
     if (shared.borrows < 0) {
       $alreadyMutablyBorrowed();
     }
+    borrow = shared;
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
     }
     throw error;
   }
+  let tmp;
   try {
     if (shared.borrows < 0) {
       $alreadyMutablyBorrowed();
     }
+    tmp = shared;
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
     }
     throw error;
   }
-  console.log(`${shared.value} ${$byteLen(shared.value)}`);
+  console.log(`${borrow.value} ${$byteLen(tmp.value)}`);
   let held;
   try {
     held = $borrowMut(shared, true);
@@ -181,9 +183,9 @@ function main() {
     }
     throw error;
   }
-  let tmp;
+  let tmp$1;
   try {
-    tmp = $eq(copy, shared, true);
+    tmp$1 = $eq(copy, shared, true);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -191,7 +193,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${$debugStr(replace)} ${tmp} ${$cellReplace($borrowMut(shared), "")}`);
+    console.log(`${$debugStr(replace)} ${tmp$1} ${$cellReplace($borrowMut(shared), "")}`);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -207,9 +209,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$1;
+  let tmp$2;
   try {
-    tmp$1 = $tryBorrow(copy, true);
+    tmp$2 = $tryBorrow(copy, true);
   } catch (error) {
     $unborrow(reading);
     if (writing$live) {
@@ -219,11 +221,11 @@ function main() {
   }
   try {
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${tmp$1.TAG === "Err"}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${tmp$2.TAG === "Err"}`,
     );
   } catch (error) {
-    if (tmp$1.TAG === "Ok") {
-      $unborrow(tmp$1._0);
+    if (tmp$2.TAG === "Ok") {
+      $unborrow(tmp$2._0);
     }
     $unborrow(reading);
     if (writing$live) {
@@ -232,8 +234,8 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$1.TAG === "Ok") {
-      $unborrow(tmp$1._0);
+    if (tmp$2.TAG === "Ok") {
+      $unborrow(tmp$2._0);
     }
   } catch (error) {
     $unborrow(reading);

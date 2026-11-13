@@ -2,7 +2,7 @@
 
 import {
   $alreadyBorrowed,
-  $alreadyMutablyBorrowed,
+  $borrow,
   $live,
   $newCyclic,
   $rcDrop,
@@ -31,8 +31,8 @@ function nodeClone_clone(node) {
       if (me.value.borrows) {
         $alreadyBorrowed();
       }
-      const value = me.value;
-      value.visits = (value.visits + 1) >>> 0;
+      const borrowMut = me.value;
+      borrowMut.visits = (borrowMut.visits + 1) >>> 0;
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -55,18 +55,12 @@ function main() {
     if (node.value.borrows) {
       $alreadyBorrowed();
     }
-    const value = node.value;
-    value.visits = (value.visits + 1) >>> 0;
-    if (node.value.borrows < 0) {
-      $alreadyMutablyBorrowed();
-    }
-    console.log(`${node.value.visits}`);
+    const borrowMut = node.value;
+    borrowMut.visits = (borrowMut.visits + 1) >>> 0;
+    console.log(`${$borrow(node.value).visits}`);
     const copy = $withBorrow(node.value, (value) => nodeClone_clone(value), true);
     try {
-      if (copy.borrows < 0) {
-        $alreadyMutablyBorrowed();
-      }
-      console.log(`${copy.visits}`);
+      console.log(`${$borrow(copy).visits}`);
     } finally {
       $weakDrop(copy.me);
     }

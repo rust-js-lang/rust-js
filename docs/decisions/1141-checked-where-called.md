@@ -1,6 +1,6 @@
 # 1141. A momentary borrow and `Vec::remove` are checked where they're called, then JS's own
 
-Status: Accepted (2026-11-14, the lead's decision, after #1692).
+Status: Accepted (2026-11-14, the lead's decision, after #1692); amended (the check first only where the borrow is evaluated first).
 Amends [0328](0328-refcell-borrow-counts.md)'s form of a momentary borrow and
 [0576](0576-what-a-bodys-integers-can-be.md)'s `$removeAt`.
 
@@ -64,3 +64,41 @@ React's replayElement's line is now three: the two checks, and
   a `const` first, named by its role where its field's name is taken,
   `cell$1` beside the program's own `count`.
 - The guide's examples show the forms, and `collections.md` says so.
+
+## Amendment: the check first only where the borrow is evaluated first
+
+Written where it's taken, in lowering, a momentary borrow's check was a
+statement before the statement that reads it, and so before a loop's
+test, which tidy then couldn't fold into its header: React's
+`for (let j = 0; j < $borrow(segments).length; j++)` became `let j = 0;
+while (true) { if (segments.borrows < 0) ..; if (j >= segments.length)
+break; .. }`, six such loops in the port, where upstream writes the
+`for`; a short circuit's and a conditional's too. The corpus had none,
+so the readability measure didn't see it. Now:
+
+- **The borrow owner writes the call** `$borrowMut(cell)` or
+  `$borrow(cell)`, as before ([0328](0328-refcell-borrow-counts.md)),
+  `Known::Momentary` (`Expr::momentary_borrow`).
+- **Tidy's last pass but one writes its check first** (`borrow checks
+  first`, `js::borrow_checks`) only where it's evaluated before anything
+  else in its statement that does something: `if (nodes.borrows)
+  $alreadyBorrowed();`, then the cell, a `const` that held the borrow then
+  read as the cell where nothing after sets either. A loop's test, which
+  runs again, a short circuit's or a conditional's branch, and what runs
+  after a call keep the call, as before. `Vec::remove` of a momentary
+  borrow writes its check first, as its bounds' (`vec_removed`).
+- **The rules the first form had left unreached are kept**: ADR 0598's
+  index read of `$borrow(completedSegments)[0]`, no part, and rd439's
+  name for `const { value: _4 } = $borrow(cell)`, each reached again, as
+  their mutations show.
+
+Held by `test/borrow-forms.test.ts`'s "a momentary borrow in a loop's
+test or a branch is the call, as before", a `while` test folded to a
+`for` and a short circuit's and a conditional's branch kept, and the
+mutation `momentary-hoisted-out-of-a-short-circuit`; the readability
+measure's `while (true)` share, which the corpus's cases of a borrow in
+a test now hold. Against the measure before this ADR, renamed `x$1`
+478.8 to 477.0 and role fallbacks 267.7 to 266.0 in 10,000 lines; the
+names are those before it, `const borrowMut = request.log`, of what
+held the borrow.
+

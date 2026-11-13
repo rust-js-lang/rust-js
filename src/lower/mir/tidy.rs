@@ -1017,6 +1017,7 @@ mod tests {
                 "named texts",
                 "stepped slices",
                 "written loop labels",
+                "borrow checks first",
                 "guarded cleanups"
             ]
         );

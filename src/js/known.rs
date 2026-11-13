@@ -268,6 +268,12 @@ knowns! {
     /// Never a binding's `js::get(o, &1.0)`, which a getter may answer
     /// (#756).
     Part,
+    /// An item read by the index the program wrote, `v[i]`, a slice's or a
+    /// `Vec`'s `Index::index` the ranges show in bounds, read unchecked
+    /// (`Expr::indexed`, `mir::bounds`): one item, never a part a pattern
+    /// names, so tidy's destructuring reads it as written, `const first =
+    /// $borrow(cell)[0];`, never `const [first] = ..` (ADR 0598, amended).
+    Indexed,
     /// An iterator's value as `lower::iterators::value` wrote it, which only
     /// that module reads (ADR 1092, #730): a JS iterator of the value it
     /// steps, `$iterator(value, next, ..)` or `$given(value, ..)`.
@@ -321,6 +327,12 @@ knowns! {
     /// the handle's, the object's in place, `$assign(object, v)`, as `*r =
     /// v`'s is (ADR 0147), not the name given another (#1352).
     HandledObject,
+    /// A `RefCell`'s borrow held only while nothing can ask (rd218),
+    /// `$borrowMut(cell)` or `$borrow(cell)`, checked and not counted
+    /// (`Expr::momentary_borrow`): tidy writes its check where it's
+    /// evaluated first in its statement, `if (cell.borrows)
+    /// $alreadyBorrowed();`, then the cell (ADR 1141, amended).
+    Momentary,
     /// A `dyn Iterator` a binding's call made, JS's own iterator, a `Set`'s
     /// `values()` or `js::keys_in`'s: its hint is the binding's contract's,
     /// `(0, None)`, which asking runs nothing of, so a collect of it asks
@@ -390,7 +402,7 @@ impl Known {
             | Known::Literal
             | Known::RunsInItsCall
             | Known::BindingIterator => Role::Permits,
-            Known::Else | Known::Guard | Known::Written | Known::Valued => Role::AsWritten,
+            Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
             Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Evidence => Role::Warns,
             // `Iterator` among them: what isn't known to be one is taken
             // for an array, not for either (by_ref_steps, ADR 1127).
@@ -411,7 +423,8 @@ impl Known {
             | Known::IterEnumerate
             | Known::IterMappedAsItIs
             | Known::NullStored
-            | Known::HandledObject => Role::Form,
+            | Known::HandledObject
+            | Known::Momentary => Role::Form,
         }
     }
 

@@ -3,6 +3,7 @@
 import {
   $alreadyBorrowed,
   $borrow,
+  $borrowMut,
   $byteLen,
   $cleanup,
   $debugStr,
@@ -44,10 +45,7 @@ function renderKept(chunks, kept) {
     const chunk = chunks[i];
     destination.push(chunk);
   }
-  if (kept.borrows) {
-    $alreadyBorrowed();
-  }
-  kept.value = destination;
+  $borrowMut(kept).value = destination;
   return result;
 }
 
@@ -65,10 +63,7 @@ function renderPeeked(chunks, kept) {
     push("!");
     return result;
   }
-  if (kept.borrows) {
-    $alreadyBorrowed();
-  }
-  kept.value = peek;
+  $borrowMut(kept).value = peek;
   const old = result;
   result = "";
   return old;
@@ -163,10 +158,7 @@ function summed(values, kept) {
     const value = values[i];
     add(value);
   }
-  if (kept.borrows) {
-    $alreadyBorrowed();
-  }
-  kept.value = add;
+  $borrowMut(kept).value = add;
   return sum;
 }
 
@@ -180,10 +172,7 @@ function last(values, kept) {
     const value = values[i];
     see(value);
   }
-  if (kept.borrows) {
-    $alreadyBorrowed();
-  }
-  kept.value = see;
+  $borrowMut(kept).value = see;
   return seen;
 }
 

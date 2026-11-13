@@ -119,6 +119,7 @@ function main() {
   if (watched.items.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
-  console.log(`[${tried.join(", ")}] [${watched.items.join(", ")}]`);
+  const borrow = watched.items;
+  console.log(`[${tried.join(", ")}] [${borrow.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

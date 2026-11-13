@@ -48,9 +48,6 @@ function main() {
     $alreadyBorrowed();
   }
   items.push(9);
-  if (items.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`[${items.join(", ")}]`);
+  console.log(`[${$borrow(items).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -47,9 +47,9 @@ function createRequest(name, onAllReady, onShellReady) {
   if (request.log.borrows) {
     $alreadyBorrowed();
   }
-  const log = request.log;
+  const borrowMut = request.log;
   for (let i = 0; i < names.length; i++) {
-    log.push(names[i]);
+    borrowMut.push(names[i]);
   }
   return request;
 }
@@ -223,8 +223,9 @@ function main() {
   if (a.log.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
+  const borrow = a.log;
   console.log(
-    `${a.name}: [${a.log.map((item) => $debugStr(item)).join(", ")}] ${a.flowed} ${a.tasks.size}`,
+    `${a.name}: [${borrow.map((item) => $debugStr(item)).join(", ")}] ${a.flowed} ${a.tasks.size}`,
   );
 
   const b = renderLogged("b");
@@ -232,14 +233,16 @@ function main() {
   if (b.log.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
-  console.log(`${b.name}: [${b.log.map((item) => $debugStr(item)).join(", ")}] ${b.flowed}`);
+  const value = b.log;
+  console.log(`${b.name}: [${value.map((item) => $debugStr(item)).join(", ")}] ${b.flowed}`);
 
   const d = renderClosing("d");
   completeAll(d);
   if (d.log.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
-  console.log(`${d.name}: [${d.log.map((item) => $debugStr(item)).join(", ")}] ${d.flowed}`);
+  const value$1 = d.log;
+  console.log(`${d.name}: [${value$1.map((item) => $debugStr(item)).join(", ")}] ${d.flowed}`);
 
   for (const [name, kind] of [
     ["e", "Root"],
@@ -250,8 +253,9 @@ function main() {
     if (request.log.borrows < 0) {
       $alreadyMutablyBorrowed();
     }
+    const value = request.log;
     console.log(
-      `${request.name}: [${request.log.map((item) => $debugStr(item)).join(", ")}] ${request.flowed}`,
+      `${request.name}: [${value.map((item) => $debugStr(item)).join(", ")}] ${request.flowed}`,
     );
   }
 }

@@ -2,7 +2,6 @@
 
 import {
   $alreadyBorrowed,
-  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $catchUnwind,
@@ -136,17 +135,7 @@ function main() {
   items$1.push(8);
   console.log(`${takeOrPush((x) => x === 8, 5)} ${takeOrPush((x) => x === 99, 6)}`);
   console.log(`${takeOrPush((x) => x === 6, 0)}`);
-  console.log(
-    `${any((x) => {
-      if (x === 7) {
-        return true;
-      }
-      if (items$1.borrows < 0) {
-        $alreadyMutablyBorrowed();
-      }
-      return items$1.length > 9;
-    })}`,
-  );
+  console.log(`${any((x) => x === 7 || $borrow(items$1).length > 9)}`);
   if (items$1.borrows) {
     $alreadyBorrowed();
   }
@@ -166,9 +155,6 @@ function main() {
     $alreadyBorrowed();
   }
   items$1.push(9);
-  if (items$1.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`[${items$1.join(", ")}]`);
+  console.log(`[${$borrow(items$1).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

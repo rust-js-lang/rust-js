@@ -639,8 +639,8 @@ test("a library's cell only its own code and constants reach is its flow's, as a
   // Taken, given, a static's, or a struct's the consumer holds: checked.
   expect(dep).toContain("  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(1);\n");
   expect(dep).toContain("  const cell = [];\n  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(5);\n");
-  expect(dep).toContain("  const cell = itemsOf(open);\n  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(2);\n");
-  expect(dep).toContain("    const cell = Tally.cell(tally);\n    if (cell.borrows) {\n      $alreadyBorrowed();\n    }\n    cell.push(n);\n");
+  expect(dep).toContain("  $borrowMut(itemsOf(open)).push(2);\n");
+  expect(dep).toContain("    $borrowMut(Tally.cell(tally)).push(n);\n");
   expect(dep).toContain("if (LOG.borrows) {\n    $alreadyBorrowed();\n  }\n  LOG.push(n);");
   // Only the crate's and a constant's: plain.
   expect(dep).toContain("  return stock.TAG === \"Many\" ? stock._0.reduce(");

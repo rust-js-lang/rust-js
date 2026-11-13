@@ -36,10 +36,11 @@ function merge(types, other) {
 
 export function main() {
   const chars = ["a", "b"];
-  if (chars.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}]`);
+  console.log(
+    `[${$borrow(chars)
+      .map((item) => $debugStr(item, "'"))
+      .join(", ")}]`,
+  );
   merge(chars, ["b"]);
 }
 //# sourceMappingURL=case.js.map

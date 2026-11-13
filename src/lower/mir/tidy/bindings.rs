@@ -372,6 +372,17 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             let a = match &stmts[i].kind {
                 StmtKind::Const(a, _) => a.clone(),
                 StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),
+                // Or the one name a `const` takes apart, a cell's value read
+                // while its guard is, `const { value: _4 } = $borrow(cell)`,
+                // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
+                StmtKind::Destructure {
+                    pattern,
+                    mutable: false,
+                    ..
+                } => match pattern.names()[..] {
+                    [only] => only.to_string(),
+                    _ => continue,
+                },
                 _ => continue,
             };
             if !is_temporary(&a) {

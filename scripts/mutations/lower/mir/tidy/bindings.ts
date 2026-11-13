@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "destructured-temporary-unnamed",
+    breaks: "a temporary a `const` takes apart, `const { value: _4 } = $borrow(cell)`, isn't named after the variable that takes it, `const chunk = _4` (rd439)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                } => match pattern.names()[..] {\n",
+    replace: "                } if false => match pattern.names()[..] {\n",
+    tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
+    snapshots: true,
+  },  {
     name: "named-temporary-renamed-in-a-closure-of-its-own",
     breaks:
       "naming a temporary renames a closure's own parameter of its name's reads, `(_2) => { const a = ty523830[0]; .. }`, and the JS after tidy's `in place` stage throws `Cannot convert NaN to a BigInt` where Rust prints `2 [41, 52]` (#1105)",

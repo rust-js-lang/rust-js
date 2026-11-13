@@ -52,10 +52,10 @@ function main() {
   if (left.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
+  const get = left.get("b");
   if (right.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
-  const get = left.get("b");
   const value = right.get("a");
   console.log(
     `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
@@ -74,21 +74,17 @@ function main() {
   add(totals, "a", 2n);
   add(totals, "b", 3n);
   const copy = $withBorrow(totals, (value) => ({ ...value, names: value.names.slice() }), true);
-  if (totals.borrows) {
-    $alreadyBorrowed();
-  }
-  totals.names.length = 0;
+  $borrowMut(totals).names.length = 0;
   const value$1 = $eq(totals, copy, true);
   console.log(
     `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$1}`,
   );
-  const names = ["c"];
   if (totals.borrows) {
     $alreadyBorrowed();
   }
   $assign(totals, {
     sum: 1n,
-    names,
+    names: ["c"],
   });
   const reading = $borrow(totals, true);
   try {

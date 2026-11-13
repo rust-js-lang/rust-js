@@ -2,7 +2,15 @@
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
-
+  {
+    name: "index-in-bounds-a-part",
+    breaks:
+      "React's `completedSegments.borrow()[0]` in bounds, of MIR's temporary of the borrow, is `const [contentSegment] = $borrow(completedSegments);`, a pattern, not the index it is (ADR 0598, amended)",
+    file: "src/lower/mir/bounds.rs",
+    find: "            Std::Index => return Ok(Value::Expr(Expr::indexed(items.clone(), exprs.remove(0)))),\n",
+    replace: "            Std::Index => return Ok(Value::Expr(at(&exprs[0]))),\n",
+    tests: ["test/lowering-parts.test.ts", "-t", "an item read by its index is no pattern"],
+  },
   {
     name: "removed-item-dropped",
     breaks:

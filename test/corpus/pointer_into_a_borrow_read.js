@@ -25,16 +25,18 @@ function main() {
   }
   const b = $ptr(tmp.value[1], "b", 0, tmp.value, 8);
   console.log(`${a.value} ${b.value}`);
+  let tmp$1;
   try {
     if (cell.borrows < 0) {
       $alreadyMutablyBorrowed();
     }
+    tmp$1 = cell;
   } catch (error) {
     $unborrow(tmp);
     $unborrow(borrow);
     throw error;
   }
-  console.log(`${cell.value[1].b}`);
+  console.log(`${tmp$1.value[1].b}`);
   // Through an `Rc` too, read where it's made.
   let items = [
     { a: 4, b: 40 },

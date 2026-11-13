@@ -30,10 +30,7 @@ export function main() {
   const ids = [1, 2];
   const more = [11];
   add(ids, more, 12);
-  if (more.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`[${more.join(", ")}]`);
+  console.log(`[${$borrow(more).join(", ")}]`);
   add(ids, ids, 20);
 }
 //# sourceMappingURL=case.js.map

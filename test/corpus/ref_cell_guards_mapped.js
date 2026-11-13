@@ -2,7 +2,6 @@
 
 import {
   $alreadyBorrowed,
-  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $byteLen,
@@ -71,10 +70,7 @@ function main() {
   } finally {
     $unborrow(x);
   }
-  if (c.borrows < 0) {
-    $alreadyMutablyBorrowed();
-  }
-  console.log(`${pointDebug_fmt(c)}`);
+  console.log(`${pointDebug_fmt($borrow(c))}`);
   // filter_map: its `Err` gives the guard back, still held.
   const guard$2 = $borrow(c, true);
   const r = $guardFilterMap(
