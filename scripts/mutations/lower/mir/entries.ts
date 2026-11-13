@@ -232,11 +232,12 @@ export const mutations: Mutation[] = [
   {
     name: "swap-of-variables-destructured",
     breaks:
-      "`mem::swap(&mut a, &mut b)` of two variables is `[a, b] = [b, a]`, which reassigns the `const` a `let` that nothing else assigns is declared (#369)",
+      "`mem::swap(&mut a, &mut b)` of two variables is `[a, b] = [b, a]`, which reassigns the `const` a `let` that nothing else assigns is declared (#369); as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
     file: "src/lower/mir/entries.rs",
     find: "        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));\n",
     replace: "        let place = |e: &Expr| !e.has_effects();\n",
     tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
+    snapshots: true,
   },
   {
     name: "generic-moved-out-shared",

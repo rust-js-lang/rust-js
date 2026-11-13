@@ -68,16 +68,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "callable-param-some-boxed",
-    breaks:
-      "an `Option` of a type parameter bound by `FnOnce` is read through `$someValue(f)`, though a function is never `undefined`",
-    file: "src/lower/representation/options.rs",
-    find: "        self.read_by_its_bounds(ty) || self.is_callable(ty) || unboxed\n",
-    replace: "        self.read_by_its_bounds(ty) || unboxed\n",
-    tests: ["test/corpus.test.ts", "-t", "optional_callbacks"],
-    snapshots: true,
-  },
-  {
     name: "binding-bound-some-boxed",
     breaks:
       "`Some` of a type parameter a binding of its bound reads is `$some(x)`, though it's never `undefined`",

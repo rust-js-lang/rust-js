@@ -192,18 +192,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "formatting-unwinding-unseen",
-    breaks: "a writer's `write!` into its `Formatter` is taken to unwind where a panic may be caught, so every writer streams through the line and a `Vec` of a derived `Debug` is refused (#1496)",
+    breaks: "a writer's `write!` into its `Formatter` is taken to unwind where a panic may be caught, so every writer streams through the line and a `Vec` of a derived `Debug` is refused (#1496); as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
     file: "src/lower/analysis/unwinding.rs",
     find: "                            || (unwinding == Unwinding::ButThroughWhatsShown && formats(tcx, callee))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
+    snapshots: true,
   },
   {
     name: "impossible-branch-taken-to-unwind",
-    breaks: "an exhaustive `match`'s impossible branch, a derived `Debug`'s of an enum, is taken to unwind as it's shown, so a `Vec` of the enum in a `println!` of a crate that catches panics is refused (#1496)",
+    breaks: "an exhaustive `match`'s impossible branch, a derived `Debug`'s of an enum, is taken to unwind as it's shown, so a `Vec` of the enum in a `println!` of a crate that catches panics is refused (#1496); as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
     file: "src/lower/analysis/unwinding.rs",
     find: "                let unreachable = unwinding == Unwinding::ButThroughWhatsShown;\n",
     replace: "                let unreachable = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
+    snapshots: true,
   },
 ];

@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Io(_)\n",
-    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
   },
   {
     name: "mir-same-trait-dispatched",
@@ -146,10 +146,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-source-through-trait-call",
-    breaks: "a known source's own method goes through the generic trait call, which gives a `Cursor` as the object, not in its box",
+    breaks: "a known source's own method goes through the generic trait call, which gives a `Cursor` as the object, not in its box; as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
     file: "src/lower/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(io_cursor|io_read_chain_take_bytes).rs$"],
+    snapshots: true,
   },
 ];

@@ -51,11 +51,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints/names.rs",
     find: "                    taken_from.insert(local, from);\n",
     replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(temporary_names|cell_const|extreme_drops).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^(temporary_names|atomics|catch_unwind_thrown_named).rs$"],
     snapshots: true,
   },
   {

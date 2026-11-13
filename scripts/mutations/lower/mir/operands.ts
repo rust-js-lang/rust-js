@@ -76,11 +76,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-take-field-reordered",
     breaks:
-      "a tuple's call taken before its later calls lets a flush run them first",
+      "a tuple's call taken before its later calls lets a flush run them first; as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
     file: "src/lower/mir/operands.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-out-of-order-fields-undeclared",
