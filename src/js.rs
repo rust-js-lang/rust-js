@@ -17,6 +17,7 @@ mod optional_call;
 pub mod result;
 mod stmt_walk;
 mod storage;
+mod template;
 pub mod undefined_arguments;
 pub mod undefined_keys;
 mod walk;
