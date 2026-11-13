@@ -28,10 +28,12 @@ use std::collections::BTreeSet;
 mod callers;
 mod ranges;
 mod session;
+mod state;
 
 use callers::parameter_intervals;
 use ranges::stepped_ranges;
 pub(in crate::lower) use session::*;
+use state::*;
 
 /// How many times a block is visited before what still moves widens.
 const VISITS_BEFORE_WIDENING: u32 = 3;
@@ -48,175 +50,6 @@ const VISITS_BEFORE_WIDENING_ANYWHERE: u32 = 12;
 pub(in crate::lower) struct Proofs {
     pub(in crate::lower) bounds: IndexSet<BasicBlock>,
     pub(in crate::lower) exact: IndexSet<Location>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-struct Interval {
-    lo: i128,
-    hi: i128,
-}
-
-impl Interval {
-    fn join(self, other: Interval) -> Interval {
-        Interval {
-            lo: self.lo.min(other.lo),
-            hi: self.hi.max(other.hi),
-        }
-    }
-}
-
-/// A comparison a `bool` local holds: `a op b`.
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct Comparison {
-    op: BinOp,
-    a: Value,
-    b: Value,
-}
-
-/// What a comparison compares: a local or a constant.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Value {
-    Local(Local),
-    Constant(i128),
-}
-
-/// What a relation's greater side is: a slice's length, by the local the
-/// slice is (`Len`), or an integer local.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum Term {
-    Len(Local),
-    Int(Local),
-}
-
-/// What's known at a point: each integer local's interval, none where it
-/// isn't; each `bool` local's comparison; and each local that's a copy of
-/// another neither has been written since, `_7 = copy _3`, which MIR
-/// compares in its place, so a comparison is of what it copies, or a
-/// reborrow of it, `_9 = &_1`, whose length is the same. And the small
-/// relational part (ADR 1137, M2b): each local that holds a slice's
-/// length, by the slice; each `x < y` and `x <= y` known, strict or not;
-/// the least each slice's length is; and each `bool` that's a slice's
-/// `is_empty()`.
-#[derive(Clone, PartialEq)]
-struct State {
-    intervals: IndexVec<Local, Option<Interval>>,
-    comparisons: IndexMap<Local, Comparison>,
-    copies: IndexMap<Local, Local>,
-    lens: IndexMap<Local, Local>,
-    below: IndexSet<(Local, Term, bool)>,
-    least: IndexMap<Local, i128>,
-    empties: IndexMap<Local, Local>,
-    /// A `for` loop's range of integers, by the local holding it, a `&mut`
-    /// of it, or the `Option` its `next()` gave.
-    ranges: IndexMap<Local, Ranged>,
-}
-
-/// A range of integers `next()` alone steps (`stepped_ranges`): what its
-/// start is at least, and its end, which never changes while it's known.
-/// Each value its `next()` gives is at least the one and below the other.
-#[derive(Clone, Copy, PartialEq)]
-struct Ranged {
-    held: Held,
-    least: i128,
-    end: Value,
-}
-
-/// What holds a range: a local, the range; a `&mut` of it, lent to its
-/// `next()`; or what `next()` gave.
-#[derive(Clone, Copy, PartialEq)]
-enum Held {
-    Range,
-    Lent,
-    Next,
-}
-
-impl State {
-    fn join(&self, other: &State) -> State {
-        let intervals = (self.intervals.iter().zip(other.intervals.iter()))
-            .map(|(a, b)| match (a, b) {
-                (Some(a), Some(b)) => Some(a.join(*b)),
-                _ => None,
-            })
-            .collect();
-        let comparisons = (self.comparisons.iter())
-            .filter(|&(local, comparison)| other.comparisons.get(local) == Some(comparison))
-            .map(|(&local, &comparison)| (local, comparison))
-            .collect();
-        let both = |a: &IndexMap<Local, Local>, b: &IndexMap<Local, Local>| -> IndexMap<Local, Local> {
-            (a.iter())
-                .filter(|&(k, v)| b.get(k) == Some(v))
-                .map(|(&k, &v)| (k, v))
-                .collect()
-        };
-        let least = (self.least.iter())
-            .filter_map(|(&k, &n)| other.least.get(&k).map(|&m| (k, n.min(m))))
-            .collect();
-        let ranges = (self.ranges.iter())
-            .filter_map(|(&k, &a)| {
-                let b = other.ranges.get(&k)?;
-                (a.held == b.held && a.end == b.end).then_some((
-                    k,
-                    Ranged {
-                        least: a.least.min(b.least),
-                        ..a
-                    },
-                ))
-            })
-            .collect();
-        State {
-            intervals,
-            comparisons,
-            copies: both(&self.copies, &other.copies),
-            lens: both(&self.lens, &other.lens),
-            below: self.below.intersection(&other.below).copied().collect(),
-            least,
-            empties: both(&self.empties, &other.empties),
-            ranges,
-        }
-    }
-
-    /// `local` written: what it held, and each comparison of it, forgotten.
-    fn forget(&mut self, local: Local) {
-        self.intervals[local] = None;
-        self.comparisons.shift_remove(&local);
-        self.comparisons
-            .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));
-        self.copies.retain(|&copy, &mut of| copy != local && of != local);
-        self.lens.retain(|&holder, &mut of| holder != local && of != local);
-        self.below
-            .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
-        self.least.shift_remove(&local);
-        self.empties.retain(|&holder, &mut of| holder != local && of != local);
-        self.ranges.shift_remove(&local);
-        self.ranges.retain(|_, ranged| ranged.end != Value::Local(local));
-    }
-
-    /// What `local` is a copy or a reborrow of, else itself.
-    fn root(&self, local: Local) -> Local {
-        self.copies.get(&local).copied().unwrap_or(local)
-    }
-
-    /// What's known of `local`, known too of what it copies and of each
-    /// other copy of that: `i > 100` of `let mut i = start` tells `i`,
-    /// though the comparison is of `start`, what `i` copies.
-    fn narrowed_to(&mut self, local: Local, interval: Interval) {
-        let root = self.root(local);
-        let copies: Vec<Local> = (self.copies.iter())
-            .filter(|&(_, &of)| of == root)
-            .map(|(&copy, _)| copy)
-            .collect();
-        for l in [local, root].into_iter().chain(copies) {
-            self.intervals[l] = Some(interval);
-        }
-    }
-
-    /// The slice whose length `local` holds, itself or what it copies.
-    fn length_of(&self, local: Local) -> Option<Local> {
-        self.lens
-            .get(&local)
-            .or_else(|| self.lens.get(&self.root(local)))
-            .copied()
-    }
 }
 
 struct Walk<'a, 'tcx> {

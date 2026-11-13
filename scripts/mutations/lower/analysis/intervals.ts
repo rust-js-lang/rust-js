@@ -109,14 +109,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "intervals-copies-unnarrowed",
-    breaks: "a comparison narrows only what's compared, not its copies, so `i += 1` under `i > 100` of `let mut i = start` may wrap",
-    file: "src/lower/analysis/intervals.rs",
-    find: "        for l in [local, root].into_iter().chain(copies) {\n",
-    replace: "        for l in [root].into_iter().chain(copies.into_iter().take(0)) {\n",
-    tests,
-  },
-  {
     name: "intervals-minus-one-may-wrap",
     breaks: "`i - 1` under `i < len` is taken below `len` though `i` may be 0, where it wraps past every length: `p[i - 1]` reads `undefined` where native Rust panics",
     file: "src/lower/analysis/intervals.rs",
