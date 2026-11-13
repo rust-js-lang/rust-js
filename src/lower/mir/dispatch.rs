@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
-        let (generic_args, args) = self.passed_through((def_id, generic_args), args);
+        let (generic_args, args) = self.passed_through(state.body, (def_id, generic_args), args);
         let args = &args[..];
         if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {
             return Ok(Value::Expr(defined));

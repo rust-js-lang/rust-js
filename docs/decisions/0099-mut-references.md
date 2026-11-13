@@ -813,3 +813,27 @@ own, `fnvHasher_finish(r)`. Held by corpus
 and `passed-on-of-shared-self` retargeted, caught. A `&mut &mut` to the
 crate's own hasher, whose `&mut` is a cell, is still refused, as before
 (#1724).
+
+## Amendment: through each `&mut` std's impl only forwards (2026-11-14, #1724)
+
+`finish()` of a `&mut &mut` to the crate's own hasher finds std's `impl
+Hasher for &mut H` twice over, and was refused: the pass-through went one
+`&mut` deep. `passed_through` (`mir/dispatch/passed_on.rs`) now peels each
+`&mut` whose impl is std's forwarding one, as `passed_through_mut_ref`
+says at each level, and the call is that of the deepest `W` it can be:
+of `&self`, where the `&mut W` reads as `W` itself, or, where `W` is a
+reference, the crate's own `impl Hasher for &mut Tally`'s, the `W` the
+place holds, whose `&W` is the `W` itself, never a copy. It never peels
+past an impl that isn't std's: that impl is the call's. A `&self`'s
+receiver, a temporary `&` of the `&mut`, `_10 = &_3`, read through more
+than once, is read from what it borrows, `_3` (`lent_by`), not through the
+temporary, which read one `.value` too many; read through once, it's read
+through the temporary as before, as `_3` may be no JS name (the `&mut`
+matrix's `{:?}` of a struct a closure captures). Held by corpus `hasher_finished_through_a_mut_of_its_mut`,
+native-compared; mutations `passed-on-one-level-only`,
+`shared-receiver-read-through-its-temporary`, `reference-w-not-passed-on`,
+`lent-place-read-through-once-only` and `lent-place-read-through-always`,
+caught, and `passed-on-receiver-not-read-through` and
+`shared-receiver-passed-through-a-cell` retargeted, caught. Generic code
+given the crate's own `&mut Tally` hasher, `"text".hash(&mut t)`, is still
+refused (#1730).
