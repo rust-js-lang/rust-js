@@ -201,20 +201,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "assigned-operator-span-off",
-    breaks:
-      "an exact operator an assignment is of, `s = n - 1`, is known only by its own span, which MIR doesn't write it at, so it keeps its wrap",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "            for span in [Some(thir[id].span), assigned.get(&id).copied()].into_iter().flatten() {\n",
-    replace:
-      "            for span in [Some(thir[id].span)].into_iter().flatten() {\n",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
     name: "string-length-any-u32",
     breaks:
       "a JS string's `length` may be `u32::MAX`, so a counter two steps below it wraps, `(i + 1) >>> 0 < formatString.length`",

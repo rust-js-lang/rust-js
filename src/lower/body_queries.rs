@@ -23,6 +23,8 @@ mod in_place;
 mod method_calls;
 mod ranges;
 mod set_reads;
+mod span_join;
+pub(in crate::lower) use span_join::{the_one, the_one_at};
 mod total_orders;
 mod values;
 mod whole_casts;
@@ -132,9 +134,11 @@ pub(super) struct BodyFacts<'tcx> {
     /// `Index::index(&v, i)`; and of each map's `m[k]` whose key its tests
     /// show the map holds (rd558).
     pub(super) in_bounds: IndexSet<ExprId>,
-    /// Where each `+`, `-` and `*` of a small integer is written that the
-    /// body's ranges show never leaves its type's range (`ranges`).
-    pub(super) exact: IndexSet<Span>,
+    /// Each `+`, `-` and `*` of a small integer, `a + b` or `a += b`,
+    /// that the body's ranges show never leaves its type's range
+    /// (`ranges`), which MIR's operator is joined to by its span alone,
+    /// `the_one` there (#1672).
+    pub(super) exact: IndexSet<ExprId>,
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
     pub(super) named_callbacks: IndexSet<LocalVarId>,

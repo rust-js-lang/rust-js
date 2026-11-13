@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
         // What the body's ranges show stays in range is JS's own (ADR 0576).
         if let BinOp::Add | BinOp::Sub | BinOp::Mul = op
-            && self.frame.facts.exact.contains(&span)
+            && self.exact_at(span)
         {
             let js_op = match op {
                 BinOp::Add => Op::Add,

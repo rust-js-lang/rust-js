@@ -3,6 +3,7 @@
 //! through `index_mut` unchecked, a `swap` JS's own.
 
 use super::*;
+use crate::lower::body_queries::{the_one, the_one_at};
 use crate::lower::combinators::Comb;
 use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -12,11 +13,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// bounds: the index there, `a[i]`, is among them.
     pub(super) fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
         matches!(msg, mir::AssertKind::BoundsCheck { .. })
-            && (self.frame.thir.exprs.iter_enumerated()).any(|(id, e)| {
+            && the_one_at(self.frame.thir, span, |e| {
                 matches!(e.kind, thir::ExprKind::Index { .. })
-                    && e.span == span
-                    && self.frame.facts.in_bounds.contains(&id)
             })
+            .is_some_and(|id| self.frame.facts.in_bounds.contains(&id))
+    }
+
+    /// Whether MIR's `+`, `-` or `*` at `span` is one THIR's facts know
+    /// stays in its type's range: the one such operator written there, or
+    /// at the assignment it's the value of, `s = n - 1`'s, never one of two
+    /// a macro writes there (`the_one`, #1672).
+    pub(in crate::lower) fn exact_at(&self, span: Span) -> bool {
+        let thir = self.frame.thir;
+        let arithmetic = |id: thir::ExprId| match thir[id].kind {
+            thir::ExprKind::Binary { op, .. } => matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul),
+            thir::ExprKind::AssignOp { op, .. } => matches!(BinOp::from(op), BinOp::Add | BinOp::Sub | BinOp::Mul),
+            _ => false,
+        };
+        let at = (thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
+            _ if e.span == span && arithmetic(id) => Some(id),
+            thir::ExprKind::Assign { rhs, .. } if e.span == span => {
+                let value = crate::lower::body_queries::strip(thir, rhs);
+                (arithmetic(value) && thir[value].span != span).then_some(value)
+            }
+            _ => None,
+        });
+        the_one(at).is_some_and(|id| self.frame.facts.exact.contains(&id))
     }
 
     /// Whether THIR's call of `def_id` at `span` is one whose indexes the

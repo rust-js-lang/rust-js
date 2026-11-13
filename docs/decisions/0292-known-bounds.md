@@ -79,3 +79,31 @@ compound_assignment_reads_its_place_after_its_right_side and
 compound_assignment_right_side_index_checked_first against native Rust;
 mutations `guard-failure-unjoined` and `assign-op-place-first`
 (`body_queries/ranges.ts`).
+
+## Amendment (2026-11-13, #1672 change 1 M1a): a check is left out only through the one node at its span
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. MIR says where a statement is written only by its span,
+and the range analysis's facts are of THIR's nodes. The join between them
+was loose. A bounds check was left out where *any* THIR index at its span
+was known in bounds. A macro's repetition, `[$($v[$i]),*]`, writes one
+index at one span for each item, so `v[k]` in bounds left out `v[k + 1]`'s
+check, and the JS read past the end where native Rust panics. And a wrap
+was left out by a table of spans, ANDed over only the operators the walk
+reached.
+
+**Each join that licenses leaving out a check now asks one owner,
+`body_queries/span_join.rs`: the one THIR node of a kind at the span, or
+none.**
+- `known_in_bounds` takes the one index there.
+- `exact` is now of operators, `ExprId`s, and MIR's operator is joined by
+  `exact_at` to the one written there or at the assignment it's the value
+  of.
+- `thir_call`, `kept_cast_at` and `closure_arguments_written`, unique
+  already, ask it too.
+
+`test/architecture-mut-refs.test.ts` holds the facts `ExprId`-keyed and the
+bounds join free of `any`. No snapshot moves. Corpus case
+macro_repeated_index_keeps_each_check against native Rust; mutations
+`bounds-join-any`, `assigned-operator-span-off` (moved to `mir/bounds.ts`),
+`exact-wrapped` and `mir-jsx-shapeless` (refitted), caught.

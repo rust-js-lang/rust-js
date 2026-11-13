@@ -215,4 +215,21 @@ export const mutations: Mutation[] = [
       "an item.s bitwise assignment is its compound",
     ],
   },
+  {
+    name: "bounds-join-any",
+    breaks: "MIR's bounds check is joined to any THIR index at its span, so a macro's repetition, `[$($v[$i]),*]`, of one index in bounds leaves out the other's check (#1672)",
+    file: "src/lower/mir/bounds.rs",
+    find: "            && the_one_at(self.frame.thir, span, |e| {\n                matches!(e.kind, thir::ExprKind::Index { .. })\n            })\n            .is_some_and(|id| self.frame.facts.in_bounds.contains(&id))\n",
+    replace: "            && (self.frame.thir.exprs.iter_enumerated()).any(|(id, e)| matches!(e.kind, thir::ExprKind::Index { .. }) && e.span == span && self.frame.facts.in_bounds.contains(&id))\n",
+    tests: ["test/corpus.test.ts", "-t", "^macro_repeated_index_keeps_each_check.rs$"],
+  },
+  {
+    name: "assigned-operator-span-off",
+    breaks:
+      "an exact operator an assignment is of, `s = n - 1`, is joined only by its own span, which MIR doesn't write it at, so it keeps its wrap",
+    file: "src/lower/mir/bounds.rs",
+    find: "            thir::ExprKind::Assign { rhs, .. } if e.span == span => {\n",
+    replace: "            thir::ExprKind::Assign { rhs, .. } if false && e.span == span => {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+  },
 ];

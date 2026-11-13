@@ -270,9 +270,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what it casts as it is (`kept_casts`): of a float it knows whole and
     /// in the target's range, or of an integer in it.
     pub(super) fn kept_cast_at(&self, span: Span) -> bool {
-        let mut casts = (self.frame.thir.exprs.iter_enumerated())
+        let casts = (self.frame.thir.exprs.iter_enumerated())
             .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));
-        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.frame.facts.kept_casts.contains(&id))
+        crate::lower::body_queries::the_one(casts).is_some_and(|(id, _)| self.frame.facts.kept_casts.contains(&id))
     }
 
     /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
@@ -282,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id: rustc_span::def_id::DefId,
         fn_span: Span,
     ) -> Option<(thir::ExprId, Vec<thir::ExprId>)> {
-        let mut calls = self.frame.thir.exprs.iter().filter_map(|e| match &e.kind {
+        let calls = self.frame.thir.exprs.iter().filter_map(|e| match &e.kind {
             thir::ExprKind::Call {
                 fun, args, fn_span: at, ..
             } if *at == fn_span && matches!(*self.frame.thir[*fun].ty.kind(), ty::FnDef(id, _) if id == def_id) => {
@@ -290,8 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         });
-        let call = calls.next()?;
-        calls.next().is_none().then_some(call)
+        crate::lower::body_queries::the_one(calls)
     }
 
     /// Where each argument of the closure call at `span` is written, `a`
@@ -299,7 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// call there; none where there's no such call.
     pub(super) fn closure_arguments_written(&self, span: Span) -> Vec<Span> {
         let thir = self.frame.thir;
-        let mut calls = thir.exprs.iter().filter_map(|e| match &e.kind {
+        let calls = thir.exprs.iter().filter_map(|e| match &e.kind {
             thir::ExprKind::Call { args, .. } if e.span == span && args.len() == 2 => {
                 match &thir[crate::lower::body_queries::strip(thir, args[1])].kind {
                     thir::ExprKind::Tuple { fields } => Some(fields.iter().map(|&field| thir[field].span).collect()),
@@ -308,10 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         });
-        match (calls.next(), calls.next()) {
-            (Some(fields), None) => fields,
-            _ => Vec::new(),
-        }
+        crate::lower::body_queries::the_one(calls).unwrap_or_default()
     }
 
     /// A future whose `Future` is the crate's own made a JS promise: by a

@@ -65,7 +65,7 @@ struct Target {
 #[derive(Default)]
 pub(in crate::lower) struct Ranges {
     pub(in crate::lower) in_bounds: IndexSet<ExprId>,
-    pub(in crate::lower) exact: IndexSet<Span>,
+    pub(in crate::lower) exact: IndexSet<ExprId>,
     pub(in crate::lower) kept_casts: IndexSet<ExprId>,
     /// The function of each `OnceCell::set` of a cell still empty there.
     pub(in crate::lower) set_empty: IndexSet<ExprId>,
@@ -274,31 +274,18 @@ impl Walk<'_, '_> {
         if self.lost {
             return Ranges::default();
         }
-        // One span may be of more than one operator, a macro's: exact where
-        // each is.
         // MIR writes the operator an assignment is of, `s = n - 1`'s, where
-        // the assignment is.
+        // the assignment is: MIR's operator is joined to the one of them
+        // there, `the_one`, never one of two (#1672).
         let thir = self.thir;
-        let assigned: IndexMap<ExprId, Span> = (thir.exprs.iter())
-            .filter_map(|e| match e.kind {
-                ExprKind::Assign { rhs, .. } => Some((strip(thir, rhs), e.span)),
-                _ => None,
-            })
-            .collect();
-        let mut exact: IndexMap<Span, bool> = IndexMap::default();
-        for (&id, &ok) in &self.ops {
-            for span in [Some(thir[id].span), assigned.get(&id).copied()].into_iter().flatten() {
-                *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
-            }
-        }
         Ranges {
             in_bounds: (self.indexes.iter())
                 .filter(|&(_, &ok)| ok)
                 .map(|(&id, _)| id)
                 .collect(),
-            exact: (exact.into_iter())
-                .filter(|&(_, ok)| ok)
-                .map(|(span, _)| span)
+            exact: (self.ops.iter())
+                .filter(|&(&id, &ok)| ok && !thir[id].span.from_expansion())
+                .map(|(&id, _)| id)
                 .collect(),
             kept_casts: (self.casts.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
             set_empty: (self.sets.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),

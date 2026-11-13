@@ -7,9 +7,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a JSX call from MIR has no THIR call for its shape: props in the struct's order",
     file: "src/lower/mir/jsx_props.rs",
-    find: "        calls.next().is_none().then_some(call)\n",
+    find: "        crate::lower::body_queries::the_one(calls)\n    }\n\n    /// Where each argument",
     replace:
-      "        calls.next().is_none().then_some(call).filter(|_| false)\n",
+      "        crate::lower::body_queries::the_one(calls).filter(|_| false)\n    }\n\n    /// Where each argument",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

@@ -85,3 +85,17 @@ test("a write in place is made by `in_place` alone", () => {
   }
   expect(read(writer)).toContain("fn in_place(");
 });
+
+// A fact that licenses leaving out a check, a bound's, a wrap's, a cast's
+// or a `OnceCell`'s, is of THIR's node, never of a span: MIR's statement is
+// joined to it by `span_join`'s one node there or none, as two nodes of a
+// macro's expansion may share a span (#1671, #1672).
+test("a fact that leaves out a check is of a node, joined by `span_join`", () => {
+  const facts = read("src/lower/body_queries.rs");
+  for (const fact of ["in_bounds", "exact", "kept_casts", "set_empty"]) {
+    expect(facts, fact).toMatch(new RegExp(`pub\\(super\\) ${fact}: IndexSet<ExprId>,`));
+  }
+  const bounds = read("src/lower/mir/bounds.rs");
+  expect(bounds).toContain("the_one_at(");
+  expect(code("src/lower/mir/bounds.rs").filter((line) => /\.any\(/.test(line) && /\.span ==/.test(line))).toEqual([]);
+});
