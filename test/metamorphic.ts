@@ -259,11 +259,11 @@ const loudLine = /^(~loud \d+ )(.*)$/;
 /** Whether the JS's run, `ran`, agrees with native Rust's, `runs`, its
  * first and its runs again, up to the order of a hash table's drops, which
  * std leaves to `RandomState`'s seed and rust-js gives in insertion order
- * (difference 5). Each drop is a group, its loud line and the lines its
- * `Drop` prints up to the next loud line; where some of native's runs put
+ * (difference 5). Each drop, clone or call is a group, its loud line and
+ * the lines it prints up to the next loud line; where some of native's runs put
  * other lines than its first does, each run of such groups in a row is a
  * hash table's iteration only where every group of it, the JS's too, is a
- * loud drop's, and the JS's are then the same groups, in any order, each
+ * loud drop's, clone's or call's, each item's step of the iteration, and the JS's are then the same groups, in any order, each
  * loud count in its place. Every other line, standard error and the
  * outcome, as `agree` asks: so a drop native's runs all put in one place,
  * one no hash table orders, is wrong anywhere else, and so is a drop given
@@ -304,7 +304,7 @@ export function agreesUpToHashOrder(runs: Run[], ran: Run): boolean {
     if (js.slice(tail, last[1]).join("\n") !== native.slice(tail, last[1]).join("\n")) return false;
     last[1] = tail;
     for (const lines of all) {
-      if (!block.every(([from]) => /^~loud \d+ drop /.test(lines[from]))) return false;
+      if (!block.every(([from]) => /^~loud \d+ (drop|clone|call) /.test(lines[from]))) return false;
     }
     const count = (line: string) => line.match(loudLine)![1];
     if (block.some(([from]) => count(js[from]) !== count(native[from]))) return false;

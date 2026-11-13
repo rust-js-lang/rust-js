@@ -30,6 +30,7 @@ plain std loud-drop lock_poisoning.rs
 plain std loud unwrap_dropping.rs
 plain std loud-call unwrap_dropping.rs
 plain std loud-drop unwrap_dropping.rs
+plain std loud-call value_cell_read_in_its_executor.rs
 
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
@@ -44,6 +45,7 @@ plain std loud-drop as_deref_rc_in_place.rs
 plain std loud assignments_chained.rs
 plain std loud-call assignments_chained.rs
 plain std loud-drop assignments_chained.rs
+plain std loud-clone btree_set_operators_seen.rs
 plain std loud cell_taken_default_first.rs
 plain std loud-call cell_taken_default_first.rs
 plain std loud-drop cell_taken_default_first.rs
@@ -73,6 +75,9 @@ plain std loud refcell_field_derive_meets.rs
 plain std loud-drop refcell_field_derive_meets.rs
 plain std loud refcell_variant_derive_meets.rs
 plain std loud-drop refcell_variant_derive_meets.rs
+plain std loud refcell_variant_derives.rs
+plain std loud-call refcell_variant_derives.rs
+plain std loud-drop refcell_variant_derives.rs
 plain std loud thread_local_field_forwarders.rs
 plain std loud-call thread_local_field_forwarders.rs
 plain std loud-drop thread_local_field_forwarders.rs

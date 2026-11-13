@@ -234,6 +234,15 @@ test("a hash table's drops agree reordered with what each drop prints", () => {
   expect(agreesUpToHashOrder(printing, run(["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"]))).toBe(true);
 });
 
+test("a hash table's calls and clones agree in another order; two calls no table orders don't", () => {
+  const seeded = [
+    ["~loud 1 call 1", "~loud 2 clone P(1)", "~loud 3 clone P(2)", "~loud 4 call 3", "~loud 5 call 4"],
+    ["~loud 1 call 1", "~loud 2 clone P(2)", "~loud 3 clone P(1)", "~loud 4 call 3", "~loud 5 call 4"],
+  ].map((lines) => run(lines));
+  expect(agreesUpToHashOrder(seeded, run(["~loud 1 call 1", "~loud 2 clone P(2)", "~loud 3 clone P(1)", "~loud 4 call 3", "~loud 5 call 4"]))).toBe(true);
+  expect(agreesUpToHashOrder(seeded, run(["~loud 1 call 1", "~loud 2 clone P(1)", "~loud 3 clone P(2)", "~loud 4 call 4", "~loud 5 call 3"]))).toBe(false);
+});
+
 test("a drop given another drop's lines doesn't agree", () => {
   const two = [
     ["~loud 1 drop A", "drop a", "~loud 2 drop B", "drop b", "end"],

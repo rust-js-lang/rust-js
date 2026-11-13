@@ -492,3 +492,15 @@ orders in 9 runs, and the compiler as it is accepted. A hash table's
 iteration that prints, not drops, isn't reordered. Held by
 `metamorphic.test.ts`' five tests of it; `value_keys.rs` ran as Rust does
 three times in a row.
+
+Amended (2026-11-13, nightly 43333093940): each drop, clone or call is a
+group, its loud line and the lines it prints up to the next loud line, so
+a key whose `Drop` prints is compared as one whose doesn't; within a block
+native's own runs order differently, any loud line may start a group, the
+counts in place, a constant line after the block's last group compared
+where it is, and a drop given another's lines never agrees. Where native is
+deterministic the order is compared exactly: two calls no hash table
+orders, swapped, still disagree (the lead's bounds). A hash table whose
+order changes what the program prints, not only its order, `stock_orders`'
+runs of different lengths, is still compared exactly.
+
