@@ -508,4 +508,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(refused_drops_and_displays|consumer_drops_what_is_left).rs$"],
     snapshots: true,
   },
+  {
+    name: "dyn-drops-settled-in-order",
+    breaks: "which `dyn Fn`s drop is settled before `dyn Any`s are known to, so a `Box<dyn Fn()>` whose closure holds a `Box<dyn Any>` of a value with a destructor never runs it (#1662)",
+    file: "src/lower/analysis.rs",
+    find: "        if settled {\n",
+    replace: "        if settled || closure_facts.any_dyns_drop {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_dyn_holding_an_any_dyn_drops_it.rs$"],
+  },
 ];

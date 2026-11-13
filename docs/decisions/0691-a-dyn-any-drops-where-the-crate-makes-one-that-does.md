@@ -169,3 +169,20 @@ one of what drops" (a library's `resume_unwind(Box::new(Restore(n)))`,
 dropped where its consumer caught it, run); mutations
 `any-drops-of-any-library` (`analysis.rs`), `library-dropping-anys-unsaid`
 (`lower/library.rs`) and `library-dropping-anys-unread` (`library.rs`).
+
+## Amendment: each `dyn`'s fact asked again till none changes (#1662, 2026-11-13)
+
+Which `dyn Fn`s drop, and whether `dyn Any`s, `dyn Error`s and
+`Box<dyn Iterator>`s do, were each settled once, in that order. But each
+answer reads the others: a `Box<dyn Fn()>` whose closure holds a
+`Box<dyn Any>` of a value with a destructor drops only once `dyn Any`s are
+known to, which was decided after it, so it dropped nothing and the value's
+destructor never ran, where Rust's runs as the `dyn Fn` drops (results
+change, Rust's kept, ADR 0262). `analyze_crate` now asks all four together
+and again, with what they count, until none changes. Each fact only grows,
+so this ends. The one-pass claims ("one that drops only by a `dyn Any` it
+holds doesn't, so one pass does") were true of a `dyn Any` alone, not of
+the others that read it. Corpus cases `fn_dyn_holding_an_any_dyn_drops_it`
+and `fn_dyn_holding_an_error_or_iterator_dyn_drops_it` match native Rust in
+both builds; the first differed before. Mutation
+`dyn-drops-settled-in-order` (`analysis.ts`).

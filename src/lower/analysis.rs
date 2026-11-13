@@ -644,17 +644,60 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // library's callers are its consumers, which it can't see.
     let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));
     let given_a_drop = |owner, index| given.contains(&(owner, index));
-    let made = closures::dropping_fn_dyns(
-        tcx,
-        all_bodies,
-        (params_may_drop, (!library).then_some(&given_a_drop), reached.functions),
-        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
-    );
-    closure_facts.fn_dyns_drop = closures::FnDynDrops::of(tcx, library_drops, &made);
-    let drops = closure_facts.fn_dyns_drop.any();
-    if drops {
+    // Which `dyn`s drop what they hold, each of what the others answer: a
+    // `dyn Fn` whose closure holds a `dyn Any` of a value with a destructor
+    // drops only once `dyn Any`s are known to (#1662), and a `dyn Any` of a
+    // closure only once its `dyn Fn` is. Each fact only grows, as does what
+    // it counts, so they're asked again, together, till none changes.
+    // Whether a value with a destructor is made a `dyn Any`, which then
+    // drops it (ADR 0691): what unwound, of a panic or of JS, drops nothing.
+    // And a `dyn Error`, and the `io::Error` that holds one (ADR 0462,
+    // amended); and a `Box<dyn Iterator>`, which carries the drop of what it
+    // owns (ADR 0521, #1420).
+    let made = loop {
+        let drop_runs = |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty);
+        let made = closures::dropping_fn_dyns(
+            tcx,
+            all_bodies,
+            (params_may_drop, (!library).then_some(&given_a_drop), reached.functions),
+            drop_runs,
+        );
+        let fn_dyns_drop = closures::FnDynDrops::of(tcx, library_drops, &made);
+        let any_dyns_drop = closure_facts.any_dyns_drop
+            || closures::any_dyns_drop(
+                tcx,
+                all_bodies,
+                (params_may_drop, foreign.makes_dropping_anys()),
+                drop_runs,
+            );
+        let error_dyns_drop = closure_facts.error_dyns_drop
+            || closures::error_dyns_drop(
+                &recognition,
+                all_bodies,
+                (params_may_drop, foreign.makes_dropping_errors()),
+                drop_runs,
+            );
+        let iterator_dyns_drop = closure_facts.iterator_dyns_drop
+            || closures::iterator_dyns_drop(
+                tcx,
+                all_bodies,
+                (params_may_drop, foreign.makes_dropping_iterators()),
+                drop_runs,
+            );
+        let settled = fn_dyns_drop == closure_facts.fn_dyns_drop
+            && any_dyns_drop == closure_facts.any_dyns_drop
+            && error_dyns_drop == closure_facts.error_dyns_drop
+            && iterator_dyns_drop == closure_facts.iterator_dyns_drop;
+        if settled {
+            break made;
+        }
+        closure_facts.fn_dyns_drop = fn_dyns_drop;
+        closure_facts.any_dyns_drop = any_dyns_drop;
+        closure_facts.error_dyns_drop = error_dyns_drop;
+        closure_facts.iterator_dyns_drop = iterator_dyns_drop;
         counted = counted_with(&closure_facts).0;
-    }
+    };
+    let drops = closure_facts.fn_dyns_drop.any();
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).
     if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {
@@ -669,40 +712,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
     }) {
         return None;
-    }
-    // Whether a value with a destructor is made a `dyn Any`, which then
-    // drops it (ADR 0691): what unwound, of a panic or of JS, drops nothing.
-    // One that drops only by a `dyn Any` it holds doesn't, so one pass does.
-    if closures::any_dyns_drop(
-        tcx,
-        all_bodies,
-        (params_may_drop, foreign.makes_dropping_anys()),
-        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
-    ) {
-        closure_facts.any_dyns_drop = true;
-        counted = counted_with(&closure_facts).0;
-    }
-    // And a `dyn Error`, and the `io::Error` that holds one (ADR 0462,
-    // amended), as one pass does for a `dyn Any`.
-    if closures::error_dyns_drop(
-        &recognition,
-        all_bodies,
-        (params_may_drop, foreign.makes_dropping_errors()),
-        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
-    ) {
-        closure_facts.error_dyns_drop = true;
-        counted = counted_with(&closure_facts).0;
-    }
-    // And a `Box<dyn Iterator>`, which carries the drop of what it owns
-    // (ADR 0521, #1420), as one pass does for a `dyn Any`.
-    if closures::iterator_dyns_drop(
-        tcx,
-        all_bodies,
-        (params_may_drop, foreign.makes_dropping_iterators()),
-        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
-    ) {
-        closure_facts.iterator_dyns_drop = true;
-        counted = counted_with(&closure_facts).0;
     }
     // A library that counts no `Rc` of a type hands the crate one, which the
     // two share as it is, the value itself: the crate can't count it either

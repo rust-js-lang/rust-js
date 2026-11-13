@@ -23,7 +23,7 @@ use rustc_span::Span;
 /// (`may_be`). Of every one, `all`, where a library
 /// hands the crate a `dyn Fn` whose own may drop, as its contract says. One
 /// `dyn Fn` dropping no longer makes every other drop (#954, #1003).
-#[derive(Default)]
+#[derive(Default, PartialEq)]
 pub struct FnDynDrops<'tcx> {
     pub all: bool,
     pub made: Vec<Ty<'tcx>>,
