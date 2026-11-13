@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::aggregates::Given;
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::generic_facts::Form;
 use crate::lower::temporary_names::{Base, Role};
 
@@ -982,7 +983,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A field held as generic code's box, written whole: the object's
         // in-place cell, `slot.at = $cellOf(other)` (#1405).
         let value = match self.boxed_field(state, place.as_ref()) {
-            Some(crossing) => self.form_given(Form::Box, crossing, value),
+            Some(crossing) => self.form_given(Form::Box, crossing, value, span)?,
             None => value,
         };
         self.flush(state, out)?;
@@ -1027,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.extend(writes);
                 return Ok(());
             }
-            let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
+            let assigned = self.in_place(InPlaceWriter::Assign, ty, vec![target, value], span)?;
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
         }
@@ -1055,7 +1056,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `*p = v` of a pointer made where it's written, `*(&raw mut v) =
         // ..`: of an object JS holds as itself, the object's in place (#1352).
-        out.push(crate::lower::pointers::written_through(target, value).at(js_span));
+        let written = place.ty(&state.body.local_decls, self.tcx).ty;
+        out.push(self.written_through(target, value, written, span)?.at(js_span));
         Ok(())
     }
 

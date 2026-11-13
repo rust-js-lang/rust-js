@@ -548,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for _ in 0..forms.unboxed[i] {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
-                if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.adapted(value, true)) {
+                if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.toward_impl(value)) {
                     *value = made;
                 }
             }
@@ -691,9 +691,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // impl's own type parameter, the trait's is generic too, and the
             // method's box is it.
             let call = match forms.result_cell {
-                true => Some(crate::lower::mut_refs::in_place_cell(
+                true => Some(self.in_place_cell(
                     call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone())),
-                )),
+                    output.builtin_deref(true).unwrap_or(output),
+                    span,
+                )?),
                 false => call,
             };
             // A `fmt::Result` the trait's signature has as a `Result`, `fn
@@ -715,8 +717,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
             // impl's made generic code's box (#686).
             let given = self.fresh(Role::Given);
-            let given_back =
-                (forms.result_within.as_ref()).and_then(|within| within.adapted(&Expr::var(&given), false));
+            let given_back = match forms.result_within.as_ref() {
+                Some(within) => within.given_back(self, &Expr::var(&given), span)?,
+                None => None,
+            };
             let made = call.is_none() && given_back.is_none();
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
             let body = match given_back {

@@ -1,6 +1,7 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::representation::NoneForm;
 use crate::lower::temporary_names::{Base, Role};
 
@@ -344,11 +345,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let replaced = match itself {
                     true if !drops => {
-                        let assigned = Expr::call(Expr::helper("$assign"), vec![target, value.clone()]);
+                        let assigned = self.in_place(InPlaceWriter::Assign, item, vec![target, value.clone()], span)?;
                         out_set.push(StmtKind::Expr(assigned).at(js_span));
                         None
                     }
-                    true => Some(taken(target, value.clone())),
+                    true => Some(taken(self, (target, value.clone()), item, span)?),
                     false if checked => Some(Expr::call(Expr::helper("$cellReplace"), vec![target, value.clone()])),
                     false => None,
                 };
@@ -520,7 +521,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => (cell, next),
                         false => borrowed(self, cell, next, out)?,
                     };
-                    return Ok(Some(taken(cell, next)));
+                    return Ok(Some(taken(self, (cell, next), item, span)?));
                 }
                 if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held, of_key) {
                     let (cell, next) = borrowed(self, cell, next, out)?;
@@ -603,7 +604,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // through the `&mut` does (#614).
             Std::CellFromMut => match self.mut_ref_form(generic_args.type_at(0)).is_cell() {
                 true => arg(),
-                false => crate::lower::mut_refs::in_place_cell(arg()),
+                false => self.in_place_cell(arg(), generic_args.type_at(0), span)?,
             },
             // A cell of each item, a handle on it (ADR 0152).
             Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),
@@ -977,14 +978,20 @@ pub(in crate::lower) fn unwrapped_lock(result: &Expr, message: Option<&Expr>) ->
 /// What `take()`, `mem::take` or `mem::replace` of `target`, an object a
 /// `&mut` or a `RefCell` of one is, gives, `value` its contents after (ADR
 /// 0147): of an array emptied, `target.splice(0)`, its items, the array
-/// itself left empty (rd264); of others, `$take(target, value)`, a copy.
-pub(in crate::lower) fn taken(target: Expr, value: Expr) -> Expr {
-    match &value.kind {
+/// itself left empty (rd264); of others, `$take(target, value)`, a copy,
+/// a write of a `written` in place (#1665).
+pub(in crate::lower) fn taken<'tcx>(
+    cx: &FnCx<'_, 'tcx>,
+    (target, value): (Expr, Expr),
+    written: Ty<'tcx>,
+    span: rustc_span::Span,
+) -> R<Expr> {
+    Ok(match &value.kind {
         js::ExprKind::Array(items) if items.is_empty() => {
             Expr::call(Expr::member(target, "splice"), vec![Expr::num(0.0)])
         }
-        _ => Expr::call(Expr::helper("$take"), vec![target, value]),
-    }
+        _ => cx.in_place(InPlaceWriter::Take, written, vec![target, value], span)?,
+    })
 }
 
 /// What `e`, a `taken` one, takes, and its contents after: `(target,

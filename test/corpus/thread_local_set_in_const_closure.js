@@ -56,7 +56,7 @@ function main() {
   Counter.NAMED("use_state");
   console.log(`name ${name}`);
   SEE(4);
-  console.log(`seen [${seen.join(", ")}]`);
+  console.log(`seen [${seen.slice().join(", ")}]`);
   const len = dispatcher?.useName("use_memo");
   console.log(`len ${len == null ? "None" : `Some(${len})`}, name ${name}`);
 }

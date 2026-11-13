@@ -522,7 +522,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it gives back in generic code's form too, an object's `&mut`
         // `$cellOf(r)`.
         let value = match self.form_of(output).filter(|_| generic_forms) {
-            Some(form) => self.form_given(form, output, value),
+            Some(form) => self.form_given(form, output, value, span)?,
             None => value,
         };
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));

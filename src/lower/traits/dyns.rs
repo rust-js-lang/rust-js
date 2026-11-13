@@ -800,7 +800,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => self.place_where_made(value, out),
                 false => self.spill(Role::Object, value, out),
             };
-            return Ok(Expr::stored_pair(object, dictionary, js::Storage::Assigned));
+            return self.in_place_pair(object, dictionary, pointee, span);
         }
         // Of a `&mut` to an object, the `Self` its impl takes as generic
         // code's box, a `impl<T: Trait> Trait for &mut T`'s or std's that
@@ -812,7 +812,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = match self.dyn_trait_ref(target, pointee) {
             Some(tr) if self.in_generic_box(pointee) => {
                 let declared = ty::GenericArgs::identity_for_item(self.tcx, tr.def_id).type_at(0);
-                self.form_given(Form::Box, (tr.def_id, declared, pointee), value)
+                self.form_given(Form::Box, (tr.def_id, declared, pointee), value, span)?
             }
             _ => value,
         };

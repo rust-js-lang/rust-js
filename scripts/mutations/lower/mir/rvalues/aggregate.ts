@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     name: "boxed-field-made-as-object",
     breaks: "a struct made where `T` is known, `Slot { at: &mut a }`, holds the object in its field generic code reads as a box (#1405)",
     file: "src/lower/mir/rvalues/aggregate.rs",
-    find: "            Some(crossing) => self.form_given(Form::Box, crossing, value),\n",
+    find: "            Some(crossing) => self.form_given(Form::Box, crossing, value, span)?,\n",
     replace: "            Some(_) => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
   },

@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's fields flattened, its `buf` a zeroed array of its
             // capacity: std's room for it checked first (ADR 0774).
             IoOp::BufReaderNew => {
-                let inner = self.buf_reader_inner_given(&call, next());
+                let inner = self.buf_reader_inner_given(&call, next())?;
                 Expr::object(vec![
                     Prop::Field("inner".into(), inner),
                     Prop::Field("buf".into(), plain::filled(Expr::int(8192), Some(Expr::int(0)))),
@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let mut check = Vec::new();
                 self.room_for((None, capacity.clone()), Expr::int(1), call.span, &mut check);
-                let mut inner = self.buf_reader_inner_given(&call, next());
+                let mut inner = self.buf_reader_inner_given(&call, next())?;
                 if !check.is_empty() && !inner.reads_same() {
                     inner = self.spill(Role::Inner, inner, out);
                 }
@@ -203,11 +203,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&mut` to an object, generic code's box of it, which std's `impl Read
     /// for &mut R`, `$mutReader`, its `Read`, reads, `Form::Box`'s (ADR 0454,
     /// #1374); any other as it is.
-    fn buf_reader_inner_given(&self, call: &Call<'_, 'tcx>, inner: Expr) -> Expr {
+    fn buf_reader_inner_given(&self, call: &Call<'_, 'tcx>, inner: Expr) -> R<Expr> {
         let inputs = self.signature_of(call.def_id).0;
         let declared = *inputs.last().expect("a constructor of its reader");
         let held = self.instantiated(declared, call.generic_args);
-        self.form_given(Form::Box, (call.def_id, declared, held), inner)
+        self.form_given(Form::Box, (call.def_id, declared, held), inner, call.span)
     }
 
     /// What a `BufReader`'s `get_ref` and `into_inner` give of its inner,

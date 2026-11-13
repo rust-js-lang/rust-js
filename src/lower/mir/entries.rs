@@ -2,6 +2,7 @@
 //! and `mem::swap`, `mem::replace` and `take`.
 
 use super::*;
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -587,10 +588,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => self.value_expr(values.next().expect("a second"), span)?,
             };
             if known == Std::Swap {
-                out.push(StmtKind::Expr(Expr::call(Expr::helper("$exchange"), vec![a, b])).at(js_span));
+                out.push(
+                    StmtKind::Expr(self.in_place(InPlaceWriter::Exchange, pointee, vec![a, b], span)?).at(js_span),
+                );
                 return Ok(Value::Expr(Expr::undefined()));
             }
-            return Ok(Value::Expr(crate::lower::std_types::cell::taken(a, b)));
+            return Ok(Value::Expr(crate::lower::std_types::cell::taken(
+                self,
+                (a, b),
+                pointee,
+                span,
+            )?));
         };
         let (b, b_place) = match known {
             Std::Swap => match values.next() {

@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // one is: an object's a handle already, a slice's the array.
                 let raw = |ty: Ty<'tcx>| Ty::new_mut_ptr(self.tcx, ty.builtin_deref(true).expect("a reference"));
                 let instantiated = self.instantiated(declared, args);
-                exprs.push(self.form_given(Form::Handle, (id, raw(declared), raw(instantiated)), pointer));
+                exprs.push(self.form_given(Form::Handle, (id, raw(declared), raw(instantiated)), pointer, span)?);
                 continue;
             }
             // Not a C-variadic function's arguments past its parameters.
@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if crate::lower::pointers::raw_pointee(self.tcx, declared).is_some() {
                     let pointer = self.value_expr(value, span)?;
                     let instantiated = self.instantiated(declared, args);
-                    exprs.push(self.form_given(Form::Handle, (id, declared, instantiated), pointer));
+                    exprs.push(self.form_given(Form::Handle, (id, declared, instantiated), pointer, span)?);
                     continue;
                 }
                 // A shared reference to what JS holds as itself, a number,
@@ -103,7 +103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let crossing = (id, declared, self.instantiated(declared, args));
                 if self.form_differs(Form::Box, crossing) {
                     let object = self.value_expr(value, span)?;
-                    exprs.push(self.form_given(Form::Box, crossing, object));
+                    exprs.push(self.form_given(Form::Box, crossing, object, span)?);
                     continue;
                 }
                 // A `&mut` to a `&mut` to an object held as a value, a
@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // a place is below (#1303).
                 if !matches!(value, Value::Ref(_)) && self.form_differs(Form::HeldBox, crossing) {
                     let held = self.value_expr(value, span)?;
-                    exprs.push(self.form_given(Form::HeldBox, crossing, held));
+                    exprs.push(self.form_given(Form::HeldBox, crossing, held, span)?);
                     continue;
                 }
                 // A write's result given where generic code has a `Result` of
@@ -134,7 +134,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 if self.form_differs(Form::Tagged, crossing) {
                     let result = self.value_expr(value, span)?;
-                    exprs.push(self.form_given(Form::Tagged, crossing, result));
+                    exprs.push(self.form_given(Form::Tagged, crossing, result, span)?);
                     continue;
                 }
             }
@@ -293,11 +293,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some((id, declared.builtin_deref(true)?, instantiated.builtin_deref(true)?))
             });
             let through = |cx: &Self, boxed: Expr| match held_crossing {
-                Some(crossing) => cx.form_given(Form::HeldBox, crossing, boxed),
-                None => boxed,
+                Some(crossing) => cx.form_given(Form::HeldBox, crossing, boxed, span),
+                None => Ok(boxed),
             };
             if let Some(boxed) = self.box_of_place(state, &place) {
-                exprs.push(through(self, boxed));
+                exprs.push(through(self, boxed)?);
                 continue;
             }
             // Its lifetimes, the signature's own, erased: a type with them
@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }
-                exprs.push(through(self, Expr::handle(place)));
+                exprs.push(through(self, Expr::handle(place))?);
                 continue;
             }
             // A `dyn`'s, or a slice's, the callee can't replace whole: its box
@@ -370,7 +370,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map_or("value".to_string(), |i| i.name.to_string());
             let name = self.fresh(Base::Named(&crate::lower::camel_case(&base)));
             let held = match inner {
-                Some(crossing) => self.form_given(Form::Box, crossing, place.clone()),
+                Some(crossing) => self.form_given(Form::Box, crossing, place.clone(), span)?,
                 None => place.clone(),
             };
             let boxed = crate::lower::mut_refs::boxed(held);

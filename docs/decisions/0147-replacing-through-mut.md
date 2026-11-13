@@ -285,3 +285,61 @@ place held is given back as it is (`Std::gives_back_held`). ADR 0262's
   `fact-capacity` rows of `iterator_values_meet.rs` and
   `iterator_values_meet_drops.rs` run as Rust does.
 - The mutation is `replaced-made-an-iterator-again`.
+
+## Amendment (2026-11-13, #1665, #1672 change 1): a write in place fails closed, and what it writes is in the mutation set by Rust's own rule
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. `copy_if_needed` leaves out the copy of a `Copy` object
+type nothing is known to change in place. But the writers in place,
+`$assign`, `$take`, `$exchange` and a `$cellOf` cell, never asked that set,
+so four writes changed `a` of `let mut b = a`:
+- generic code's `*r = T::default()`,
+- `clone_from` through a `&mut`,
+- generic `mem::swap` and `mem::replace`,
+- `RefCell::replace`, `swap` and `replace_with` of a cell that's its object.
+
+**One constructor, `FnCx::in_place` (`copies/in_place.rs`), makes every write
+in place, given the written type. Where its copies are left out, it refuses,
+in release too, as rust-js's own error naming #1665, never a wrong answer.**
+`test/architecture-mut-refs.test.ts` bans a bare writer outside it.
+
+**The mutation set gains two rules read from MIR (`analysis/mutation.rs`),
+never a list of names:**
+- **`generic_writes`:** what a call gives a `&mut X` to (X object-like), where
+  the function it resolves to declares a `&mut` of a type parameter, `Self`
+  too. Generic code may write it whole through its box, an in-place cell
+  (ADR 0454). Resolved first: a trait's method that an impl for the type
+  writes, `AddAssign` of a `Wrapping<u8>`, declares the type itself and
+  reassigns it, which marked it wrongly and copied its numbers' literals.
+- **`held_by_ref_cells`:** each `T` a `RefCell<T>` local holds, as an
+  `UnsafeCell`'s contents change through `&`.
+- **And in `generic_writes`, a `&mut X` made a `&mut dyn Trait`,** which
+  erases `X` as generic code does: a blanket impl's pair writes it whole,
+  `Storage::Assigned`, which `FnCx::in_place_pair` makes under the same
+  guard. The metamorphic net's `dyn-ref` rewrite found it.
+
+Whether a declared input is a `&mut` of a type parameter is the generic
+facts' owner's question, `writes_through_its_box`. std's manifest exports
+its own iterator structs as changed, `FlattenCompat` and the like; none is
+`Copy`, so no copy follows.
+
+Measured before landing: the corpus in both modes, the crate pairs, every
+`check:fast` suite and the React port. Step 1 alone refused one case that
+compiled, `generic_code_right_for_every_instance` (a generic `swap_in` of a
+`(i32, char)`), which the rules fill. Three snapshots gain an array copy,
+each still running as native: `refcell_clone_while_mut`,
+`thread_local_set_in_const_closure` and `untagged_in_untagged`. The port
+gains none. Crater's crates are left to the nightly's `--check`, where a
+newly refused crate would be a refusal, not a wrong answer.
+
+Corpus cases copy_written_whole_by_generic_code_is_its_own,
+copy_written_by_clone_from_is_its_own,
+copy_swapped_and_replaced_by_generic_code_is_its_own and
+ref_cell_contents_written_in_place_are_copied and
+copy_written_whole_through_a_dyn_is_its_own run against native Rust.
+Mutations `generic-writes-unseen`, `generic-writes-unresolved` (by its
+snapshot) `ref-cell-contents-unseen` and `unsized-writes-unseen`
+(`analysis/mutation.ts`). The
+guard itself has no mutation: no program the corpus has reaches it once the
+set is filled, which is the point, so a mutation of it is equivalent there.
+The architecture test holds every writer to it.

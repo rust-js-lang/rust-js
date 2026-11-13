@@ -2,6 +2,9 @@
 //! JS shares an object: a copy is made only where one of them may change in
 //! place, which is found once for each type (ADRs 0020, 0052, 0100).
 
+mod in_place;
+pub(in crate::lower) use in_place::InPlaceWriter;
+
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
 use crate::collections::{IndexMap, IndexSet};

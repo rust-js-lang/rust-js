@@ -13,6 +13,83 @@ use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
+/// What a call gives a `&mut` to where its callee declares a `&mut T` of
+/// a type parameter, `Self` too: generic code may write it whole, `*r =
+/// T::default()`, `mem::swap`, `mem::replace`, `clone_from`, in place,
+/// through generic code's box of it, an in-place cell (ADR 0454), as Rust's
+/// own rule has an operand of a mutable borrow changed (#1665, #1672). Of
+/// what the call resolves to: a trait's method an impl for the type writes,
+/// `AddAssign` of a `Wrapping<u8>`, declares the type itself, and writes it
+/// as that impl's body says, which the rules below see.
+fn generic_writes<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx>, mutated: &mut IndexSet<Ty<'tcx>>) {
+    let typing_env = ty::TypingEnv::post_analysis(tcx, mir.source.def_id());
+    // And a `&mut X` made a `&mut dyn Trait`, which erases `X` as generic
+    // code's type parameter does: an impl's `*self = v` writes it whole
+    // through its pair (#968).
+    for statement in mir.basic_blocks.iter().flat_map(|data| &data.statements) {
+        if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
+            && let rustc_middle::mir::Rvalue::Cast(rustc_middle::mir::CastKind::PointerCoercion(..), operand, target) =
+                &assign.1
+            && let ty::Ref(_, erased, ty::Mutability::Mut) = *target.kind()
+            && matches!(erased.kind(), ty::Dynamic(..))
+            && let ty::Ref(_, to, ty::Mutability::Mut) = *operand.ty(mir, tcx).kind()
+            && object_like(tcx, to)
+        {
+            mutated.insert(to);
+        }
+    }
+    for data in mir.basic_blocks.iter() {
+        let rustc_middle::mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            continue;
+        };
+        let Some((callee, generic_args)) = func.const_fn_def() else {
+            continue;
+        };
+        // Where it can't resolve, generic code's own call, what it names.
+        let resolved = match ty::Instance::try_resolve(tcx, typing_env, callee, generic_args) {
+            Ok(Some(instance)) if !matches!(instance.def, ty::InstanceKind::Virtual(..)) => instance.def_id(),
+            _ => callee,
+        };
+        // A closure's, never generic over what it's given: its own body's
+        // writes are the rules below's.
+        if tcx.is_closure_like(resolved) {
+            continue;
+        }
+        let declared = tcx
+            .fn_sig(resolved)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        for (input, arg) in declared.inputs().iter().zip(args.iter()) {
+            let generic = crate::lower::generic_facts::writes_through_its_box(*input);
+            if let ty::Ref(_, to, ty::Mutability::Mut) = *arg.node.ty(mir, tcx).kind()
+                && generic
+                && object_like(tcx, to)
+            {
+                mutated.insert(to);
+            }
+        }
+    }
+}
+
+/// What a `RefCell` holds, of each type a local of `mir` has: its contents
+/// are written through a shared reference, `replace`, `swap`,
+/// `replace_with` and `take` writing them whole in place, of a cell that's
+/// its object (#1665), as Rust's own rule has an `UnsafeCell`'s contents
+/// changed through `&`.
+fn held_by_ref_cells<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx>, mutated: &mut IndexSet<Ty<'tcx>>) {
+    for decl in mir.local_decls.iter() {
+        for part in decl.ty.walk().filter_map(|part| part.as_type()) {
+            if let ty::Adt(adt, args) = *part.kind()
+                && crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::RefCell)
+                && object_like(tcx, args.type_at(0))
+            {
+                mutated.insert(args.type_at(0));
+            }
+        }
+    }
+}
+
 /// The types whose JS objects get changed in place somewhere in the crate:
 /// `a.b.c = ..` changes the object `a.b`, so it's `a.b`'s type. Only these
 /// ever need copying (ADR 0020).
@@ -26,6 +103,8 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
         // copy of it is made where one is read. A pointer's pointee is
         // already, below; an object it's inside isn't.
         if let Some(mir) = &body.mir {
+            generic_writes(tcx, &mir.body, &mut mutated);
+            held_by_ref_cells(tcx, &mir.body, &mut mutated);
             for (_, written, kept) in crate::lower::pointers::rewritten_places(tcx, &mir.body) {
                 // And each object inside it kept, written over first.
                 for place in std::iter::once(written).chain(kept) {

@@ -10,7 +10,7 @@ function main() {
   const cell = [1];
   const writing = $borrowMut(cell, true);
   try {
-    const copy = $borrow(cell);
+    const copy = $borrow(cell).slice();
     console.log(
       `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.join(", ")}]`, true)} } ${writing.length}`,
     );

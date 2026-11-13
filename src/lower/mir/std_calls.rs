@@ -5,6 +5,7 @@
 //! lowers what none knows of its values alone, by `std_values`.
 
 use super::*;
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::format_args::Piece;
 use crate::lower::std_types::once::OnceOp;
 use crate::lower::temporary_names::{Base, Role};
@@ -1212,8 +1213,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         value
                     } else {
                         let js_span = this.js_span(span);
+                        let written = arg_tys[0].peel_refs();
                         out.push(match through {
-                            true => StmtKind::Expr(Expr::call_helper("$assign", vec![target, value])).at(js_span),
+                            true => {
+                                let assigned = vec![target, value];
+                                StmtKind::Expr(this.in_place(InPlaceWriter::Assign, written, assigned, span)?)
+                                    .at(js_span)
+                            }
                             false => StmtKind::Assign(target, value).at(js_span),
                         });
                         Expr::undefined()

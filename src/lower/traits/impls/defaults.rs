@@ -200,7 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let forms = forms.as_ref()?;
                 let made = forms.unboxed[i] > 0
                     || (forms.within[i].as_ref())
-                        .is_some_and(|within| within.adapted(&Expr::undefined(), true).is_some());
+                        .is_some_and(|within| within.toward_impl(&Expr::undefined()).is_some());
                 let receiver = || {
                     let sig = self.tcx.fn_sig(id).instantiate(self.tcx, args).skip_normalization();
                     sig.skip_binder().inputs()[0]
@@ -237,7 +237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for _ in 0..forms.unboxed[i] {
                 value = Expr::held(value);
             }
-            if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.adapted(&value, true)) {
+            if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.toward_impl(&value)) {
                 value = made;
             }
             if value != Expr::var(&given) {

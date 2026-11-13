@@ -5,6 +5,7 @@
 //! `pointers/rewritten.rs`'s. Split from `assign.rs` by concept (#1334).
 
 use super::*;
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::pointers::{Rewritten, within_items};
 use crate::lower::temporary_names::Role;
 
@@ -66,16 +67,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             ),
                         ));
                     };
-                    written.push(
-                        StmtKind::Expr(Expr::call_helper("$assign", vec![inner_js.clone(), of_value.clone()]))
-                            .at(js_span),
-                    );
+                    let inner_ty = inner.ty(&state.body.local_decls, self.tcx).ty;
+                    let assigned = vec![inner_js.clone(), of_value.clone()];
+                    let assigned = self.in_place(InPlaceWriter::Assign, inner_ty, assigned, span)?;
+                    written.push(StmtKind::Expr(assigned).at(js_span));
                     written.push(StmtKind::Assign(of_value, inner_js).at(js_span));
                 }
                 held
             }
         };
-        written.push(StmtKind::Expr(Expr::call_helper("$assign", vec![target.clone(), value_in_place])).at(js_span));
+        let place_ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        let assigned = self.in_place(
+            InPlaceWriter::Assign,
+            place_ty,
+            vec![target.clone(), value_in_place],
+            span,
+        )?;
+        written.push(StmtKind::Expr(assigned).at(js_span));
         match how {
             // `if (m === undefined) m = v; else $assign(m, v);`
             Rewritten::Tested => out.push(

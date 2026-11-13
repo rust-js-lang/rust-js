@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut` of a `&mut` to an array is the array, so `set` writes a `value` property on it, not the array",
     file: "src/lower/std_types/cell.rs",
-    find: "                false => crate::lower::mut_refs::in_place_cell(arg()),\n",
+    find: "                false => self.in_place_cell(arg(), generic_args.type_at(0), span)?,\n",
     replace: "                false => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
   },
@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell` of an object's `replace` sets its `value`, the old one not taken out of the object every name of it sees",
     file: "src/lower/std_types/cell.rs",
-    find: "                    return Ok(Some(taken(cell, next)));\n",
+    find: "                    return Ok(Some(taken(self, (cell, next), item, span)?));\n",
     replace:
       '                    return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],

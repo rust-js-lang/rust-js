@@ -15384,6 +15384,69 @@
           "ops"
         ]
       }
+    ],
+    "changed": [
+      {
+        "of": "core::iter::adapters::flatten::FlattenCompat",
+        "args": [
+          {},
+          {}
+        ]
+      },
+      {
+        "of": "core::iter::adapters::flatten::FlattenCompat",
+        "args": [
+          {
+            "of": "core::iter::adapters::map::Map",
+            "args": [
+              {},
+              {}
+            ]
+          },
+          {}
+        ]
+      },
+      {
+        "of": "core::iter::adapters::fuse::Fuse",
+        "args": [
+          {}
+        ]
+      },
+      {
+        "of": "core::iter::adapters::step_by::StepBy",
+        "args": [
+          {}
+        ]
+      },
+      {
+        "of": "core::iter::adapters::zip::Zip",
+        "args": [
+          {},
+          {}
+        ]
+      },
+      {
+        "of": "core::iter::sources::from_fn::FromFn",
+        "args": [
+          {
+            "of": "closure core::iter::adapters::step_by::{impl#8}::spec_try_fold::nth::{closure#0}"
+          }
+        ]
+      },
+      {
+        "of": "core::iter::sources::from_fn::FromFn",
+        "args": [
+          {
+            "of": "closure core::iter::adapters::step_by::{impl#9}::spec_try_rfold::nth_back::{closure#0}"
+          }
+        ]
+      },
+      {
+        "of": "core::iter::sources::repeat_n::RepeatN",
+        "args": [
+          {}
+        ]
+      }
     ]
   },
   "input": "lib.rs",

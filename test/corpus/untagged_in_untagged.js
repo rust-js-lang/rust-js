@@ -14,12 +14,10 @@ export function entry() {
 
 function describe(child) {
   if (Array.isArray(child)) {
-    return child.map(describe).join(",");
+    const children = child.slice();
+    return children.map(describe).join(",");
   }
-  if (Array.isArray(child.children)) {
-    return `<${child.tag}>${describe(child.children)}`;
-  }
-  return child.text;
+  return Array.isArray(child.children) ? `<${child.tag}>${describe(child.children)}` : child.text;
 }
 
 function isOne(child) {

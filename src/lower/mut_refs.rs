@@ -8,6 +8,7 @@ use super::{FnCx, R, Std};
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::generic_facts::{Crossing, Form};
 use crate::lower::temporary_names::Role;
 
@@ -51,8 +52,9 @@ pub(super) fn boxed(place: Expr) -> Expr {
 /// `nested_mut_object` walks, a `Vec<&mut Self>`.
 #[derive(Clone, Debug)]
 pub(in crate::lower) enum Within<'tcx> {
-    /// A `&mut` generic code has as its box, of what the impl's `&mut` is.
-    Mut(MutRefForm),
+    /// A `&mut` generic code has as its box, of what the impl's `&mut` is,
+    /// and what it's to.
+    Mut(MutRefForm, Ty<'tcx>),
     /// A tuple, of what each of its fields holds.
     Tuple(Vec<Within<'tcx>>),
     /// An `Option` whose `Some` boxes its value on neither side, of what
@@ -67,7 +69,7 @@ impl<'tcx> Within<'tcx> {
     /// doesn't make its impl's own.
     pub(in crate::lower) fn given_as_it_is(self, out: &mut Vec<Ty<'tcx>>) {
         match self {
-            Within::Mut(_) => {}
+            Within::Mut(..) => {}
             Within::Tuple(parts) => parts.into_iter().for_each(|part| part.given_as_it_is(out)),
             Within::Some(inner) => inner.given_as_it_is(out),
             Within::AsItIs(ty) => out.push(ty),
@@ -78,45 +80,66 @@ impl<'tcx> Within<'tcx> {
     /// `&mut` it holds is of a form that isn't generic code's box.
     pub(in crate::lower) fn changes(&self) -> bool {
         match self {
-            Within::Mut(form) => !form.is_cell(),
+            Within::Mut(form, _) => !form.is_cell(),
             Within::Tuple(parts) => parts.iter().any(Within::changes),
             Within::Some(inner) => inner.changes(),
             Within::AsItIs(_) => false,
         }
     }
 
-    /// `value`, of what this says, as the other side takes it: toward the
-    /// impl, `to_impl`, each `&mut` that's generic code's box made the
-    /// impl's form, as a parameter's own is, `arg1?.value`; back, each the
-    /// impl's made generic code's box, an in-place cell of an object, as the
-    /// result's own is (ADR 0454). `None` where it's the same value.
-    pub(in crate::lower) fn adapted(&self, value: &Expr, to_impl: bool) -> Option<Expr> {
-        match self {
-            Within::Mut(form) => match form.is_cell() {
+    /// `value`, of what this says, as the impl takes it: each `&mut` that's
+    /// generic code's box made the impl's form, as a parameter's own is,
+    /// `arg1?.value` (ADR 0454). `None` where it's the same value.
+    pub(in crate::lower) fn toward_impl(&self, value: &Expr) -> Option<Expr> {
+        let never = &mut |_: Expr, _: Ty<'tcx>| -> R<Expr> {
+            unreachable!("toward the impl a `&mut` is held, never a cell made")
+        };
+        self.adapt(value, true, never)
+            .expect("toward the impl nothing is refused")
+    }
+
+    /// `value`, of what this says, as generic code takes it back: each
+    /// `&mut` the impl's made generic code's box, an in-place cell of an
+    /// object, as the result's own is (ADR 0454), a write in place
+    /// (`in_place`, #1665). `None` where it's the same value.
+    pub(in crate::lower) fn given_back(
+        &self,
+        cx: &FnCx<'_, 'tcx>,
+        value: &Expr,
+        span: rustc_span::Span,
+    ) -> R<Option<Expr>> {
+        self.adapt(value, false, &mut |object, to| cx.in_place_cell(object, to, span))
+    }
+
+    fn adapt(&self, value: &Expr, to_impl: bool, cell: &mut dyn FnMut(Expr, Ty<'tcx>) -> R<Expr>) -> R<Option<Expr>> {
+        Ok(match self {
+            Within::Mut(form, to) => match form.is_cell() {
                 true => None,
                 false if to_impl => Some(Expr::held(value.clone())),
-                false => Some(in_place_cell(value.clone())),
+                false => Some(cell(value.clone(), *to)?),
             },
             Within::Tuple(parts) => {
                 let field = |i: usize| Expr::index(value.clone(), Expr::int(i as i128));
                 let made: Vec<Option<Expr>> = (parts.iter().enumerate())
-                    .map(|(i, part)| part.adapted(&field(i), to_impl))
-                    .collect();
+                    .map(|(i, part)| part.adapt(&field(i), to_impl, &mut *cell))
+                    .collect::<R<_>>()?;
                 if made.iter().all(Option::is_none) {
-                    return None;
+                    return Ok(None);
                 }
                 let items = (made.into_iter().enumerate()).map(|(i, made)| made.unwrap_or_else(|| field(i)));
                 Some(Expr::array(items.collect()))
             }
             Within::Some(inner) => {
-                let made = inner.adapted(&value.clone().present(), to_impl)?;
+                let Some(made) = inner.adapt(&value.clone().present(), to_impl, cell)? else {
+                    return Ok(None);
+                };
                 Some(match (inner.as_ref(), to_impl) {
-                    (Within::Mut(_), true) => Expr::optional_member(value.clone(), js::HELD),
+                    (Within::Mut(..), true) => Expr::optional_member(value.clone(), js::HELD),
                     _ => Expr::cond(Expr::presence(value.clone(), true), made, Expr::undefined()),
                 })
             }
             Within::AsItIs(_) => None,
-        }
+        })
     }
 }
 
@@ -148,7 +171,7 @@ pub(in crate::lower) fn within_shape<'tcx>(
     if leaf(declared)
         && let ty::Ref(_, given, Mutability::Mut) = *actual.kind()
     {
-        return Within::Mut(form(given));
+        return Within::Mut(form(given), given);
     }
     if !declared.walk().filter_map(|part| part.as_type()).any(leaf) {
         return Within::AsItIs(declared);
@@ -179,9 +202,12 @@ pub(in crate::lower) fn within_shape<'tcx>(
 /// write of the whole changes it in place, `$assign`, as `*r = v` of the
 /// object's own `&mut` does (ADRs 0153, 0454). `Cell::from_mut`'s, a
 /// dictionary's `&mut Self::Out`, and a `&mut` given for longer than the
-/// call (#528). What's moved out of one is apart (`moved_out`).
-pub(in crate::lower) fn in_place_cell(object: Expr) -> Expr {
-    Expr::call_helper("$cellOf", vec![object])
+/// call (#528). What's moved out of one is apart (`moved_out`). A write in
+/// place of `object`, a `written` (`in_place`, #1665).
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    pub(in crate::lower) fn in_place_cell(&self, object: Expr, written: Ty<'tcx>, span: rustc_span::Span) -> R<Expr> {
+        self.in_place(InPlaceWriter::CellOf, written, vec![object], span)
+    }
 }
 
 /// A box a call is given for a `&mut` to a place, copied back once the call

@@ -15,6 +15,7 @@ use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
 use super::calls::Call;
+use super::copies::InPlaceWriter;
 use super::recognition::Std;
 use super::recognition::TypeFact;
 use super::refusal::{Refused, refuse};
@@ -177,17 +178,6 @@ pub(in crate::lower) enum Offset {
     /// tuple's, `null`, whose address `$addr` refuses where it's asked, as
     /// it does of a struct's named field given none.
     LaidOutByCaller,
-}
-
-/// A whole write of `place`, `pointee_place`'s of a pointer: of the object
-/// a `$ptrTo(object)` is a handle on (`Known::HandledObject`), the
-/// handle's own write, the object's in place, as `*r = v`'s is (ADR 0147),
-/// so each name for it sees it, not the name given another (#1352).
-pub(in crate::lower) fn written_through(place: Expr, value: Expr) -> StmtKind {
-    match place.facts.has(js::Known::HandledObject) {
-        true => StmtKind::Expr(Expr::call_helper("$assign", vec![place, value])),
-        false => StmtKind::Assign(place, value),
-    }
 }
 
 pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
@@ -844,8 +834,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of an object JS holds as itself, `$ptrTo(object)`, the handle's own
     /// write, the object's in place, as `*r = v`'s is (ADR 0147), so each
     /// name for it sees it, not the name given another (#1352).
-    pub(super) fn pointee_write(&self, pointer: Expr, value: Expr) -> StmtKind {
-        written_through(self.pointee_place(pointer), value)
+    pub(super) fn pointee_write(&self, pointer: Expr, value: Expr, written: Ty<'tcx>, span: Span) -> R<StmtKind> {
+        self.written_through(self.pointee_place(pointer), value, written, span)
+    }
+
+    /// A whole write of `place`, `pointee_place`'s of a pointer, of a
+    /// `written`: of the object a `$ptrTo(object)` is a handle on
+    /// (`Known::HandledObject`), the handle's own write, the object's in
+    /// place, as `*r = v`'s is (ADR 0147), so each name for it sees it, not
+    /// the name given another (#1352).
+    pub(in crate::lower) fn written_through(
+        &self,
+        place: Expr,
+        value: Expr,
+        written: Ty<'tcx>,
+        span: Span,
+    ) -> R<StmtKind> {
+        Ok(match place.facts.has(js::Known::HandledObject) {
+            true => StmtKind::Expr(self.in_place(InPlaceWriter::Assign, written, vec![place, value], span)?),
+            false => StmtKind::Assign(place, value),
+        })
     }
 
     /// A call of std's of a raw pointer, of its arguments' values. `None` if
@@ -883,7 +891,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             PointerOp::Read => self.read_out(self.pointee_place(arg()), pointee.expect("a pointer")),
             PointerOp::Write => {
                 let (pointer, value) = (arg(), arg());
-                out.push(self.pointee_write(pointer, value).at(self.js_span(span)));
+                let written = self.pointee_write(pointer, value, pointee.expect("a pointer"), span)?;
+                out.push(written.at(self.js_span(span)));
                 Expr::undefined()
             }
             PointerOp::FirstItem => helper("$ptr", vec![arg(), Expr::int(0)]),

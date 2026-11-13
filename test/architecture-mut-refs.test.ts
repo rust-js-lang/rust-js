@@ -71,3 +71,17 @@ test("what a counted Rc is in JS is rc.rs's alone", () => {
   const key = files("src/runtime").filter((file) => /\$countedKey\b/.test(read(file)));
   expect(key).toEqual(["src/runtime/rc.js"]);
 });
+
+// A write in place, `$assign`, `$take`, `$exchange` or a `$cellOf` cell, is
+// made by `FnCx::in_place` alone, which asks the copy policy whether the
+// written type's copies are left out, and refuses where they are: a writer
+// that skipped it would change every name sharing a `Copy` value (#1665,
+// #1672). Its recognizers, `helper_name() == Some("$take")`, may name one.
+test("a write in place is made by `in_place` alone", () => {
+  const writer = "src/lower/copies/in_place.rs";
+  const made = /(?:Expr::helper|call_helper)\(\s*"\$(?:assign|take|exchange|cellOf)"|Storage::Assigned/;
+  for (const file of files("src/lower").filter((file) => file.endsWith(".rs") && file !== writer)) {
+    expect(code(file).filter((line) => made.test(line)), file).toEqual([]);
+  }
+  expect(read(writer)).toContain("fn in_place(");
+});

@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a dictionary's entry gives generic code the object an impl's `Option<&mut Self>` holds, which generic code reads as a box, `r.value` (#686)",
     file: "src/lower/mut_refs.rs",
-    find: "                false => Some(in_place_cell(value.clone())),\n",
+    find: "                false => Some(cell(value.clone(), *to)?),\n",
     replace: "                false => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
   },

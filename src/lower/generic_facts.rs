@@ -40,13 +40,16 @@
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
 //! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `src/lower/generic_facts.rs trusted_len_asked` |
+//! | whether a caller's `&mut` to a value is one generic code may write whole, through its box, as a function declares a `&mut` of a type parameter there, `Self` too, which the copy policy asks (#1665) | Instances | `src/lower/generic_facts.rs writes_through_its_box` |
 //! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `src/lower/generic_facts.rs error_impl_has_type_id` |
 //! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `src/lower/generic_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
 
-use super::FnCx;
+use super::copies::InPlaceWriter;
+use super::{FnCx, R};
 use crate::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
+use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 /// Where a value crosses into generic code or back: the generic function,
@@ -370,14 +373,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|&input| (def_id, input, self.instantiated(input, args)))
             .collect();
         let output = (def_id, declared.output(), self.instantiated(declared.output(), args));
+        let span = self.tcx.def_span(def_id);
         let made = move |cx: &mut Self| -> super::R<Expr> {
             let params: Vec<String> = (0..inputs.len()).map(|i| format!("arg{i}")).collect();
             let given = (params.iter().zip(&inputs))
                 .map(|(name, &given)| match cx.form_of(given) {
-                    Some(form) => cx.form_given(form, given, Expr::var(name)),
-                    None => Expr::var(name),
+                    Some(form) => cx.form_given(form, given, Expr::var(name), span),
+                    None => Ok(Expr::var(name)),
                 })
-                .collect();
+                .collect::<super::R<Vec<_>>>()?;
             let called = Expr::call(function, given);
             let called = match cx.form_of(output) {
                 Some(form) => cx.form_back(form, output, called),
@@ -430,17 +434,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// goes, `instantiated` the caller's type for it: in generic code's
     /// form. A slice's pointer, the array, given for a `*mut T` is a handle
     /// on it, `$ptrTo(array)`, whose `value` is it (ADR 1114).
-    pub(in crate::lower) fn form_given(&self, form: Form, crossing: Crossing<'tcx>, value: Expr) -> Expr {
+    /// Generic code's box of an object is an in-place cell of it, a write in
+    /// place of the caller's referent (`in_place`, #1665).
+    pub(in crate::lower) fn form_given(
+        &self,
+        form: Form,
+        crossing: Crossing<'tcx>,
+        value: Expr,
+        span: Span,
+    ) -> R<Expr> {
         if !self.form_differs(form, crossing) {
-            return value;
+            return Ok(value);
         }
-        match form {
+        Ok(match form {
             Form::Handle => Expr::call_helper("$ptrTo", vec![value]),
-            Form::Box => Expr::call_helper("$cellOf", vec![value]),
+            Form::Box => {
+                let (_, _, instantiated) = crossing;
+                let written = instantiated.builtin_deref(true).unwrap_or(instantiated);
+                self.in_place(InPlaceWriter::CellOf, written, vec![value], span)?
+            }
             Form::HeldBox => Expr::call_helper("$heldCellOf", vec![value]),
             Form::Tagged => Expr::call_helper("$writeTagged", vec![value]),
             Form::Valued => value,
-        }
+        })
     }
 
     /// `value`, generic code's of its `declared` type, given back where
@@ -540,6 +556,13 @@ pub(in crate::lower) fn may_hold_for_some<'tcx>(
 /// typed answer of one apart (`recognition::kind_of`, ADR 1124).
 pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
+}
+
+/// Whether a function's `declared` input is a `&mut` of a type parameter,
+/// `Self` too: what its caller gives a `&mut` to there, generic code may
+/// write whole through its box, an in-place cell (ADR 0454, #1665).
+pub(in crate::lower) fn writes_through_its_box(declared: Ty<'_>) -> bool {
+    matches!(*declared.kind(), ty::Ref(_, to, Mutability::Mut) if matches!(to.kind(), ty::Param(_)))
 }
 
 /// Whether `ty` holds the type parameter of index `index`, itself or in

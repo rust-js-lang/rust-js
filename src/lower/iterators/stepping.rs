@@ -35,7 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.collect_fallible_items(items, target, item, iter_ty, span);
         };
         let r = self.fresh(Role::R);
-        let tagged = self.form_given(crate::lower::generic_facts::Form::Tagged, crossing, Expr::var(&r));
+        let tagged = self.form_given(crate::lower::generic_facts::Form::Tagged, crossing, Expr::var(&r), span)?;
         let f = Expr::arrow(vec![r.into()], vec![StmtKind::Return(Some(tagged)).at(js::Span::NONE)]);
         let items = Expr::call(Expr::member(items, "map"), vec![f]);
         let collected = self.collect_fallible_items(items, target, item, iter_ty, span)?;

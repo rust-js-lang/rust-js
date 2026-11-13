@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `fn` pointer of an object's `&mut T` gives the instance the object where it takes generic code's box, `view::<Vec<u8>>` reading `r.value` of the vector",
     file: "src/lower/generic_facts.rs",
-    find: "            Form::Box => Expr::call_helper(\"$cellOf\", vec![value]),",
-    replace: "            Form::Box => value,",
+    find: "                self.in_place(InPlaceWriter::CellOf, written, vec![value], span)?\n",
+    replace: "                value\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
   },
   {

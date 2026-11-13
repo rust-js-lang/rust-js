@@ -3,6 +3,7 @@
 
 use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::recognition::{PinTarget, Std};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
@@ -105,7 +106,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match handle || self.mut_ref_form(target).is_cell() {
                     true => out.push(StmtKind::Assign(Expr::held(pin), value).at(js_span)),
                     false => {
-                        out.push(StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![pin, value])).at(js_span));
+                        let assigned = self.in_place(InPlaceWriter::Assign, target, vec![pin, value], span)?;
+                        out.push(StmtKind::Expr(assigned).at(js_span));
                     }
                 }
                 Expr::undefined()
@@ -141,7 +143,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let js_span = self.js_span(span);
                 out.push(match self.mut_ref_form(target).is_cell() {
                     true => StmtKind::Assign(Expr::held(place), value).at(js_span),
-                    false => StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, value])).at(js_span),
+                    false => StmtKind::Expr(self.in_place(InPlaceWriter::Assign, target, vec![place, value], span)?)
+                        .at(js_span),
                 });
                 Expr::undefined()
             }

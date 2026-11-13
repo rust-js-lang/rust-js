@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     name: "buf-reader-held-mut-unboxed",
     breaks: "a `BufReader` of a `&mut` to an object holds the object, where its dictionary, `$mutReader`'s, reads generic code's box of it: what it reads is `undefined` (#1374)",
     file: "src/lower/std_types/io.rs",
-    find: "        self.form_given(Form::Box, (call.def_id, declared, held), inner)\n",
-    replace: "        let _ = (declared, held);\n        inner\n",
+    find: "        self.form_given(Form::Box, (call.def_id, declared, held), inner, call.span)\n",
+    replace: "        let _ = (declared, held);\n        Ok(inner)\n",
     tests: ["test/corpus.test.ts", "-t", "^buf_reader_of_a_borrowed_reader.rs$"],
   },
   {
