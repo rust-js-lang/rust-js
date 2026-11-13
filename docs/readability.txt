@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2497
-lines	324879
+files	2498
+lines	324918
 temporaries	0	0
 labeled blocks	0	0
 while (true)	222	6.8
 $iter	2797	86.1
 Iterator.from	281	8.6
 return;	327	10.1
-renamed x$1	15486	476.7
-role fallbacks	8631	265.7
+renamed x$1	15486	476.6
+role fallbacks	8631	265.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -1563,6 +1563,7 @@ test/corpus/own_fold_and_nth.js	533	0	0	0	0	1	0	6	4
 test/corpus/own_fold_through_adapters.js	345	0	0	0	1	0	0	4	4
 test/corpus/own_fold_unwind_given_on.js	324	0	0	1	7	0	0	0	2
 test/corpus/own_folds_unwind.js	592	0	0	3	0	0	0	0	6
+test/corpus/own_hasher_finished_through_its_mut.js	39	0	0	0	0	0	0	0	0
 test/corpus/own_iterator_collected_by_generic_code_into_own_from_iterator.js	197	0	0	1	1	2	0	4	3
 test/corpus/own_iterator_dropped_from_back.js	235	0	0	0	0	0	0	0	3
 test/corpus/own_iterator_dropped_through_adapters.js	783	0	0	0	1	0	0	3	6

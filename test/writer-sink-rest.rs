@@ -145,6 +145,13 @@ impl fmt::Display for ParseFailed {
     }
 }
 
+// A `Layout` a derived `Debug` shows, and a `LayoutError`.
+#[derive(Debug)]
+struct Sized {
+    layout: std::alloc::Layout,
+    error: Option<std::alloc::LayoutError>,
+}
+
 fn main() {
     let m = HashMap::from([("k", -1)]);
     let b = BTreeMap::from([(1, "a\"b"), (2, "c")]);
@@ -238,5 +245,16 @@ fn main() {
     println!("{:?} {}", chars.0, failed);
     let mut failing = Failing(Vec::new());
     let r = write!(failing, "{:*^45}", failed);
+    println!("{:?} {:?}", failing.0, r);
+
+    let sized = Sized {
+        layout: std::alloc::Layout::new::<u64>(),
+        error: std::alloc::Layout::from_size_align(1, 3).err(),
+    };
+    let mut log = Log(Vec::new());
+    write!(log, "{:?}|{:#?}|{:5?}|{:#x?}", sized, sized, sized, sized).unwrap();
+    println!("{:?}", log.0);
+    let mut failing = Failing(Vec::new());
+    let r = write!(failing, "{:?}", sized);
     println!("{:?} {:?}", failing.0, r);
 }

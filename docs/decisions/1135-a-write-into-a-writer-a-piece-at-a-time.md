@@ -359,6 +359,11 @@ go.
      `Display::fmt(&self.0, f)` of a `ParseIntError`, is `pad` of its
      message, as a `dyn Error` of it writes it. Proof:
      test/writer-sink-rest.rs; 1 mutation.
+   - A `Layout`'s `Debug`, smallvec's derived `Debug` of a `&Layout`, is
+     written a piece at a time as its derived `Debug` writes it: its
+     `size` a `usize`'s by the options (#1728), its `align` an
+     `Alignment`'s `write!` of its own (`$writeDebugLayout`). Proof:
+     test/writer-sink-rest.rs; 2 mutations.
 
 ## Alternatives
 

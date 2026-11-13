@@ -31,6 +31,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(written));
         }
         let helper = |name: &'static str, args: Vec<Expr>| Ok(Some(vec![SinkWrite::Helper(name, args)]));
+        // A `Layout`'s derived `Debug`, `Layout { size: 8, align: 4 (1 <<
+        // 2) }`, its `size` by the options, and a `LayoutError`'s, its name
+        // (ADR 0417, #1728).
+        if let Some(layout) = self.recognition().layout(ty) {
+            return match layout {
+                true => helper("$writeDebugLayout", vec![value, pretty.clone(), options.clone()]),
+                false => Ok(Some(vec![SinkWrite::Str(Expr::str("LayoutError"))])),
+            };
+        }
         // `()`'s, `f.pad("()")`.
         if ty.is_unit() {
             return helper("$writePadded", vec![Expr::str("()"), options.clone()]);

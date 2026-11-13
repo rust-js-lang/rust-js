@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "sink-layout-debug-refused",
+    breaks: "a `Layout`'s `Debug` in a framed writer, smallvec's derived `Debug` of a `&Layout`, is refused",
+    file: "src/lower/display/sink_debug.rs",
+    find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
+    replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

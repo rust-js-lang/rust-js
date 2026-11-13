@@ -35,6 +35,21 @@ function $debugLayout(layout, options) {
   return options?.alternate ? $pretty("Layout {", fields, "}") : `Layout { ${fields.join(", ")} }`;
 }
 
+// `{:?}` of a `Layout` into a writer's sink `f`, a piece at a time: its
+// derived `Debug`'s struct, its `size` a `usize`'s by the `Formatter`'s
+// `options`, its `align` an `Alignment`'s `{:?} (1 << {:?})`, which no
+// options reach (#1728).
+function $writeDebugLayout(f, layout, pretty, options) {
+  const integer = (g, n) => $writeDebugInteger(g, n, n.toString(16), n.toString(16).toUpperCase(), options);
+  const alignment = (g, align) => {
+    g.write(String(align));
+    g.write(" (1 << ");
+    g.write(String(Math.log2(align)));
+    g.write(")");
+  };
+  $writeDebugStruct(f, "Layout", [["size", layout.size, integer], ["align", layout.align, alignment]], pretty);
+}
+
 // `Vec::from_raw_parts(p, len, cap)`: the array `p` points to the first of,
 // `len` long. Of another place, rust-js's error.
 function $vecFromRaw(pointer, length) {
