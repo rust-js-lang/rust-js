@@ -679,6 +679,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_bodies,
         tidy_until,
         tidy_fired,
+        label_census,
         prepare_without,
         prepare_fired,
         without_known,
@@ -694,6 +695,9 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     js::forget_known(&without_known);
     if tidy_fired.is_some() {
         lower::session::record_tidy_fired();
+    }
+    if label_census.is_some() {
+        lower::session::record_label_census();
     }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
@@ -797,6 +801,11 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         if let Some(path) = &tidy_fired {
             std::fs::write(path, lower::session::tidy_fired())
                 .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
+        }
+        // Each compiler-made label kept, by its shape (#1461).
+        if let Some(path) = &label_census {
+            std::fs::write(path, lower::session::label_census())
+                .map_err(|error| format!("can't write the label census to {}: {error}", path.display()))?;
         }
     }
     drop(stage);

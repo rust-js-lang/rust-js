@@ -599,3 +599,40 @@ each name a pass `--tidy-passes` names, in its order, some and far from
 all, each of a body or more, and the JS unchanged. Mutations
 `tidy-fired-every-pass` (`lower/mir/tidy/fired.ts`), `tidy-fired-unhooked`
 (`lower/mir/tidy.ts`) and `tidy-fired-unrecorded` (`main.ts`).
+
+## Amendment (2026-11-13, #1461): which labels are left, by shape, `--label-census`
+
+A JS label is the program's where it wrote one; one tidy keeps that the
+Rust didn't, a `bbN`, is a shape no rewrite yet takes back to what the
+program wrote (#771). `rust-js case.rs -o out.js --label-census
+census.txt` writes each such label a body keeps after tidy, by the MIR
+shape that left it, `count<TAB>shape`, the most first: what it labels, a
+`while`, a `for` or a block; what decided each way to its block in MIR,
+each predecessor's terminator or, through the `Goto`s and `Drop`s one
+predecessor alone reaches, the `SwitchInt`, `Call` or guard's `FalseEdge`
+that chose the way, said "through drops" where drops were passed; and
+how many jumps reach it and the most loops and blocks one crosses.
+`mir/census.rs` records it by statics, as `--tidy-fired` does, of a
+body's own statements, not a closure's, which its own body records.
+
+`bun scripts/label-census.ts [--programs <start> <count> | --match-trees
+<start> <count>] [--std-iterators]` sums it over the corpus, the
+generated programs of a range of seeds (ADR 0092), or the generated
+`match`es of test/match-trees.ts (#771), and ranks the rows, each with a
+program it's of. A row's block is the one its label names, asked of
+`mir/queries.rs`' `label_block`, beside `is_block_label`; `scripts/each-compiled.ts` is the one harness of it and
+of `scripts/tidy-fired.ts`. Over the corpus (2026-11-13) no compiler-made
+label is left, as the readability gate says; over 1,000 generated
+programs, 65 keep one, 67 labels in 35 shapes, the most a `for` its
+jump leaves from inside another loop, reached from a `Call` and a drop
+(19). Over the generated matches of seeds 1 to 24, 960 functions, all 24
+programs keep one, 288 labels in 49 shapes, the most a block one
+`SwitchInt` reaches by one jump crossing nothing (59), then by two (45),
+then one a `Goto` reaches (29). Each row's fix is the emitter's, the
+decisions walk's, or none, a jump no structured form makes, one row at a
+time (#1461's design).
+
+Held by `mir/census.rs`' unit test of a kept block and a kept loop and
+how far their jumps reach, a label the program wrote no row; mutations
+`label-census-loops-uncrossed` and `label-census-written-labels-counted`
+(`lower/mir/census.ts`).

@@ -84,6 +84,18 @@ pub(crate) fn tidy_fired() -> String {
     super::mir::tidy_fired_report(&super::mir::tidy_pass_names())
 }
 
+/// Records which compiler-made labels each body keeps after tidy, by the
+/// MIR shape that left it: `--label-census`'s (#1461).
+pub(crate) fn record_label_census() {
+    super::mir::record_label_census();
+}
+
+/// Each shape of a label kept and how many, a line each, `count<TAB>shape`,
+/// the most first: what `--label-census` writes.
+pub(crate) fn label_census() -> String {
+    super::mir::label_census_report()
+}
+
 /// The address of `tcx`'s rustc session, one each session.
 fn gcx_of(tcx: TyCtxt<'_>) -> usize {
     std::ptr::from_ref(tcx.sess) as usize

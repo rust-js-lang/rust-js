@@ -22,6 +22,7 @@ mod assign;
 mod awaits;
 mod bounds;
 mod calls;
+mod census;
 mod cfg;
 mod closures;
 mod dispatch;
@@ -61,6 +62,7 @@ mod threaded;
 mod tidy;
 mod tried_ints;
 mod vec_growth;
+pub(in crate::lower) use census::{record as record_label_census, report as label_census_report};
 pub(in crate::lower) use tidy::fired::{record as record_tidy_fired, report as tidy_fired_report};
 pub(super) use tidy::pass_names as tidy_pass_names;
 pub(in crate::lower) use tidy::settle_unthrown_catches;
@@ -1255,9 +1257,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 commented: &state.commented,
             },
         );
-        let params = params.into_inner();
+        census::note(mir_body, &out);
         self.body_epilogue(&mut state, &mut out);
-        Ok((params, out))
+        Ok((params.into_inner(), out))
     }
 
     /// What the items written in `def_id`'s body may read that the body

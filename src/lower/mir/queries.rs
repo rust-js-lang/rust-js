@@ -300,6 +300,13 @@ pub(in crate::lower::mir) fn is_block_label(name: &str) -> bool {
         .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
 }
 
+/// The block a label `label` made labels, `bb7`'s, where `name` is one
+/// (`is_block_label`).
+pub(in crate::lower::mir) fn label_block(name: &str) -> Option<mir::BasicBlock> {
+    let index = name.strip_prefix("bb").filter(|_| is_block_label(name))?;
+    index.parse::<usize>().ok().map(mir::BasicBlock::from_usize)
+}
+
 /// Of a bounds check `msg`, the index whose element `target` reads or
 /// writes first, and whether it writes it: there, `$index(xs, i)` or
 /// `xs[$at(xs, i)]`, the check.

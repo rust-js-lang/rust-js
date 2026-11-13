@@ -79,6 +79,9 @@ pub(crate) struct Build {
     /// `--tidy-fired <file>`: where to write which of tidy's passes changed
     /// a body, and how many, a line each (#1461).
     pub tidy_fired: Option<PathBuf>,
+    /// `--label-census <file>`: where to write each compiler-made label a
+    /// body keeps after tidy, by the MIR shape that left it (#1461).
+    pub label_census: Option<PathBuf>,
     /// `--prepare-without <pass>`, any number: each module prepared with
     /// every rewrite but these, to see that each changes nothing a program
     /// does (ADR 1087).
@@ -182,6 +185,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     }
     let prepare_fired = valued(&mut ours, "--prepare-fired", "a path")?.map(PathBuf::from);
     let tidy_fired = valued(&mut ours, "--tidy-fired", "a path")?.map(PathBuf::from);
+    let label_census = valued(&mut ours, "--label-census", "a path")?.map(PathBuf::from);
     let mut without_known = Vec::new();
     while let Some(name) = valued(&mut ours, "--without-known", "a fact an expression may carry")? {
         let Some(known) = crate::js::Known::named(&name) else {
@@ -228,6 +232,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         std_bodies,
         tidy_until,
         tidy_fired,
+        label_census,
         prepare_without,
         prepare_fired,
         without_known,

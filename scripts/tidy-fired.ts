@@ -6,21 +6,20 @@
 // "changed a body", not "was needed": a pass may fire and a later one undo
 // it, and one that never fires here may of a user's program.
 //
-//   bun scripts/tidy-fired.ts                  # the corpus
-//   bun scripts/tidy-fired.ts --stage jumps    # its passes alone
-//   bun scripts/tidy-fired.ts --std-iterators  # in the build of std's iterator structs
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+//   bun scripts/tidy-fired.ts                       # the corpus
+//   bun scripts/tidy-fired.ts --stage jumps         # its passes alone
+//   bun scripts/tidy-fired.ts --std-iterators       # in the build of std's iterator structs
+//   bun scripts/tidy-fired.ts --programs 1000 200   # generated programs, 200 seeds from 1000
 import { join } from "node:path";
 
-import { cases, corpus, directives } from "../test/corpus-cases";
-import { compileJsAsync } from "../test/programs";
 import { buildCompiler, compiler, run, target } from "../test/support";
-import { atOnce } from "./shard";
+import { corpusPrograms, eachCompiled, generatedPrograms } from "./each-compiled";
 
 const args = process.argv.slice(2);
 const stageAt = args.indexOf("--stage");
 const stage = stageAt < 0 ? undefined : args[stageAt + 1];
 const build = args.includes("--std-iterators") ? ["--std-iterators"] : [];
+const programsAt = args.indexOf("--programs");
 
 buildCompiler();
 const passes = run([compiler, "--tidy-passes"])
@@ -29,40 +28,28 @@ const passes = run([compiler, "--tidy-passes"])
   .filter((pass) => stage === undefined || pass.startsWith(`${stage}/`));
 if (passes.length === 0) throw new Error(`--stage ${stage}: no pass of it; \`rust-js --tidy-passes\` lists them`);
 
-const work = join(target, "tidy-fired", String(process.pid));
-rmSync(work, { recursive: true, force: true });
+const programs =
+  programsAt < 0
+    ? corpusPrograms()
+    : generatedPrograms(Number(args[programsAt + 1]), Number(args[programsAt + 2]), join(target, "tidy-fired-programs"));
 const fired = new Map<string, { cases: number; bodies: number }>();
-let compiled = 0;
-let refused = 0;
-const waiting = [...cases];
-const worker = async () => {
-  for (let name = waiting.shift(); name !== undefined; name = waiting.shift()) {
-    const said = directives(readFileSync(join(corpus, name), "utf8"));
-    if (typeof said === "string" || said.kind === "compile-fail" || said.kind === "ignore-rust-js") continue;
-    const dir = join(work, name.replace(/\.rs$/, ""));
-    mkdirSync(dir, { recursive: true });
-    const file = join(dir, "tidy-fired.txt");
-    const js = await compileJsAsync(join(corpus, name), dir, said.edition, false, {}, [...build, "--tidy-fired", file]);
-    if (!("js" in js)) {
-      refused++;
-      continue;
-    }
-    compiled++;
-    for (const line of readFileSync(file, "utf8").split("\n").filter(Boolean)) {
+const { compiled, refused } = await eachCompiled(
+  programs,
+  (out) => [...build, "--tidy-fired", out],
+  (text) => {
+    for (const line of text.split("\n").filter(Boolean)) {
       const [pass, bodies] = line.split("\t");
       const at = fired.get(pass) ?? { cases: 0, bodies: 0 };
       fired.set(pass, { cases: at.cases + 1, bodies: at.bodies + Number(bodies) });
     }
-  }
-};
-await Promise.all(Array.from({ length: atOnce("test") }, worker));
-rmSync(work, { recursive: true, force: true });
+  },
+);
 
 const never = passes.filter((pass) => !fired.has(pass));
-console.log(`${compiled} cases compiled, ${refused} refused; ${passes.length - never.length} of ${passes.length} passes changed a body`);
+console.log(`${compiled} programs compiled, ${refused} refused; ${passes.length - never.length} of ${passes.length} passes changed a body`);
 console.log(`\nnever fired (${never.length}):`);
 for (const pass of never) console.log(`  ${pass}`);
-console.log("\nfired: cases, bodies");
+console.log("\nfired: programs, bodies");
 for (const pass of passes.filter((pass) => fired.has(pass))) {
   const { cases: of, bodies } = fired.get(pass)!;
   console.log(`  ${pass}\t${of}\t${bodies}`);
