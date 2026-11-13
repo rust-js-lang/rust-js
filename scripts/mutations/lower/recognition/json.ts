@@ -11,4 +11,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(op) = None::<SerdeOp> {\n",
     tests: ["test/serde.test.ts", "-t", "hand-written"],
   },
+  {
+    name: "json-index-mut-unrecognized",
+    breaks: "`value[key] = ..` of a `Value` isn't recognized, so it's refused where serde_json writes through its `index_or_insert` (#1624)",
+    file: "src/lower/recognition/json.rs",
+    find: "            if tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {\n",
+    replace: "            if false && tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {\n",
+    tests: ["test/serde-values.test.ts", "-t", "IndexMut is serde_json"],
+  },
 ];

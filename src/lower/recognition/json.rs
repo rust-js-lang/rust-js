@@ -8,6 +8,9 @@ pub(in crate::lower) enum Json {
     Value,
     Number,
     Map,
+    /// `map::Entry`, a `Map`'s entry, which is std's `BTreeMap`'s, as the
+    /// `Map` is (#1624).
+    Entry,
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
@@ -22,12 +25,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "Value" => Json::Value,
             "Number" => Json::Number,
             "Map" => Json::Map,
+            "Entry" => Json::Entry,
             _ => return None,
         })
     }
 
     pub(in crate::lower) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Map)
+    }
+
+    /// serde_json's `map::Entry`, whose methods are a `BTreeMap` entry's.
+    pub(in crate::lower) fn is_json_entry(&self, ty: Ty<'tcx>) -> bool {
+        self.json_type(ty) == Some(Json::Entry)
     }
 }
 
@@ -36,6 +45,10 @@ pub(in crate::lower) enum JsonCall<'tcx> {
     ToValue(Ty<'tcx>),
     FromValue(Ty<'tcx>),
     Index,
+    /// `value[key]` written, `IndexMut` of a `&mut Value`, a cell of it:
+    /// a handle on its entry, serde_json's `index_or_insert`, `$jsonIndexMut`
+    /// (#1624).
+    IndexMut,
     Equal {
         other: Ty<'tcx>,
         value_first: bool,
@@ -88,6 +101,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if tcx.is_lang_item(trait_id, LangItem::Index) && this_value {
                 return Some(JsonCall::Index);
             }
+            if tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {
+                return Some(JsonCall::IndexMut);
+            }
             if tcx.is_lang_item(trait_id, LangItem::PartialEq)
                 && let Some(other) = other
                 && this_value != other_value
@@ -117,7 +133,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
         match self.json_type(owner)? {
             json @ (Json::Value | Json::Number) => Some(JsonCall::Method(JsonMethod::recognize(json, name))),
-            Json::Map => None,
+            Json::Map | Json::Entry => None,
         }
     }
 }
@@ -141,6 +157,17 @@ pub(in crate::lower) enum JsonMethod {
     Get,
     /// `get_mut(key)`: a handle on the entry, `$jsonGetMut`.
     GetMut,
+    /// `as_null()`: `Some(())` of a `null` (#1624).
+    AsNull,
+    /// `pointer(p)`: what a JSON Pointer names, `$jsonPointer`; and
+    /// `pointer_mut(p)` of a `&mut Value`, a cell of it, a handle on it,
+    /// `$jsonPointerMut` (#1624).
+    Pointer {
+        mutable: bool,
+    },
+    /// `take()` of a `&mut Value`, a cell of it: what it held, `null` left
+    /// in its place, `$jsonTake` (#1624).
+    Take,
     Unsupported {
         owner: &'static str,
         name: Symbol,
@@ -183,6 +210,10 @@ impl JsonMethod {
             "as_i64" => Self::AsInt("i64"),
             "get" => Self::Get,
             "get_mut" => Self::GetMut,
+            "as_null" => Self::AsNull,
+            "pointer" => Self::Pointer { mutable: false },
+            "pointer_mut" => Self::Pointer { mutable: true },
+            "take" => Self::Take,
             _ => Self::Unsupported { owner: "Value", name },
         }
     }
@@ -231,7 +262,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Some(Json::Map) => return Some(JsonConversion::Tag("Object")),
             Some(Json::Number) => return Some(JsonConversion::Tag("Number")),
             Some(Json::Value) => return Some(JsonConversion::Same),
-            None => {}
+            Some(Json::Entry) | None => {}
         }
         if let ty::Adt(_, args) = from.kind()
             && self.is_std_type(from, StdItem::Vec)

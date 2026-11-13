@@ -292,3 +292,106 @@ pub fn report() -> String {
   expect((await compiled(dir)).report()).toBe(expected);
 });
 
+
+// A `Value` written through `IndexMut`, as serde_json's `index_or_insert`
+// writes it (#1624): a missing key of an object inserted as `null`, a `null`
+// made an object first, nested; and serde_json's panic of a key of what isn't
+// an object, an index of what isn't an array or past its end.
+test("serde: a Value written through IndexMut is serde_json's index_or_insert", async () => {
+  const dir = fixture("serde-value-index-mut");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde_json::{json, Value};
+
+fn panics(out: &mut String, f: impl FnOnce() + std::panic::UnwindSafe) {
+    match std::panic::catch_unwind(f) {
+        Ok(()) => out.push_str("no panic\n"),
+        Err(payload) => out.push_str(&format!("panic: {}\n", payload.downcast_ref::<String>().map(String::as_str).unwrap_or("?"))),
+    }
+}
+
+pub fn report() -> String {
+    let mut out = String::new();
+    let mut v = json!({"a": 1, "b": [1, 2]});
+    v["b"] = json!([1, 2, 3]);
+    v["c"]["d"] = json!("deep");
+    v["b"][0] = json!(null);
+    v["a"] = Value::Null;
+    v["a"]["z"] = json!(true);
+    let key = String::from("k");
+    v[&key] = json!(7);
+    v[key.as_str()] = json!(8);
+    out.push_str(&format!("{v}\n"));
+    let mut n = Value::Null;
+    n["x"] = json!(1);
+    out.push_str(&format!("{n}\n"));
+    {
+        let entry = &mut v["e"];
+        *entry = json!({"f": 1});
+    }
+    if let Value::Object(map) = &mut v["e"] {
+        map.insert("g".into(), json!(2));
+    }
+    out.push_str(&format!("{v}\n"));
+    panics(&mut out, || { let mut v = json!({"a": 1}); v[0] = json!(1); });
+    panics(&mut out, || { let mut v = json!([1, 2]); v[2] = json!(1); });
+    panics(&mut out, || { let mut v = json!([1, 2]); v["a"] = json!(1); });
+    panics(&mut out, || { let mut v = json!("s"); v["a\"b"] = json!(1); });
+    panics(&mut out, || { let mut v = json!(3); v[0] = json!(1); });
+    panics(&mut out, || { let mut v = json!(true); v["t"] = json!(1); });
+    panics(&mut out, || { let mut v = Value::Null; v[0] = json!(1); });
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
+// A `Value`'s access API as serde_json's (#1624): `take()`, `as_null()`, a
+// JSON Pointer's `pointer` and `pointer_mut`, `~0`, `~1`, an index of digits
+// alone, an empty pointer the value itself and one not from `/` none; a
+// `Map`'s `retain`, in its keys' order, and its `entry`.
+test("serde: a Value's take, as_null, pointers and its Map's retain and entry are serde_json's", async () => {
+  const dir = fixture("serde-value-access-api");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde_json::{json, Value};
+
+pub fn report() -> String {
+    let mut out = String::new();
+    let mut v = json!({"a": 1, "b": [1, 2], "c/d": {"e~f": "x"}, "": 0, "~1": "tilde one", "/": "slash"});
+    let taken = v["b"].take();
+    out.push_str(&format!("{taken} {v} {:?} {:?}\n", v["a"].as_null(), json!(null).as_null()));
+    for p in ["", "/a", "/b", "/c~1d", "/c~1d/e~0f", "/", "a", "/missing", "/b/0", "/x/y", "/~01", "/~1"] {
+        out.push_str(&format!("{p:?} -> {:?}\n", v.pointer(p)));
+    }
+    let list = json!([10, 20, 30]);
+    for p in ["/0", "/2", "/3", "/01", "/+1", "/-1", "/1.0", "/18446744073709551616"] {
+        out.push_str(&format!("{p:?} -> {:?}\n", list.pointer(p)));
+    }
+    let mut w = json!({"a": {"b": [1, {"c": 2}]}});
+    if let Some(at) = w.pointer_mut("/a/b/1/c") {
+        *at = json!("changed");
+    }
+    if let Some(at) = w.pointer_mut("") {
+        at["new"] = json!(true);
+    }
+    out.push_str(&format!("{w} {:?}\n", w.pointer_mut("/nope").is_none()));
+    let mut m = json!({"z": 1, "a": 2, "m": 3, "b": 4});
+    let mut seen = Vec::new();
+    m.as_object_mut().unwrap().retain(|k, v| {
+        seen.push(k.clone());
+        *v = json!(v.as_i64().unwrap() * 10);
+        k != "m"
+    });
+    out.push_str(&format!("{m} {seen:?}\n"));
+    let obj = m.as_object_mut().unwrap();
+    *obj.entry("n").or_insert(json!(0)) = json!(5);
+    let e = obj.entry("a").or_insert(json!(0));
+    *e = json!(e.as_i64().unwrap() + 1);
+    obj.entry("k").or_insert_with(|| json!([]));
+    out.push_str(&format!("{m}\n"));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

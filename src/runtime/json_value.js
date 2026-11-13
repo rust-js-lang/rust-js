@@ -144,6 +144,77 @@ function $jsonGetMut(cell, key) {
     ? { get value() { return items.get(key); }, set value(next) { items.set(key, next); } }
     : { get value() { return items[key]; }, set value(next) { items[key] = next; } };
 }
+// `value[key]` written, `IndexMut` of a `&mut Value`, a cell of it: a
+// handle on the entry, as serde_json's `index_or_insert` (#1624). Of a key,
+// a `null` made an empty object first, then its entry, `null` inserted
+// where it isn't there; of an index, the array's item. Else serde_json's
+// panic, naming what the value is.
+function $jsonIndexMut(cell, key) {
+  const kinds = { Bool: "boolean", Number: "number", String: "string", Array: "array", Object: "object" };
+  const kind = (value) => (value === "Null" ? "null" : kinds[value.TAG]);
+  if (typeof key === "string") {
+    if (cell.value === "Null") cell.value = { TAG: "Object", _0: new Map() };
+    const value = cell.value;
+    if (value.TAG !== "Object") throw new Error(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
+    const entries = value._0;
+    if (!entries.has(key)) entries.set(key, "Null");
+    return { get value() { return entries.get(key); }, set value(next) { entries.set(key, next); } };
+  }
+  const value = cell.value;
+  if (value.TAG !== "Array") throw new Error(`cannot access index ${key} of JSON ${kind(value)}`);
+  const items = value._0;
+  if (key >= items.length) throw new Error(`cannot access index ${key} of JSON array of length ${items.length}`);
+  return { get value() { return items[key]; }, set value(next) { items[key] = next; } };
+}
+// A JSON Pointer's tokens, as serde_json's `pointer` splits it: none of `""`,
+// which names the value itself; `undefined` of one that doesn't start with
+// `/`; else each after a `/`, its `~1` a `/`, then its `~0` a `~` (#1624).
+function $jsonPointerTokens(pointer) {
+  if (pointer === "") return [];
+  if (!pointer.startsWith("/")) return undefined;
+  return pointer.split("/").slice(1).map((token) => token.replaceAll("~1", "/").replaceAll("~0", "~"));
+}
+// Where `token` leads in `value`: an object's key it has, or an array's
+// index in it, as serde_json's `parse_index` reads one, digits alone, no `+`
+// and no leading `0`; else `undefined`.
+function $jsonPointerStep(value, token) {
+  if (value.TAG === "Object") return value._0.has(token) ? token : undefined;
+  if (value.TAG !== "Array" || !/^(0|[1-9][0-9]*)$/.test(token)) return undefined;
+  const index = Number(token);
+  return index < value._0.length ? index : undefined;
+}
+// `pointer(p)`: the value a JSON Pointer names, or `undefined`.
+function $jsonPointer(value, pointer) {
+  const tokens = $jsonPointerTokens(pointer);
+  if (tokens === undefined) return undefined;
+  let target = value;
+  for (const token of tokens) {
+    const at = $jsonPointerStep(target, token);
+    if (at === undefined) return undefined;
+    target = typeof at === "string" ? target._0.get(at) : target._0[at];
+  }
+  return target;
+}
+// `pointer_mut(p)` of a `&mut Value`, a cell of it: a handle on what the
+// pointer names, `$jsonGetMut`'s at each step, or `undefined`.
+function $jsonPointerMut(cell, pointer) {
+  const tokens = $jsonPointerTokens(pointer);
+  if (tokens === undefined) return undefined;
+  let target = cell;
+  for (const token of tokens) {
+    const at = $jsonPointerStep(target.value, token);
+    if (at === undefined) return undefined;
+    target = $jsonGetMut(target, at);
+  }
+  return target;
+}
+// `take()` of a `&mut Value`, a cell of it: what it held, `null` left in its
+// place, as `mem::replace(self, Value::Null)` (#1624).
+function $jsonTake(cell) {
+  const value = cell.value;
+  cell.value = "Null";
+  return value;
+}
 function $jsonIndex(value, key) {
   return $jsonGet(value, key) ?? "Null";
 }

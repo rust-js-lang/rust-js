@@ -465,4 +465,12 @@ export const mutations: Mutation[] = [
     replace: "        true\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
+  {
+    name: "json-entry-not-an-entry",
+    breaks: "a JSON `Map`'s `entry()` isn't an entry, so its `or_insert` is refused (#1624)",
+    file: "src/lower/recognition/inherent.rs",
+    find: " || self.is_json_entry(owner),",
+    replace: ",",
+    tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
+  },
 ];

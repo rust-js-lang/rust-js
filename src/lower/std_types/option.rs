@@ -569,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Some(value)` of what could look like `None` (ADR 0051): `$some(value)`,
     /// or a literal itself where it can't, as `$some(4)` is `4`.
-    pub(in crate::lower) fn some(&mut self, value: Expr) -> Expr {
+    pub(in crate::lower) fn some(&self, value: Expr) -> Expr {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,

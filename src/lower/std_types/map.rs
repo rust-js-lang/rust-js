@@ -244,7 +244,8 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "remove" if set => MapOp::Delete,
         "len" if map || set => MapOp::Len,
         "clear" if std_map || set => MapOp::Clear,
-        "retain" if std_map || set => MapOp::Retain,
+        // And serde_json's `Map`'s, a sorted map's (#1624).
+        "retain" if std_map || set || map && sorted => MapOp::Retain,
         "drain" if std_map || set => MapOp::DrainAll,
         "get_key_value" if std_map => MapOp::GetKeyValue,
         "remove_entry" if std_map => MapOp::RemoveEntry,

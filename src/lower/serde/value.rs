@@ -56,6 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }
             JsonCall::Index => Ok(Expr::call(Expr::helper("$jsonIndex"), values)),
+            JsonCall::IndexMut => Ok(Expr::call(Expr::helper("$jsonIndexMut"), values)),
             JsonCall::Equal {
                 other,
                 value_first,
@@ -90,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = match self.json_type(ty)? {
             Json::Value => "$jsonValueWrite",
             Json::Number => "$jsonNumberWrite",
-            Json::Map => return None,
+            Json::Map | Json::Entry => return None,
         };
         Some(Expr::helper(name))
     }
@@ -100,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = match self.json_type(ty)? {
             Json::Value => "$jsonValueClone",
             Json::Map => "$jsonMapClone",
-            Json::Number => return None,
+            Json::Number | Json::Entry => return None,
         };
         Some(Expr::call(Expr::helper(name), vec![value]))
     }
@@ -112,7 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(match json {
             Json::Value => Expr::call(Expr::helper("$jsonValueText"), vec![value, Expr::bool(pretty)]),
             Json::Number => Expr::call(Expr::helper("$jsonNumberText"), vec![value]),
-            Json::Map => return None,
+            Json::Map | Json::Entry => return None,
         })
     }
 
@@ -125,7 +126,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Json::Value if matches!(pretty, Pretty::Plain) => Expr::call(Expr::helper("$debugJsonValue"), vec![value]),
             Json::Value => Expr::call(Expr::helper("$debugJsonValue"), vec![value, pretty.alternate()]),
             Json::Number => Expr::call(Expr::helper("$debugJsonNumber"), vec![value]),
-            Json::Map => return None,
+            Json::Map | Json::Entry => return None,
         })
     }
 
@@ -170,6 +171,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             JsonMethod::GetMut => {
                 let key = values.remove(0);
                 call("$jsonGetMut", vec![key])
+            }
+            JsonMethod::AsNull => {
+                let unit = self.some(Expr::undefined());
+                Expr::cond(
+                    Expr::bin(Op::Eq, receiver.clone(), Expr::str("Null")),
+                    unit,
+                    Expr::undefined(),
+                )
+            }
+            JsonMethod::Take => call("$jsonTake", Vec::new()),
+            JsonMethod::Pointer { mutable } => {
+                let pointer = values.remove(0);
+                call(if mutable { "$jsonPointerMut" } else { "$jsonPointer" }, vec![pointer])
             }
             JsonMethod::NumberFromF64 | JsonMethod::Unsupported { .. } => {
                 unreachable!("handled before receiver extraction")

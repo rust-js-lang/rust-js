@@ -441,8 +441,7 @@ for (const [name, source, message, crate] of [
   ["serde_json's Deserializer::from_str", 'use serde::Deserialize;\npub fn f() -> bool { let mut de = serde_json::Deserializer::from_str("[1,2]"); Vec::<i32>::deserialize(&mut de).is_ok() }', "calling `serde_json::Deserializer::<serde_json::de::StrRead<'a>>::from_str`", "serde"],
   ["a remote type's stand-in", '#[derive(serde::Serialize)] #[serde(remote = "Remote")] pub struct Def { a: i32 }\npub struct Remote { pub a: i32 }\n#[derive(serde::Serialize)] pub struct Holder { #[serde(with = "Def")] pub r: Remote }\npub fn f(h: &Holder) -> String { serde_json::to_string(h).unwrap() }', "`#[serde(remote = ..)]` (#1615)", "serde"],
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],
-  ["unsupported Value method", 'pub fn f(v: &serde_json::Value) -> bool { v.pointer("/name").is_some() }', "`Value::pointer`", "serde"],
-  ["assigning to a Value's key", 'pub fn f() -> String { let mut v = serde_json::json!({}); v["k"] = serde_json::json!(1); v.to_string() }', "`std::ops::IndexMut::index_mut`", "serde"],
+  ["unsupported Value method", 'pub fn f(v: &mut serde_json::Value) { v.sort_all_objects() }', "`Value::sort_all_objects`", "serde"],
   // A variant's own writer is given all its fields, a newtype's its one,
   // which is used; of a variant of no field or more, refused, never ignored;
   // and of an internally tagged newtype, serde's tagged serializer, which
@@ -473,10 +472,7 @@ for (const [name, source, message, crate] of [
   ["an Error's column", 'pub fn f(s: &str) -> usize { serde_json::from_str::<serde_json::Value>(s).map_err(|e| e.column()).err().unwrap_or(0) }', "`serde_json::Error::column`", "serde"],
   ["an Error's is_syntax", 'pub fn f(s: &str) -> bool { serde_json::from_str::<serde_json::Value>(s).is_err_and(|e| e.is_syntax()) }', "`serde_json::Error::is_syntax`", "serde"],
   ["an Error's classify", 'pub fn f(s: &str) -> bool { serde_json::from_str::<serde_json::Value>(s).is_err_and(|e| e.classify() == serde_json::error::Category::Eof) }', "`serde_json::Error::classify`", "serde"],
-  ["Value::pointer_mut", 'pub fn f(v: &mut serde_json::Value) -> bool { v.pointer_mut("/a").is_some() }', "`Value::pointer_mut`", "serde"],
-  ["Value::take", 'pub fn f(v: &mut serde_json::Value) -> serde_json::Value { v.take() }', "`Value::take`", "serde"],
   ["to_vec", 'pub fn f(v: &serde_json::Value) -> Vec<u8> { serde_json::to_vec(v).unwrap() }', "`serde_json::to_vec`", "serde"],
-  ["a Map's entry or_insert", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.entry("k").or_insert(serde_json::json!(1)); }', "`serde_json::map::Entry::<'a>::or_insert`", "serde"],
   ["Map::clear", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.clear() }', "::clear`", "serde"],
   ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],

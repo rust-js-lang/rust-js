@@ -81,9 +81,24 @@ async function make(): Promise<string[]> {
   return readdirSync(programs).filter((f) => f.endsWith(".rs")).map((f) => f.slice(0, -3)).sort();
 }
 
-/** What a program ran to: its output and its exit, as run-one.sh writes it. */
-const ran = (r: { stdout: string; stderr: string; code: number | null; timedOut: boolean }) =>
-  `${r.stdout}${r.stderr}exit ${r.timedOut ? "timeout" : r.code}\n`;
+/** A run's panic message, where it panicked: native Rust's, `thread 'main'
+ * (..) panicked at <place>:` and its message, exit 101; or a JS engine's
+ * uncaught error, Bun's `error: <message>` or Node's `Error: <message>`, as
+ * rust-js's panic is a thrown `Error` (#1624). */
+function panicMessage(stderr: string, code: number | null): string | undefined {
+  if (code === 101) return /thread '[^']*'(?: \(\d+\))? panicked at [^\n]*:\n([^\n]*)/.exec(stderr)?.[1];
+  if (code === 0 || code === null) return undefined;
+  return /^(?:error|Error): (.*)$/m.exec(stderr)?.[1];
+}
+
+/** What a program ran to: its output and its exit, as run-one.sh writes it;
+ * of one that panicked, its output and its message, so a panic is compared
+ * by what it says, not by each runtime's way of saying it (#1624). */
+const ran = (r: { stdout: string; stderr: string; code: number | null; timedOut: boolean }) => {
+  const panic = r.timedOut ? undefined : panicMessage(r.stderr, r.code);
+  if (panic !== undefined) return `${r.stdout}panicked: ${panic}\nexit panic\n`;
+  return `${r.stdout}${r.stderr}exit ${r.timedOut ? "timeout" : r.code}\n`;
+};
 
 const flags = { native: buildSerde("rlib"), wasm32: buildSerde("rlib-wasm32"), js: buildSerde() };
 

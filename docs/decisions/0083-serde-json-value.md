@@ -103,3 +103,23 @@ it, written whole; `get_mut(key)` is a handle on the entry,
 `$jsonGetMut`, and `as_array_mut()` and `as_object_mut()` read what the
 cell holds, whose array or map is changed in place. Held by the serde
 test "a Value written through a &mut changes to and from Null".
+
+## Amendment: written through `IndexMut`, and its access API (2026-11-13, #1624)
+
+A `Value` written through `IndexMut`, `v["a"] = json!(1)`, `v[0] = ..` and
+nested, is a handle on the entry, as `get_mut`'s is, of a `&mut Value`'s
+cell (`$jsonIndexMut`), by serde_json's `index_or_insert`: of a key, a
+`null` made an empty object first, then its entry, `null` inserted where
+it isn't there; of an index, the array's item; else serde_json's panic,
+`cannot access key "a" in JSON array`, `cannot access index 0 of JSON
+object` or `cannot access index 2 of JSON array of length 2`. A map's
+entries are sorted where they're written, so an inserted key needs no
+place. And its access API: `take()`, `null` left in its place
+(`$jsonTake`); `as_null()`, `Some(())` of a `null`; `pointer(p)` and
+`pointer_mut(p)`, a JSON Pointer as serde_json reads one (`""` the value
+itself, one not from `/` none, `~1` unescaped before `~0`, an array's
+index digits alone, no `+` and no leading `0`), `pointer_mut`'s a handle
+walked by `get_mut`'s steps. serde_json's `Map`'s `retain` is a sorted
+map's, and its `map::Entry`, now one of serde_json's own types (`Json::
+Entry`), is a `BTreeMap` entry's. Case (ADR 0262): none observable, the
+same values, order and panics as serde_json's.

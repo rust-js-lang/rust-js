@@ -734,4 +734,12 @@ export const mutations: Mutation[] = [
     replace: '                Expr::call(Expr::helper(if unwinds { "$mapFrom" } else { "$extendMap" }), list)\n',
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops_what_it_filled_as_a_replaced_drop_panics.rs$"],
   },
+  {
+    name: "json-map-retain-unrecognized",
+    breaks: "a JSON `Map`'s `retain` is refused, where it's a sorted map's (#1624)",
+    file: "src/lower/std_types/map.rs",
+    find: '        "retain" if std_map || set || map && sorted => MapOp::Retain,\n',
+    replace: '        "retain" if std_map || set => MapOp::Retain,\n',
+    tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
+  },
 ];

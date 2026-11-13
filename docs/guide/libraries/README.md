@@ -721,7 +721,12 @@ serde's common attributes work, `rename`, `rename_all`, `tag`, `content`,
 `untagged`, `flatten`, `default`, `skip` and the rest, as do
 `serde_json::Value` and `json!`
 ([the semantics](../semantics.md#the-javascript-boundary)); what's refused
-is in [the limitations](../limitations.md#serde).
+is in [the limitations](../limitations.md#serde). A `Value` is written
+through `v["a"] = ..` and `v[0] = ..` as serde_json writes it, a missing
+key inserted and a `null` made an object, its panics serde_json's; its
+`take()`, `as_null()`, `pointer()` and `pointer_mut()`, and its `Map`'s
+`retain` and `entry`, are serde_json's too
+([ADR 0083](../../decisions/0083-serde-json-value.md)).
 
 A hand-written `Serialize` or `Deserialize` is its body over serde_json's
 writer and reader, `s.serialize_str(x)` the writer's `s.string(x)`. A

@@ -55,7 +55,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),
             hashed: adt(StdItem::HashMap) || adt(StdItem::HashSet),
             random_state: (adt(StdItem::HashMap) || adt(StdItem::HashSet)) && self.random_state_table(def_id, args),
-            entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry),
+            entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry) || self.is_json_entry(owner),
             occupied: self.is_occupied_entry(owner),
             vacant: self.is_vacant_entry(owner),
         };
