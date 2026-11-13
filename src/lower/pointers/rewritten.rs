@@ -84,7 +84,7 @@ pub(in crate::lower) fn rewritten_places<'tcx>(
     for (at, written) in whole_writes(tcx, body) {
         // A local's first write makes it; a field's is over what the local
         // was made with.
-        let Some(kept) = kept_within(tcx, &pointed, written) else {
+        let Some(kept) = kept_within(tcx, body, &pointed, written) else {
             continue;
         };
         if written.projection.is_empty() && !again.contains(&written.local) {
@@ -149,9 +149,13 @@ fn pointed_places<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Vec<mi
 
 /// Of a `place` one of `pointed` is or is inside, the places inside it
 /// a pointer is into, deepest first: each an object a write over `place`
-/// keeps. None where no pointer is to or into it.
+/// keeps. None where no pointer is to or into it. Past `place`, an item
+/// a pointer reached by an index read where it was taken, `items[i]`, is
+/// each item of its array, which the write never reads `i` to tell
+/// apart (#1553).
 fn kept_within<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
     pointed: &[mir::Place<'tcx>],
     place: mir::Place<'tcx>,
 ) -> Option<Vec<mir::Place<'tcx>>> {
@@ -164,22 +168,63 @@ fn kept_within<'tcx>(
     let mut kept: Vec<mir::Place<'tcx>> = Vec::new();
     for p in within {
         // The place's own, its index the place's, and what the pointer
-        // reaches past it.
-        for end in place.projection.len() + 1..=p.projection.len() {
-            let projection: Vec<PlaceElem<'tcx>> = (place.projection.iter())
-                .chain(p.projection[place.projection.len()..end].iter().copied())
-                .collect();
-            let inner = mir::Place {
-                local: p.local,
-                projection: tcx.mk_place_elems(&projection),
-            };
-            if !kept.contains(&inner) {
-                kept.push(inner);
+        // reaches past it, each of an array's items where it's reached by
+        // an index.
+        let mut paths: Vec<Vec<PlaceElem<'tcx>>> = vec![place.projection.to_vec()];
+        for &elem in &p.projection[place.projection.len()..] {
+            let mut next = Vec::new();
+            for path in &paths {
+                let at = mir::Place {
+                    local: p.local,
+                    projection: tcx.mk_place_elems(path),
+                };
+                for each in each_item(tcx, body, at, elem) {
+                    let mut longer = path.clone();
+                    longer.push(each);
+                    next.push(longer);
+                }
+            }
+            paths = next;
+            for path in &paths {
+                let inner = mir::Place {
+                    local: p.local,
+                    projection: tcx.mk_place_elems(path),
+                };
+                if !kept.contains(&inner) {
+                    kept.push(inner);
+                }
             }
         }
     }
     kept.sort_by_key(|inner| std::cmp::Reverse(inner.projection.len()));
     Some(kept)
+}
+
+/// `elem` past `at`, or of an `Index` into an array of a known length,
+/// each of its items, `ConstantIndex` (#1553).
+fn each_item<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    at: mir::Place<'tcx>,
+    elem: PlaceElem<'tcx>,
+) -> Vec<PlaceElem<'tcx>> {
+    let PlaceElem::Index(_) = elem else {
+        return vec![elem];
+    };
+    let ty = at.ty(&body.local_decls, tcx).ty;
+    let ty::Array(_, len) = ty.kind() else {
+        return vec![elem];
+    };
+    let Some(len) = len.try_to_target_usize(tcx) else {
+        return vec![elem];
+    };
+    (0..len)
+        .map(|offset| PlaceElem::ConstantIndex {
+            offset,
+            min_length: len,
+            from_end: false,
+        })
+        .collect()
 }
 
 /// How each of `writes` in `body` is written (`Rewritten`), by rustc's

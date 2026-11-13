@@ -295,9 +295,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Some(Expr::array(items))
             }
-            // An array's items: shared, as nothing writes into one of
-            // them over its place yet (#1553).
-            Shape::Other => match ty.kind() {
+            // An array's items: each an object held inline copied in turn,
+            // as a write over the place it was moved from keeps them, a
+            // pointer's at each (#1553); else shared.
+            Shape::Other => match *ty.kind() {
+                ty::Array(item, _) if inline(item) => {
+                    let copied = self.moved_apart(Expr::var("item"), item)?;
+                    Some(Expr::read(
+                        place,
+                        "map",
+                        vec![Expr::arrow(
+                            vec![js::Pattern::Name("item".into())],
+                            vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
+                        )],
+                    ))
+                }
                 ty::Array(..) => Some(Expr::read(place, "slice", Vec::new())),
                 _ => None,
             },

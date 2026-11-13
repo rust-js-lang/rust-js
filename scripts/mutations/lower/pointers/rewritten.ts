@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     name: "inner-objects-unkept",
     breaks: "an object inside a place written whole, a pointer into it, is replaced by the value's, its pointer reading the old (#1484)",
     file: "src/lower/pointers/rewritten.rs",
-    find: "        for end in place.projection.len() + 1..=p.projection.len() {\n",
-    replace: "        for end in p.projection.len() + 1..=p.projection.len() {\n",
+    find: "                if !kept.contains(&inner) {\n",
+    replace: "                if false && !kept.contains(&inner) {\n",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
   },
   {
@@ -92,5 +92,13 @@ export const mutations: Mutation[] = [
     find: "        PlaceElem::Deref => base.ty(body, tcx).ty.is_box(),\n",
     replace: "        PlaceElem::Deref => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_local_moved_out.rs$"],
+  },
+  {
+    name: "kept-item-at-its-pointers-index",
+    breaks: "a write over an array a pointer is at an item of, reached by an index read where it was taken, keeps the item at that index's local, which the write never declares: `ReferenceError` (#1553)",
+    file: "src/lower/pointers/rewritten.rs",
+    find: "    let Some(len) = len.try_to_target_usize(tcx) else {\n",
+    replace: "    let Some(len) = len.try_to_target_usize(tcx).filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_when_written_whole.rs$"],
   },
 ];

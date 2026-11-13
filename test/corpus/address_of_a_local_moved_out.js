@@ -162,7 +162,7 @@ function main() {
   at = $addr($ptrTo(a), 16);
   $stored($ptr(a, 0), 8);
   const aFirst = addressOf(a[0]);
-  const b = a.slice();
+  const b = a.map((item) => [item[0], item[1]]);
   $storedItems(b, 8);
   $stored($ptr(b, 0), 8);
   const value$3 = at === $addr($ptrTo(b), 16);

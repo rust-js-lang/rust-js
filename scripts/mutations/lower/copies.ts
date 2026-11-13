@@ -473,4 +473,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) => true,\n",
     tests: ["test/diagnostics.test.ts", "-t", "a HashMap whose address is taken, moved"],
   },
+  {
+    name: "moved-array-items-shared",
+    breaks: "an array moved out of a place a pointer is into shares its items, which a write over that place then changes (#1553)",
+    file: "src/lower/copies.rs",
+    find: "                ty::Array(item, _) if inline(item) => {\n",
+    replace: "                ty::Array(item, _) if false && inline(item) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_when_written_whole.rs$"],
+  },
 ];

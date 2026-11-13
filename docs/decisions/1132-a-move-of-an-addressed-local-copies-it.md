@@ -72,3 +72,29 @@ no pointer is taken to, give the JS they gave. `a.slice()` is a read
   rewritten.ts, copies.ts, assign/rewritten.ts and expr_walk.ts.
 - #1553 (an array assigned again over an item's pointer crashes) was found
   here and left; it predates this change.
+
+## Amendment (2026-11-13, #1553): an item reached by an index is each item, and a moved array's items are copied
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. An array an item of which a pointer was taken to
+by an index read at run time, `&raw const items[i]`, assigned whole
+again, kept the item at `items[_19]`, the index local of the pointer's own
+statement, which the write never declares: `ReferenceError: _19 is not
+defined`.
+
+- `kept_within` (`pointers/rewritten.rs`) now takes an item reached by an
+  `Index`, past the place written, of an array of a known length as each
+  of its items, `ConstantIndex` 0 to N: the write writes over each, so a
+  pointer at any of them reads the new item where it was, and it never
+  reads the index to tell them apart.
+- Writes now keep an array's items, so a move of such an array copies
+  each item that's an object held inline, `a.map((item) => [item[0],
+  item[1]])`, where it shared them, `a.slice()` (`copies.rs moved_apart`):
+  a later write over the place the array was moved from changed the moved
+  array's items with it.
+
+Corpus case address_of_an_array_item_kept_when_written_whole against
+native Rust; address_of_a_local_moved_out's snapshot copies its items.
+Mutations `kept-item-at-its-pointers-index` (`pointers/rewritten.ts`) and
+`moved-array-items-shared` (`copies.ts`). A write through the `&mut` that
+`mem::replace` is given isn't one of #1484's yet, #1616.
