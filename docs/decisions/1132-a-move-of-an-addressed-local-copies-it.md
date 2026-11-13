@@ -98,3 +98,16 @@ native Rust; address_of_a_local_moved_out's snapshot copies its items.
 Mutations `kept-item-at-its-pointers-index` (`pointers/rewritten.ts`) and
 `moved-array-items-shared` (`copies.ts`). A write through the `&mut` that
 `mem::replace` is given isn't one of #1484's yet, #1616.
+
+## Amendment (2026-11-13, #1616): `mem::replace` of an addressed variable writes in place
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. `mem::replace(&mut whole, v)`, `mem::swap` and
+`mem::take` of the body's own variable were written as giving the variable
+its new value, `const old = whole; whole = v`, so a pointer into it, at
+`whole[0]`, read the old array's item. A variable a raw pointer is taken
+into (`addressed_locals`, of `pointed_places`, `pointers/rewritten.rs`), or a field of one, on
+either side of a swap, is now changed in place as an object given by
+`&mut` is, `$take(whole, v)`, `$exchange(a, b)` (`mir_swap_or_replace`).
+Corpus case address_of_an_array_item_kept_through_mem_replace against
+native Rust; mutation `addressed-variable-rebound` (`mir/entries.ts`).

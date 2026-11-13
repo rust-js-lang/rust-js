@@ -30,7 +30,7 @@ pub(in crate::lower) use lending::{lends_a_place_handle, made_once_of};
 mod rewritten;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;
-pub(in crate::lower) use rewritten::{Rewritten, rewritten_places, within_items};
+pub(in crate::lower) use rewritten::{Rewritten, addressed_locals, rewritten_places, within_items};
 
 /// A pointer into what JS may hold a copy of, a slice's or a constant's,
 /// whose place isn't the one it's a copy of: refused, in these words.

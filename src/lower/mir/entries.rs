@@ -483,7 +483,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // body's or a field of the crate's struct, not a cell's value read
         // through what holds it (`Known::Taken`, ADR 0996).
         let mut made_here = false;
-        for (i, value) in values.enumerate() {
+        // Of a variable a raw pointer is taken into, whose objects are its
+        // places, or a field of one, either side's of a swap: each changed
+        // in place as an object is, `$take(a, v)`, `$exchange(a, b)`, never
+        // rebound (#1616).
+        let addressed = crate::lower::pointers::addressed_locals(self.tcx, state.body);
+        let values: Vec<_> = values.collect();
+        let rebound = !(values.iter().take(borrowed)).any(|value| {
+            let (Value::Expr(e) | Value::Place(e) | Value::Ref(e)) = value else {
+                return false;
+            };
+            let mut root = e;
+            while let js::ExprKind::Member(of, _) | js::ExprKind::Index(of, _) = &root.kind {
+                root = of;
+            }
+            matches!(&root.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
+                .any(|(local, n)| n == name && addressed.contains(&local)))
+        });
+        let (variables, fields) = (variables && rebound, fields && rebound);
+        for (i, value) in values.into_iter().enumerate() {
             given.push(match value {
                 Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => {
                     made_here |= i == 0;

@@ -321,4 +321,12 @@ export const mutations: Mutation[] = [
     replace: "        let moved_apart = self.is_flattened_state(pointee);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_code_right_for_every_instance.rs$"],
   },
+  {
+    name: "addressed-variable-rebound",
+    breaks: "a variable a raw pointer is taken into, given by `&mut` to `mem::replace`, `mem::swap` or `mem::take`, is given its new value, so the pointer reads the old array's item (#1616)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let (variables, fields) = (variables && rebound, fields && rebound);\n",
+    replace: "        let (variables, fields) = (variables, fields);\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_through_mem_replace.rs$"],
+  },
 ];

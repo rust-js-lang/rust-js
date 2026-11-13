@@ -95,6 +95,14 @@ pub(in crate::lower) fn rewritten_places<'tcx>(
     rewritten
 }
 
+/// Each local of `body` a raw pointer is taken into, `&raw const s.f` or
+/// `&raw const items[i]`: one whose objects are its places, so what writes
+/// it whole, a `mem::replace`'s `&mut` to it too, writes over them, never
+/// rebinding it (#1616).
+pub(in crate::lower) fn addressed_locals<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> IndexSet<Local> {
+    pointed_places(tcx, body).iter().map(|place| place.local).collect()
+}
+
 /// Each place `body` moves out, `let kept = m;` or `f(m)`, that a raw
 /// pointer is taken to or into, by where it's moved. The value moved is its
 /// own allocation, at another address, as each live local is (#1535), so
