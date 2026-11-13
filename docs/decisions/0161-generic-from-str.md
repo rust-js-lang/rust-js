@@ -67,3 +67,14 @@ builds; and by rand_core's own `fill_via_u32_chunks` and
 `fill_via_u64_chunks`, run as JS by a library's `#[test]`s, as native.
 Mutations `never-shown-displayed` (`lower/display/written.ts`) and
 `uninhabited-debug-refused`, refitted.
+
+## Amendment: a type only a caller knows, an associated type's too (2026-11-13, #1605)
+
+`parse` went to the target's dictionary only where the target was a type
+parameter, `ty::Param`, so `text.parse::<S::Item>()` with `S::Item:
+FromStr`, and `I::Item` of an `I: IntoIterator`, were refused. Whether a
+type is one only a caller knows has one owner, `is_unknown`, which an
+associated type's answer is yes too. `parse_as` asks it, so an associated
+type's `parse` is its dictionary's `from_str`, given as a type
+parameter's is. No difference (ADR 0262): the same `from_str` runs. Corpus
+case `parse_to_an_associated_type` against native Rust in both builds.

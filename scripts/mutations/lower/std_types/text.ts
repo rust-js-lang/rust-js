@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`s.parse::<T>()` of a generic `T: FromStr` is an error, its dictionary unused",
     file: "src/lower/std_types/text.rs",
-    find: "            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))",
+    find: "            && (self.is_unknown(target) || self.has_user_impl(from_str, target))",
     replace: "            && self.has_user_impl(from_str, target)",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
@@ -534,5 +534,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
     snapshots: true,
+  },
+  {
+    name: "parse-to-associated-type-refused",
+    breaks: "`text.parse::<S::Item>()` of an associated type only a caller knows is refused, where its dictionary's `from_str` parses it (#1605)",
+    file: "src/lower/std_types/text.rs",
+    find: "            && (self.is_unknown(target) || self.has_user_impl(from_str, target))\n",
+    replace: "            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))\n",
+    tests: ["test/corpus.test.ts", "-t", "^parse_to_an_associated_type.rs$"],
   },
 ];

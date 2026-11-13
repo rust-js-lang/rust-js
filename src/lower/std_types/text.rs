@@ -737,11 +737,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_lang_adt(target, LangItem::String) {
             return Ok(result::ok(text));
         }
-        // A type's own `FromStr`: its `from_str`, called (ADR 0159), or a
-        // `T`'s, its dictionary's (ADR 0161). Not std's of another type,
-        // which has no dictionary but this.
+        // A type's own `FromStr`: its `from_str`, called (ADR 0159), or one
+        // only a caller knows, a `T`'s or an `S::Item`'s, its dictionary's
+        // (ADR 0161, #1605). Not std's of another type, which has no
+        // dictionary but this.
         if let Some(from_str) = self.recognition().std_from_str()
-            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))
+            && (self.is_unknown(target) || self.has_user_impl(from_str, target))
         {
             let method = trait_method(self.tcx, from_str, "from_str");
             let args = self.tcx.mk_args(&[target.into()]);

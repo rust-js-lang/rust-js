@@ -200,7 +200,8 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
   calling `impl FromStr for Role`'s `from_str`
   ([0159](../decisions/0159-user-from-str.md)); a generic `T: FromStr`'s is
-  its dictionary's, std's or the crate's ([0161](../decisions/0161-generic-from-str.md)).
+  its dictionary's, std's or the crate's, and so is an associated type's,
+  `s.parse::<S::Item>()` ([0161](../decisions/0161-generic-from-str.md), amended).
 
 - **A `Path` or a `PathBuf` is its text,** made from text and shown by
   `display()`; its `==` compares components, as Rust's does
