@@ -39,4 +39,12 @@ export const mutations: Mutation[] = [
     replace: ".is_some_and(|_| true);\n",
     tests,
   },
+  {
+    name: "throwing-fn-named-as-a-value",
+    breaks: "a private function whose result is a binding's `Result`, named as a value, is a throwing function, so a call through a `fn` pointer reads its plain value as a `Result` and lets its throw go (#1670)",
+    file: "src/lower/analysis/throwing.rs",
+    find: "        .filter(|body| only_called.contains_key(&body.def_id) && candidate(tcx, recognition, body.def_id))\n",
+    replace: "        .filter(|body| candidate(tcx, recognition, body.def_id))\n",
+    tests: ["test/throwing-calls.test.ts", "-t", "a function whose result is a throwing call's is a throwing function"],
+  },
 ];

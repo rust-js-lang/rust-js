@@ -109,3 +109,17 @@ function willCoercionThrow(value) {
 - Mutations in `scripts/mutations/lower/analysis/throwing.ts`,
   `scripts/mutations/lower/mir/structure.ts` and
   `scripts/mutations/lower/mir/calls.ts`.
+
+## Amendment: never one named as a value (#1670, 2026-11-13)
+
+A private function whose result is a binding's `Result` became a throwing
+function though it was also named as a value: `through(parsed, text)`, or
+`let f: fn(&str) -> Parsed = parsed`. A call through that value reads a
+`Result`, so it read the plain value as one, and the throw went uncaught:
+`true` became `false`, and `false` became a `SyntaxError` (results change,
+Rust's kept, ADR 0262). A throwing function is now one that only calls
+reach, `only_called`'s answer, which leaves out a function named as a
+value, exported, or a module's default export. The throwing-function test
+in `test/js-builtins.test.ts` holds the case: the function keeps its
+`$try`, and both calls answer as Rust does. Mutation
+`throwing-fn-named-as-a-value`.

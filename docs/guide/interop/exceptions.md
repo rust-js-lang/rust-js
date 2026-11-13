@@ -284,7 +284,8 @@ export function hasConfig(path) {
 - **A function whose result is the call's `Result` throws too**,
   `readConfig(path)`, which returns `loadConfig(path)`: its calls are
   throwing calls, by each rule above. Not a `pub` one, whose JS callers
-  read its `Result`, nor a trait's method or a generic one
+  read its `Result`, nor one named as a value, `through(parse, text)`,
+  whose callers read it too, nor a trait's method or a generic one
   ([ADR 0644](../../decisions/0644-a-function-of-a-throwing-calls-result-throws.md)).
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it

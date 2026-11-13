@@ -214,6 +214,18 @@ fn number(text: &str) -> Result<u32, std::num::ParseIntError> {
 pub fn numeric(text: &str) -> bool {
     number(text).is_ok()
 }
+
+fn read(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    json::parse(text)
+}
+
+fn through(f: fn(&str) -> Result<Option<&'static Unknown>, &'static JsError>, text: &str) -> bool {
+    f(text).is_ok()
+}
+
+pub fn as_value(text: &str) -> bool {
+    through(read, text)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -237,4 +249,7 @@ pub fn numeric(text: &str) -> bool {
   expect([lib.parses(""), lib.parses("1"), lib.parses("{")]).toEqual([true, true, false]);
   // One of a Rust \`Result\`, no JS call's, is no throwing function.
   expect([lib.numeric("12"), lib.numeric("x")]).toEqual([true, false]);
+  // Nor one named as a value, whose callers read its \`Result\` (#1670).
+  expect(js).toContain("function read(text) {\n  return $try(() => JSON.parse(text));\n}");
+  expect([lib.asValue("[1]"), lib.asValue("{")]).toEqual([true, false]);
 });

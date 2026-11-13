@@ -34,16 +34,19 @@ pub(in crate::lower) fn call_throws<'tcx>(
 /// The crate's throwing functions: each whose every write of its result is
 /// a throwing call's, a binding's or another's of these, given its result
 /// as it is. Not one JS may call, a `pub` one, whose JS callers read its
-/// `Result`; nor a trait's method, called through a dictionary; nor a
-/// generic one, nor a closure. Found from the least: a function that
-/// returns its own call is none, its `$try` kept.
+/// `Result`; nor one named as a value, a `fn` pointer's or a callback's,
+/// whose callers read its `Result` too (#1670): each is one only calls
+/// reach, `only_called`'s; nor a trait's method, called through a
+/// dictionary; nor a generic one, nor a closure. Found from the least: a
+/// function that returns its own call is none, its `$try` kept.
 pub(super) fn throwing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
 ) -> IndexSet<DefId> {
+    let only_called = super::only_called::only_called(tcx);
     let candidates: Vec<(DefId, &mir::Body<'tcx>)> = (bodies.iter())
-        .filter(|body| candidate(tcx, recognition, body.def_id))
+        .filter(|body| only_called.contains_key(&body.def_id) && candidate(tcx, recognition, body.def_id))
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
         .collect();
     let mut throwing = IndexSet::default();
