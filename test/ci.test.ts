@@ -191,6 +191,22 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
 });
 
+// Plain check:fast runs the JSX, snapshot and diagnostics tests of a change
+// committed before its check, as one on `main` is, as it does of the working
+// tree's: 216a72342, checked committed, skipped them and left bindings.test.ts's
+// snapshot unblessed (#1731).
+test("plain check:fast runs the snapshots, JSX and diagnostics of a committed change", () => {
+  const files = (scope: { changed: string[]; branch: string[] }) =>
+    jobs({ all: false, ...scope, added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
+  const shared = ["test/snapshots.test.ts", "test/diagnostics.test.ts"];
+  expect(files({ changed: [], branch: ["src/lower/representation.rs"] })).toEqual(expect.arrayContaining(shared));
+  expect(files({ changed: ["std/lib.rs"], branch: [] })).toEqual(expect.arrayContaining(shared));
+  expect(files({ changed: [], branch: ["src/lower/jsx/props.rs"] }).some((name) => name.startsWith("test/jsx"))).toBe(true);
+  const docs = files({ changed: [], branch: ["docs/guide/README.md"] });
+  expect(docs.filter((name) => shared.includes(name) || name.startsWith("test/jsx"))).toEqual([]);
+  expect(jobs({ all: false, changed: [], branch: ["src/lower/representation.rs"], added: [], extra: [], cores: 12 }).shared).toBe(true);
+});
+
 // The crate corpus runs of a change to what compiles it, plain check:fast's
 // and each push's (`plan`'s `crates`), not only `--all`'s and the
 // nightly's: 9353847cd refused itertools unseen (#1188).

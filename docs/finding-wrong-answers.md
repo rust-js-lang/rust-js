@@ -139,6 +139,28 @@ say.
     corpus had no case where `i` may be 0. Before a rule of relations
     decides anything, write the case at the edge where its arithmetic
     wraps.
+12. **A rule made flow-sensitive must take effect on every path.** The MIR
+    intervals forgot an integer local lent `&mut` in the whole body. M3
+    narrowed that to "forgotten where it's lent", so a local assigned again
+    after its borrow ends is known again; borrowck holds it unassigned
+    while the borrow lives. The first cut put the forget after the walk's
+    early return for a statement whose destination is lent, so a borrow
+    taken there never forgot anything. `k` kept the interval it had
+    before `f(&mut k)`, and MIR proved `k - 2` in range although `f`,
+    a function pointer, may set `k` to 0 (#1672 M3, ADR 1137). The test
+    that lends a local and subtracts after the call caught it before
+    anything landed. When a
+    conservative rule ("unknown everywhere") becomes a precise one
+    ("unknown from here"), what made it safe has to happen at every exit
+    of the transfer function, not only the common one. Write the case
+    where the callee writes a value outside what was known before.
+
+Lessons 10 to 12 are one family: an analysis that licenses JS's own
+operator must prove every property the dropped normalization gave (10),
+keep a relation only where its arithmetic can't wrap (11), and forget what
+a borrow may change on every path that takes the borrow (12). Each was
+caught before M3's switch reached main, by recording both directions of
+the shadow, or by writing the case at the edge.
 
 ## Nets still to build
 

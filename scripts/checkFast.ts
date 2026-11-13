@@ -148,21 +148,27 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
 export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows }: Scope): { jobs: Job[]; shared: boolean } {
+  // What the change touches, the working tree's and what the branch
+  // committed since `main`: of the working tree's alone, a change committed
+  // before its check, as one on `main` is, touched nothing, and its JSX,
+  // snapshots and diagnostics were skipped; 216a72342 left bindings.test.ts's
+  // snapshot unblessed, `main` red until 8257a8634 (#1731).
+  const touched = [...changed, ...branch];
   // What the snapshots and the diagnostics read: the compiler and `@rust-js/std`.
-  const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("std/"));
-  const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
+  const shared = all || touched.some((file) => file.startsWith("src/") || file.startsWith("std/"));
+  const jsx = all || touched.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
   // A change to tidy or preparation, or to the oracles, is checked after
   // each of tidy's stages and without each of preparation's rewrites, and by
   // the read cases (ADRs 0659, 1087): of `--all` too only then, as a push's
   // CI runs them, readability-passes.yml's paths, the nightly every case
   // (the user, #998: 28–34 core-seconds of every compiler change's check).
-  const tidy = touchesReadability([...changed, ...branch]);
+  const tidy = touchesReadability(touched);
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
-  const mutRefs = all || changed.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
+  const mutRefs = all || touched.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
   // A change to how a place holds a `None`, or to what reads or writes
   // one, runs the `None` matrix's sample against native Rust (#855).
-  const nones = all || changed.some((file) => /^src\/lower\/(representation\/(nones|options)|bindings\/nullable|std_types\/option|analysis\/nulled_params)/.test(file));
+  const nones = all || touched.some((file) => /^src\/lower\/(representation\/(nones|options)|bindings\/nullable|std_types\/option|analysis\/nulled_params)/.test(file));
   // A change to the JS object model's owners, what a struct JS may make
   // is, or the readability passes, or to the net itself, runs the object
   // model's sample: a library's values read through counting proxies
@@ -170,7 +176,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   const objectModel =
     all ||
     tidy ||
-    [...changed, ...branch].some((file) =>
+    touched.some((file) =>
       /^(src\/lower\/(classes|untagged|field_keys|bindings|representation|analysis\/fn_pointers)|src\/js\/(stmt_walk|expr_walk)|test\/object-model)/.test(file),
     );
   // A change to the iterators' code, the working tree's or the branch's
@@ -178,32 +184,32 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // slices and the corpus with std's iterator structs, as a push's check
   // does (scripts/iteratorSlice.ts, #731, #766): with `--all` too, which is
   // what the push's check runs, these where its change is the iterators'.
-  const iterators = touchesIterators([...changed, ...branch]);
+  const iterators = touchesIterators(touched);
   // And a change to the formatting code, the formatting grid's slice, as a
   // push's check runs it (#941).
-  const formatting = touchesFormatting([...changed, ...branch]);
+  const formatting = touchesFormatting(touched);
   // And to the numbers' code, the numbers grid's slice (#940).
-  const numbers = touchesNumbers([...changed, ...branch]);
+  const numbers = touchesNumbers(touched);
   // And to the pointers' code, the memory net's slice (#1172).
-  const memory = touchesMemory([...changed, ...branch]);
+  const memory = touchesMemory(touched);
   // And to what a `None` is at the JS boundary, the declarations'
   // TypeScript callers, in one part (#822).
-  const declarations = touchesDeclarations([...changed, ...branch]);
+  const declarations = touchesDeclarations(touched);
   // And to how a future awaits and drops, the async table (#942).
-  const awaits = touchesAsync([...changed, ...branch]);
+  const awaits = touchesAsync(touched);
   // And to the iterators' code or the drops', the consumer net.
-  const consumers = touchesConsumers([...changed, ...branch]);
+  const consumers = touchesConsumers(touched);
   // And to std's collections', slices', strings' or cells' code, the std net (#1171).
-  const stdNet = touchesStdNet([...changed, ...branch]);
+  const stdNet = touchesStdNet(touched);
   // And to the iterators' code, the runtime's among it, the twin net: the
   // runtime's helpers against std's own bodies (#1205).
-  const twins = touchesTwins([...changed, ...branch]);
+  const twins = touchesTwins(touched);
   // And each corpus case it adds or edits, each of its metamorphic
   // rewrites, plain or `--all` (#1165).
-  const cases = changedCases([...changed, ...branch]);
+  const cases = changedCases(touched);
   // And the crate corpus, of a change to what compiles it, plain too, as a
   // push's check runs it (#1188); `--all`'s always (#998).
-  const crates = all || touchesCrates([...changed, ...branch]);
+  const crates = all || touchesCrates(touched);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
