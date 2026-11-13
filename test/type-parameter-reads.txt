@@ -4,7 +4,8 @@
 src/lower/aggregates.rs	1
 src/lower/analysis.rs	1
 src/lower/analysis/callers_decide.rs	6
-src/lower/analysis/cell_borrows.rs	12
+src/lower/analysis/cell_borrows.rs	11
+src/lower/analysis/cell_borrows/std_given.rs	1
 src/lower/analysis/cell_flow.rs	1
 src/lower/analysis/clones.rs	1
 src/lower/analysis/closures.rs	2
