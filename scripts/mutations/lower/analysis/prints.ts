@@ -308,4 +308,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "each of a writer generic over a constant's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "listed-writers-compiled-here-unframed",
+    breaks: "a consumer's own copy of a library's derived `Debug` its contract lists isn't framed, so its dictionary's `fmtInto` is refused",
+    file: "src/lower/analysis/prints.rs",
+    find: "        found.framed.extend(listed_writers_compiled_here(recognition));\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
+  },
 ];

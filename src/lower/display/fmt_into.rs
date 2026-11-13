@@ -108,16 +108,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props: &[js::Prop],
         span: Span,
     ) -> R<Option<js::Prop>> {
+        // Of the crate's type, or a library's whose impl the crate compiles
+        // its own of, which its contract lists (`listed_writers_compiled_here`).
         let adt = match tr.self_ty().kind() {
             ty::Adt(adt, _) if adt.did().is_local() => adt.did(),
+            ty::Adt(adt, _) if self.krate.foreign.lists_fmt_into(adt.did()) => adt.did(),
             _ => return Ok(None),
         };
-        if !self.krate.written.of_adt(adt) || !self.is_fmt_trait(tr.def_id) {
+        let listed = !adt.is_local();
+        if !(listed || self.krate.written.of_adt(adt)) || !self.is_fmt_trait(tr.def_id) {
             return Ok(None);
         }
         let fmt = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "fmt");
         let writes_through_sink = match self.resolve_self_instance(fmt, tr.args) {
-            Ok(Some(instance)) => instance.def_id().is_local() && self.writes_through_sink(instance.def_id()),
+            Ok(Some(instance)) => {
+                (instance.def_id().is_local() || listed) && self.writes_through_sink(instance.def_id())
+            }
             _ => false,
         };
         let entry = (props.iter()).find_map(|prop| match prop {

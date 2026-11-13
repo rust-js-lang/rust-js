@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     name: "fmt-into-impl-entry-left-out",
     breaks: "an impl of the crate's own given a generic writer carries no `fmtInto`, which the writer calls",
     file: "src/lower/display/fmt_into.rs",
-    find: "        if !self.krate.written.of_adt(adt) || !self.is_fmt_trait(tr.def_id) {\n",
+    find: "        if !(listed || self.krate.written.of_adt(adt)) || !self.is_fmt_trait(tr.def_id) {\n",
     replace: "        if true {\n",
     tests: sink,
   },
@@ -69,5 +69,13 @@ export const mutations: Mutation[] = [
     find: "        } else if (ty.ty_adt_def()).is_some_and(|adt| self.krate.foreign.lists_fmt_into(adt.did())) {\n",
     replace: "        } else if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "published type"],
+  },
+  {
+    name: "listed-library-copy-without-fmt-into",
+    breaks: "a consumer's own copy of a library's derived `Debug` its contract lists has no `fmtInto`, which the consumer calls",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            ty::Adt(adt, _) if self.krate.foreign.lists_fmt_into(adt.did()) => adt.did(),\n",
+    replace: "            ty::Adt(adt, _) if false && self.krate.foreign.lists_fmt_into(adt.did()) => adt.did(),\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
   },
 ];

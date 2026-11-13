@@ -177,6 +177,7 @@ pub(super) fn prints<'tcx>(
     );
     if crate::lower::recognition::writes_piecewise() {
         (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
+        found.framed.extend(listed_writers_compiled_here(recognition));
         found.through_sink.extend(found.framed.iter().copied());
     }
     found
@@ -359,6 +360,26 @@ fn written_into_writers<'tcx>(
         }
     }
     (found, published)
+}
+
+/// Each formatting impl's `fmt` of a library's type its contract lists as
+/// written into a writer a piece at a time (`Foreign::lists_fmt_into`),
+/// which the crate compiles its own of where the library exports none, a
+/// derived `Debug` (ADR 0914, amended): framed, as the library's would be,
+/// so its dictionary's `fmtInto` writes through the sink it claims.
+fn listed_writers_compiled_here(recognition: &Recognition<'_, '_>) -> Vec<DefId> {
+    let tcx = recognition.tcx;
+    (tcx.crates(()).iter())
+        .flat_map(|&krate| tcx.trait_impls_in_crate(krate).iter().copied())
+        .filter(|&imp| {
+            matches!(tcx.type_of(imp).skip_binder().kind(),
+                ty::Adt(adt, _) if recognition.foreign.lists_fmt_into(adt.did()))
+        })
+        .flat_map(|imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .filter(|&item| {
+            (tcx.trait_item_of(item)).is_some_and(|declared| crate::lower::recognition::is_fmt_method(tcx, declared))
+        })
+        .collect()
 }
 
 /// The types `body`, a writer shown into a writer, shows: each a `write!`

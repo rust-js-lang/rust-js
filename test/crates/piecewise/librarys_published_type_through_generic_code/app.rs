@@ -1,4 +1,4 @@
-//! Writes the library's type into a writer through generic code, and
+//! Writes the library's types into a writer through generic code, and
 //! directly into a writer of its own, a piece at a time by the dictionary
 //! its library publishes.
 use std::fmt::{self, Write};
@@ -23,4 +23,13 @@ pub fn main() {
     own(&mut log, &dep::Meters(7)).unwrap();
     write!(log, "{}|", dep::Meters(8)).unwrap();
     println!("{} {:?}", text, log.0);
+    let name = String::from("ab");
+    let mut log = Log(Vec::new());
+    own(&mut log, &dep::Prefixed(&name, -4)).unwrap();
+    write!(log, "{}|", dep::Prefixed("c", 5)).unwrap();
+    println!("{:?} {}", log.0, dep::Prefixed("d", 6));
+    let mut log = Log(Vec::new());
+    write!(log, "{:?}|{:#?}", dep::Pair(1, "a\""), dep::Pair(-2, "b")).unwrap();
+    own(&mut log, &format!("{:?}", dep::Pair(3, "c"))).unwrap();
+    println!("{:?}", log.0);
 }

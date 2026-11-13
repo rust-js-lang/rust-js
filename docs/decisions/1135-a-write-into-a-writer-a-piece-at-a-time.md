@@ -374,6 +374,12 @@ go.
      consumer may write (`makes_fmt_dyns`), so a consumer's `dyn` written
      into a writer beside it isn't refused (#1688's second case, chrono's).
      Proof: a piecewise pair; 1 mutation.
+   - A published type whose formatting impl the library exports none
+     of, a derived `Debug`, which a consumer compiles its own of (ADR
+     0914, amended): the consumer frames its copy, and its dictionary
+     carries `fmtInto`, as the library's would (`listed_writers_compiled_here`).
+     A published type of a lifetime alone, `Prefixed<'a>`, is published as
+     one of none. Proof: the published piecewise pair; 2 mutations.
 
 ## Alternatives
 
