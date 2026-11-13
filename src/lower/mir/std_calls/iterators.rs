@@ -290,9 +290,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             },
                             // Of items that may look like `None`, each boxed, the
                             // test given it unboxed.
+                            // Where the test may panic, the item dropped as it
+                            // unwinds, as std's `next_if` holds it (#1648).
                             StepOp::NextIf => {
                                 let f = exprs.next().expect("a test");
-                                Expr::call_helper(if boxed { "$nextIfSome" } else { "$nextIf" }, vec![it, f])
+                                let item = this.iterator_item(arg_tys[0].peel_refs());
+                                let drop = match item {
+                                    Some(item) if this.call_may_unwind(arg_tys[1]) => {
+                                        this.std_drop_function(item, span)?
+                                    }
+                                    _ => None,
+                                };
+                                let mut args = vec![it, f];
+                                args.extend(drop);
+                                Expr::call_helper(if boxed { "$nextIfSome" } else { "$nextIf" }, args)
                             }
                             _ if boxed => {
                                 return Err(this.unsupported(span, "`next_if_eq` of items that may be `None`"));

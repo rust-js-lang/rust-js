@@ -607,3 +607,24 @@ rest, which JS can't give as Rust's are.
 
 No observable difference (ADR 0262): std's own bodies run. Corpus case
 `net_addresses_compiled` runs against native Rust in both builds.
+
+## Amendment (2026-11-13, #1648): `next_if`'s item dropped as its test panics
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+Std's `next_if(f)` takes the next item into a local, then asks `f` of
+it, so where `f` panics the item drops as the panic unwinds, before what's
+left of the iterator. `$nextIf` took the item and called `f`, so a panic
+there leaked it: `drop 5`, `drop 6` where native Rust prints `drop 4`
+first. `$nextIf` and `$nextIfSome` are given the item's drop, where the
+test may unwind (`call_may_unwind`), and run `f` by `$unwinds`, which
+drops the item as it unwinds. A test that can't panic is given none, so
+its JS is as before.
+
+`test/corpus/next_if_drops_its_item_as_its_test_panics.rs` holds it
+against native Rust in both builds, of items that may look like `None`
+too. Mutations `next-if-item-leaked-as-test-panics` and
+`next-if-some-item-leaked-as-test-panics` (`runtime/next_if.ts`),
+`next-if-given-no-drop` and `next-if-drop-given-a-test-that-cant-panic`
+(`lower/mir/std_calls/iterators.ts`).

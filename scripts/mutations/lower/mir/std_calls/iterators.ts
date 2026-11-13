@@ -232,4 +232,21 @@ export const mutations: Mutation[] = [
     replace: "                            this.clone_shows(item)\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_owned_items_as_std_cycles.rs$"],
   },
+  {
+    name: "next-if-given-no-drop",
+    breaks: "`next_if` is given no drop of its item, so one its test panics on leaks (#1648)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                                args.extend(drop);\n                                Expr::call_helper(if boxed { \"$nextIfSome\" } else { \"$nextIf\" }, args)\n",
+    replace: "                                let _ = drop;\n                                Expr::call_helper(if boxed { \"$nextIfSome\" } else { \"$nextIf\" }, args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^next_if_drops_its_item_as_its_test_panics.rs$"],
+  },
+  {
+    name: "next-if-drop-given-a-test-that-cant-panic",
+    breaks: "`next_if` of a test that can't panic, `(l) => l[0] === 1`, is given its item's drop too, which it never runs (#1648)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                                    Some(item) if this.call_may_unwind(arg_tys[1]) => {\n",
+    replace: "                                    Some(item) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^next_if_drops_its_item_as_its_test_panics.rs$"],
+    snapshots: true,
+  },
 ];
