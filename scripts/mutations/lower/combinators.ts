@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
       "`as_mut()` of a `Result` of a number gives the number, not a handle",
     file: "src/lower/combinators.rs",
     find: "        let part = |boxed: bool, lent: Lend| if boxed { handle(lent, None) } else { inside() };\n",
-    replace: "        let part = |_: bool, _: Lent| inside();\n",
+    replace: "        let part = |_: bool, _: Lend| inside();\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {

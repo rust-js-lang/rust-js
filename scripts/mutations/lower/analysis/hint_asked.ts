@@ -178,6 +178,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                asked.hinted.dyn_unseen = true;\n",
     replace: "",
-    tests: ["test/js-builtins.test.ts", "-t", "a binding's dyn Iterator's size_hint is refused"],
+    tests: ["test/js-collections.test.ts", "-t", "a binding's dyn Iterator's size_hint is refused"],
   },
 ];
