@@ -4,7 +4,6 @@
 # JS a person would write, under test/react-compiler/, failing the same.
 # A source `sweep:<test file>` is of the nightly sweep of the lowering
 # tests' programs (scripts/react-compiler-sweep.ts).
-test/react-compiler/listener_shadowing_its_local.rs	Keys	[InferMutationAliasingEffects] Expected value kind to be initialized	#1702
 sweep:jsx-syntax	Edited	This value cannot be modified	as hand-written: hand-written/written_in_render.jsx
 sweep:jsx-syntax	Live	This value cannot be modified	as hand-written: hand-written/written_in_render.jsx
 sweep:jsx-syntax	List	Cannot access refs during render	as hand-written: hand-written/ref_read_in_render.jsx

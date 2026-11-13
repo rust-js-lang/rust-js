@@ -31,10 +31,10 @@ function scaled(v) {
     }, error);
     throw error;
   }
-  function f(x) {
+  const f = (x) => {
     const f = factor;
     return ((Math.imul(x, factor[0]) >>> 0) + f[0]) >>> 0;
-  }
+  };
   const iter = $holding(
     tmp.map(f),
     () => {

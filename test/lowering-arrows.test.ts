@@ -67,7 +67,9 @@ pub fn values() -> Vec<bool> {
 // `function deleteChild(returnFiber, childToDelete) { .. }`: a closure of
 // statements a `let` binds is a function declared, an async one's an
 // `async function`; one of a value alone stays an arrow, and so does one
-// that reads a class's `this`, which a function has of its own.
+// that reads a class's `this`, which a function has of its own, and one
+// that declares its own name, a listener `key` of `let key = event.key`,
+// which React Compiler refuses declared (#1702).
 test("a let's closure of statements is a function declared", async () => {
   const dir = fixture("let-closure-functions");
   writeFileSync(
@@ -84,9 +86,13 @@ test("a let's closure of statements is a function declared", async () => {
         let m = double(n);
         js::console_log(m);
     };
+    let shifted = |n: u32| {
+        let shifted = n + 1;
+        shifted * 2
+    };
     Box::new(move |n| {
         log(n);
-        delete_child(n)
+        delete_child(n) + shifted(n) - shifted(n)
     })
 }
 
@@ -125,6 +131,7 @@ impl Counter {
   expect(js).toContain("  const double = (n) => (n * 2) >>> 0;\n");
   expect(js).toContain("  function log(n) {\n");
   expect(js).toContain("  async function step(m) {\n");
+  expect(js).toContain("  const shifted = (n) => {\n    const shifted = (n + 1) >>> 0;\n");
   expect(js).toContain("  const read = (k) => {\n    const x = (this.n + k) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.make(true)(1), lib.make(false)(1), await lib.later(2), new lib.Counter(4).twice(1)]).toEqual([2, 1, 6, 20]);

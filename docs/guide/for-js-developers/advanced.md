@@ -24,7 +24,9 @@ it, returned or stored, takes what it uses with `move`. One of statements
 that a `let` binds is a function declared in its place, as JS writes a
 helper inside a function; one of a value alone stays an arrow
 ([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md#amendment-a-lets-closure-of-statements-is-a-function-declared)),
-`function counted(n) { .. }` beside `const double = (n) => n * 2`.
+`function counted(n) { .. }` beside `const double = (n) => n * 2`, and so
+does one that declares its own name, a listener `key` of `let key =
+event.key;`, which React Compiler refuses declared (#1702).
 
 ```js
 const makeAdder = (n) => (x) => x + n;

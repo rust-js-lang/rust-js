@@ -40,7 +40,8 @@ pub(super) fn declared_module_functions(items: &mut [js::Item]) {
 /// of its own. A function made as a value, `js::function::with_this`'s,
 /// is declared so too, a value alone as well, its `this` its own as it
 /// was; and one stored as a property is named as it, `update.callback =
-/// function callback() { .. }` (ADR 0972).
+/// function callback() { .. }` (ADR 0972). Not one that declares its own
+/// name in its body or its parameters, which stays its arrow (#1702).
 pub(super) fn declared_functions(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::Assign(target, value) = &mut stmt.kind
@@ -81,7 +82,12 @@ pub(super) fn declared_functions(stmts: &mut [Stmt]) {
                 ..
             }]
         );
-        if own || value_alone {
+        // Nor one that declares its own name in it, `const key = event.key`
+        // of a listener `key`: a reader sees one name meaning two things,
+        // and React Compiler refuses the function that declares it (#1702).
+        let mut shadows = params.iter().any(|p| p.names().contains(&name.as_str()));
+        js::each_declared(body, &mut |declared| shadows |= declared == name);
+        if own || value_alone || shadows {
             continue;
         }
         let function = js::Function {

@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "let-closure-of-a-value-declared",
     breaks: "`const double = (n) => n * 2` is `function double(n) { return n * 2; }` (ADR 0882, amended)",
     file: "src/prepare/declared.rs",
-    find: "        if own || value_alone {\n",
-    replace: "        if own {\n",
+    find: "        if own || value_alone || shadows {\n",
+    replace: "        if own || shadows {\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
   },
   {
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
     replace: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
+  },
+  {
+    name: "self-shadowing-closure-declared",
+    breaks: "a closure that declares its own name is declared, `function key(event) { const key = event.key; .. }`, which React Compiler refuses (#1702)",
+    file: "src/prepare/declared.rs",
+    find: "        if own || value_alone || shadows {\n",
+    replace: "        if own || value_alone {\n",
+    tests: ["test/lowering-arrows.test.ts", "-t", "closure of statements is a function declared"],
   },
 ];

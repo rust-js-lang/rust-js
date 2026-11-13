@@ -1,7 +1,8 @@
 # 0882. A field that's a closure of statements is a method
 
 Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
-to one an object's field holds. Amended below (the user's decision,
+to one an object's field holds. Amended last: one that declares its own
+name stays its arrow (#1702). Amended below (the user's decision,
 2026-10-26): a closure of statements a `let` binds is a function declared,
 `function deleteChild(..) { .. }`. Amended again (the user's decision,
 2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow; narrowed (the user's decision, 2026-10-29) to the program's own `Rc::new`, `Arc::new` or `Box::new`. Amended (2026-11-02): a function declared in a closure's body has its comments where they're written.
@@ -253,3 +254,26 @@ Held by `test/lowering-arrows.test.ts`, "a comment in a closure's function
 declared is where it's written", the corpus case
 `closure_function_comments`, run against native Rust, and the mutation
 `arrow-declared-function-unstarted`.
+
+## Amendment: one that declares its own name stays its arrow (#1702)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, the same
+function either way; which form reads best, and React Compiler.
+
+A listener and a local in it both named `key`, as Rust writes them,
+`let key = webapi::listener(move |event: &KeyboardEvent| { let key =
+event.key(); .. })`, was declared, `function key(event) { const key =
+event.key; .. }`: one name meaning two things to a reader, and a
+function React Compiler 1.0.0 refuses, "[InferMutationAliasingEffects]
+Expected value kind to be initialized", skipping the component that
+holds it (a consumer's finding). Its arrow, `const key = (event) => {
+const key = event.key; .. };`, it compiles, as a renamed local or a name
+of the listener's own would be; the arrow keeps every name the program
+wrote. So a closure that declares its own name, in its body or its
+parameters, stays its arrow.
+
+Held by `test/lowering-arrows.test.ts`'s `shifted`, the mutation
+`self-shadowing-closure-declared`, and the React Compiler net's case
+`test/react-compiler/listener_shadowing_its_local.rs` ([1142](1142-the-react-compiler-net.md)),
+whose known entry is gone.
+
