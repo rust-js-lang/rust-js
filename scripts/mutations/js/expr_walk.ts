@@ -313,4 +313,12 @@ export const mutations: Mutation[] = [
     replace: "        !self.calls_only(&|_| true)\n",
     tests: ["test/effects.test.ts", "-t", "toString runs after every argument"],
   },
+  {
+    name: "unread-item-read-kept",
+    breaks: "a value nothing reads keeps its item read, `nodes.splice(i, 1)[0];`, where a person writes `nodes.splice(i, 1);`",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Index(object, index) if !index.has_effects() => object.read_alone(),\n",
+    replace: "",
+    tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
+  },
 ];

@@ -426,12 +426,15 @@ pub fn record(log: &RefCell<Vec<String>>) {
 ```
 
 ```js
-import { $borrow, $borrowMut, $unborrow } from "@rust-js/std";
+import { $alreadyBorrowed, $borrow, $unborrow } from "@rust-js/std";
 
 export function record(log) {
   const entries = $borrow(log, true);
   try {
-    $borrowMut(log).push(`${entries.length} entries`);
+    if (log.borrows) {
+      $alreadyBorrowed();
+    }
+    log.push(`${entries.length} entries`);
   } finally {
     $unborrow(entries);
   }

@@ -18,7 +18,7 @@ import {
   $minBy,
   $partition,
   $range,
-  $removeAt,
+  $removeOutOfBounds,
   $swap,
   $truncate,
   $windows,
@@ -115,7 +115,10 @@ export function vecs(n) {
   const has = v.includes(n);
   $dedup(v);
   $insertAt(v, 1, 50);
-  const removed = $removeAt(v, 0);
+  if (0 >= v.length) {
+    $removeOutOfBounds(v, 0);
+  }
+  const removed = v.splice(0, 1)[0];
   $swap(v, 0, 1);
   const value = [7, 8];
   for (let i = 0; i < value.length; i++) {
@@ -128,7 +131,10 @@ export function vecs(n) {
 }
 export function panics(i) {
   const v = [1, 2];
-  return $removeAt(v, i);
+  if (i >= v.length) {
+    $removeOutOfBounds(v, i);
+  }
+  return v.splice(i, 1)[0];
 }
 // A slice's `concat` of parts written out is an array of them, spread, as
 // JS writes it: `[...path, last]`.

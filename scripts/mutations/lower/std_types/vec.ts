@@ -231,4 +231,11 @@ export const mutations: Mutation[] = [
     replace: "        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
   },
-];
+  {
+    name: "remove-unchecked",
+    breaks: "a `Vec::remove` past its end is JS's `splice`, which removes nothing and gives `undefined`, where std panics `removal index (is 3) should be < len (is 1)`",
+    file: "src/lower/std_types/vec.rs",
+    find: "        out.push(StmtKind::If(past, vec![StmtKind::Expr(refused).at(js_span)], None).at(js_span));\n",
+    replace: "",
+    tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
+  },];

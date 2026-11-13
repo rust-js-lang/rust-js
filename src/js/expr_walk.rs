@@ -646,6 +646,21 @@ impl Expr {
         }
     }
 
+    /// What of a value nothing reads does something: past each item read,
+    /// which does nothing where its index does nothing (`has_effects`),
+    /// `items.splice(i, 1)[0]`'s `items.splice(i, 1)`, as a person writes
+    /// a `Vec::remove` whose item nothing takes (#1692). A property's read,
+    /// which a getter may answer, is kept.
+    pub fn read_alone(self) -> Expr {
+        if self.facts.has(Known::Getter) {
+            return self;
+        }
+        match self.kind {
+            ExprKind::Index(object, index) if !index.has_effects() => object.read_alone(),
+            kind => Expr { kind, ..self },
+        }
+    }
+
     pub fn has_effects(&self) -> bool {
         // A read a getter may answer, which may do anything (ADRs 0672, 0750).
         if self.facts.has(Known::Getter) {

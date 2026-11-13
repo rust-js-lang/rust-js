@@ -52,8 +52,9 @@ export const mutations: Mutation[] = [
       "        if self.held_quietly((fun, cell), (&[], &extents), &self.ended_before()) || true {\n",
     tests: [
       "test/lowering-cells.test.ts",
+      "test/borrow-forms.test.ts",
       "-t",
-      "a field's RefCell only borrowed for a moment is its value",
+      "a field's RefCell only borrowed for a moment is its value|a guard held while a Drop runs",
     ],
   },
   {

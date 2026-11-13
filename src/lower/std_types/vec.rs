@@ -35,6 +35,31 @@ pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> 
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `items.remove(at)`: its bounds checked where it's called, then JS's
+    /// own `splice`, as a person writes it, its item `[0]` (which a value
+    /// nothing reads leaves out, `read_alone`): no call where it's in
+    /// bounds, where React's replayElement's catch has room for none
+    /// (ADR 1141). An `items` or an `at` not read the same twice, a `const`.
+    pub(in crate::lower) fn vec_removed(
+        &mut self,
+        items: Expr,
+        at: Expr,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let mut once = |cx: &mut Self, value: Expr, role: Role| match value.reads_same() {
+            true => value,
+            false => cx.spill(role, value, out),
+        };
+        let items = once(self, items, Role::Items);
+        let at = once(self, at, Role::Index);
+        let past = Expr::bin(Op::Ge, at.clone(), Expr::member(items.clone(), "length"));
+        let refused = Expr::call_helper("$removeOutOfBounds", vec![items.clone(), at.clone()]);
+        let js_span = self.js_span(span);
+        out.push(StmtKind::If(past, vec![StmtKind::Expr(refused).at(js_span)], None).at(js_span));
+        Expr::index(Expr::builtin(items, "splice", vec![at, Expr::int(1)]), Expr::int(0))
+    }
+
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
     /// A `Vec` of `items`, of type `ty`: a slice's items cloned,
     /// `clone_items`, or moved, an array's `into()`, one made here

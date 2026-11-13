@@ -439,3 +439,10 @@ it. Held by the corpus case `for_each_changes_items_in_place`; mutations
 `rows-kept-of-a-closure`, retargeted, and
 `rows-kept-past-a-function-given-one`
 (`lower/body_queries/ranges/tables.ts`).
+
+## Amendment: any other `remove` checked where it's called
+
+A `remove(i)` the code before it doesn't show in bounds was `$removeAt`;
+it's `if (i >= v.length) $removeOutOfBounds(v, i);` where it's called,
+then JS's own `v.splice(i, 1)`, its panic std's as before
+([1141](1141-checked-where-called.md)).

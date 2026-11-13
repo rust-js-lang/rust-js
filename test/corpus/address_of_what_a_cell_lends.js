@@ -2,6 +2,8 @@
 
 import {
   $addr,
+  $alreadyBorrowed,
+  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $cleanup,
@@ -228,9 +230,13 @@ function main() {
   const arg = ($addr($ptr(counter, "seen", 8), 2) - cs) >>> 0;
   console.log(`field ${count} ${value} ${arg}`);
   $storedIn(counter, "count", 0, 4);
+  const cell = $fieldCell(counter, "count");
   let borrowMut;
   try {
-    borrowMut = $borrowMut($fieldCell(counter, "count"));
+    if (cell.borrows) {
+      $alreadyBorrowed();
+    }
+    borrowMut = cell;
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -238,30 +244,35 @@ function main() {
   borrowMut.value = (borrowMut.value + 1) >>> 0;
   counter.seen = (counter.seen + 1) & 65535;
   $storedIn(counter, "count", 0, 4);
-  const tag = counter.tag;
+  const cell$1 = $fieldCell(counter, "count");
   try {
-    const value = $borrow($fieldCell(counter, "count"));
+    if (cell$1.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    const tag = counter.tag;
+    if (one.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
     const seen = counter.seen;
-    const value$1 = $borrow(one);
     const props = { ...c.value };
-    const value$2 = $storedValue(items, 4).value;
-    const value$3 = $storedValue(shared, 4).value;
-    const value$4 = $lock($storedValue(m, 4));
-    const value$5 = (((value$2[0].a + value$3[0].a) & 255) + value$4.value.a) & 255;
+    const value = $storedValue(items, 4).value;
+    const value$1 = $storedValue(shared, 4).value;
+    const value$2 = $lock($storedValue(m, 4));
+    const value$3 = (((value[0].a + value$1[0].a) & 255) + value$2.value.a) & 255;
     try {
-      const value$2 = $lockRead($storedValue(r, 4));
+      const value = $lockRead($storedValue(r, 4));
       try {
         console.log(
-          `${tag} ${value.value} ${seen} ${pDebug_fmt(value$1)} ${pDebug_fmt({ ...props })} ${(value$5 + value$2.value.a) & 255}`,
+          `${tag} ${cell$1.value} ${seen} ${pDebug_fmt(one)} ${pDebug_fmt({ ...props })} ${(value$3 + value.value.a) & 255}`,
         );
       } finally {
-        $unborrow(value$2);
+        $unborrow(value);
       }
     } catch (error) {
-      $poison(value$4);
+      $poison(value$2);
       throw error;
     } finally {
-      $unborrow(value$4);
+      $unborrow(value$2);
     }
   } finally {
     $unborrow(borrow);

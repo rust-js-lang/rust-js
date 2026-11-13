@@ -3698,14 +3698,17 @@ pub fn delete(tasks: &mut Vec<Task>, at: usize) {
 ```
 
 ```js
-import { $removeAt } from "@rust-js/std";
+import { $removeOutOfBounds } from "@rust-js/std";
 
 export function firstWord(text) {
   return text.split(" ")[0] ?? "";
 }
 
 function delete$(tasks, at) {
-  $removeAt(tasks, at);
+  if (at >= tasks.length) {
+    $removeOutOfBounds(tasks, at);
+  }
+  tasks.splice(at, 1);
 }
 
 export { delete$ as delete };

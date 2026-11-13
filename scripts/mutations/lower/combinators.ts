@@ -858,4 +858,5 @@ export const mutations: Mutation[] = [
     replace: "        let name = \"$truncate\";\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_retain_back.rs$"],
   },
+
 ];

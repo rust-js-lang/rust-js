@@ -257,7 +257,9 @@ pub fn first_of_pair(n: f64) -> f64 {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const contentSegment = $borrow(completedSegments)[0];\n  return contentSegment;\n");
+  expect(js).toContain(
+    "  if (completedSegments.borrows < 0) {\n    $alreadyMutablyBorrowed();\n  }\n  const contentSegment = completedSegments[0];\n  return contentSegment;\n",
+  );
   expect(js).toContain("  const [first] = pair(n);\n");
   const lib = await import(join(dir, "lib.js"));
   const boundary = { completedSegments: ["root"] };

@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $cleanup,
@@ -67,7 +68,10 @@ function insert(root, word) {
     }
     let borrow;
     try {
-      borrow = $borrow(cur.value);
+      if (cur.value.borrows < 0) {
+        $alreadyMutablyBorrowed();
+      }
+      borrow = cur.value;
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
@@ -191,7 +195,10 @@ function depth(node) {
   while (true) {
     let borrow;
     try {
-      borrow = $borrow(cur.value);
+      if (cur.value.borrows < 0) {
+        $alreadyMutablyBorrowed();
+      }
+      borrow = cur.value;
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
@@ -305,7 +312,10 @@ function main() {
   }
   let borrow;
   try {
-    borrow = $borrow(root.value);
+    if (root.value.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    borrow = root.value;
   } catch (error) {
     $cleanup(() => {
       if (root$live) {
@@ -327,7 +337,10 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = $borrow(a.value);
+    if (a.value.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    tmp$1 = a.value;
   } catch (error) {
     $cleanup(() => {
       $rcDrop(a, dropNode);

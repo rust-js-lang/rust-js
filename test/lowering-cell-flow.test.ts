@@ -209,7 +209,7 @@ pub fn reveal_pending() -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(fn(js, "revealPending")).toContain("$borrow(");
+  expect(fn(js, "revealPending")).toContain("if (globalThis.$RB.borrows < 0) {\n    $alreadyMutablyBorrowed();");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
   try {
@@ -264,7 +264,7 @@ pub fn bump() -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(fn(js, "bump")).toContain("$borrow(cell)");
+  expect(fn(js, "bump")).toContain("if (cell.borrows < 0) {\n    $alreadyMutablyBorrowed();");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
   let kept: unknown;

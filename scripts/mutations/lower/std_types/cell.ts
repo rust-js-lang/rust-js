@@ -535,15 +535,7 @@ export const mutations: Mutation[] = [
       "                let next = match false && js::taken_place(&place) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
-  {
-    name: "momentary-borrow-counted",
-    breaks:
-      "a momentary borrow of a counted `RefCell` is counted though its guard's drop releases nothing, so the cell stays borrowed and the next borrow panics `RefCell already borrowed` (rd218)",
-    file: "src/lower/std_types/cell.rs",
-    find: "                if !call.momentary {\n",
-    replace: "                if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
-  },
+
   {
     name: "taken-array-copied",
     breaks:
@@ -800,4 +792,21 @@ export const mutations: Mutation[] = [
     replace: "                    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
   },
+  {
+    name: "momentary-borrow-called",
+    breaks: "a momentary borrow is `$borrowMut(cell, true)`, counted, never released, so the next borrow panics `RefCell already borrowed`, and a call where it's free",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::Borrow { mutable, lock: false } if call.momentary => {\n",
+    replace: "            Std::Borrow { mutable, lock: false } if false && call.momentary => {\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
+  },
+  {
+    name: "momentary-shared-borrow-refused-beside-shared",
+    breaks: "a momentary shared borrow is refused where another shared borrow is held, `RefCell already borrowed`, where Rust's lends it",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    false => (Expr::bin(Op::Lt, borrows, Expr::int(0)), \"$alreadyMutablyBorrowed\"),\n",
+    replace: "                    false => (borrows, \"$alreadyMutablyBorrowed\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
+  },
 ];
+

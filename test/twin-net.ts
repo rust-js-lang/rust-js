@@ -89,6 +89,8 @@ export const pitted: string[] = [
 export const shared: Record<string, keyof typeof why> = {
   "$add": "collections",
   "$advanceSlice": "js-own", // ADRs 0422, 0465: an array's iterator an adapter holds, advanced by index
+  "$alreadyBorrowed": "cells",
+  "$alreadyMutablyBorrowed": "cells",
   "$andModify": "collections",
   "$append": "collections",
   "$asChunksMut": "collections",
@@ -267,7 +269,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$rchunksMut": "collections",
   "$reduce": "consumers",
   "$remove": "collections",
-  "$removeAt": "collections",
+  "$removeOutOfBounds": "collections",
   "$removeEntry": "collections",
   "$removeItem": "collections",
   "$removeOpt": "collections",

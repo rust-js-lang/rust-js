@@ -13,8 +13,8 @@ import {
   $lastDropping,
   $live,
   $range,
-  $removeAt,
   $removeOpt,
+  $removeOutOfBounds,
   $resizeWith,
   $retain,
   $retainDeque,
@@ -43,7 +43,10 @@ function main() {
   try {
     $insertAt(v, 1, [4], noisyDrop_drop);
     console.log(`[${ids(v).join(", ")}]`);
-    const removed = $removeAt(v, 0);
+    if (0 >= v.length) {
+      $removeOutOfBounds(v, 0);
+    }
+    const removed = v.splice(0, 1)[0];
     try {
       console.log(`removed ${removed[0]} [${ids(v).join(", ")}]`);
     } catch (error) {

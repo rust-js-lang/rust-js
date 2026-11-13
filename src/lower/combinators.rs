@@ -765,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper(name, vec![subject, next(), Expr::str(count)])
             }
             Comb::Insert => self.inserted_dropping(subject, next(), next(), (subject_ty, span))?,
-            Comb::Remove => helper("$removeAt", vec![subject, next()]),
+            Comb::Remove => self.vec_removed(subject, next(), span, out),
             Comb::Swap => helper("$swap", self.deque_marked(vec![subject, next(), next()], subject_ty)),
             Comb::Truncate { front } => self.truncated(front, vec![subject, next()], (subject_ty, span))?,
             Comb::Dedup => self.dedup_call(subject, subject_ty, span)?,

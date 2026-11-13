@@ -320,7 +320,7 @@ pub fn at(v: &[i32], i: usize) -> i32 {
 ```
 
 ```js
-import { $drain, $index, $removeAt, $slice, $splice, $truncate } from "@rust-js/std";
+import { $drain, $index, $removeOutOfBounds, $slice, $splice, $truncate } from "@rust-js/std";
 
 export function stack() {
   const v = [1, 2, 3];
@@ -328,7 +328,10 @@ export function stack() {
   const last = v.pop();
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   v.unshift(0);
-  $removeAt(v, 1);
+  if (1 >= v.length) {
+    $removeOutOfBounds(v, 1);
+  }
+  v.splice(1, 1);
   v.push(7, 8);
   $truncate(v, 4);
   return v;
@@ -412,8 +415,12 @@ export function at(v, i) {
   A `remove(i)` of an index the code before it shows below the length is
   JS's own, `targets.shift()` of the first while `!targets.is_empty()`,
   `v.splice(i, 1)[0]` of another, and an `insert(i, x)` of one at most the
-  length, `v.splice(i, 0, x)`; any other `$removeAt` and `$insertAt`
-  ([ADR 0576](../../decisions/0576-what-a-bodys-integers-can-be.md#amendment-a-vecs-remove-and-insert-in-bounds-are-jss-own)).
+  length, `v.splice(i, 0, x)`; any other `insert` is `$insertAt`
+  ([ADR 0576](../../decisions/0576-what-a-bodys-integers-can-be.md#amendment-a-vecs-remove-and-insert-in-bounds-are-jss-own)),
+  and any other `remove` is checked where it's called, then JS's own,
+  `if (i >= v.length) $removeOutOfBounds(v, i);` and `v.splice(i, 1)`,
+  its item `[0]` where something takes it
+  ([ADR 1141](../../decisions/1141-checked-where-called.md)).
 
 Changing each item in its place is a loop over its `&mut`s, `iter_mut()`,
 which is a loop over the array's indices; of its `enumerate()`, the index

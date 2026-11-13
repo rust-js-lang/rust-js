@@ -9,7 +9,7 @@ import {
   $folded,
   $iterator,
   $panicking,
-  $removeAt,
+  $removeOutOfBounds,
   $skipping,
 } from "@rust-js/std";
 
@@ -24,7 +24,10 @@ function dDrop_drop(d) {
   }
 }
 function ownIterator_next(own) {
-  return $removeAt(own[0], 0);
+  if (0 >= own[0].length) {
+    $removeOutOfBounds(own[0], 0);
+  }
+  return own[0].splice(0, 1)[0];
 }
 function main() {
   const skipped = $catchUnwind(() => {

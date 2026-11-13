@@ -693,6 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 value => self.value_expr(value, span)?,
             };
+            let expr = expr.read_alone();
             if expr.has_effects() {
                 self.flush(state, out)?;
                 out.push(StmtKind::Expr(expr).at(self.js_span(span)));

@@ -574,15 +574,7 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_edits.rs$"],
     snapshots: true,
   },
-  {
-    name: "destructured-temporary-unnamed",
-    breaks: "a temporary a `const` takes apart, `const { value: _4 } = $borrow(cell)`, isn't named after the variable that takes it, `const chunk = _4` (rd439)",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "                } => match pattern.names()[..] {\n",
-    replace: "                } if false => match pattern.names()[..] {\n",
-    tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
-    snapshots: true,
-  },
+
   {
     name: "fixed-alias-kept",
     breaks:

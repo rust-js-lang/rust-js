@@ -8,7 +8,7 @@ import {
   $mutItems,
   $next,
   $position,
-  $removeAt,
+  $removeOutOfBounds,
 } from "@rust-js/std";
 
 export function entry() {
@@ -101,7 +101,10 @@ function removeAfterPop(xs, x) {
   const i = xs.indexOf(x);
   if (i !== -1) {
     xs.pop();
-    $removeAt(xs, i);
+    if (i >= xs.length) {
+      $removeOutOfBounds(xs, i);
+    }
+    xs.splice(i, 1);
     console.log(`[${xs.join(", ")}]`);
   }
 }

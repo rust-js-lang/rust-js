@@ -10888,8 +10888,21 @@ export function $decodeUtf16(units) {
 // many share it, or -1 for the one that changes it. One held only while
 // nothing can ask isn't counted; with `hold`, it's counted until `$unborrow`.
 // A `RefCell` of an object is the object, which counts its own (ADR 0863).
+// A `RefCell` found borrowed where a borrow is taken, std's panic: its
+// mutable borrow's, where it's borrowed at all, and its shared one's,
+// where it's borrowed mutably. A momentary borrow, held only while
+// nothing can ask, is checked where it's taken, `if (cell.borrows)
+// $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
+export const $alreadyBorrowedMessage = "RefCell already borrowed";
+export function $alreadyBorrowed() {
+  throw new Error($alreadyBorrowedMessage);
+}
+export function $alreadyMutablyBorrowed() {
+  throw new Error("RefCell already mutably borrowed");
+}
+
 export function $borrow(cell, hold) {
-  if (cell.borrows < 0) throw new Error("RefCell already mutably borrowed");
+  if (cell.borrows < 0) $alreadyMutablyBorrowed();
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
   return cell;
 }
@@ -10899,7 +10912,7 @@ export function $borrowMut(cell, hold, dropGiven) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = new Error("RefCell already borrowed");
+    const error = new Error($alreadyBorrowedMessage);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }
@@ -20003,11 +20016,10 @@ export function $insertAt(v, index, item, drop, message) {
   v.splice(index, 0, item);
 }
 
-export function $removeAt(v, index) {
-  if (index >= v.length) {
-    throw new Error(`removal index (is ${index}) should be < len (is ${v.length})`);
-  }
-  return v.splice(index, 1)[0];
+// `Vec::remove(index)` past its end: std's panic, its message as std's.
+// The removal itself is JS's `splice` where it's called (#1692).
+export function $removeOutOfBounds(v, index) {
+  throw new Error(`removal index (is ${index}) should be < len (is ${v.length})`);
 }
 
 // `v.swap(a, b)`: out of bounds, a slice's message of the first index std

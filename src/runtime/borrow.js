@@ -3,8 +3,21 @@
 // many share it, or -1 for the one that changes it. One held only while
 // nothing can ask isn't counted; with `hold`, it's counted until `$unborrow`.
 // A `RefCell` of an object is the object, which counts its own (ADR 0863).
+// A `RefCell` found borrowed where a borrow is taken, std's panic: its
+// mutable borrow's, where it's borrowed at all, and its shared one's,
+// where it's borrowed mutably. A momentary borrow, held only while
+// nothing can ask, is checked where it's taken, `if (cell.borrows)
+// $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
+const $alreadyBorrowedMessage = "RefCell already borrowed";
+function $alreadyBorrowed() {
+  throw new Error($alreadyBorrowedMessage);
+}
+function $alreadyMutablyBorrowed() {
+  throw new Error("RefCell already mutably borrowed");
+}
+
 function $borrow(cell, hold) {
-  if (cell.borrows < 0) throw new Error("RefCell already mutably borrowed");
+  if (cell.borrows < 0) $alreadyMutablyBorrowed();
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
   return cell;
 }
@@ -14,7 +27,7 @@ function $borrowMut(cell, hold, dropGiven) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = new Error("RefCell already borrowed");
+    const error = new Error($alreadyBorrowedMessage);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }

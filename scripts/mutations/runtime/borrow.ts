@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "borrow-unchecked",
     breaks: "a `borrow()` while a `borrow_mut()` lives runs on",
     file: "src/runtime/borrow.js",
-    find: "  if (cell.borrows < 0) throw new Error(\"RefCell already mutably borrowed\");\n",
+    find: "  if (cell.borrows < 0) $alreadyMutablyBorrowed();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "refcell_borrow_while_mut"],
+    tests: ["test/borrow-forms.test.ts", "-t", "a guard held while a Drop runs is counted"],
   },
   {
     name: "borrow-mut-beside-shared",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/borrow.js",
     find: "  if (cell.borrows) {\n    // What the call",
     replace: "  if (cell.borrows < 0) {\n    // What the call",
-    tests: ["test/corpus.test.ts", "-t", "refcell_double_borrow"],
+    tests: ["test/borrow-forms.test.ts", "-t", "a guard held while a Drop runs is counted"],
   },
   {
     name: "unborrow-keeps",

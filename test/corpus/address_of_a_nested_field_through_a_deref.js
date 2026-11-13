@@ -2,6 +2,7 @@
 
 import {
   $addr,
+  $alreadyMutablyBorrowed,
   $borrow,
   $ptr,
   $ptrTo,
@@ -43,9 +44,13 @@ function main() {
     $unborrow(borrow);
     throw error;
   }
+  const cell$1 = $storedValue(cell, 4);
   let tmp;
   try {
-    tmp = $borrow($storedValue(cell, 4));
+    if (cell$1.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    tmp = cell$1;
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -53,9 +58,13 @@ function main() {
   $stored($ptr(tmp.value, 2), 8);
   console.log(`ref ${($addr($ptr(tmp.value[2], "a", 4, tmp.value, 20), 1) - base) >>> 0}`);
   const seen = [];
+  const cell$2 = $storedValue(cell, 4);
   let tmp$1;
   try {
-    tmp$1 = $borrow($storedValue(cell, 4));
+    if (cell$2.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    tmp$1 = cell$2;
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -68,18 +77,24 @@ function main() {
   }
   const end = tmp$1.value.length;
   for (let i = 0; i < end; i++) {
+    const cell$1 = $storedValue(cell, 4);
     let tmp;
+    let tmp$1;
     try {
-      tmp = $borrow($storedValue(cell, 4));
+      if (cell$1.borrows < 0) {
+        $alreadyMutablyBorrowed();
+      }
+      tmp = seen;
+      tmp$1 = cell$1;
     } catch (error) {
       $unborrow(borrow);
       throw error;
     }
     if (i < 3) {
-      $stored($ptr(tmp.value, i), 8);
-      const value = ($addr($ptr(tmp.value[i], "b", 0, tmp.value, i * 8), 4) - base) >>> 0;
+      $stored($ptr(tmp$1.value, i), 8);
+      const value = ($addr($ptr(tmp$1.value[i], "b", 0, tmp$1.value, i * 8), 4) - base) >>> 0;
       try {
-        seen.push(value);
+        tmp.push(value);
       } catch (error) {
         $unborrow(borrow);
         throw error;

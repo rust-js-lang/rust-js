@@ -668,6 +668,7 @@ pub fn take_hooks() -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("      listeners.push(listener);\n");
+  expect(js).not.toContain("listeners.borrows");
   expect(js).toContain("      const listener = listeners[index];\n");
   expect(js).toContain("$withBorrow(\n    hooks,");
   const lib = await import(join(dir, "lib.js"));
@@ -727,7 +728,7 @@ pub fn listened(listener: Rc<dyn Fn()>) -> usize {
   const borrowed = await import(join(lent, "lib.js"));
   borrowed.addHook(() => borrowed.clearHooks());
   expect(() => borrowed.runHooks()).toThrow("already borrowed");
-  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("$borrowMut(listeners");
+  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("if (listeners.borrows) {\n    $alreadyBorrowed();");
 });
 
 // React's update clone, `{ .., gesture: update.gesture, .., next: null }`: a

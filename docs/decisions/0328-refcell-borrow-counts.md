@@ -256,3 +256,10 @@ a split's half mapped, and two maps of one cell to one object, each cell's
 `try_borrow_mut` asked as guards drop, against native Rust in both
 builds. `test/lowering-guard-maps.test.ts` holds the two refusals. The std
 net's four pins are off, and none is refused now.
+
+## Amendment: a momentary borrow checked where it's taken
+
+A momentary borrow, checked and not counted, is `if (cell.borrows)
+$alreadyBorrowed();` where it's taken, a shared one's `cell.borrows < 0`,
+then the cell: no call where the cell is free
+([1141](1141-checked-where-called.md)).

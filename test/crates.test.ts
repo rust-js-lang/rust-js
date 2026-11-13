@@ -360,7 +360,7 @@ test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Ve
   const out = chain(pairs, "cell_dyn_apart", ["dep", "app"]);
   // Checked: the held borrow counted, the momentary one checked alone (3901c815a).
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("  $borrowMut(hooks.list).push(hook);\n");
+  expect(dep).toContain("  if (hooks.list.borrows) {\n    $alreadyBorrowed();\n  }\n  hooks.list.push(hook);\n");
   expect(dep).toContain("  const borrow = $borrow(hooks.list, true);\n");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
 }, 300_000);
@@ -610,8 +610,8 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // Each momentary borrow checked alone (3901c815a), the library's held one
   // found by the closure's; its `Rc`, which the library's own calls don't
   // count, is the cell itself (#1234).
-  expect(consumer).toContain("  $borrowMut(list).value.push(3);\n");
-  expect(consumer).toContain("      $borrowMut(list).value.push(n);\n");
+  expect(consumer).toContain("  if (list.borrows) {\n    $alreadyBorrowed();\n  }\n  list.value.push(3);\n");
+  expect(consumer).toContain("      if (list.borrows) {\n        $alreadyBorrowed();\n      }\n      list.value.push(n);\n");
 }, 300_000);
 
 // ADR 0863, amended (#445): a library's cell its consumer may share is
@@ -622,7 +622,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
 test("a library checks a cell its consumer may share as its type says", () => {
   const out = chain(pairs, "ref_cells_flow", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("$borrowMut(cell).push(1);");
+  expect(dep).toContain("if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(1);");
   expect(contract(out).ref_cells.unchecked).toBeUndefined();
 }, 300_000);
 
@@ -637,11 +637,11 @@ test("a library's cell only its own code and constants reach is its flow's, as a
   const out = chain(pairs, "ref_cells_flow_reach", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   // Taken, given, a static's, or a struct's the consumer holds: checked.
-  expect(dep).toContain("  $borrowMut(cell).push(1);\n");
-  expect(dep).toContain("  $borrowMut(cell).push(5);\n");
-  expect(dep).toContain("  $borrowMut(itemsOf(open)).push(2);\n");
-  expect(dep).toContain("    $borrowMut(Tally.cell(tally)).push(n);\n");
-  expect(dep).toContain("$borrowMut(LOG).push(n)");
+  expect(dep).toContain("  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(1);\n");
+  expect(dep).toContain("  const cell = [];\n  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(5);\n");
+  expect(dep).toContain("  const cell = itemsOf(open);\n  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(2);\n");
+  expect(dep).toContain("    const cell = Tally.cell(tally);\n    if (cell.borrows) {\n      $alreadyBorrowed();\n    }\n    cell.push(n);\n");
+  expect(dep).toContain("if (LOG.borrows) {\n    $alreadyBorrowed();\n  }\n  LOG.push(n);");
   // Only the crate's and a constant's: plain.
   expect(dep).toContain("  return stock.TAG === \"Many\" ? stock._0.reduce(");
   expect(dep).toContain("    stock._0.push(3);\n");

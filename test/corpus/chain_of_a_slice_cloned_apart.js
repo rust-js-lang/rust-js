@@ -46,7 +46,7 @@ function main() {
     { next: $next },
     { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
   );
-  Array.from($lent(stepped).drop(3).take(1))[0];
+  Array.from($lent(stepped).drop(3).take(1));
   const again = chainClone_clone(stepped, iterClone, iterClone);
   const next = $next(stepped);
   const arg = $count(again);
