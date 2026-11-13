@@ -63,7 +63,7 @@ const owners: Record<string, string[]> = {
   "self.walks.mutated": ["src/lower/copies.rs"],
   "self.walks.clones": ["src/lower/std_impls/clones.rs"],
   "self.walks.clone_assumed": ["src/lower/std_impls/clones.rs"],
-  "self.codecs": ["src/lower/serde.rs"],
+  "self.codecs": ["src/lower/serde/codecs.rs"],
   // A function's scope struct's methods, functions declared in it (ADR
   // 1043): their names, which calls of them call, and while one is
   // lowered, the variable it closes over, its `self`'s.

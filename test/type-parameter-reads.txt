@@ -86,7 +86,7 @@ src/lower/recursive_fns.rs	1
 src/lower/representation.rs	2
 src/lower/representation/mut_ref.rs	3
 src/lower/representation/options.rs	3
-src/lower/serde.rs	1
+src/lower/serde/codecs.rs	1
 src/lower/shortcuts.rs	2
 src/lower/signatures.rs	2
 src/lower/std_impls.rs	6
