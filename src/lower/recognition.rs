@@ -9,7 +9,7 @@ mod conversions;
 mod fmt;
 mod inherent;
 pub(crate) use fmt::is_byte_slice;
-pub(in crate::lower) use fmt::{is_fmt_argument, is_std_formatting};
+pub(in crate::lower) use fmt::{is_fmt_argument, is_std_formatting, writes_piecewise};
 mod io;
 pub(crate) use io::{
     ByteSource, IoOp, fs_type, in_io_dictionary, is_buf_reader, is_file_handle, is_std_reader, is_std_reader_impl,

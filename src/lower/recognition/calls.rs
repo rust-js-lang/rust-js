@@ -840,12 +840,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
-        // A writer of the crate's own: what `write!` and `write_char` give its
-        // `write_str` (ADR 0166). One it writes itself is called as it is.
-        if tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
-            && matches!(tcx.item_name(def_id).as_str(), "write_fmt" | "write_char")
-            && self.has_user_impl(trait_, ty.peel_refs())
-        {
+        // A writer of the crate's own, or a `W: fmt::Write`: what `write!`
+        // and `write_char` give its `write_str` (ADR 0166, #1652).
+        if self.writes_through_write_str(def_id, trait_, ty) {
             return Some(Std::UserWrite);
         }
         // Writing to a standard stream or a `Vec<u8>` (ADRs 0132, 0392).

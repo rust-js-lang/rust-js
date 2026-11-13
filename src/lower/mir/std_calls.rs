@@ -12,6 +12,7 @@ use crate::lower::temporary_names::{Base, Role};
 
 mod fmt_parts;
 mod iterators;
+mod written_into;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std call's value as its `output` is held. A std iterator
@@ -230,6 +231,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let template = crate::lower::format_args::decode_template(&bytes)
                         .ok_or_else(|| this.unsupported(span, "this format string"))?;
+                    // Written into a writer a piece at a time (#1652).
+                    if this.arguments_written(state) {
+                        return this.arguments_writes(state, items, &template, span, out);
+                    }
                     // As its format string is written: across lines, or
                     // `concat!`'s pieces (ADRs 0066, 0641).
                     let written = crate::lower::format_args::written_pieces(tcx, span, template);
@@ -301,8 +306,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A writer of the crate's own: what `write!` and `write_char` give
             // its `write_str` (ADR 0166).
             Std::UserWrite => lower(move |this, state, values, out| {
+                let mut values: Vec<_> = values.collect();
+                // A `write!`'s, a piece at a time (#1652).
+                if let [writer, Value::Writes(writes)] = &mut values[..] {
+                    let (writer, writes) = (this.value_expr(writer.clone(), span)?, std::mem::take(writes));
+                    return this.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
+                }
+                this.arguments_not_written(def_id, &values, span)?;
                 Ok(Value::Expr({
-                    let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                    let exprs = values
+                        .into_iter()
+                        .map(|v| this.value_expr(v, span))
+                        .collect::<R<Vec<_>>>()?;
                     let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
                     let write_str = trait_method(tcx, trait_id, "write_str");
                     this.flush(state, out)?;

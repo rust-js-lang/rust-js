@@ -20,6 +20,10 @@ pub(in crate::lower) enum ArgumentsUse {
     /// Given by value to std's formatting alone, or asked `as_str()`: its
     /// text, made where it's made.
     InPlace,
+    /// Given by value to a `write!` into a writer of the crate's own, or a
+    /// `W: fmt::Write`'s, which std writes a piece at a time: each write,
+    /// made where it's written (#1652).
+    Written,
     /// Given on: a function that makes its text.
     GivenOn,
 }
@@ -31,9 +35,29 @@ pub(in crate::lower) fn arguments_use<'tcx>(
     local: Local,
 ) -> ArgumentsUse {
     match formatted_by_std(recognition, body, local, 2) {
+        true if crate::lower::recognition::writes_piecewise() && written_into_writer(recognition, body, local) => {
+            ArgumentsUse::Written
+        }
         true => ArgumentsUse::InPlace,
         false => ArgumentsUse::GivenOn,
     }
+}
+
+/// Whether `local` is given by value to a `write_fmt`, or `fmt::write`,
+/// into a writer that std writes a piece at a time, `Std::UserWrite`'s.
+fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> bool {
+    let tcx = recognition.tcx;
+    body.basic_blocks.iter().any(|data| match &data.terminator().kind {
+        TerminatorKind::Call { func, args, .. } => {
+            args.iter().any(|arg| {
+                arg.node
+                    .place()
+                    .is_some_and(|p| p.local == local && p.projection.is_empty())
+            }) && crate::lower::fn_def(func.ty(&body.local_decls, tcx))
+                .is_some_and(|(id, generic_args)| recognition.writes_arguments_piecewise(id, generic_args))
+        }
+        _ => false,
+    })
 }
 
 /// Whether each use of `local`, which holds an `Arguments` or what holds
@@ -161,7 +185,8 @@ fn mentions(rvalue: &Rvalue<'_>, local: Local) -> bool {
 
 /// Whether `local`, of `body`, holds an `Arguments` the body made that's
 /// its text: made by `format_args!` (`Arguments::new` or `from_str`) and
-/// formatted where it's made (`ArgumentsUse::InPlace`). Any other place
+/// formatted where it's made (`ArgumentsUse::InPlace`), or its writes
+/// (`ArgumentsUse::Written`). Any other place
 /// of an `Arguments`, a parameter's, a field's, or one given on, holds a
 /// function that makes its text.
 pub(in crate::lower) fn holds_text<'tcx>(
@@ -177,5 +202,5 @@ pub(in crate::lower) fn holds_text<'tcx>(
                     .and_then(|(id, generic_args)| recognition.classify(id, generic_args))
                     .is_some_and(|known| matches!(known, Std::FmtNew | Std::FmtStr)))
     });
-    made && arguments_use(recognition, body, local) == ArgumentsUse::InPlace
+    made && arguments_use(recognition, body, local) != ArgumentsUse::GivenOn
 }

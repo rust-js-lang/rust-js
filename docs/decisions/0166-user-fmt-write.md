@@ -1,6 +1,6 @@
 # 0166. A writer of the crate's is given its text a `write!` at a time
 
-Status: Accepted. Amends [0148](0148-write-to-string.md). (Amended: a
+Status: Accepted; [1135](1135-a-write-into-a-writer-a-piece-at-a-time.md) writes a `write!` a piece at a time instead once its last step lands (#1652). Amends [0148](0148-write-to-string.md). (Amended: a
 `fmt::Error` is thrown now, ADR 0187, but this writer's is still an error,
 given its text whole where Rust fails at a piece.)
 

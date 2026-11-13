@@ -116,6 +116,9 @@ enum Value<'tcx> {
     /// may print (#1490): `println!` writes each through stdout's line as
     /// it's made (`$printing`); and whether it may fail (ADR 0187).
     Printing(Expr, bool),
+    /// A `format_args!` written into a writer of the crate's own, or a
+    /// `W: fmt::Write`'s: each write std's `write_fmt` makes (#1652).
+    Writes(Vec<crate::lower::display::SinkWrite>),
     /// A value made a `&dyn Debug` here, of its type and the `dyn`'s:
     /// shown where it's made, by a placeholder, a `Debug` builder's step or
     /// a derived `Debug`'s fields, the string it shows (`shown_in_place`);

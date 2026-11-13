@@ -158,4 +158,12 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true
   },
+  {
+    name: "user-write-char-unrouted",
+    breaks: "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
+    file: "src/lower/recognition/fmt.rs",
+    find: '                name => name == "write_char" && self.has_user_impl(trait_, ty),\n',
+    replace: '                _ => false,\n',
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
+  },
 ];

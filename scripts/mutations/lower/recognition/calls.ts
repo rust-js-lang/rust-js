@@ -94,16 +94,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {
-    name: "user-write-char-unrouted",
-    breaks:
-      "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
-    file: "src/lower/recognition/calls.rs",
-    find: '            && matches!(tcx.item_name(def_id).as_str(), "write_fmt" | "write_char")',
-    replace:
-      '            && matches!(tcx.item_name(def_id).as_str(), "write_fmt")',
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
-  },
-  {
     name: "user-size-hint-unknown",
     breaks:
       "`size_hint()` of an iterator of the crate's that keeps std's is an error",

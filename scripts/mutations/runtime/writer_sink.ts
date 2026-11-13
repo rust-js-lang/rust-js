@@ -1,0 +1,71 @@
+// Mutations of src/runtime/writer_sink.js (ADR 1135, #1652).
+import type { Mutation } from "../../mutations";
+
+const tests = ["test/writer-sink.test.ts"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "writer-sink-char-as-str",
+    breaks: "a writer's own `write_char` is passed over: each `char` std writes so is given to its `write_str`",
+    file: "src/runtime/writer_sink.js",
+    find: "    writeChar: (c) => writeChar(w, c),\n",
+    replace: "    writeChar: (c) => writeStr(w, c),\n",
+    tests,
+  },
+  {
+    name: "writer-padding-centre-rounds-up",
+    breaks: "`{:^6}` of an odd room puts the extra fill char before the text, where std puts it after",
+    file: "src/runtime/writer_sink.js",
+    find: '  const before = align === "Left" ? 0 : align === "Center" ? Math.floor(count / 2) : count;\n',
+    replace: '  const before = align === "Left" ? 0 : align === "Center" ? Math.ceil(count / 2) : count;\n',
+    tests,
+  },
+  {
+    name: "writer-padded-precision-ignored",
+    breaks: "`{:.2}` of a string written into a writer isn't cut to two `char`s",
+    file: "src/runtime/writer_sink.js",
+    find: "  if (precision !== undefined && chars.length > precision) {\n",
+    replace: "  if (false) {\n",
+    tests,
+  },
+  {
+    name: "writer-padded-text-and-fill-as-one",
+    breaks: "a padded string is written with its fill in one `write_str`, not each fill char a `write_char`",
+    file: "src/runtime/writer_sink.js",
+    find: "  for (let i = 0; i < after; i++) f.writeChar(options.fill ?? \" \");\n}\n",
+    replace: "  f.write((options.fill ?? \" \").repeat(after));\n}\n",
+    tests,
+  },
+  {
+    name: "writer-integral-sign-as-str",
+    breaks: "an integer's sign is given to the writer's `write_str`, not its `write_char`",
+    file: "src/runtime/writer_sink.js",
+    find: "    if (sign !== undefined) f.writeChar(sign);\n",
+    replace: "    if (sign !== undefined) f.write(sign);\n",
+    tests,
+  },
+  {
+    name: "writer-integral-empty-prefix-skipped",
+    breaks: "`{:#}` of an integer, whose prefix is `\"\"`, writes no empty `write_str`, where std calls it",
+    file: "src/runtime/writer_sink.js",
+    find: "    if (options.alternate) f.write(prefix);\n",
+    replace: "    if (options.alternate && prefix !== \"\") f.write(prefix);\n",
+    tests,
+  },
+  {
+    name: "writer-integral-zeros-before-sign",
+    breaks: "`{:05}` of a negative integer writes its zeros before its sign",
+    file: "src/runtime/writer_sink.js",
+    find: "  if (zero) writePrefix();\n",
+    replace: "  if (false) writePrefix();\n",
+    tests,
+  },
+  {
+    name: "writer-integer-sign-kept-in-digits",
+    breaks: "a negative integer's digits keep its `-`, written twice",
+    file: "src/runtime/writer_sink.js",
+    find: '  return $writeIntegral(f, n >= 0, "", String(n < 0 ? -n : n), options);\n',
+    replace: '  return $writeIntegral(f, n >= 0, "", String(n), options);\n',
+    tests,
+  },
+];

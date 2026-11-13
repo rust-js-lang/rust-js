@@ -161,8 +161,9 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         // A place shared, or shown, is read where it's used, as Rust reads
         // it; nothing changes it meanwhile.
         Value::Place(_) => true,
-        // A view, made where it's used, which checks its range there.
-        Value::Ref(_) | Value::View(..) => false,
+        // A view, made where it's used, which checks its range there; and
+        // writes, each of which runs the writer's code.
+        Value::Ref(_) | Value::View(..) | Value::Writes(_) => false,
     }
 }
 

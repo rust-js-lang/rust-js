@@ -6,10 +6,12 @@
 mod composed;
 mod debug;
 mod printing;
+mod sink_writes;
 mod streamed;
 mod written;
 
 pub(super) use printing::write_to_sink;
+pub(super) use sink_writes::SinkWrite;
 
 use super::bindings;
 use crate::lower::temporary_names::Role;

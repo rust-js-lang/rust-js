@@ -205,6 +205,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.places.insert(local, value);
                 continue;
             }
+            // A `format_args!` written into a writer: kept for its
+            // `write_fmt`, its arguments held where it's made (#1652).
+            if !named && let Value::Writes(_) = &value {
+                state.places.insert(local, value);
+                continue;
+            }
             // A `&mut` to a place, a call's argument held before another that
             // changes what it reads, `&mut lanes[index]` before `{ index += 1;
             // 10 }`: the place, fixed here, `$index(ps, i).x`'s object named
@@ -846,6 +852,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Discriminant(..) => self.discriminant_number(&value, span)?,
             Value::Place(e) => e,
             Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
+            // Only its `write_fmt` writes it (`ArgumentsUse::Written`).
+            Value::Writes(_) => panic!("DEBUGWRITES"),
             Value::Tested(..) | Value::Cut(..) => {
                 return Err(self.unsupported(span, "an `Option` read as a test, as a value, from its MIR"));
             }

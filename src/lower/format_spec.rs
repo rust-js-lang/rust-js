@@ -120,7 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `Wrapping`'s number, a `Cow<str>`'s or a path's text, a parse
     /// error's message, each of which `fmt`s it as its own; `js::shown`'s
     /// text, `${value}`, which is padded as text is (ADR 0312); else `value`.
-    fn display_handed_on(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+    pub(super) fn display_handed_on(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
         let text = self.tcx.types.str_;
         if self.displays_itself(ty) {
             return (super::display::shown_text(value), text);
@@ -363,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// A placeholder's options as the object a `fmt` is given (ADR 0058):
 /// `{ width: 6, align: ">" }`, with only those it has.
-fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) -> Expr {
+pub(super) fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) -> Expr {
     let mut fields = Vec::new();
     let mut field = |name: &str, value: Expr| fields.push(Prop::Field(name.into(), value));
     if spec.alternate {

@@ -10,7 +10,11 @@
 // `f.alternate()`, passes its options on or writes past them, and its own
 // `Debug` by `f.debug_struct` and the rest. Each case writes its value
 // bracketed, `[{:>7}]`, so a pad shows, by `println!`, by `format!` or by
-// `write!` into a `String`, in turn. test/iterator-matrix.test.ts runs it
+// `write!` into a `String`, in turn; or, of a value whose split
+// `display::sink_writes` follows (#1652), by `write!` into a writer of the
+// crate's own that records each call it's given, `Log`, or `Chars`, which
+// has its own `write_char`, given the value held in a variable, which rustc
+// doesn't write into the format string as it does a literal. test/iterator-matrix.test.ts runs it
 // (`ITERATOR_TABLE=format`) in both builds against native Rust, as it runs
 // the iterator tables.
 //
@@ -204,8 +208,18 @@ export const values: Value[] = [
 ];
 
 /** How a case writes what it formats. */
-const sinks = ["println", "format", "write", "panic", "args"] as const;
+const sinks = ["println", "format", "write", "panic", "args", "log"] as const;
 type Sink = (typeof sinks)[number];
+
+/** Whether `display::sink_writes` follows std's split of `spec` of
+ * `value`, so `write!` into a writer of the crate's own writes it a piece
+ * at a time (#1652): an integer's, by any trait but an exponent's, and a
+ * `char`'s, a string's or a `bool`'s `Display`, and a `bool`'s `Debug`. As
+ * each value's split lands, more do; the rest are written to a `String`. */
+const pieced = (spec: Spec, value: Value) =>
+  value.kind === "integer"
+    ? !["e", "E"].includes(spec.trait)
+    : ["char", "str", "String", "bool"].includes(value.kind) && (spec.trait === "D" || (spec.trait === "G" && value.kind === "bool" && !/[xX]\?/.test(spec.text)));
 
 export type FormatCase = Row & { spec: Spec; value: Value; sink: Sink };
 
@@ -220,7 +234,8 @@ export function formatCases(): FormatCase[] {
   for (const value of values) {
     for (const spec of specs) {
       if (!value.has.includes(spec.trait) || (value.sized && radix(spec))) continue;
-      const sink = sinks[out.length % sinks.length];
+      const turn = sinks[out.length % sinks.length];
+      const sink = turn === "log" && !pieced(spec, value) ? "write" : turn;
       const id = `${spec.text} | ${value.ty} | ${value.expr} | ${sink}`;
       out.push({ n: out.length, id, spec, value, sink });
     }
@@ -348,6 +363,32 @@ impl fmt::Debug for Manual {
     }
 }
 
+/** A writer that records each call it's given, std's \`write_char\` a
+ * \`write_str\` of the \`char\`. */
+struct Log(Vec<String>);
+
+impl Write for Log {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+
+/** One with its own \`write_char\`, which marks each \`char\`. */
+struct Chars(Vec<String>);
+
+impl Write for Chars {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.0.push(format!("<{c}>"));
+        Ok(())
+    }
+}
+
 /** What a panic said, its \`String\`. */
 fn said(ended: Result<(), Box<dyn Any + Send>>) -> String {
     match ended {
@@ -388,7 +429,14 @@ function caseFn(c: FormatCase, i: number): string {
           ? [`let mut s = String::new();`, `write!(s, ${format}).unwrap();`, `println!("{s}");`]
           : c.sink === "panic"
             ? [`let ended = catch_unwind(AssertUnwindSafe(|| -> () { panic!(${format}) }));`, `println!("{}", said(ended));`]
-            : [`shown(format_args!(${format}));`];
+            : c.sink === "log"
+              ? [
+                  `let v = ${c.value.expr};`,
+                  `let mut log = ${i % 2 === 0 ? "Log" : "Chars"}(Vec::new());`,
+                  `write!(log, "[${escaped(c.spec.text)}]", ${c.spec.args?.("v") ?? "v"}).unwrap();`,
+                  `println!("{:?}", log.0);`,
+                ]
+              : [`shown(format_args!(${format}));`];
   return `fn case_${i}() {\n${body.map((line) => `    ${line}`).join("\n")}\n}`;
 }
 

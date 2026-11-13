@@ -872,7 +872,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // build that rewrites adapters steps as `$foldBack` (#754).
         let std = self.is_std_call(def_id, generic_args)?
             || (self.tcx.trait_of_assoc(def_id).is_some()
-                && self.std_iterator_call(def_id, generic_args, values.first(), span)?);
+                && self.std_iterator_call(def_id, generic_args, &values, span)?);
         let given = match std {
             true => {
                 let known = self.recognition().classify(def_id, generic_args);
@@ -955,10 +955,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-        receiver: Option<&Value<'tcx>>,
+        values: &[Value<'tcx>],
         span: Span,
     ) -> R<bool> {
-        let receiver = receiver.and_then(|receiver| match receiver {
+        // Not a `write!`'s writes (#1652), which aren't values.
+        if values.iter().any(|value| matches!(value, Value::Writes(_))) {
+            return Ok(false);
+        }
+        let receiver = values.first().and_then(|receiver| match receiver {
             Value::Expr(e) | Value::Place(e) | Value::Ref(e) => Some(e),
             _ => None,
         });
@@ -1130,7 +1134,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // to one is it, an object its helpers step in place. Not one the
         // crate's impl has, in a copied default as its impl calls it (ADR
         // 0492).
-        if tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, values.first(), span)? {
+        if tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, &values, span)? {
             let mut exprs = (values.clone().into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
@@ -1177,7 +1181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (`Std::never_through_a_trait_call`); nor std's `clone_from`, `*dest = source.clone()` written in place,
         // where the crate's impl isn't known to have its own.
         if !known.is_some_and(Std::never_through_a_trait_call)
-            && (rust_impl || self.std_trait_call(known, def_id))
+            && (rust_impl || (self.std_trait_call(known, def_id) && known != Some(Std::UserWrite)))
             && !self.is_binding_of(def_id, generic_args)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl

@@ -116,6 +116,35 @@ pub(in crate::lower) enum SkipPredicate {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether `def_id`, of the trait `trait_` on `ty`, is a `fmt::Write`'s
+    /// call std writes with the writer's `write_str`: `write!` and
+    /// `write_char` into a writer of the crate's own (ADR 0166), and
+    /// `write!` into a `W: fmt::Write`, a `dyn`'s too, each piece through
+    /// its dictionary (#1652). One the crate's writer writes itself is
+    /// called as it is.
+    pub(in crate::lower) fn writes_through_write_str(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        let generic = super::known_by_a_dictionary(ty);
+        self.tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
+            && match self.tcx.item_name(def_id).as_str() {
+                "write_fmt" => (generic && writes_piecewise()) || self.has_user_impl(trait_, ty),
+                name => name == "write_char" && self.has_user_impl(trait_, ty),
+            }
+    }
+
+    /// Whether a call of `def_id` of `generic_args` is a `write_fmt` into a
+    /// writer std writes a piece at a time (`writes_through_write_str`):
+    /// `w.write_fmt(args)`, or `fmt::write(w, args)`, which is it.
+    pub(in crate::lower) fn writes_arguments_piecewise(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> bool {
+        let (def_id, generic_args) = self.call_it_is(def_id, generic_args);
+        self.tcx.item_name(def_id).as_str() == "write_fmt"
+            && self.classify(def_id, generic_args) == Some(Std::UserWrite)
+    }
+
     /// `&mut Formatter<'_>`.
     /// `fmt::Write`'s `write_str(f, s)` of a `Formatter`, called through the
     /// trait: its `&mut Self` is the `Formatter`, as `f.write_str(s)`'s is.
@@ -664,6 +693,18 @@ pub(crate) fn io_write_default(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
         _ if is_std_method(tcx, id, StdItem::IoWrite, "write_fmt") => Some(false),
         _ => None,
     }
+}
+
+/// Whether a `write!` into a writer of the crate's own, or a `W:
+/// fmt::Write`'s, is written a piece at a time, each piece a call of the
+/// writer's, as std's `write_fmt` writes it (#1652, ADR 1135). Not yet by
+/// default: each value's split lands in `display::sink_writes` first, proven
+/// by the tests that set `RUST_JS_WRITES_PIECEWISE`, and the last of them
+/// makes it the one way and removes this switch.
+pub(in crate::lower) fn writes_piecewise() -> bool {
+    static PIECEWISE: std::sync::LazyLock<bool> =
+        std::sync::LazyLock::new(|| std::env::var_os("RUST_JS_WRITES_PIECEWISE").is_some_and(|v| v == "1"));
+    *PIECEWISE
 }
 
 /// `fmt::Write`'s `write_char` or `write_fmt`, which std's writes with
