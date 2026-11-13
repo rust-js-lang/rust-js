@@ -355,6 +355,10 @@ go.
      too. `Display::fmt(&format_args!(..), f)` arms an `Arguments`
      function where it could write inline (#1725, P3). Proof:
      test/writer-sink-arguments-kept.rs; 8 mutations.
+   - A std parse error's `Display` given the `Formatter`, thiserror's
+     `Display::fmt(&self.0, f)` of a `ParseIntError`, is `pad` of its
+     message, as a `dyn Error` of it writes it. Proof:
+     test/writer-sink-rest.rs; 1 mutation.
 
 ## Alternatives
 

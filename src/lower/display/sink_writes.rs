@@ -198,6 +198,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let int = shown_num(ty).filter(|num| !num.float());
         let debug_hex = self.debug_hex();
+        // A std parse error's `Display`, `pad` of its message, its value
+        // (ADR 0063), as a `dyn Error` of it writes it (`$parseErrorDyn`).
+        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) {
+            return Ok(Some(vec![SinkWrite::Helper("$writePadded", vec![value, options])]));
+        }
         let given = |value: Expr| vec![value, options.clone()];
         Ok(Some(vec![match kind {
             Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),

@@ -135,6 +135,16 @@ impl fmt::LowerExp for Hexy {
     }
 }
 
+// A parse error's `Display` given its `Formatter`, `pad` of its message.
+struct ParseFailed(std::num::ParseIntError);
+
+impl fmt::Display for ParseFailed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("failed: ")?;
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
 fn main() {
     let m = HashMap::from([("k", -1)]);
     let b = BTreeMap::from([(1, "a\"b"), (2, "c")]);
@@ -221,4 +231,12 @@ fn main() {
     )
     .unwrap();
     println!("{:?}", chars.0);
+
+    let failed = ParseFailed("zz".parse::<i32>().unwrap_err());
+    let mut chars = Chars(Vec::new());
+    write!(chars, "{}|{:>40}|{:.7}", failed, failed, failed).unwrap();
+    println!("{:?} {}", chars.0, failed);
+    let mut failing = Failing(Vec::new());
+    let r = write!(failing, "{:*^45}", failed);
+    println!("{:?} {:?}", failing.0, r);
 }

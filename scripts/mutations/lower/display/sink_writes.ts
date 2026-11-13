@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "        let Some(fmt_trait) = self.fmt_trait_of(kind).filter(|_| matches!(kind, Std::FmtDisplay | Std::FmtDebug)) else {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "parse-error-display-given-the-formatter-refused",
+    breaks: "a parse error's `Display` given a framed writer's `Formatter`, thiserror's, is refused",
+    file: "src/lower/display/sink_writes.rs",
+    find: "        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) {\n",
+    replace: "        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) && false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];
