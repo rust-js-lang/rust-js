@@ -608,6 +608,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Value::Expr(value) = &value
             && let js::ExprKind::Call(callee, _) = &value.kind
             && matches!(callee.helper_name(), Some("$writeTry" | "$writeOf"))
+            && (state.writer.is_some() || self.write_thrown_here(state))
         {
             self.flush(state, out)?;
             self.fmt_check(value.clone(), self.js_span(span), out);

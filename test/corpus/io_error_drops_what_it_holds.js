@@ -148,14 +148,13 @@ function wroteTwice(n) {
 
 function randFill() {
   const result$1 = { TAG: "Err", _0: { inner: { value: [40], impl: loudError } } };
+  let result;
   if (result$1.TAG !== "Err") {
-    const result = $writeCheck(result$1._0);
-    if (result$1.TAG === "Err") {
-      result$1._0.inner.impl.$drop?.(result$1._0.inner.value);
-    }
-    return result;
+    result = result$1._0;
+    return $writeCheck(result);
   }
-  return $ioThrow(errorFromRandError_from(result$1._0));
+  result = $ioThrow(errorFromRandError_from(result$1._0));
+  return $writeCheck(result);
 }
 
 function main() {

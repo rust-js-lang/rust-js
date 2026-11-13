@@ -288,15 +288,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$ioThrow", vec![error]))
     }
 
+    /// Whether the write's result written to the return place here is
+    /// thrown here (`result_use::thrown_where_written`, #1636); else it's
+    /// held, and thrown at the `Return` (`held_write_thrown`).
+    pub(super) fn write_thrown_here(&self, state: &State<'_, 'tcx>) -> bool {
+        let at = state.location().block;
+        super::result_use::thrown_where_written(self.tcx, state.body, at, &|ty| self.drop_may_panic(ty))
+    }
+
+    /// What a `Return` gives back, `value`: of a write's result held past
+    /// a drop that may panic anywhere in the body (`write_thrown_here`),
+    /// thrown now, after the drops, `$writeCheck(result)`, as Rust gives it
+    /// back (#1636).
+    pub(super) fn held_write_thrown(&self, state: &State<'_, 'tcx>, value: Option<Expr>) -> Option<Expr> {
+        let output = state.body.local_decls[mir::RETURN_PLACE].ty;
+        let held = self.is_write_result(output)
+            && super::result_use::write_held(self.tcx, state.body, &|ty| self.drop_may_panic(ty));
+        match held {
+            true => value.map(|held| Expr::call_helper("$writeCheck", vec![held])),
+            false => value,
+        }
+    }
+
     /// What a function gives back of a write's result, `_0 = ..` of a
     /// `fmt::Result` or an `io::Result<()>`: its error thrown, as a call
     /// of it throws (ADR 0187), `Err(fmt::Error)` made there `$fmtError()`,
     /// `Err(e)` `$ioThrow(e)`, and one held, which may be its error as a
     /// value, `let r = Err(fmt::Error); r`, `$writeCheck(r)` (#1011). Any
-    /// other, `value`.
+    /// other, `value`. Of one a drop that may panic comes after, the error
+    /// as a value, `$writeTry($fmtError)` or the `io::Error`, which the
+    /// `Return` throws (`write_thrown_here`, #1636).
     pub(super) fn returned_write_result(
         &mut self,
-        state: &State<'_, 'tcx>,
+        state: &mut State<'_, 'tcx>,
         (place, rvalue): (Place<'tcx>, &Rvalue<'tcx>),
         value: Value<'tcx>,
         span: Span,
@@ -306,6 +330,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let result = self.value_expr(value, span)?;
+        let err = |rvalue: &Rvalue<'tcx>| matches!(rvalue, Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, variant, ..) if variant != VariantIdx::ZERO));
+        let thrown = !(err(rvalue) || crate::lower::display::may_be_write_error(&result) && self.krate.failing.any)
+            || self.write_thrown_here(state);
+        if !thrown {
+            return Ok(Value::Expr(match err(rvalue) && self.is_fmt_result(output) {
+                true => Expr::call_helper("$writeTry", vec![Expr::helper("$fmtError")]),
+                false => result,
+            }));
+        }
         Ok(Value::Expr(match rvalue {
             Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, variant, ..) if variant != VariantIdx::ZERO) => {
                 match self.is_fmt_result(output) {

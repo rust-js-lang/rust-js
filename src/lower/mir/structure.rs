@@ -402,6 +402,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map_or(span, |block| block.shrink_to_hi()),
                     false => span,
                 };
+                // A writer's, the string it wrote, throws nothing held (#1636).
+                let value = match state.writer {
+                    Some(_) => value,
+                    None => self.held_write_thrown(state, value),
+                };
                 out.push(StmtKind::Return(value).at(self.js_span(span)));
             }
             TerminatorKind::Unreachable => {

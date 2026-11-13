@@ -75,3 +75,60 @@ pub(in crate::lower) fn result_use<'tcx>(
         false => ResultUse::Inspected,
     }
 }
+
+/// Whether the write's result a body gives back, written to its return
+/// place at `at`, is thrown where it's written, as a call of the body throws
+/// its `Err`: where no drop that may panic (`drop_may_panic`) runs on the
+/// way on to the `Return`, so each that runs is a `finally`'s, which runs on
+/// the throw too. Else it's held as a value there and thrown at the
+/// `Return`, past those drops, as Rust gives it back after them (#1636):
+/// thrown where it's written, a drop no `finally` holds was left out.
+pub(in crate::lower) fn thrown_where_written<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    at: mir::BasicBlock,
+    drop_may_panic: &dyn Fn(ty::Ty<'tcx>) -> bool,
+) -> bool {
+    let mut seen = crate::collections::IndexSet::default();
+    let mut blocks = vec![at];
+    while let Some(block) = blocks.pop() {
+        if !seen.insert(block) {
+            continue;
+        }
+        let terminator = body.basic_blocks[block].terminator();
+        if let TerminatorKind::Drop { place, .. } = &terminator.kind
+            && drop_may_panic(place.ty(body, tcx).ty)
+        {
+            return false;
+        }
+        blocks.extend(
+            terminator
+                .successors()
+                .filter(|&next| !body.basic_blocks[next].is_cleanup),
+        );
+    }
+    true
+}
+
+/// Whether a body that gives back a write's result holds one as a value
+/// anywhere, an `Err` or a call's result written to its return place where
+/// it isn't thrown (`thrown_where_written`): each `Return` then throws it
+/// (#1636). An `Ok(())` written is nothing to throw.
+pub(in crate::lower) fn write_held<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    drop_may_panic: &dyn Fn(ty::Ty<'tcx>) -> bool,
+) -> bool {
+    let ok = |rvalue: &mir::Rvalue<'tcx>| {
+        matches!(rvalue, mir::Rvalue::Aggregate(kind, _)
+            if matches!(**kind, mir::AggregateKind::Adt(_, variant, ..) if variant == rustc_abi::VariantIdx::ZERO))
+    };
+    body.basic_blocks.iter_enumerated().any(|(block, data)| {
+        let returned = (data.statements.iter()).any(|statement| {
+            matches!(&statement.kind, mir::StatementKind::Assign(assign)
+                if assign.0 == Place::from(mir::RETURN_PLACE) && !ok(&assign.1))
+        }) || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. }
+            if *destination == Place::from(mir::RETURN_PLACE));
+        !data.is_cleanup && returned && !thrown_where_written(tcx, body, block, drop_may_panic)
+    })
+}

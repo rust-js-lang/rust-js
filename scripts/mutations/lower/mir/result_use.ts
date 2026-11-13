@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^write_result_kept_by_a_writer.rs$"],
     snapshots: true,
   },
+  {
+    name: "write-thrown-past-panicking-drops",
+    breaks: "a write's result given back is thrown where it's written, before a drop that may panic, which its `Err` then leaves out (#1636)",
+    file: "src/lower/mir/result_use.rs",
+    find: "            && drop_may_panic(place.ty(body, tcx).ty)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
+  },
 ];

@@ -1034,4 +1034,12 @@ export const mutations: Mutation[] = [
     replace: "            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()\n",
     tests: ["test/corpus.test.ts", "-t", "^reborrow_of_a_calls_mut_result.rs$"],
   },
+  {
+    name: "returned-write-thrown-past-drops",
+    breaks: "a `write!` given back is thrown where it's written, before a drop that may panic, which its `Err` then leaves out (#1636)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && (state.writer.is_some() || self.write_thrown_here(state))\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
+  },
 ];

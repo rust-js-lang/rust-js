@@ -66,7 +66,3 @@ plain std loud-drop thread_local_with_in_place.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
-
-#1636 P0: a write's Err returned by a function skips the drops after it, where a Drop impl calls a function that formats (sequential drop form)
-plain std loud write_result_through_a_dictionary.rs
-plain std loud-drop write_result_through_a_dictionary.rs

@@ -329,4 +329,20 @@ export const mutations: Mutation[] = [
     replace: "        let (variables, fields) = (variables, fields);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_through_mem_replace.rs$"],
   },
+  {
+    name: "held-write-returned-unthrown",
+    breaks: "a write's result held past a drop that may panic is returned as a value, so its `Err` is `Ok` to its caller (#1636)",
+    file: "src/lower/mir/entries.rs",
+    find: "            true => value.map(|held| Expr::call_helper(\"$writeCheck\", vec![held])),\n",
+    replace: "            true => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
+  },
+  {
+    name: "held-fmt-error-made-ok",
+    breaks: "`Err(fmt::Error)` held past a drop that may panic is held as `Ok`, so the function gives back `Ok` (#1636)",
+    file: "src/lower/mir/entries.rs",
+    find: "                true => Expr::call_helper(\"$writeTry\", vec![Expr::helper(\"$fmtError\")]),\n",
+    replace: "                true => Expr::undefined(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
+  },
 ];

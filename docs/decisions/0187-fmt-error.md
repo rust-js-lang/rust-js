@@ -328,3 +328,36 @@ as the value's `Debug` was one JS expression. Now, where a part may fail
 (`fmt_may_fail`), the value is written through std's builders, each piece
 as it's taken, and the `Err` carries what came before it. ADR 1130's
 amendment for #1561 says how, with its proof.
+
+## Amendment: a write's `Err` given back is thrown at the `Return`, past a drop that may panic (2026-11-13, #1636)
+
+A function that gives back a write's result threw its `Err` where its
+return place was written, `_0 = ..`, not where it returns. `fn made(n) ->
+fmt::Result { let _loud = Loud(n); if n > 1 { return Err(fmt::Error); }
+Ok(()) }` was `result = $fmtError(); said(..); return result;`, so `_loud`'s
+drop never ran on the `Err` path. A returned `write!(text, ..)` was
+`text += f(..)`, which threw before the drops after it. tidy's scoping
+covered this wherever the drops fit in a `finally` (`try { .. } finally {
+if ($live()) .. }` runs on the throw too). A drop that may panic, one that
+formats, doesn't fit there, and the sequential form it gets instead only
+guards against a panic. Found by the metamorphic net's `loud` rewrite of
+`write_result_through_a_dictionary`.
+
+**Where a drop that may panic (`drop_may_panic`) runs between the write of
+the return place and the `Return`, the return place holds the write's
+result as a value, and the `Return` throws it, `return
+$writeCheck(result)`, after the drops.** `Err(fmt::Error)` as a value is
+`$writeTry($fmtError)`, with no new helper; an `io::Error`'s is the
+error; a call's is its `$writeTry(..)`. The one owner is `result_use.rs`:
+`thrown_where_written` answers for each write, and `write_held` says
+whether a body's `Return`s throw. Elsewhere the JS is unchanged: `text +=
+f(..)` still throws in place, inside its `finally`. A writer's own body,
+whose result is the string it writes, keeps its own form. The lead chose
+this (option A on #1636).
+
+Results change, so Rust's behavior is kept (ADR 0262). Corpus case
+`write_result_err_given_back_past_drops` runs against native Rust in both
+builds: an `Err` made, a `write!` given back, a call's result given back,
+`?` of one, and an `io::Result<()>`'s, each past a drop that formats. One
+other corpus case's JS changed, `io_error_drops_what_it_holds`'s
+`randFill`. Four mutations.
