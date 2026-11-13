@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "ways-none-takes-walked",
     breaks: "the walk goes on down each way, `b === 1` once `b >= 1 && b <= 2` failed too, so a run of guarded `if`s each going on to the next is more leaves than a match has and `ways_none_takes` keeps its labeled block (#771)",
     file: "src/lower/mir/tidy/decisions/walk.rs",
-    find: "            let taken = |tests: &[Expr]| simplified(tests, false).is_some();\n",
+    find: "            let taken = |tests: &[Expr]| walked(tests, false).is_some();\n",
     replace: "            let taken = |_: &[Expr]| true;\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
     snapshots: true,

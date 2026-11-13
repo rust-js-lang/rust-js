@@ -26,9 +26,11 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
     js::each_list(body, &mut |list| {
         for (i, stmt) in list.iter().enumerate() {
             // A `let` right before a block MIR made, read only by its
-            // tree's tests (`given_before`).
+            // tree's tests (`given_before`), past the declarations of the
+            // arms' bindings, `let x;`, which read nothing (#1620).
+            let block_at = (i + 1..list.len()).find(|&j| !matches!(list[j].kind, StmtKind::Let(_, None)));
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && let Some(StmtKind::Labeled(label, block)) = list.get(i + 1).map(|s| &s.kind)
+                && let Some(StmtKind::Labeled(label, block)) = block_at.and_then(|j| list.get(j)).map(|s| &s.kind)
                 && crate::lower::mir::is_block_label(label)
                 && pure(value)
                 && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
@@ -103,10 +105,15 @@ pub(super) fn binds(
 /// each a pure read that the block's tree alone reads, in its tests, and
 /// nothing after it: the binding of a guard's first alternative, `let x$1 =
 /// _4[0]; bb18: { if (h(c, x$1) == null) { .. x$1 = _4[0]; ..`, which the
-/// walk reads as its value, as it does the others' (#771).
+/// walk reads as its value, as it does the others' (#771). Past the
+/// declarations of the arms' bindings between, `let x;`, which read
+/// nothing (#1620).
 pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Vec<(String, Expr)> {
     let mut given = Vec::new();
-    for stmt in before.iter().rev() {
+    let declared = (before.iter().rev())
+        .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
+        .count();
+    for stmt in before[..before.len() - declared].iter().rev() {
         let (StmtKind::Let(name, Some(value)) | StmtKind::Const(name, value)) = &stmt.kind else {
             break;
         };
@@ -124,6 +131,23 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
     }
     given.reverse();
     given
+}
+
+/// Of `given`, what `given_before` gave the walk, each `let` of `stmts` no
+/// statement reads now the chain reads its value in its place: gone, as
+/// what it's given reads nothing that changes, `let x$1 = a;` of `(x, _) |
+/// (x, 1) if h(c, x).is_some()` (#1620).
+pub(super) fn given_unread(stmts: &mut Vec<Stmt>, given: &[(String, Expr)]) {
+    for (name, _) in given {
+        let at = stmts
+            .iter()
+            .position(|s| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name));
+        if let Some(at) = at
+            && js::mentions_in(&stmts[..at], name) + js::mentions_in(&stmts[at + 1..], name) == 0
+        {
+            stmts.remove(at);
+        }
+    }
 }
 
 /// Whether `stmts` read `name` only in their `if`s' tests (`tested_reads`).

@@ -29,8 +29,10 @@ use bodies::{longer_first, size};
 use calls::Model;
 pub(super) use defaults::default_values;
 pub(super) use guarded::bound;
-use guarded::{bound_where_read, given_before};
-use paths::{absorbed, failing, narrowed, present_failing, present_said_by, said, simplified, unions, written_order};
+use guarded::{bound_where_read, given_before, given_unread};
+use paths::{
+    absorbed, failing, narrowed, present_failing, present_said_by, said, simplified, unions, walked, written_order,
+};
 pub(super) use presence::presence_said;
 use sets::{Kind, Set, Value, atom, is_subject, render, same_subject};
 use tails::{breaks_ended, calls_in, nested, tails};
@@ -168,6 +170,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
         } else {
             stmts.splice(i..i + 1, chain);
         }
+        given_unread(stmts, &given);
     }
 }
 
@@ -315,7 +318,7 @@ fn chain(
     let no_switch = breaking || !switched(&tested, told);
     let valued = |e: &Expr| no_switch && valued(e);
     let leaves: Vec<(Vec<Expr>, Leaf)> = (leaves.into_iter())
-        .filter_map(|leaf| Some((present_said(simplified(&leaf.tests, patterns)?, &valued), leaf)))
+        .filter_map(|leaf| Some((present_said(walked(&leaf.tests, patterns)?, &valued), leaf)))
         .collect();
     // Leaves that do one thing, one arm.
     let mut arms: Vec<Arm> = Vec::new();
@@ -478,7 +481,7 @@ fn chain(
             }
             if changed
                 && let Some(tests) = (made.iter())
-                    .map(|path| Some(present_said(simplified(path, patterns)?, &valued)))
+                    .map(|path| Some(present_said(walked(path, patterns)?, &valued)))
                     .collect::<Option<Vec<_>>>()
             {
                 arms[i].tests = tests;
@@ -497,11 +500,7 @@ fn chain(
             // Of a tree that calls, each path as the tree tests it, which
             // `Model::fewest` reads as few tests as tell.
             let mut paths = match &model {
-                Some(_) => arms[i]
-                    .made
-                    .iter()
-                    .filter_map(|path| simplified(path, patterns))
-                    .collect(),
+                Some(_) => arms[i].made.iter().filter_map(|path| walked(path, patterns)).collect(),
                 None => arms[i].tests.clone(),
             };
             if model.is_none() {

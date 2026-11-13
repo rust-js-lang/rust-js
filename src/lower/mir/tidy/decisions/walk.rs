@@ -108,8 +108,9 @@ impl<'s> Walk<'s, '_> {
             }
             // A way no value takes, `b === 1` once `b >= 1 && b <= 2` failed,
             // has no leaf: not walked, so a run of `if`s each going on to
-            // the next is as many ways as its values take (#771).
-            let taken = |tests: &[Expr]| simplified(tests, false).is_some();
+            // the next is as many ways as its values take (#771); but one
+            // whose own test calls first, an arm's guard's (`walked`, #1620).
+            let taken = |tests: &[Expr]| walked(tests, false).is_some();
             let mut yes = frames.clone();
             yes.push(then);
             let passing = [tests.clone(), vec![test.clone()]].concat();

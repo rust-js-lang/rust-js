@@ -146,4 +146,13 @@ export const mutations: Mutation[] = [
     replace: "            !present.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
   },
+  {
+    name: "guard-calling-before-no-value-dropped",
+    breaks: "an arm no value reaches whose guard calls first, `(0, 0) if odd(c, a + b) && a > 2`, has no leaf, so the chain's `else` makes no call where the tree does, and the block keeps its label (#1620)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "            return called.then(|| tests.to_vec());\n",
+    replace: "            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(guarded_alternatives_chained_without_labels|match_trees_chained).rs$"],
+    snapshots: true,
+  },
 ];

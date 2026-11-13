@@ -120,6 +120,36 @@ pub(super) fn narrowed(known: &[(Expr, Set)], test: &Expr) -> Option<Expr> {
     })
 }
 
+/// `tests` as `simplified` reads them, a way of the tree's; or, where its
+/// last test calls before what it tests that calls nothing says no value
+/// passes, as they are: the tree makes that call, an arm's guard's, on its
+/// way past the arm, so the chain tests that arm too, whose body runs on no
+/// way, `(0, 0) if g(c, a) && a > 2` of `a === 0` (#1620). Not where a
+/// test that calls nothing of its own says so, `op === 0` once `op !== 0`
+/// past another arm's guard, which the chain makes in that arm's test.
+pub(super) fn walked(tests: &[Expr], patterns: bool) -> Option<Vec<Expr>> {
+    if let Some(read) = simplified(tests, patterns) {
+        return Some(read);
+    }
+    let (last, before) = tests.split_last()?;
+    let mut parts = Vec::new();
+    conjuncts(last.clone(), &mut parts);
+    let (mut read, mut called) = (before.to_vec(), false);
+    for part in parts {
+        let mut made = Vec::new();
+        leaf_tests(&part, js::Span::NONE, &mut made);
+        if made.iter().any(|(test, _)| !pure(test)) {
+            called = true;
+            continue;
+        }
+        read.push(part);
+        if simplified(&read, patterns).is_none() {
+            return called.then(|| tests.to_vec());
+        }
+    }
+    None
+}
+
 /// `tests`, each read where it's made, without what those before it in a
 /// run of tests of one value already say: `None` where no value passes
 /// them all.

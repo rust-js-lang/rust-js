@@ -91,8 +91,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm's path whose earlier arm's failure is left out keeps its `!= null`, `symbolFor != null && symbolFor === C`, the labeled block staying (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "                .map(|path| Some(present_said(simplified(path, patterns)?, &valued)))\n",
-    replace: "                .map(|path| simplified(path, patterns))\n",
+    find: "                .map(|path| Some(present_said(walked(path, patterns)?, &valued)))\n",
+    replace: "                .map(|path| walked(path, patterns))\n",
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
   },
   {

@@ -1591,3 +1591,52 @@ among them, nor one stepping such an iterator through a `&mut` in generic
 code, `for _ in &mut *g`, `g.by_ref().count()` and a held `&mut`'s `next`,
 changes its JS or its results. The rule stays, as what
 `implements_iterator` means.
+
+## Amendment: a guard's binding past the arm's declaration, and an arm no value reaches whose guard calls (#1620, 2026-11-13)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes.
+
+#1461's label census (ADR 0659) ranked the labels the generated matches
+keep. The top row, 59 blocks a `SwitchInt` reaches by one jump, holds two
+general causes.
+
+- **A guard's binding past the arm's own declaration.** `(x, _) | (x, 1)
+  if seen(c, x).is_some()` is `let x$1 = a; let x; bb10: { .. }`: the
+  arm's binding `let x;` sits between the guard's `let` and the block. Both
+  `bound` and `given_before` read only a `let` right before the block, so
+  neither did, and the walk stopped at `x$1 = a;` with the guard's `break`
+  inside a leaf. Both now look past bare declarations, which read nothing.
+  Once the chain reads the binding's value in its place, the `let` nothing
+  reads goes (`given_unread`), its value a pure read.
+- **An arm no value reaches whose guard calls.** `(0, 0) if odd(c, a + b)
+  && a > 2` of `a === 0` is a way no value takes, so the walk made no leaf
+  of it. But the tree calls `odd` before `a > 2` says so. The chain's `else`
+  then made no call where the tree did, `Model` refused it, and the block
+  kept its label. A way whose last test calls before what it tests that
+  calls nothing says no value passes is now walked, kept as it is
+  (`walked`). Its arm is tested, its body running on no way, as Rust
+  writes it. A way that dies at a pure test of another arm, `op === 0`
+  once `op !== 0` past an earlier arm's guard, stays untaken: that guard is
+  made in its own arm's test.
+
+```js
+if (seen(c, a) != null || (b === 1 && seen(c, a) != null)) {
+  x = a;
+  level = (x * 10) >>> 0;
+  return level;
+}
+if (b === 0 && a === 0 && odd(c, a + b) && a > 2) {
+  return a + b + 1000;
+}
+level = 99;
+```
+
+The census of seeds 1 to 24 goes from 288 labels to 252, the top row from
+59 to 46. No function gains one, each seed's program runs as native Rust
+does, and the corpus keeps none. test/match-trees-labeled.txt shrinks in
+17 seeds. `guarded_alternatives_chained_without_labels.rs` holds both
+against native Rust in both builds. Mutations
+`given-before-stopped-by-declarations`, `bound-stopped-by-declarations`,
+`given-left-unread` (`decisions/guarded.ts`) and
+`guard-calling-before-no-value-dropped` (`decisions/paths.ts`).
