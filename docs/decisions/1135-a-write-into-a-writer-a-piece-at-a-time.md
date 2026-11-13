@@ -337,6 +337,25 @@ go.
    - the corpus case writer_fn_pointer_at_an_instance;
    - 13 mutations.
 
+   Then, each its own commit:
+   - **An `Arguments` kept is the function that writes into the sink it
+     claims** (the lead approved, under the switch). Step 6 made one sink
+     form only where a write was followed to; one in a field, an
+     `Option`, a closure's capture, a value returned, a constant, or given
+     to a generic function, `Box::new(args)`, was plain, and a write of it
+     was refused, "made elsewhere". `given_to_a_write` now counts each of
+     those as kept, and a read of a place or of a call's result is sink
+     form (`sink_form_given`). So `Display::fmt(&args, f)`, strum's
+     derived `Display`, `Display::fmt(&self.0, f)` and
+     `f.write_fmt(given(..))` write it a piece at a time, as std's
+     `fmt::write` does. A sink-form function called plainly gives its
+     text, so one kept only for plain text is still right; at the flip
+     the count of those made sink form is measured, and one whose only use
+     is plain text kept a template. A `&Arguments` parameter is followed
+     too. `Display::fmt(&format_args!(..), f)` arms an `Arguments`
+     function where it could write inline (#1725, P3). Proof:
+     test/writer-sink-arguments-kept.rs; 8 mutations.
+
 ## Alternatives
 
 - **Keep ADR 0166's whole text**, listed as a difference: rejected, since

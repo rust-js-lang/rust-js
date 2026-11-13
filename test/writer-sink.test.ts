@@ -40,6 +40,7 @@ const cases: [string, string][] = [
   ["callables' ", "test/writer-sink-callables.rs"],
   ["a writer generic over a constant's ", "test/writer-sink-const-generic.rs"],
   ["a writer function's pointer's ", "test/writer-sink-fn-pointer.rs"],
+  ["Arguments kept's ", "test/writer-sink-arguments-kept.rs"],
 ];
 
 for (const [build, flags] of builds) for (const [which, path] of cases) {
@@ -60,7 +61,7 @@ for (const [build, flags] of builds) for (const [which, path] of cases) {
 /** A writer shown into a writer whose split isn't followed: each `fmt` of
  * `Shown`, written into `Log`, is refused, naming #1652. */
 const refusedWriters: [string, string, string][] = [
-  ["a write_fmt of Arguments made elsewhere", "made elsewhere", 'f.write_fmt(given(format_args!("{}", 1)))'],
+  ["a pointer's fmt given the Formatter", "or the like of a `Shown`", "fmt::Pointer::fmt(&self, f)"],
 ];
 
 test("a writer shown into a writer whose split isn't followed is refused, naming #1652", () => {
@@ -98,46 +99,10 @@ fn main() {
     );
     const compiled = compileJs(file, dir, "2021", false, piecewise);
     if ("js" in compiled) throw new Error(`${name}: compiled`);
-    expect(compiled.error, name).toContain("#1652");
+    expect(compiled.error, name).toContain("which isn't followed for it (#1652)");
+    expect(compiled.error, name).not.toContain("(#1652) yet");
     expect(compiled.error, name).toContain(said);
   }
-}, underLoad(120_000));
-
-// Step 6: an `Arguments` a function returned, given to a function that
-// writes it into a writer, isn't the function that writes into the sink it
-// claims, which its writer's sink would be armed for: refused, naming
-// #1652, not an error where it runs.
-test("an Arguments made elsewhere given to a function that writes it into a writer is refused, naming #1652", () => {
-  const dir = fixture("writer-sink-arguments-refused");
-  const file = join(dir, "given.rs");
-  writeFileSync(
-    file,
-    `use std::fmt::{self, Write};
-struct Log(Vec<String>);
-impl Write for Log {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.0.push(s.to_string());
-        Ok(())
-    }
-}
-fn given(args: fmt::Arguments<'_>) -> fmt::Arguments<'_> {
-    args
-}
-fn log_to(w: &mut Log, args: fmt::Arguments<'_>) -> fmt::Result {
-    w.write_fmt(args)
-}
-fn main() {
-    let mut log = Log(Vec::new());
-    log_to(&mut log, given(format_args!("{}", 1))).unwrap();
-    println!("{:?}", log.0);
-}
-`,
-  );
-  const compiled = compileJs(file, dir, "2021", false, piecewise);
-  if ("js" in compiled) throw new Error("compiled");
-  expect(compiled.error).toContain("an `fmt::Arguments` made elsewhere given to a function that writes it into a writer");
-  expect(compiled.error).toContain("which isn't followed for it (#1652)");
-  expect(compiled.error).not.toContain("(#1652) yet");
 }, underLoad(120_000));
 
 // Only a writer shown into a writer writes through a sink: one the same

@@ -124,4 +124,12 @@ export const mutations: Mutation[] = [
     replace: "            WriteCall::OtherFmt if false => {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "displayed-arguments-refused",
+    breaks: "`Display::fmt(&args, f)` of an `Arguments` in a writer shown into a writer is refused",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "                            _ if arguments && self.arguments_given_as_sink_at(state, 0) => {\n",
+    replace: "                            _ if arguments && false => {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+  },
 ];

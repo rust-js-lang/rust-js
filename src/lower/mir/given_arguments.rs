@@ -202,54 +202,79 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `operand`, an `Arguments` given to what writes it into a
     /// writer a piece at a time, is the function that writes into the sink
-    /// it claims (#1652, step 6): through what it's copied from, a
-    /// `format_args!` the body makes, which `given_to_a_writer` makes so,
-    /// or a parameter of the function being lowered that it writes so
-    /// (`WrittenArguments`), whose every caller gives one.
+    /// it claims (#1652, step 6): through each of what it's copied or lent
+    /// from, a `format_args!` the body makes, which `given_to_a_writer`
+    /// makes so; a parameter of the function being lowered that it writes
+    /// so (`WrittenArguments`), whose every caller gives one; or one kept, a
+    /// field's, a call's result, which only one kept so is
+    /// (`given_to_a_write`).
     pub(super) fn sink_form_given(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> bool {
-        let Some(mut local) = operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local) else {
-            return false;
+        // A constant's, which is made so as what it returns.
+        let Some(place) = operand.place() else {
+            return operand.constant().is_some();
         };
         let recognition = self.recognition();
-        for _ in 0..body.local_decls.len() {
+        // Read of a place, `self.0`, or through a reference, `*args`.
+        let read = |place: Place<'tcx>| place.projection.iter().any(|p| p != mir::ProjectionElem::Deref);
+        let mut sources = vec![place.local];
+        let mut at = 0;
+        while let Some(&local) = sources.get(at) {
+            at += 1;
             if body.local_kind(local) == mir::LocalKind::Arg {
                 let index = local.as_u32() - 1;
-                return self
-                    .krate
-                    .written
-                    .arguments
-                    .marks(&recognition, self.item)
-                    .contains(&index);
+                if !(self.krate.written.arguments.marks(&recognition, self.item)).contains(&index) {
+                    return false;
+                }
+                continue;
             }
-            let made = body.basic_blocks.iter().any(|data| {
-                matches!(&data.terminator().kind, TerminatorKind::Call { func, destination, .. }
-                    if destination.as_local() == Some(local)
-                        && crate::lower::fn_def(func.ty(&body.local_decls, self.tcx))
-                            .and_then(|(id, generic_args)| recognition.classify(id, generic_args))
-                            .is_some_and(|known| matches!(known, Std::FmtNew | Std::FmtStr)))
+            let made = body.basic_blocks.iter().find_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call { func, destination, .. } if destination.as_local() == Some(local) => Some(
+                    crate::lower::fn_def(func.ty(&body.local_decls, self.tcx))
+                        .and_then(|(id, generic_args)| recognition.classify(id, generic_args)),
+                ),
+                _ => None,
             });
-            if made {
-                return arguments_use(&recognition, body, local) == ArgumentsUse::GivenOn;
+            match made {
+                Some(Some(Std::FmtNew | Std::FmtStr)) => {
+                    if arguments_use(&recognition, body, local) != ArgumentsUse::GivenOn {
+                        return false;
+                    }
+                    continue;
+                }
+                // A call's result, `Option::unwrap`'s of what it was kept in.
+                Some(_) => continue,
+                None => {}
             }
-            let assigned: Vec<&Operand<'tcx>> = (body.basic_blocks.iter())
-                .flat_map(|data| data.statements.iter())
-                .filter_map(|statement| match &statement.kind {
-                    StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => match &assign.1 {
-                        Rvalue::Use(from, _) => Some(from),
-                        _ => None,
-                    },
+            let mut assigned = 0;
+            for statement in body.basic_blocks.iter().flat_map(|data| data.statements.iter()) {
+                let StatementKind::Assign(assign) = &statement.kind else {
+                    continue;
+                };
+                if assign.0.as_local() != Some(local) {
+                    continue;
+                }
+                assigned += 1;
+                // Copied, moved, lent, `&args`, `&self.0`, or lent again,
+                // `&*args`, as `Display::fmt(&args, f)` is given it.
+                let from = match &assign.1 {
+                    // A constant's.
+                    Rvalue::Use(Operand::Constant(_), _) => continue,
+                    Rvalue::Use(from, _) => from.place(),
+                    Rvalue::Ref(_, _, from) => Some(*from),
                     _ => None,
-                })
-                .collect();
-            match assigned[..] {
-                [from] => match from.place().filter(|p| p.projection.is_empty()) {
-                    Some(from) => local = from.local,
+                };
+                match from {
+                    Some(from) if read(from) => {}
+                    Some(from) if !sources.contains(&from.local) => sources.push(from.local),
+                    Some(_) => {}
                     None => return false,
-                },
-                _ => return false,
+                }
+            }
+            if assigned == 0 {
+                return false;
             }
         }
-        false
+        true
     }
 
     /// Refuses a call of `callee` that gives a parameter it writes into a

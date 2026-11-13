@@ -249,9 +249,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// second, is the function that writes into the sink it claims
     /// (`sink_form_given`, #1652 step 6).
     pub(super) fn arguments_given_as_sink(&self, state: &State<'_, 'tcx>) -> bool {
+        self.arguments_given_as_sink_at(state, 1)
+    }
+
+    /// Whether the call at `state.at` is given at `index` an `Arguments`
+    /// that writes into the sink it claims (`sink_form_given`).
+    pub(super) fn arguments_given_as_sink_at(&self, state: &State<'_, 'tcx>, index: usize) -> bool {
         match &state.body.basic_blocks[state.at].terminator().kind {
             TerminatorKind::Call { args, .. } => args
-                .get(1)
+                .get(index)
                 .is_some_and(|arg| self.sink_form_given(state.body, &arg.node)),
             _ => false,
         }
@@ -373,7 +379,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         };
                         let ty = generic_args.type_at(0).peel_refs();
                         let value = given.into_iter().next().expect("a `fmt`'s value");
+                        // An `Arguments`' `Display`, `Display::fmt(&args, f)`,
+                        // std's `fmt::write` of it into the `Formatter`'s
+                        // writer, its options unread: the function that
+                        // writes into the sink it claims, armed with this
+                        // one; else refused, as its `write_fmt` is (step 6).
+                        let arguments = kind == Std::FmtDisplay && self.is_lang_adt(ty, LangItem::FormatArguments);
                         let written = match kind {
+                            _ if arguments && self.arguments_given_as_sink_at(state, 0) => {
+                                Some(vec![SinkWrite::Helper("$writingInto", vec![value])])
+                            }
+                            _ if arguments => {
+                                let what = "a `Display::fmt` of a `fmt::Arguments` made elsewhere";
+                                return Err(self.refused_in_a_writer(what, span));
+                            }
                             Std::FmtDebug => {
                                 let pretty = self.writer_pretty().alternate();
                                 self.debug_sink_writes(value, ty, (&options, &pretty), span)?

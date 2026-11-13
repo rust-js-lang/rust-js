@@ -20,7 +20,7 @@ use super::prints::{Prints, shown_by, shown_into_writers};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, pointer_target};
-use crate::lower::{Body, fn_def};
+use crate::lower::{Body, Std, fn_def};
 use rustc_middle::mir;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::adjustment::PointerCoercion;
@@ -386,8 +386,7 @@ pub(super) fn written_arguments<'tcx>(
     if !crate::lower::recognition::writes_piecewise() {
         return found;
     }
-    let is_arguments =
-        |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments));
+    let is_arguments = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments));
     // Of each function, its `Arguments` parameters.
     let params: Vec<(&Body<'tcx>, &mir::Body<'tcx>, Vec<mir::Local>)> = (all_bodies.iter().copied())
         .filter(|body| !tcx.is_closure_like(body.def_id))
@@ -419,7 +418,12 @@ pub(super) fn written_arguments<'tcx>(
 
 /// Whether `local`, an `Arguments` of `body`, is given, as it is or through
 /// what it's copied to, to a parameter a call writes into a writer a piece
-/// at a time (`WrittenArguments::writes`).
+/// at a time (`WrittenArguments::writes`); or is kept where a write may
+/// find it later, past what's followed: a field, a closure's capture, a
+/// value returned, or a generic function's parameter, `Some(args)`,
+/// `Box::new(args)`. What's read of a place, of a call's result, is then
+/// the function that writes into the sink it claims (`sink_form_given`),
+/// so a `Display::fmt(&self.0, f)` writes it a piece at a time.
 pub(in crate::lower) fn given_to_a_write<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     marks: &WrittenArguments,
@@ -428,29 +432,50 @@ pub(in crate::lower) fn given_to_a_write<'tcx>(
 ) -> bool {
     use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
     let tcx = recognition.tcx;
+    let piecewise = crate::lower::recognition::writes_piecewise();
+    // Made as what's returned, a function's or a constant's.
+    if piecewise && local == mir::RETURN_PLACE {
+        return true;
+    }
     let mut holders = vec![local];
     let mut at = 0;
     while let Some(&holder) = holders.get(at) {
         at += 1;
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
+                // Copied, moved, lent, `&args` of a `Display::fmt`, or lent
+                // again, `&*args`.
                 if let StatementKind::Assign(assign) = &statement.kind
-                    && let Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) = &assign.1
+                    && let Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) | Rvalue::Ref(_, _, from) =
+                        &assign.1
                     && from.local == holder
-                    && from.projection.is_empty()
+                    && (from.projection.is_empty()
+                        || matches!(assign.1, Rvalue::Ref(..)) && from.projection[..] == [mir::ProjectionElem::Deref])
                     && let Some(to) = assign.0.as_local()
                     && !holders.contains(&to)
                 {
                     holders.push(to);
                 }
+                // Kept: in a field, a capture, or what's returned.
+                if piecewise
+                    && let StatementKind::Assign(assign) = &statement.kind
+                    && match &assign.1 {
+                        Rvalue::Aggregate(_, operands) => operands.iter().any(|operand| is_holder(operand, holder)),
+                        Rvalue::Use(operand, _) => {
+                            is_holder(operand, holder) && (assign.0.as_local()).is_none_or(|to| to == mir::RETURN_PLACE)
+                        }
+                        _ => false,
+                    }
+                {
+                    return true;
+                }
             }
             if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some(callee) = fn_def(func.ty(&body.local_decls, tcx))
                 && (args.iter().enumerate()).any(|(i, arg)| {
-                    arg.node
-                        .place()
-                        .is_some_and(|p| p.local == holder && p.projection.is_empty())
-                        && marks.writes(recognition, callee, i)
+                    is_holder(&arg.node, holder)
+                        && (marks.writes(recognition, callee, i)
+                            || piecewise && kept_by_a_generic(recognition, callee, i))
                 })
             {
                 return true;
@@ -458,6 +483,32 @@ pub(in crate::lower) fn given_to_a_write<'tcx>(
         }
     }
     false
+}
+
+/// Whether `operand` is `holder` itself, copied or moved.
+fn is_holder(operand: &mir::Operand<'_>, holder: mir::Local) -> bool {
+    operand
+        .place()
+        .is_some_and(|p| p.local == holder && p.projection.is_empty())
+}
+
+/// Whether `callee`'s parameter `index` is of its generic parameter's type,
+/// `Box::new(args)`, `v.push(args)`, which may keep what it's given, or
+/// write it: a trait's method of `Self`, `Display::fmt(&args, f)`, std's
+/// `fmt::write` of it into the `Formatter`'s writer, strum's. Not of
+/// `Arguments` itself, `_print(args)`, a function of the crate's whose
+/// writes `WrittenArguments` follows; nor a placeholder's `Argument`,
+/// `Argument::new_display(&args)`, which keeps it only to format it there.
+fn kept_by_a_generic<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    (callee, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+    index: usize,
+) -> bool {
+    let placeholder = matches!(
+        recognition.classify(callee, generic_args),
+        Some(Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer)
+    );
+    !placeholder && !crate::lower::mir::arguments_use::std_formats_param(recognition, callee, index)
 }
 
 /// `recognition` asked within `body`, its generic parameters its own, which
