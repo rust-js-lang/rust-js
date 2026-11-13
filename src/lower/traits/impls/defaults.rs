@@ -199,6 +199,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|i| {
                 let forms = forms.as_ref()?;
                 let made = forms.unboxed[i] > 0
+                    || forms.rebound[i].is_some()
                     || (forms.within[i].as_ref())
                         .is_some_and(|within| within.toward_impl(&Expr::undefined()).is_some());
                 let receiver = || {
@@ -236,6 +237,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut value = Expr::var(&given);
             for _ in 0..forms.unboxed[i] {
                 value = Expr::held(value);
+            }
+            if let Some(crossing) = forms.rebound[i] {
+                value = self.form_back(crate::lower::generic_facts::Form::HeldBox, crossing, value);
             }
             if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.toward_impl(&value)) {
                 value = made;

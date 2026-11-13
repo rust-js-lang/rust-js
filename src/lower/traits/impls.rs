@@ -12,6 +12,12 @@ use crate::lower::mut_refs::{Within, adapted_part};
 struct EntryForms<'tcx> {
     /// Of each parameter, how many boxes' `value` it's taken out of.
     unboxed: Vec<usize>,
+    /// Of each parameter generic code gives as its box of an in-place cell,
+    /// a `&mut Self` of `Self = &mut Bag`, which the method takes as a box
+    /// of the `&mut` itself: given as its caller holds it, a box whose
+    /// write repoints the `&mut`, not one that writes the `Bag` in place
+    /// (`Form::HeldBox`'s, #1732). Its `unboxed` is none.
+    rebound: Vec<Option<crate::lower::generic_facts::Crossing<'tcx>>>,
     /// Of each parameter, what's within it past its own `&mut` (#686).
     within: Vec<Option<Within<'tcx>>>,
     /// The result's own `&mut` is made generic code's box, an in-place
@@ -561,6 +567,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for _ in 0..forms.unboxed[i] {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
+                if let Some(crossing) = forms.rebound[i] {
+                    let given = std::mem::replace(value, Expr::undefined());
+                    *value = self.form_back(crate::lower::generic_facts::Form::HeldBox, crossing, given);
+                }
                 if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.toward_impl(value)) {
                     *value = made;
                 }
@@ -1019,10 +1029,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => self.param_is_box(method, i),
         };
+        let trait_inputs = (self.tcx.fn_sig(item).instantiate_identity())
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .to_vec();
+        let rebound: Vec<_> = (0..count)
+            .map(|i| {
+                let declared = *trait_inputs.get(i)?;
+                let crossing = (item, declared, self.instantiated(declared, args));
+                (takes_box(i) && self.form_differs(crate::lower::generic_facts::Form::HeldBox, crossing))
+                    .then_some(crossing)
+            })
+            .collect();
         let unboxed = (0..count)
             .map(|i| {
                 let given = usize::from(self.param_is_box(item, i)) + usize::from(i == 0 && self_held);
-                given.saturating_sub(usize::from(takes_box(i)))
+                match rebound[i] {
+                    Some(_) => 0,
+                    None => given.saturating_sub(usize::from(takes_box(i))),
+                }
             })
             .collect();
         // And a `&mut` within what it takes past its own, `Option<&mut
@@ -1058,6 +1084,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         EntryForms {
             unboxed,
+            rebound,
             within: within_params,
             result_cell,
             result_within: within(Some(&declared_sig.output()), Some(&impl_sig.output())),

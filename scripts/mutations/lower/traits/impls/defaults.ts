@@ -168,4 +168,12 @@ export const mutations: Mutation[] = [
     replace: "            None if false => {\n",
     tests: ["test/library-classes.test.ts", "-t", "on the prototype"],
   },
+  {
+    name: "copied-default-rebound-self-ignored",
+    breaks: "a trait's default copied into an impl for `&mut Bag`, `*self = Self::fresh()`, is given generic code's box of the cell as it is, not as its caller holds it (#1732)",
+    file: "src/lower/traits/impls/defaults.rs",
+    find: "            if let Some(crossing) = forms.rebound[i] {\n",
+    replace: "            if let Some(crossing) = forms.rebound[i].filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_impl_replaced_through_generic_code.rs$"],
+  },
 ];

@@ -968,3 +968,26 @@ native Rust in both builds: a lender stepped from its back and its front,
 a lender bound to a local, a closure and a `&mut` to one called through
 the pair, and a `Vec`'s box as before; #1414's cases unchanged. Mutation
 `dyn-pair-of-a-lent-iterator-boxed` (`lower/traits/dyns.ts`).
+
+## Amendment: a method that repoints its `&mut` (2026-11-14, #1732)
+
+Generic code holds a `T = &mut Bag` as an in-place cell of the `Bag`,
+`$cellOf(bag)`, and a `&mut T` as a box of that cell. An impl for `&mut
+Bag` whose method takes its `&mut self`, a `&mut &mut Bag`, as a box was
+given, by its dictionary's entry, that box's `value`: the in-place cell
+itself. Its `*self = r`, which in Rust points the `&mut` at another `Bag`,
+was then the in-place cell's write, `$assign`, which wrote `r`'s `Bag` over
+the one it pointed at: native's `bag.n` 0, the JS's 102, a wrong answer
+(P0). Now such a parameter is given as its caller holds it, through
+`Form::HeldBox`'s `form_back`, `$heldObjectOf(arg0)`: a box whose `value`
+is the `Bag` and whose write puts the new `&mut`'s cell in generic code's
+box. That's of each parameter whose trait type is a `&mut` to what generic
+code holds in a box and which the method takes as a box (`entry_forms`'
+`rebound`), the impl's own method's entry and a copied default's alike.
+Held by corpus `mut_impl_replaced_through_generic_code`, two traits, an
+impl's method and a copied default, native-compared; mutations
+`rebound-self-taken-apart`, `rebound-self-given-as-generic-box`,
+`rebound-self-unboxed-too` and `copied-default-rebound-self-ignored`,
+caught. `mut_ref_to_object_impl`'s entry moves from `arg0.value` to
+`$heldObjectOf(arg0)`, the same reads; that one never writes `*self` whole,
+and narrowing the form to methods that may is #1733 (P3).

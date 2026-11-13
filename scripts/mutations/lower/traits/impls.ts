@@ -669,4 +669,28 @@ export const mutations: Mutation[] = [
     replace: "            if is_writer_default(self.tcx, item.def_id) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "rebound-self-taken-apart",
+    breaks: "an impl for `&mut Bag` whose method replaces `*self`, called through generic code, is given generic code's in-place cell as its `&mut &mut Bag`, and writes the leaked `Bag` over the one it pointed at (#1732)",
+    file: "src/lower/traits/impls.rs",
+    find: "                (takes_box(i) && self.form_differs(crate::lower::generic_facts::Form::HeldBox, crossing))\n",
+    replace: "                (false && self.form_differs(crate::lower::generic_facts::Form::HeldBox, crossing))\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_impl_replaced_through_generic_code.rs$"],
+  },
+  {
+    name: "rebound-self-given-as-generic-box",
+    breaks: "an impl's own method for `&mut Bag` that takes its `&mut &mut Bag` as a box is given generic code's box of the cell as it is, whose `value` is no `Bag` (#1732)",
+    file: "src/lower/traits/impls.rs",
+    find: "                if let Some(crossing) = forms.rebound[i] {\n",
+    replace: "                if let Some(crossing) = forms.rebound[i].filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_impl_replaced_through_generic_code.rs$"],
+  },
+  {
+    name: "rebound-self-unboxed-too",
+    breaks: "a parameter given back as its caller holds it, `$heldObjectOf`, is also taken out of a box first, so it's given the wrong one (#1732)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    Some(_) => 0,\n",
+    replace: "                    Some(_) => 1,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_impl_replaced_through_generic_code.rs$"],
+  },
 ];
