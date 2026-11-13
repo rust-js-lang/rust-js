@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
       "a line comment after an argument promoted to a constant, `&[\"\"], // path`, whose JS the map places only at its `]`, is after the call's `);`, not after `[\"\"],` (rd525)",
     file: "src/to_oxc/trailing.rs",
     find: "        let end = (before.or_else(closed).or_else(argument))\n",
-    replace: "        let end = before.or(None::<(u32, u32)>.filter(|_| { let _ = closed; false })).or_else(argument)\n",
+    replace: "        let end = before.or(None::<(u32, MapCol)>.filter(|_| { let _ = closed; false })).or_else(argument)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a promoted array argument"],
   },
   {
