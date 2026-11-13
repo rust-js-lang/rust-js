@@ -243,3 +243,18 @@ The survivor `library-params-never-drop` is caught by crate pair
 destructor of its own whose generic code holds an associated type's value,
 reached through a function pointer it gives out, which its consumer can't
 compile its own of, so the library's own JS drops it (ADR 0163).
+
+## Amendment (2026-11-13, #1650): a destructor made only in generic code still drops
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. Whether any of a crate's values drops something,
+`drops_any`, which gives generic code no drops where none does, asked only
+of types with no type parameter. A crate whose only values with a
+destructor are made in generic code, `Token<I>` of a `Drop` impl for
+`Token<T>` in `pairs<I>`, was taken to drop nothing, so a `Chain`'s
+`parse(self, ..)` that returned early by `?` dropped the `Token` its `self.1`
+held never. Now a value of a type of generic code counts where it holds a
+struct or an enum of the program's own with a destructor, which runs
+whatever its parameters are. No snapshot moves. Corpus case
+generic_struct_with_a_destructor_dropped_on_an_early_return against native
+Rust; mutation `generic-destructors-unseen` (`analysis/drops.ts`).

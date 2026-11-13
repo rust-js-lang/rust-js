@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
+    find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     replace: "    if false {",
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
     snapshots: true,
@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
-    replace: "    if !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {",
+    find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
+    replace: "    if !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     tests: ["test/crates.test.ts", "-t", "impl_drops"],
   },
   {
@@ -152,8 +152,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer none of whose own values drops gives generic code no drops, though a library's own code gives the library's generic impl's method it compiles, `Bag`'s `extend`, a value that drops: `drop Up 3` never printed (#1591)",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {\n",
-    replace: "    if !library && !drops_any(all_bodies, &runs) {\n",
+    find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {\n",
+    replace: "    if !library && !drops_any(tcx, all_bodies, &runs) {\n",
     tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
+  },
+  {
+    name: "generic-destructors-unseen",
+    breaks: "a crate whose only values with a destructor are made in generic code is taken to drop nothing, so that code is given no drops and they leak (#1650)",
+    file: "src/lower/analysis/drops.rs",
+    find: "                    true => own_destructor(expr.ty),\n",
+    replace: "                    true => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_struct_with_a_destructor_dropped_on_an_early_return.rs$"],
   },
 ];

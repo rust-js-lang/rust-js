@@ -12,14 +12,30 @@ use rustc_span::def_id::DefId;
 
 /// Whether any value of the crate's drops something when it's dropped, a
 /// destructor, a counted `Rc`'s count or a guard's borrow, as `runs` says
-/// (ADR 0451): a library's contract says it of its own (#1591).
-pub(super) fn drops_any<'tcx>(all_bodies: &[&Body<'tcx>], runs: impl Fn(Ty<'tcx>, DefId) -> bool) -> bool {
+/// (ADR 0451): a library's contract says it of its own (#1591). And of a
+/// value of a type of generic code's, one holding a struct or an enum of
+/// the program's own with a destructor, `Token<I>` of a `Drop` impl for
+/// `Token<T>`, which runs whatever its parameters are: a crate whose only
+/// such values are made in generic code drops them too (#1650).
+pub(super) fn drops_any<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    runs: impl Fn(Ty<'tcx>, DefId) -> bool,
+) -> bool {
     let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
+    let own_destructor = |ty: Ty<'tcx>| {
+        ty.walk()
+            .filter_map(|part| part.as_type())
+            .any(|part| matches!(part.kind(), ty::Adt(adt, _) if !crate::lower::recognition::is_std_crate(tcx, adt.did()) && adt.has_dtor(tcx)))
+    };
     all_bodies.iter().any(|body| {
-        body.thir
-            .exprs
-            .iter()
-            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id))
+        body.thir.exprs.iter().any(|expr| {
+            asked.insert(expr.ty)
+                && match expr.ty.has_param() {
+                    true => own_destructor(expr.ty),
+                    false => runs(expr.ty, body.def_id),
+                }
+        })
     })
 }
 
@@ -43,7 +59,7 @@ pub(super) fn drop_params<'tcx>(
     // nothing calls (ADR 0451). Nor do its libraries' values: the generic
     // impls' methods of a library's it compiles are given that library's
     // own, `Extend::extend` of its `Bag` given its `Up` by its `up` (#1591).
-    if !library && !drops_any(all_bodies, &runs) && !foreign.libraries_drop() {
+    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {
         return IndexMap::default();
     }
     // A trait impl's methods are called through its dictionary, or resolved

@@ -990,7 +990,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let may_run = runs;
     let runs = runs_settled;
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
-    let drops_any = drops::drops_any(all_bodies, runs);
+    let drops_any = drops::drops_any(tcx, all_bodies, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     // The functions JS calls, whose JS takes their type parameters as JS
