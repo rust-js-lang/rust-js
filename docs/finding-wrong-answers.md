@@ -126,6 +126,19 @@ say.
     normalization gave, not only the one the analysis tracks. Shadow mode
     found it because it records both directions: checks THIR drops that
     MIR can't prove, and checks MIR proves that THIR keeps.
+11. **A relation carried through arithmetic must hold where it wraps.**
+    The MIR intervals carried `i < len` to `i - 1 < len`, true for every
+    `i` at least 1. But at `i = 0`, `i - 1` wraps to `usize::MAX`, past
+    every length. Native Rust panics there, while the JS, its check left
+    out, read `p[4294967295]` and got `undefined` (#1672 M3, ADR 1137). An
+    interval analysis knows each value's range; a relation between two
+    values is a second fact, and it needs the first one: `i - c` keeps
+    `i`'s relations only where `i` is known at least `c`. This was found
+    by switching MIR to decide and writing the case that should fail
+    (`index_one_below_a_value_that_may_be_zero`), not by the shadow: the
+    corpus had no case where `i` may be 0. Before a rule of relations
+    decides anything, write the case at the edge where its arithmetic
+    wraps.
 
 ## Nets still to build
 
