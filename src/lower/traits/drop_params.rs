@@ -358,11 +358,11 @@ fn drop_items_of<'tcx>(
         let Some(bound) = clause.as_trait_clause().and_then(|b| b.no_bound_vars()) else {
             continue;
         };
-        // As the bounds here say it is, as the body has it: an impl's
-        // `Self::Item`, `<Wrapper<I> as Iterator>::Item`, is `<I as
-        // Iterator>::Item`, a slot (#803, #1080).
-        let self_ty = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound.self_ty())))
-            .unwrap_or(bound.self_ty());
+        // As the clause names it: an impl's method's where clause on its
+        // `Self::Item`, `<Wrapper<I> as Iterator>::Item: IntoIterator`, is
+        // no slot of the impl's, whose items' iterator the bound's own
+        // dictionary drops, `$dropIntoIter` (ADR 0451, amended).
+        let self_ty = bound.self_ty();
         let slotted = matches!(self_ty.kind(), ty::Param(_))
             || (alias_of(self_ty).is_some() && items.iter().any(|&t| alias_of(t) == alias_of(self_ty)));
         if !slotted {

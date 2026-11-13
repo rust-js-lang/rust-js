@@ -213,3 +213,33 @@ against native Rust. Mutations `libraries-drop-unasked` (`drops.ts`),
 `a_contract_without_drops_any_may_drop`), caught;
 `drops-without-destructors` and `library-drops-skipped` refitted.
 
+## Amendment: an impl's items' iterator is dropped by one route, its bound's dictionary (2026-11-13)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, what's printed is
+native's either way.
+
+An impl's method whose where clause bounds its `Self::Item`, `<Wrapper<I>
+as Iterator>::Item: IntoIterator`, drops what each of its items' iterators
+holds. It had two routes to that drop: the clause's self type normalized
+to the impl's `<I as Iterator>::Item`, a slot of the impl's, which gave the
+impl two more drop parameters, `dropIItemItem` and `dropIItemIntoIter`
+(#1080); and the bound's own dictionary's entry, `$dropIntoIter`, which
+`item_drop` reads (ADR 0178). The mutation that took the first route out,
+`bound-self-unnormalized`, survived: every case dropped the same by the
+second. The first is removed (`drop_items_of` takes the clause's self type
+as it's named), so the dictionary's `$dropIntoIter` is the one route,
+`WrapperItemIntoIterator.$dropIntoIter?.(held.iter)`, and the impl takes
+the drops of its own parameters alone.
+
+`impl_method_drops_its_items_iterator.rs` and
+`default_of_a_non_blanket_impl_steps_its_self.rs`, re-blessed, and the
+crate pair `library_impl_method_where_clause` print native's drops, in
+both builds. Mutation `item-drop-of-a-dictionary-unread`, the dictionary's
+drop unread, is caught by the first; `bound-self-unnormalized` is removed
+with its route.
+
+The survivor `library-params-never-drop` is caught by crate pair
+`library_without_destructors_drops_what_a_pointer_holds`: a library with no
+destructor of its own whose generic code holds an associated type's value,
+reached through a function pointer it gives out, which its consumer can't
+compile its own of, so the library's own JS drops it (ADR 0163).

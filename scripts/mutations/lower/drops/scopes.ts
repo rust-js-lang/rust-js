@@ -48,4 +48,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "drop"],
   },
+  {
+    name: "item-drop-of-a-dictionary-unread",
+    breaks: "an associated type's drop isn't read of its impl's dictionary, so an impl's method holding its items' iterators, by a where clause `Self::Item: IntoIterator`, never drops what each holds: `drop 6` never printed (ADR 0451, amended)",
+    file: "src/lower/drops/scopes.rs",
+    find: "        Some(Expr::member(dictionary, item_drop_key(self.tcx, item)))\n",
+    replace: "        let _ = (dictionary, item);\n        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],
+  },
 ];

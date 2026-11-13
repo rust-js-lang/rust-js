@@ -36,39 +36,22 @@ function countdownIterator_next(countdown) {
 
 const $wrapperKeeping = new WeakMap();
 
-function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
-  return $traitImpl(
-    $wrapperKeeping,
-    [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
-    () => ({
-      looped(wrapper) {
-        let n = 0;
-        const iter = wrapper;
-        while (true) {
-          let tmp;
-          try {
-            tmp = wrapperIterator_next(iter, IIterator, dropI, dropIItem);
-          } catch (error) {
-            $cleanup(() => {
-              dropI?.(iter[0]);
-            }, error);
-            throw error;
-          }
-          if (tmp == null) {
-            try {
-              if (tmp != null) {
-                dropIItem?.($someValue(tmp));
-              }
-            } catch (error) {
-              $cleanup(() => {
-                dropI?.(iter[0]);
-              }, error);
-              throw error;
-            }
+function wrapperKeeping(IIterator, dropI, dropIItem) {
+  return $traitImpl($wrapperKeeping, [IIterator, dropI, dropIItem], () => ({
+    looped(wrapper) {
+      let n = 0;
+      const iter = wrapper;
+      while (true) {
+        let tmp;
+        try {
+          tmp = wrapperIterator_next(iter, IIterator, dropI, dropIItem);
+        } catch (error) {
+          $cleanup(() => {
             dropI?.(iter[0]);
-            break;
-          }
-          n = (n + 1) >>> 0;
+          }, error);
+          throw error;
+        }
+        if (tmp == null) {
           try {
             if (tmp != null) {
               dropIItem?.($someValue(tmp));
@@ -79,38 +62,26 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
             }, error);
             throw error;
           }
+          dropI?.(iter[0]);
+          break;
         }
-        return n;
-      },
-      collected(wrapper) {
-        const all = $collectDropping(
-          $closing(
-            $iterator(
-              wrapper,
-              (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
-              true,
-            ),
-            (it) => {
-              dropI?.(it.of[0]);
-            },
-          ).map((value) => $some(value)),
-          (option) => {
-            if (option != null) {
-              dropIItem?.($someValue(option));
-            }
-          },
-          true,
-        );
-        const result = all.length;
-        $dropItems(all, (item) => {
-          if (item != null) {
-            dropIItem?.($someValue(item));
+        n = (n + 1) >>> 0;
+        try {
+          if (tmp != null) {
+            dropIItem?.($someValue(tmp));
           }
-        });
-        return result;
-      },
-      counted(wrapper) {
-        return $closing(
+        } catch (error) {
+          $cleanup(() => {
+            dropI?.(iter[0]);
+          }, error);
+          throw error;
+        }
+      }
+      return n;
+    },
+    collected(wrapper) {
+      const all = $collectDropping(
+        $closing(
           $iterator(
             wrapper,
             (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
@@ -119,48 +90,73 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
           (it) => {
             dropI?.(it.of[0]);
           },
-        ).reduce((n, item) => {
-          dropIItem?.(item);
-          return n + 1;
-        }, 0);
-      },
-      stepped(wrapper) {
-        const next = wrapperIterator_next(wrapper, IIterator, dropI, dropIItem);
-        if (next != null) {
-          dropIItem?.($someValue(next));
+        ).map((value) => $some(value)),
+        (option) => {
+          if (option != null) {
+            dropIItem?.($someValue(option));
+          }
+        },
+        true,
+      );
+      const result = all.length;
+      $dropItems(all, (item) => {
+        if (item != null) {
+          dropIItem?.($someValue(item));
         }
-        return wrapperIterator_next(wrapper, IIterator, dropI, dropIItem);
-      },
-      held(wrapper, SelfItemIntoIterator) {
-        const all = $collectDropping(
-          $closing(
-            $iterator(
-              wrapper,
-              (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
-              true,
-            ),
-            (it) => {
-              dropI?.(it.of[0]);
-            },
-          ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
-          (held) => {
-            console.log("drop held");
-            dropIItemIntoIter?.(held.iter);
-          },
+      });
+      return result;
+    },
+    counted(wrapper) {
+      return $closing(
+        $iterator(
+          wrapper,
+          (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
           true,
-        );
-        const result = all.length;
-        $dropItems(all, (item) => {
+        ),
+        (it) => {
+          dropI?.(it.of[0]);
+        },
+      ).reduce((n, item) => {
+        dropIItem?.(item);
+        return n + 1;
+      }, 0);
+    },
+    stepped(wrapper) {
+      const next = wrapperIterator_next(wrapper, IIterator, dropI, dropIItem);
+      if (next != null) {
+        dropIItem?.($someValue(next));
+      }
+      return wrapperIterator_next(wrapper, IIterator, dropI, dropIItem);
+    },
+    held(wrapper, SelfItemIntoIterator) {
+      const all = $collectDropping(
+        $closing(
+          $iterator(
+            wrapper,
+            (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
+            true,
+          ),
+          (it) => {
+            dropI?.(it.of[0]);
+          },
+        ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
+        (held) => {
           console.log("drop held");
-          dropIItemIntoIter?.(item.iter);
-        });
-        return result;
-      },
-      $drop(wrapper) {
-        dropI?.(wrapper[0]);
-      },
-    }),
-  );
+          SelfItemIntoIterator.$dropIntoIter?.(held.iter);
+        },
+        true,
+      );
+      const result = all.length;
+      $dropItems(all, (item) => {
+        console.log("drop held");
+        SelfItemIntoIterator.$dropIntoIter?.(item.iter);
+      });
+      return result;
+    },
+    $drop(wrapper) {
+      dropI?.(wrapper[0]);
+    },
+  }));
 }
 
 function pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem) {
@@ -169,51 +165,17 @@ function pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem) {
 
 const $pairedKeeping = new WeakMap();
 
-function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropIItemIntoIter) {
-  return $traitImpl(
-    $pairedKeeping,
-    [IIterator, dropI, dropU, dropIItem, dropIItemItem, dropIItemIntoIter],
-    () => ({
-      looped(paired) {
-        let n = 0;
-        const iter = paired;
-        while (true) {
-          let tmp;
-          try {
-            tmp = pairedIterator_next(iter, IIterator, dropI, dropU, dropIItem);
-          } catch (error) {
-            $cleanup(() => {
-              try {
-                dropI?.(iter[0]);
-              } catch (error) {
-                $cleanup(() => {
-                  dropU?.(iter[1]);
-                }, error);
-                throw error;
-              }
-              dropU?.(iter[1]);
-            }, error);
-            throw error;
-          }
-          if (tmp == null) {
-            try {
-              if (tmp != null) {
-                dropIItem?.($someValue(tmp));
-              }
-            } catch (error) {
-              $cleanup(() => {
-                try {
-                  dropI?.(iter[0]);
-                } catch (error) {
-                  $cleanup(() => {
-                    dropU?.(iter[1]);
-                  }, error);
-                  throw error;
-                }
-                dropU?.(iter[1]);
-              }, error);
-              throw error;
-            }
+function pairedKeeping(IIterator, dropI, dropU, dropIItem) {
+  return $traitImpl($pairedKeeping, [IIterator, dropI, dropU, dropIItem], () => ({
+    looped(paired) {
+      let n = 0;
+      const iter = paired;
+      while (true) {
+        let tmp;
+        try {
+          tmp = pairedIterator_next(iter, IIterator, dropI, dropU, dropIItem);
+        } catch (error) {
+          $cleanup(() => {
             try {
               dropI?.(iter[0]);
             } catch (error) {
@@ -223,9 +185,10 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               throw error;
             }
             dropU?.(iter[1]);
-            break;
-          }
-          n = (n + 1) >>> 0;
+          }, error);
+          throw error;
+        }
+        if (tmp == null) {
           try {
             if (tmp != null) {
               dropIItem?.($someValue(tmp));
@@ -244,46 +207,42 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             }, error);
             throw error;
           }
-        }
-        return n;
-      },
-      collected(paired) {
-        const all = $collectDropping(
-          $closing(
-            $iterator(
-              paired,
-              (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
-              true,
-            ),
-            (it) => {
-              try {
-                dropI?.(it.of[0]);
-              } catch (error) {
-                $cleanup(() => {
-                  dropU?.(it.of[1]);
-                }, error);
-                throw error;
-              }
-              dropU?.(it.of[1]);
-            },
-          ).map((value) => $some(value)),
-          (option) => {
-            if (option != null) {
-              dropIItem?.($someValue(option));
-            }
-          },
-          true,
-        );
-        const result = all.length;
-        $dropItems(all, (item) => {
-          if (item != null) {
-            dropIItem?.($someValue(item));
+          try {
+            dropI?.(iter[0]);
+          } catch (error) {
+            $cleanup(() => {
+              dropU?.(iter[1]);
+            }, error);
+            throw error;
           }
-        });
-        return result;
-      },
-      counted(paired) {
-        return $closing(
+          dropU?.(iter[1]);
+          break;
+        }
+        n = (n + 1) >>> 0;
+        try {
+          if (tmp != null) {
+            dropIItem?.($someValue(tmp));
+          }
+        } catch (error) {
+          $cleanup(() => {
+            try {
+              dropI?.(iter[0]);
+            } catch (error) {
+              $cleanup(() => {
+                dropU?.(iter[1]);
+              }, error);
+              throw error;
+            }
+            dropU?.(iter[1]);
+          }, error);
+          throw error;
+        }
+      }
+      return n;
+    },
+    collected(paired) {
+      const all = $collectDropping(
+        $closing(
           $iterator(
             paired,
             (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
@@ -300,64 +259,97 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             }
             dropU?.(it.of[1]);
           },
-        ).reduce((n, item) => {
-          dropIItem?.(item);
-          return n + 1;
-        }, 0);
-      },
-      stepped(paired) {
-        const next = pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem);
-        if (next != null) {
-          dropIItem?.($someValue(next));
+        ).map((value) => $some(value)),
+        (option) => {
+          if (option != null) {
+            dropIItem?.($someValue(option));
+          }
+        },
+        true,
+      );
+      const result = all.length;
+      $dropItems(all, (item) => {
+        if (item != null) {
+          dropIItem?.($someValue(item));
         }
-        return pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem);
-      },
-      held(paired, SelfItemIntoIterator) {
-        const all = $collectDropping(
-          $closing(
-            $iterator(
-              paired,
-              (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
-              true,
-            ),
-            (it) => {
-              try {
-                dropI?.(it.of[0]);
-              } catch (error) {
-                $cleanup(() => {
-                  dropU?.(it.of[1]);
-                }, error);
-                throw error;
-              }
-              dropU?.(it.of[1]);
-            },
-          ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
-          (held) => {
-            console.log("drop held");
-            dropIItemIntoIter?.(held.iter);
-          },
+      });
+      return result;
+    },
+    counted(paired) {
+      return $closing(
+        $iterator(
+          paired,
+          (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
           true,
-        );
-        const result = all.length;
-        $dropItems(all, (item) => {
+        ),
+        (it) => {
+          try {
+            dropI?.(it.of[0]);
+          } catch (error) {
+            $cleanup(() => {
+              dropU?.(it.of[1]);
+            }, error);
+            throw error;
+          }
+          dropU?.(it.of[1]);
+        },
+      ).reduce((n, item) => {
+        dropIItem?.(item);
+        return n + 1;
+      }, 0);
+    },
+    stepped(paired) {
+      const next = pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem);
+      if (next != null) {
+        dropIItem?.($someValue(next));
+      }
+      return pairedIterator_next(paired, IIterator, dropI, dropU, dropIItem);
+    },
+    held(paired, SelfItemIntoIterator) {
+      const all = $collectDropping(
+        $closing(
+          $iterator(
+            paired,
+            (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
+            true,
+          ),
+          (it) => {
+            try {
+              dropI?.(it.of[0]);
+            } catch (error) {
+              $cleanup(() => {
+                dropU?.(it.of[1]);
+              }, error);
+              throw error;
+            }
+            dropU?.(it.of[1]);
+          },
+        ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
+        (held) => {
           console.log("drop held");
-          dropIItemIntoIter?.(item.iter);
-        });
-        return result;
-      },
-      $drop(paired) {
-        try {
-          dropI?.(paired[0]);
-        } catch (error) {
-          $cleanup(() => {
-            dropU?.(paired[1]);
-          }, error);
-          throw error;
-        }
-        dropU?.(paired[1]);
-      },
-    }),
-  );
+          SelfItemIntoIterator.$dropIntoIter?.(held.iter);
+        },
+        true,
+      );
+      const result = all.length;
+      $dropItems(all, (item) => {
+        console.log("drop held");
+        SelfItemIntoIterator.$dropIntoIter?.(item.iter);
+      });
+      return result;
+    },
+    $drop(paired) {
+      try {
+        dropI?.(paired[0]);
+      } catch (error) {
+        $cleanup(() => {
+          dropU?.(paired[1]);
+        }, error);
+        throw error;
+      }
+      dropU?.(paired[1]);
+    },
+  }));
 }
 
 // Through generic code too.
@@ -413,8 +405,6 @@ function main() {
           dDrop_drop(option);
         }
       },
-      dDrop_drop,
-      $dropEach(dDrop_drop),
     ).held([$iter([[6n], undefined])], {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),

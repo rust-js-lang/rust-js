@@ -34,37 +34,17 @@ function wrapperIterator_next(wrapper, IIterator, dropI, dropIItem) {
 
 const $wrapperKeeping = new WeakMap();
 
-function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
-  return $traitImpl(
-    $wrapperKeeping,
-    [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
-    () => ({
-      held(arg0, WrapperItemIntoIterator) {
-        return wrapperKeeping_held(
-          arg0,
-          IIterator,
-          WrapperItemIntoIterator,
-          dropI,
-          dropIItem,
-          dropIItemItem,
-          dropIItemIntoIter,
-        );
-      },
-      $drop(wrapper) {
-        dropI?.(wrapper[0]);
-      },
-    }),
-  );
+function wrapperKeeping(IIterator, dropI, dropIItem) {
+  return $traitImpl($wrapperKeeping, [IIterator, dropI, dropIItem], () => ({
+    held(arg0, WrapperItemIntoIterator) {
+      return wrapperKeeping_held(arg0, IIterator, WrapperItemIntoIterator, dropI, dropIItem);
+    },
+    $drop(wrapper) {
+      dropI?.(wrapper[0]);
+    },
+  }));
 }
-function wrapperKeeping_held(
-  wrapper,
-  IIterator,
-  WrapperItemIntoIterator,
-  dropI,
-  dropIItem,
-  dropIItemItem,
-  dropIItemIntoIter,
-) {
+function wrapperKeeping_held(wrapper, IIterator, WrapperItemIntoIterator, dropI, dropIItem) {
   const all = $collectDropping(
     $closing(
       $iterator(
@@ -78,14 +58,14 @@ function wrapperKeeping_held(
     ).map((i) => ({ iter: $held(WrapperItemIntoIterator.intoIter(i)) })),
     (held) => {
       console.log("drop held");
-      dropIItemIntoIter?.(held.iter);
+      WrapperItemIntoIterator.$dropIntoIter?.(held.iter);
     },
     true,
   );
   const result = all.length;
   $dropItems(all, (item) => {
     console.log("drop held");
-    dropIItemIntoIter?.(item.iter);
+    WrapperItemIntoIterator.$dropIntoIter?.(item.iter);
   });
   return result;
 }
@@ -112,24 +92,16 @@ function main() {
           dDrop_drop(option);
         }
       },
-      dDrop_drop,
-      $dropEach(dDrop_drop),
     )}`,
   );
   console.log(
     `${heldThrough(
       [[7n]],
-      wrapperKeeping(
-        { next: countdownIterator_next },
-        undefined,
-        (option) => {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        },
-        dDrop_drop,
-        $dropEach(dDrop_drop),
-      ),
+      wrapperKeeping({ next: countdownIterator_next }, undefined, (option) => {
+        if (option != null) {
+          dDrop_drop(option);
+        }
+      }),
       intoIterator,
     )}`,
   );
