@@ -311,3 +311,37 @@ An integer's bytes read or written as a float, byteorder's `*(&int as
 `$floatToBits`. Case C of ADR 0262: what was refused now runs as Rust's.
 Corpus case pointer_to_a_lent_slot covers it against native Rust in both
 builds.
+
+## Amendment: a function that returns its parameter gives back the pointer it was given (2026-11-13, #1513)
+
+httparse's `parse_headers_iter` gives `parse_headers_iter_uninit`, which may
+let a pointer out (its `Bytes` holds raw pointers), what `deinit_slice_mut`
+returns. `deinit_slice_mut(s)` reborrows its own parameter through `&raw mut
+*s` and a cast that keeps the place. A pointer to what a call returns was
+refused as a cell made at each call (#1497), which kept httparse's 362
+tests from running.
+
+**A crate's own function returns its parameter where, on every path, its
+result is a reborrow of that one `&mut` parameter through `&raw mut *s`,
+`&mut *p`, copies, moves and pointer casts that keep the place, each local
+on the way written once and never borrowed whole, and where both are to a
+value JS holds in a cell for every instance (`MutRefForm::Box`) at the same
+place (`returns_its_parameter`, `pointers/returned.rs`). In it, `&mut *p` of
+a handle pointer is the pointer, so its JS returns `s`. A caller's pointer
+to what such a call returns, where the reborrow it's of reaches back to a
+parameter given its place's pointer, is that call's result, the same
+place's pointer.** Anything else keeps the refusal: another parameter on
+one path, a field, a fresh allocation, a call of any other function, a
+library's function (whose body this crate doesn't see), and a root that's a
+parameter given no place's pointer.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The pointer is the
+place's, so reads, writes and `ptr::eq` are Rust's. Held by
+reference_returned_as_its_parameter_given_as_its_pointer (`ptr::eq` and a
+write after the call, against native Rust),
+reference_returned_on_one_path_given_as_its_pointer_refused and
+reference_returned_as_a_parameter_given_no_pointer_refused. Six snapshots lose a forwarding handle, 32 lines, and `static_mut_pointers` its copy-back boxes, six renames; no file's count of a role fallback grows, so its share in docs/readability.txt rises from 267.7 to 267.8 in 10,000 lines by the lines alone, blessed for that reason. httparse
+through `scripts/crater.ts`; mutations `returned-parameter-unseen`,
+`returned-parameter-last-write` (`pointers/returned.ts`),
+`handle-pointer-reborrow-unkept` and `returned-parameter-of-any-root`
+(`mir/rvalues.ts`).

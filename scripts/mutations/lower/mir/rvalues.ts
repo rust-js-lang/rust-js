@@ -834,4 +834,20 @@ export const mutations: Mutation[] = [
     replace: "                            if false && self.krate.hinted.dyn_asked\n",
     tests: ["test/diagnostics.test.ts", "-t", "a dyn Iterator of chars whose size_hint is asked"],
   },
+  {
+    name: "handle-pointer-reborrow-unkept",
+    breaks: "`&mut *p` of a handle pointer is a handle of its own made at each reborrow, so `deinit_slice_mut` gives back no pointer its caller gave and two pointers to one place differ (#1513)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        && (self.is_cell(base.ty(decls, tcx).ty) || self.is_handle_pointer(base.ty(decls, tcx).ty))\n",
+    replace: "                        && self.is_cell(base.ty(decls, tcx).ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_returned_as_its_parameter_given_as_its_pointer.rs$"],
+  },
+  {
+    name: "returned-parameter-of-any-root",
+    breaks: "a reborrow through calls that return their parameter is taken as a pointer whatever it reborrows, a parameter given no place's pointer too (#1513)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && self.given_its_pointer_here(state.body, param)\n                {\n                    return self.read_local_value(state, place.local, out);\n",
+    replace: "                {\n                    return self.read_local_value(state, place.local, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_returned_as_a_parameter_given_no_pointer_refused.rs$"],
+  },
 ];

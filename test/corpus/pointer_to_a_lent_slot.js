@@ -68,14 +68,7 @@ const ExclusiveGuardData = {
     return [data];
   },
   asMut(exclusiveGuardData) {
-    return {
-      get value() {
-        return exclusiveGuardData[0].value;
-      },
-      set value(value) {
-        exclusiveGuardData[0].value = value;
-      },
-    };
+    return exclusiveGuardData[0];
   },
   asRef(exclusiveGuardData) {
     return exclusiveGuardData[0].value;

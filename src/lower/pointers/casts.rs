@@ -283,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether what an `a` and a `b` are is one value in JS: the same type,
     /// or a `MaybeUninit` of it, which is its value (ADR 0332), or arrays of
     /// as many of those.
-    fn same_place(&self, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
+    pub(super) fn same_place(&self, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
         let value = |t: Ty<'tcx>| {
             self.tcx
                 .erase_and_anonymize_regions(self.recognition().uninit_of(t).unwrap_or(t))

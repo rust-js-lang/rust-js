@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-let STEPS = 0;
+const STEPS = { value: 0 };
 const COUNT = { value: 0 };
 const TOTAL = { value: 0 };
 const OTHER = { value: 0 };
@@ -26,19 +26,15 @@ function names() {
 }
 
 function main() {
-  STEPS = (STEPS + 2) >>> 0;
-  const count$1 = { value: STEPS };
-  bump(count$1);
-  STEPS = count$1.value;
-  const steps = STEPS;
+  STEPS.value = (STEPS.value + 2) >>> 0;
+  bump(STEPS);
+  const steps = STEPS.value;
   console.log(`${steps}`);
 
   COUNT.value = (COUNT.value + 2) >>> 0;
   const count = $ptr(COUNT, "value", 0);
   count.value = (count.value * 5) >>> 0;
-  const count$2 = { value: COUNT.value };
-  bump(count$2);
-  COUNT.value = count$2.value;
+  bump(COUNT);
   const read = COUNT.value;
   console.log(`${read}`);
 

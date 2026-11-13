@@ -27,6 +27,7 @@ mod catalog;
 mod into_copies;
 mod lending;
 pub(in crate::lower) use lending::{lends_a_place_handle, made_once_of};
+mod returned;
 mod rewritten;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;

@@ -12,14 +12,7 @@ function same(s) {
 }
 
 function deinitSliceMut(s) {
-  return {
-    get value() {
-      return s.value;
-    },
-    set value(value) {
-      s.value = value;
-    },
-  };
+  return s;
 }
 
 function throughUnsafe(headers) {

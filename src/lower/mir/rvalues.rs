@@ -240,9 +240,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `&mut **u`, a reborrow of a cell a place holds, an
                     // `Option`'s `&mut` through a `ref mut`: that cell's
                     // `value`, the place kept as one that holds a cell, as a
-                    // variable is, so a handle on it is the cell.
+                    // variable is, so a handle on it is the cell. And `&mut
+                    // *p` of a handle pointer, read and written by its `value`
+                    // as a cell is: the pointer, the place it's on, not a
+                    // handle made at each reborrow, which no record holds,
+                    // httparse's `&mut *(s as *mut &mut [MaybeUninit<T>])`
+                    // (#1513).
                     if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
-                        && self.is_cell(base.ty(decls, tcx).ty)
+                        && (self.is_cell(base.ty(decls, tcx).ty) || self.is_handle_pointer(base.ty(decls, tcx).ty))
                         && let js::ExprKind::Member(cell, field) = &target.kind
                         && field == js::HELD
                         && fixed_place(cell)
@@ -837,6 +842,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // through (#1474).
                 if let [PlaceElem::Deref] = place.projection.as_slice()
                     && self.placed_by_lend(state.body, place.local)
+                {
+                    return self.read_local_value(state, place.local, out);
+                }
+                // Of what a reborrow of a parameter given its place's pointer
+                // refers to, through calls of functions that return their
+                // parameter, httparse's `deinit_slice_mut(s)` given its `s`:
+                // the reborrow, which is that pointer, the same place's, read
+                // before its place is, which would take what it holds (#1513).
+                if let [PlaceElem::Deref] = place.projection.as_slice()
+                    && let ty::Ref(_, referent, ty::Mutability::Mut) = *decls[place.local].ty.kind()
+                    && self.mut_ref_form(referent).is_cell()
+                    && let Some(param) = self.reborrowed_from(state.body, place.local, true)
+                    && param != place.local
+                    && self.given_its_pointer_here(state.body, param)
                 {
                     return self.read_local_value(state, place.local, out);
                 }

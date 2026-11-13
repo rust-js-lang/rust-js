@@ -12,7 +12,7 @@ function ptrVia(x) {
 }
 
 function reborrowed(x) {
-  return $ptr(x, "value", 0);
+  return x;
 }
 
 // A `&mut dyn` of a field, given back by its method, whose pointer is the

@@ -42,14 +42,7 @@ function ownDeref_deref(own) {
 }
 
 function ownDerefMut_derefMut(own) {
-  return {
-    get value() {
-      return own.value.value;
-    },
-    set value(value) {
-      own.value.value = value;
-    },
-  };
+  return own.value;
 }
 
 // Only pointed to, never changed: its copy is a copy still.
