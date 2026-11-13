@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 import { tempRoot } from "./bounded";
 import { runSync, stopped } from "./child";
+import { keptSerdeFlags } from "./serde-kept";
 import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
@@ -775,7 +776,12 @@ export function rustJsUnits(profile: string): string[] {
  * a native benchmark. */
 const serdeFlags: Record<string, string[]> = {};
 export function buildSerde(kind: "rmeta" | "rlib" | "rlib-wasm32" | "rlib-release" = "rmeta"): string[] {
-  serdeFlags[kind] ??= run(["serde/build.sh", ...(kind === "rmeta" ? [] : [`--${kind}`])]).trim().split(/\s+/);
+  // Of a snapshot of what Cargo built, which a rebuild of `target/serde`
+  // by another run never takes from under a compile (#1711).
+  serdeFlags[kind] ??= keptSerdeFlags(
+    run(["serde/build.sh", ...(kind === "rmeta" ? [] : [`--${kind}`])]).trim().split(/\s+/),
+    join(target, "serde-kept"),
+  );
   return serdeFlags[kind];
 }
 
