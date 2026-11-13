@@ -68,12 +68,14 @@ const $ioKinds = {
 function $ioKindText(kind) {
   return $ioKinds[kind];
 }
-// `{}` of an `io::Error`: the OS's message and number, what its error
-// shows, or its kind's words.
-function $ioErrorDisplay(e) {
+// `{}` of an `io::Error`, given the `Formatter`'s options: the OS's message
+// and number, `write!`'s; what its error shows, given them; its message,
+// `pad` of it; or its kind's words, `write_str`'s (#1689).
+function $ioErrorDisplay(e, options) {
   if (e.code !== undefined) return `${e.message} (os error ${e.code})`;
-  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);
-  return e.message || $ioKindText(e.kind);
+  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value, options);
+  if (e.message) return $formatted(e.message, options);
+  return $ioKindText(e.kind);
 }
 // `{:?}` of one, std's `Os { code, kind, message }`, `Custom { kind, error
 // }` or `Kind(..)`, pretty where `options` say.
@@ -103,7 +105,7 @@ function $ioResultDebug(result, options) {
 function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
-    Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
+    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options) }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
     typeId: () => type,

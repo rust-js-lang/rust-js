@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    Debug: () => ({ fmt: (message) => message }),",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
+  {
+    name: "string-error-display-unpadded",
+    breaks: "`{:>8}` of a `Box<dyn Error>` made from a message shows it unpadded, where std's `pad` pads it (#1689)",
+    file: "src/runtime/string_error.js",
+    find: "    Display: () => ({ fmt: (message, options) => $formatted(message, options) }),",
+    replace: "    Display: () => ({ fmt: (message) => message }),",
+    tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
+  },
 ];

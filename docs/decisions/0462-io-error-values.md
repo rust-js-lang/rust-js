@@ -233,3 +233,24 @@ drops). `mir_drop` now asks `write_branch` (`mir/drops.rs`) once, of
 every drop it lowers, before the elaboration's ways split: whole, as a
 flag says, or a variant's parts at a time. The push's tidy stages run
 that case; mutation `write-branch-dropped`, refitted to that one place.
+
+## Amendment: its `Display` reads the `Formatter`'s options where std's does (#1689)
+
+`$ioErrorDisplay(e)` took no options, and `$stringError`'s `Display`, what
+`Box<dyn Error>::from("..")` and `io::Error::other("..")` hold, returned
+its message as it is, so `{:>8}` and `{:.2}` of either changed nothing,
+where Rust pads and cuts it: a P0 (case: results change, ADR 0262).
+std's `io::Error` gives its `Custom` error the `Formatter`, and its
+`SimpleMessage`, `read_exact`'s, is `msg.message.fmt(fmt)`, a `str`'s
+`pad`; its OS error is a `write!` and its kind's words a `write_str`,
+neither padded. `StringError`'s is `Display::fmt(&self.0, f)`. So
+`$ioErrorDisplay(e, options)` gives its error the options and pads its
+message, and `$stringError`'s `Display` is `$formatted(message, options)`.
+The same was true of each std error whose `Display` is `pad` of a fixed
+message, which `display/written.rs` now pads by the placeholder's options
+(`padded_message`): `TryFromSliceError`, `fmt::Error`, `FromUtf16Error`,
+`PoisonError`, `TryLockError`, `StripPrefixError` and `IntoStringError`.
+Those that `write!` theirs, a UTF-8 error's, `SystemTimeError`'s, a C
+string's others', `VarError`'s, stay unpadded, as std's are. Held by
+corpus case `std_error_messages_padded` against native Rust in both builds,
+its metamorphic rewrites, and eight mutations.

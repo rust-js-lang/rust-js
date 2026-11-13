@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "padded-message-unpadded",
+    breaks: "`{:>35}` of a std error whose `Display` is `pad` of its message, a `TryFromSliceError`'s, shows it unpadded (#1689)",
+    file: "src/lower/display/written.rs",
+    find: "fn padded_message(message: Expr, pretty: &Pretty) -> Expr {\n    match pretty {",
+    replace: "fn padded_message(message: Expr, pretty: &Pretty) -> Expr {\n    match &Pretty::Plain {",
+    tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
+  },
+  {
+    name: "io-error-display-options-dropped",
+    breaks: "`{:>8}` of an `io::Error` shown directly isn't given the placeholder's options, so its message is unpadded (#1689)",
+    file: "src/lower/display/written.rs",
+    find: "            if let Pretty::When(options) | Pretty::Given(options, _) = pretty {\n                args.push(options.clone());\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
+  },
+  {
+    name: "into-string-error-unpadded",
+    breaks: "`{:>40}` of an `IntoStringError` shows its message unpadded, where std's `pad` pads it (#1689)",
+    file: "src/lower/display/written.rs",
+    find: "                crate::lower::recognition::CStrError::IntoString => padded_message(message, pretty),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
+  },
+  {
     name: "debug-non-exhaustive-closed",
     breaks: "`finish_non_exhaustive()` leaves out its `..`",
     file: "src/lower/display/written.rs",
@@ -105,8 +129,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{}` of a `StripPrefixError` is its `{:?}`, where std shows `prefix not found`",
     file: "src/lower/display/written.rs",
-    find: '            return Ok(Expr::str("prefix not found"));\n',
-    replace: '            return Ok(Expr::str("StripPrefixError(())"));\n',
+    find: '            return Ok(padded_message(Expr::str("prefix not found"), pretty));\n',
+    replace: '            return Ok(padded_message(Expr::str("StripPrefixError(())"), pretty));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
   {
@@ -218,8 +242,8 @@ export const mutations: Mutation[] = [
     name: "fmt-error-display-lost",
     breaks: "fmt::Error displays std's text",
     file: "src/lower/display/written.rs",
-    find: 'return Ok(Expr::str("an error occurred when formatting an argument"));',
-    replace: 'return Ok(Expr::str("an error"));',
+    find: '                Expr::str("an error occurred when formatting an argument"),\n',
+    replace: '                Expr::str("an error"),\n',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
@@ -331,8 +355,8 @@ export const mutations: Mutation[] = [
     name: "poison-error-display-refused",
     breaks: "`{}` of a `PoisonError` is refused, where std's shows that the lock is poisoned (#1438)",
     file: "src/lower/display/written.rs",
-    find: "        if crate::lower::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"poisoned lock: another task failed inside\"));",
-    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"poisoned lock: another task failed inside\"));",
+    find: "        if crate::lower::recognition::is_poison_error(ty) {\n",
+    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
   },
 ];

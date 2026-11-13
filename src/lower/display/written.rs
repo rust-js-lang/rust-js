@@ -510,14 +510,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         // A C string's error's message (#1157).
+        // `IntoStringError`'s is `pad` of its message; the others' `write!`s
+        // (#1689).
         if let Some(error) = crate::lower::recognition::c_str_error(self.tcx, ty) {
-            return Ok(Expr::call_helper(
-                "$cstrErrorMessage",
-                vec![value, Expr::str(error.kind())],
-            ));
+            let message = Expr::call_helper("$cstrErrorMessage", vec![value, Expr::str(error.kind())]);
+            return Ok(match error {
+                crate::lower::recognition::CStrError::IntoString => padded_message(message, pretty),
+                _ => message,
+            });
         }
         if crate::lower::recognition::is_try_from_slice_error(self.tcx, ty) {
-            return Ok(Expr::str("could not convert slice to array"));
+            return Ok(padded_message(Expr::str("could not convert slice to array"), pretty));
         }
         // std's clock's (ADR 0447): a `SystemTimeError`'s message; a time's
         // has none.
@@ -531,10 +534,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `fmt::Error`'s, std's text (#118).
         if self.recognition().is_fmt_error(ty) {
-            return Ok(Expr::str("an error occurred when formatting an argument"));
+            return Ok(padded_message(
+                Expr::str("an error occurred when formatting an argument"),
+                pretty,
+            ));
         }
         if crate::lower::recognition::is_from_utf16_error(self.tcx, ty) {
-            return Ok(Expr::str("invalid utf-16: lone surrogate found"));
+            return Ok(padded_message(
+                Expr::str("invalid utf-16: lone surrogate found"),
+                pretty,
+            ));
         }
         // A `char`'s case mapping, or a `char`'s or a `str`'s escape, the
         // `char`s it hasn't given: their text, all of an array's, the rest of
@@ -575,9 +584,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.never_shown(ty) {
             return Ok(Expr::str(""));
         }
-        // A path's `StripPrefixError`, as std shows it.
+        // A path's `StripPrefixError`, as std shows it, `pad` of its message.
         if self.recognition().is_strip_prefix_error(ty) {
-            return Ok(Expr::str("prefix not found"));
+            return Ok(padded_message(Expr::str("prefix not found"), pretty));
         }
         // An environment's `VarError`, as std shows it.
         if self.recognition().is_var_error(ty) {
@@ -588,25 +597,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Ok(var_error_shown(value, shown));
         }
-        // A poisoned lock's `PoisonError`, as std shows it (#1438).
+        // A poisoned lock's `PoisonError`, as std shows it (#1438), `pad` of
+        // its message (#1689).
         if crate::lower::recognition::is_poison_error(ty) {
-            return Ok(Expr::str("poisoned lock: another task failed inside"));
+            return Ok(padded_message(
+                Expr::str("poisoned lock: another task failed inside"),
+                pretty,
+            ));
         }
-        // A lock's `TryLockError`, as std shows it.
+        // A lock's `TryLockError`, as std shows it, `pad` of its message.
         if self.recognition().is_try_lock_error(ty) {
             let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));
-            return Ok(Expr::cond(
+            let message = Expr::cond(
                 blocks,
                 Expr::str("try_lock failed because the operation would block"),
                 Expr::str("poisoned lock: another task failed inside"),
-            ));
+            );
+            return Ok(padded_message(message, pretty));
         }
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
         }
-        // An `io::Error`'s, as std shows it, and an `ErrorKind`'s words (ADR 0462).
+        // An `io::Error`'s, as std shows it, given the `Formatter`'s options,
+        // which its message's `pad` and the error it holds read (#1689); and
+        // an `ErrorKind`'s words, its `write_str` (ADR 0462).
         if self.recognition().is_io_error(ty) {
-            return Ok(Expr::call_helper("$ioErrorDisplay", vec![value]));
+            let mut args = vec![value];
+            if let Pretty::When(options) | Pretty::Given(options, _) = pretty {
+                args.push(options.clone());
+            }
+            return Ok(Expr::call_helper("$ioErrorDisplay", args));
         }
         if self.recognition().is_io_error_kind(ty) {
             return Ok(Expr::call_helper("$ioKindText", vec![value]));
@@ -681,4 +701,16 @@ pub(in crate::lower) struct EntriesShown {
     pub(in crate::lower) shows: Vec<Expr>,
     pub(in crate::lower) closed: bool,
     pub(in crate::lower) drop: Option<Expr>,
+}
+
+/// `message`, a std value's whose `Display` is `pad` of it, `"..".fmt(f)`,
+/// given the `Formatter`'s options `pretty` has, which it's cut to and
+/// padded by as `pad` does (#1689).
+fn padded_message(message: Expr, pretty: &Pretty) -> Expr {
+    match pretty {
+        Pretty::When(options) | Pretty::Given(options, _) => {
+            Expr::call_helper("$formatted", vec![message, options.clone()])
+        }
+        Pretty::Plain | Pretty::Always => message,
+    }
 }

@@ -17698,11 +17698,12 @@ export function $jsonLocked(cell, write, exclusive) {
 // std's error of a message, which `Box<dyn Error>::from("..")` makes: a
 // `dyn Error`'s dictionary, whose `value` is the message (ADR 0141).
 // Its `type_id` is std's private `StringError`'s, which no program can
-// name, so no downcast finds it: a key no type's name is (ADR 0331).
+// name, so no downcast finds it: a key no type's name is (ADR 0331). Its
+// `Display` is its message's, `pad`, given the `Formatter`'s options (#1689).
 export function $stringError() {
   return {
     Debug: () => ({ fmt: (message) => $debugStr(message) }),
-    Display: () => ({ fmt: (message) => message }),
+    Display: () => ({ fmt: (message, options) => $formatted(message, options) }),
     source: () => undefined,
     typeId: () => "<std's StringError>",
   };
@@ -19272,12 +19273,14 @@ export const $ioKinds = {
 export function $ioKindText(kind) {
   return $ioKinds[kind];
 }
-// `{}` of an `io::Error`: the OS's message and number, what its error
-// shows, or its kind's words.
-export function $ioErrorDisplay(e) {
+// `{}` of an `io::Error`, given the `Formatter`'s options: the OS's message
+// and number, `write!`'s; what its error shows, given them; its message,
+// `pad` of it; or its kind's words, `write_str`'s (#1689).
+export function $ioErrorDisplay(e, options) {
   if (e.code !== undefined) return `${e.message} (os error ${e.code})`;
-  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);
-  return e.message || $ioKindText(e.kind);
+  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value, options);
+  if (e.message) return $formatted(e.message, options);
+  return $ioKindText(e.kind);
 }
 // `{:?}` of one, std's `Os { code, kind, message }`, `Custom { kind, error
 // }` or `Kind(..)`, pretty where `options` say.
@@ -19307,7 +19310,7 @@ export function $ioResultDebug(result, options) {
 export function $ioErrorDyn(type) {
   return {
     Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
-    Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
+    Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options) }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),
     typeId: () => type,
