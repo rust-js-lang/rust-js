@@ -1602,8 +1602,7 @@ about 80,000 parses that never yields, kept each registration's record,
 about 110 bytes each, and Node ran out of heap after 950 s where native
 Rust passes. **At most 65,536 allocations now wait for a cleanup; past that,
 an allocation's range is never given back.** What that costs is address
-space, which ends loudly, "the address space is used up", never the heap
-and never a wrong answer. A program that yields gives ranges back as
-before. `test/lowering.test.ts`'s "a million short-lived addresses run in a
+space, which ends loudly, never the heap
+and never a wrong answer. A program that never yields and asks addresses of more than wasm32 holds, 4 GiB of them, ends with `rust-js does not support more addresses than wasm32 has: the address space is used up`. A program that yields gives ranges back as before. `test/lowering.test.ts`'s "a million short-lived addresses run in a
 bounded heap" now runs in 64 MB, not 384, where the records took 130 MB.
 Mutation `releasing-unbounded` (`runtime/pointers.ts`), caught.

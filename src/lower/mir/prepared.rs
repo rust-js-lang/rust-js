@@ -48,12 +48,19 @@ impl<'tcx> Mir<'tcx> {
         (body, promoted) = revealed::revealed(tcx, (body, promoted));
         // A call that can't throw, a binding marked so or `unwrap_unchecked`,
         // has nothing to clean up (ADR 0301): rustc's dataflow of what's there,
-        // which says what's dropped, follows no unwinding of it.
+        // which says what's dropped, follows no unwinding of it. Of std's
+        // `len()`, `is_empty()` and the like, where its MIR says so, as it
+        // resolves: not `Range::is_empty` of a `K` whose `PartialOrd` is the
+        // crate's, which may panic (#1666).
+        let typing_env = ty::TypingEnv::post_analysis(tcx, body.source.def_id());
         for data in body.basic_blocks.as_mut() {
             if let TerminatorKind::Call { func, unwind, .. } = &mut data.terminator_mut().kind
-                && let Some((id, _)) = func.const_fn_def()
+                && let Some((id, args)) = func.const_fn_def()
                 && match pure_std(tcx, id) {
-                    Some(PureStd::Question | PureStd::BoxNew | PureStd::Unchecked) => true,
+                    Some(PureStd::Question) => {
+                        crate::lower::analysis::std_call_never_unwinds(tcx, typing_env, (id, args))
+                    }
+                    Some(PureStd::BoxNew | PureStd::Unchecked) => true,
                     _ => bindings::is_binding(tcx, id) && bindings::cannot_throw(tcx, id),
                 }
             {

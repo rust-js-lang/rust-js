@@ -53,3 +53,26 @@ f(args)
 - **It's the JavaScript a person writes**: `useEvent(fn)`, no `try`.
 - **It's the same program**: nothing before the move can leave, so the
   drop its flag guarded can't run.
+
+## Amendment (2026-11-13, #1666): whether std's call can unwind is read from its MIR
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. A std call named `len`, `is_empty`, `is_some`, `is_none`,
+`is_ok` or `is_err` lost its unwind edge by its name (`pure_std`'s
+`Question`). But `Range::is_empty` and `RangeInclusive::is_empty` run their
+`Idx`'s `PartialOrd`, which is the program's and may panic. When one did, the
+values live across the call weren't dropped: a guard's `drop` never ran.
+**Now `analysis/unwinding.rs`'s `std_call_never_unwinds` reads it from the
+call's MIR, as it resolves.** Every call in that MIR is followed to what it
+resolves to, the `Idx`'s order included: an intrinsic never unwinds, a std
+function with MIR is followed in turn, at most four deep. Anything else may
+unwind: the program's code, a body without MIR, a drop, an assertion. Each
+call is followed whatever unwinding it says, because std's MIR is wasm32's,
+a target that aborts, where every call says it never unwinds. No snapshot
+moves: `len()` and the like still never unwind. The name-based
+`std_never_unwinds`, which asks what rust-js's own runtime does (a print
+never fails), stays for its own question; folding both into std's MIR is
+#1671's change 2. Corpus cases range_is_empty_of_a_panicking_order_unwinds
+and range_inclusive_is_empty_of_a_panicking_order_unwinds against native
+Rust; mutations `std-question-by-name` (`mir/prepared.ts`) and
+`std-mir-calls-unfollowed` (`analysis/unwinding.ts`), caught.

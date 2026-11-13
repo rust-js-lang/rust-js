@@ -792,3 +792,55 @@ fn shown_whole<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool 
     let ty = ty.peel_refs();
     ty.is_primitive() || ty.is_str() || recognition.is_lang_adt(ty, LangItem::String)
 }
+
+/// How deep `std_call_never_unwinds` follows std's calls of std's own.
+const STD_CALLS_FOLLOWED: usize = 4;
+
+/// Whether a call of std's `id`, given `args`, never unwinds, as its MIR
+/// says, what it resolves to: every call in it of std's own that never
+/// unwinds in turn, each resolved as it's given, a `len()`'s none; not one
+/// that runs the program's code, `Range::is_empty`'s `PartialOrd::lt` of a
+/// `K` whose order is the crate's, which may panic (#1666). One whose body
+/// has no MIR, or that reaches past `STD_CALLS_FOLLOWED`, may.
+pub(in crate::lower) fn std_call_never_unwinds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> bool {
+    std_mir_never_unwinds(tcx, typing_env, (id, args), STD_CALLS_FOLLOWED)
+}
+
+fn std_mir_never_unwinds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    depth: usize,
+) -> bool {
+    let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, id, args) else {
+        return false;
+    };
+    let resolved = match instance.def {
+        // An intrinsic runs none of the program's code.
+        ty::InstanceKind::Intrinsic(_) => return true,
+        ty::InstanceKind::Item(resolved) => resolved,
+        _ => return false,
+    };
+    if depth == 0 || !is_std_crate(tcx, resolved) || !tcx.is_mir_available(resolved) {
+        return false;
+    }
+    // Each call in it followed, whatever unwinding it says: std's MIR is
+    // wasm32's, a target that aborts, so each says it never unwinds.
+    let body = tcx.optimized_mir(resolved);
+    body.basic_blocks.iter().all(|data| match &data.terminator().kind {
+        TerminatorKind::Call { func, .. } => func.const_fn_def().is_some_and(|(callee, callee_args)| {
+            let callee_args = instance.instantiate_mir_and_normalize_erasing_regions(
+                tcx,
+                typing_env,
+                ty::EarlyBinder::bind(tcx, callee_args),
+            );
+            std_mir_never_unwinds(tcx, typing_env, (callee, callee_args), depth - 1)
+        }),
+        TerminatorKind::Drop { .. } | TerminatorKind::Assert { .. } | TerminatorKind::InlineAsm { .. } => false,
+        _ => true,
+    })
+}

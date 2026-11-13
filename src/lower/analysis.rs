@@ -63,7 +63,7 @@ pub(in crate::lower) use stored_places::StoredPlaces;
 mod tests;
 mod throwing;
 mod unwinding;
-pub(in crate::lower) use unwinding::{never_unwinds_given, std_quiet};
+pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};
 mod wholes;
 pub(super) use wholes::{Wholes, whole_locals};
 

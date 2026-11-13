@@ -208,4 +208,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
     snapshots: true,
   },
+  {
+    name: "std-mir-calls-unfollowed",
+    breaks: "a std function's calls aren't followed to what they resolve to, so one that runs the program's `PartialOrd` is taken never to unwind (#1666)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "            std_mir_never_unwinds(tcx, typing_env, (callee, callee_args), depth - 1)\n",
+    replace: "            { let _ = (callee, callee_args); true }\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_(inclusive_)?is_empty_of_a_panicking_order_unwinds.rs$"],
+  },
 ];

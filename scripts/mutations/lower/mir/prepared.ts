@@ -151,4 +151,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "std-question-by-name",
+    breaks: "a std call named `len`, `is_empty` or the like is taken never to unwind by its name, so `Range::is_empty` of an order that panics drops nothing as it unwinds (#1666)",
+    file: "src/lower/mir/prepared.rs",
+    find: "                        crate::lower::analysis::std_call_never_unwinds(tcx, typing_env, (id, args))\n",
+    replace: "                        true\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_(inclusive_)?is_empty_of_a_panicking_order_unwinds.rs$"],
+  },
 ];
