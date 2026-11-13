@@ -479,7 +479,7 @@ for (const [name, source, message, crate] of [
   ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
   ["reading a Box<str>", 'pub fn f(s: &str) -> Box<str> { serde_json::from_str(s).unwrap() }', "deserializing `str`", "serde"],
   ["writing a Cow<str>", 'pub fn f(c: &std::borrow::Cow<str>) -> String { serde_json::to_string(c).unwrap() }', "serializing `std::borrow::Cow<'_, str>`", "serde"],
-  ["writing an Ipv4Addr", 'pub fn f(a: &std::net::Ipv4Addr) -> String { serde_json::to_string(a).unwrap() }', "serializing `std::net::Ipv4Addr`", "serde"],
+  ["reading a BinaryHeap", 'pub fn f(s: &str) -> usize { serde_json::from_str::<std::collections::BinaryHeap<u8>>(s).map_or(0, |h| h.len()) }', "deserializing `std::collections::BinaryHeap<u8>`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).

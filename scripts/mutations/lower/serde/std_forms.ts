@@ -4,6 +4,7 @@ import type { Mutation } from "../../../mutations";
 
 const ranges = ["test/serde-std.test.ts", "-t", "a range and a bound"];
 const time = ["test/serde-std.test.ts", "-t", "a Duration and a SystemTime"];
+const wrappers = ["test/serde-std.test.ts", "-t", "a Wrapping, a Reverse and a PhantomData"];
 
 export const mutations: Mutation[] = [
   {
@@ -61,5 +62,29 @@ export const mutations: Mutation[] = [
     find: "                    Some(then) => Expr::call_helper(then, vec![read]),\n",
     replace: "                    Some(_) => read,\n",
     tests: time,
+  },
+  {
+    name: "std-wrapper-row-missing",
+    breaks: "a `Reverse` or a `Wrapping` has no row, so writing or reading one is refused where serde writes what it holds (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "        if self.is_reverse(ty) || self.is_std_type(ty, StdItem::Wrapping) {\n",
+    replace: "        if false {\n",
+    tests: wrappers,
+  },
+  {
+    name: "std-newtype-written-as-its-array",
+    breaks: "a `Reverse` or a `Wrapping` is written as the array that holds it, `[3]`, where serde writes what it holds, `3` (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "self.write_json(Expr::index(value, Expr::int(0)), json, inner, span, out)",
+    replace: "self.write_json(value, json, Ty::new_tup(self.tcx, &[inner]), span, out)",
+    tests: wrappers,
+  },
+  {
+    name: "std-newtype-read-unwrapped",
+    breaks: "a `Reverse` or a `Wrapping` read is what it holds, not its tuple struct's array, so reading its field gives `undefined` (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "            let made = Expr::array(vec![Expr::call(read, vec![Expr::var(&json)])]);\n",
+    replace: "            let made = Expr::call(read, vec![Expr::var(&json)]);\n",
+    tests: wrappers,
   },
 ];

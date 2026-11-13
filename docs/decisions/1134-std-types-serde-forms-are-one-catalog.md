@@ -90,3 +90,15 @@ arms call too). Three runtime helpers of serde's checks, in
 The catalog is asked before any other kind of type, as a `Duration` is held
 as a number, which the numbers' rules would take. Probes `std_03`,
 `std_15` and `std_22` give native's answer in all three modes.
+
+## Amendment: wrappers (2026-11-13, #1623)
+
+A newtype form, what a `Reverse<T>` or a `Wrapping<T>` holds, written and
+read as that, `Wrapping(3)` as `3`, its tuple struct's field, `value[0]`
+(ADR 0023), as `{:?}` reads it; a unit form, `PhantomData<T>`, `null`,
+read as serde's unit, `invalid type: integer `1`, expected unit`. Probes
+`std_09`, `std_10` and `std_27` give native's answer in all three modes.
+`Saturating<T>` is the numbers family's: serde reads one by its own
+visitor, which clamps what's out of range. The cells and locks, whose
+value and borrow are what the cell analysis decides for each, come after
+a design of their own (#1623).

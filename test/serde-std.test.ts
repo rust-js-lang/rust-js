@@ -196,3 +196,50 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// Wrappers: a `Wrapping` and a `Reverse` as what they hold, both ways, a
+// read's error that of what they hold; a `PhantomData` as `null`, read as
+// serde's unit.
+test("serde: a Wrapping, a Reverse and a PhantomData are written and read as serde's own impls do", async () => {
+  const dir = fixture("serde-std-wrappers");
+  writeFileSync(join(dir, "cases.rs"), harness + String.raw`
+use std::cmp::Reverse;
+use std::marker::PhantomData;
+use std::num::Wrapping;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Marked {
+    pub count: Wrapping<u8>,
+    pub order: Vec<Reverse<i32>>,
+    pub nested: Reverse<Wrapping<u16>>,
+    pub kind: PhantomData<String>,
+}
+
+pub fn report() -> String {
+    let mut out = String::new();
+    write(&mut out, &Wrapping(250u8));
+    write(&mut out, &Reverse("text"));
+    write(&mut out, &PhantomData::<u8>);
+    let marked = Marked { count: Wrapping(255u8) + Wrapping(2u8), order: vec![Reverse(3), Reverse(-1)], nested: Reverse(Wrapping(9)), kind: PhantomData };
+    write(&mut out, &marked);
+    for text in ["7", "256", "-1", "\"7\"", "null"] {
+        read::<Wrapping<u8>>(&mut out, text);
+        read::<Reverse<u8>>(&mut out, text);
+    }
+    for text in ["null", "1", "{}", "[]", "\"PhantomData\""] {
+        read::<PhantomData<u8>>(&mut out, text);
+    }
+    read::<Marked>(&mut out, r#"{"count":4,"order":[1,2],"nested":5,"kind":null}"#);
+    read::<Marked>(&mut out, r#"{"count":4,"order":[1,2],"nested":5,"kind":0}"#);
+    read::<Marked>(&mut out, r#"{"count":4,"order":[1,2],"nested":5}"#);
+    let back: Marked = serde_json::from_str(&serde_json::to_string(&marked).unwrap()).unwrap();
+    out.push_str(&format!("{back:?}\n"));
+    read_value::<Reverse<String>>(&mut out, serde_json::json!("v"));
+    read_value::<PhantomData<u8>>(&mut out, serde_json::json!(null));
+    read_value::<PhantomData<u8>>(&mut out, serde_json::json!(false));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

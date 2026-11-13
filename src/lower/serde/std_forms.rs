@@ -10,6 +10,9 @@
 //!   fields by their names, a range's `{ start, end }`, or is a `Duration`'s
 //!   nanoseconds, whose parts serde writes, `{"secs":1,"nanos":5}`, taken by
 //!   `Duration`'s own lowering, and which a maker of serde's checks makes.
+//! - A newtype form is what it holds, written and read as that, `Wrapping(3)`
+//!   as `3`; and a unit form, `PhantomData`, is `null`, read as serde's
+//!   unit, `invalid type: integer `1`, expected unit`.
 //! - An enum form is externally tagged, `"Unbounded"` or `{"Included":3}`,
 //!   each variant written and read as a derive of the enum's own
 //!   definition does, the variants named in serde's order, which its
@@ -29,6 +32,11 @@ pub(super) enum StdForm<'tcx> {
         fields: Vec<(&'static str, Ty<'tcx>)>,
         held: Held,
     },
+    /// What it holds, a tuple struct's one field, as a `Reverse` or a
+    /// `Wrapping` holds it, `value[0]` (ADR 0023).
+    Newtype(Ty<'tcx>),
+    /// A unit struct's, `null`.
+    Unit,
     /// What a derive of the enum's own definition writes and reads, its
     /// variants named in this order, serde's.
     Enum(ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>, &'static [&'static str]),
@@ -97,6 +105,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(RangeKind::Inclusive) => return range("RangeInclusive"),
             _ => {}
         }
+        // Wrappers serde writes as what they hold, and a marker as a unit.
+        if self.is_reverse(ty) || self.is_std_type(ty, StdItem::Wrapping) {
+            return Some(StdForm::Newtype(args.type_at(0)));
+        }
+        if self.is_lang_adt(ty, rustc_hir::attrs::lang_items::LangItem::PhantomData) {
+            return Some(StdForm::Unit);
+        }
         if self.is_std_type(ty, StdItem::Bound) {
             return Some(StdForm::Enum(*adt, args, &["Unbounded", "Included", "Excluded"]));
         }
@@ -143,6 +158,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "endObject", Vec::new(), out);
                 Ok(())
             }
+            StdForm::Newtype(inner) => self.write_json(Expr::index(value, Expr::int(0)), json, inner, span, out),
+            StdForm::Unit => {
+                self.emit(json, "null", Vec::new(), out);
+                Ok(())
+            }
             StdForm::Enum(adt, args, _) => self.write_adt(value, json, adt, args, span, out),
         }
     }
@@ -150,7 +170,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The reader of `ty`, of its row's form: `(json) => json.struct("struct
     /// Range", [["start", read], ["end", read]], build, { deny: true })`.
     pub(super) fn read_std_form(&mut self, form: StdForm<'tcx>, span: Span) -> R<Expr> {
+        // A unit's, serde's own reader of one; a newtype's, `[read(json)]`.
         let json = self.fresh(Role::Json);
+        let inner = match form {
+            StdForm::Unit => return Ok(Expr::member(Expr::helper("$json"), "unit")),
+            StdForm::Newtype(inner) => Some(self.json_reader(inner, span)?),
+            _ => None,
+        };
+        if let Some(read) = inner {
+            let made = Expr::array(vec![Expr::call(read, vec![Expr::var(&json)])]);
+            return Ok(Expr::arrow(
+                vec![json.into()],
+                vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
+            ));
+        }
         let read = match form {
             StdForm::Struct { name, fields, held } => {
                 let then = match held {
@@ -198,6 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => read,
                 }
             }
+            StdForm::Newtype(_) | StdForm::Unit => unreachable!("read above"),
             StdForm::Enum(adt, args, order) => {
                 let variants = (order.iter())
                     .map(|name| {
