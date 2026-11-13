@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "  return inPlace ? \"inPlace\" : trusted ? \"fold\" : \"next\";\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_collected_in_place_capacity|capacity_of_generic_collects|vec_collect_as_its_caller_knows).rs$"],
   },
+  {
+    name: "collect-counted-as-a-vec",
+    breaks: "generic code's `collect()` into an `Rc<[T]>` of a `TrustedLen` collects as a `Vec`, dropping what it wrote before what's left, and panicking `capacity overflow` where std unwraps a `LayoutError` (#1678, #1694)",
+    file: "src/runtime/fold_of.js",
+    find: "  if (trusted) return $collectDropping($roomForCounted(it, size, align), drop, true);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],
+  },
 ];

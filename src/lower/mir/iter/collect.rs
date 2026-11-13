@@ -329,6 +329,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(iter_ty) = iter_ty else {
             return Ok(None);
         };
+        // An `Rc<[T]>`'s or an `Arc<[T]>`'s of a `TrustedLen`, std's
+        // `from_iter_exact`, whose guard of what it wrote drops after the
+        // iterator (#1678).
+        if self.is_rc(output)
+            && output.ty_adt_def().is_some()
+            && let ty::Adt(_, args) = output.kind()
+            && args.type_at(0).is_slice()
+            && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+        {
+            return Ok(first);
+        }
         match self.collects_in_place(Some(iter_ty), Some(item)) {
             Some(true) => return Ok(None),
             Some(false) => return Ok(first),
@@ -630,22 +641,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             let boxed = Ty::new_box(self.tcx, pointee);
-            // Of a `TrustedLen`, std's `from_iter_exact` writes each item in
-            // place, so a panic as it steps drops what's left of the
-            // iterator before what it wrote, where a `Vec` drops them the
-            // other way round: refused where that's seen, items that drop
-            // and steps that may panic (#1678).
-            if crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
-                && self.unwinding_collect(boxed, item, Some(iter_ty), span)?.is_some()
-            {
-                return Err(self.unsupported(
-                    span,
-                    &format!(
-                        "`collect` into a `{output}` of a `TrustedLen` whose steps may panic, of items that drop: std's `from_iter_exact` drops what's left before what it wrote, which isn't followed yet (#1678)"
-                    ),
-                ));
+            // Of a `TrustedLen` whose steps may panic, std's
+            // `from_iter_exact` writes each item in place, so a panic as it
+            // steps drops what's left of the iterator before what it wrote,
+            // where a `Vec` drops them the other way round: collected so,
+            // `$collectDropping`'s `restFirst` (`rest_dropped_first`), its
+            // room never asked of the iterator (#1678).
+            // Not a `Vec`'s: each item by `next`, as `from_iter_exact`'s loop
+            // takes it, its hint asked first, as `ToRcSlice` asks it
+            // (`counted_slice_room`). Of another, std's
+            // `collect::<Vec<T>>().into()`.
+            let exact = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            // Of a type parameter's iterator, whether it's `TrustedLen` and
+            // how std collects it as a `Vec` are its caller's, `ITrustedLen`
+            // and `IVecCollect`: `$collectCounted` picks.
+            let given_counted = match (crate::lower::recognition::known_by_bounds(iter_ty), item) {
+                (true, Some(item)) => self.given_vec_collect(iter_ty, item, span)?.map(|how| (item, how)),
+                _ => None,
+            };
+            if let Some((item, how)) = given_counted {
+                let trusted = self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span)?;
+                let (size, align) = self.counted_slice_layout((boxed, item), iter_ty, span)?;
+                let mut args = vec![it, size, align, trusted, how];
+                if self.drops(item) != crate::lower::drops::Drops::Nothing {
+                    args.extend(self.drop_function(item, span)?);
+                }
+                let items = Expr::call_helper("$collectCounted", args);
+                return Ok(match self.krate.counted.counts(self.tcx, pointee) {
+                    true => self.new_counted_rc(items, pointee, span)?,
+                    false => items,
+                });
             }
-            let items = self.collected_as_vec((it, &given, walk.as_ref()), boxed, item, iter_ty, false, span)?;
+            let items = match exact {
+                true => {
+                    let it = match item {
+                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, span)?,
+                        None => it,
+                    };
+                    match self.unwinding_collect(output, item, Some(iter_ty), span)? {
+                        Some(unwinding) => unwinding.collected(it, None),
+                        None => {
+                            let items = self.collected_items(&it);
+                            items.unwrap_or_else(|| Expr::collected(it))
+                        }
+                    }
+                }
+                false => self.collected_as_vec((it, &given, walk.as_ref()), boxed, item, iter_ty, false, span)?,
+            };
             match self.krate.counted.counts(self.tcx, pointee) {
                 true => self.new_counted_rc(items, pointee, span)?,
                 false => items,

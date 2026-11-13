@@ -167,6 +167,30 @@ function $roomFor(count, size) {
   if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
 }
 
+// `it`, a `TrustedLen` an `Rc<[T]>` or an `Arc<[T]>` is collected of, of
+// items of `size` bytes aligned to `align`, its hint asked first, as std's
+// `ToRcSlice` asks it before `from_iter_exact` writes each item in place
+// (#1678): of no upper bound, a `capacity overflow` panic; of one whose
+// slice, after the counts' two `usize`s, wasm32's 8 bytes, is past
+// `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
+// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed.
+function $roomForCounted(it, size, align) {
+  $unwinds(
+    () => {
+      const [, upper] = $sizeHint(it);
+      if (upper === undefined) throw new Error("capacity overflow");
+      const max = 2 ** 31 - 1;
+      const bytes = upper * size;
+      const counts = Math.ceil(8 / align) * align;
+      if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
+        throw new Error("called `Result::unwrap()` on an `Err` value: LayoutError");
+      }
+    },
+    () => it.return?.(),
+  );
+  return it;
+}
+
 // The least capacity std's `Vec` of items of `size` bytes grows to,
 // `MIN_NON_ZERO_CAP` (raw_vec/mod.rs `min_non_zero_cap`).
 function $leastCapacity(size) {

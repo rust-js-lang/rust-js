@@ -939,11 +939,17 @@ What's refused is in [the limitations](limitations.md).
   one that has no end its type knows, `(0..).map(f)`, a `TrustedLen` of no
   upper bound, panics `capacity overflow` before any item's made
   ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). So does a
-  `collect()` into a `VecDeque`, a `Box<[T]>`, an `Rc<[T]>` or an
-  `Arc<[T]>` (#1678), a `BinaryHeap`, a
+  `collect()` into a `VecDeque`, a `Box<[T]>`, a `BinaryHeap`, a
   `BTreeSet` or a `BTreeMap`, which std collects as a `Vec` first; not
   into a `LinkedList`, which std extends as each item comes
-  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended). One that
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended).
+  Into an `Rc<[T]>` or an `Arc<[T]>` of a `TrustedLen`, its hint is asked
+  as std's `ToRcSlice` asks it: of no upper bound, `capacity overflow`;
+  past what a `Layout` of the slice can be, the panic of std's `unwrap()`
+  of a `LayoutError` (#1694); and a panic as it steps drops what's left
+  of the iterator before what it wrote (#1678). Of another iterator, as a
+  `Vec` first ([0940](../decisions/0940-collect-asks-room-of-its-hint.md),
+  amended). One that
   isn't `TrustedLen` but has no end once it gives an item is stepped once
   first, as std does, and then panics the same way, dropping that item:
   `items.iter().cycle().map(f)` of items that has some, or `(0..).skip(n)`.

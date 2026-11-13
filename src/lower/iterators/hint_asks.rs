@@ -653,6 +653,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$roomForHint", given))
     }
 
+    /// `it`, a `TrustedLen` of type `iter_ty` collected into an `Rc<[T]>` or
+    /// an `Arc<[T]>` of `item`s, as a `Box<[T]>`, `boxed`, would be, given
+    /// room as std's `ToRcSlice` asks it, `$roomForCounted(it, size,
+    /// align)`: of no upper bound, `capacity overflow`; past what a `Layout`
+    /// of the slice after its counts holds, `LayoutError`'s (#1678). Not of
+    /// one bounded by items that exist already, which asks no room it could
+    /// lack (`bounded_by_items`).
+    pub(in crate::lower) fn counted_slice_room(
+        &mut self,
+        it: Expr,
+        (boxed, item): (Ty<'tcx>, Ty<'tcx>),
+        iter_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        if self.recognition().bounded_by_items(iter_ty) {
+            return Ok(it);
+        }
+        let (size, align) = self.counted_slice_layout((boxed, item), iter_ty, span)?;
+        Ok(Expr::call_helper("$roomForCounted", vec![it, size, align]))
+    }
+
+    /// The size and the alignment of each of `item`s an `Rc<[T]>`, as a
+    /// `Box<[T]>`, `boxed`, would be, std's `from_iter_exact` lays out:
+    /// `grown_item_size`'s, and its layout's or its caller's `TAlign`.
+    pub(in crate::lower) fn counted_slice_layout(
+        &mut self,
+        (boxed, item): (Ty<'tcx>, Ty<'tcx>),
+        iter_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<(Expr, Expr)> {
+        let size = self.grown_item_size(boxed, iter_ty, item, span)?;
+        let align = match self.layout(item) {
+            Some(layout) => Expr::int(layout.align.abi.bytes().into()),
+            None => self.type_fact_value(item, TypeFact::Align, span)?,
+        };
+        Ok((size, align))
+    }
+
     /// The size of each of `item`s a `Vec` std makes of an iterator of
     /// `iter_ty` grows by, which says when it's full and asks the hint
     /// again (`$roomForHint`'s, #728): `room_item_size`; but of items whose

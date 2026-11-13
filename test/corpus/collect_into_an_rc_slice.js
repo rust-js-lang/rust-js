@@ -2,8 +2,8 @@
 
 import {
   $catchUnwind,
+  $collectCounted,
   $collectDropping,
-  $collectVec,
   $collectsInPlace,
   $debugStr,
   $iter,
@@ -28,9 +28,11 @@ function loudDrop_drop(loud) {
 function main() {
   const fromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collectVec(
+      $collectCounted(
         items,
         4,
+        4,
+        ITrustedLen,
         $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
       ),
   };

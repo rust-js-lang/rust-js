@@ -4826,6 +4826,17 @@ export function $collectVec(it, size, how, drop) {
   return $grownVec($roomForHint(it, size, false, false, drop), (grown) => $collectDropping(grown, drop, true));
 }
 
+// `collect()` into an `Rc<[T]>` or an `Arc<[T]>` of what generic code was
+// given, as std's `ToRcSlice` collects the type its caller knows: of a
+// `TrustedLen`, `trusted`, `from_iter_exact`'s, room asked as
+// `$roomForCounted` asks it, of items `size` bytes aligned to `align`,
+// then each item by `next`, a panic dropping what's left before what it
+// wrote; of another, a `Vec`'s, `$collectVec`'s by `how` (#1678, #1694).
+export function $collectCounted(it, size, align, trusted, how, drop) {
+  if (trusted) return $collectDropping($roomForCounted(it, size, align), drop, true);
+  return $collectVec(it, size, how, drop);
+}
+
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's
 // `extend_trusted` does it: each item through its `fold`, std's compiled one
 // where it's std's struct, a zip's `SpecFold` say, which steps no item past
@@ -14662,6 +14673,30 @@ export function $keepCapacity(v) {
 // `usize::MAX` items, of no size too, a `capacity overflow` panic.
 export function $roomFor(count, size) {
   if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+}
+
+// `it`, a `TrustedLen` an `Rc<[T]>` or an `Arc<[T]>` is collected of, of
+// items of `size` bytes aligned to `align`, its hint asked first, as std's
+// `ToRcSlice` asks it before `from_iter_exact` writes each item in place
+// (#1678): of no upper bound, a `capacity overflow` panic; of one whose
+// slice, after the counts' two `usize`s, wasm32's 8 bytes, is past
+// `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
+// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed.
+export function $roomForCounted(it, size, align) {
+  $unwinds(
+    () => {
+      const [, upper] = $sizeHint(it);
+      if (upper === undefined) throw new Error("capacity overflow");
+      const max = 2 ** 31 - 1;
+      const bytes = upper * size;
+      const counts = Math.ceil(8 / align) * align;
+      if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
+        throw new Error("called `Result::unwrap()` on an `Err` value: LayoutError");
+      }
+    },
+    () => it.return?.(),
+  );
+  return it;
 }
 
 // The least capacity std's `Vec` of items of `size` bytes grows to,

@@ -422,3 +422,33 @@ case stays refused, naming #1678: a `TrustedLen` whose steps may panic, of
 items that drop. There std's `from_iter_exact` writes each item in place,
 and a panic drops what's left of the iterator before what it wrote, where
 a `Vec` drops what it wrote first.
+
+## Amendment (2026-11-13, #1678's rest, #1694): an `Rc<[T]>` of a `TrustedLen` is std's `from_iter_exact`
+
+The case left refused is followed, and the first amendment's "always a
+`Vec`'s" was wrong of a `TrustedLen`: std's `ToRcSlice` of one asks its
+hint, panics `capacity overflow` of no upper bound, and otherwise makes
+`Layout::array::<T>(len)` and the counts' layout extended by it, each
+`unwrap()`ed, then writes each item in place by a `for` loop, its `next`.
+So of a length past `isize::MAX` bytes, `(0..usize::MAX).map(f)`, it
+panics `called `Result::unwrap()` on an `Err` value: LayoutError`, where
+rust-js panicked `capacity overflow`, a `Vec`'s: a P0, #1694, a
+regression of 170e19376. Now a `collect()` into an `Rc<[T]>` or an
+`Arc<[T]>` of a `TrustedLen` is `$roomForCounted(it, size, align)`, which
+asks the hint as `ToRcSlice` does, wasm32's `Layout` with the counts' 8
+bytes before the slice, then each item by `next`; one bounded by items
+that exist asks none (`counted_slice_room`, `bounded_by_items`). Where its
+steps may panic, of items that drop or an iterator that holds what drops,
+it's `$collectDropping(it, drop, true)`: what's left of the iterator is
+dropped before what it wrote, `from_iter_exact`'s guard dropping after
+it (`rest_dropped_first`). Generic code's, given its iterator by a
+caller, is `$collectCounted(it, size, align, ITrustedLen, IVecCollect,
+drop)`, which picks by the caller's facts: it was a `Vec`'s, the order
+and the panic both wrong. Of another iterator, std's
+`collect::<Vec<T>>().into()`, as before. Case (ADR 0262): results change.
+Proof: corpus cases `collect_into_an_rc_slice_unwinding` (each panic
+point of each shape, against a `Vec`'s and a filter's) and
+`collect_into_an_rc_slice_room`, against native Rust in both builds,
+their metamorphic rewrites, and seven mutations. A range collected into an
+`Rc<[T]>` reads `Array.from($roomForCounted(..))` where a `Vec`'s reads
+`Array.from({ length }, f)`, which knows its length: readability only.

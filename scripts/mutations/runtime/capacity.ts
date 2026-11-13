@@ -375,4 +375,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "an extend given its items' size as undefined"],
   },
+  {
+    name: "room-for-counted-capacity-overflow",
+    breaks: "an `Rc<[T]>` collected of a `TrustedLen` past what a `Layout` can be panics `capacity overflow`, a `Vec`'s, where std unwraps a `LayoutError` (#1694)",
+    file: "src/runtime/capacity.js",
+    find: "        throw new Error(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
+    replace: "        throw new Error(\"capacity overflow\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
+  },
+  {
+    name: "room-for-counted-endless-unrefused",
+    breaks: "an `Rc<[T]>` collected of a `TrustedLen` of no upper bound, `(0..)`'s, steps on where std panics `capacity overflow` (#1678)",
+    file: "src/runtime/capacity.js",
+    find: "      if (upper === undefined) throw new Error(\"capacity overflow\");\n      const max = 2 ** 31 - 1;\n      const bytes = upper * size;\n",
+    replace: "      if (upper === undefined) return;\n      const max = 2 ** 31 - 1;\n      const bytes = upper * size;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
+  },
 ];

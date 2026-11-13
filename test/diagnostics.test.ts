@@ -298,9 +298,6 @@ for (const [name, source, message, crate] of [
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
-  // An `Rc<[T]>` std writes in place from a `TrustedLen`, whose panic drops what's left of
-  // the iterator first, of items that drop (#1678).
-  ["collecting into an Rc slice of a TrustedLen that may panic", 'pub struct D(pub u8);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() -> usize { let r: std::rc::Rc<[D]> = (1..4u8).map(|i| if i == 9 { panic!() } else { D(i) }).collect(); r.len() }', "std's `from_iter_exact` drops what's left before what it wrote, which isn't followed yet (#1678)"],
   // std's `eq` of two `TrustedLen` iterators asks their lengths first; of maps held in MIR's
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
