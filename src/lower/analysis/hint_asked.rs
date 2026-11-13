@@ -443,8 +443,27 @@ fn mark_hint_knowing<'tcx>(
     });
     if of_items {
         mark_each(tcx, instance, marked);
+        return true;
     }
-    of_items
+    // A `take(n)` of a `dyn Iterator`'s, a binding's JS iterator that knows
+    // no hint: JS's own `take` knows none either, where std's `Take` bounds
+    // its by `n` (#1691). It alone is made knowing, `$taking`, of its
+    // source as it is.
+    let (_, hinted) = marked;
+    let mut takes = false;
+    for held in instance.walk().filter_map(|part| part.as_type()) {
+        let held = tcx.erase_and_anonymize_regions(held);
+        if let Some((source, false)) = counted_source(tcx, held)
+            && source
+                .walk()
+                .filter_map(|part| part.as_type())
+                .any(|part| part.is_trait())
+        {
+            hinted.insert(held);
+            takes = true;
+        }
+    }
+    takes
 }
 
 fn adapter<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) -> bool {

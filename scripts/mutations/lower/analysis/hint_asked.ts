@@ -180,4 +180,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-collections.test.ts", "-t", "a binding's dyn Iterator's size_hint is refused"],
   },
+  {
+    name: "dyn-take-hint-unknown",
+    breaks: "a `take(n)` of a binding's JS iterator, given where generic code asks its hint, is JS's own `take`, which hints (0, None) where std's `Take` hints (0, Some(n)) (#1691)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "            hinted.insert(held);\n            takes = true;\n",
+    replace: "            takes = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
+  },
+  {
+    name: "dyn-take-source-unseen",
+    breaks: "a `take(n)` of a `dyn Iterator` isn't seen to be of one, so it's JS's own `take`, which hints (0, None) (#1691)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                .any(|part| part.is_trait())\n",
+    replace: "                .any(|part| part.is_trait() && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
+  },
 ];

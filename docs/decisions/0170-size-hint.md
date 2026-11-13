@@ -300,3 +300,22 @@ closure that asks, given to the asker where made) against native Rust in
 both builds; no other snapshot changed. Mutations
 `take-made-knowing-crate-wide` (snapshots), `take-left-unmarked`,
 `take-passed-unmarked`.
+
+## Amendment: a `take(n)` of a JS iterator that knows no hint (2026-11-13, #1691)
+
+Generic code that asks a hint is given, where it's made, a form that knows
+std's hint (`mark_hint_knowing`, #1236), but only for what steps an array's
+items. JS's own iterator, `values()`, and its own adapters knew no hint, so
+they were left as they were. That's right of every adapter of a source
+whose hint is `(0, None)` but one: std's `Take` bounds its upper bound by
+`n` whatever its source says. So `take(3)` of a binding's JS iterator behind
+a `Box<dyn Iterator>`, the tables' `js values` source (ADR 1136), hinted
+`(0, None)`, JS's own `take`, where native hints `(0, Some(3))`.
+
+A `take(n)` of a `dyn Iterator`'s is now made knowing, `$taking` of its
+source as it is, wherever generic code may ask its hint. Case (ADR 0262):
+results change (a hint, and what a `Vec` reserves by it), so std's hint is
+kept. Corpus case `take_of_an_iterator_with_no_upper_bound_hints_its_count`,
+failing before, against native in both builds; #1691's two table rows off
+`test/iterator-matrix-known.txt`; mutations `dyn-take-hint-unknown` and
+`dyn-take-source-unseen`, caught.
