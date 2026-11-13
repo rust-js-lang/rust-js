@@ -21,6 +21,9 @@ plain std boxed address_of_an_option_payload.rs
 plain std fact-addresses mut_kept_by_what_a_call_gives_back.rs
 plain std fact-stored mut_kept_by_what_a_call_gives_back.rs
 
+#difference 2 a `usize` is 32 bits, as rustc checks programs for wasm32 (ADR 0090): a collect into a `Vec` std makes in place, by its items' layout, on wasm32 and not natively, drops what it collected before what's left of its source as a closure panics, where natively it drops them the other way (the user's decision, #1651)
+plain std loud-call blanket_default_beside_an_unmet_clause.rs
+
 #difference 5 a HashMap or a HashSet iterates in insertion order, where Rust's order is its seed's: of a program whose own output differs across seeds in what it prints, not only in its order, which no comparison of native's runs can judge (the lead's decision, #1453)
 plain std loud stock_orders.rs
 plain loud-call stock_orders.rs

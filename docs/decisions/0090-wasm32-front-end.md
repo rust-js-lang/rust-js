@@ -136,3 +136,19 @@ and leaves `cfg(panic)` wrong. And for the runtime: shipping its metadata
 beside the bindings', which every host would then pass in, Cargo's,
 `rust-js build`'s, the tests' and the playground's, where the compiler
 alone can make it.
+
+## Amendment (2026-11-13, #1651): what std decides by a layout is decided as on wasm32
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the JS does what Rust
+does on the target rust-js compiles for; the user's decision. A layout is
+wasm32's, so whatever std decides by one is decided as there. A
+`filter_map` over `Vec<D>`s collected into a `Vec<D>` is collected in
+place on wasm32, where both are aligned to 4, so as its closure panics,
+what it collected drops before what's left of its source. On a 64-bit
+machine `Vec<D>` is aligned to 8, so std collects otherwise and drops them
+the other way. The metamorphic net's native run is the host's, so that
+case is listed under difference 2 in test/metamorphic-known.txt.
+`native: wasm32` can't show it, as wasm32-wasip1 aborts on a panic. Corpus
+cases collect_in_place_drops_what_it_collected_first_as_a_closure_panics
+and collect_not_in_place_drops_its_source_first_as_a_closure_panics hold
+each order where both targets decide alike.

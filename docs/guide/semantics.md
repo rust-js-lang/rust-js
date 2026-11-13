@@ -2006,7 +2006,14 @@ React and JSX are [their own pages](README.md#react).
 ## Differences from native Rust, in one list
 
 1. Integer overflow wraps, as a release build's does, in every build.
-2. `usize` and `isize` are 32 bits.
+2. `usize` and `isize` are 32 bits, and layouts are wasm32's, as rustc checks
+   programs for it ([0090](../decisions/0090-wasm32-front-end.md)). So
+   what std decides by a layout is decided as on wasm32: a `collect()` into
+   a `Vec` std makes in place where its items are as aligned as the
+   `Vec`'s and no smaller, `Vec<D>`s into `D`s, drops what it collected
+   before what's left of its source as a closure panics, where on a 64-bit
+   machine, whose `Vec` is aligned to 8, it collects otherwise and drops
+   them the other way (the user's decision, #1651).
 3. `i64` and `u64` are BigInts at the JS boundary.
 4. Float library functions, `sin`, `exp`, `powf`, are JS's: the last bit may
    differ. A NaN's sign and payload aren't kept.
