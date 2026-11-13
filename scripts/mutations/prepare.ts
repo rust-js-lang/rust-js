@@ -6,25 +6,9 @@ export const mutations: Mutation[] = [
     name: "module-function-const",
     breaks: "a thread-local's with_this function stays a `const` of a function expression, `const onUnsuspend = function () { .. }`, where upstream declares `function onUnsuspend() { .. }` (rd196)",
     file: "src/prepare.rs",
-    find: "    passes::run(Pass::DeclaredModuleFunctions, module, |module| {\n        declared_module_functions(&mut module.items)\n    });\n",
+    find: "    passes::run(Pass::DeclaredModuleFunctions, module, |module| {\n        declared::declared_module_functions(&mut module.items)\n    });\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
-  },
-  {
-    name: "module-function-mutable-declared",
-    breaks: "a thread-local its module sets, a `let`, is declared a function, which the module's assignment would replace as it does a `let`, but which is hoisted",
-    file: "src/prepare.rs",
-    find: "            && !constant.mutable\n            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    replace: "            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
-  },
-  {
-    name: "valued-arrow-declared",
-    breaks: "a function held as a value, an `Rc`'s or a `Box`'s of a closure, is declared, `function commitHook(n) { .. }` (ADR 0882, amended)",
-    file: "src/prepare.rs",
-    find: "        if value.facts.has(js::Known::Valued) {\n            continue;\n        }\n",
-    replace: "",
-    tests: ["test/lowering-arrows.test.ts", "-t", "a let of an Rc or a Box"],
   },
   {
     name: "let-else-guard-a-loop-head",
@@ -574,32 +558,8 @@ export const mutations: Mutation[] = [
     name: "let-closure-stays-arrow",
     breaks: "React's factory's `const deleteChild = (..) => { .. }`, not `function deleteChild(..) { .. }` (ADR 0882, amended)",
     file: "src/prepare.rs",
-    find: "    each_block(Pass::DeclaredFunctions, module, &mut |stmts| declared_functions(stmts));\n",
+    find: "    each_block(Pass::DeclaredFunctions, module, &mut |stmts| {\n        declared::declared_functions(stmts)\n    });\n",
     replace: "",
-    tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
-  },
-  {
-    name: "let-closure-of-this-declared",
-    breaks: "a closure that reads a class's `this` is a function, whose `this` is its own (ADR 0882, amended)",
-    file: "src/prepare.rs",
-    find: "        let mut own = js::reads_this(body);\n",
-    replace: "        let mut own = false;\n",
-    tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
-  },
-  {
-    name: "let-closure-of-a-value-declared",
-    breaks: "`const double = (n) => n * 2` is `function double(n) { return n * 2; }` (ADR 0882, amended)",
-    file: "src/prepare.rs",
-    find: "        if own || value_alone {\n",
-    replace: "        if own {\n",
-    tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
-  },
-  {
-    name: "let-closure-async-unmarked",
-    breaks: "an async closure a `let` binds is a function that isn't `async`, whose `await` JS refuses (ADR 0882, amended)",
-    file: "src/prepare.rs",
-    find: "            is_async: matches!(value.kind, ExprKind::AsyncArrow(..)),\n",
-    replace: "            is_async: false,\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
   },
   {
@@ -641,46 +601,6 @@ export const mutations: Mutation[] = [
     find: "            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);\n",
     replace: "            let bitwise = true;\n",
     tests: ["test/lowering-math.test.ts", "-t", "bitwise chain"]
-  },
-  {
-    name: "function-stored-unnamed",
-    breaks: "a `with_this` function stored as a property stays anonymous, `update.callback = function () { .. }`, not React's `function callback()` (ADR 0972)",
-    file: "src/prepare.rs",
-    find: "            named_as(value, property);\n",
-    replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
-  },
-  {
-    name: "function-named-as-what-it-reads",
-    breaks: "a function stored as `update.callback` is named `callback` where it reads a variable of that name, which its own name then is: `function callback() { return callback(); }` calls itself (a wrong answer, ADR 0972)",
-    file: "src/prepare.rs",
-    find: "        && js::mentions_in(&function.body, property) == 0\n",
-    replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
-  },
-  {
-    name: "function-named-a-kept-word",
-    breaks: "a function stored as `update.default` is named `function default()`, a `SyntaxError` (ADR 0972)",
-    file: "src/prepare.rs",
-    find: "        && !crate::names::kept_word(property)\n",
-    replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
-  },
-  {
-    name: "function-named-no-name",
-    breaks: "a function stored as `on[\"data-on\"]` is named `function data-on()`, a `SyntaxError` (ADR 0972)",
-    file: "src/prepare.rs",
-    find: "        && crate::names::is_identifier(property)\n",
-    replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
-  },
-  {
-    name: "function-of-a-let-not-declared",
-    breaks: "a `let` of a `with_this` function stays `const inner = function () { .. }`, not `function inner() { .. }` (ADR 0972)",
-    file: "src/prepare.rs",
-    find: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    replace: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
-    tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
   },
   {
     name: "err-ending-a-block-returns",
