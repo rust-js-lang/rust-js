@@ -86,22 +86,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a keyed extreme, `max_by_key`'s or `min_by_key`'s, of the
-    /// crate's iterator with a destructor, `arg_tys[0]`, closes it, as
-    /// `consumer_closes` (closing.rs) says of what it answers: of a key moved into its
-    /// fold with a destructor (`consumed_function`), std's `Map` the key's
-    /// `reduce` folds drops the iterator, then the key, where its first step
-    /// ends, after the fold its key drops before what's left, so its drop is
-    /// the consumer's, there (#789).
+    /// crate's iterator with a destructor, or a type parameter's,
+    /// `arg_tys[0]`, closes it, as `consumer_closes` (closing.rs) says of
+    /// what it answers: of a key function moved into its fold with a
+    /// destructor (`consumed_function`), std's `Map` the key's `reduce` folds
+    /// drops the iterator, then the function, where its first step ends,
+    /// after the fold its function drops before what's left (#789); of keys
+    /// with a destructor, the fold drops the iterator before `let (_, x)`
+    /// drops the kept key (#1649). So its drop is the consumer's, there.
     pub(in crate::lower::mir) fn keyed_consumer_closes(
         &self,
         method: Option<IterMethod>,
         arg_tys: &[Ty<'tcx>],
     ) -> bool {
-        matches!(method, Some(IterMethod::MaxByKey(_)))
-            && arg_tys
-                .first()
-                .is_some_and(|&iter| self.is_user_iterator(iter) && self.closes_to_drop(iter))
-            && self.consumed_function(method, arg_tys)
+        let (Some(IterMethod::MaxByKey(_)), [iter, f, ..]) = (method, arg_tys) else {
+            return false;
+        };
+        let keys_drop = || {
+            self.iterator_item(*iter).is_some_and(|item| {
+                let key = self.key_of(*f, Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_erased, item));
+                self.drops(key) != crate::lower::drops::Drops::Nothing
+            })
+        };
+        (self.is_user_iterator(*iter) || crate::lower::recognition::known_by_bounds(*iter))
+            && self.closes_to_drop(*iter)
+            && (self.consumed_function(method, arg_tys) || keys_drop())
     }
 
     /// Whether std's consumer `method` of an `iter_ty` moves the function
@@ -394,10 +403,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let key = keyed.then(|| self.key_of(arg_tys[1], Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, item)));
         let f = arg();
         let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
-        // Of a key that drops, over the crate's iterator with a destructor:
-        // closed, its drop the consumer's, which std's `Map` the key's
-        // `reduce` folds drops before the key where its first step ends,
-        // and after it where its fold does (`keyed_consumer_closes`, #789).
+        // Of a key function that drops, or keys that do, over the crate's
+        // iterator with a destructor or a type parameter's: closed, its drop
+        // the consumer's, which std's `Map` the key's `reduce` folds drops
+        // before the function where its first step ends, after it where its
+        // fold does, and before the kept key (`keyed_consumer_closes`, #789,
+        // #1649).
         let it = match self.keyed_consumer_closes(Some(method), arg_tys) {
             true => self.closing(it, arg_tys[0], span)?,
             false => it,

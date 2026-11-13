@@ -409,3 +409,28 @@ dropped something, and was otherwise dropped after the call, past the key
 `$maxByKey` had dropped. Of a key with a destructor it's the fold's too
 (`keeps_a_dropping_key`), `$extremeByKey`'s `ends`, before the kept key.
 `test/corpus/key_function_drops_before_its_key.rs` holds it.
+
+## Amended (2026-11-13, #1649): the iterator drops before the kept key
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's order is kept.
+
+Std's `let (_, x) = self.map(|x| (f(&x), x)).reduce(..)?;` drops the
+iterator as its fold ends, then the kept pair's key, as the `let` takes it
+apart. Of keys with a destructor, over the crate's iterator with one,
+`$extremeByKey` dropped the kept key, and the iterator was dropped by its
+caller after the call: `drop key 3`, `drop Up` where native Rust prints
+`drop Up` first. `keyed_consumer_closes` (`mir/iter/consumers.rs`) closes
+it where the keys drop too, so it drops at the fold's end, before the kept
+key; and of a type parameter's as well as the crate's, which had the same
+order, and so did #789's key function that drops over a type parameter's,
+dropped before the iterator where the first step ends. Lent by
+`by_ref()`, it's its lender's, as before; a std adapter's closes its source
+already.
+
+`test/corpus/max_by_key_drops_its_iterator_before_the_kept_key.rs` holds
+it against native Rust in both builds: `max_by_key` and `min_by_key`,
+empty, of one item and more, of a type parameter's, of one given an
+iterator with no `Drop`, lent, and a key that panics. Mutations
+`keyed-extreme-of-dropping-keys-unclosed` and
+`keyed-extreme-of-a-type-parameter-unclosed` (`mir/iter/consumers.ts`).

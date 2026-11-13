@@ -956,4 +956,6 @@ export const mutations: Mutation[] = [
     replace: "        let own_count = matches!(iter_ty.kind(), ty::Param(_))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_of_an_into_iter_by_its_own.rs$"],
   },
+
+
 ];
