@@ -306,7 +306,11 @@ what's held before it, as a browser's console takes whole lines
   written through std's builders, `$composed(..)`, so what came before the
   part is kept, in the line or the `String` it's written to (#1561).
   Another std value's of such a part, a `RefCell`'s say, is refused,
-  #1530
+  #1530. A library's writers are shown so too, as its contract says
+  which print. A library's writer that may stop part-way by a panic,
+  shown in stdout's line by a program with a `catch_unwind`, is refused,
+  #1530, as the library's JS makes its text whole: show it in a
+  `format!` first, or where no `catch_unwind` catches (#1608)
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
   amended).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),

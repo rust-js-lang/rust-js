@@ -89,7 +89,10 @@ use std::path::Path;
 /// of its traits' methods asks of its own slots, `trait_methods`, which a
 /// call of it through any impl's dictionary gives, the library's JS's own
 /// list, never one a consumer's analysis of its body makes (#1612).
-pub const VERSION: u32 = 33;
+/// 34: `printing_types`, `stopping_types`, `stopping_where_caught` and
+/// `leaves_unended`, what its writers and prints do to a consumer's line
+/// (#1608).
+pub const VERSION: u32 = 34;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -447,6 +450,28 @@ pub struct Library {
     /// A library a compiler wrote before is taken to.
     #[serde(default = "made_before")]
     pub drops_any: bool,
+    /// Its types one of whose writers may print to stdout as it formats,
+    /// by key (#1608, #1490): a consumer's line that formats one is written
+    /// through stdout's line writer, as one of its own types' is.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub printing_types: Vec<String>,
+    /// Of its types, those a `Debug` of a std value shows piece by piece,
+    /// `Prints::stopping`: whose writer may stop part-way where a panic may
+    /// be caught, or may print where a write to stderr may run while a line
+    /// is formatted (#1608, #1530, #1490).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stopping_types: Vec<String>,
+    /// Of its types, those one of whose writers may stop part-way, by a
+    /// panic, were a consumer to catch it, `Prints::stopping_where_caught`:
+    /// its JS makes their text whole, so a consumer that catches a panic
+    /// refuses to show one in stdout's line (#1608, #1530).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stopping_where_caught: Vec<String>,
+    /// Whether its code may leave stdout's line, and stderr's, unended: a
+    /// consumer then prints each whole line through what the runtime holds
+    /// (#1608, #1599).
+    #[serde(default, skip_serializing_if = "leaves_nothing_unended")]
+    pub leaves_unended: [bool; 2],
     /// A program's, `--tested`'s: the keys of the trait constants its
     /// dictionaries carry, those its own generic code reads, as `rust-js
     /// build` writes them (ADRs 0106, 1076, amended, #597). A consumer that
@@ -704,6 +729,10 @@ fn made_before() -> bool {
     true
 }
 
+fn leaves_nothing_unended(streams: &[bool; 2]) -> bool {
+    !streams[0] && !streams[1]
+}
+
 /// A type an `Rc` points at, as a library's contract names it (ADR 0852):
 /// what makes it, an item by its key or a primitive's name, and the types
 /// it's made of; `_`, no `of`, where it may be any type, a type
@@ -776,6 +805,14 @@ pub struct Exports {
     pub makes_dropping_iterators: bool,
     /// Whether any of its own values drops (ADR 0451, amended, #1591).
     pub drops_any: bool,
+    /// Its types whose writers may print as they format, by key (#1608).
+    pub printing_types: IndexSet<String>,
+    /// Its types a std value's `Debug` shows piece by piece (#1608).
+    pub stopping_types: IndexSet<String>,
+    /// Its types whose writers may stop part-way where caught (#1608).
+    pub stopping_where_caught: IndexSet<String>,
+    /// Whether it may leave stdout's line, and stderr's, unended (#1608).
+    pub leaves_unended: [bool; 2],
     /// A program's dictionaries' constants, by key; None of a library's,
     /// which carry every one (#597).
     pub dictionary_consts: Option<IndexSet<String>>,
@@ -887,6 +924,10 @@ impl Exports {
             merges_identities,
             makes_dropping_iterators,
             drops_any,
+            printing_types,
+            stopping_types,
+            stopping_where_caught,
+            leaves_unended,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,
@@ -927,6 +968,10 @@ impl Exports {
             merges_identities: merges_identities.into_iter().collect(),
             makes_dropping_iterators,
             drops_any,
+            printing_types: printing_types.into_iter().collect(),
+            stopping_types: stopping_types.into_iter().collect(),
+            stopping_where_caught: stopping_where_caught.into_iter().collect(),
+            leaves_unended,
             makes_dropping_anys,
             makes_dropping_errors,
             makes_dropping_fn_dyns,

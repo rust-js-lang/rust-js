@@ -56,6 +56,12 @@ pub(in crate::lower) struct Prints {
     /// left unended a whole line is printed through what the runtime holds
     /// (#1599).
     pub(in crate::lower) unended: [bool; 2],
+    /// Of a library's types, those one of whose writers may stop part-way,
+    /// by a panic, were a consumer to catch it: what it wrote before is
+    /// in Rust's stdout's line, where the library's JS, which catches
+    /// nothing, makes its text whole. Its contract's, so a consumer that
+    /// catches a panic refuses to show one in a line (#1608, #1530).
+    pub(in crate::lower) stopping_where_caught: IndexSet<DefId>,
 }
 
 impl Prints {
@@ -136,10 +142,12 @@ pub(super) fn prints<'tcx>(
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
+    library: bool,
 ) -> Prints {
-    let mut found = printing_writers(recognition, all_bodies, runs, unwinding);
+    let mut found = printing_writers(recognition, all_bodies, runs, unwinding, library);
     for error in [false, true] {
-        found.unended[usize::from(error)] = all_bodies.iter().any(|body| leaves_unended(recognition, body, error));
+        found.unended[usize::from(error)] = recognition.foreign.leaves_unended(error)
+            || all_bodies.iter().any(|body| leaves_unended(recognition, body, error));
     }
     let failing = unwinding.1;
     found.through_sink.extend(
@@ -162,18 +170,37 @@ fn printing_writers<'tcx>(
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
+    library: bool,
 ) -> Prints {
     let printing: IndexSet<DefId> = (all_bodies.iter())
         .filter(|body| prints_to(recognition, body, false))
         .map(|body| body.def_id)
         .collect();
     let mut found = Prints::default();
-    let catches = all_bodies.iter().any(|body| catches_unwinding(recognition, body));
-    if printing.is_empty() && !catches {
-        return found;
+    // A library's types the crate's bodies have, of whose writers its
+    // contract says they may print, or that a std value's `Debug` shows
+    // piece by piece (#1608): as the crate's own types are.
+    let foreign = &recognition.foreign;
+    let mut foreign_stopping: IndexSet<DefId> = IndexSet::default();
+    for body in all_bodies {
+        for expr in body.thir.exprs.iter() {
+            for adt in (expr.ty.walk().filter_map(|part| part.as_type()))
+                .filter_map(|part| part.ty_adt_def().map(|adt| adt.did()))
+                .filter(|did| !did.is_local())
+            {
+                if foreign.prints_shown(adt) {
+                    found.types.insert(adt);
+                }
+                if foreign.stops_shown(adt) {
+                    found.stopping.insert(adt);
+                }
+                if foreign.stops_where_caught(adt) {
+                    foreign_stopping.insert(adt);
+                }
+            }
+        }
     }
     let tcx = recognition.tcx;
-    let mut unfollowed = false;
     // The crate's writers: each function or closure given a `Formatter`,
     // not a `const`'s body.
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
@@ -194,13 +221,36 @@ fn printing_writers<'tcx>(
                 .did(),
         )
     };
+    // A library's, for its contract: the types of its writers that may stop
+    // part-way, by a panic, were a consumer to catch it (#1608).
+    if library {
+        let stopping = stopping(
+            (all_bodies, &writers),
+            runs,
+            (unwinding.0, &IndexSet::default()),
+            &type_of,
+            &foreign_stopping,
+        );
+        found.stopping_where_caught = (writers.iter())
+            .filter(|writer| stopping.contains(&writer.def_id))
+            .filter_map(|writer| type_of(writer.def_id))
+            .collect();
+    }
+    let catches = all_bodies.iter().any(|body| catches_unwinding(recognition, body));
+    if catches && !foreign_stopping.is_empty() {
+        refuse_shown_stopping(recognition, (all_bodies, &writers), runs, &type_of, &foreign_stopping);
+    }
+    if printing.is_empty() && !catches && found.types.is_empty() {
+        return found;
+    }
+    let mut unfollowed = false;
     // Of those that may stop, the ones that may write into stdout's line,
     // where what they wrote before is kept: in a `format!`, it's dropped
     // with the `String` the panic never gives (#1496).
     let stops = match catches {
         true => {
             let in_a_line = in_a_line(recognition, (all_bodies, &writers), runs, &type_of);
-            let mut stops = stopping((all_bodies, &writers), runs, unwinding, &type_of);
+            let mut stops = stopping((all_bodies, &writers), runs, unwinding, &type_of, &foreign_stopping);
             if let Some(in_a_line) = in_a_line {
                 stops.retain(|id| in_a_line.contains(id));
             }
@@ -234,14 +284,13 @@ fn printing_writers<'tcx>(
     if unfollowed {
         found.while_formatting.extend(printing.iter().copied());
     }
-    found.types = found
-        .through_sink
-        .iter()
+    let own_types: Vec<DefId> = (found.through_sink.iter())
         .filter_map(|&writer| type_of(writer))
         .collect();
+    found.types.extend(own_types);
     // The types a `Debug` of which may stop part-way, which a `Debug` that
     // shows them among other parts can't write as the line has it (#1530).
-    found.stopping = (stops.iter())
+    let own_stopping: Vec<DefId> = (stops.iter())
         .filter(|&&writer| {
             (tcx.trait_impl_of_assoc(writer).map(|imp| tcx.impl_trait_id(imp))).is_some_and(|of| {
                 of == crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Debug)
@@ -249,6 +298,7 @@ fn printing_writers<'tcx>(
         })
         .filter_map(|&writer| type_of(writer))
         .collect();
+    found.stopping.extend(own_stopping);
     // A writer that shows a value of a type one of whose writers may print,
     // a derived `Debug` of a field's, which std's builders format through a
     // `&dyn Debug` what may run doesn't follow: it may print too, to a fixed
@@ -292,27 +342,33 @@ fn printing_writers<'tcx>(
     found
 }
 
-/// Of the crate's bodies, where it catches a panic, those that may stop
+/// Of the crate's writers, where it catches a panic, those that may stop
 /// part-way as they format, by a panic, all but `never_unwinding`'s (ADR
 /// 0902) of what their formatting shows, or by an `Err`, `failing`'s (ADR
 /// 0187); or that show a value that may (#1496, #1521, #1530). What a body
 /// shows is each type its expressions have, of a writer of the crate's
-/// that may stop, or what can't be known (`unknown_shown`). A body stops
-/// where what it may run does (`runs`), or where that can't be followed.
-/// To a fixed point, as a type stops where a writer of it does.
+/// that may stop, or of a library's whose contract says its writer may
+/// (`foreign_stopping`, #1608), or what can't be known (`unknown_shown`).
+/// A writer stops where a body it may run does (`runs`), or where that
+/// can't be followed: what may run is asked of the writers alone, as a
+/// library asks it of each of them, not of every body (#1608). To a fixed
+/// point, as a type stops where a writer of it does.
 fn stopping<'tcx>(
     (all_bodies, writers): (&[&Body<'tcx>], &[&Body<'tcx>]),
     runs: &Runs<'_, 'tcx>,
     (never_unwinding, failing): (&IndexSet<DefId>, &IndexSet<DefId>),
     type_of: &dyn Fn(DefId) -> Option<DefId>,
+    foreign_stopping: &IndexSet<DefId>,
 ) -> IndexSet<DefId> {
     // The crate's own: another crate's writer is shown whole (`unknown_part`).
     let all_bodies: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
         .filter(|body| body.def_id.is_local())
         .collect();
-    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> =
-        all_bodies.iter().map(|&body| (body, runs.of(body.def_id))).collect();
-    let mut types: IndexSet<DefId> = IndexSet::default();
+    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())
+        .filter(|writer| writer.def_id.is_local())
+        .map(|writer| (writer, runs.of(writer.def_id)))
+        .collect();
+    let mut types: IndexSet<DefId> = foreign_stopping.clone();
     loop {
         let direct: IndexSet<DefId> = (all_bodies.iter())
             .filter(|body| {
@@ -330,6 +386,7 @@ fn stopping<'tcx>(
         let more: IndexSet<DefId> = (writers.iter())
             .filter(|writer| stops.contains(&writer.def_id))
             .filter_map(|writer| type_of(writer.def_id))
+            .chain(foreign_stopping.iter().copied())
             .collect();
         if more.len() == types.len() {
             return stops;
@@ -449,7 +506,8 @@ fn unknown_shown(expr: &thir::Expr<'_>) -> bool {
 /// Whether `part`'s writer can't be known: a type parameter's, or, where
 /// `dyn_unknown`, a `dyn`'s. Another crate's writer is shown whole, its
 /// text made before the line gets it, as a library's that prints is
-/// (#1490), so it's taken not to stop.
+/// (#1490), so it's taken not to stop, but where its contract says it may
+/// (`foreign_stopping`, #1608).
 fn unknown_part(part: ty::Ty<'_>, dyn_unknown: bool) -> bool {
     match part.kind() {
         ty::Dynamic(..) => dyn_unknown,
@@ -465,13 +523,87 @@ fn local_parts(ty: ty::Ty<'_>) -> impl Iterator<Item = DefId> + '_ {
         .filter(|did| did.is_local())
 }
 
+/// Where the crate catches a panic, each print to stdout that shows a
+/// value of a library's type one of whose writers may stop part-way by a
+/// panic (`foreign_stopping`), or of what can't be known where the crate
+/// has one; and each writer of the crate's that may write into stdout's
+/// line (`in_a_line`) and has one: refused. Rust's stdout keeps what that
+/// writer wrote before it stopped, where its library's JS, which catches
+/// nothing, makes its text whole, `x ` where native's line is `x [!L1, !`
+/// (#1608, #1530).
+fn refuse_shown_stopping<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    (all_bodies, writers): (&[&Body<'tcx>], &[&Body<'tcx>]),
+    runs: &Runs<'_, 'tcx>,
+    type_of: &dyn Fn(DefId) -> Option<DefId>,
+    foreign_stopping: &IndexSet<DefId>,
+) {
+    let tcx = recognition.tcx;
+    let stopping_part = |ty: ty::Ty<'tcx>| {
+        (ty.walk().filter_map(|part| part.as_type())).find(|part| {
+            part.ty_adt_def()
+                .is_some_and(|adt| foreign_stopping.contains(&adt.did()))
+        })
+    };
+    let refuse = |span, shown: String| {
+        let what = format!("showing {shown} in stdout's line where a `catch_unwind` may catch a panic");
+        let why = "its writer, of another crate, may stop part-way, and Rust's stdout keeps what it wrote before it stopped, where its crate's JS makes its text whole: show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1530)";
+        crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
+    };
+    let own: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
+        .filter(|body| body.def_id.is_local())
+        .collect();
+    let any = foreign_stopping
+        .first()
+        .map(|&adt| tcx.def_path_str(adt))
+        .unwrap_or_default();
+    for body in &own {
+        for expr in body.thir.exprs.iter() {
+            let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                continue;
+            };
+            let ty::FnDef(id, generics) = *body.thir[fun].ty.kind() else {
+                continue;
+            };
+            if !recognition.writes_stream(id, generics.skip_binder(), false) {
+                continue;
+            }
+            let mut found = ShownByArguments {
+                thir: &body.thir,
+                tcx,
+                shown: Vec::new(),
+            };
+            for &arg in args.iter() {
+                found.visit_expr(&body.thir[arg]);
+            }
+            for ty in found.shown {
+                if let Some(part) = stopping_part(ty) {
+                    refuse(expr.span, format!("a `{part}`"));
+                } else if (ty.walk().filter_map(|part| part.as_type())).any(|part| unknown_part(part, true)) {
+                    refuse(expr.span, format!("a `{ty}`, which may be a `{any}`,"));
+                }
+            }
+        }
+    }
+    let line = in_a_line(recognition, (all_bodies, writers), runs, type_of);
+    for writer in writers.iter().filter(|writer| writer.def_id.is_local()) {
+        if line.as_ref().is_some_and(|line| !line.contains(&writer.def_id)) {
+            continue;
+        }
+        if let Some((expr, part)) = (writer.thir.exprs.iter()).find_map(|expr| Some((expr, stopping_part(expr.ty)?))) {
+            refuse(expr.span, format!("a `{part}`"));
+        }
+    }
+}
+
 /// Whether `body` shows a value that may stop part-way as it's shown: of
 /// a type among `types`, or of what can't be known (`unknown_shown`).
 fn shows_what_may_stop(body: &Body<'_>, types: &IndexSet<DefId>) -> bool {
-    body.thir
-        .exprs
-        .iter()
-        .any(|expr| local_parts(expr.ty).any(|adt| types.contains(&adt)) || unknown_shown(expr))
+    body.thir.exprs.iter().any(|expr| {
+        (expr.ty.walk().filter_map(|part| part.as_type()))
+            .any(|part| part.ty_adt_def().is_some_and(|adt| types.contains(&adt.did())))
+            || unknown_shown(expr)
+    })
 }
 
 /// Whether `body` calls `catch_unwind`, past which a program a panic
@@ -493,15 +625,8 @@ fn catches_unwinding<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx
 /// `print!` or `eprint!` and their lines, or a write to `io::stdout()` or
 /// `io::stderr()`.
 fn prints_to<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
-    body.thir.exprs.iter().any(|expr| {
-        let ExprKind::Call { fun, .. } = expr.kind else {
-            return false;
-        };
-        let ty::FnDef(id, args) = *body.thir[fun].ty.kind() else {
-            return false;
-        };
-        recognition.writes_stream(id, args.skip_binder(), error)
-    })
+    (crate::lower::instances::calls_of(body).into_iter())
+        .any(|(id, args, _)| recognition.writes_stream(id, args, error))
 }
 
 /// Whether `body` may leave stdout's line, or of `error`, stderr's,

@@ -1073,6 +1073,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         all_bodies,
         &may_run,
         (&never_but_through_whats_shown, &failing),
+        library,
     );
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their

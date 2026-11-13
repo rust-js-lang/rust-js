@@ -312,6 +312,47 @@ test("a consumer's fact of a library's associated type its dictionaries don't ca
   expect(native).toBe("24\n");
 }, 300_000);
 
+// #1608: a library's writer that may stop part-way by a panic, which its
+// contract says (`stopping_where_caught`), shown in stdout's line by a
+// program that catches one, is refused, naming #1530 and what to write:
+// Rust's stdout keeps `x [!L1, !L2, !`, where the library's JS makes the
+// writer's text whole.
+test("a library's writer that may stop part-way, shown in a line where a panic may be caught, is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_writer_stopping_where_caught", ["dep", "app"], [
+    "rust-js does not support showing a `dep::Loud` in stdout's line where a `catch_unwind` may catch a panic yet",
+    "show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1530)",
+    "app.rs:17:28",
+    "app.rs:22:5",
+    "showing a `&T`, which may be a `dep::Loud`,",
+    "app.rs:26:34",
+  ]);
+  expect(native).toBe("x [!L1, !L2, ! caught true\nx w! caught true\nshown ! caught true\n");
+}, 300_000);
+
+// And of a library whose writer shows its dependency's that may stop: its
+// own may too, as its contract says (#1608).
+test("a library's writer showing its dependency's writer that may stop part-way is refused where a panic may be caught", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_writer_showing_a_dependencys_stopping_writer", ["dep", "mid", "app"], [
+    "rust-js does not support showing a `mid::Holder` in stdout's line where a `catch_unwind` may catch a panic yet",
+    "app.rs:9:",
+  ]);
+  expect(native).toBe("x <! caught true\n");
+}, 300_000);
+
+// #1608: a library's contract says which of its types' writers print and
+// whether its prints may leave a line unended; a program's line ended
+// after the library's `print!` is printed through what the runtime holds,
+// `$print`, so a browser's console shows `begun ended` as one line.
+test("a library's printing writers and unended line are its contract's, and its consumer's lines go through what's held", () => {
+  const out = chain(pairs, "library_writer_prints_in_a_programs_line", ["dep", "app"]);
+  const library = contract(out);
+  expect(library.printing_types.length).toBe(5);
+  expect(library.leaves_unended).toEqual([true, false]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain('$print("ended\\n")');
+  expect(app).not.toContain("console.log");
+}, 300_000);
+
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
 // borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.

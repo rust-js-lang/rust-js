@@ -102,7 +102,8 @@ are off test/metamorphic-known.txt.
   what it wrote before the panic, where Rust's line buffer keeps it, only
   in a program that catches no panic (amended below, #1496).
 - A library's writer that prints, shown by a consumer's `println!`, is
-  shown as before, its string whole. No contract fact says it prints.
+  shown as before, its string whole. No contract fact says it prints
+  (amended below, #1608: its contract says so).
 - Placing the panic message relative to a partial line, in a stream that
   mixes stdout and stderr, isn't modelled: rust-js writes the partial line
   when `$printing` ends, where Rust writes it with the next newline.
@@ -315,7 +316,8 @@ corpus only `never_unwinding_calls`' snapshot changes, its `Bad`, shown
 by a `println!` that may be caught, now written through the line.
 A library's writer that may panic, shown by a consumer's `println!` that
 catches it, is shown whole, as one that prints is: no contract fact says
-it may (the metamorphic net's `library` rewrite, listed with #1490's).
+it may (the metamorphic net's `library` rewrite, listed with #1490's;
+amended below, #1608: refused).
 
 Proof: corpus case `panic_part_way_through_a_line_kept_where_caught`,
 against native Rust in both builds: a writer that panics after writing,
@@ -526,3 +528,67 @@ comparison, all five cases now, and the case
 `line_printed_after_a_part_left_unended`. A library's `print!` before a
 program's `println!` is #1608's.
 
+
+## Amendment (2026-11-13, #1608): a library's writers, by its contract
+
+A crate whose writers are a library's didn't see them print, so a
+consumer's `println!` showed one whole, its prints before the line; nor
+see one stop part-way, where it catches a panic. Library contract
+version 34 carries what the consumer needs, each from `Prints`, the one
+owner:
+
+- `printing_types`: the library's types one of whose writers may print as
+  it formats. A consumer's line that shows one is written through
+  stdout's line, as one of its own types' is, and its own writers that
+  show one write through a sink.
+- `stopping_types`: those a std value's `Debug` shows piece by piece
+  (`Prints::stopping`).
+- `leaves_unended`: whether the library's prints may leave stdout's or
+  stderr's line unended (#1599), so a consumer's whole lines go through
+  what the runtime holds, `$print(..)`, and a library's `print!("begun ")`
+  before a program's `println!("ended")` is one line in a browser too.
+- `stopping_where_caught`: the types one of whose writers may stop
+  part-way by a panic were a consumer to catch it, `stopping` asked
+  without the library's own `catch_unwind`, a dependency's such types
+  among what its writers may show (`foreign_stopping`). The library's JS, which catches
+  nothing, makes such a writer's text whole, where Rust's stdout keeps
+  what it wrote before it stopped, `x [!L1, !L2, !`. A consumer that
+  catches a panic and shows one in stdout's line, in a print, a writer of
+  its own in a line (`in_a_line`), or a print of a value only a caller
+  knows the type of, is refused, naming #1530: show it in a `format!`
+  first, whose text a panic drops, or where no `catch_unwind` catches.
+  Case ([0262](0262-when-rust-and-js-disagree.md)): results change and
+  the library's JS can't keep them, so a compile error (m6-react's option
+  (ii)); the library's JS is the same.
+
+And a library's writer the consumer compiles itself (ADR 0914), read from
+its MIR alone, whose THIR is empty, is asked as the crate's own: whether
+it prints by its calls (`calls_of`), and a library's destructor it
+compiles is followed by `may_run`, as the `&dyn Debug`s it shows already
+were, so a `{:#?}` of a library's builder whose entries print, or print
+as they're dropped, writes each print where Rust's line has it.
+
+The metamorphic net's `library` rewrites of #1490's cases are off the
+known list: seven run as Rust does, eight print as Rust does or are
+refused. Proof: crate pair `library_writer_prints_in_a_programs_line`
+against native, with its contract's facts and the app's `$print`; the
+refused pair `library_writer_stopping_where_caught`, a print, a writer of
+the program's and a generic print each refused; the refused triple
+`library_writer_showing_a_dependencys_stopping_writer`; nine mutations,
+two retargeted. A library asks `stopping` of each of its bodies, so
+`may_run` met a trait's method's call whose arguments still hold a
+const parameter, `Guard<'_, T, CAP>`'s `deref_mut`, whose impl rustc
+crashed selecting in a monomorphized env, which hasn't the const's type:
+it's taken as a type parameter's call is, any impl's. An inherent
+method's, `Ring::capacity(ring, CAP)`, selects none and resolves as
+before. Held by the crate pair
+`library_writer_reaching_a_const_generic_deref` and `const_generics`'
+snapshot, two more mutations. What may run is asked of
+a crate's writers alone, as only they're read of `stopping`'s answer,
+where every body was: yoke's and wasm-bindgen's other bodies crashed it.
+And a drop is asked where its type's parameters are the walked body's
+own (`generic_facts::params_owned_by`, its catalogue's): powerfmt's `SmartDisplay::fmt` reaches
+`Metadata::new` holding `<WriteBuffer<SIZE> as SmartDisplay>::Metadata`,
+whose `SIZE` that body's env hasn't, and rustc crashed; its parts are
+asked then, as a type parameter's drop is. No case holds it yet: the
+same shape crashes lowering too, #1618, whose case will.

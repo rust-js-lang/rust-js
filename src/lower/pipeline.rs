@@ -1290,6 +1290,7 @@ pub fn lower_crate<'tcx>(
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop.any(),
                         makes_dropping_iterators: closure_facts.iterator_dyns_drop,
                         drops_any,
+                        prints: &prints,
                         program: tested,
                         counted: &counted,
                         changed,

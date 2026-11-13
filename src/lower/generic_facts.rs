@@ -24,6 +24,7 @@
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
+//! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `src/lower/generic_facts.rs params_owned_by` |
 //! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `src/lower/generic_facts.rs boxed_steps_given` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
@@ -546,6 +547,28 @@ pub(in crate::lower) fn holds_type_parameter(ty: Ty<'_>, index: u32) -> bool {
     ty.walk()
         .filter_map(|part| part.as_type())
         .any(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
+}
+
+/// Whether each parameter `ty` names, a type's or a const's, is one of
+/// `id`'s generics, by its index and name: of a type made in another
+/// body's terms, a caller's, it may name one `id` hasn't, whose env then
+/// can't give a const's type, where rustc crashes (#1608).
+pub(in crate::lower) fn params_owned_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
+    let generics = tcx.generics_of(id);
+    let owns = |index: u32, name: rustc_span::Symbol| {
+        (index as usize) < generics.count() && generics.param_at(index as usize, tcx).name == name
+    };
+    ty.walk().all(|part| match part.kind() {
+        ty::GenericArgKind::Type(ty) => match *ty.kind() {
+            ty::Param(param) => owns(param.index, param.name),
+            _ => true,
+        },
+        ty::GenericArgKind::Const(c) => match c.kind() {
+            ty::ConstKind::Param(param) => owns(param.index, param.name),
+            _ => true,
+        },
+        ty::GenericArgKind::Lifetime(_) => true,
+    })
 }
 
 /// Whether `ty`, what a `Box<I>` holds, is stepped by a dictionary its

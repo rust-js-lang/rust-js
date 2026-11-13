@@ -88,6 +88,10 @@ m6-react's to see first (#1462).
 | `Library.makes_dropping_fn_dyns` | closed-world | whether it makes a `dyn Fn` holding a value that drops | a `dyn Fn` it's handed carries a drop (ADR 0626) |
 | `Library.makes_dropping_iterators` | closed-world | whether it boxes a `dyn Iterator` of a value that drops | its `Box<dyn Iterator>` carries a drop (ADR 0521) |
 | `Library.drops_any` | closed-world | whether any of its own values drops something: a destructor, a counted `Rc`'s count or a guard's borrow; a manifest without it reads as true | gives generic code drops though none of its own values drops, as the library's generic impls' methods it compiles may be given the library's (ADR 0451, amended, #1591) |
+| `Library.printing_types` | closed-world | its types one of whose writers may print to stdout as it formats (`Prints::types`) | writes a line that shows one through stdout's line, and its writers that show one through a sink, as of its own types (ADR 1130, amended, #1608) |
+| `Library.stopping_types` | closed-world | its types a std value's `Debug` shows piece by piece (`Prints::stopping`) | writes a std value's `Debug` of one through std's builders (ADR 1130, amended, #1608) |
+| `Library.stopping_where_caught` | closed-world | its types one of whose writers may stop part-way by a panic, were a consumer to catch it (`Prints::stopping_where_caught`) | one that catches a panic and shows one in stdout's line is refused, naming #1530 (ADR 1130, amended, #1608) |
+| `Library.leaves_unended` | closed-world | whether its prints may leave stdout's line, and stderr's, unended | prints each whole line through what the runtime holds, `$print` (ADR 1130, amended, #1599, #1608) |
 | `Library.dictionary_consts` | closed-world | a program's: the trait constants its own generic code reads, which its dictionaries carry | one that reads another is refused (#597) |
 | `Library.dyns_drop_nothing` | closed-world | a program's: its own traits whose `dyn`s drop nothing | one that makes a `dyn` of what drops is refused (#597) |
 | `Library.counted_rcs` | closed-world | what the `Rc`s it counts point at | counts each as it does (ADR 0852) |

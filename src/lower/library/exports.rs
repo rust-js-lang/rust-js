@@ -41,6 +41,7 @@ pub(in crate::lower) fn exports<'tcx>(
         makes_dropping_fn_dyns,
         makes_dropping_iterators,
         drops_any,
+        prints,
         program,
         counted,
         changed,
@@ -204,6 +205,16 @@ pub(in crate::lower) fn exports<'tcx>(
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
         makes_dropping_iterators: *makes_dropping_iterators,
         drops_any: *drops_any,
+        printing_types: sorted_keys(tcx, prints.types.iter().filter(|id| id.is_local()))
+            .into_iter()
+            .collect(),
+        stopping_types: sorted_keys(tcx, prints.stopping.iter().filter(|id| id.is_local()))
+            .into_iter()
+            .collect(),
+        stopping_where_caught: sorted_keys(tcx, prints.stopping_where_caught.iter())
+            .into_iter()
+            .collect(),
+        leaves_unended: prints.unended,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
         dyns_drop_nothing: program
             .as_ref()

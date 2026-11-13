@@ -170,6 +170,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) makes_dropping_iterators: bool,
     /// Whether any of its own values drops (ADR 0451, amended, #1591).
     pub(super) drops_any: bool,
+    /// What its writers and prints do to a line (#1608).
+    pub(super) prints: &'a super::analysis::prints::Prints,
     /// A program's, `--tested`'s (#597): the trait constants its
     /// dictionaries carry, its generic code's, a library's every one; and its
     /// own traits whose `dyn`s drop nothing, none of a library's.
@@ -885,6 +887,35 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// crate may be handed, or an `io::Error` holding one (ADR 0462, amended)?
     pub(super) fn makes_dropping_errors(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_errors)
+    }
+
+    /// Is `adt`, a library's type, one of whose writers may print to
+    /// stdout as it formats, as its library's contract says (#1608)?
+    pub(super) fn prints_shown(&self, adt: DefId) -> bool {
+        self.library(adt.krate)
+            .is_some_and(|library| library.printing_types.contains(&key(self.tcx, adt)))
+    }
+
+    /// Is `adt`, a library's type, one a std value's `Debug` shows piece by
+    /// piece, as its library's contract says (#1608)?
+    pub(super) fn stops_shown(&self, adt: DefId) -> bool {
+        self.library(adt.krate)
+            .is_some_and(|library| library.stopping_types.contains(&key(self.tcx, adt)))
+    }
+
+    /// Is `adt`, a library's type, one of whose writers may stop part-way,
+    /// by a panic, were the crate to catch it, as its library's contract
+    /// says (#1608)?
+    pub(super) fn stops_where_caught(&self, adt: DefId) -> bool {
+        self.library(adt.krate)
+            .is_some_and(|library| library.stopping_where_caught.contains(&key(self.tcx, adt)))
+    }
+
+    /// May any of the libraries leave stdout's line, or of `error`,
+    /// stderr's, unended (#1608, #1599)?
+    pub(super) fn leaves_unended(&self, error: bool) -> bool {
+        (self.dependencies.libraries.values())
+            .any(|library| !library.builtin && library.leaves_unended[usize::from(error)])
     }
 
     /// Does any of the libraries' values drop, which a generic impl's method

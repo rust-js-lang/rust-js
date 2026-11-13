@@ -229,7 +229,13 @@ fn may_run<'tcx>(
                 matches!(part.kind(), ty::Dynamic(predicates, ..)
                     if crate::lower::recognition::is_fn_dyn(tcx, predicates))
             };
-            if !ty.walk().filter_map(|part| part.as_type()).any(fn_dyn) && !drop_runs(ty, id) {
+            // Asked where `ty`'s parameters are the body's own: of another's,
+            // its caller's, `id`'s env hasn't them, a const's type, where
+            // rustc crashes (#1608); its parts are asked then.
+            if !ty.walk().filter_map(|part| part.as_type()).any(fn_dyn)
+                && crate::lower::generic_facts::params_owned_by(tcx, id, ty)
+                && !drop_runs(ty, id)
+            {
                 return true;
             }
             let mut parts = vec![ty];
@@ -241,7 +247,10 @@ fn may_run<'tcx>(
                 match *part.kind() {
                     ty::Adt(adt, adt_args) => {
                         let destructor = tcx.adt_destructor(adt.did()).map(|d| d.did);
-                        if let Some(destructor) = destructor.filter(|d| d.is_local()) {
+                        // The crate's, or a library's the crate compiles
+                        // itself (ADR 0914), as of a library's writer it
+                        // does (#1608).
+                        if let Some(destructor) = destructor.filter(|d| d.is_local() || bodies.contains_key(d)) {
                             work.push((destructor, identity(destructor)));
                         }
                         let library = !adt.did().is_local() && !crate::lower::recognition::is_std_crate(tcx, adt.did());
@@ -380,7 +389,18 @@ fn may_run<'tcx>(
                     let ty = of(func.ty(&mir.local_decls, tcx));
                     let called = match crate::lower::fn_def(ty) {
                         Some((callee, callee_args)) => {
-                            match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, callee_args) {
+                            // A trait's method of what a const parameter is
+                            // still left in, `Guard<'_, T, CAP>`'s `deref_mut`,
+                            // selects its impl by the const's type, which a
+                            // monomorphized env hasn't, where rustc crashes:
+                            // taken as a type parameter's call is, any impl's.
+                            let unselectable = tcx.trait_of_assoc(callee).is_some()
+                                && callee_args.has_type_flags(ty::TypeFlags::HAS_CT_PARAM);
+                            let resolved = match unselectable {
+                                true => Ok(None),
+                                false => crate::lower::items::resolve_instance_in(tcx, typing_env, callee, callee_args),
+                            };
+                            match resolved {
                                 Ok(Some(instance)) => match instance.def {
                                     ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {
                                         let gives = (call_args.iter())
