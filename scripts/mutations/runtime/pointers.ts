@@ -795,4 +795,12 @@ export const mutations: Mutation[] = [
     replace: "  return made === handle;\n",
     tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
   },
+  {
+    name: "releasing-unbounded",
+    breaks: "every allocation an address is asked of waits for a cleanup, so a program that never yields keeps a record of each until the heap is used up (#1677)",
+    file: "src/runtime/pointers.js",
+    find: "    if (align === 16 && $releasing < $releasingMost) {\n",
+    replace: "    if (align === 16) {\n",
+    tests: ["test/lowering.test.ts", "-t", "million short-lived addresses"],
+  },
 ];

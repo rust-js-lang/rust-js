@@ -255,10 +255,19 @@ let $asked = false;
 // ranges aligned at 16.
 const $freedBases = new Map();
 const $released = /* @__PURE__ */ new FinalizationRegistry(({ base, end }) => {
+  $releasing -= 1;
   const bases = $freedBases.get(end - base);
   if (bases === undefined) $freedBases.set(end - base, [base]);
   else bases.push(base);
 });
+// How many allocations wait to give their ranges back, registered and not
+// yet cleaned up, and the most that may. A cleanup runs only once the
+// program yields, so a program that never does, a parser's loop of 80,000
+// requests, kept a record of each until the heap was used up (#1677). Past
+// the most, an allocation's range is never given back: what it costs is
+// address space, which ends loudly, never the heap.
+let $releasing = 0;
+const $releasingMost = 65536;
 
 // A module that finds places by their addresses, as it loads.
 function $exposeAddresses() {
@@ -488,7 +497,10 @@ function $addresses(allocation, bytes, align = 16) {
     }
     range = { base, end: base + length, of: allocation, stride: undefined };
     $ranges.set(allocation, range);
-    if (align === 16) $released.register(allocation, { base, end: base + length });
+    if (align === 16 && $releasing < $releasingMost) {
+      $releasing += 1;
+      $released.register(allocation, { base, end: base + length });
+    }
     // Kept in order of base, for `$ptrFrom`, where it's asked.
     if ($exposing) {
       let low = 0;

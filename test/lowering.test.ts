@@ -824,7 +824,9 @@ pub fn main() {
 // A program that asks the address of each of 1.2 million short-lived
 // allocations, httparse's count of what it parsed, and never makes an
 // address a pointer again, keeps none of them: it runs in a bounded heap,
-// and its addresses fit wasm32's (#1426).
+// and its addresses fit wasm32's (#1426). Bounded though it never yields,
+// so its ranges are never given back: a record of each kept for a cleanup
+// that never ran took 110 bytes, 130 MB here, past 64 (#1677).
 test("a million short-lived addresses run in a bounded heap", () => {
   const dir = fixture("short-lived-addresses");
   writeFileSync(join(dir, "lib.rs"), `pub fn main() {
@@ -839,7 +841,7 @@ test("a million short-lived addresses run in a bounded heap", () => {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toContain("$exposeAddresses");
-  const ran = Bun.spawnSync(["node", "--max-old-space-size=384", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  const ran = Bun.spawnSync(["node", "--max-old-space-size=64", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
   expect([ran.exitCode, ran.stdout.toString()]).toEqual([0, "4800000\n"]);
 }, underLoad(120_000));
 

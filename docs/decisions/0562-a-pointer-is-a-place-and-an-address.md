@@ -1591,3 +1591,19 @@ run natively on wasm32, over a payload of each width, a `bool`, a
 `NonZeroU32`, a reference and a `#[repr(C)]` struct, and an `Option` whose
 own address nothing asks. Mutations option-as-mut-the-cell-itself,
 option-as-mut-local-no-cell, placed-lend-refused and offset-handle-not-a-place.
+
+## Amendment (2026-11-13, #1677): what waits to give a range back is bounded
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. An allocation an address was asked of gives its range
+back through a `FinalizationRegistry` (#1426), and a cleanup runs only once
+the program yields. httparse's `test_all_utf8_char_in_paths`, one loop of
+about 80,000 parses that never yields, kept each registration's record,
+about 110 bytes each, and Node ran out of heap after 950 s where native
+Rust passes. **At most 65,536 allocations now wait for a cleanup; past that,
+an allocation's range is never given back.** What that costs is address
+space, which ends loudly, "the address space is used up", never the heap
+and never a wrong answer. A program that yields gives ranges back as
+before. `test/lowering.test.ts`'s "a million short-lived addresses run in a
+bounded heap" now runs in 64 MB, not 384, where the records took 130 MB.
+Mutation `releasing-unbounded` (`runtime/pointers.ts`), caught.
