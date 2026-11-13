@@ -24,7 +24,7 @@ const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/panic_runtime.rs", "src/std_sysroot.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
-    "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
+    "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs", "src/packages.rs", "src/collections.rs", "src/lines.rs", "src/decisions.rs"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
@@ -53,6 +53,7 @@ const allowed: Record<string, string[]> = {
 };
 const orchestration: Record<string, string[]> = {
   "src/output.rs": ["src/to_oxc.rs", "src/typescript.rs", "src/prettier.rs", "src/format.rs"],
+  "src/output/local_js.rs": ["src/to_oxc.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
 // A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;

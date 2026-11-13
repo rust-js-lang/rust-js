@@ -50,7 +50,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` prints the declaration model |
 | Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
-| Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
+| Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
 | Native app build and editor check; the command each JS test runner runs a crate's tests by (ADR 1076) | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js`, `tooling/runners.js` |
@@ -175,11 +175,12 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs`, `std_sysroot.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `collections.rs`, `decisions.rs` | Owned output; no rustc |
+| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `collections.rs`, `decisions.rs` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
-adapters, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use
+adapters, `output/local_js.rs`, which asks `to_oxc.rs` what a JS file of the
+program's own loads, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use
 oxc. `output.rs` also writes manifest JSON and each test file's registrations
 of its tests, by the runner's `test` (ADR 1076).
 The architecture test checks top-level dependency cycles; it treats the parts
@@ -394,7 +395,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
 | A variant without fields as a body writes it, a numbered enum's its module's `const` (ADR 0722), and a constant rustc computed there | `representation.rs` | `unit_variant`, `const_value` |
 | Whether a body reads a `const` or a numbered enum's variant by its name, or, where its module loads, another module's as its value (ADR 0722) | `items.rs` | `reads_by_name` |
-| What the crate's modules import of each other where their JS loads, through the JS files of the program's own they import too, which a module's load and a dictionary in a load cycle ask (ADR 0031, amended) | `load_order.rs`; `program.rs`; `output.rs`; `to_oxc/loads.rs` | `ModuleImports`, `reaches`; `JsModules`, `loaded`; `LocalJs`; `loaded_modules` |
+| What the crate's modules import of each other where their JS loads, through the JS files of the program's own they import too, which a module's load and a dictionary in a load cycle ask (ADR 0031, amended) | `load_order.rs`; `program.rs`; `output/local_js.rs`; `to_oxc/loads.rs` | `ModuleImports`, `reaches`; `JsModules`, `loaded`; `LocalJs`; `loaded_modules` |
 | Whether a struct literal's object is across lines, as the literal is written | `aggregates.rs` | `object_layout`, `const_object` |
 | An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 | What an untagged enum's variants are together, a test's and a `switch`'s case, and its objects', `kind.object()`'s (ADR 0910) | `untagged.rs` | `untagged_test`, `untagged_cases`, `object_test` |
