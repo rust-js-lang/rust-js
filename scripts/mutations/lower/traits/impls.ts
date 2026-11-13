@@ -653,4 +653,12 @@ export const mutations: Mutation[] = [
       "^readers_of_the_crates_own_and_boxed.rs$"
     ]
   },
+  {
+    name: "own-write-fmt-entry-given-text",
+    breaks: "a writer's own `write_fmt` reached through generic code's dictionary is given its text, which its body calls as a function (#1695)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id) {\n",
+    replace: "            let value = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+  },
 ];

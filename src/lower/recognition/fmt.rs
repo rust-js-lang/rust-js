@@ -724,6 +724,11 @@ pub(crate) fn is_writer_default(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_method(tcx, id, StdItem::FmtWrite, "write_char") || is_std_method(tcx, id, StdItem::FmtWrite, "write_fmt")
 }
 
+/// `fmt::Write::write_fmt`, the trait's method.
+pub(crate) fn is_write_fmt(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_method(tcx, id, StdItem::FmtWrite, "write_fmt")
+}
+
 /// `fmt::Arguments::new` and its kin, what `format_args!` makes.
 pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "new" && std_path(tcx, id).starts_with("std::fmt::Arguments")

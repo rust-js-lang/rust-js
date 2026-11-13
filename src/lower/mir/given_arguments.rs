@@ -3,7 +3,7 @@
 //! its operands evaluated there, and called where std formats it, so its
 //! values' `Display` and `Debug` run there, as often as it's formatted.
 
-use super::arguments_use::{ArgumentsUse, arguments_use, holds_text};
+use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, resolves_to_own};
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -83,12 +83,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn arguments_formatted(
         &mut self,
         state: &State<'_, 'tcx>,
-        callee: rustc_span::def_id::DefId,
+        (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         (operands, arg_tys): (&[&Operand<'tcx>], &[Ty<'tcx>]),
         values: &mut [Value<'tcx>],
         span: Span,
     ) -> R<()> {
-        if !crate::lower::recognition::is_std_crate(self.tcx, callee) {
+        // Not a std trait's method an impl of the crate's defines, which
+        // takes the function as any of the crate's does (#1695).
+        if !crate::lower::recognition::is_std_crate(self.tcx, callee)
+            || resolves_to_own(&self.recognition(), callee, generic_args)
+        {
             return Ok(());
         }
         for (i, value) in values.iter_mut().enumerate() {

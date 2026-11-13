@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "    arguments_use(recognition, body, local) == ArgumentsUse::InPlace && false\n",
     tests: ["test/writer-sink.test.ts"],
   },
+  {
+    name: "own-write-fmt-given-text",
+    breaks: "a writer's own `write_fmt` is given a `write!`'s text, which its body calls as a function, `args is not a function` (#1695)",
+    file: "src/lower/mir/arguments_use.rs",
+    find: "                    crate::lower::recognition::is_std_crate(tcx, id) && !resolves_to_own(recognition, id, generic_args)\n",
+    replace: "                    crate::lower::recognition::is_std_crate(tcx, id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+  },
 ];

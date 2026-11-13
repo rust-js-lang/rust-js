@@ -58,3 +58,18 @@ collectorWrite_write_str(collector, `1 and ${$debugStr("two")}`);
 - **Keep it refused**, ADR 0148's choice: exact, but anyhow, writeable and
   serde_core stay stopped. Chosen against: the difference is in how text
   is handed over, not in what it is.
+
+## Amendment: a writer that defines its own `write_fmt` (2026-11-13, #1695)
+
+A `write!` into a writer whose impl defines `write_fmt` calls that
+function, and its body takes its `Arguments` as the function that makes
+its text (#1565), `args()`. The `write!` gave it the text, so it threw
+`args is not a function`. Now a std trait's method an impl of the crate's
+defines isn't std's formatting (`arguments_use`'s `resolves_to_own`), so
+the `Arguments` is given on as to any function of the crate's,
+`countingWrite_writeFmt(w, () => text)`; and the impl's dictionary entry,
+which generic code gives its text (ADR 0180), makes that function where
+it passes it on, `writeFmt: (arg0, arg1) => countingWrite_writeFmt(arg0
+.value, () => arg1)`. What it writes is the text whole, as this ADR
+writes a `write!` into a writer. Held by corpus case
+`writer_with_its_own_write_fmt` against native Rust, and three mutations.

@@ -37,4 +37,12 @@ export const mutations: Mutation[] = [
     replace: "            Value::Fmt(_, _, text) => (text, false),\n",
     tests: grid,
   },
+  {
+    name: "own-write-fmt-given-called",
+    breaks: "the function of a `write!`'s `Arguments` given a writer's own `write_fmt` is called first, its text given, which the body calls (#1695)",
+    file: "src/lower/mir/given_arguments.rs",
+    find: "            || resolves_to_own(&self.recognition(), callee, generic_args)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+  },
 ];

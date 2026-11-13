@@ -754,6 +754,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (true, None) => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),
                 (false, _) => arrow,
             };
+            // A writer's own `write_fmt`, which takes its `Arguments` as the
+            // function that makes its text (#1565), given generic code's
+            // text (ADR 0180) as that function (#1695).
+            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id) {
+                true => {
+                    let made = |text: &str| {
+                        Expr::arrow(
+                            Vec::new(),
+                            vec![StmtKind::Return(Some(Expr::var(text))).at(js::Span::NONE)],
+                        )
+                    };
+                    // Of an entry that takes it apart, `(arg0, arg1) =>
+                    // ..(arg0.value, arg1)`, its text made that function where
+                    // it's passed on.
+                    let given = match &value.kind {
+                        js::ExprKind::Arrow(params, body) => match (&params[..], &body[..]) {
+                            ([_, js::Pattern::Name(text)], [only]) => match &only.kind {
+                                StmtKind::Return(Some(call)) => call
+                                    .substitute(&|v: &str| (v == text.as_str()).then(|| made(text)))
+                                    .map(|call| {
+                                        Expr::arrow(
+                                            params.clone(),
+                                            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+                                        )
+                                    }),
+                                _ => None,
+                            },
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    given.unwrap_or_else(|| {
+                        let (writer, text) = (self.fresh(Role::Arg), self.fresh(Role::Text));
+                        let call = Expr::call(value, vec![Expr::var(&writer), made(&text)]);
+                        Expr::arrow(
+                            vec![writer.into(), text.into()],
+                            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+                        )
+                    })
+                }
+                false => value,
+            };
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }
         props.extend(self.dictionary_drop(tr.self_ty(), span)?);

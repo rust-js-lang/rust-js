@@ -150,8 +150,11 @@ fn formatted_by_std<'tcx>(
         match &data.terminator().kind {
             TerminatorKind::Call { func, args, .. } => {
                 let decls = &body.local_decls;
-                let std = crate::lower::fn_def(func.ty(decls, tcx))
-                    .is_some_and(|(id, _)| crate::lower::recognition::is_std_crate(tcx, id));
+                // Not a std trait's method an impl of the crate's defines,
+                // `write_fmt`'s of a writer that writes it itself (#1695).
+                let std = crate::lower::fn_def(func.ty(decls, tcx)).is_some_and(|(id, generic_args)| {
+                    crate::lower::recognition::is_std_crate(tcx, id) && !resolves_to_own(recognition, id, generic_args)
+                });
                 std && args.iter().all(|arg| match &arg.node {
                     Operand::Copy(place) | Operand::Move(place) if place.local == local => {
                         place.projection.is_empty() && holds_arguments(arg.node.ty(decls, tcx))
@@ -227,4 +230,24 @@ pub(in crate::lower) fn holds_text<'tcx>(
                     .is_some_and(|known| matches!(known, Std::FmtNew | Std::FmtStr)))
     });
     made && arguments_use(recognition, body, local) != ArgumentsUse::GivenOn
+}
+
+/// Whether a call of `id`, a std trait's method, of `generic_args`, runs a
+/// function rust-js compiled: the method of an impl of the crate's, or of a
+/// library's, that defines it, not its trait's default. Of a type only a caller knows, its
+/// dictionary's entry says (`impl_entries`).
+pub(super) fn resolves_to_own<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    id: rustc_span::def_id::DefId,
+    generic_args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    let Some(trait_) = tcx.trait_of_assoc(id) else {
+        return false;
+    };
+    let tr = ty::TraitRef::from_assoc(tcx, trait_, generic_args);
+    !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
+        && recognition
+            .user_impl(tr)
+            .is_some_and(|imp| tcx.impl_item_implementor_ids(imp).contains_key(&id))
 }

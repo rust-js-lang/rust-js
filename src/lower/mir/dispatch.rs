@@ -625,7 +625,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if given_on {
             self.arguments_operands_held(state, &mut values, out)?;
         }
-        self.arguments_formatted(state, callee.0, (operands, arg_tys), &mut values, span)?;
+        self.arguments_formatted(state, callee, (operands, arg_tys), &mut values, span)?;
         // Of another crate's, one its crate's calls each give `null` or a
         // value, which its body tests `!== null`: what may be `undefined`
         // given it `?? null`, as its contract says.
