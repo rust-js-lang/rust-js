@@ -97,7 +97,7 @@ reordered, and git merges this file by keeping both sides' lines
 
 **Talking to a server**
 
-- [0077 `#[derive(Serialize)]` is a function that writes serde_json's text](0077-serde-json.md) *(amended: its attributes are found by `DefId`, under `-C incremental` too)*
+- [0077 `#[derive(Serialize)]` is a function that writes serde_json's text](0077-serde-json.md) *(amended: its attributes are found by `DefId`, under `-C incremental` too; a serde_json method and `remote` refused, not a panic, #1541)*
 - [0078 `serde_json::from_str` is serde_json's reader, ported; `#[derive(Deserialize)]` is a table it reads by](0078-serde-json-reading.md)
 - [0079 A tagged or untagged enum is read as serde reads one: through the value, read first and kept](0079-serde-tagged-enums.md)
 - [0080 A generic type's codec takes its type parameters' codecs; `Result`, `from`, `try_from` and `into` are serde's](0080-serde-generics-and-conversions.md)
@@ -206,7 +206,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0174 `{:x}` and `{:p}` of a generic `T`: its dictionary's](0174-generic-fmt-traits.md)
 - [0175 `std::num::Wrapping` is a number in a `[x]`, its arithmetic wrapped](0175-wrapping.md) *(amended: an `op=` through a `&mut` writes what it points at)*
 - [0176 A generic impl's constant of its parameters is its dictionary's getter](0176-generic-impl-consts.md) *(amended: a library's impl a consumer compiles has its constants, #468)*
-- [0177 A `NonZero` integer is its number](0177-nonzero.md)
+- [0177 A `NonZero` integer is its number](0177-nonzero.md) *(amended: read from JSON as serde reads it, #1538)*
 - [0178 An impl's dictionary has its associated types' drops](0178-associated-type-drops.md)
 - [0179 `filter` and `map_or` drop what they don't keep](0179-option-filter-map-or-drops.md)
 - [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](0180-generic-writers.md)
@@ -913,7 +913,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](0457-an-into-iterator-bound-on-a-reference.md)
 - [0458 `try_fold` stops at the first `None` or `Err`, leaving the rest to step](0458-try-fold.md)
-- [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](0459-hand-written-serde-impls.md) *(amended: a visitor's `expecting` asked only where an error says it, #1544; a string given by the kind serde_json gives it, `visit_string`, #1546; a 128-bit integer written by each serializer's own rule, #1547; the readers one interface, `deserialize_option` each one's, #1549, #1597)*
+- [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](0459-hand-written-serde-impls.md) *(amended: a visitor's `expecting` asked only where an error says it, #1544; a string given by the kind serde_json gives it, `visit_string`, #1546; a 128-bit integer written by each serializer's own rule, #1547; the readers one interface, `deserialize_option` each one's, #1549, #1597; `T::deserialize` of a `Value` or a `&Value`, #1539)*
 - [0460 A callable that writes to a `Formatter` is a writer, and a writer's options are its crate's](0460-writer-callables.md)
 - [0461 A `Formatter` held is a handle on its writer's text, and a `fmt::Result` meets generic code as a `Result`](0461-a-formatter-held.md)
 - [0462 An `io::Error` is a value: its kind, and the error it holds](0462-io-error-values.md)

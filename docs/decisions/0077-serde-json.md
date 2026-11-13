@@ -230,3 +230,18 @@ Held by test/diagnostics.test.ts (a struct of such fields from text, a
 generic codec of a value whose `Drop` does nothing, read as before, and
 mutations `dropping-read-unrefused`, `quiet-drop-taken-as-seen` and
 `std-container-drop-taken-as-seen`.
+
+## Amendment: refused, not a panic: a serde_json method and `remote` (2026-11-13, #1541)
+
+serde_json's free functions are recognized by their names, `from_str`,
+`to_string` and `to_string_pretty`; a method of the same name,
+`Deserializer::from_str`, was taken for `serde_json::from_str`, and the
+compiler panicked on its arguments. They're its free functions alone now,
+and the method is refused as any call rust-js has no model of is.
+`#[serde(remote = ..)]`, whose derive writes inherent functions of a
+remote type's stand-in that no codec of rust-js's reads, panicked where a
+field's `with` named one; each is refused before anything is lowered
+(`serde::refuse_unread`, #1615). `test/diagnostics.test.ts` holds both.
+Mutations `serde-json-method-taken-for-its-function` and
+`serde-remote-unrefused`, caught.
+

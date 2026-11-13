@@ -64,3 +64,25 @@ test("every method the code over a reader calls is each reader's", () => {
     "$JsonContent has no `parseWhitespace`, which `json_visit.js` calls of every reader",
   ]);
 });
+
+// Each reader the lowering names, `reader("vec")` of `$json`, and each
+// number's, its primitive's name, `$json.u32`, is one `$json` has: a name it
+// hasn't would be an `undefined` reader, which throws `read is not a
+// function` where the program runs, as a `NonZero<u32>`'s did by its type's
+// name (#1538). A type it has none for is refused.
+test("each reader the lowering names is one $json has", () => {
+  const codecs = read("src/runtime/from_json.js");
+  const start = codecs.indexOf("const $json = {");
+  const table = codecs.slice(start, codecs.indexOf("\n};", start));
+  const has = new Set([...table.matchAll(/^ {2}([A-Za-z_$][\w$]*):/gm)].map((m) => m[1]));
+  const lowering = read("src/lower/serde/de.rs");
+  const named = [...lowering.matchAll(/\breader\("([A-Za-z_$][\w$]*)"\)/g)].map((m) => m[1]);
+  const numbers = ["u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize", "f32", "f64"];
+  expect(named.length).toBeGreaterThan(10);
+  expect([...named, ...numbers].filter((name) => !has.has(name))).toEqual([]);
+  // A name made otherwise, of a type's, is a primitive number's alone.
+  const made = [...lowering.matchAll(/\breader\(&([^)]*)\)/g)].map((m) => m[1]);
+  expect(made).toEqual(["ty.to_string("]);
+  expect(lowering).toContain("if Num::of(ty).is_some() && ty.is_primitive() {\n            return Ok(reader(&ty.to_string()));");
+});
+

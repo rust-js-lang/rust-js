@@ -88,9 +88,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if op == SerdeOp::Deserialize {
             self.refuse_dropping_read(args.type_at(0), span)?;
             let reader = self.json_reader(args.type_at(0), span)?;
+            let deserializer = args.types().nth(1).expect("`deserialize::<D>`");
+            let given = self.deserializer(values.remove(0), deserializer);
             return Ok(Written::Value(Expr::call(
                 Expr::helper("$jsonRead"),
-                vec![values.remove(0), reader],
+                vec![given, reader],
             )));
         }
         if let SerdeOp::DeError(error) = op {
@@ -335,6 +337,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::helper(helper),
             vec![json, expected, Expr::object(props)],
         ))
+    }
+
+    /// The reader of `value`, a `Deserializer` of type `ty`: a
+    /// `serde_json::Value`'s, as `from_value` reads one, whose strings it
+    /// gives whole; a `&Value`'s, which lends them, `visit_borrowed_str`
+    /// (#1539); else a reader already, generic code's, its caller's.
+    fn deserializer(&self, value: Expr, ty: ty::Ty<'tcx>) -> Expr {
+        if self.json_type(ty.peel_refs()) != Some(super::Json::Value) {
+            return value;
+        }
+        let mut given = vec![value];
+        if ty.is_ref() {
+            given.push(Expr::str("borrowed"));
+        }
+        Expr::new_(Expr::helper("$JsonValueReader"), given)
     }
 
     /// serde's `error`, of its arguments' `values`: its message, as serde

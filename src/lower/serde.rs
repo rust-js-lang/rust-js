@@ -134,6 +134,20 @@ pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
     collector.found
 }
 
+/// Each `#[serde(remote = ..)]`, refused before anything is lowered: serde's
+/// derive of it writes inherent functions of a remote type's stand-in,
+/// which no codec of rust-js's reads, so a field's `with` of it found none
+/// and the compiler panicked (#1541). Whether any was.
+pub(super) fn refuse_unread(tcx: TyCtxt<'_>, attrs: &SerdeAttributes) -> bool {
+    let mut refused = false;
+    for item in attrs.values().flatten().filter(|item| item.name == "remote") {
+        let what = super::refusal::Refused::Feature("`#[serde(remote = ..)]` (#1615)");
+        super::refusal::refuse(tcx, item.span, what);
+        refused = true;
+    }
+    refused
+}
+
 /// `Some(true)` for serde's `Serialize`, `Some(false)` for `Deserialize`
 /// and `DeserializeOwned`.
 pub(super) use super::recognition::serde_trait;

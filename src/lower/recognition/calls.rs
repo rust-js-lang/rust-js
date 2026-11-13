@@ -448,7 +448,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if char_fn("from_u32_unchecked") {
             return Some(Some(Std::Text(TextOp::CharFromCode)));
         }
-        if tcx.crate_name(def_id.krate).as_str() == "serde_json" {
+        // serde_json's free functions, by their names: not a method of the
+        // same name, `Deserializer::from_str` (#1541).
+        if tcx.crate_name(def_id.krate).as_str() == "serde_json" && tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn
+        {
             match tcx.item_name(def_id).as_str() {
                 "to_string" => return Some(Some(Std::ToJson(false))),
                 "to_string_pretty" => return Some(Some(Std::ToJson(true))),

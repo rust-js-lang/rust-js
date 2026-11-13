@@ -765,3 +765,95 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// 'T::deserialize(d)' of a 'serde_json::Value', or of a '&Value', reads 'T'
+// from it, as 'from_value' does (#1539): a 'Value' gives its strings whole,
+// 'visit_string', and a '&Value' lends them, 'visit_borrowed_str', each of
+// what it holds alike. It was given the 'Value' as its reader, 'json.struct
+// is not a function'.
+test("serde: T::deserialize of a Value or a &Value reads T from it", async () => {
+  const dir = fixture("serde-protocol-deserialize-a-value");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer};
+use serde_json::json;
+use std::fmt;
+
+#[derive(Deserialize, Debug)]
+pub struct Body {
+    n: i32,
+}
+
+/// Which of a visitor's string methods a string is given to.
+#[derive(Debug)]
+pub struct Said(String);
+
+struct SaidVisitor;
+
+impl<'de> Visitor<'de> for SaidVisitor {
+    type Value = Said;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a string")
+    }
+    fn visit_str<E: Error>(self, s: &str) -> Result<Said, E> {
+        Ok(Said(format!("str {s}")))
+    }
+    fn visit_borrowed_str<E: Error>(self, s: &'de str) -> Result<Said, E> {
+        Ok(Said(format!("borrowed {s}")))
+    }
+    fn visit_string<E: Error>(self, s: String) -> Result<Said, E> {
+        Ok(Said(format!("string {s}")))
+    }
+}
+
+impl<'de> Deserialize<'de> for Said {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_str(SaidVisitor)
+    }
+}
+
+/// A hand-written impl reading its field from a 'Value' it holds.
+#[derive(Debug)]
+pub struct Wrapped(i32);
+
+impl<'de> Deserialize<'de> for Wrapped {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(d)?;
+        let n = i32::deserialize(&value["n"]).map_err(D::Error::custom)?;
+        Ok(Wrapped(n))
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub enum Kind {
+    Named(Said),
+    Pair { a: Said, b: Said },
+}
+
+pub fn report() -> String {
+    let value = json!({"n": 5});
+    [
+        format!("{:?}", Body::deserialize(&value).map_err(|e| e.to_string())),
+        format!("{:?}", Body::deserialize(value.clone()).map_err(|e| e.to_string())),
+        format!("{:?}", i32::deserialize(json!(5)).map_err(|e| e.to_string())),
+        format!("{:?}", Vec::<String>::deserialize(json!(["a"])).map_err(|e| e.to_string())),
+        format!("{:?}", Body::deserialize(&json!("no")).map_err(|e| e.to_string())),
+        format!("{:?}", Said::deserialize(&json!("x")).map_err(|e| e.to_string())),
+        format!("{:?}", Said::deserialize(json!("y")).map_err(|e| e.to_string())),
+        format!("{:?}", Option::<u8>::deserialize(&json!(null)).map_err(|e| e.to_string())),
+        format!("{:?}", serde_json::from_str::<Wrapped>(r#"{"n": 3}"#).map_err(|e| e.to_string())),
+        format!("{:?}", serde_json::from_str::<Wrapped>(r#"{"m": 3}"#).map_err(|e| e.to_string())),
+        format!("{:?}", Vec::<Said>::deserialize(&json!(["p", "q"])).map_err(|e| e.to_string())),
+        format!("{:?}", Vec::<Said>::deserialize(json!(["p", "q"])).map_err(|e| e.to_string())),
+        format!("{:?}", Kind::deserialize(&json!({"Named": "r"})).map_err(|e| e.to_string())),
+        format!("{:?}", Kind::deserialize(json!({"Named": "r"})).map_err(|e| e.to_string())),
+        format!("{:?}", Kind::deserialize(&json!({"Pair": {"a": "s", "b": "t"}})).map_err(|e| e.to_string())),
+        format!("{:?}", value),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

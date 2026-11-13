@@ -735,4 +735,12 @@ export const mutations: Mutation[] = [
     replace: "        while let ty::Ref(_, inner, ty::Mutability::Mut) = *pointee.kind() {\n            break;\n        }\n        if is_hasher(tcx, tr) && self.std_hasher(pointee).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
   },
+  {
+    name: "serde-json-method-taken-for-its-function",
+    breaks: "`serde_json::Deserializer::from_str` is taken for `serde_json::from_str` by its name, and the compiler panics on its arguments (#1541)",
+    file: "src/lower/recognition/calls.rs",
+    find: " && tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn\n",
+    replace: "\n",
+    tests: ["test/diagnostics.test.ts", "-t", "Deserializer::from_str"],
+  },
 ];

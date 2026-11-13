@@ -1,10 +1,13 @@
 
 // A `serde_json::Value` read as a deserializer (ADR 0083), for
 // `serde_json::from_value`: its `impl Deserializer for Value`.
+// A `Value`'s, whose strings it gives whole, `owned`, or a `&Value`'s,
+// which lends them, `borrowed` (#1539), as each of what it holds does.
 class $JsonValueReader extends $JsonDecoder {
-  constructor(value) {
+  constructor(value, kind = "owned") {
     super();
     this.value = value;
+    this.kind = kind;
   }
 
   // serde_json's `Value::unexpected`.
@@ -30,13 +33,13 @@ class $JsonValueReader extends $JsonDecoder {
   // A string of a `Value` is its own, so a `&str` can't borrow it: it's
   // given whole, `visit_string` (#1546).
   deserializeStr(expected, visit) {
-    if (this.value.TAG === "String") return visit(this.value._0, "owned");
+    if (this.value.TAG === "String") return visit(this.value._0, this.kind);
     throw this.invalid(expected);
   }
 
   visitArray(visit) {
     const items = this.value._0;
-    const seq = new $JsonValueSeq(items);
+    const seq = new $JsonValueSeq(items, this.kind);
     const value = visit(seq);
     if (seq.count < items.length) throw $jsonError(`invalid length ${items.length}, expected fewer elements in array`);
     return value;
@@ -44,7 +47,7 @@ class $JsonValueReader extends $JsonDecoder {
 
   visitObject(visit) {
     const entries = $sortedEntries(this.value._0, $cmp);
-    const map = new $JsonValueMap(entries);
+    const map = new $JsonValueMap(entries, this.kind);
     const value = visit(map);
     if (map.count < entries.length) throw $jsonError(`invalid length ${entries.length}, expected fewer elements in map`);
     return value;
@@ -81,7 +84,7 @@ class $JsonValueReader extends $JsonDecoder {
       });
     }
     const visit = { Bool: visitor.bool, Number: visitor.number, String: visitor.string }[tag];
-    if (visit) return visit(inner, "owned");
+    if (visit) return visit(inner, this.kind);
     throw this.invalid(expected);
   }
 
@@ -128,7 +131,7 @@ class $JsonValueReader extends $JsonDecoder {
     } else {
       throw this.invalid("string or map");
     }
-    return visit($jsonVariantNamed(name, variants, other), new $JsonValueVariant(held));
+    return visit($jsonVariantNamed(name, variants, other), new $JsonValueVariant(held, this.kind));
   }
 
   identifier(variants, other) {
@@ -151,9 +154,10 @@ function $jsonValueContent(value) {
 }
 
 class $JsonValueSeq {
-  constructor(items) {
+  constructor(items, kind) {
     this.items = items;
     this.count = 0;
+    this.kind = kind;
   }
 
   next() {
@@ -161,7 +165,7 @@ class $JsonValueSeq {
   }
 
   value(read) {
-    return read(new $JsonValueReader(this.items[this.count - 1]));
+    return read(new $JsonValueReader(this.items[this.count - 1], this.kind));
   }
 
   element(read, i, expected, missing, defaults) {
@@ -170,9 +174,10 @@ class $JsonValueSeq {
 }
 
 class $JsonValueMap {
-  constructor(entries) {
+  constructor(entries, kind) {
     this.entries = entries;
     this.count = 0;
+    this.kind = kind;
   }
 
   next() {
@@ -184,7 +189,7 @@ class $JsonValueMap {
   }
 
   value(read) {
-    return read(new $JsonValueReader(this.entries[this.count - 1][1]));
+    return read(new $JsonValueReader(this.entries[this.count - 1][1], this.kind));
   }
 }
 
@@ -226,13 +231,14 @@ class $JsonValueKey {
 
 // `VariantAccess` of a `Value`'s variant: what it holds, if anything.
 class $JsonValueVariant {
-  constructor(held) {
+  constructor(held, kind) {
     this.held = held;
+    this.kind = kind;
   }
 
   reader(kind, tag) {
     if (this.held === undefined) throw $jsonError(`invalid type: unit variant, expected ${kind}`);
-    const reader = new $JsonValueReader(this.held);
+    const reader = new $JsonValueReader(this.held, this.kind);
     if (tag && this.held.TAG !== tag) throw reader.invalid(kind);
     return reader;
   }

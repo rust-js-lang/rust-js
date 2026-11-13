@@ -432,3 +432,27 @@ Mutations, one of each reader's rule: `text-option-null-as-unit`,
 `visit-option-none-unchecked` and `serde-option-unit-unwritten`, caught.
 `T::deserialize(&value)` of a `&Value` is #1539's, apart.
 
+## Amendment: `T::deserialize` of a `Value` or a `&Value` (2026-11-13, #1539)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, the JS threw where
+Rust runs.
+
+A `serde_json::Value` is a `Deserializer`, and so is a `&Value`:
+`T::deserialize(value)` reads a `T` from it, as `from_value` does. The
+call gave `T`'s reader the `Value` itself, `json.struct is not a function`
+(P1). Its deserializer is now read by its type (`protocol::deserializer`).
+A type parameter's is a reader already. A `Value`'s is `new
+$JsonValueReader(value)`, whose strings are given whole, `visit_string`. A
+`&Value`'s is `new $JsonValueReader(value, "borrowed")`, which lends them,
+`visit_borrowed_str`, as each of what it holds does, an array's items, an
+object's values and a variant's payload (the reader's `kind`, #1546's
+table's row of a `Value` now of a `&Value` too). Generic code's is its
+caller's reader already.
+
+The serde-protocol test `T::deserialize of a Value or a &Value reads T
+from it` holds a derived struct, a number, a `Vec`, an error, a hand-written
+visitor's strings of each, an `Option`, a hand-written impl reading a
+`&Value` it indexes, and an enum's payloads, against native serde_json.
+Mutations `value-deserializer-unread`, `value-reference-deserializer-owned`
+and `value-seq-kind-unkept`, caught.
+

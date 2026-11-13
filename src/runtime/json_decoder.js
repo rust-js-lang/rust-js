@@ -12,11 +12,14 @@ class $JsonDecoder {
   }
 
   // An integer type, named as serde names it, from `min` to `max`: a
-  // number, or for an `i64` or `u64`, a BigInt (ADR 0086).
-  int(name, min, max) {
+  // number, or for an `i64` or `u64`, a BigInt (ADR 0086). Of serde's
+  // `NonZero` of it, `nonZero`, zero refused too, and what's expected `a
+  // nonzero u32` (#1538).
+  int(type, min, max, nonZero) {
+    const name = nonZero ? `a nonzero ${type}` : type;
     return this.deserializeNumber(name, (n) => {
       if (n.kind === "f") throw $jsonError(`invalid type: floating point \`${$jsonNumber(n.value)}\`, expected ${name}`);
-      if (n.kind === "u" ? n.value > max : n.value < min) {
+      if ((n.kind === "u" ? n.value > max : n.value < min) || (nonZero && n.value == 0)) {
         throw $jsonError(`invalid value: integer \`${n.value}\`, expected ${name}`);
       }
       return typeof max === "bigint" ? BigInt(n.value) : Number(n.value);

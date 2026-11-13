@@ -237,3 +237,58 @@ pub fn report() -> String {
     expect((await compiled(dir)).report()).toBe(expected);
   });
 }
+
+// A `NonZero<T>` is read as serde reads it (#1538): `T`'s number, what's
+// expected `a nonzero u32`, out of its range, a float or a string, and zero
+// refused, each where serde_json says, from text and from a `Value`; held
+// in a field, an `Option`, a `Vec` and a map's keys. Its reader was
+// `undefined`, `read is not a function`.
+test("serde: a NonZero is read as serde reads it", async () => {
+  const dir = fixture("serde-non-zero");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::Deserialize;
+use std::num::{NonZeroI64, NonZeroI8, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize};
+
+#[derive(Debug, Deserialize)]
+pub struct S {
+    id: NonZeroU32,
+    small: Option<NonZeroU8>,
+}
+
+fn read<T: for<'de> Deserialize<'de> + std::fmt::Debug>(text: &str) -> String {
+    let from_text = serde_json::from_str::<T>(text).map_err(|e| e.to_string());
+    let value: serde_json::Value = serde_json::from_str(text).unwrap();
+    let from_value = serde_json::from_value::<T>(value).map_err(|e| e.to_string());
+    format!("{from_text:?}; {from_value:?}")
+}
+
+pub fn report() -> String {
+    [
+        read::<NonZeroU32>("7"),
+        read::<NonZeroU32>("0"),
+        read::<NonZeroU32>("-1"),
+        read::<NonZeroU8>("300"),
+        read::<NonZeroI8>("-3"),
+        read::<NonZeroI8>("0"),
+        read::<NonZeroU64>("18446744073709551615"),
+        read::<NonZeroU64>("0"),
+        read::<NonZeroI64>("-9223372036854775808"),
+        read::<NonZeroUsize>("0"),
+        read::<S>(r#"{"id": 3, "small": null}"#),
+        read::<S>(r#"{"id": 0, "small": 4}"#),
+        read::<S>(r#"{"id": 3, "small": 0}"#),
+        read::<Option<NonZeroU32>>("0"),
+        read::<Vec<NonZeroI64>>("[1, -2, 0]"),
+        read::<Vec<NonZeroI64>>("[1, -2]"),
+        read::<NonZeroU32>("1.5"),
+        read::<NonZeroU32>("\"3\""),
+        read::<std::collections::BTreeMap<NonZeroU8, u8>>(r#"{"1": 2}"#),
+        read::<std::collections::BTreeMap<NonZeroU8, u8>>(r#"{"0": 2}"#),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+

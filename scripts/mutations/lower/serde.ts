@@ -310,4 +310,12 @@ export const mutations: Mutation[] = [
       "TaggedSerializer writes it"
     ]
   },
+  {
+    name: "serde-remote-unrefused",
+    breaks: "`#[serde(remote = ..)]` isn't refused, so a field's `with` of its stand-in names an inherent function rust-js never lowered, and the compiler panics (#1541)",
+    file: "src/lower/serde.rs",
+    find: "    for item in attrs.values().flatten().filter(|item| item.name == \"remote\") {\n",
+    replace: "    for item in attrs.values().flatten().filter(|_| false) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a remote type"],
+  },
 ];

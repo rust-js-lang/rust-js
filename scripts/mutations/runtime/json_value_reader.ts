@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "json-value-object-unsorted",
     breaks: "a `Value`'s object is read in the order it was written, where serde_json's map is a `BTreeMap`, read by key",
     file: "src/runtime/json_value_reader.js",
-    find: "    const entries = $sortedEntries(this.value._0, $cmp);\n    const map = new $JsonValueMap(entries);\n",
-    replace: "    const entries = [...this.value._0];\n    const map = new $JsonValueMap(entries);\n",
+    find: "    const entries = $sortedEntries(this.value._0, $cmp);\n    const map = new $JsonValueMap(entries, this.kind);\n",
+    replace: "    const entries = [...this.value._0];\n    const map = new $JsonValueMap(entries, this.kind);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
   {
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "json-value-string-by-reference",
     breaks: "a `Value`'s string is given by reference, `visit_str`, where serde_json gives it whole, `visit_string` (#1546)",
     file: "src/runtime/json_value_reader.js",
-    find: "    if (visit) return visit(inner, \"owned\");\n",
+    find: "    if (visit) return visit(inner, this.kind);\n",
     replace: "    if (visit) return visit(inner, \"transient\");\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
   },
@@ -113,5 +113,13 @@ export const mutations: Mutation[] = [
     find: "      return visitor.none();\n",
     replace: "      throw $jsonError(`missing field \\`${this.name}\\``);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
+  {
+    name: "value-seq-kind-unkept",
+    breaks: "what a `&Value`'s array holds gives its strings whole, as an owned `Value`'s, where serde_json lends them (#1539)",
+    file: "src/runtime/json_value_reader.js",
+    find: "    return read(new $JsonValueReader(this.items[this.count - 1], this.kind));\n",
+    replace: "    return read(new $JsonValueReader(this.items[this.count - 1]));\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "T::deserialize of a Value or a &Value"],
   },
 ];

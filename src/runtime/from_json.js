@@ -90,16 +90,20 @@ function $jsonOneOf(entries) {
 // What the crate reads with: `$json.u32`, `$json.option($json.string)`.
 const $json = {
   bool: (json) => json.bool(),
-  u8: (json) => json.int("u8", 0, 255),
-  u16: (json) => json.int("u16", 0, 65535),
-  u32: (json) => json.int("u32", 0, 4294967295),
-  usize: (json) => json.int("usize", 0, 4294967295),
-  i8: (json) => json.int("i8", -128, 127),
-  i16: (json) => json.int("i16", -32768, 32767),
-  i32: (json) => json.int("i32", -2147483648, 2147483647),
-  isize: (json) => json.int("isize", -2147483648, 2147483647),
-  u64: (json) => json.int("u64", 0n, 18446744073709551615n),
-  i64: (json) => json.int("i64", -9223372036854775808n, 9223372036854775807n),
+  // A `NonZero<T>`: `read`, `T`'s, of a nonzero one (#1538).
+  nonZero: (read) => (json) => read(json, true),
+  // Each integer, and where `nonZero`, serde's `NonZero` of it, which says
+  // `a nonzero u32` where it isn't one and refuses zero.
+  u8: (json, nonZero) => json.int("u8", 0, 255, nonZero),
+  u16: (json, nonZero) => json.int("u16", 0, 65535, nonZero),
+  u32: (json, nonZero) => json.int("u32", 0, 4294967295, nonZero),
+  usize: (json, nonZero) => json.int("usize", 0, 4294967295, nonZero),
+  i8: (json, nonZero) => json.int("i8", -128, 127, nonZero),
+  i16: (json, nonZero) => json.int("i16", -32768, 32767, nonZero),
+  i32: (json, nonZero) => json.int("i32", -2147483648, 2147483647, nonZero),
+  isize: (json, nonZero) => json.int("isize", -2147483648, 2147483647, nonZero),
+  u64: (json, nonZero) => json.int("u64", 0n, 18446744073709551615n, nonZero),
+  i64: (json, nonZero) => json.int("i64", -9223372036854775808n, 9223372036854775807n, nonZero),
   f64: (json) => json.f64(),
   f32: (json) => json.f32(),
   string: (json) => json.string(),

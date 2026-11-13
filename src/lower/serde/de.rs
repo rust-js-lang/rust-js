@@ -165,8 +165,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if Num::of(ty).is_some_and(|n| n.bits() == 128) {
             return Err(unsupported(self));
         }
-        // Named as serde names them in its messages: `u32`, `usize`.
-        if Num::of(ty).is_some() {
+        // A `NonZero<T>`, `T`'s, then serde's check that it isn't zero, in
+        // its words, `a nonzero u32` (#1538).
+        if let ty::Adt(adt, args) = ty.kind()
+            && crate::lower::recognition::is_non_zero(adt.did())
+        {
+            let read = self.json_reader(args.type_at(0), span)?;
+            return Ok(Expr::call(reader("nonZero"), vec![read]));
+        }
+        // Named as serde names them in its messages: `u32`, `usize`. Of a
+        // primitive alone, whose name `$json` has; another rust-js holds as
+        // a number, a `Duration`'s, is refused above.
+        if Num::of(ty).is_some() && ty.is_primitive() {
             return Ok(reader(&ty.to_string()));
         }
         if ty.is_char() {

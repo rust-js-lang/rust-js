@@ -49,3 +49,27 @@ places, and deranged, so time.
   `0`, with native Rust.
 - **It's the JS a person writes:** a number, as the `Option` around it is
   the number or `undefined`.
+
+## Amendment: read from JSON as serde reads it (2026-11-13, #1538)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, the JS threw where
+Rust runs.
+
+Reading a `NonZero<u32>` from JSON named its reader by its type,
+`$json["NonZero<u32>"]`, which `$json` hasn't: `TypeError: read is not a
+function` where the program ran (P1). It's now `$json.nonZero($json.u32)`:
+its number's reader, told it's serde's `NonZero` of it, `read(json, true)`,
+so the decoder's `int` says what's expected as serde does, `a nonzero u32`,
+of a number out of its range, a float or a string, and refuses zero,
+`invalid value: integer `0`, expected a nonzero u32`, each where
+serde_json says. A number is named by its type only of a primitive; any
+other type rust-js holds as a number is refused, as a `Duration` is.
+`test/architecture-json.test.ts` holds each reader the lowering names to
+one `$json` has.
+
+The serde-values test `a NonZero is read as serde reads it` holds each
+width, zero, out of range, a float, a string, from text and from a
+`Value`, in a field, an `Option`, a `Vec` and a map's keys, against native
+serde_json. Mutations `non-zero-reader-unmade`, `non-zero-zero-read` and
+`non-zero-read-as-its-number`, caught.
+

@@ -43,8 +43,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`T::deserialize(d)` in a hand-written impl is what's read, not a `Result` of it, and `?` of it throws",
     file: "src/lower/serde/protocol.rs",
-    find: '            return Ok(Written::Value(Expr::call(\n                Expr::helper("$jsonRead"),\n                vec![values.remove(0), reader],\n            )));\n',
-    replace: "            return Ok(Written::Value(Expr::call(reader, vec![values.remove(0)])));\n",
+    find: '            return Ok(Written::Value(Expr::call(\n                Expr::helper("$jsonRead"),\n                vec![given, reader],\n            )));\n',
+    replace: "            return Ok(Written::Value(Expr::call(reader, vec![given])));\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
   },
   {
@@ -185,5 +185,21 @@ export const mutations: Mutation[] = [
     find: "(VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit | SerdeHint::Option) => \"unit\",",
     replace: "(VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit) => \"unit\",",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
+  },
+  {
+    name: "value-deserializer-unread",
+    breaks: "`T::deserialize(value)` of a `serde_json::Value` is given the `Value` as its reader: `json.struct is not a function` (#1539)",
+    file: "src/lower/serde/protocol.rs",
+    find: "        Expr::new_(Expr::helper(\"$JsonValueReader\"), given)\n",
+    replace: "        given.remove(0)\n",
+    tests: ["test/serde-protocol.test.ts", "-t", "T::deserialize of a Value or a &Value"],
+  },
+  {
+    name: "value-reference-deserializer-owned",
+    breaks: "a `&Value`'s reader gives its strings whole, `visit_string`, where serde_json's lends them, `visit_borrowed_str` (#1539)",
+    file: "src/lower/serde/protocol.rs",
+    find: "            given.push(Expr::str(\"borrowed\"));\n",
+    replace: "",
+    tests: ["test/serde-protocol.test.ts", "-t", "T::deserialize of a Value or a &Value"],
   },
 ];

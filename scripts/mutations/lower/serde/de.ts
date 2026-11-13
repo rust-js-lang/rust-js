@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "if crate::lower::recognition::is_std_crate(tcx, adt.did()) => true,",
     tests: ["test/serde.test.ts", "-t", "a value with a destructor"],
   },
+  {
+    name: "non-zero-reader-unmade",
+    breaks: "a `NonZero<u32>` has no reader of its own, so reading one is refused, where serde reads its number and refuses zero (#1538)",
+    file: "src/lower/serde/de.rs",
+    find: "            return Ok(Expr::call(reader(\"nonZero\"), vec![read]));\n",
+    replace: "            let _ = read;\n",
+    tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
+  },
 ];

@@ -68,6 +68,10 @@ pub fn lower_crate<'tcx>(
     } = built;
     // A program decides by its own code, whatever contract it writes (#597).
     let library = export_library && !program;
+    // What no codec of rust-js's reads, refused before anything is lowered.
+    if super::serde::refuse_unread(tcx, serde_attrs) {
+        return Lowered::Crate(None);
+    }
     let sources = super::sources::CapturedSources::new(tcx);
     // What the analysis stands on; then which adapters each body makes in
     // place, decided once the crate's `Recognition` exists, before anything

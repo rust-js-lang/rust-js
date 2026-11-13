@@ -14942,11 +14942,14 @@ export class $JsonDecoder {
   }
 
   // An integer type, named as serde names it, from `min` to `max`: a
-  // number, or for an `i64` or `u64`, a BigInt (ADR 0086).
-  int(name, min, max) {
+  // number, or for an `i64` or `u64`, a BigInt (ADR 0086). Of serde's
+  // `NonZero` of it, `nonZero`, zero refused too, and what's expected `a
+  // nonzero u32` (#1538).
+  int(type, min, max, nonZero) {
+    const name = nonZero ? `a nonzero ${type}` : type;
     return this.deserializeNumber(name, (n) => {
       if (n.kind === "f") throw $jsonError(`invalid type: floating point \`${$jsonNumber(n.value)}\`, expected ${name}`);
-      if (n.kind === "u" ? n.value > max : n.value < min) {
+      if ((n.kind === "u" ? n.value > max : n.value < min) || (nonZero && n.value == 0)) {
         throw $jsonError(`invalid value: integer \`${n.value}\`, expected ${name}`);
       }
       return typeof max === "bigint" ? BigInt(n.value) : Number(n.value);
@@ -16542,10 +16545,13 @@ export class $JsonFlatMap {
 
 // A `serde_json::Value` read as a deserializer (ADR 0083), for
 // `serde_json::from_value`: its `impl Deserializer for Value`.
+// A `Value`'s, whose strings it gives whole, `owned`, or a `&Value`'s,
+// which lends them, `borrowed` (#1539), as each of what it holds does.
 export class $JsonValueReader extends $JsonDecoder {
-  constructor(value) {
+  constructor(value, kind = "owned") {
     super();
     this.value = value;
+    this.kind = kind;
   }
 
   // serde_json's `Value::unexpected`.
@@ -16571,13 +16577,13 @@ export class $JsonValueReader extends $JsonDecoder {
   // A string of a `Value` is its own, so a `&str` can't borrow it: it's
   // given whole, `visit_string` (#1546).
   deserializeStr(expected, visit) {
-    if (this.value.TAG === "String") return visit(this.value._0, "owned");
+    if (this.value.TAG === "String") return visit(this.value._0, this.kind);
     throw this.invalid(expected);
   }
 
   visitArray(visit) {
     const items = this.value._0;
-    const seq = new $JsonValueSeq(items);
+    const seq = new $JsonValueSeq(items, this.kind);
     const value = visit(seq);
     if (seq.count < items.length) throw $jsonError(`invalid length ${items.length}, expected fewer elements in array`);
     return value;
@@ -16585,7 +16591,7 @@ export class $JsonValueReader extends $JsonDecoder {
 
   visitObject(visit) {
     const entries = $sortedEntries(this.value._0, $cmp);
-    const map = new $JsonValueMap(entries);
+    const map = new $JsonValueMap(entries, this.kind);
     const value = visit(map);
     if (map.count < entries.length) throw $jsonError(`invalid length ${entries.length}, expected fewer elements in map`);
     return value;
@@ -16622,7 +16628,7 @@ export class $JsonValueReader extends $JsonDecoder {
       });
     }
     const visit = { Bool: visitor.bool, Number: visitor.number, String: visitor.string }[tag];
-    if (visit) return visit(inner, "owned");
+    if (visit) return visit(inner, this.kind);
     throw this.invalid(expected);
   }
 
@@ -16669,7 +16675,7 @@ export class $JsonValueReader extends $JsonDecoder {
     } else {
       throw this.invalid("string or map");
     }
-    return visit($jsonVariantNamed(name, variants, other), new $JsonValueVariant(held));
+    return visit($jsonVariantNamed(name, variants, other), new $JsonValueVariant(held, this.kind));
   }
 
   identifier(variants, other) {
@@ -16692,9 +16698,10 @@ export function $jsonValueContent(value) {
 }
 
 export class $JsonValueSeq {
-  constructor(items) {
+  constructor(items, kind) {
     this.items = items;
     this.count = 0;
+    this.kind = kind;
   }
 
   next() {
@@ -16702,7 +16709,7 @@ export class $JsonValueSeq {
   }
 
   value(read) {
-    return read(new $JsonValueReader(this.items[this.count - 1]));
+    return read(new $JsonValueReader(this.items[this.count - 1], this.kind));
   }
 
   element(read, i, expected, missing, defaults) {
@@ -16711,9 +16718,10 @@ export class $JsonValueSeq {
 }
 
 export class $JsonValueMap {
-  constructor(entries) {
+  constructor(entries, kind) {
     this.entries = entries;
     this.count = 0;
+    this.kind = kind;
   }
 
   next() {
@@ -16725,7 +16733,7 @@ export class $JsonValueMap {
   }
 
   value(read) {
-    return read(new $JsonValueReader(this.entries[this.count - 1][1]));
+    return read(new $JsonValueReader(this.entries[this.count - 1][1], this.kind));
   }
 }
 
@@ -16767,13 +16775,14 @@ export class $JsonValueKey {
 
 // `VariantAccess` of a `Value`'s variant: what it holds, if anything.
 export class $JsonValueVariant {
-  constructor(held) {
+  constructor(held, kind) {
     this.held = held;
+    this.kind = kind;
   }
 
   reader(kind, tag) {
     if (this.held === undefined) throw $jsonError(`invalid type: unit variant, expected ${kind}`);
-    const reader = new $JsonValueReader(this.held);
+    const reader = new $JsonValueReader(this.held, this.kind);
     if (tag && this.held.TAG !== tag) throw reader.invalid(kind);
     return reader;
   }
@@ -16937,16 +16946,20 @@ export function $jsonOneOf(entries) {
 // What the crate reads with: `$json.u32`, `$json.option($json.string)`.
 export const $json = {
   bool: (json) => json.bool(),
-  u8: (json) => json.int("u8", 0, 255),
-  u16: (json) => json.int("u16", 0, 65535),
-  u32: (json) => json.int("u32", 0, 4294967295),
-  usize: (json) => json.int("usize", 0, 4294967295),
-  i8: (json) => json.int("i8", -128, 127),
-  i16: (json) => json.int("i16", -32768, 32767),
-  i32: (json) => json.int("i32", -2147483648, 2147483647),
-  isize: (json) => json.int("isize", -2147483648, 2147483647),
-  u64: (json) => json.int("u64", 0n, 18446744073709551615n),
-  i64: (json) => json.int("i64", -9223372036854775808n, 9223372036854775807n),
+  // A `NonZero<T>`: `read`, `T`'s, of a nonzero one (#1538).
+  nonZero: (read) => (json) => read(json, true),
+  // Each integer, and where `nonZero`, serde's `NonZero` of it, which says
+  // `a nonzero u32` where it isn't one and refuses zero.
+  u8: (json, nonZero) => json.int("u8", 0, 255, nonZero),
+  u16: (json, nonZero) => json.int("u16", 0, 65535, nonZero),
+  u32: (json, nonZero) => json.int("u32", 0, 4294967295, nonZero),
+  usize: (json, nonZero) => json.int("usize", 0, 4294967295, nonZero),
+  i8: (json, nonZero) => json.int("i8", -128, 127, nonZero),
+  i16: (json, nonZero) => json.int("i16", -32768, 32767, nonZero),
+  i32: (json, nonZero) => json.int("i32", -2147483648, 2147483647, nonZero),
+  isize: (json, nonZero) => json.int("isize", -2147483648, 2147483647, nonZero),
+  u64: (json, nonZero) => json.int("u64", 0n, 18446744073709551615n, nonZero),
+  i64: (json, nonZero) => json.int("i64", -9223372036854775808n, 9223372036854775807n, nonZero),
   f64: (json) => json.f64(),
   f32: (json) => json.f32(),
   string: (json) => json.string(),
