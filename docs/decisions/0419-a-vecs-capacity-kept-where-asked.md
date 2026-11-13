@@ -732,3 +732,36 @@ builds; the compiler before gives 34, 35, 18, 2, 2 and 3 for 64, 46, 20,
 10, 10 and 12. Mutations `heap-from-capacity-its-length`
 (`runtime/heap_from.ts`) and `heap-sorted-capacity-its-length`
 (`runtime/heap_sorted.ts`).
+
+## Amendment (2026-11-13, #1572): what passes on a hint its form keeps
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal becomes
+Rust's behavior.
+
+In a crate that reads a `Vec`'s capacity, a `Vec` grown by an adapter of
+an adapter was refused unless its hint was known to be std's.
+`s.char_indices().map(f).rev()` was refused beside a case that reads a
+capacity, though it compiles alone (the neighbour shuffle).
+
+Whether an iterator's runtime form keeps std's hint, as it's made, is
+`hint_kept_by_form` (`recognition/lengths.rs`): `$chars` where a crate
+keeps it, and a std source whose form gives std's (`source_hint_kept`).
+So is a `rev()`, a `take(n)`, a `copied()` or a `map()` of one, each a
+`$Steps` that passes its source's hint on, as std's adapter does;
+`lower_bound_is_stds_where` asks it. The rule is the form's, not the
+type's. A `map()` of an array's iterator, JS's own `values().map(f)`,
+knows no hint, however exactly std counts it. Taking it to keep the hint
+grew a `Vec` from `a.iter().map(f).cycle().take(5)` by doubling,
+capacity 8 where std's is 5; it stays refused. Nor a `skip(n)`, whose JS
+`drop(n)` keeps none (#1316).
+
+#1572's second pair, `Take<Cycle<Map<slice::Iter>>>` and
+`Take<Cycle<Zip<..>>>` beside a case that reads a capacity, stays refused
+and listed in test/neighbours-known.txt. Their parts' JS keeps no hint
+inside a cycle, so they would need making knowing it there.
+
+`test/corpus/hint_kept_through_rev_take_and_cycle.rs` holds the capacities
+against native Rust in both builds, and a diagnostics row the refusal of
+a cycle's take of an array's map. Mutations `hint-kept-not-through-rev`,
+`hint-kept-not-through-take`, `hint-kept-by-form-unasked` and
+`hint-kept-through-an-arrays-map` (`lower/recognition/lengths.ts`).

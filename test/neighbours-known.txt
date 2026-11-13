@@ -31,8 +31,7 @@ plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_o
 #1513 P2 (pointers): a lent object std keeps in a $some box (OnceCell<Option<T>>, Peekable of Options) or lends in generic code is refused in a crate that asks its address
 plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
 
-#1572 P2 (neighbours): a Vec grown by a std adapter whose JS size hint has no lower bound (Rev<Map<CharIndices>>, Take<Cycle<Map<..>>>) is refused beside a case that reads capacity
-plain std rev_of_char_indices.rs beside adapter_size_hints.rs
+#1572 P2 (neighbours): a Vec grown by a std adapter whose JS size hint has no lower bound (Take<Cycle<Map<slice::Iter>>>, Take<Cycle<Zip<..>>>) is refused beside a case that reads capacity
 plain std cloned_chains_and_cycles.rs beside extend_by_a_dyn_iterator_asks_its_hint.rs
 
 #1573 P2 (neighbours): an Inspect of a vec's IntoIter, or a StepBy of a Rev of a Range, is refused as an ExactSizeIterator beside a case that counts

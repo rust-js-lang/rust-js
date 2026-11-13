@@ -446,11 +446,36 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// whose form gives std's hint, `repeat`'s `$repeating` and the like
     /// (`source_hint_kept`, #1357). Not an adapter of one, JS's own
     /// `drop(n)` of `$chars`, which keeps none (#1316).
+    ///
+    /// And of what passes on the hint of a source whose runtime form keeps
+    /// std's (`hint_kept_by_form`): `s.char_indices().map(f).rev()` (#1572).
     pub(in crate::lower) fn lower_bound_is_stds_where(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
         let made = self.reveal(ty.peel_refs());
-        chars_kept && (self.is_str_chars(made) || self.is_char_indices(made))
-            || super::source_hint_kept(self.tcx, made)
-            || self.lower_bound_is_stds(ty)
+        self.hint_kept_by_form(made, chars_kept) || self.lower_bound_is_stds(ty)
+    }
+
+    /// Whether the runtime form of an iterator of type `ty` keeps std's
+    /// hint, as it's made: a string's `chars()` or `char_indices()` where
+    /// they're `$chars`, `chars_kept` (#1186), and a std source whose form
+    /// gives std's, `$repeating` and the like (`source_hint_kept`, #1357);
+    /// and a `rev()`, a `take(n)`, a `copied()` or a `map()` of one, each a
+    /// `$Steps` that passes its source's on as std's adapter does (#1572). Not an array's iterator, JS's own, nor a map of one,
+    /// whose JS `map` knows none, however exactly std counts it; nor a
+    /// `skip(n)`, whose JS `drop(n)` keeps none (#1316).
+    fn hint_kept_by_form(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {
+            return true;
+        }
+        super::copied_source(self.tcx, ty)
+            .or_else(|| super::mapped_source(self.tcx, ty))
+            .or_else(|| super::reversed_source(self.tcx, ty))
+            .or_else(|| {
+                (super::counted_source(self.tcx, ty))
+                    .filter(|(_, skip)| !skip)
+                    .map(|(source, _)| source)
+            })
+            .is_some_and(|source| self.hint_kept_by_form(source, chars_kept))
     }
 
     /// `lower_bound_is_stds`, of an iterator of type `ty` a caller gives
