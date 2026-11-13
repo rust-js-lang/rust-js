@@ -573,11 +573,12 @@ impl Expr {
 
     /// Whether evaluating this may run the program's own code: a function
     /// of the crate's, a `Debug` of its own, a method of what JS doesn't
-    /// know, a dictionary's. Not a runtime helper's, which runs only what
-    /// it's given, a JS global's, nor a JS method of text or an array,
-    /// though each callback's body is looked at.
+    /// know, a dictionary's, a value's `toString` a runtime helper runs,
+    /// `$shown(v)`'s (#1676). Not another runtime helper's, which runs
+    /// only what it's given, a JS global's, nor a JS method of text or an
+    /// array, though each callback's body is looked at.
     pub fn runs_program_code(&self) -> bool {
-        !self.calls_only(&|_| true)
+        !self.calls_only(&|helper| !crate::runtime::runs_given_values(helper))
     }
 
     /// Whether each call in this is a helper's `helper` allows, or one of
@@ -586,7 +587,7 @@ impl Expr {
     /// of what JS's own calls are, `only_reads`' and `runs_program_code`'s.
     /// A template's interpolation runs nothing: what may run code when
     /// it's shown, a class's or a binding's JS value's `toString`, is
-    /// called, a class's `p.toString()` (ADR 1138).
+    /// called, `p.toString()`, `$shown(v)` (ADR 1138).
     /// No name says it: a crate's method named `map` or `String` may do
     /// anything (#1663, #1674).
     fn calls_only(&self, helper: &dyn Fn(&str) -> bool) -> bool {

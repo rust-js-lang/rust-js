@@ -52,6 +52,13 @@ impl Expr {
         self
     }
 
+    /// This, `js::shown`'s value of text, a number or a `bool`, which a
+    /// template shows running nothing (`Known::Plain`, #1676).
+    pub fn plain(mut self) -> Expr {
+        self.facts = self.facts.with(Known::Plain);
+        self
+    }
+
     /// This, which lowering knows is never `undefined`, though maybe
     /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
     /// read say, as it is. What it knows of the `None` it can be, of an

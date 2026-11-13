@@ -484,7 +484,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // options (#557).
         // A binding's JS value's own, what JS's template makes of it.
         if self.displays_itself(ty) {
-            return Ok(shown_text(value));
+            return Ok(super::binding_text(value));
         }
         // An untagged enum's value, a string, an integer, a `bool` or a
         // `char`, which a template shows running nothing (ADR 1138).

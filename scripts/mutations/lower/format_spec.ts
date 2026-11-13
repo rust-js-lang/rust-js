@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     name: "shown-formatted",
     breaks: "`js::shown(msg)` in `format!` calls its `Display`, not `${msg}`",
     file: "src/lower/format_spec.rs",
-    find: "        if self.displays_itself(ty) {\n            return (super::display::shown_text(value), text);\n",
-    replace: "        if false {\n            return (super::display::shown_text(value), text);\n",
+    find: "        if self.displays_itself(ty) {\n            return (super::display::binding_text(value), text);\n",
+    replace: "        if false {\n            return (super::display::binding_text(value), text);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`format!("{}", js::shown(n))` is `n`, a number, not its text, `${n}`',
     file: "src/lower/format_spec.rs",
-    find: "            return (super::display::shown_text(value), text);\n",
+    find: "            return (super::display::binding_text(value), text);\n",
     replace: "            return (value, text);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
   },

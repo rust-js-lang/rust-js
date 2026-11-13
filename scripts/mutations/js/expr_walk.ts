@@ -305,4 +305,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(refcell_variant_field_twice|try_lock|fn_items_as_values|destructuring_assignment|untagged_displayed_in_place|bit_width|btree_compare|byte_constants_large|adapter_of_a_borrowed_iterator_where_addresses_are_asked|runtime_long_writes|range_size_hint|refcell_variant_replaced_held|class_trait_field_borrows|option_map_drops|binary_heap_keeps_its_vecs_capacity|rc_counted_per_type|one_thread_sync|ref_cell_guards_mapped|asked_length_overflow).rs$"],
     snapshots: true,
   },
+  {
+    name: "shown-taken-to-run-only-what-its-given",
+    breaks: "`$shown(v)` is taken to run only what it's given, never `v`'s `toString`, so a format's later argument is moved past it (#1676)",
+    file: "src/js/expr_walk.rs",
+    find: "        !self.calls_only(&|helper| !crate::runtime::runs_given_values(helper))\n",
+    replace: "        !self.calls_only(&|_| true)\n",
+    tests: ["test/effects.test.ts", "-t", "toString runs after every argument"],
+  },
 ];

@@ -83,3 +83,35 @@ anything else may do anything.
   (`js/expr_walk.ts`); `js-global-unknown-to-tidy` (`lower/mir/tidy.ts`,
   held by lowering-strings' read of `Math.PI`); `console-unread-past`
   (`lower/format_args.ts`).
+
+## Amendment (2026-11-13, #1676): a binding's JS value's text is called too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+Rust evaluates every format argument before it formats one.
+`format!("{} {} {}", loud(1), js::shown(value), loud(2))` was `${loud(1)}
+${value} ${loud(2)}`, which ran `value`'s JS `toString` before `loud(2)`;
+held, `const b = loud(2)`, a minifier put it back past `${value}`, as it
+takes a template's `toString` to run nothing. A binding's JS value of any
+shape is now shown called, `$shown(value)`, the runtime's
+\`${value}\` (ADR 0312's text, a symbol's throw among it), which
+`runtime::runs_given_values` says runs a value's code: so the format holds
+what's after it, and a minifier keeps the call in place. `js::shown` of
+text, a number or a `bool`, as its Rust type says where the binding is
+called (`Known::Plain`, that value's only mark), stays \`${value}\`.
+
+The invariant this decision rests on, a template's interpolation running
+nothing, is held by an architecture test: `shown_text`, the one maker of a
+bare \`${v}\`, is called only of `js::shown`'s value of text, a number or
+a `bool`, and of an untagged enum's value, whose variants each hold a
+string, an integer, a `bool` or a `char` (`writes_each_value`).
+
+`test/corpus/format_arguments_evaluated_before_a_class_is_shown.rs` holds
+the class shape against native Rust in all three builds;
+`test/bindings.test.ts`'s "js::shown's toString runs after every argument
+is evaluated" holds the binding shape, plain and minified. Mutations
+`binding-text-interpolated`, `plain-binding-text-called`
+(`lower/display.ts`), `shown-number-unmarked-plain`
+(`lower/binding_calls.ts`), `shown-taken-to-run-only-what-its-given`
+(`js/expr_walk.ts`).

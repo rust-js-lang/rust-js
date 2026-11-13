@@ -123,7 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn display_handed_on(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
         let text = self.tcx.types.str_;
         if self.displays_itself(ty) {
-            return (super::display::shown_text(value), text);
+            return (super::display::binding_text(value), text);
         }
         if let Some((inner, _)) = self.recognition().int_newtype(ty) {
             return (Expr::index(value, Expr::int(0)), inner);

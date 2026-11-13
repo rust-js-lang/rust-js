@@ -267,7 +267,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(property, value).at(self.js_span(span)));
                 Expr::undefined()
             }
-            (JsForm::This, Some(this)) if args.is_empty() => this,
+            // The value itself, `js::shown(n)`'s; text, a number or a
+            // `bool` as its Rust type is, whose text a template makes
+            // running nothing (`Known::Plain`, #1676).
+            (JsForm::This, Some(this)) if args.is_empty() => {
+                let given = (self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args))
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .first()
+                    .map(|ty| ty.peel_refs());
+                let plain = given.is_some_and(|ty| {
+                    ty.is_numeric()
+                        || ty.is_bool()
+                        || ty.is_str()
+                        || self.is_lang_adt(ty, rustc_hir::attrs::lang_items::LangItem::String)
+                });
+                match plain {
+                    true => this.plain(),
+                    false => this,
+                }
+            }
             // `js::this()`, of no value given: the function's own `this`,
             // read only where it's what JS called it with
             // (`analysis::arguments`, rd683).

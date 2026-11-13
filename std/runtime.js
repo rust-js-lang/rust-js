@@ -11227,6 +11227,14 @@ export function $typeIdShown() {
   throw $unsupported("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
 }
 
+// `js::shown(value)`'s text, what JS's template makes of it, `${value}`
+// (ADR 0312): its `toString`, which may run anything, a JS object's own,
+// called here, so a minifier, which takes a template's `toString` to run
+// nothing, keeps it in place after what's evaluated before it (#1676).
+export function $shown(value) {
+  return `${value}`;
+}
+
 // `Cell::from_mut` of a `&mut` to an object, an array's or a struct's: a
 // cell whose `value` is the object, which a write changes in place, as
 // writing through the `&mut` does (ADR 0153).

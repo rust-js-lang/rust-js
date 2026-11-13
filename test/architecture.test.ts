@@ -1297,3 +1297,32 @@ test("no caller of substitute falls back to the expression unrenamed", () => {
   expect(falls.test("(target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target)")).toBe(true);
 });
 
+
+// A template's interpolation runs nothing (ADR 1138): what may run code
+// where it's shown is called, a class's `p.toString()`, as the crate's
+// writer is, and a binding's JS value of any shape `$shown(v)`, whose
+// `toString` may run anything and which a minifier keeps in place. The one
+// maker of a bare \`${v}\` of a value, `shown_text`, is called only where `v`
+// is text, a number or a `bool`: `binding_text`'s `js::shown` value of one
+// (`Known::Plain`), and an untagged enum's value, whose variants each hold
+// a string, an integer, a `bool` or a `char` (`writes_each_value`).
+test("a bare template value is made only of text, a number or a bool", () => {
+  const callers = ["src/lower.rs", ...files("src/lower").filter((file) => file.endsWith(".rs"))].flatMap((file) =>
+    read(file)
+      .split("\n")
+      .filter((line) => /\bshown_text\(/.test(line) && !/fn shown_text\(/.test(line) && !/is_shown_text\(/.test(line))
+      .map((line) => `${file}: ${line.trim()}`),
+  );
+  expect(callers.sort()).toEqual([
+    "src/lower/display.rs: true => shown_text(value),",
+    "src/lower/display/written.rs: return Ok(shown_text(value));",
+    "src/lower/format_spec.rs: return Ok(super::display::shown_text(value));",
+  ]);
+  // Each beside the question that makes it plain.
+  const display = read("src/lower/display.rs");
+  expect(display).toMatch(/match value\.facts\.has\(js::Known::Plain\) \{\n\s*true => shown_text\(value\),/);
+  for (const file of ["src/lower/display/written.rs", "src/lower/format_spec.rs"]) {
+    expect(read(file)).toMatch(/self\.displays_its_value\(ty\)\s*\{\n(?:\s*\/\/.*\n)*\s*return Ok\((?:super::display::)?shown_text\(value\)\);/);
+  }
+  expect(read("src/lower/untagged/displayed.rs")).toContain("if !(self.is_string_like(shown) || shown.is_integral() || shown.is_bool()) {");
+});

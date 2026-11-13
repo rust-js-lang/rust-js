@@ -1000,4 +1000,12 @@ export const mutations: Mutation[] = [
     replace: "                    && true =>\n",
     tests: ["test/this.test.ts", "-t", "refused"],
   },
+  {
+    name: "shown-number-unmarked-plain",
+    breaks: "`js::shown(n)` of a number isn't marked text, so its template is `$shown(n)` (#1676)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    true => this.plain(),\n",
+    replace: "                    true => this,\n",
+    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+  },
 ];

@@ -567,7 +567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
     /// `#[link_name = "this"]`, `js::shown`'s: its text is what JS's
-    /// template makes of the value, `shown_text` (ADR 0312). Not a
+    /// template makes of the value, `binding_text` (ADR 0312). Not a
     /// class's, whose `Display::fmt`, its prototype's `toString`, is called
     /// as the crate's writer is, `p.toString()` (ADR 1138).
     pub(super) fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
@@ -812,6 +812,18 @@ fn joined(parts: Vec<(Expr, bool)>, separable: bool) -> Expr {
 /// text, not the value; preparation splices it into the outer one.
 pub(super) fn shown_text(value: Expr) -> Expr {
     Expr::template(vec![String::new(), String::new()], vec![value])
+}
+
+/// A binding's JS value's text, `js::shown`'s, what JS's template makes of
+/// it, called, `$shown(value)`: its `toString` may run anything, which a
+/// minifier takes a template's not to (#1676).
+pub(super) fn binding_text(value: Expr) -> Expr {
+    // Text, a number or a `bool`, as `js::shown`'s given value is, which a
+    // template shows running nothing (`Known::Plain`).
+    match value.facts.has(js::Known::Plain) {
+        true => shown_text(value),
+        false => Expr::call_helper("$shown", vec![value]),
+    }
 }
 
 /// Whether `e` is a template of values alone, \`${x}\`, which is text only

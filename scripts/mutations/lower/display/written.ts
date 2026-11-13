@@ -227,8 +227,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::shown(n).to_string()`, and a `T: Display` given it, is `n`, a number, not its text, `${n}`",
     file: "src/lower/display/written.rs",
-    find: "            return Ok(shown_text(value));\n        }\n        // An untagged",
-    replace: "            return Ok(value);\n        }\n        // An untagged",
+    find: "            return Ok(super::binding_text(value));\n",
+    replace: "            return Ok(value);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
   },
   {

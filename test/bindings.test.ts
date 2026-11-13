@@ -1066,7 +1066,7 @@ pub fn year(year: f64) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return `${msg}-${index}`;");
+  expect(js).toContain("return `${$shown(msg)}-${index}`;");
   expect(js).toContain("return `© ${year}`;");
   expect((await import(join(dir, "lib.js"))).year(1e21)).toBe("© 1e+21");
   // `String(arg)` stays, which names a symbol a template throws on.
@@ -1162,7 +1162,7 @@ pub fn lines(n: f64) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return $byteLen(`${n}`);");
   expect(js).toContain("return `${a}${b}`;");
-  expect(js).toContain("s += `${v}`;");
+  expect(js).toContain("s += $shown(v);");
   // Its template spliced into one written across lines, which has no `\n`.
   expect(js).toContain("return `<b>\n${n}</b>`;");
   const lib = await import(join(dir, "lib.js"));

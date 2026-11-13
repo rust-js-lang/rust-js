@@ -409,4 +409,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^infallible_shown_through_a_bound.rs$"],
   },
+  {
+    name: "binding-text-interpolated",
+    breaks: "a binding's JS value is \\`${v}\\` again, whose `toString` a minifier takes to run nothing, moving a held argument past it (#1676)",
+    file: "src/lower/display.rs",
+    find: "        false => Expr::call_helper(\"$shown\", vec![value]),\n",
+    replace: "        false => shown_text(value),\n",
+    tests: ["test/effects.test.ts", "-t", "toString runs after every argument"],
+  },
+  {
+    name: "plain-binding-text-called",
+    breaks: "a number's `js::shown`, `${year}`, is `$shown(year)`, a call where its template runs nothing (#1676)",
+    file: "src/lower/display.rs",
+    find: "        true => shown_text(value),\n        false => Expr::call_helper(\"$shown\", vec![value]),\n",
+    replace: "        true => Expr::call_helper(\"$shown\", vec![value]),\n        false => Expr::call_helper(\"$shown\", vec![value]),\n",
+    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+  },
 ];

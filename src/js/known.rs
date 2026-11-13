@@ -28,6 +28,12 @@ knowns! {
     /// `s.startsWith(t)`, which only reads it and throws nothing: never a
     /// crate's or a binding's of the same name, `P.at(p)`.
     Read,
+    /// The value `js::shown(value)` was given where it's text, a number or
+    /// a `bool` by its Rust type, which a template shows running nothing,
+    /// \`${value}\`; any other, whose `toString` may run anything, is
+    /// shown called, `$shown(value)` (#1676). Not `Read`, which says a call
+    /// only reads, nor `Text`, which a `+` joins as text.
+    Plain,
     /// A call of one of JS's own functions or methods, of text, an array,
     /// a number or a global, `parts.join(", ")`, `String(n)`, built where
     /// lowering knows what it calls: it runs nothing of the program's but
@@ -359,6 +365,7 @@ impl Known {
         match self {
             Known::Read
             | Known::BuiltIn
+            | Known::Plain
             | Known::Lasting
             | Known::Sliced
             | Known::SetItems

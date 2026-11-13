@@ -187,6 +187,7 @@ helpers! {
     CharEscape,
     Borrow,
     TypeIdShown,
+    Shown,
     CellOf,
     GetOrInitLock,
     GetOrInit,
@@ -538,6 +539,13 @@ pub(crate) fn is_pure(name: &str) -> bool {
     PURE.contains(&name)
 }
 
+/// Whether `name` is a helper that runs code of a value it's given, not
+/// only the callbacks it's given: `$shown(v)`, `v`'s `toString`, which a
+/// binding's JS value's may be anything (#1676).
+pub(crate) fn runs_given_values(name: &str) -> bool {
+    name == "$shown"
+}
+
 /// Whether `@rust-js/std`'s helpers export `name`: a name any module may import.
 pub(crate) fn exports(name: &str) -> bool {
     static EXPORTS: std::sync::LazyLock<IndexSet<&'static str>> = std::sync::LazyLock::new(|| {
@@ -707,6 +715,7 @@ impl Helper {
             Helper::CharEscape => include_str!("runtime/char_escape.js"),
             Helper::Borrow => include_str!("runtime/borrow.js"),
             Helper::TypeIdShown => include_str!("runtime/type_id_shown.js"),
+            Helper::Shown => include_str!("runtime/shown.js"),
             Helper::CellOf => include_str!("runtime/cell_of.js"),
             Helper::GetOrInitLock => include_str!("runtime/get_or_init_lock.js"),
             Helper::GetOrInit => include_str!("runtime/get_or_init.js"),

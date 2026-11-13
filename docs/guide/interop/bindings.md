@@ -921,7 +921,12 @@ export function nodeRequire(module, key) {
 `js::shown(value)` displays any value as JS's template shows it,
 `` `${value}` ``: an object by its `toString`, a number as JS writes it,
 `1e+21`. Its text is a string wherever it goes, alone too, padded, and by
-`to_string()` (ADR 0312):
+`to_string()` (ADR 0312). Of text, a number or a `bool` it's that
+template; of a value of any other shape, whose `toString` may run
+anything, it's `$shown(value)`, the same template called, which a
+minifier keeps after the format's other arguments, as Rust evaluates them
+first; a bare `${value}` it would take to run nothing and move them past
+([ADR 1138](../../decisions/1138-effects-are-opt-in.md), #1676):
 
 ```rust
 use js::Unknown;
@@ -940,10 +945,10 @@ pub fn year_width(year: f64) -> usize {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/std";
+import { $byteLen, $shown } from "@rust-js/std";
 
 export function key(msg, index) {
-  return `${msg}-${index}`;
+  return `${$shown(msg)}-${index}`;
 }
 
 export function year(year) {
