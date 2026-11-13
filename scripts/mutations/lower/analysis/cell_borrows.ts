@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
       "a function of the crate's may borrow anything, as before, so `timerQueue` and `taskQueue` stay `{ value }` cells",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        Called::Body(body, args) => found.runs.push((body, Some(args))),\n",
-    replace: "        Called::Body(..) => found.any = true,\n",
+    replace: "        Called::Body(..) => found.reach.and(Reach::Anything),\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",

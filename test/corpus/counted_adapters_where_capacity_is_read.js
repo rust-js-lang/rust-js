@@ -64,20 +64,20 @@ function main() {
   console.log(`[${v.join(", ")}] ${arg}`);
   const n = new Map(
     $reserveHint(
-      $lazyRange(1, 4).map((n) => [n, String(n)]),
+      $lazyRange(1, 40).map((n) => [n, String(n)]),
       16,
       4,
     ),
   );
   const w = $grownVec(
     $roomForHint(
-      $taking($iter(Array.from(n.values())), 2).map((s) => s + "!"),
+      $taking($iter(Array.from(n.values())), 10).map((s) => s + "!"),
       12,
       false,
     ),
     (grown) => Array.from(grown),
   );
-  const arg$1 = $capacity(w, 12) >= 2;
+  const arg$1 = $capacity(w, 12);
   console.log(`${w.length} ${arg$1}`);
   const s = $skipping($iter([1, 2, 3, 4, 5]), 1);
   const r = $grownVec($roomForHint($rev($mapEnds(s, (x) => (x + 1) >>> 0)), 4, false), (grown) =>
