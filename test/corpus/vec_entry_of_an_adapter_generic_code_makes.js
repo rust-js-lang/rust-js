@@ -2,7 +2,6 @@
 
 import {
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $count,
   $given,
@@ -81,12 +80,10 @@ function doubleCallU32_call(double, t) {
 function main() {
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () =>
-        $collectVec(
-          items,
-          8,
-          $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
-        ),
+      $collectVec(
+        items,
+        8,
+        $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
       ),
   };
   let v = mappedIterator_collect(

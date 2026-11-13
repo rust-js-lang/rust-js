@@ -6,7 +6,6 @@ import {
   $cmp,
   $collectDropping,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $foldToArray,
   $iter,
@@ -194,27 +193,21 @@ function main() {
   console.log(`{${Array.from($sortedKeys(c, $cmp)).join(", ")}}`);
   let g = built(loud([7], "generic vec"), {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () =>
-        $collectVec(
-          items,
-          4,
-          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-        ),
+      $collectVec(
+        items,
+        4,
+        $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
       ),
   });
   console.log(`[${g.join(", ")}]`);
   g = built(loud([8], "generic set"), {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(
-        items,
-        () =>
-          new $BTreeSet(
-            $collectVec(
-              items,
-              4,
-              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-            ),
-          ),
+      new $BTreeSet(
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        ),
       ),
   });
   console.log(`{${Array.from($sortedKeys(g, $cmp)).join(", ")}}`);

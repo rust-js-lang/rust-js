@@ -6,7 +6,6 @@ import {
   $cmp,
   $collectResults,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $debugStr,
   $folded,
@@ -62,27 +61,24 @@ function parsed(words, BFromIteratorResult) {
 function main() {
   const resultFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => $collectResults(items, undefined, undefined, false, 4)),
+      $collectResults(items, undefined, undefined, false, 4),
   };
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () =>
-        $collectVec(
-          items,
-          4,
-          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-        ),
+      $collectVec(
+        items,
+        4,
+        $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
       ),
   };
   const v = gather(3, vecFromIterator);
   const s = gather(2, {
-    fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
+    fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
   });
   const b = gather(4, bagFromIteratorU32);
   const t = made("abc", {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => Array.from($reserveHint($folded(items), 1)).join("")),
+      Array.from($reserveHint($folded(items), 1)).join(""),
   });
   const pairs = new $BTreeMap(
     gather(2, vecFromIterator)

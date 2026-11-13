@@ -7,7 +7,6 @@ import {
   $closing,
   $collectDropping,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $debugStr,
   $foldToArray,
@@ -188,12 +187,10 @@ function main() {
     mapOkCallResult(12, 4),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            12,
-            $vecCollectWay($collectsInPlace(IInPlace, 12, 4), ITrustedLen, IInPlace),
-          ),
+        $collectVec(
+          items,
+          12,
+          $vecCollectWay($collectsInPlace(IInPlace, 12, 4), ITrustedLen, IInPlace),
         ),
     },
     true,
@@ -215,17 +212,15 @@ function main() {
     MapOkCallIntoIterItem,
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            8,
-            $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
-            (result) => {
-              if (result.TAG === "Ok") {
-                loudDrop_drop(result._0);
-              }
-            },
-          ),
+        $collectVec(
+          items,
+          8,
+          $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
+          (result) => {
+            if (result.TAG === "Ok") {
+              loudDrop_drop(result._0);
+            }
+          },
         ),
     },
     true,

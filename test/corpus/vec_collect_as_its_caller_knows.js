@@ -5,7 +5,6 @@ import {
   $catchUnwind,
   $closing,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $count,
   $dropEach,
@@ -107,13 +106,11 @@ function kept(it, JInPlace, dropJ) {
     ),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            4,
-            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-            loudDrop_drop,
-          ),
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+          loudDrop_drop,
         ),
     },
     false,
@@ -186,12 +183,10 @@ function main() {
     $lazyRange(0, 3).map((x) => (x * 3) >>> 0),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            4,
-            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-          ),
+        $collectVec(
+          items,
+          4,
+          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
         ),
     },
     true,
@@ -208,13 +203,11 @@ function main() {
       }),
       {
         fromIter: (items, ITrustedLen, IInPlace) =>
-          $collecting(items, () =>
-            $collectVec(
-              items,
-              4,
-              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-              loudDrop_drop,
-            ),
+          $collectVec(
+            items,
+            4,
+            $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+            loudDrop_drop,
           ),
       },
       true,

@@ -4284,15 +4284,6 @@ export function $unwinds(run, ...drops) {
   }
 }
 
-// `collect()`, generic code's iterator `items` collected by a std
-// collection's `from_iter` its caller gives: what's left of it closed where
-// collecting it panics, as std drops the iterator its collect holds as it
-// unwinds, by `$unwinds` (#1141, #1239). How it grows is the compiler's
-// collect's, `collect` (ADR 0445).
-export function $collecting(items, collect) {
-  return $unwinds(collect, () => items.return?.());
-}
-
 // Each of `drops` run in turn as a panic unwinds, the runtime's cleanup:
 // one that throws aborts, as Rust does (`$cleanup`, #847).
 export function $dropsUnwinding(drops) {

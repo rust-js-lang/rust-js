@@ -2,7 +2,6 @@
 
 import {
   $collectResults,
-  $collecting,
   $debugF64,
   $debugStr,
   $iter,
@@ -38,7 +37,7 @@ function tryCollect(it, ResultFromIteratorResult, ITrustedLen, IInPlace) {
 function main() {
   const resultFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => $collectResults(items, undefined, undefined, false, 1)),
+      $collectResults(items, undefined, undefined, false, 1),
   };
   const value = sum1($iter([1, 2, 3]), {
     sum: (items) => Iterator.from(items).reduce((a, b) => (a + b) | 0, 0),

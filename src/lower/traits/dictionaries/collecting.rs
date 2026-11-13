@@ -67,17 +67,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if shunted {
             params.push("dropI".into());
         }
-        // What's left of what it's given closed where collecting it panics,
-        // as std drops the iterator its collect holds as it unwinds (#1141):
-        // the type parameter says nothing of what it holds, so it's closed,
-        // `$collecting`'s.
-        let made = Expr::call_helper(
-            "$collecting",
-            vec![
-                Expr::var("items"),
-                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]),
-            ],
-        );
+        // What's left of what it's given is closed where collecting it
+        // panics, as std drops the iterator its collect holds as it unwinds
+        // (#1141), by the collect itself, as each of the runtime's collects
+        // closes what it steps on a panic (`$foldToArray`,
+        // `$collectDropping`, `$roomForHint`): no second close around it.
         Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],

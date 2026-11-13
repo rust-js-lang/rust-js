@@ -4,7 +4,6 @@ import {
   $KeyMap,
   $KeySet,
   $catchable,
-  $collecting,
   $eq,
   $extendMap,
   $folded,
@@ -91,7 +90,7 @@ function collectedThrough(v, n, VCopy, UsizeVAlign, UsizeVSize) {
     $lazyRange(0, n).map((i) => [i, VCopy ? VCopy.copy(v) : v]),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () => new Map($reserveHint($folded(items), UsizeVSize, UsizeVAlign))),
+        new Map($reserveHint($folded(items), UsizeVSize, UsizeVAlign)),
     },
     true,
   ).size;

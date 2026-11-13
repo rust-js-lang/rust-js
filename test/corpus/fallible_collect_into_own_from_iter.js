@@ -4,7 +4,6 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $collecting,
   $count,
   $debugStr,
   $extend,
@@ -617,21 +616,19 @@ function main() {
       ),
       {
         fromIter: (items, ITrustedLen, IInPlace, dropI) =>
-          $collecting(items, () =>
-            $tryProcessOptions(
-              $closing(items, dropI, false),
-              (iter) =>
-                bagFromIteratorI32_fromIter(
-                  iter,
-                  (genericShunt) => {
-                    dropI?.(genericShunt.iter);
-                  },
-                  (genericShunt) => {
-                    dropI?.(genericShunt.iter);
-                  },
-                ),
-              bagDrop_drop,
-            ),
+          $tryProcessOptions(
+            $closing(items, dropI, false),
+            (iter) =>
+              bagFromIteratorI32_fromIter(
+                iter,
+                (genericShunt) => {
+                  dropI?.(genericShunt.iter);
+                },
+                (genericShunt) => {
+                  dropI?.(genericShunt.iter);
+                },
+              ),
+            bagDrop_drop,
           ),
       },
       true,

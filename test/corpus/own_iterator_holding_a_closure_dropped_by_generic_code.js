@@ -5,7 +5,6 @@ import {
   $cleanup,
   $closing,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $dropEach,
   $foldOf,
@@ -159,12 +158,10 @@ function main() {
     ),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            2,
-            $vecCollectWay($collectsInPlace(IInPlace, 2, 1), ITrustedLen, IInPlace),
-          ),
+        $collectVec(
+          items,
+          2,
+          $vecCollectWay($collectsInPlace(IInPlace, 2, 1), ITrustedLen, IInPlace),
         ),
     },
     false,

@@ -7,7 +7,6 @@ import {
   $closing,
   $cmp,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $debugList,
   $dropEach,
@@ -123,16 +122,12 @@ function main() {
     () =>
       collected(ds(), {
         fromIter: (items, ITrustedLen, IInPlace) =>
-          $collecting(
-            items,
-            () =>
-              new $BTreeSet(
-                $collectVec(
-                  items,
-                  4,
-                  $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-                ),
-              ),
+          new $BTreeSet(
+            $collectVec(
+              items,
+              4,
+              $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+            ),
           ),
       }).size,
   );
@@ -140,8 +135,7 @@ function main() {
   r = $catchUnwind(
     () =>
       repeated([4], 4294967295, {
-        fromIter: (items, ITrustedLen, IInPlace) =>
-          $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
+        fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
       }).size,
   );
   console.log(`reserved ${r.TAG === "Err"}`);
@@ -152,7 +146,7 @@ function main() {
   );
   console.log(`sorted ${r.TAG === "Err"}`);
   console.log(
-    `[${collected([[5], [6]], { fromIter: (items, ITrustedLen, IInPlace) => $collecting(items, () => $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace))) }).join(", ")}]`,
+    `[${collected([[5], [6]], { fromIter: (items, ITrustedLen, IInPlace) => $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace)) }).join(", ")}]`,
   );
   console.log(
     `${$isSortedBy(

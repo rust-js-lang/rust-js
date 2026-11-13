@@ -182,3 +182,27 @@ Mutations `extend-dictionary-iterator-undropped`,
 `dictionary-call-drop-of-what-iterated-made` and
 `arrow-body-declarations-unbound` are new;
 `dictionary-call-own-drops-missing` is refitted.
+
+## Amendment: the entry's collect closes what it's given itself (2026-11-13)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): what's printed is
+native's with or without the wrapper.
+
+A `fromIter` entry ran its collect inside `$collecting(items, () => ..)`,
+which closed what it's given where collecting it panics. Each of the
+runtime's collects does that already: `$foldToArray` and
+`$collectDropping` close what's left as a step unwinds, and `$roomForHint`
+closes it where asking room panics before any step, a `capacity overflow`.
+The nightly's survivor `from-iter-dictionary-unclosed`, which took the
+wrapper out, showed that no case drops differently without it. So the
+wrapper is gone, and with it the runtime's `$collecting`: one close, the
+collect's own. An entry reads `fromIter: (items, ITrustedLen, IInPlace) =>
+new Set($reserveHint($folded(items), 4, 4))`. The corpus case
+`generic_collect_closes_what_it_steps_on_a_panic.rs` collects into every
+std collection generic code can (a `Vec`, a `VecDeque`, a `LinkedList`, a
+`BinaryHeap`, both sets and both maps, a `String`, a `Box<[T]>`, an
+`Option` and a `Result` of a `Vec`), of a step that panics part-way and,
+for five of them, of a hint that overflows their capacity. It runs against
+native in both builds, and so do the 13 cases whose JS lost the wrapper.
+The mutations `from-iter-dictionary-unclosed` and
+`collecting-left-unclosed` go with the code they mutated.

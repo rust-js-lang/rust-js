@@ -6,7 +6,6 @@ import {
   $checked,
   $cmp,
   $collectVec,
-  $collecting,
   $collectsInPlace,
   $enumerate,
   $iter,
@@ -45,12 +44,10 @@ function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace) {
 function main() {
   const vecFromIterator = {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () =>
-        $collectVec(
-          items,
-          4,
-          $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
-        ),
+      $collectVec(
+        items,
+        4,
+        $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
       ),
   };
   const set = new Set($reserveHint($lazyRange(0, 9), 4, 4));
@@ -90,12 +87,10 @@ function main() {
     $enumerate($iter(Array.from(set))),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        $collecting(items, () =>
-          $collectVec(
-            items,
-            8,
-            $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
-          ),
+        $collectVec(
+          items,
+          8,
+          $vecCollectWay($collectsInPlace(IInPlace, 8, 4), ITrustedLen, IInPlace),
         ),
     },
     false,

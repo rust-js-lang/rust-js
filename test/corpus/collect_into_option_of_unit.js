@@ -2,7 +2,6 @@
 
 import {
   $collectOptions,
-  $collecting,
   $folded,
   $iter,
   $lazyRange,
@@ -32,8 +31,7 @@ function gathered(items, VFromIteratorT) {
 
 function main() {
   const unitFromIterator = {
-    fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => $folded(items).forEach(() => {})),
+    fromIter: (items, ITrustedLen, IInPlace) => $folded(items).forEach(() => {}),
   };
   const value = allDone([{ $someNone: 0 }, { $someNone: 0 }]);
   console.log(`${value == null ? "None" : "Some(())"}`);
@@ -70,8 +68,7 @@ function main() {
   const unit = gathered([{ $someNone: 0 }, { $someNone: 0 }], unitFromIterator);
   console.log(`${unit == null ? "None" : "Some(())"}`);
   const set = gathered([4, 4], {
-    fromIter: (items, ITrustedLen, IInPlace) =>
-      $collecting(items, () => new Set($reserveHint($folded(items), 1, 1))),
+    fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 1, 1)),
   });
   console.log(`${set?.size == null ? "None" : `Some(${set?.size})`}`);
   const none = gathered([{ $someNone: 0 }, undefined], unitFromIterator);

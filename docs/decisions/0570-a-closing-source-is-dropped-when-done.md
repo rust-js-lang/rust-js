@@ -383,7 +383,7 @@ IVecCollect, drop)` ([0145](0145-type-facts.md), amended), which steps what it's
 given by JS's protocol, by its fold or its `next` as std's `SpecFromIter`
 does, and so closes it at its end, where std's collect drops it, before
 the `Vec` is given back; a `B: FromIterator`'s entry runs it inside
-`$collecting`, which closes it where it's done, as before. Of items that
+`$collecting`, which closed it where it was done (since removed: the collect closes it itself, ADR 0445, amended 2026-11-13). Of items that
 drop, a panic closes it as each of std's ways unwinds, by `$foldToArray`
 or `$collectDropping`. Held by
 `vec_collect_as_its_caller_knows.rs` and the `generic-instances` row of

@@ -358,14 +358,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {
-    name: "collecting-left-unclosed",
-    breaks: "generic code's collect into a std collection by its dictionary leaves what's left of what it's given unclosed where collecting it panics, where std drops it as it unwinds (#1141, #1239)",
-    file: "src/runtime/steps.js",
-    find: "  return $unwinds(collect, () => items.return?.());\n",
-    replace: "  return collect();\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic\\.rs$"],
-  },
-  {
     name: "own-next-unkept",
     breaks: "a `$Steps` stepped by JS's protocol keeps no steps of its own before, so `$closing` steps it by those that close it at its end, though what holds it drops it later (#1239)",
     file: "src/runtime/steps.js",
