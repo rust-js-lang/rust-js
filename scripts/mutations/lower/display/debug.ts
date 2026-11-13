@@ -306,8 +306,8 @@ export const mutations: Mutation[] = [
     name: "std-tuple-enum-debug-refused",
     breaks: "`{:?}` of std's `Bound` and `ControlFlow` is refused",
     file: "src/lower/display/debug.rs",
-    find: "                    && adt.variants().iter().all(|v| v.ctor_kind().is_some())\n",
-    replace: "                    && false\n",
+    find: "            && adt.variants().iter().all(|v| v.ctor_kind().is_some())\n",
+    replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
   },
   {
@@ -607,5 +607,13 @@ export const mutations: Mutation[] = [
     find: "                    args.push(pretty.alternate());\n                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
     replace: "                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
+  },
+  {
+    name: "debug-forwards-refused",
+    breaks: "`{:?}` of a `Wrapping` or a `Cow` of a part that may stop part-way is refused, where their `Debug` is their part's own (#1530)",
+    file: "src/lower/display/debug.rs",
+    find: "            && !self.recognition().debug_forwards(ty)\n",
+    replace: "            && true\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
   },
 ];

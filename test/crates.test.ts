@@ -314,13 +314,13 @@ test("a consumer's fact of a library's associated type its dictionaries don't ca
 
 // #1608: a library's writer that may stop part-way by a panic, which its
 // contract says (`stopping_where_caught`), shown in stdout's line by a
-// program that catches one, is refused, naming #1530 and what to write:
+// program that catches one, is refused, naming #1633 and what to write:
 // Rust's stdout keeps `x [!L1, !L2, !`, where the library's JS makes the
 // writer's text whole.
 test("a library's writer that may stop part-way, shown in a line where a panic may be caught, is refused", () => {
   const native = chain(join(root, "test", "crates", "refused"), "library_writer_stopping_where_caught", ["dep", "app"], [
     "rust-js does not support showing a `dep::Loud` in stdout's line where a `catch_unwind` may catch a panic yet",
-    "show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1530)",
+    "show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1633)",
     "app.rs:17:28",
     "app.rs:22:5",
     "showing a `&T`, which may be a `dep::Loud`,",

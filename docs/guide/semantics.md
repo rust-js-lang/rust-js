@@ -306,12 +306,19 @@ what's held before it, as a browser's console takes whole lines
   written through std's builders, `$composed(..)`, so what came before the
   part is kept, in the line or the `String` it's written to (#1561). So
   does a `RefCell`'s, a `Cell`'s, a `Mutex`'s or an `RwLock`'s, a panic
-  out of a `Mutex`'s part poisoning it, as std's does. Another std
-  value's of such a part, a `Reverse`'s or a range's say, is refused,
-  #1530. A library's writers are shown so too, as its contract says
-  which print. A library's writer that may stop part-way by a panic,
-  shown in stdout's line by a program with a `catch_unwind`, is refused,
-  #1530, as the library's JS makes its text whole: show it in a
+  out of a `Mutex`'s part poisoning it, as std's does. So does a
+  `Reverse`'s, a `OnceCell`'s, a `OnceLock`'s, a `LazyCell`'s, a
+  `Bound`'s, a `Poll`'s, and a slice's, a `Vec`'s or an array's iterator's,
+  `Iter([..])`, through std's `debug_tuple`; and a range's, whose bounds
+  and dots std writes straight to the formatter, each written as it's
+  made, `!Grid(1)..!Grid(` kept (#1530). `Wrapping`'s, `Saturating`'s and
+  a `Cow`'s `Debug` is their part's own. An iterator adapter's of such a
+  part, `Rev { iter: .. }`, the std package's compiled `Debug`, which makes
+  its text whole, is refused, #1633. A library's writers are shown so
+  too, as its contract says which print. A library's writer that may stop
+  part-way by a panic, shown in stdout's line by a program with a
+  `catch_unwind`, is refused, #1633, as the library's JS makes its text
+  whole: show it in a
   `format!` first, or where no `catch_unwind` catches (#1608)
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
   amended).

@@ -39,11 +39,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(composed);
         }
-        if let Some(part) = self.krate.prints.stops_composed(ty) {
+        // One whose `Debug` writes only its part's, `Wrapping`'s or a
+        // `Cow`'s, writes nothing a part that stops could lose: shown as it
+        // always is.
+        if let Some(part) = self.krate.prints.stops_composed(ty)
+            && !self.recognition().debug_forwards(ty)
+        {
             return Err(self.unsupported(
                 span,
                 &format!(
-                    "`{{:?}}` of a `{ty}` whose part `{part}`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"
+                    "`{{:?}}` of a `{ty}` whose part `{part}`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote, where its compiled `Debug` makes its text whole (#1633)"
                 ),
             ));
         }
@@ -453,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.writer_call(fmt, args, value, pretty, span);
         }
         if self.range_kind(ty).is_some() {
-            return self.range_debug(value, ty, span, pretty);
+            return self.range_debug(value, ty, span, pretty, false);
         }
         // A `RandomState`, `RandomState { .. }`, as std's `Debug` shows it,
         // `{:#?}` too, whose `finish_non_exhaustive` of no field writes it
@@ -730,30 +735,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // place, `Bound`'s `Included(3)`, and whose `Debug` is derived:
             // each variant's name and what it holds, as a derived `Debug`
             // shows them, of its value as any enum's is (ADR 0033).
-            ty::Adt(adt, args)
-                if adt.is_enum()
-                    && !representation::is_fieldless_enum(*adt)
-                    && !adt.did().is_local()
-                    && !self.krate.foreign.in_library(adt.did())
-                    && adt.variants().iter().all(|v| v.ctor_kind().is_some())
-                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>
-            {
-                self.tuple_variants_debug(*adt, args, value, span, pretty)
+            ty::Adt(_, args) if let Some(adt) = self.std_tuple_variants(ty) => {
+                self.tuple_variants_debug(adt, args, value, span, pretty, false)
             }
             _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
         }
     }
 
+    /// Of another of std's enums whose variants hold what they hold by
+    /// place, `Bound`'s `Included(3)` or `Poll`'s `Ready(3)`, and whose
+    /// `Debug` is derived, the enum.
+    pub(super) fn std_tuple_variants(&self, ty: Ty<'tcx>) -> Option<ty::AdtDef<'tcx>> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        (adt.is_enum()
+            && !representation::is_fieldless_enum(*adt)
+            && !adt.did().is_local()
+            && !self.krate.foreign.in_library(adt.did())
+            && adt.variants().iter().all(|v| v.ctor_kind().is_some())
+            && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty))
+        .then_some(*adt)
+    }
+
     /// `{:?}` of another crate's enum whose variants hold what they hold by
     /// place, as a derived `Debug` shows it: `Unbounded`, a fieldless one's
     /// name, the string it is; `Included(3)` of `{ TAG: "Included", _0: 3 }`.
-    fn tuple_variants_debug(
+    /// Of `composed`, a variant's fields written through std's
+    /// `debug_tuple` as each is taken, where one may stop part-way (#1530).
+    pub(super) fn tuple_variants_debug(
         &mut self,
         adt: ty::AdtDef<'tcx>,
         args: ty::GenericArgsRef<'tcx>,
         value: Expr,
         span: Span,
         pretty: &Pretty,
+        composed: bool,
     ) -> R<Expr> {
         let tag = Expr::member(Expr::var("value"), bindings::tag_key(self.tcx, adt.did()));
         let mut shown: Option<Expr> = None;
@@ -775,15 +790,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Expr::member(Expr::var("value"), representation::variant_field(self.tcx, variant, i));
                         parts.push(self.debug_string_with(held, self.field_ty(field, args), span, pretty)?);
                     }
-                    let mut plain = vec![Expr::str(format!("{name}("))];
-                    for (i, part) in parts.iter().enumerate() {
-                        if i > 0 {
-                            plain.push(Expr::str(", "));
+                    let this = match composed {
+                        true => self.composed_tuple(&name, parts, pretty),
+                        false => {
+                            let mut plain = vec![Expr::str(format!("{name}("))];
+                            for (i, part) in parts.iter().enumerate() {
+                                if i > 0 {
+                                    plain.push(Expr::str(", "));
+                                }
+                                plain.push(part.clone());
+                            }
+                            plain.push(Expr::str(")"));
+                            self.pretty_or(pretty, join(plain), &format!("{name}("), Expr::array(parts), ")")
                         }
-                        plain.push(part.clone());
-                    }
-                    plain.push(Expr::str(")"));
-                    let this = self.pretty_or(pretty, join(plain), &format!("{name}("), Expr::array(parts), ")");
+                    };
                     (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)
                 }
             };

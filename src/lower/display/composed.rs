@@ -3,11 +3,16 @@
 //! written as std's own `Debug` writes it, through its builders, core's
 //! `fmt/builders.rs`, the runtime's model (#1533): `Some(x)`'s
 //! `debug_tuple("Some")`, a `Vec`'s `debug_list().entries(..)`, a map's
-//! `debug_map()`. Each piece is written into a sink of its own as it's taken,
-//! `$composed((f) => ..)`, so what came before the part that stops is kept:
-//! a write's `Err` carries it out (`$fmtWritten`), and in a line, where a
-//! panic stops it, the line has it already (#1561, #1530). Another std
-//! value of such a part is refused, naming #1530.
+//! `debug_map()`, `Reverse(x)`'s and a `OnceCell`'s `debug_tuple`. Each
+//! piece is written into a sink of its own as it's taken, `$composed((f) =>
+//! ..)`, so what came before the part that stops is kept: a write's `Err`
+//! carries it out (`$fmtWritten`), and in a line, where a panic stops it,
+//! the line has it already (#1561, #1530). A range's, which std writes
+//! straight to the formatter, `self.start.fmt(f)?; write!(f, "..")?`, with
+//! no builder, is written so in the same sink, `f.write(..)` a piece
+//! (`composed_written`). One whose `Debug` is the std package's compiled
+//! body, an iterator adapter's, `Rev { iter: .. }`, which makes its text
+//! whole, is refused, naming #1633.
 
 use super::*;
 use crate::lower::recognition::StdItem;
@@ -27,12 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn composed_debug(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Option<Expr>> {
         let one = |this: &mut Self, name: &str, part: Expr, part_ty: Ty<'tcx>| -> R<Expr> {
             let shown = this.debug_string_with(part, part_ty, span, pretty)?;
-            Ok(this.composed(
-                DebugBuilder::Tuple,
-                Some(Expr::str(name)),
-                pretty,
-                vec![("field", vec![made_when_taken(shown)])],
-            ))
+            Ok(this.composed_tuple(name, vec![shown], pretty))
         };
         // Read where it's read, of one that reads the same each time; else
         // as an arrow's parameter, a name of its own, which nothing the
@@ -151,8 +151,76 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = self.composed_to(DebugBuilder::Struct, Some(name), pretty, steps, "finishNonExhaustive");
                 apply(made, "lock")
             }
+            // `Reverse(..)`, its derived `Debug`'s `debug_tuple` (#1530).
+            ty::Adt(_, args) if self.is_reverse(ty) => {
+                let held = Expr::index(subject("reverse"), Expr::int(0));
+                let made = one(self, "Reverse", held, args.type_at(0))?;
+                apply(made, "reverse")
+            }
+            // `OnceCell(1)` or `LazyCell(1)`, `OnceLock`'s and `LazyLock`'s
+            // alike, or `OnceCell(<uninit>)` where it holds none yet: each
+            // std's `debug_tuple`, of `format_args!("<uninit>")` where it
+            // holds none (#1530).
+            ty::Adt(adt, args) if std(StdItem::OnceCell) || std(StdItem::LazyCell) => {
+                let type_name = self.tcx.item_name(adt.did()).to_string();
+                let item = args.type_at(0);
+                let held = Expr::held(subject("cell"));
+                let field = match self.is_std_type(ty, StdItem::LazyCell) {
+                    true => {
+                        let shown = self.debug_string_with(held, item, span, pretty)?;
+                        let made = Expr::bin(Op::Eq, Expr::member(subject("cell"), "init"), Expr::undefined());
+                        Expr::cond(made, shown, Expr::str("<uninit>"))
+                    }
+                    false => {
+                        let inside = match self.boxed_payload(item) {
+                            true => self.some_value(held.clone()),
+                            false => held.clone(),
+                        };
+                        let shown = self.debug_string_with(inside, item, span, pretty)?;
+                        let none = Expr::bin(Op::LooseEq, held, Expr::null());
+                        Expr::cond(none, Expr::str("<uninit>"), shown)
+                    }
+                };
+                let made = self.composed_tuple(&type_name, vec![field], pretty);
+                apply(made, "cell")
+            }
+            // `Included(..)`, `Ready(..)`: a derived `Debug`'s `debug_tuple`
+            // of each variant, a fieldless one's name (#1530).
+            ty::Adt(_, args) if let Some(adt) = self.std_tuple_variants(ty) => {
+                self.tuple_variants_debug(adt, args, value.clone(), span, pretty, true)?
+            }
+            // A slice's iterator, `Iter([..])`, and a `Vec`'s, an array's or a
+            // `Drain`'s, `IntoIter([..])`: std's `debug_tuple` of what it has
+            // left, its `as_slice()` (ADR 0473, #1530).
+            ty::Adt(..) if let Some(type_name) = self.recognition().shows_its_slice(ty) => {
+                let item = self.iterator_item(ty).expect("an iterator's item").peel_refs();
+                let left = self.stepped_left(subject("it"), ty, false, span)?;
+                let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item), span, pretty)?;
+                apply(self.composed_tuple(type_name, vec![shown], pretty), "it")
+            }
+            // `start..end`, each piece written as it's made (#1530).
+            _ if self.range_kind(ty).is_some() => self.range_debug(value.clone(), ty, span, pretty, true)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// `$composed((f) => { const tuple = $debugTuple(f, "Reverse"); ..
+    /// })` of `name`'s fields, each made as it's taken.
+    pub(super) fn composed_tuple(&mut self, name: &str, fields: Vec<Expr>, pretty: &Pretty) -> Expr {
+        let steps = fields.into_iter().map(|shown| ("field", vec![made_when_taken(shown)]));
+        self.composed(DebugBuilder::Tuple, Some(Expr::str(name)), pretty, steps.collect())
+    }
+
+    /// `$composed((f) => { f.write(..); .. })`: `pieces` written straight
+    /// to the sink, each made as it's written, as std's `Debug` of a range
+    /// writes its bounds and dots to the formatter with no builder, so a
+    /// piece that stops part-way leaves those before it written, and those
+    /// after it unmade, as `?` returns (#1530).
+    pub(in crate::lower) fn composed_written(&mut self, pieces: Vec<Expr>) -> Expr {
+        let written = (pieces.into_iter()).map(|piece| {
+            StmtKind::Expr(Expr::call(Expr::member(Expr::var("f"), "write"), vec![piece])).at(js::Span::NONE)
+        });
+        Expr::call_helper("$composed", vec![Expr::arrow(vec!["f".into()], written.collect())])
     }
 
     /// `$composed((f) => { .. })` of entries, `entries(items, show..)`, a

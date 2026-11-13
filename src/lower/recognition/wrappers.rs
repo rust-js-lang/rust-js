@@ -4,6 +4,14 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether `ty`'s `Debug` is its part's, writing nothing of its own:
+    /// `Wrapping`'s and `Saturating`'s `self.0.fmt(f)` (ADR 0175), a
+    /// `Cow`'s of what it borrows or owns (ADR 0319), so a part that stops
+    /// part-way loses nothing of its (#1530).
+    pub(in crate::lower) fn debug_forwards(&self, ty: Ty<'tcx>) -> bool {
+        self.int_newtype(ty).is_some() || self.cow_parts(ty).is_some()
+    }
+
     /// One of std's integers in a `[x]`, `Wrapping<T>` or `Saturating<T>`
     /// (ADR 0175, #1434): its `T`, and which, whose operators are its
     /// number's methods (`newtype_method`), and whose `==`, order, `Hash`

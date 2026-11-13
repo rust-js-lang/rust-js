@@ -425,4 +425,12 @@ export const mutations: Mutation[] = [
     replace: "        ] if false && matches!(passed.kind, js::ExprKind::Bool(false))\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
   },
+  {
+    name: "range-written-whole",
+    breaks: "a range of a bound that stops is made whole, so a panic in its end loses `!Grid(1)..` and an `Err` the `String`'s `Failing(1)..` (#1530)",
+    file: "src/lower/std_types/range.rs",
+    find: "                true => this.composed_written(pieces),\n",
+    replace: "                true => join(pieces),\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
+  },
 ];

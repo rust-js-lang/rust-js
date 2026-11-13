@@ -623,3 +623,48 @@ both builds. Five mutations, each caught. test/diagnostics.test.ts now
 holds the refusal of a `Reverse`'s `Debug`. #1530 stays open for std's
 other values of such a part: `Reverse`, `OnceCell` and `OnceLock`, the
 ranges, `Bound`, `Poll` and the like.
+
+## Amendment (2026-11-13, #1530, #1633): the rest of std's values, and a range's raw writes
+
+The rest of #1530 goes through the same `$composed` writer
+(`display/composed.rs`), each as std's own `Debug` writes it:
+
+- `Reverse(x)`'s derived `debug_tuple("Reverse")`. `OnceCell`'s,
+  `OnceLock`'s, `LazyCell`'s and `LazyLock`'s `debug_tuple`, whose field is
+  `format_args!("<uninit>")` where it holds nothing yet.
+- `Bound`'s, `Poll`'s and any other std enum whose variants hold by place
+  and whose `Debug` is derived (`std_tuple_variants`): a `debug_tuple` for
+  each variant, and a unit variant's name, the twin of
+  `tuple_variants_debug`'s one-expression form.
+- A slice's `Iter`, and a `Vec`'s, an array's or a `Drain`'s `IntoIter`:
+  `debug_tuple` of what's left, its `as_slice()` (ADR 0473).
+- A range. std writes it straight to the formatter, with no builder:
+  `self.start.fmt(f)?; write!(f, "..")?; self.end.fmt(f)?`. So the same
+  writer takes raw steps: `$composed((f) => { f.write(<start>);
+  f.write(".."); f.write(<end>); })`. A part's `Err` leaves as `?` does,
+  through `$composed`, which puts what `f` holds in front of the error's
+  text. A panic's unfinished text closes into `f`'s capture, so the line
+  keeps `!Grid(1)..!Grid(`. No helper was added. The pieces, start, dots,
+  end and ` (exhausted)`, have one owner, `range_debug` in
+  `std_types/range.rs`: it joins them for the plain form and writes them
+  for this one (`composed_written`). The lead approved this on #1530.
+
+`Wrapping`'s, `Saturating`'s and a `Cow`'s `Debug` is their part's own,
+`self.0.fmt(f)`, with nothing written before or after it. So no part of
+theirs that stops can lose anything, and the refusal skips them
+(`debug_forwards`). They're shown as they always are.
+
+What's still refused is the `Debug` another crate compiled: one of std's
+iterator adapters, `Rev`, `Skip`, `Take`, `Enumerate`, `Chain`, `Cycle`,
+`Fuse`, `Cloned` and `Peekable` (the std package's `revDebug_fmt` and the
+like), which makes its text whole, `` `Rev { iter: ${..} }` ``; and a
+library's writer that may stop part-way (#1608). Both now name #1633,
+whose fix is to write that compiled `Debug` through std's builders too.
+The lead chose this split (option A on #1530).
+
+Each case's result changes, so Rust's behavior is kept (ADR 0262).
+Corpus case `printing_std_wrappers_stopped_part_way`, against native Rust
+in both builds: `{:?}` and `{:#?}`, a part that panics or gives `Err`,
+first, middle and last, generic code's, and a range given by reference
+or changed after it's made. test/diagnostics.test.ts now holds a `Rev`'s
+refusal.

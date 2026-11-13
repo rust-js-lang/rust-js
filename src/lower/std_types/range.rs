@@ -412,8 +412,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`,
-    /// and of one exhausted, ` (exhausted)` after, as std's (#414).
-    pub(in crate::lower) fn range_debug(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
+    /// and of one exhausted, ` (exhausted)` after, as std's (#414). Of
+    /// `written`, each piece written as it's made, as std's writes them
+    /// straight to the formatter, `self.start.fmt(f)?; write!(f, "..")?`,
+    /// where a bound may stop part-way (`composed_written`, #1530); else
+    /// the pieces joined.
+    pub(in crate::lower) fn range_debug(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        pretty: &Pretty,
+        written: bool,
+    ) -> R<Expr> {
         let kind = self.range_kind(ty).expect("a range");
         let index = self.range_index(ty);
         let shown = |this: &mut Self, (parts, exhausted): (Vec<Expr>, Option<Expr>)| -> R<Expr> {
@@ -430,7 +441,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(exhausted) = exhausted {
                 pieces.push(Expr::cond(exhausted, Expr::str(" (exhausted)"), Expr::str("")));
             }
-            Ok(join(pieces))
+            Ok(match written {
+                true => this.composed_written(pieces),
+                false => join(pieces),
+            })
         };
         if let Some(parts) = self.range_literal_parts(&range, kind)
             && (kind != RangeKind::Inclusive || parts.iter().all(Expr::is_constant))

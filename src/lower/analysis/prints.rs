@@ -547,7 +547,7 @@ fn refuse_shown_stopping<'tcx>(
     };
     let refuse = |span, shown: String| {
         let what = format!("showing {shown} in stdout's line where a `catch_unwind` may catch a panic");
-        let why = "its writer, of another crate, may stop part-way, and Rust's stdout keeps what it wrote before it stopped, where its crate's JS makes its text whole: show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1530)";
+        let why = "its writer, of another crate, may stop part-way, and Rust's stdout keeps what it wrote before it stopped, where its crate's JS makes its text whole: show it in a `format!` first, whose text a panic drops, or where no `catch_unwind` catches (#1633)";
         crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
     };
     let own: Vec<&Body<'tcx>> = (all_bodies.iter().copied())

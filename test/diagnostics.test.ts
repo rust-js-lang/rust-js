@@ -32,11 +32,11 @@ for (const [name, source, message, crate] of [
   // type's address, is no record's: refused (#1513), where one held as the
   // object is recorded as stored in its slot (#1475).
   ["a get_mut of a boxed object lent beside its address", "use std::cell::OnceCell;\n#[repr(C)] pub struct P(u8, u32);\npub fn f(o: &mut OnceCell<Option<P>>, p: P) -> usize { let at = &raw const p as usize; if let Some(q) = o.get_mut().unwrap() { q.0 += 1; } at }", "`std::cell::OnceCell::<T>::get_mut` in a crate that asks an address (#1513)"],
-  // A std value's `Debug`, or a derived `Debug`'s field, of parts whose
-  // `Debug` may print and stop part-way, where a `catch_unwind` may catch
-  // the panic: the line keeps what the parts before it wrote, which the JS,
-  // making the parts' texts whole, can't rebuild (#1521, #1495, #1530).
-  ["a Reverse's Debug of what may print and panic where it may be caught", "use std::cmp::Reverse;\nuse std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: Reverse<Loud>) -> bool { std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || println!(\"{:?}\", v))).is_err() }", "`{:?}` of a `std::cmp::Reverse<Loud>` whose part `Loud`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"],
+  // A std iterator adapter's `Debug`, the std package's compiled body, of
+  // parts whose `Debug` may print and stop part-way, where a `catch_unwind`
+  // may catch the panic: the line keeps what the parts before it wrote,
+  // `Rev { iter: `, which its JS, making its text whole, can't (#1633).
+  ["a Rev's Debug of what may print and panic where it may be caught", "use std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: std::iter::Rev<std::vec::IntoIter<Loud>>) -> bool { std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || println!(\"{:?}\", v))).is_err() }", "`{:?}` of a `std::iter::Rev<std::vec::IntoIter<Loud>>` whose part `Loud`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote, where its compiled `Debug` makes its text whole (#1633)"],
   // Which writers may stop part-way, past what never unwinds but through
   // what it shows (#1496): a builder's `entries`, which steps an iterator;
   // an `fmt::Write` of the crate's; a `dyn Debug` read from a field; and a
