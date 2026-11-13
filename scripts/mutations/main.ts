@@ -219,4 +219,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/tidy-stages.test.ts", "-t", "tidy-fired"],
   },
+  {
+    name: "reports-unrecorded",
+    breaks: "what a compile reports where it's asked, `--knowns-found` and the rest, isn't named as written in its record, so a compile the tests' cache gives again doesn't write it: ENOENT (#1526)",
+    file: "src/main.rs",
+    find: ".chain(coverage).chain(reports).collect();",
+    replace: ".chain(coverage).collect(); let _ = reports;",
+    tests: ["test/compiles.test.ts", "-t", "names what it reports"],
+  },
 ];

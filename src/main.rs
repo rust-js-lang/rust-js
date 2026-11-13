@@ -708,6 +708,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     plan.toolchain = rustc_interface::util::rustc_version_str()
         .unwrap_or("unknown")
         .to_string();
+    // What it writes beside its JS where it's asked, each a file its record
+    // of the build names as written (ADR 1099), so a compile given again
+    // from the tests' cache writes it again (#1526).
+    let reports: Vec<PathBuf> = [&prepare_fired, &knowns_found, &build_recognizers_found, &tidy_fired]
+        .into_iter()
+        .flatten()
+        .map(|path| paths::absolute(path))
+        .collect::<Result<_, _>>()?;
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
     let (without_recognizers, recognizers_found) = (build_without_recognizers, build_recognizers_found);
@@ -771,7 +779,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
                 path.clone(),
                 Box::new(move |read: &[PathBuf], wrote: &[PathBuf]| {
                     let read: Vec<PathBuf> = read.iter().cloned().chain(reading).collect();
-                    let wrote: Vec<PathBuf> = wrote.iter().cloned().chain(coverage).collect();
+                    let wrote: Vec<PathBuf> = wrote.iter().cloned().chain(coverage).chain(reports).collect();
                     output::file_dep_info(&written, &wrote, &read)
                 }),
             ));

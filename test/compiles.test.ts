@@ -89,6 +89,41 @@ test("a compile is given again only where all it's made of is the same", () => {
   expect(ran.length).toBe(7);
 });
 
+// What a compile writes beside its JS where it's asked, the facts a reader
+// found, the passes that fired and the recognisers that took a call, is of
+// what it wrote, which its record names: given again, it's written again,
+// where it was missing, ENOENT, the second time a test ran (#1526).
+test("what a compile reports where it's asked is written again where it's given again", () => {
+  const dir = fixture("kept-reports");
+  writeFileSync(join(dir, "lib.rs"), lib);
+  writeFileSync(join(dir, "text.txt"), "first");
+  const reports = ["found.txt", "fired.txt", "recognized.txt", "tidy.txt"].map((file) => join(dir, file));
+  const [found, fired, recognized, tidy] = reports;
+  const { ran, compile, own } = counting();
+  const kept = () =>
+    keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--knowns-found", found, "--prepare-fired", fired, "--recognizers-found", recognized, "--tidy-fired", tidy, "--", "-Awarnings"], root, own, compile, room);
+  expect(kept().code).toBe(0);
+  const first = reports.map((file) => readFileSync(file, "utf8"));
+  for (const file of reports) rmSync(file);
+  expect(kept().code).toBe(0);
+  expect(ran.length).toBe(1);
+  expect(reports.map((file) => readFileSync(file, "utf8"))).toEqual(first);
+});
+
+// Which its record says it wrote, as a compile the tests' cache keeps
+// reads it (#1526).
+test("a compile's record names what it reports where it's asked as written", () => {
+  const dir = fixture("recorded-reports");
+  writeFileSync(join(dir, "lib.rs"), lib);
+  writeFileSync(join(dir, "text.txt"), "first");
+  const reports = ["found.txt", "fired.txt", "recognized.txt", "tidy.txt"].map((file) => join(dir, file));
+  const [found, fired, recognized, tidy] = reports;
+  const record = join(dir, "lib.d");
+  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--knowns-found", found, "--prepare-fired", fired, "--recognizers-found", recognized, "--tidy-fired", tidy, "--", `--emit=dep-info=${record}`, "-Awarnings"], { cwd: root, stderr: "pipe" });
+  expect(p.stderr.toString()).toBe("");
+  expect(parseRecord(readFileSync(record, "utf8")).wrote).toEqual(expect.arrayContaining(reports));
+});
+
 test("another compiler's compiles, a failed compile and one that read what it wrote aren't kept", () => {
   const dir = fixture("kept-not");
   writeFileSync(join(dir, "lib.rs"), lib);

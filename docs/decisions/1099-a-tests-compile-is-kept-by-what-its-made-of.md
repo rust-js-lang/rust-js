@@ -241,3 +241,18 @@ M6: 18.1 CPU-seconds and 11.2 s before, 14.8 and 7.4 s after (load 1.9–2.7).
 Held by `test/compiles.test.ts`'s "a file's record of its build", whose
 record of a compile by the named printer names its three files and which
 refuses one without, and mutation `printer-reads-unrecorded` (`main.ts`).
+
+## Amendment: what a compile reports where it's asked is of what it wrote (2026-11-13, #1526)
+
+A compile writes beside its JS, where it's asked, what the tests read of
+it: `--knowns-found`'s facts, `--prepare-fired`'s rewrites,
+`--recognizers-found`'s recognisers and `--tidy-fired`'s passes. Its
+record named none of them as written, so the cache, which writes again
+only what the record says was written, gave the compile again without
+them: `test/tidy-stages.test.ts` failed `ENOENT` on `found.txt` the second
+time it ran with a compile kept, and passed in `check:fast`, whose build
+is new each run. Each is now named as written in the record, as std's
+coverage list is. `test/compiles.test.ts` holds both the record naming
+them and a compile given again writing them again. Mutation
+`reports-unrecorded`, caught.
+
