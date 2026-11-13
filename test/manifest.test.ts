@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LIBRARY_ABI, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
+import { FIELD_FACTS, ITEM_FACTS, LIBRARY_ABI, PARAM_FACTS, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder } from "../tooling/build.js";
 import { buildCompiler, cargoApp, compiler, fixture, installStd, KeptApp, root as repository, run, stdDir } from "./support";
 
@@ -263,6 +263,23 @@ test("the tooling's library ABI is the compiler's", () => {
 // refused. A new fact is given its row with it (#1462): six wrong answers
 // were such facts, answered apart by a library's compile and its
 // consumer's.
+// The host's check of a contract knows each fact the compiler writes: its
+// lists, `tooling/manifest.js`' mirror of `src/library.rs`' enums, are
+// theirs, so a library whose type parameter is `counted` isn't refused as
+// an invalid contract (#1638: itertools' `rciter`).
+test("the host's check of a contract knows each fact src/library.rs writes", () => {
+  const source = readFileSync(join(repository, "src", "library.rs"), "utf8");
+  const snake = (name: string) => name.replace(/(?<!^)([A-Z])/g, "_$1").toLowerCase();
+  const variants = (name: string) => {
+    const body = new RegExp(`^pub enum ${name}[^{]*\\{\\n([\\s\\S]*?)\\n\\}`, "m").exec(source)?.[1];
+    expect(body, name).toBeDefined();
+    return [...body!.matchAll(/^ {4}([A-Z]\w+),/gm)].map(([, variant]) => snake(variant));
+  };
+  expect([...ITEM_FACTS].sort()).toEqual(variants("ItemFact").sort());
+  expect([...PARAM_FACTS].sort()).toEqual(variants("ParamFact").sort());
+  expect([...FIELD_FACTS].sort()).toEqual(variants("FieldFact").sort());
+});
+
 test("each fact of a library's contract says what makes it true, and a closed-world one what a consumer that differs does", () => {
   const source = readFileSync(join(repository, "src", "library.rs"), "utf8");
   const facts: string[] = [];

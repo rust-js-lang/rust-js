@@ -60,3 +60,22 @@ what a consumer that differs does. A fact without its row fails
   consumer agree, as `generic_facts.rs`' catalogue is for generic code.
 - If a closed-world fact is later made canonical at exports, its row
   moves to `summary` or goes; the test follows the code either way.
+
+## Amendment: the host's check knows each fact (2026-11-13, #1638)
+
+The host reads every library's manifest through `tooling/manifest.js`'
+`parseManifest`, which checks each fact set against a list of the names
+it knows. Two lists had fallen behind `src/library.rs`: a type
+parameter's marks lacked `shown_pretty`, `shown_hex` (#1331) and
+`counted` (#1234), and an item's facts lacked `arguments` and `this`. So
+a library with one of those facts was refused as "Invalid rust-js library
+contract", and nothing built on it. itertools' `rciter` has a `counted`
+parameter, and 124 of its Crater's tests stopped running.
+
+The lists are now `ITEM_FACTS`, `PARAM_FACTS` and `FIELD_FACTS`, exported
+beside `LIBRARY_ABI`. They mirror `ItemFact`, `ParamFact` and `FieldFact`
+across the compiler's boundary, as `LIBRARY_ABI` mirrors `VERSION`.
+test/manifest.test.ts reads both and holds them equal, so a new fact
+fails there until the host knows it. No observable difference in a
+program (ADR 0262): the host refused a build it now runs. The itertools
+Crater goes from 6 of 415 tests as native back to 130.

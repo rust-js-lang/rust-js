@@ -5,6 +5,14 @@
 // a test builds and reads holds the two equal.
 export const LIBRARY_ABI = 34;
 
+// The facts a contract's sets hold, by name: `src/library.rs`' `ItemFact`,
+// `ParamFact` and `FieldFact`, their authority, mirrored here across the
+// compiler's boundary, as `LIBRARY_ABI` is; test/manifest.test.ts reads
+// both and holds them equal (#1638).
+export const ITEM_FACTS = ["fails", "takes_location", "arguments", "this", "rest", "lazy", "variable"];
+export const PARAM_FACTS = ["drop", "copy", "clone", "no_drop", "unboxed", "shown_pretty", "shown_hex", "counted"];
+export const FIELD_FACTS = ["quiet", "rust_functions"];
+
 function validCompiler(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     && typeof value.version === "string" && value.version.length > 0
@@ -45,7 +53,7 @@ export function parseManifest(text) {
     || object(value.array) && Number.isInteger(value.array.len) && template(value.array.of)
     || typeof value.primitive === "string");
   const built = value => value === undefined || object(value) && template(value.of);
-  const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "copy", "clone", "no_drop", "unboxed"])
+  const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, PARAM_FACTS)
     && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped))
     && built(value.built);
   const fingerprint = value => object(value) && path(value.file)
@@ -87,7 +95,7 @@ export function parseManifest(text) {
           // steps it by, each by its key (ADR 0548).
           && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam))
           // What else its calls give it or read of it (ADR 0906).
-          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"])
+          && facts(item.facts, ITEM_FACTS)
           // Its own nullable parameters each of its crate's calls gives
           // `null` or a value, by index (ADR 0861, amended).
           && (item.nulled_params === undefined || Array.isArray(item.nulled_params)
@@ -100,7 +108,7 @@ export function parseManifest(text) {
         // What it says of each of its structs' fields, by key (ADRs 0863,
         // amended, 0906).
         || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
-          && typeof field.key === "string" && facts(field.facts, ["quiet", "rust_functions"])))
+          && typeof field.key === "string" && facts(field.facts, FIELD_FACTS)))
         // What its traits' dictionaries carry of each associated type, by
         // key (ADR 0145, amended).
         || !(library.associated === undefined || Array.isArray(library.associated)
