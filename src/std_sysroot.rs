@@ -5,8 +5,7 @@
 //! bodies alone (`std/lib.rs` is `#![no_std]`), so what's built is `core`
 //! and `alloc` (ADR 1123), of the toolchain's own source, their metadata
 //! alone with each body's MIR, and a `compiler_builtins` that's a crate and
-//! nothing more, as the panic runtime a test harness is given is
-//! (`panic_runtime`). Nothing is linked. It's built once for a toolchain and
+//! nothing more. Nothing is linked. It's built once for a toolchain and
 //! a target, into the compiler's own directory, and given to the session as
 //! its `--sysroot`. Std's items are keyed by their paths, which these crates
 //! share with the ones a program's session reads (`lower::library::key`).

@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-react.test.ts"],
   },
   {
-    name: "panic-runtime-not-given",
-    breaks: "a test harness, which rustc gives a panic runtime, is given wasm32's, which aborts, and rustc refuses it",
-    file: "src/command.rs",
-    find: "            args.push(format!(\"--extern=panic_unwind={}\", runtime.display()));\n",
-    replace: "",
-    tests: ["test/manifest.test.ts", "-t", "where its tests' runner is"],
-  },
-  {
     name: "js-made-all-unread",
     breaks: "`--js-made-all` is taken for an input file's name, and the object model's net can't build its programs (ADR 1105)",
     file: "src/command.rs",

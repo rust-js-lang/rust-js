@@ -152,3 +152,23 @@ case is listed under difference 2 in test/metamorphic-known.txt.
 cases collect_in_place_drops_what_it_collected_first_as_a_closure_panics
 and collect_not_in_place_drops_its_source_first_as_a_closure_panics hold
 each order where both targets decide alike.
+
+## Amendment (2026-11-13): no panic runtime, as Rust 1.100 checks it at linking
+
+Rust 1.100 checks a panic runtime's strategy where a crate is linked, no
+longer where it's analysed: `rustc +1.99 --test --target
+wasm32-unknown-unknown -Cpanic=unwind --emit=metadata` fails, "the crate
+`panic_unwind` does not have the panic strategy `unwind`", and 1.100's
+passes, failing only at `--emit=link`, which rust-js never reaches. So the
+runtime rust-js made for a test harness's session, `panic_runtime.rs`,
+staged as `libpanic_unwind.rmeta` and given as `--extern panic_unwind=..`,
+held nothing up, and it's gone with its two mutations, `panic-runtime-
+not-given` and `panic-runtime-aborts`, whose survivor at 1.100 (main's
+check 43391346121) showed it. Sessions still unwind, `-Cpanic=unwind`, as
+above. The toolchain is pinned (ADR 0109): a later rustc that checks it
+before linking again fails loudly at that upgrade, every `--test` and bin
+refused, which is when to bring the runtime back. The playground's patch
+0007 is unchanged. Held by the suite in both compilers: the manifest's
+test of a test harness, every corpus case's bin, `cargo test`'s and
+`rust-js build`'s tests, and the playground's and snapshots' tests on
+rust-js.wasm.

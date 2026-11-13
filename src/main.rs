@@ -64,7 +64,6 @@ mod names;
 mod node_session;
 mod output;
 mod packages;
-mod panic_runtime;
 mod paths;
 mod prepare;
 mod prettier;
@@ -615,21 +614,12 @@ fn run() -> ExitCode {
 struct Stage(Option<std::path::PathBuf>);
 
 impl Stage {
-    /// With the panic runtime a session of `args` is given made in it, if
-    /// it's given one (`panic_runtime`).
-    fn create(staged: &command::Staged, args: &[String]) -> Result<Self, String> {
+    fn create(staged: &command::Staged) -> Result<Self, String> {
         if !staged.any() {
             return Ok(Stage(None));
         }
         std::fs::create_dir_all(&staged.dir).map_err(|error| format!("cannot stage the build: {error}"))?;
-        let stage = Stage(Some(staged.dir.clone()));
-        if let Some(runtime) = &staged.panic_runtime {
-            let session: Vec<(&str, String)> = (["--target", "--sysroot"].into_iter())
-                .filter_map(|flag| command::flag_values(args, flag).last().map(|value| (flag, value)))
-                .collect();
-            panic_runtime::make(runtime, &session)?;
-        }
-        Ok(stage)
+        Ok(Stage(Some(staged.dir.clone())))
     }
 }
 
@@ -685,7 +675,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             std_sysroot::sysroot(&toolchain, &target)?.display()
         ));
     }
-    let stage = Stage::create(&staged, &rustc_args)?;
+    let stage = Stage::create(&staged)?;
     let command::Build {
         input,
         output,

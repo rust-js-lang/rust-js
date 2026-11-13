@@ -21,7 +21,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 //
 //   driver ──► front end (rustc) ──► owned output ──► printing (oxc, TypeScript)
 const layers = {
-  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/panic_runtime.rs", "src/std_sysroot.rs"],
+  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
