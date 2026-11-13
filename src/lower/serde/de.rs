@@ -208,6 +208,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Expr::call(reader("option"), vec![read]));
         }
+        // A std type whose impl is serde's own, as its catalog row says (#1623).
+        if let Some(form) = self.std_form(ty) {
+            return self.read_std_form(form, span);
+        }
         match ty.kind() {
             ty::Adt(..) if self.counted_rc(ty).is_some() => {
                 Err(self.unsupported(span, &format!("reading a counted `{ty}` from JSON")))
@@ -298,7 +302,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A struct or an enum of the crate's own, read from `json` as its
     /// derived `deserialize` reads it.
-    fn read_adt(&mut self, json: &str, adt: ty::AdtDef<'tcx>, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn read_adt(
+        &mut self,
+        json: &str,
+        adt: ty::AdtDef<'tcx>,
+        args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
         let container = self.serde_attrs(adt.did())?;
         let type_name = self.tcx.item_name(adt.did()).to_string();
         let method = |name: &str, args: Vec<Expr>| Expr::call(Expr::member(Expr::var(json), name), args);
@@ -673,7 +683,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The tagged variants: `json.enum(names, (variant, content) => ..)`, or
     /// `json.internallyTagged(tag, ..)`, or `json.adjacentlyTagged(tag, content, ..)`.
     #[allow(clippy::too_many_arguments)]
-    fn read_tagged(
+    pub(super) fn read_tagged(
         &mut self,
         json: &str,
         tagging: &Tagging,

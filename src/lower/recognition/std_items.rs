@@ -578,6 +578,8 @@ pub(crate) enum StdItem {
     /// `hash::BuildHasherDefault<H>`, which holds nothing, building an
     /// `H::default()` (#1155).
     BuildHasherDefault,
+    /// `core::ops::Bound`, a range's bound, whose JSON is serde's own (#1623).
+    Bound,
     /// `hash::RandomState`, which holds nothing in JS, building a
     /// `DefaultHasher` (#1420, ADR 0262's "none" row: its keys are random
     /// in Rust, so no program can see which a build hashes with).
@@ -706,6 +708,7 @@ impl StdItem {
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::FutureReady => Symbol::intern("FutureReady"),
             StdItem::BuildHasherDefault => Symbol::intern("BuildHasherDefault"),
+            StdItem::Bound => Symbol::intern("Bound"),
             StdItem::RandomState => Symbol::intern("RandomState"),
             StdItem::Ord => sym::Ord,
             StdItem::Rc => sym::Rc,
@@ -767,6 +770,12 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         StdItem::BuildHasherDefault => {
             tcx.def_kind(id) == DefKind::Struct
                 && tcx.item_name(id).as_str() == "BuildHasherDefault"
+                && of_std_crate(tcx, id, StdCrate::Core)
+        }
+        // `core`'s `ops::Bound`, by its crate and name.
+        StdItem::Bound => {
+            tcx.def_kind(id) == DefKind::Enum
+                && tcx.item_name(id).as_str() == "Bound"
                 && of_std_crate(tcx, id, StdCrate::Core)
         }
         // `std`'s `hash::RandomState`, by its crate and name.

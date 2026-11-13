@@ -735,6 +735,12 @@ kept as serde_json keeps it
 writes the digits, a `Value` holds one that fits in an `i64` or a `u64`
 and else is serde_json's `number out of range`, and a flattened one is
 serde's `u128 is not supported`.
+std's types serde implements itself are written and read as serde does:
+a `Range` or a `RangeInclusive` as `{"start":1,"end":5}`, from an object
+or a two-item array, and a `Bound` as `"Unbounded"` or `{"Included":3}`
+([ADR 1134](../../decisions/1134-std-types-serde-forms-are-one-catalog.md)).
+The others are refused for now (#1623).
+
 A library's hand-written impl, and the `Visitor` its `Deserialize`
 gives, work in the crates that use it: each compiles its own copy, as it
 does every generic function of a library's it calls (#1560).
