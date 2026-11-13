@@ -44,7 +44,9 @@ pub(in crate::lower) fn arguments_use<'tcx>(
 }
 
 /// Whether `local` is given by value to a `write_fmt`, or `fmt::write`,
-/// into a writer that std writes a piece at a time, `Std::UserWrite`'s.
+/// into a writer that std writes a piece at a time, `Std::UserWrite`'s, of
+/// the crate's own: not a `W: fmt::Write`'s, whose `write_fmt` its
+/// dictionary says, given the function (#1652, step 6).
 fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> bool {
     let tcx = recognition.tcx;
     body.basic_blocks.iter().any(|data| match &data.terminator().kind {
@@ -53,8 +55,10 @@ fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Bo
                 arg.node
                     .place()
                     .is_some_and(|p| p.local == local && p.projection.is_empty())
-            }) && crate::lower::fn_def(func.ty(&body.local_decls, tcx))
-                .is_some_and(|(id, generic_args)| recognition.writes_arguments_piecewise(id, generic_args))
+            }) && crate::lower::fn_def(func.ty(&body.local_decls, tcx)).is_some_and(|(id, generic_args)| {
+                recognition.writes_arguments_piecewise(id, generic_args)
+                    && !recognition.writes_through_a_dictionary(id, generic_args)
+            })
         }
         _ => false,
     })
@@ -151,9 +155,12 @@ fn formatted_by_std<'tcx>(
             TerminatorKind::Call { func, args, .. } => {
                 let decls = &body.local_decls;
                 // Not a std trait's method an impl of the crate's defines,
-                // `write_fmt`'s of a writer that writes it itself (#1695).
+                // `write_fmt`'s of a writer that writes it itself (#1695),
+                // nor one a dictionary says, which may be (#1652, step 6).
                 let std = crate::lower::fn_def(func.ty(decls, tcx)).is_some_and(|(id, generic_args)| {
-                    crate::lower::recognition::is_std_crate(tcx, id) && !resolves_to_own(recognition, id, generic_args)
+                    crate::lower::recognition::is_std_crate(tcx, id)
+                        && !resolves_to_own(recognition, id, generic_args)
+                        && !recognition.writes_through_a_dictionary(id, generic_args)
                 });
                 std && args.iter().all(|arg| match &arg.node {
                     Operand::Copy(place) | Operand::Move(place) if place.local == local => {

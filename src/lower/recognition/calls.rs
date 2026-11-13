@@ -119,6 +119,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some((fact, of_val)) = layout_query(tcx, def_id) {
             return Some(Some(Std::Layout { fact, of_val }));
         }
+        // `fmt::write(w, args)`, std's own `write_fmt` of a `dyn fmt::Write`:
+        // what it writes given to the writer's `write_str` (ADR 0446, #1697).
+        if super::std_items::is_fmt_write_fn(tcx, def_id) {
+            return Some(Some(Std::UserWrite));
+        }
         // A write to a `Formatter` held where it isn't its writer's, a `&mut`
         // to it kept in a struct: its text's, a `String`'s, through the
         // handle it is (ADR 0461).

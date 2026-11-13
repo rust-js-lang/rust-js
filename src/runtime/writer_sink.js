@@ -9,6 +9,13 @@ function $writerSink(w, writeStr, writeChar) {
     writeChar: (c) => writeChar(w, c),
   };
 }
+// std's `write_fmt` of a writer whose `write_fmt` is std's, its
+// dictionary's `writeFmt` (#1652, step 6 of ADR 1135): `fmt::write` of
+// `args`, the function of its `Arguments`, into its sink, each piece a
+// call of `writeStr` or `writeChar`.
+function $writerWriteFmt(writeStr, writeChar) {
+  return (w, args) => $writingInto($writerSink(w, writeStr, writeChar), args);
+}
 // std's `padding`: `count` fill chars, the share `align` puts before the
 // text, each a `write_char`; and how many go after it.
 function $writePadding(f, count, align, fill) {

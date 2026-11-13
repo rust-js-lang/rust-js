@@ -460,7 +460,7 @@ function main() {
     },
   };
   $print(
-    `${$writeTry(() => receiver.impl.writeFmt(receiver, shownDisplay_fmt([true]))) === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(text)}\n`,
+    `${$writeTry(() => receiver.impl.writeStr(receiver, shownDisplay_fmt([true]))) === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(text)}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

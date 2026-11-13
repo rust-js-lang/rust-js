@@ -406,10 +406,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
             // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
+            // Where writes are followed a piece at a time, std's `write_fmt`
+            // is `fmt::write` of the function of its `Arguments` into its
+            // sink, `$writerWriteFmt(writeStr, writeChar)` (#1652, step 6).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
                 let write_str = bindings::trait_method_name(self.tcx, tr.def_id, "write_str");
                 let write_str = self.shared_entry(&mut props, &mut shared, &write_str, span)?;
-                props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
+                let entry = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id)
+                    && crate::lower::recognition::writes_piecewise()
+                {
+                    true => {
+                        let write_char = bindings::trait_method_name(self.tcx, tr.def_id, "write_char");
+                        let write_char = self.shared_entry(&mut props, &mut shared, &write_char, span)?;
+                        Expr::call_helper("$writerWriteFmt", vec![write_str, write_char])
+                    }
+                    false => write_str,
+                };
+                props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), entry));
                 continue;
             }
             // std's own `write_all` and `write_fmt` of a writer of bytes of the
@@ -757,7 +770,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A writer's own `write_fmt`, which takes its `Arguments` as the
             // function that makes its text (#1565), given generic code's
             // text (ADR 0180) as that function (#1695).
-            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id) {
+            // Where writes are followed a piece at a time, generic code gives
+            // it that function, as it is (#1652, step 6).
+            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id)
+                && !crate::lower::recognition::writes_piecewise()
+            {
                 true => {
                     let made = |text: &str| {
                         Expr::arrow(

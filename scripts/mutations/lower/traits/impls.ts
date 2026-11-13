@@ -657,8 +657,16 @@ export const mutations: Mutation[] = [
     name: "own-write-fmt-entry-given-text",
     breaks: "a writer's own `write_fmt` reached through generic code's dictionary is given its text, which its body calls as a function (#1695)",
     file: "src/lower/traits/impls.rs",
-    find: "            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id) {\n",
-    replace: "            let value = match false {\n",
+    find: "            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id)\n                && !crate::lower::recognition::writes_piecewise()\n",
+    replace: "            let value = match false\n                && !crate::lower::recognition::writes_piecewise()\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+  },
+  {
+    name: "writer-write-fmt-default-over-own",
+    breaks: "a writer's dictionary's `writeFmt` is std's though it defines its own `write_fmt`, which generic code's `write!` then never calls",
+    file: "src/lower/traits/impls.rs",
+    find: "            if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {\n",
+    replace: "            if is_writer_default(self.tcx, item.def_id) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
 ];

@@ -34,10 +34,10 @@ function put(w, n) {
 function main() {
   const buf = { text: "", cap: 8 };
   const receiver = { value: buf, impl: bufWrite };
-  const short = $writeTry(() => receiver.impl.writeFmt(receiver, `[${[1, 2].join(", ")}]`));
+  const short = $writeTry(() => receiver.impl.writeStr(receiver, `[${[1, 2].join(", ")}]`));
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
   const receiver$1 = { value: buf, impl: bufWrite };
-  const long = $writeTry(() => receiver$1.impl.writeFmt(receiver$1, "too long"));
+  const long = $writeTry(() => receiver$1.impl.writeStr(receiver$1, "too long"));
   console.log(`${long === undefined} ${$debugStr(buf.text)}`);
   let s = ">";
   const receiver$2 = {
@@ -49,7 +49,7 @@ function main() {
       s = value;
     },
   };
-  const result = $writeTry(() => receiver$2.impl.writeFmt(receiver$2, "3-x"));
+  const result = $writeTry(() => receiver$2.impl.writeStr(receiver$2, "3-x"));
   $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s}`);
   const result$1 = $writeTry(() =>

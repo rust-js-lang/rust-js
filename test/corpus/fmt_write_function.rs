@@ -1,6 +1,8 @@
-// `fmt::write(w, args)` is `w.write_fmt(args)`, of a `&mut dyn Write`: the
-// crate's own writer, as anyhow's `ensure!` renders its sides, and a
-// `String`; and a function of any writer, a `dyn fmt::Write` (ADR 0446).
+// `fmt::write(w, args)` is std's own `write_fmt` of a `&mut dyn Write`,
+// what it writes given to the writer's `write_str`, never its own
+// `write_fmt` (#1697): the crate's own writer, as anyhow's `ensure!`
+// renders its sides, and a `String`; and a function of any writer, a `dyn
+// fmt::Write` (ADR 0446).
 use std::fmt::{self, Write};
 
 struct Buf {

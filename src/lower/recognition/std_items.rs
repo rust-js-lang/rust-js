@@ -30,16 +30,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// The call a std function is, which rust-js lowers as that call:
-    /// `fmt::write(w, args)` is `w.write_fmt(args)`, of the `dyn fmt::Write`
-    /// it takes, anyhow's (ADR 0446). Another is itself.
+    /// `fmt::write(w, args)` is std's own `write_fmt` of the `dyn
+    /// fmt::Write` it takes, anyhow's (ADR 0446): each piece written
+    /// through its `write_str` and `write_char`, never its own `write_fmt`,
+    /// which a writer's own `write_fmt` calls it to write (#1697). Another
+    /// is itself.
     pub(in crate::lower) fn call_it_is(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> (DefId, ty::GenericArgsRef<'tcx>) {
         let tcx = self.tcx;
-        if of_std_crate(tcx, def_id, StdCrate::Core)
-            && std_path(tcx, def_id).ends_with("fmt::write")
+        if is_fmt_write_fn(tcx, def_id)
             && let sig = tcx
                 .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
             && let Some(&writer) = sig.inputs().first()
@@ -48,6 +50,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return (write_fmt, tcx.mk_args(&[writer.peel_refs().into()]));
         }
         (def_id, generic_args)
+    }
+
+    /// Whether `def_id` is `fmt::write`, std's own `write_fmt` (`call_it_is`).
+    pub(in crate::lower) fn is_fmt_write(&self, def_id: DefId) -> bool {
+        is_fmt_write_fn(self.tcx, def_id)
     }
 
     /// Of a call of a std trait's method `def_id` of `&mut self` whose
@@ -922,4 +929,10 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
         _ if is_std_def(tcx, id, StdItem::BoxNew) => Some(PureStd::BoxNew),
         _ => None,
     }
+}
+
+/// Whether `def_id` is `core::fmt::write`, std's own `write_fmt` of a
+/// `dyn fmt::Write` (#1697).
+pub(in crate::lower) fn is_fmt_write_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id).ends_with("fmt::write")
 }

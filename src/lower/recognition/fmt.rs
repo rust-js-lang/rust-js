@@ -166,9 +166,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> bool {
-        let (def_id, generic_args) = self.call_it_is(def_id, generic_args);
+        if self.is_fmt_write(def_id) {
+            return writes_piecewise();
+        }
         self.tcx.item_name(def_id).as_str() == "write_fmt"
             && self.classify(def_id, generic_args) == Some(Std::UserWrite)
+    }
+
+    /// Whether such a write (`writes_arguments_piecewise`) is into a writer
+    /// only a caller's dictionary says, a `W: fmt::Write`'s or a `dyn`'s,
+    /// which may define its own `write_fmt`: given the function of its
+    /// `Arguments`, `W.writeFmt(w, args)`, as Rust calls `W::write_fmt`
+    /// (#1652, step 6 of ADR 1135).
+    pub(in crate::lower) fn writes_through_a_dictionary(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> bool {
+        // Not `fmt::write`, std's own `write_fmt`, which writes through the
+        // writer's `write_str` whatever its own `write_fmt` (#1697).
+        !self.is_fmt_write(def_id)
+            && self.writes_arguments_piecewise(def_id, generic_args)
+            && (generic_args.types().next()).is_some_and(|writer| super::known_by_a_dictionary(writer.peel_refs()))
     }
 
     /// `&mut Formatter<'_>`.

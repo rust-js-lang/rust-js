@@ -34,11 +34,13 @@ const builds: [string, string[]][] = [
 const cases: [string, string][] = [
   ["", "test/writer-sink.rs"],
   ["generic code's and dyns' ", "test/writer-sink-generic.rs"],
+  ["Arguments given on's ", "test/writer-sink-arguments.rs"],
+  ["own write_fmt's through generic code's ", "test/writer-sink-own-write-fmt.rs"],
 ];
 
 for (const [build, flags] of builds) for (const [which, path] of cases) {
   test(`each of ${which}writes is native Rust's, in the ${build} build`, () => {
-    const dir = fixture(`writer-sink-${build}-${which === "" ? "own" : "generic"}`);
+    const dir = fixture(`writer-sink-${build}-${path.replace(/^test\/|\.rs$/g, "")}`);
     const file = join(root, path);
     const native = runNative(file, dir, "2021");
     if (typeof native === "string") throw new Error(native);
@@ -99,6 +101,43 @@ fn main() {
     expect(compiled.error, name).toContain("#1652");
     expect(compiled.error, name).toContain(said);
   }
+}, underLoad(120_000));
+
+// Step 6: an `Arguments` a function returned, given to a function that
+// writes it into a writer, isn't the function that writes into the sink it
+// claims, which its writer's sink would be armed for: refused, naming
+// #1652, not an error where it runs.
+test("an Arguments made elsewhere given to a function that writes it into a writer is refused, naming #1652", () => {
+  const dir = fixture("writer-sink-arguments-refused");
+  const file = join(dir, "given.rs");
+  writeFileSync(
+    file,
+    `use std::fmt::{self, Write};
+struct Log(Vec<String>);
+impl Write for Log {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+fn given(args: fmt::Arguments<'_>) -> fmt::Arguments<'_> {
+    args
+}
+fn log_to(w: &mut Log, args: fmt::Arguments<'_>) -> fmt::Result {
+    w.write_fmt(args)
+}
+fn main() {
+    let mut log = Log(Vec::new());
+    log_to(&mut log, given(format_args!("{}", 1))).unwrap();
+    println!("{:?}", log.0);
+}
+`,
+  );
+  const compiled = compileJs(file, dir, "2021", false, piecewise);
+  if ("js" in compiled) throw new Error("compiled");
+  expect(compiled.error).toContain("an `fmt::Arguments` made elsewhere given to a function that writes it into a writer");
+  expect(compiled.error).toContain("which isn't followed for it (#1652)");
+  expect(compiled.error).not.toContain("(#1652) yet");
 }, underLoad(120_000));
 
 // Only a writer shown into a writer writes through a sink: one the same
@@ -370,6 +409,20 @@ test("a library's type whose dictionary carries no fmtInto, written through gene
 // what the library's parameter is given is written a piece at a time.
 test("a consumer's type given only to a library's generic writer writes a piece at a time", () => {
   piecewiseChain(piecewisePairs, "own_type_into_a_librarys_generic_writer");
+}, underLoad(300_000));
+
+// Step 6: a library's function that writes an `Arguments` it's given into
+// a writer, itself or through another, says so in its contract
+// (`written_arguments`), so a consumer's `format_args!` given it is the
+// function that writes into the sink it claims; and a library's writer
+// with its own `write_fmt`, written into through a consumer's generic
+// code, is given that function by its dictionary's `writeFmt`.
+test("a library's function given an Arguments, and a library's own write_fmt, write a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "arguments_into_a_librarys_writer");
+  const library = contract(out);
+  const written = (name: string) => library.items.find((item: { export: string }) => item.export === name)?.written_arguments;
+  expect(written("logInto")).toEqual([1]);
+  expect(written("relay")).toEqual([1]);
 }, underLoad(300_000));
 
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {

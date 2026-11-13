@@ -158,10 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.sink_writes_given(Expr::var(&value), (kind, shown), given, span)?,
         };
         let Some(writes) = writes else {
-            let what = format!(
-                "a `{ty}` written into a writer through generic code: std writes it a piece at a time, which isn't followed for it yet (#1652)"
-            );
-            return Err(self.unsupported(span, &what));
+            return Err(self.refused_piecewise(span, &format!("a `{ty}` written into a writer through generic code")));
         };
         // One std function given just the value and its options is the
         // entry, `fmtInto: $writePadded`.

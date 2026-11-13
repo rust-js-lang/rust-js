@@ -76,4 +76,28 @@ export const mutations: Mutation[] = [
     replace: '                let helper = if named { "$writeDebugTuple" } else { "$writeDebugTuple" };\n',
     tests,
   },
+  {
+    name: "formatter-arguments-param-refused",
+    breaks: "a `Formatter`'s `write_fmt` of an `Arguments` parameter, in a writer shown into a writer, is refused",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "                        (true, false) if self.arguments_given_as_sink(state) => {\n",
+    replace: "                        (true, false) if false => {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "dyn-writer-char-as-str",
+    breaks: "`fmt::write` into a `dyn fmt::Write` with its own `write_char` gives each `char` to its `write_str`",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "            _ if (generic_args.types().next())\n",
+    replace: "            _ if false && (generic_args.types().next())\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "fmt-write-takes-own-write-fmt",
+    breaks: "`fmt::write(self, args)` in a writer's own `write_fmt` calls that `write_fmt` again through its dictionary, without end (#1697)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "            && (std_write_fmt || !self.recognition().writes_through_a_dictionary(def_id, generic_args))\n",
+    replace: "            && !self.recognition().writes_through_a_dictionary(def_id, generic_args)\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+  },
 ];

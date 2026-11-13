@@ -348,7 +348,15 @@ what's held before it, as a browser's console takes whole lines
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`
-  ([0180](../decisions/0180-generic-writers.md)).
+  ([0180](../decisions/0180-generic-writers.md)). A `write!` of a value
+  whose `Display` fails keeps what it wrote before it, given to the
+  writer's `write_str`, as Rust's does,
+  `$fmtTextOr(() => {..}, (text) => WWrite.writeStr(w, text))` (#1696).
+- **`fmt::write(w, args)` is std's own `write_fmt`:** what it writes is
+  given to the writer's `write_str`, never to a `write_fmt` of the
+  writer's own, so a writer whose `write_fmt` is `fmt::write(self, args)`
+  writes once, as Rust's does
+  ([0446](../decisions/0446-a-dyn-fmt-write.md), amended, #1697).
 
 What's refused of formatting is in [the limitations](limitations.md#formatting).
 

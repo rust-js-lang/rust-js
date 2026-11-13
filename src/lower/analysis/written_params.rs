@@ -16,11 +16,12 @@
 //! its contract says its dictionaries carry `fmtInto`; otherwise it's
 //! refused, naming #1688.
 
-use super::prints::{Prints, shown_by, written_arguments};
+use super::prints::{Prints, shown_by, shown_into_writers};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, pointer_target};
 use crate::lower::{Body, fn_def};
+use rustc_middle::mir;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -44,6 +45,9 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     /// a value and its dictionary, which a library's contract says
     /// (`Library::makes_fmt_dyns`).
     pub(in crate::lower) makes_dyns: bool,
+    /// Each function's `fmt::Arguments` parameters it writes into a
+    /// writer a piece at a time (step 6).
+    pub(in crate::lower) arguments: WrittenArguments,
 }
 
 impl<'tcx> WrittenParams<'tcx> {
@@ -134,9 +138,13 @@ pub(super) fn written_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     prints: &Prints,
     foreign: &Foreign<'_, 'tcx>,
+    arguments: WrittenArguments,
 ) -> WrittenParams<'tcx> {
     let tcx = recognition.tcx;
-    let mut found = WrittenParams::default();
+    let mut found = WrittenParams {
+        arguments,
+        ..Default::default()
+    };
     if !crate::lower::recognition::writes_piecewise() {
         return found;
     }
@@ -165,12 +173,14 @@ pub(super) fn written_params<'tcx>(
         let owner = tcx.typeck_root_def_id(body.def_id);
         let mut written = Vec::new();
         let writes_into = (body.thir.exprs.iter()).find(|expr| match expr.kind {
-            ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty)
-                .is_some_and(|(callee, args)| recognition.writes_arguments_piecewise(callee, args)),
+            ExprKind::Call { fun, ref args, .. } => fn_def(body.thir[fun].ty).is_some_and(|callee| {
+                !recognition.formatter_write_fmt(callee.0, callee.1)
+                    && (0..args.len()).any(|at| found.arguments.writes(recognition, callee, at))
+            }),
             _ => false,
         });
-        if writes_into.is_some() {
-            written.extend(written_arguments(recognition, body).unwrap_or_else(|| shown_by(recognition, body)));
+        if let Some(shown) = shown_into_writers(recognition, body, &found.arguments) {
+            written.extend(shown.unwrap_or_else(|| shown_by(recognition, body)));
         }
         if prints.writes_into_writers(body.def_id) {
             written.extend(shown_by(recognition, body));
@@ -262,4 +272,187 @@ fn refuse_lacked<'tcx>(tcx: TyCtxt<'tcx>, foreign: &Foreign<'_, 'tcx>, ty: Ty<'t
             "std writes it a piece at a time through its dictionary, which its library doesn't say it can (#1688)";
         crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
     }
+}
+
+/// Of each of the crate's functions, its `fmt::Arguments` value
+/// parameters it writes into a writer a piece at a time, by index, its
+/// `self` first: given by its own `write_fmt` or `fmt::write` into a writer
+/// std writes so, a `W: fmt::Write`'s and a `Formatter`'s too, or given on
+/// to a function's parameter written so, to a fixed point; a library's as
+/// its contract says (`Calling.written_arguments`). Each `format_args!`
+/// given one is the function that makes its text by writing into the sink
+/// it claims, `const f = $sink(); ..; return f.done();`, which a write of
+/// it arms with its writer's, `$writingInto(f, args)`, and which, called
+/// plainly, gives its text (#1652, step 6 of ADR 1135).
+///
+/// A trait's method is marked too where an impl of the crate's writes its
+/// parameter so, so a call through a dictionary or a `dyn`, which may run
+/// that impl's, gives what it writes.
+#[derive(Default)]
+pub(in crate::lower) struct WrittenArguments {
+    params: IndexMap<DefId, IndexSet<u32>>,
+}
+
+impl WrittenArguments {
+    /// The parameters of `owner`, by index, written so.
+    pub(in crate::lower) fn of_fn(&self, owner: DefId) -> impl Iterator<Item = u32> + '_ {
+        self.params.get(&owner).into_iter().flatten().copied()
+    }
+
+    /// Whether a call of `callee`, of `generic_args`, writes the
+    /// `Arguments` it's given at `index` into a writer a piece at a time:
+    /// std's `write_fmt` into a writer std writes so, or `fmt::write`, of
+    /// its second; a `Formatter`'s `write_fmt`; or a function's parameter
+    /// written so, of the impl a trait's method resolves to, else of the
+    /// trait's, a library's as its contract says.
+    pub(in crate::lower) fn writes<'tcx>(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (callee, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        index: usize,
+    ) -> bool {
+        if !crate::lower::recognition::writes_piecewise() {
+            return false;
+        }
+        if index == 1
+            && (recognition.writes_arguments_piecewise(callee, generic_args)
+                || recognition.formatter_write_fmt(callee, generic_args))
+        {
+            return true;
+        }
+        let callee = implementor(recognition, callee, generic_args).unwrap_or(callee);
+        self.marks(recognition, callee).contains(&(index as u32))
+    }
+
+    /// The parameters of `id`, by index, written so: as found here, of the
+    /// crate's function or a library's it compiles itself, an impl's
+    /// method, which its contract doesn't list; and of a library's, as its
+    /// contract says.
+    pub(in crate::lower) fn marks(&self, recognition: &Recognition<'_, '_>, id: DefId) -> Vec<u32> {
+        let mut marks: Vec<u32> = self.of_fn(id).collect();
+        if !id.is_local() {
+            marks.extend(recognition.foreign.written_arguments(id));
+        }
+        marks
+    }
+
+    /// `owner` writes its parameter `index` so; and, of an impl's method of
+    /// the crate's trait, its trait's method does.
+    fn mark(&mut self, tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
+        let mut changed = self.params.entry(owner).or_default().insert(index);
+        if let Some(declared) = tcx.trait_item_of(owner)
+            && declared.is_local()
+        {
+            changed |= self.params.entry(declared).or_default().insert(index);
+        }
+        changed
+    }
+}
+
+/// The method of an impl, the crate's or a library's, that a call of
+/// `callee`, a trait's method, of `generic_args` runs; `None` of another
+/// call, or of one only a caller's types say.
+fn implementor<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    callee: DefId,
+    generic_args: ty::GenericArgsRef<'tcx>,
+) -> Option<DefId> {
+    use rustc_middle::ty::TypeVisitableExt;
+    let tcx = recognition.tcx;
+    let trait_ = tcx.trait_of_assoc(callee)?;
+    let tr = ty::TraitRef::from_assoc(tcx, trait_, generic_args);
+    if tr.has_non_region_param() {
+        return None;
+    }
+    let imp = recognition.user_impl(tr)?;
+    tcx.impl_item_implementor_ids(imp).get(&callee).copied()
+}
+
+/// Each function's `fmt::Arguments` parameters `all_bodies` write into a
+/// writer a piece at a time, to a fixed point through their calls
+/// (`WrittenArguments`), by their MIR, as the lowering reads it: a
+/// library's a consumer compiles itself too, whose contract says nothing of
+/// an impl's method. Only where writes are followed so (ADR 1135's switch);
+/// none else.
+pub(super) fn written_arguments<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+) -> WrittenArguments {
+    use rustc_hir::attrs::lang_items::LangItem;
+    let tcx = recognition.tcx;
+    let mut found = WrittenArguments::default();
+    if !crate::lower::recognition::writes_piecewise() {
+        return found;
+    }
+    let is_arguments =
+        |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments));
+    // Of each function, its `Arguments` parameters.
+    let params: Vec<(&Body<'tcx>, &mir::Body<'tcx>, Vec<mir::Local>)> = (all_bodies.iter().copied())
+        .filter(|body| !tcx.is_closure_like(body.def_id))
+        .filter_map(|body| {
+            let mir = &body.mir.as_ref()?.body;
+            let params: Vec<mir::Local> = mir
+                .args_iter()
+                .filter(|&arg| is_arguments(mir.local_decls[arg].ty))
+                .collect();
+            (!params.is_empty()).then_some((body, mir, params))
+        })
+        .collect();
+    loop {
+        let mut changed = false;
+        for &(body, mir, ref params) in &params {
+            for &param in params {
+                if given_to_a_write(recognition, &found, mir, param) {
+                    changed |= found.mark(tcx, body.def_id, param.as_u32() - 1);
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    found
+}
+
+/// Whether `local`, an `Arguments` of `body`, is given, as it is or through
+/// what it's copied to, to a parameter a call writes into a writer a piece
+/// at a time (`WrittenArguments::writes`).
+pub(in crate::lower) fn given_to_a_write<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    marks: &WrittenArguments,
+    body: &mir::Body<'tcx>,
+    local: mir::Local,
+) -> bool {
+    use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
+    let tcx = recognition.tcx;
+    let mut holders = vec![local];
+    let mut at = 0;
+    while let Some(&holder) = holders.get(at) {
+        at += 1;
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) = &assign.1
+                    && from.local == holder
+                    && from.projection.is_empty()
+                    && let Some(to) = assign.0.as_local()
+                    && !holders.contains(&to)
+                {
+                    holders.push(to);
+                }
+            }
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some(callee) = fn_def(func.ty(&body.local_decls, tcx))
+                && (args.iter().enumerate()).any(|(i, arg)| {
+                    arg.node
+                        .place()
+                        .is_some_and(|p| p.local == holder && p.projection.is_empty())
+                        && marks.writes(recognition, callee, i)
+                })
+            {
+                return true;
+            }
+        }
+    }
+    false
 }

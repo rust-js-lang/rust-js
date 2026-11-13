@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "  return f.writeChar(c);\n",
     tests,
   },
+  {
+    name: "writer-write-fmt-whole",
+    breaks: "a writer's dictionary's `writeFmt`, std's, gives its `write_str` the text whole, one call, not each piece",
+    file: "src/runtime/writer_sink.js",
+    find: "  return (w, args) => $writingInto($writerSink(w, writeStr, writeChar), args);\n",
+    replace: "  return (w, args) => writeStr(w, args());\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+  },
 ];

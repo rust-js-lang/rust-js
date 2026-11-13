@@ -931,6 +931,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .collect()
     }
 
+    /// The `fmt::Arguments` parameters of `id`, a library's function, by
+    /// index, that it writes into a writer a piece at a time, as its
+    /// contract says (`Calling.written_arguments`, #1652).
+    pub(super) fn written_arguments(&self, id: DefId) -> Vec<u32> {
+        (self.library(id.krate))
+            .and_then(|library| library.items.get(&key(self.tcx, id)))
+            .map(|item| item.calling.written_arguments.clone())
+            .unwrap_or_default()
+    }
+
     /// Is `adt`, a library's type, one of whose writers may print to
     /// stdout as it formats, as its library's contract says (#1608)?
     pub(super) fn prints_shown(&self, adt: DefId) -> bool {

@@ -51,3 +51,27 @@ function put(w, n) {
 - **It's tested**: a corpus case writes through `fmt::write` and a `dyn
   fmt::Write` to a `String` and to the crate's writer that fails, against
   native Rust; a mutation of each is caught.
+
+## Amendment (2026-11-14, #1697)
+
+`fmt::write(w, args)` is not `w.write_fmt(args)`. It is std's own
+`write_fmt` body, which writes each piece through the writer's
+`write_str` and `write_char` and never calls its `write_fmt`. A writer
+whose own `write_fmt` is `fmt::write(self, args)`, the usual way to
+write one, called itself through its dictionary, `w.impl.writeFmt`, and
+overflowed the stack (#1697). Case: results change ([0262](0262-when-rust-and-js-disagree.md)),
+so Rust's is kept.
+
+`fmt::write` is now classified `Std::UserWrite` itself, `Recognition::is_fmt_write`.
+It is lowered as std's `write_fmt` of the `dyn fmt::Write` it takes
+(`call_it_is` still names that writer):
+
+- its text given to the writer's `write_str`, `w.impl.writeStr(w, text)`;
+- or, where writes are followed a piece at a time (ADR 1135), each piece
+  written into `$writerSink(w, writeStr, writeChar)`.
+
+Neither form calls the writer's own `write_fmt`. Proof: test/corpus/fmt_write_function.rs
+(its snapshot's `writeFmt` became `writeStr`), and a writer of the crate's
+own whose `write_fmt` is `fmt::write(self, args)` in test/writer-sink-own-write-fmt.rs
+and in a library pair, against native Rust in both builds. Mutation:
+fmt-write-takes-own-write-fmt.

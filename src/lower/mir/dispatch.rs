@@ -140,7 +140,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
-        let (def_id, generic_args) = self.recognition().call_it_is(def_id, generic_args);
         let (generic_args, args) = self.passed_through((def_id, generic_args), args);
         let args = &args[..];
         if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {
@@ -626,6 +625,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.arguments_operands_held(state, &mut values, out)?;
         }
         self.arguments_formatted(state, callee, (operands, arg_tys), &mut values, span)?;
+        self.arguments_given_to_writers(state, callee, operands, span)?;
+        self.partial_written_through_a_dictionary(state, callee, &mut values, span, out)?;
         // Of another crate's, one its crate's calls each give `null` or a
         // value, which its body tests `!== null`: what may be `undefined`
         // given it `?? null`, as its contract says.
@@ -639,8 +640,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // Of one given to a writer a piece at a time, the function that
+        // writes into the sink it claims (#1652, step 6).
+        let sink = given_on && (destination.as_local()).is_some_and(|local| self.given_to_a_writer(state.body, local));
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
-            made if given_on => self.arguments_given_on(made, span),
+            made if given_on => self.arguments_given_on(made, sink, span),
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
         }

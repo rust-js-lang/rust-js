@@ -162,8 +162,8 @@ export const mutations: Mutation[] = [
     name: "fmt-write-function-unlowered",
     breaks: "`fmt::write(w, args)` is refused, where it's `w.write_fmt(args)`",
     file: "src/lower/recognition/std_items.rs",
-    find: '            && std_path(tcx, def_id).ends_with("fmt::write")\n',
-    replace: "            && false\n",
+    find: '    of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id).ends_with("fmt::write")\n',
+    replace: "    false\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_write_function.rs$"],
   },
   {

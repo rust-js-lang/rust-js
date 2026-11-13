@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "  return result._0;\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
   },
+  {
+    name: "fmt-text-or-partial-dropped",
+    breaks: "a `write!` into a `String` through generic code loses what it wrote before a value that fails, `\"\"` where native Rust has `\"x1y\"` (#1696)",
+    file: "src/runtime/fmt_error.js",
+    find: "    if (error instanceof $FmtError) written($fmtPartial(error));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_write_into_a_string_keeps_text_before_a_failure.rs$"],
+  },
 ];

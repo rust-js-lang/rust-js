@@ -14,7 +14,12 @@
 // `display::sink_writes` follows (#1652), by `write!` into a writer of the
 // crate's own that records each call it's given, `Log`, or `Chars`, which
 // has its own `write_char`, given the value held in a variable, which rustc
-// doesn't write into the format string as it does a literal. test/iterator-matrix.test.ts runs it
+// doesn't write into the format string as it does a literal. Its
+// \`format_args!\` given on, \`args\`, of such a value is given both to a
+// function that prints it, the function that makes its text, and to one
+// that prints it and writes it into a \`Log\`, the function that writes into
+// the sink it claims (step 6), so each prints the same text as native
+// Rust's. test/iterator-matrix.test.ts runs it
 // (`ITERATOR_TABLE=format`) in both builds against native Rust, as it runs
 // the iterator tables.
 //
@@ -408,6 +413,16 @@ fn shown(args: fmt::Arguments) {
     println!("{args}");
 }
 
+/** What \`format_args!\` makes, given on, written, and written into a
+ * writer a piece at a time, which makes it the function that writes into
+ * the sink it claims, called plainly first (#1652, step 6). */
+fn logged(args: fmt::Arguments) {
+    println!("{args}");
+    let mut log = Log(Vec::new());
+    log.write_fmt(args).unwrap();
+    println!("{:?}", log.0);
+}
+
 fn run(name: &str, case: fn()) {
     println!("case {name}");
     if catch_unwind(case).is_err() {
@@ -437,7 +452,9 @@ function caseFn(c: FormatCase, i: number): string {
                   `write!(log, "[${escaped(c.spec.text)}]", ${c.spec.args?.("v") ?? "v"}).unwrap();`,
                   `println!("{:?}", log.0);`,
                 ]
-              : [`shown(format_args!(${format}));`];
+              : pieced(c.spec, c.value)
+                ? [`shown(format_args!(${format}));`, `logged(format_args!(${format}));`]
+                : [`shown(format_args!(${format}));`];
   return `fn case_${i}() {\n${body.map((line) => `    ${line}`).join("\n")}\n}`;
 }
 

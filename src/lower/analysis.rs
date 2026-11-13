@@ -115,7 +115,7 @@ use validation::{
     reject_rest_misuse, reject_static_references, reject_unsupported,
 };
 pub(super) use validation::{init_of, is_thread_local};
-pub(super) use written_params::WrittenParams;
+pub(super) use written_params::{WrittenParams, given_to_a_write};
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.
@@ -1101,14 +1101,18 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Which writers may print as they format, through stdout's line (#1490),
     // and which of their types' may stop part-way where a panic may be
     // caught (#1521).
+    // Which `fmt::Arguments` parameters each function writes into a writer
+    // a piece at a time, whose `format_args!` show what a writer shows
+    // (#1652, step 6).
+    let written_arguments = written_params::written_arguments(&recognition, all_bodies);
     let prints = prints::prints(
         &recognition,
         all_bodies,
         &may_run,
         (&never_but_through_whats_shown, &failing),
-        library,
+        (library, &written_arguments),
     );
-    let written_params = written_params::written_params(&recognition, all_bodies, &prints, &foreign);
+    let written_params = written_params::written_params(&recognition, all_bodies, &prints, &foreign, written_arguments);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function

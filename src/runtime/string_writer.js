@@ -1,15 +1,27 @@
 // A `String`, or a `Formatter`'s text, as a `fmt::Write` generic code is
 // given, in a box: what it writes is added to the box's `value`, which the
 // caller takes back (ADR 0180). A `char` and a `write!`'s text are strings.
+// A `Formatter` of a writer that writes through a sink is given as that
+// sink, `$sink()`'s, whose `value` set writes what it adds: its
+// `write_char` is the sink's, which a `write!` into a writer may have armed
+// with its writer's, and a `write!`'s `Arguments` is written into it a piece
+// at a time, as std's `Formatter` writes them (#1652, step 6 of ADR 1135).
 const $stringWriter = {
   writeStr(w, s) {
     w.value += s;
   },
   writeChar(w, c) {
-    w.value += c;
+    if (w.writeChar !== undefined) w.writeChar(c);
+    else w.value += c;
   },
-  writeFmt(w, text) {
-    w.value += text;
+  // Given the function of a `write!`'s `Arguments` where writes are
+  // followed a piece at a time, its text, and what it wrote before a value
+  // that failed, as std's writes each piece into the string; till ADR
+  // 1135's last step, its text where they aren't.
+  writeFmt(w, args) {
+    if (typeof args !== "function") w.value += args;
+    else if (w.writeChar !== undefined) $writingInto(w, args);
+    else w.value += $fmtTextOr(args, (text) => (w.value += text));
   },
 };
 

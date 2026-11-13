@@ -46,4 +46,28 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(lacked) = lacked.filter(|_| false) {\n",
     tests: pairs,
   },
+  {
+    name: "written-arguments-copies-unfollowed",
+    breaks: "an `Arguments` parameter copied before it's written into a writer isn't seen written, so its callers give the function that makes its text, and the write throws",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                    holders.push(to);\n",
+    replace: "                    let _ = to;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "written-arguments-trait-unmarked",
+    breaks: "a trait's method an impl writes its `Arguments` into a writer by isn't marked, so a call through a `dyn` gives the function that makes its text, and the write throws",
+    file: "src/lower/analysis/written_params.rs",
+    find: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && declared.is_local()\n",
+    replace: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && false\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "written-arguments-contract-unread",
+    breaks: "a library's function that writes an `Arguments` into a writer is given the function that makes its text, whatever its contract says, and its write throws",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            marks.extend(recognition.foreign.written_arguments(id));\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "an Arguments, and a library"],
+  },
 ];

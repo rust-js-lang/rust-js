@@ -18807,15 +18807,27 @@ export function $nonZeroOk(result, zero) {
 // A `String`, or a `Formatter`'s text, as a `fmt::Write` generic code is
 // given, in a box: what it writes is added to the box's `value`, which the
 // caller takes back (ADR 0180). A `char` and a `write!`'s text are strings.
+// A `Formatter` of a writer that writes through a sink is given as that
+// sink, `$sink()`'s, whose `value` set writes what it adds: its
+// `write_char` is the sink's, which a `write!` into a writer may have armed
+// with its writer's, and a `write!`'s `Arguments` is written into it a piece
+// at a time, as std's `Formatter` writes them (#1652, step 6 of ADR 1135).
 export const $stringWriter = {
   writeStr(w, s) {
     w.value += s;
   },
   writeChar(w, c) {
-    w.value += c;
+    if (w.writeChar !== undefined) w.writeChar(c);
+    else w.value += c;
   },
-  writeFmt(w, text) {
-    w.value += text;
+  // Given the function of a `write!`'s `Arguments` where writes are
+  // followed a piece at a time, its text, and what it wrote before a value
+  // that failed, as std's writes each piece into the string; till ADR
+  // 1135's last step, its text where they aren't.
+  writeFmt(w, args) {
+    if (typeof args !== "function") w.value += args;
+    else if (w.writeChar !== undefined) $writingInto(w, args);
+    else w.value += $fmtTextOr(args, (text) => (w.value += text));
   },
 };
 
@@ -18845,6 +18857,13 @@ export function $writerSink(w, writeStr, writeChar) {
     write: (s) => writeStr(w, s),
     writeChar: (c) => writeChar(w, c),
   };
+}
+// std's `write_fmt` of a writer whose `write_fmt` is std's, its
+// dictionary's `writeFmt` (#1652, step 6 of ADR 1135): `fmt::write` of
+// `args`, the function of its `Arguments`, into its sink, each piece a
+// call of `writeStr` or `writeChar`.
+export function $writerWriteFmt(writeStr, writeChar) {
+  return (w, args) => $writingInto($writerSink(w, writeStr, writeChar), args);
 }
 // std's `padding`: `count` fill chars, the share `align` puts before the
 // text, each a `write_char`; and how many go after it.
@@ -19237,6 +19256,18 @@ export function $writeOf(result) {
 export function $writeCaught(error) {
   if (error instanceof $WriteError) return error;
   throw error;
+}
+// A `write!`'s text through generic code's writer, `make()`'s: where a
+// value fails, what was made before it given to `written`, the writer's
+// `write_str`, as std's `write_fmt` writes each piece before it, then the
+// error thrown on (#1696). Till ADR 1135's last step writes each piece.
+export function $fmtTextOr(make, written) {
+  try {
+    return make();
+  } catch (error) {
+    if (error instanceof $FmtError) written($fmtPartial(error));
+    throw error;
+  }
 }
 // `?` of one: its error, on.
 export function $writeCheck(result) {

@@ -57,6 +57,18 @@ function $writeCaught(error) {
   if (error instanceof $WriteError) return error;
   throw error;
 }
+// A `write!`'s text through generic code's writer, `make()`'s: where a
+// value fails, what was made before it given to `written`, the writer's
+// `write_str`, as std's `write_fmt` writes each piece before it, then the
+// error thrown on (#1696). Till ADR 1135's last step writes each piece.
+function $fmtTextOr(make, written) {
+  try {
+    return make();
+  } catch (error) {
+    if (error instanceof $FmtError) written($fmtPartial(error));
+    throw error;
+  }
+}
 // `?` of one: its error, on.
 function $writeCheck(result) {
   if (result !== undefined) throw result;

@@ -96,8 +96,12 @@ use std::path::Path;
 /// its types whose formatting dictionaries carry `fmtInto`,
 /// `written_into`; whether it writes a `dyn` it's given so,
 /// `dyn_written_into`; and whether it makes a `dyn` whose dictionary may
-/// carry none, `makes_fmt_dyns` (#1652, step 5 of ADR 1135).
-pub const VERSION: u32 = 35;
+/// carry none, `makes_fmt_dyns` (#1652, step 5 of ADR 1135). 36: the
+/// `fmt::Arguments` parameters each function writes into a writer a piece
+/// at a time, `written_arguments`, given the function that writes into the
+/// sink it claims; and each `fmt::Write` dictionary's `writeFmt` given that
+/// function, not its text (#1652, step 6 of ADR 1135).
+pub const VERSION: u32 = 36;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -157,6 +161,13 @@ pub struct Calling {
     /// use of it as a value is refused.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub nulled_params: Vec<u32>,
+    /// Its `fmt::Arguments` parameters, by index, its `self` first, that it
+    /// writes into a writer a piece at a time, itself or by what it gives
+    /// them to (#1652, step 6 of ADR 1135; library ABI 36): a consumer's
+    /// `format_args!` given one is the function that writes into the sink
+    /// it claims, which a write of it arms with its writer's.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub written_arguments: Vec<u32>,
 }
 
 /// A fact of a library's function its consumers' calls read (ADR 0906):

@@ -19,6 +19,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (state.called_into.and_then(|place| place.as_local())).is_some_and(|local| {
             let recognition = self.recognition();
             arguments_use(&recognition, state.body, local) == ArgumentsUse::Written
+                || (arguments_use(&recognition, state.body, local) == ArgumentsUse::GivenOn
+                    && self.given_to_a_writer(state.body, local))
                 || (self.writes_into_writers(state)
                     && (state.writer.as_ref())
                         .is_some_and(|(aliases, _)| written_into_formatter(&recognition, state.body, local, aliases)))
@@ -74,9 +76,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             _ => "a radix",
                         };
                         let what = format!(
-                            "`write!` of a `{ty}` by its `{shown}` into a writer of the crate's own or a generic one: std writes it a piece at a time, each a call of the writer's, which isn't followed for it yet (#1652)"
+                            "`write!` of a `{ty}` by its `{shown}` into a writer of the crate's own or a generic one"
                         );
-                        return Err(self.unsupported(span, &what));
+                        return Err(self.refused_piecewise(span, &what));
                     };
                     writes.extend(written);
                 }
@@ -105,13 +107,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let tcx = self.tcx;
+        // `fmt::write(w, args)`, std's own `write_fmt` of the `dyn
+        // fmt::Write` it takes (#1697): written through its `write_str`,
+        // never its own `write_fmt`.
+        let std_write_fmt = self.recognition().is_fmt_write(def_id);
+        let (def_id, generic_args) = self.recognition().call_it_is(def_id, generic_args);
         // A `write!`'s, a piece at a time (#1652).
         if let [writer, Value::Writes(writes, fails)] = &mut values[..] {
             let (writer, writes) = (self.value_expr(writer.clone(), span)?, std::mem::take(writes));
             let writes = (writes, *fails);
             return self.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
         }
-        self.arguments_not_written(def_id, &values, span)?;
+        // Given the function of an `Arguments` that writes into the sink it
+        // claims (#1652, step 6): a writer of the crate's own writes it
+        // through its sink, `$writingInto(f, args)`; a `W: fmt::Write`'s
+        // dictionary's `writeFmt` is given it.
+        let function = self.takes_arguments_function(state, (def_id, generic_args), 1);
+        let sink = function && self.arguments_given_as_sink(state);
+        if !sink {
+            self.arguments_not_written(def_id, &values, span)?;
+        }
+        if sink
+            && (std_write_fmt || !self.recognition().writes_through_a_dictionary(def_id, generic_args))
+            && let [writer, args] = &values[..]
+        {
+            let (writer, args) = (
+                self.value_expr(writer.clone(), span)?,
+                self.value_expr(args.clone(), span)?,
+            );
+            let writes = (
+                vec![SinkWrite::Helper("$writingInto", vec![args])],
+                self.krate.failing.any,
+            );
+            return self.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
+        }
+        if sink {
+            let exprs = (values.into_iter())
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            self.flush(state, out)?;
+            return Ok(Value::Expr(
+                self.trait_call(def_id, generic_args, exprs, span, out)?
+                    .ok_or_else(|| self.unsupported(span, "this writer's `write_fmt`"))?,
+            ));
+        }
         Ok(Value::Expr({
             let exprs = values
                 .into_iter()
@@ -145,9 +184,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
         let write_str = trait_method(tcx, trait_id, "write_str");
         let write_char = trait_method(tcx, trait_id, "write_char");
+        // A generic writer's dictionary, or a `dyn`'s, has its own, or std's.
         let own_char = |cx: &Self| match cx.resolve_self_instance(write_char, generic_args) {
+            _ if (generic_args.types().next())
+                .is_some_and(|writer| crate::lower::recognition::known_by_a_dictionary(writer.peel_refs())) =>
+            {
+                true
+            }
             Ok(Some(instance)) => cx.krate.fns.contains_key(&instance.def_id()),
-            // A generic writer's dictionary has its own, or std's.
             _ => true,
         };
         let own_char = own_char(self);
@@ -196,10 +240,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(());
         }
-        Err(self.unsupported(
+        Err(self.refused_piecewise(
             span,
-            "`write_fmt` of a `fmt::Arguments` made elsewhere into a writer of the crate's own or a generic one: std writes it a piece at a time, each a call of the writer's, which isn't followed for it yet (#1652)",
+            "`write_fmt` of a `fmt::Arguments` made elsewhere into a writer of the crate's own or a generic one",
         ))
+    }
+
+    /// Whether the `Arguments` the `write_fmt` at `state.at` is given, its
+    /// second, is the function that writes into the sink it claims
+    /// (`sink_form_given`, #1652 step 6).
+    pub(super) fn arguments_given_as_sink(&self, state: &State<'_, 'tcx>) -> bool {
+        match &state.body.basic_blocks[state.at].terminator().kind {
+            TerminatorKind::Call { args, .. } => args
+                .get(1)
+                .is_some_and(|arg| self.sink_form_given(state.body, &arg.node)),
+            _ => false,
+        }
     }
 
     /// A writer's `write_str` or `write_char`, `method` of `generic_args`,
@@ -280,6 +336,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = self.shown_in_place(value, span)?;
                     let literal = matches!(value.kind, js::ExprKind::Str(_));
                     match (self.recognition().formatter_write_fmt(def_id, generic_args), literal) {
+                        // The function of an `Arguments` that writes into the
+                        // sink it claims, a parameter's (#1652, step 6):
+                        // this writer's sink armed for it.
+                        (true, false) if self.arguments_given_as_sink(state) => {
+                            vec![SinkWrite::Helper("$writingInto", vec![value])]
+                        }
                         (true, false) => {
                             return Err(
                                 self.refused_in_a_writer("a `write_fmt` of a `fmt::Arguments` made elsewhere", span)
@@ -415,10 +477,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// sink a `write!` into a writer may arm, where its split isn't
     /// followed yet (#1652).
     pub(in crate::lower) fn refused_in_a_writer(&self, what: &str, span: Span) -> rustc_span::ErrorGuaranteed {
-        self.unsupported(
+        self.refused_piecewise(span, &format!("{what} in a writer shown into a writer by `write!`"))
+    }
+
+    /// The refusal of `what`, written into a writer, whose split into
+    /// pieces isn't followed yet: `what`, and why, std writes it a piece at
+    /// a time, naming #1652.
+    pub(in crate::lower) fn refused_piecewise(&self, span: Span, what: &str) -> rustc_span::ErrorGuaranteed {
+        crate::lower::refusal::refuse(
+            self.tcx,
             span,
-            &format!(
-                "{what} in a writer shown into a writer by `write!`: std writes it a piece at a time, each a call of the writer's, which isn't followed for it yet (#1652)"
+            crate::lower::refusal::Refused::Because(
+                what,
+                "std writes it a piece at a time, each a call of the writer's, which isn't followed for it (#1652)",
             ),
         )
     }

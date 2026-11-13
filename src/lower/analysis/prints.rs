@@ -24,6 +24,7 @@ use rustc_middle::ty;
 use rustc_span::def_id::DefId;
 
 use super::may_run::Runs;
+use super::written_params::WrittenArguments;
 
 /// What `prints` found of a crate.
 #[derive(Default)]
@@ -152,7 +153,7 @@ pub(super) fn prints<'tcx>(
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
-    library: bool,
+    (library, arguments): (bool, &WrittenArguments),
 ) -> Prints {
     let mut found = printing_writers(recognition, all_bodies, runs, unwinding, library);
     for error in [false, true] {
@@ -170,7 +171,7 @@ pub(super) fn prints<'tcx>(
             .map(|body| body.def_id),
     );
     if crate::lower::recognition::writes_piecewise() {
-        found.framed = written_into_writers(recognition, all_bodies);
+        found.framed = written_into_writers(recognition, all_bodies, arguments);
         found.through_sink.extend(found.framed.iter().copied());
     }
     found
@@ -188,7 +189,11 @@ pub(super) fn prints<'tcx>(
 /// writes through a sink, which a `write!` into a writer arms with its
 /// writer's (`$writingInto`). Never `types` or `while_formatting`, which
 /// route what's printed.
-fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
+fn written_into_writers<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    arguments: &WrittenArguments,
+) -> IndexSet<DefId> {
     let tcx = recognition.tcx;
     let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
@@ -207,11 +212,8 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
     // Each type shown, and whether it's a writer's, whose own type
     // parameters the types it's shown as give.
     let mut shown: Vec<(ty::Ty<'tcx>, bool)> = (all_bodies.iter())
-        .filter(|body| {
-            (crate::lower::instances::calls_of(body).into_iter())
-                .any(|(callee, args, _)| recognition.writes_arguments_piecewise(callee, args))
-        })
-        .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))
+        .filter_map(|body| shown_into_writers(recognition, body, arguments).map(|shown| (body, shown)))
+        .flat_map(|(body, shown)| shown.unwrap_or_else(|| shown_by(body)))
         .map(|ty| (ty, false))
         .collect();
     // And what's given a library's function's parameter it writes into a
@@ -824,13 +826,18 @@ fn leaves_unended<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, 
 
 /// The types each `write!` of `body` into a writer std writes a piece at a
 /// time shows, the `T` of each `Argument::new_*::<T>` of the
-/// `format_args!` it's given where it's made: not what the rest of the body
-/// formats, a `println!`'s. `None` where an `Arguments` is given made
-/// elsewhere, a local's, of which every type the body shows is asked.
-pub(super) fn written_arguments<'tcx>(
+/// `format_args!` it's given where it's made, or given a function's
+/// parameter written so (`WrittenArguments`, #1652 step 6): not what the
+/// rest of the body formats, a `println!`'s. `Some(None)` where an
+/// `Arguments` is given made elsewhere, a local's, of which every type the
+/// body shows is asked; `None` of a body that writes none so. A
+/// `Formatter`'s `write_fmt`, a writer's own, shows nothing into a writer
+/// of its own: what its writer shows is framed by who shows it.
+pub(super) fn shown_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &Body<'tcx>,
-) -> Option<Vec<ty::Ty<'tcx>>> {
+    marks: &WrittenArguments,
+) -> Option<Option<Vec<ty::Ty<'tcx>>>> {
     struct Arguments<'a, 'tcx> {
         tcx: ty::TyCtxt<'tcx>,
         thir: &'a Thir<'tcx>,
@@ -854,8 +861,9 @@ pub(super) fn written_arguments<'tcx>(
             walk_expr(self, expr);
         }
     }
-    body.root()?;
     let mut found = Vec::new();
+    let mut writes = false;
+    let mut made_elsewhere = body.root().is_none();
     for expr in body.thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
@@ -863,22 +871,25 @@ pub(super) fn written_arguments<'tcx>(
         let ty::FnDef(id, generic_args) = *body.thir[fun].ty.kind() else {
             continue;
         };
-        if !recognition.writes_arguments_piecewise(id, generic_args.skip_binder()) {
+        let generic_args = generic_args.skip_binder();
+        if recognition.formatter_write_fmt(id, generic_args) {
             continue;
         }
-        let mut arguments = Arguments {
-            tcx: recognition.tcx,
-            thir: &body.thir,
-            found: Vec::new(),
-            made: false,
-        };
-        for &arg in args.iter() {
+        for (at, &arg) in args.iter().enumerate() {
+            if !marks.writes(recognition, (id, generic_args), at) {
+                continue;
+            }
+            writes = true;
+            let mut arguments = Arguments {
+                tcx: recognition.tcx,
+                thir: &body.thir,
+                found: Vec::new(),
+                made: false,
+            };
             arguments.visit_expr(&body.thir[arg]);
+            made_elsewhere |= !arguments.made;
+            found.extend(arguments.found);
         }
-        if !arguments.made {
-            return None;
-        }
-        found.extend(arguments.found);
     }
-    Some(found)
+    writes.then_some((!made_elsewhere).then_some(found))
 }

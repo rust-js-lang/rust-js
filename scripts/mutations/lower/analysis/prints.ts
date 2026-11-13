@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-unseen",
     breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "        found.framed = written_into_writers(recognition, all_bodies);\n",
+    find: "        found.framed = written_into_writers(recognition, all_bodies, arguments);\n",
     replace: "",
     tests: ["test/writer-sink.test.ts"],
   },
@@ -256,8 +256,8 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-every-shown-of-the-body",
     breaks: "every type a body that writes into a writer formats is framed, a `println!`'s too, so a writer never shown into one is held to std's pieces and refused (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "        .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))\n",
-    replace: "        .flat_map(|body| shown_by(body))\n",
+    find: "        .flat_map(|(body, shown)| shown.unwrap_or_else(|| shown_by(body)))\n",
+    replace: "        .flat_map(|(body, _)| shown_by(body))\n",
     tests: ["test/writer-sink.test.ts", "-t", "only prints doesn't write through a sink"],
   },
   {
@@ -267,5 +267,13 @@ export const mutations: Mutation[] = [
     find: "            for index in recognition.foreign.written_marks(callee) {\n",
     replace: "            for index in recognition.foreign.written_marks(callee).into_iter().filter(|_| false) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's type given only"],
+  },
+  {
+    name: "arguments-given-on-shown-unframed",
+    breaks: "a type shown by a `format_args!` given a function that writes it into a writer isn't framed, so its writer writes its text whole, one piece",
+    file: "src/lower/analysis/prints.rs",
+    find: "            if !marks.writes(recognition, (id, generic_args), at) {\n",
+    replace: "            if at != 1 || !recognition.writes_arguments_piecewise(id, generic_args) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
 ];

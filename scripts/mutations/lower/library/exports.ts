@@ -392,4 +392,12 @@ export const mutations: Mutation[] = [
     replace: "        written_into: Vec::new(),\n",
     tests: ["test/writer-sink.test.ts", "-t", "library"],
   },
+  {
+    name: "written-arguments-unexported",
+    breaks: "a library's contract lists no `Arguments` parameter it writes into a writer, so a consumer gives the function that makes its text",
+    file: "src/lower/library/exports.rs",
+    find: "                written_arguments: contracts.written.arguments.of_fn(id).collect(),\n",
+    replace: "                written_arguments: Vec::new(),\n",
+    tests: ["test/writer-sink.test.ts", "-t", "an Arguments, and a library"],
+  },
 ];

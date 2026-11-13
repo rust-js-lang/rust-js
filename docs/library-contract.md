@@ -67,6 +67,7 @@ m6-react's to see first (#1462).
 | `ItemFact::Variable` | summary | its module's variable, read by its name | |
 | `Calling.owned_by_return` | summary | the parameters what it returns alone owns | |
 | `Calling.quiet_by_return` | summary | of those, the ones nothing it runs before it returns may call | |
+| `Calling.written_arguments` | summary | the `fmt::Arguments` parameters it writes into a writer a piece at a time, itself or by what it gives them to: a call gives each made there as the function that writes into the sink it claims (#1652) | |
 | `Library.with_this_arguments` | summary | the parameters of each `with_this` function it makes that reads `arguments` | |
 | `Library.gives_argument` | summary | its functions each call of which is what it's given | |
 | `Library.displays_value` | summary | its untagged enums whose `Display` writes each variant's value as it is | |

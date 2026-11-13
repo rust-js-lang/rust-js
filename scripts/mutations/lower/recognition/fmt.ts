@@ -174,4 +174,12 @@ export const mutations: Mutation[] = [
     replace: '                "write_fmt_" => Some(Std::PushStr),',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
+  {
+    name: "dictionary-write-inline",
+    breaks: "generic code's `write!` into a `W: fmt::Write` writes each piece into its `write_str`, past the writer's own `write_fmt`, which Rust calls",
+    file: "src/lower/recognition/fmt.rs",
+    find: "        !self.is_fmt_write(def_id)\n            && self.writes_arguments_piecewise(def_id, generic_args)\n",
+    replace: "        false && self.writes_arguments_piecewise(def_id, generic_args)\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+  },
 ];

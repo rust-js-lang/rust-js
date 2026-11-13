@@ -40,8 +40,16 @@ export const mutations: Mutation[] = [
     name: "own-write-fmt-given-text",
     breaks: "a writer's own `write_fmt` is given a `write!`'s text, which its body calls as a function, `args is not a function` (#1695)",
     file: "src/lower/mir/arguments_use.rs",
-    find: "                    crate::lower::recognition::is_std_crate(tcx, id) && !resolves_to_own(recognition, id, generic_args)\n",
-    replace: "                    crate::lower::recognition::is_std_crate(tcx, id)\n",
+    find: "                        && !resolves_to_own(recognition, id, generic_args)\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+  },
+  {
+    name: "dictionary-write-arguments-as-text",
+    breaks: "a `format_args!` given generic code's `write_fmt` is its text, not the function that writes into the sink it claims, which the writer's dictionary's `writeFmt` writes",
+    file: "src/lower/mir/arguments_use.rs",
+    find: "                        && !recognition.writes_through_a_dictionary(id, generic_args)\n                });\n",
+    replace: "                });\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
 ];

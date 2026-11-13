@@ -864,4 +864,12 @@ export const mutations: Mutation[] = [
     replace: "        known != Some(Std::CloneFrom)\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a formatting trait's fmt is refused without its recogniser"],
   },
+  {
+    name: "given-to-a-writer-made-text",
+    breaks: "an `Arguments` given to a function that writes it into a writer is the function that makes its text, which the writer's sink isn't armed for",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            made if given_on => self.arguments_given_on(made, sink, span),\n",
+    replace: "            made if given_on => self.arguments_given_on(made, sink && false, span),\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+  },
 ];

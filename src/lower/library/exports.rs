@@ -124,6 +124,7 @@ pub(in crate::lower) fn exports<'tcx>(
                     nulled.sort();
                     nulled
                 },
+                written_arguments: contracts.written.arguments.of_fn(id).collect(),
             },
         })
         .collect();

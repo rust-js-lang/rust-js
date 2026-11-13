@@ -182,8 +182,76 @@ go.
    (a library's generic writer given a consumer's type, a library's type
    written through a consumer's generic code, and one refused), the
    runtime's unit tests of the errors' writes, and 26 mutations.
-6. An `Arguments` passed on, a writing function, so either's and
-   arrayvec's own `write_fmt` pass it on.
+6. An `Arguments` passed on (landed). An `Arguments` stays the function
+   of its text. Only where it flows to a parameter that is written into a
+   writer is it the function that writes into the sink it claims:
+
+   ```js
+   () => {
+     const f = $sink();
+     f.write("a");
+     $writeInteger(f, n);
+     return f.done();
+   }
+   ```
+
+   A write of it arms that sink with its writer's, `$writingInto(f,
+   args)`, so each piece is a call of the writer's. Called plainly, by
+   `to_string()`, `format!` or `{}`, it gives its text, as `$sink()`
+   with nothing armed is a string of its own.
+
+   `analysis::written_params::written_arguments` says which parameters
+   are written so, by their MIR, as the lowering reads them, to a fixed
+   point through calls. A parameter is written so where it's given:
+   - to `write_fmt` into a writer std writes a piece at a time;
+   - to `fmt::write`;
+   - to a `Formatter`'s `write_fmt`;
+   - or to another function's parameter written so.
+
+   A trait's method of the crate's is marked where any of its impls is,
+   for calls through a `dyn`. A library's contract says it,
+   `Calling.written_arguments` (summary, library ABI 36). A consumer
+   compiles a library's impl methods itself, so it finds those by the
+   same analysis.
+
+   A `format_args!` given such a parameter shows its types into a writer,
+   so their writers are framed. A function given an `Arguments` made
+   elsewhere, one a function returned or a field held, is refused, naming
+   #1652.
+
+   Rust's `write!` calls `W::write_fmt`, so a write through a dictionary,
+   a `W: fmt::Write`'s or a `dyn`'s, is `W.writeFmt(w, args)`, given that
+   function. Each dictionary's `writeFmt` takes it:
+   - std's, of a writer without its own `write_fmt`, is
+     `$writerWriteFmt(writeStr, writeChar)`, which writes it into
+     `$writerSink`;
+   - a writer's own `write_fmt` is called with it as it is;
+   - `$mutWriter` and a `dyn` pass it on;
+   - `$stringWriter` appends its text, keeping what was written before a
+     value that fails (#1696);
+   - a `Formatter` given as a `W`, a framed writer's sink, has it written
+     into that sink, and its `write_char` is the sink's.
+
+   Before this, under the switch, generic code wrote each piece into
+   `W.writeStr`, past a writer's own `write_fmt`, which Rust calls.
+
+   A concrete writer of the crate's own without its own `write_fmt` keeps
+   the inline form. `fmt::write` is std's own `write_fmt`, through the
+   writer's `write_str`, never its own `write_fmt` (#1697, ADR 0446,
+   amended).
+
+   Proof, each against native Rust in both builds:
+   - test/writer-sink-arguments.rs: parameters, a relay, `dyn` and own
+     trait methods, `fmt::write`, a `Formatter`'s `write_fmt`, failures,
+     and the same `Arguments` written and printed;
+   - test/writer-sink-own-write-fmt.rs: generic code given a writer with
+     its own `write_fmt`, `&mut W`, an `Either`, a `Formatter` as `W`;
+   - a crate pair: a library's functions and writers;
+   - the formatting grid: each pieced case's `args` is also given to
+     `logged`, which prints it, the sink form called plainly, and writes
+     it into a `Log`, 1,370 cases, both the same as native Rust's.
+
+   Also the metamorphic rewrites of each case, and 26 mutations.
 
 ## Alternatives
 
