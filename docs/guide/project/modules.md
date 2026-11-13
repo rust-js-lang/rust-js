@@ -817,6 +817,91 @@ The path, like every relative module in a `link_name`, is relative to the
 crate root's JS file, so one path means one file from every module; the JS
 names it from the importing file ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 
+## Read a CSS Module's classes
+
+A CSS Module, `site.module.css`, is bound as any module's default export
+is: a `static`, its type a struct of the classes the program reads, each
+a getter, as [a JS type's](../interop/bindings.md#declare-a-js-type)
+property is. Marked `#[rust_js::css_module]`, each compile reads the file
+and checks each getter's class is one it exports, so a class misspelled,
+or deleted from the file, is a compile error at the getter, naming the
+file's classes. A use of a getter that isn't there, `STYLES.code_blok()`,
+is rustc's own error, which plain `cargo check` and rust-analyzer give
+too, with completion
+([ADR 1133](../../decisions/1133-a-css-modules-binding-is-checked-against-its-file.md)).
+
+```rust
+// src/lib.rs
+use std::marker::PhantomData;
+
+use js::JsObject;
+
+/// The classes of `site.module.css` the app reads.
+#[cfg_attr(rust_js, rust_js::css_module)]
+pub struct Styles(PhantomData<JsObject>);
+
+impl Styles {
+    #[cfg_attr(rust_js, rust_js::link_name = "get codeBlock")]
+    pub fn code_block(&self) -> String {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get card-title")]
+    pub fn card_title(&self) -> String {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "./site.module.css#default"]
+    pub safe static STYLES: &'static Styles;
+}
+
+pub fn card_classes(wide: bool) -> String {
+    if wide {
+        format!("{} {}", STYLES.card_title(), STYLES.code_block())
+    } else {
+        STYLES.card_title()
+    }
+}
+```
+
+```css
+/* src/site.module.css */
+.codeBlock {
+  font-family: monospace;
+}
+
+.card-title:hover {
+  color: rebeccapurple;
+}
+```
+
+```js
+// src/lib.js
+import STYLES from "./site.module.css";
+
+export function cardClasses(wide) {
+  return wide ? `${STYLES["card-title"]} ${STYLES.codeBlock}` : STYLES["card-title"];
+}
+```
+
+- **A class is its key as the file exports it**, as the bundler names
+  it as it is (`asIs`): `"get card-title"` is `STYLES["card-title"]`. The
+  getter's Rust name is the program's own.
+- **A class by a name known as the program runs** is the dynamic read,
+  `"get []"`, `fn class(&self, name: &str) -> Option<String>`, which isn't
+  checked.
+- **The file is what the build read**, so a save of it checks the program
+  again, and a class it deletes that the program reads is the error.
+- **What's refused**: a `#[rust_js::css_module]` that isn't a struct; its
+  `static` bound to anything but a `.module.css` file's default export;
+  a binding of it that isn't a getter; a file that isn't there, or that
+  Lightning CSS, Next.js's CSS parser, can't read; and ICSS's `:export` and
+  `:import` and `@value`, whose names it doesn't export where webpack's
+  css-loader does
+  ([#1617](https://github.com/rust-js-lang/rust-js/issues/1617)).
+
 ## Load a module later
 
 `js::import!` with a function of another module is a dynamic `import()`,

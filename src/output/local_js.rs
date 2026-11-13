@@ -156,6 +156,28 @@ impl program::JsModules for LocalJs {
             })
             .collect()
     }
+
+    /// Of the file where the crate's JS is written, or where it goes in
+    /// source, as `reached` finds a binding's file: the first that's there,
+    /// read, and so what the build read, which loads nothing of the crate's,
+    /// as a style doesn't (`loads`).
+    fn css_module_keys(&self, specifier: &str) -> Result<Vec<String>, String> {
+        let mut looked = Vec::new();
+        for root in [&self.output, &self.input] {
+            let file = specifier_file(parent_dir(&absolute(root)?), specifier)?;
+            if !file.is_file() {
+                looked.push(file);
+                continue;
+            }
+            let source = std::fs::read_to_string(&file).map_err(|e| format!("reading {}: {e}", file.display()))?;
+            self.loads.borrow_mut().insert(file.clone(), Some(Vec::new()));
+            let name = file.file_name().map(|name| name.to_string_lossy().into_owned());
+            return crate::css_modules::exported_keys(&source, &name.unwrap_or_default());
+        }
+        looked.dedup();
+        let looked: Vec<String> = looked.iter().map(|file| file.display().to_string()).collect();
+        Err(format!("there's no file {}", looked.join(", nor ")))
+    }
 }
 
 /// A JS file's path without its extension, `src/ReactEventPriorities`,

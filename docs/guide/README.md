@@ -100,6 +100,7 @@ the tests run, fails where a page isn't what the compiler makes.
   `use` or the type an example needs, which an earlier one showed.
 - **Several files are a run of fences**, each headed by its path, `//
   src/lib.rs`, `// src/greeting.rs`; each output fence after them is headed
-  by the module it's of, `// src/greeting.js`.
+  by the module it's of, `// src/greeting.js`. A stylesheet a binding reads
+  is a `css` fence in the run, headed `/* src/site.module.css */`.
 - **```` ```rust excerpt ```` isn't compiled**, and no output fence follows
   it: a part of an example shown whole elsewhere.

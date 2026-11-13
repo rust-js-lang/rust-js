@@ -48,6 +48,7 @@ mod clippy;
 mod collections;
 mod command;
 mod comments;
+mod css_modules;
 mod decisions;
 mod format;
 mod hooks;

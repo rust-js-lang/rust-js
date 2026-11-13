@@ -14,6 +14,8 @@ use rustc_span::{Span, Symbol, sym};
 
 mod collects;
 pub(super) use collects::reject_attributed_calls;
+mod css_module;
+pub(super) use css_module::refuse_unverified as refuse_unverified_css_modules;
 mod effects;
 mod flattened;
 mod forms;

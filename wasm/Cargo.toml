@@ -64,6 +64,10 @@ oxc_regular_expression = { git = "https://github.com/oxc-project/oxc", tag = "cr
 oxc_sourcemap = "=8.1.2"
 oxc_span = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
+# The class names a CSS Module exports, which a binding of one is checked
+# against (#1512): pinned, its default features off, `css_modules.rs` its
+# one reader.
+lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
 
 # Standalone: not part of the rust-js package one directory up.
 [workspace]

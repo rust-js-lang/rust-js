@@ -114,7 +114,10 @@ its binding in `rust-js-lang/bindings`, each written and kept by hand as
 DefinitelyTyped's `@types` are (ADR 0119): `classnames`'s is one.
 **A file that isn't code**, a CSS module, an image or JSON, is bound as
 Next.js types it: a CSS module's class names, an image's
-`StaticImageData`.
+`StaticImageData`. A CSS Module's are its classes the program reads, each
+checked against the file as each compile reads it, so a class it doesn't
+export is a compile error (amended by
+[1133](1133-a-css-modules-binding-is-checked-against-its-file.md), #1512).
 
 ### 4. The JS is committed; only who writes Rust needs Rust
 

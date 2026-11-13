@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
+  {
+    name: "css-module-file-unrecorded",
+    breaks: "a CSS Module a binding is checked against isn't what the build read, so a save of it doesn't check the program again (ADR 1133)",
+    file: "src/output/local_js.rs",
+    find: "            self.loads.borrow_mut().insert(file.clone(), Some(Vec::new()));\n",
+    replace: "",
+    tests: ["test/css-modules.test.ts", "-t", "a save of it"],
+  },
+  {
+    name: "css-module-in-source-unlooked",
+    breaks: "a CSS Module beside the Rust, where the crate's JS goes in source, isn't found where the JS is written elsewhere (ADR 1133)",
+    file: "src/output/local_js.rs",
+    find: "        for root in [&self.output, &self.input] {\n            let file = specifier_file(parent_dir(&absolute(root)?), specifier)?;\n",
+    replace: "        for root in [&self.output] {\n            let file = specifier_file(parent_dir(&absolute(root)?), specifier)?;\n",
+    tests: ["test/css-modules.test.ts", "-t", "written elsewhere"],
+  },
 ];

@@ -12,8 +12,9 @@
 // fails. `rust excerpt` isn't compiled, and nothing follows it. A line `# ..`
 // is compiled but isn't the example's, as rustdoc's: what it needs, a `use`
 // or a type an earlier example made. Examples of several files are a run of
-// fences each headed `// src/x.rs`, its first the crate's root; each output
-// fence after them is headed by the module it's of, `// src/x.js`. A `toml`
+// fences each headed `// src/x.rs`, its first the crate's root, and of the
+// stylesheets its bindings read, `css` fences headed `/* src/x.module.css */`;
+// each output fence after them is headed by the module it's of, `// src/x.js`. A `toml`
 // fence of `[dependencies]` right before an example makes it an app that
 // `rust-js build` builds, a crate of crates.io's JS headed by its path,
 // `// rust-js/crates/either-1.15.0/src/lib.js`. A `rust test` fence is compiled
@@ -59,6 +60,9 @@ function fences(text: string): Fence[] {
 
 const outputKinds = new Set(["js", "jsx", "ts", ""]);
 const header = (body: string) => body.match(/^\/\/ (\S+\.(?:rs|jsx?|d\.ts))\n/)?.[1];
+/** A stylesheet's fence's file, `/* src/site.module.css *\/`, one of the
+ * crate's files that a binding reads (ADR 1133). */
+const styleHeader = (fence: Fence) => (fence.info === "css" ? fence.body.match(/^\/\* (\S+\.css) \*\/\n/)?.[1] : undefined);
 
 /** The examples of `page`, and what's wrong with how they're written. */
 function examples(page: string, text: string, problems: string[]): Example[] {
@@ -77,8 +81,8 @@ function examples(page: string, text: string, problems: string[]): Example[] {
     const sources = [{ path: header(fence.body) ?? "src/lib.rs", code: fence.body }];
     let j = i + 1;
     if (header(fence.body)) {
-      while (all[j]?.info === "rust" && header(all[j].body)) {
-        sources.push({ path: header(all[j].body)!, code: all[j].body });
+      while (all[j] && ((all[j].info === "rust" && header(all[j].body)) || styleHeader(all[j]))) {
+        sources.push({ path: header(all[j].body) ?? styleHeader(all[j])!, code: all[j].body });
         j++;
       }
     }
@@ -167,7 +171,8 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
   if (!kept) rmSync(dir, { recursive: true, force: true });
   for (const { path, code } of example.sources) {
     // Its header names the file, and isn't a comment of its code: a blank line, so lines keep their numbers.
-    const text = compiled(code.replace(/^\/\/ \S+\.rs\n/, "\n"));
+    // A stylesheet is as it's written, its header a comment of its own.
+    const text = path.endsWith(".css") ? code : compiled(code.replace(/^\/\/ \S+\.rs\n/, "\n"));
     if (kept) kept.write(path, text);
     else {
       mkdirSync(dirname(join(dir, path)), { recursive: true });

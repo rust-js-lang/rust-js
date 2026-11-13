@@ -25,7 +25,7 @@ const layers = {
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
-    "src/paths.rs", "src/packages.rs", "src/collections.rs", "src/lines.rs", "src/decisions.rs"],
+    "src/paths.rs", "src/packages.rs", "src/collections.rs", "src/lines.rs", "src/decisions.rs", "src/css_modules.rs"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
@@ -297,6 +297,12 @@ test("oxc APIs stay behind the printing and formatting adapters", () => {
   for (const file of sources.filter(file => layerOf(file) !== "printing")) {
     expect(read(file), file).not.toMatch(/\boxc_\w+/);
   }
+});
+
+// What a CSS Module exports is one function's, `exported_keys`, so another
+// parser can stand behind it (ADR 1133).
+test("Lightning CSS stays behind the one function that lists a CSS Module's keys", () => {
+  expect(sources.filter(file => /\blightningcss::/.test(read(file)))).toEqual(["src/css_modules.rs"]);
 });
 
 // Files are written by the publisher, and by the driver, which stages a

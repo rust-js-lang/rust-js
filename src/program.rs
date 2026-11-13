@@ -19,14 +19,23 @@ pub type ModuleAt<'a> = (&'a [String], Option<&'a Path>, bool);
 
 /// What a JS module a crate's module imports, as its binding names it,
 /// `./src/hook.js`, `react`, loads of the crate's modules where it loads
-/// (ADR 0031, amended). Lowering asks it, for which module may load before
-/// another; artifact planning answers it, which lays out the crate's JS and
-/// reads the program's own files (`output::LocalJs`).
+/// (ADR 0031, amended), and what a CSS Module it imports exports (#1512).
+/// Lowering asks it, for which module may load before another and whether
+/// a binding of a stylesheet's classes names them; artifact planning
+/// answers it, which lays out the crate's JS and reads the program's own
+/// files (`output::LocalJs`), each what the build read.
 pub trait JsModules {
     /// Of `modules`, which each of `specifiers` may load, by their places
     /// in it: none, of a package's; `None` where that can't be said, so any
     /// may be.
     fn loaded<'s>(&self, specifiers: &[&'s str], modules: &[ModuleAt]) -> IndexMap<&'s str, Option<IndexSet<usize>>>;
+
+    /// The keys the CSS Module a binding imports exports, `specifier`'s,
+    /// `./site.module.css`, relative to the crate root's JS as each
+    /// binding's module is (ADR 0028), sorted (`css_modules::exported_keys`);
+    /// or why they can't be said, a file not found or not read, its path
+    /// named.
+    fn css_module_keys(&self, specifier: &str) -> Result<Vec<String>, String>;
 }
 
 /// Normalized Rust source retained independently of the frontend.

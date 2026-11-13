@@ -72,6 +72,10 @@ pub fn lower_crate<'tcx>(
     if super::serde::refuse_unread(tcx, serde_attrs) {
         return Lowered::Crate(None);
     }
+    // A CSS Module's binding its file doesn't bear out (#1512).
+    if super::bindings::refuse_unverified_css_modules(tcx, js_modules) {
+        return Lowered::Crate(None);
+    }
     let sources = super::sources::CapturedSources::new(tcx);
     // What the analysis stands on; then which adapters each body makes in
     // place, decided once the crate's `Recognition` exists, before anything
