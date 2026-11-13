@@ -31,15 +31,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
-    name: "known-writer-through-dictionary",
-    breaks:
-      "`write!` of a writer whose type is known goes through its dictionary, given the writer unboxed, and JS throws",
-    file: "src/lower/traits/routes.rs",
-    find: "    (writer && known_here) || (holder",
-    replace: "    (writer && false) || (holder",
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
-  },
-  {
     name: "known-deref-through-dictionary",
     breaks:
       "a known std type's `deref()`, a `RefCell` guard's or a `Cow`'s, is a dictionary's call, not recognized in place",

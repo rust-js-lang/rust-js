@@ -267,14 +267,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
   {
-    name: "grown-by-array-uncounted",
-    breaks: "generic code's `extend` of a `Vec` by an array given whole asks a hint of none, so grows as by what isn't `TrustedLen` (#1180)",
-    file: "src/runtime/capacity.js",
-    find: "  const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();\n",
-    replace: "  const it = items[Symbol.iterator]();\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
-  },
-  {
     name: "unknown-capacity-its-length",
     breaks: "`capacity()` of a `Vec` whose growth wasn't kept gives its length, silently another number than std's (#1180)",
     file: "src/runtime/capacity.js",

@@ -9,11 +9,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/any.rs",
     find: "                    Some(Expr::cond((**test).clone(), then, otherwise))\n",
     replace: "                    None\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^any_given_to_a_nullable_parameter.rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^(any_given_to_a_nullable_parameter|any_mapped_to_a_nullable_parameter).rs$"],
+    snapshots: true,
   },
   {
     name: "js-error-downcast-of-panic-unseen",

@@ -713,7 +713,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                    && !output.is_box()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "dyn_iterators"],
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_iterators|dyn_iterator_size_hints|generic_double_ended|rev_of_dyn_double_ended).rs$"],
   },
   {
     name: "mir-std-param-output-an-iterator",
