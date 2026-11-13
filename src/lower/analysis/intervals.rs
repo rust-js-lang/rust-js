@@ -144,6 +144,20 @@ impl State {
         self.copies.get(&local).copied().unwrap_or(local)
     }
 
+    /// What's known of `local`, known too of what it copies and of each
+    /// other copy of that: `i > 100` of `let mut i = start` tells `i`,
+    /// though the comparison is of `start`, what `i` copies.
+    fn narrowed_to(&mut self, local: Local, interval: Interval) {
+        let root = self.root(local);
+        let copies: Vec<Local> = (self.copies.iter())
+            .filter(|&(_, &of)| of == root)
+            .map(|(&copy, _)| copy)
+            .collect();
+        for l in [local, root].into_iter().chain(copies) {
+            self.intervals[l] = Some(interval);
+        }
+    }
+
     /// The slice whose length `local` holds, itself or what it copies.
     fn length_of(&self, local: Local) -> Option<Local> {
         self.lens
@@ -386,6 +400,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     && let Some(result) = self.arithmetic(*op, &operands.0, &operands.1, &state)
                     && range.lo <= result.lo
                     && result.hi <= range.hi
+                    && !(*op == BinOp::Mul && self.may_make_negative_zero(&operands.0, &operands.1, &state))
                 {
                     proofs.exact.insert(Location {
                         block,
@@ -452,6 +467,17 @@ impl<'tcx> Walk<'_, 'tcx> {
         }
     }
 
+    /// Whether `a * b` can be JS's `-0`, which an integer never is (ADR
+    /// 0064): one of them 0, the other below it, `-4 * 0`. JS's own `*` is
+    /// then no integer's product, though it stays in range.
+    fn may_make_negative_zero(&self, a: &Operand<'tcx>, b: &Operand<'tcx>, state: &State) -> bool {
+        let (Some(a), Some(b)) = (self.operand(a, state), self.operand(b, state)) else {
+            return true;
+        };
+        let zero = |x: Interval| x.lo <= 0 && 0 <= x.hi;
+        zero(a) && b.lo < 0 || zero(b) && a.lo < 0
+    }
+
     /// What `a op b` is, where it stays in the integers it's of; none where
     /// it may wrap, which is then its type's range.
     fn arithmetic(&self, op: BinOp, a: &Operand<'tcx>, b: &Operand<'tcx>, state: &State) -> Option<Interval> {
@@ -508,6 +534,26 @@ impl<'tcx> Walk<'_, 'tcx> {
                     hi: *products.iter().max()?,
                 }
             }
+            // Of a divisor all of one sign, the quotient, truncated toward
+            // zero, is at a corner: monotone in each operand.
+            BinOp::Div if b.lo > 0 || b.hi < 0 => {
+                let quotients = [a.lo / b.lo, a.lo / b.hi, a.hi / b.lo, a.hi / b.hi];
+                Interval {
+                    lo: *quotients.iter().min()?,
+                    hi: *quotients.iter().max()?,
+                }
+            }
+            // Of a positive divisor, the remainder has the dividend's sign,
+            // and is less than the divisor and no more than the dividend.
+            BinOp::Rem if b.lo > 0 => Interval {
+                lo: if a.lo >= 0 { 0 } else { a.lo.max(1 - b.hi) },
+                hi: if a.hi <= 0 { 0 } else { a.hi.min(b.hi - 1) },
+            },
+            // Of two never negative, at most the lesser.
+            BinOp::BitAnd if a.lo >= 0 && b.lo >= 0 => Interval {
+                lo: 0,
+                hi: a.hi.min(b.hi),
+            },
             _ => return None,
         })
     }
@@ -582,9 +628,10 @@ impl<'tcx> Walk<'_, 'tcx> {
                     .map(|of| state.root(of));
                 None
             }
-            Rvalue::BinaryOp(op @ (BinOp::Add | BinOp::Sub | BinOp::Mul), operands) => {
-                self.arithmetic(*op, &operands.0, &operands.1, state).filter(fits)
-            }
+            Rvalue::BinaryOp(
+                op @ (BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem | BinOp::BitAnd),
+                operands,
+            ) => self.arithmetic(*op, &operands.0, &operands.1, state).filter(fits),
             Rvalue::BinaryOp(
                 op @ (BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne),
                 operands,
@@ -902,13 +949,23 @@ impl<'tcx> Walk<'_, 'tcx> {
                 };
                 (both, both)
             }
+            // Unequal to a value known exactly, at either end: past it,
+            // `steps != 0`.
+            BinOp::Ne => {
+                let past = |x: Interval, y: Interval| match y.lo == y.hi {
+                    true if x.lo == y.lo => Interval { lo: x.lo + 1, hi: x.hi },
+                    true if x.hi == y.lo => Interval { lo: x.lo, hi: x.hi - 1 },
+                    _ => x,
+                };
+                (past(a, b), past(b, a))
+            }
             _ => return,
         };
         for (v, narrowed) in [(c.a, a2), (c.b, b2)] {
             if let Value::Local(l) = v
                 && narrowed.lo <= narrowed.hi
             {
-                state.intervals[l] = Some(narrowed);
+                state.narrowed_to(l, narrowed);
             }
         }
     }
@@ -993,35 +1050,41 @@ pub(in crate::lower) enum LeftOut {
     Wrap,
 }
 
-/// THIR's facts leave out a check at `span` of `owner`'s body, `left`'s:
-/// a line logged where MIR's proofs, of the body being lowered, don't cover
-/// it. Nothing asked of a session that records no shadow.
-pub(in crate::lower) fn shadow_left_out(
+/// A check THIR's facts leave out or keep, `left_out`, against MIR's
+/// proof of it: a line where THIR leaves out what MIR doesn't prove, a
+/// wrong answer's candidate or a gap of MIR's precision, and a `mir-only`
+/// line where MIR proves what THIR keeps, which M3 leaves out, so what it
+/// proves there must be right.
+pub(in crate::lower) fn shadow_check(
     tcx: TyCtxt<'_>,
     owner: rustc_span::def_id::DefId,
     span: Span,
-    left: impl FnOnce() -> Option<LeftOut>,
+    left_out: bool,
+    check: impl FnOnce() -> Option<LeftOut>,
 ) {
     let caches = crate::lower::session::caches(tcx);
     let Some(shadow) = &caches.intervals_shadow else {
         return;
     };
-    let Some(left) = left() else {
+    let Some(check) = check() else {
         return;
     };
     let mut shadow = shadow.borrow_mut();
     let Some((proofs, exact)) = shadow.bodies.last() else {
         return;
     };
-    let (kind, proved) = match left {
+    let (kind, proved) = match check {
         LeftOut::Bounds(block) => ("bounds", proofs.bounds.contains(&block)),
         LeftOut::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
     };
-    if !proved {
-        let at = tcx.sess.source_map().span_to_diagnostic_string(span);
-        let line = format!("{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
-        shadow.lines.insert(line);
-    }
+    let kind = match (left_out, proved) {
+        (true, false) => kind,
+        (false, true) => &format!("mir-only-{kind}"),
+        _ => return,
+    };
+    let at = tcx.sess.source_map().span_to_diagnostic_string(span);
+    let line = format!("{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
+    shadow.lines.insert(line);
 }
 
 /// Each check THIR's facts leave out that MIR doesn't prove, a line each,

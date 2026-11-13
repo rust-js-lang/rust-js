@@ -777,12 +777,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return None;
         };
-        if self.known_in_bounds(msg, terminator.source_info.span) {
-            crate::lower::analysis::shadow_left_out(self.tcx, self.frame.owner, terminator.source_info.span, || {
-                let mut blocks = body.basic_blocks.iter_enumerated();
-                let block = blocks.find(|(_, data)| std::ptr::eq(data.terminator(), terminator))?.0;
-                Some(crate::lower::analysis::LeftOut::Bounds(block))
-            });
+        let in_bounds = self.known_in_bounds(msg, terminator.source_info.span);
+        if matches!(**msg, mir::AssertKind::BoundsCheck { .. }) {
+            crate::lower::analysis::shadow_check(
+                self.tcx,
+                self.frame.owner,
+                terminator.source_info.span,
+                in_bounds,
+                || {
+                    let mut blocks = body.basic_blocks.iter_enumerated();
+                    let block = blocks.find(|(_, data)| std::ptr::eq(data.terminator(), terminator))?.0;
+                    Some(crate::lower::analysis::LeftOut::Bounds(block))
+                },
+            );
+        }
+        if in_bounds {
             return Some(Check::Unchecked);
         }
         if constant_truth((self.tcx, self.typing_env), body, cond) == Some(*expected) {

@@ -121,3 +121,47 @@ Measured: 180 lines across 2,453 cases, 18 bounds and 162 wraps, where
 M2b-1 left 305. Mutations `intervals-given-unused`,
 `intervals-given-before-every-call` and `intervals-lengths-unbounded`,
 caught.
+
+## The triage, and the shadow's other side (2026-11-13)
+
+- **The shadow now records both directions.** A line is written where
+  THIR's facts leave out a check MIR doesn't prove: a wrong answer's
+  candidate, or a gap in MIR's precision. A `mir-only-bounds` or
+  `mir-only-wrap` line is written where MIR proves a check THIR keeps.
+  These are the checks M3 starts leaving out, so each must be right
+  before M3 does. Each hook, `shadow_check`, is told what THIR decided
+  both ways.
+- **A hazard found on that side:** `product_sign`'s `area(-2, 0)`. MIR
+  proved `width * height` in range, but JS's own `*` is `-0` there, which
+  no integer is (ADR 0064), and THIR keeps the product's normalization.
+  A product proved exact now excludes one that may be `-0`: one factor may
+  be 0 while the other may be below it, THIR's `may_make_negative_zero`.
+- **Precision added:**
+  - quotients by a divisor of one sign;
+  - remainders by a positive divisor;
+  - `&` of two never-negative values;
+  - `x != c` narrowing an end equal to `c`;
+  - a comparison narrowing every copy of what it compares
+    (`let mut i = start`).
+- **Triage of the 143 wrap and 18 bounds lines left:** no wrong answer
+  was found. They fall into a few shapes, each a precision gap:
+  - loop counters bounded through `Range::next` or a test of a field;
+  - closures' captures and parameters;
+  - values from a call's result;
+  - indices checked against another slice of equal length;
+  - products of two parameters bounded only together.
+
+  Adversarial probes, each a variant with values that overflow, confirmed
+  that THIR keeps the check:
+  - a closure reached only through `Rc<dyn Fn>`;
+  - recursive functions.
+- **The mir-only lines** (314 bounds, 57 wraps), sampled: constant
+  indexes; a remainder of the array's length; lengths of an allocation's
+  items; `repr(u8)` discriminants; counters under a bounds check's
+  `assert`. All sound, the `-0` product excepted, now fixed.
+
+Measured: 143 wraps and 18 bounds, where M2b-2 left 162 and 18; 314
+mir-only bounds, 57 mir-only wraps. Mutations `intervals-quotients-unknown`,
+`intervals-remainder-reaches-its-divisor`, `intervals-unequal-unnarrowed`,
+`intervals-negative-zero-exact`, `intervals-mir-only-unreported` and
+`intervals-copies-unnarrowed`, caught.

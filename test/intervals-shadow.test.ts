@@ -20,7 +20,7 @@ function shadowOf(source: string): string[] {
   return readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t").slice(0, 2).join(" "));
 }
 
-test("an array's index in a loop to its length is proved by MIR's intervals alone", () => {
+test("an array's index in a loop to its length is proved by MIR's intervals alone, a check THIR's facts keep: a mir-only line", () => {
   expect(shadowOf(`pub fn sum(a: [u32; 4]) -> u32 {
     let mut total = 0u32;
     let mut i = 0usize;
@@ -33,7 +33,7 @@ test("an array's index in a loop to its length is proved by MIR's intervals alon
 pub fn main() {
     println!("{}", sum([1, 2, 3, 4]));
 }
-`)).toEqual([]);
+`)).toEqual(["mir-only-bounds sum"]);
 });
 
 test("a slice's index tested against its length, or its first under `!is_empty()`, is proved by MIR's relations", () => {
@@ -85,12 +85,56 @@ pub fn main() {
 `)).toEqual([]);
 });
 
-test("a function that calls itself is given nothing of its outer calls: its parameters may be anything", () => {
-  expect(shadowOf(`fn down(n: u32) -> u32 {
-    if n == 0 { 0 } else { down(n - 1) + n }
+test("a function that calls itself is given nothing of its outer calls: MIR proves nothing of its parameters THIR doesn't", () => {
+  expect(shadowOf(`fn grow(n: u32, k: u32) -> u32 {
+    if k == 0 { n } else { grow(n + 1, k - 1) }
 }
 pub fn main() {
-    println!("{}", down(5));
+    println!("{}", grow(1, 3));
 }
-`)).toEqual(["wrap down"]);
+`)).toEqual([]);
+});
+
+test("a product that may be JS's -0, `-2 * 0`, isn't proved exact, though in range", () => {
+  expect(shadowOf(`fn area(width: i32, height: i32) -> i32 {
+    width * height
+}
+pub fn main() {
+    println!("{} {}", area(-2, 0), area(3, 4));
+}
+`)).toEqual([]);
+});
+
+test("a quotient, a remainder and a value unequal to its least are proved: `n / 2 + n / 4`, `SLOTS[v % 3]`, `steps - 1` under `steps != 0`", () => {
+  expect(shadowOf(`fn quarter(n: u32) -> u32 {
+    n / 2 + n / 4
+}
+fn slot(slots: &[u8; 3], v: usize) -> u8 {
+    slots[v % 3]
+}
+fn plain(steps: u32) -> u32 {
+    if steps == 0 { 0 } else { plain(steps - 1) }
+}
+pub fn main() {
+    let n = std::hint::black_box(7);
+    println!("{} {} {}", quarter(n), slot(&[1, 2, 3], n as usize), plain(n));
+}
+`)).toEqual(["mir-only-bounds slot"]);
+});
+
+test("a comparison of what a local copies narrows the copy: `i > 100` of `let mut i = start`", () => {
+  expect(shadowOf(`fn never_ends(start: u32) -> u32 {
+    let mut i = start;
+    loop {
+        if i > 100 {
+            panic!("never ends: {i}");
+        }
+        i += 1;
+    }
+}
+pub fn main() {
+    let r = std::panic::catch_unwind(|| never_ends(std::hint::black_box(3)));
+    println!("{}", r.is_err());
+}
+`)).toEqual([]);
 });
