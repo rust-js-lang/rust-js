@@ -518,7 +518,7 @@ export const mutations: Mutation[] = [
     find: "                made = true;\n",
     replace: "                made = false;\n",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/throwing-calls.test.ts",
       "-t",
       "unwrap of a throwing call each branch",
     ],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
     replace:
       "                    _ => block = unwrap,\n                }\n            }\n            false\n",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/throwing-calls.test.ts",
       "-t",
       "unwrap of a throwing call each branch",
     ],
@@ -546,7 +546,7 @@ export const mutations: Mutation[] = [
     replace:
       "                let throws = destination.projection.is_empty()\n                    || fn_def(",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/throwing-calls.test.ts",
       "-t",
       "unwrap of a throwing call each branch",
     ],
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
     replace:
       "StatementKind::Assign(assign) if assign.0.local == local))\n            {\n                continue;\n",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/throwing-calls.test.ts",
       "-t",
       "unwrap of a throwing call each branch",
     ],

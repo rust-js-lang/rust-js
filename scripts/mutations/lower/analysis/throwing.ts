@@ -1,7 +1,7 @@
 // Mutations of src/lower/analysis/throwing.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-const tests = ["test/js-builtins.test.ts", "-t", "is a throwing function"];
+const tests = ["test/throwing-calls.test.ts", "-t", "is a throwing function"];
 
 export const mutations: Mutation[] = [
   {

@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "        Ok(Value::Expr(self.catching(def_id, generic_args, called)))\n",
     replace: "        Ok(Value::Expr(called))\n",
-    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+    tests: ["test/throwing-calls.test.ts", "-t", "is a throwing function"],
   },
   {
     name: "rest-variable-called-as-js",

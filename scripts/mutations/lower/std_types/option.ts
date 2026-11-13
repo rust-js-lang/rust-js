@@ -340,7 +340,7 @@ export const mutations: Mutation[] = [
     find: "                    && let Some(call) = result.uncaught()\n",
     replace:
       "                    && let Some(call) = result.uncaught().filter(|_| false)\n",
-    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+    tests: ["test/throwing-calls.test.ts", "-t", "unwrap of a throwing JS call"],
   },
   {
     name: "expect-of-throwing-call-unsaid",
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                if let [result] = list.as_slice()\n",
     replace: "                if let [result, ..] = list.as_slice()\n",
-    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+    tests: ["test/throwing-calls.test.ts", "-t", "unwrap of a throwing JS call"],
   },
   {
     name: "flatten-of-then-boxed",

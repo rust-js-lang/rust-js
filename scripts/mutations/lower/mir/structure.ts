@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                            && self.krate.throwing.contains(&state.body.source.def_id()) =>\n",
     replace: "                            && false =>\n",
-    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+    tests: ["test/throwing-calls.test.ts", "-t", "is a throwing function"],
   },
   {
     name: "throwing-fn-returns-any-uncaught",
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                            && self.krate.throwing.contains(&state.body.source.def_id()) =>\n",
     replace: "                            && true =>\n",
-    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+    tests: ["test/throwing-calls.test.ts", "-t", "is a throwing function"],
   },
   {
     name: "defined-static-read-first",
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     replace:
       "                    Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {\n                        Value::Expr(e)\n",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/throwing-calls.test.ts",
       "-t",
       "unwrap of a throwing call each branch",
     ],

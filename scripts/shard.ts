@@ -213,7 +213,7 @@ export const plainSuites: { name: string; starts: string[]; when?: "shared" | "j
   { name: "compiler", starts: ["compiler.test.ts"] },
   {
     name: "bindings",
-    starts: ["bindings.test.ts", "bindings-require.test.ts", "js-builtins.test.ts", "js-errors.test.ts", "node-bindings.test.ts", "webapi-bindings.test.ts"],
+    starts: ["bindings.test.ts", "bindings-require.test.ts", "js-builtins.test.ts", "js-errors.test.ts", "throwing-calls.test.ts", "node-bindings.test.ts", "webapi-bindings.test.ts"],
   },
   // The bindings crates' coverage ratchets, which a binding added or taken
   // out changes: when only the nightly ran them, a change that did was

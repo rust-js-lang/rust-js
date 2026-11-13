@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            (Some(\"$settle\"), [promise]) => Some(Expr {\n",
     replace: "            (Some(\"$settled\"), [promise]) => Some(Expr {\n",
-    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+    tests: ["test/throwing-calls.test.ts", "-t", "unwrap of a throwing JS call"],
   },
   {
     name: "optional-index-spelled-out",
