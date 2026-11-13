@@ -11,10 +11,10 @@ import {
   $cloneIntoVec,
   $cmp,
   $eq,
-  $extendMap,
   $heapFrom,
   $live,
   $madeEach,
+  $mapFrom,
   $partialEq,
   $partialOrd,
   $unwindsOn,
@@ -404,7 +404,7 @@ function main() {
     // Of entries whose order a hashed map picks: each clones and
     // drops alike.
     run("HashMap", boom, () => {
-      const v = $extendMap(
+      const v = $mapFrom(
         new Map(),
         [
           [1, [3]],
@@ -415,7 +415,7 @@ function main() {
       );
       let w;
       try {
-        w = $extendMap(new Map(), [[9, [7]]], false, dDrop_drop);
+        w = $mapFrom(new Map(), [[9, [7]]], false, dDrop_drop);
       } catch (error) {
         $cleanup(() => {
           for (const item of v.values()) {
@@ -486,9 +486,9 @@ function main() {
         .join(", ")}}`,
     );
     run("HashSet", boom, () => {
-      const v = $extendMap(new $KeySet(), [[3]], true, undefined, dDrop_drop);
+      const v = $mapFrom(new $KeySet(), [[3]], true, undefined, dDrop_drop);
       try {
-        const w = $extendMap(new $KeySet(), [[7]], true, undefined, dDrop_drop);
+        const w = $mapFrom(new $KeySet(), [[7]], true, undefined, dDrop_drop);
         try {
           $cloneIntoMap(w, v, (item) => dClone_clone(item), dDrop_drop);
           console.log(`${w.size}`);

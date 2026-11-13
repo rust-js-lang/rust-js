@@ -5,11 +5,11 @@ import {
   $cleanup,
   $cmp,
   $collectDropping,
-  $extendMap,
   $extractIf,
   $iter,
   $live,
   $mapExtractIf,
+  $mapFrom,
   $next,
   $sortedEntries,
   $treeFrom,
@@ -148,7 +148,7 @@ function fromMaps() {
   }
   let h;
   try {
-    h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
+    h = $mapFrom(new Map(), [[1, [40]]], false, loudDrop_drop);
   } catch (error) {
     $cleanup(() => {
       for (const [, value] of $sortedEntries(m, $cmp)) {

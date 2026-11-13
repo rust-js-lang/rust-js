@@ -8,8 +8,8 @@ import {
   $cleanup,
   $cmp,
   $dropItems,
-  $extendMap,
   $live,
+  $mapFrom,
   $sortedEntries,
   $treeFrom,
   $unwindsOn,
@@ -44,7 +44,7 @@ function run(name, boom$1, f) {
 function main() {
   for (const boom of [0, 1]) {
     run("HashMap drop", boom, () => {
-      const m = $extendMap(
+      const m = $mapFrom(
         new Map(),
         [
           [1, [1]],
@@ -59,7 +59,7 @@ function main() {
       }
     });
     run("HashMap of keys and values drop", boom, () => {
-      const m = $extendMap(
+      const m = $mapFrom(
         new $KeyMap(),
         [
           [[5], [1]],
@@ -75,12 +75,12 @@ function main() {
       }
     });
     run("HashSet drop", boom, () => {
-      const s = $extendMap(new $KeySet(), [[1]], true, undefined, dDrop_drop);
+      const s = $mapFrom(new $KeySet(), [[1]], true, undefined, dDrop_drop);
       for (const item of s) {
         dDrop_drop(item);
       }
     });
-    const m = $extendMap(
+    const m = $mapFrom(
       new Map(),
       [
         [1, [1]],

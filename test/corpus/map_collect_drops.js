@@ -7,8 +7,8 @@ import {
   $btreeSet,
   $cleanup,
   $cmp,
-  $extendMap,
   $iter,
+  $mapFrom,
   $range,
   $sortedEntries,
   $sortedKeys,
@@ -26,7 +26,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function main() {
-  const h = $extendMap(
+  const h = $mapFrom(
     new Map(),
     [
       [1, [1]],
@@ -129,7 +129,7 @@ function main() {
   }
   let hs;
   try {
-    hs = $extendMap(
+    hs = $mapFrom(
       new $KeySet(),
       $iter([
         [2, 0],
@@ -158,7 +158,7 @@ function main() {
   }
   let km;
   try {
-    km = $extendMap(
+    km = $mapFrom(
       new $KeyMap(),
       $iter([
         [[3, 0], [20]],

@@ -12,9 +12,9 @@ import {
   $count,
   $dropEach,
   $dropItems,
-  $extendMap,
   $iter,
   $lazyRange,
+  $mapFrom,
   $range,
   $reserveHint,
   $skipping,
@@ -50,7 +50,7 @@ function limit() {
 }
 
 function byNumber() {
-  return $extendMap(
+  return $mapFrom(
     new Map(),
     $reserveHint(
       $lazyRange(0, 3).map((i) => [i, [i]]),
@@ -63,7 +63,7 @@ function byNumber() {
 }
 
 function byLoud() {
-  return $extendMap(
+  return $mapFrom(
     new $KeyMap(),
     $reserveHint(
       $lazyRange(0, 3).map((i) => [[i], i]),
@@ -118,7 +118,7 @@ function main() {
   );
   const arg$2 = drops();
   console.log(`entries [${entries.join(", ")}] ${arg$2}`);
-  const set = $extendMap(
+  const set = $mapFrom(
     new $KeySet(),
     $reserveHint(
       $lazyRange(0, 3).map((value) => [value]),

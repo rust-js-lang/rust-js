@@ -596,7 +596,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// keys' order, by `$treeFrom`, another's the key it's given and the
     /// value it replaces, each as it's inserted, by `$extendMap` (ADR 0506).
     /// Of one not a B-tree that a panic may stop as it's stepped, `unwinds`,
-    /// `$mapFrom`, which drops what's left then what it holds (#423).
+    /// `$mapFrom`, which drops what's left then what it holds (#423); and
+    /// so of keys or values with a destructor, whose drop of what an equal
+    /// one replaces may panic, the map it's filling `from_iter`'s own, which
+    /// std drops as that panic unwinds (#1646).
     pub(in crate::lower) fn made_of(
         &mut self,
         set: bool,
@@ -647,7 +650,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ if unwinds || !drops.is_empty() => {
                 let list = vec![made, items, Expr::bool(set)].into_iter().chain(drops).collect();
-                Expr::call(Expr::helper(if unwinds { "$mapFrom" } else { "$extendMap" }), list)
+                Expr::call(Expr::helper("$mapFrom"), list)
             }
             // A class's constructor steps what it's given once, in order, a
             // plain `Set`'s and a caller's `TSet` alike: an array's `$iter`

@@ -64,3 +64,17 @@ A map whose keys and values drop nothing is `new Map(items)`, as before.
 - Mutations sort none, drop no earlier key or value, give back no map,
   drop nothing an equal one replaces, refuse `extract_if` and a map made of
   items, and take an `ExtractIf` to drop what it holds.
+
+## Amendment (2026-11-13, #1646): a map collected of values with a destructor is dropped as a panic unwinds
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. A `collect()` into a map of two items with one key
+drops the value the second replaces; where that drop panicked, the map it
+was filling, `from_iter`'s own, leaked what it held, `$extendMap(new
+$KeyMap(), ..)`. A map made of keys or values with a destructor, whose drop
+may panic, is now `$mapFrom`'s, which drops what it holds as a panic
+unwinds, as std's frame does; the loud rewrite's, whose every drop panics,
+aborts as native Rust does. Eight snapshots read `$mapFrom` for
+`$extendMap`. Corpus case
+map_collect_drops_what_it_filled_as_a_replaced_drop_panics against native
+Rust; mutation `map-collect-filled-undropped` (`std_types/map.ts`).

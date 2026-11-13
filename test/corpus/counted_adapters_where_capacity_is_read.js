@@ -5,11 +5,11 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
-  $extendMap,
   $grownVec,
   $iter,
   $lazyRange,
   $mapEnds,
+  $mapFrom,
   $reserveHint,
   $rev,
   $roomForHint,
@@ -37,7 +37,7 @@ function mapped(l) {
 }
 
 function main() {
-  const m = $extendMap(
+  const m = $mapFrom(
     new Map(),
     $reserveHint(
       $lazyRange(1, 2).map((n) => [n, [n]]),

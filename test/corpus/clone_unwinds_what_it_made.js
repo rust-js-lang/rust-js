@@ -5,11 +5,11 @@ import {
   $cleanup,
   $cmp,
   $eq,
-  $extendMap,
   $intsOrdered,
   $live,
   $madeEach,
   $madeInTurn,
+  $mapFrom,
   $ordTreeMap,
   $sortedEntries,
   $treeFromSorted,
@@ -329,7 +329,7 @@ function main() {
     }
   });
   run("map's pair", () => {
-    const m = $extendMap(new Map(), [[1, [[1], [0]]]], false, (value) => {
+    const m = $mapFrom(new Map(), [[1, [[1], [0]]]], false, (value) => {
       dDrop_drop(value[0]);
       dDrop_drop(value[1]);
     });

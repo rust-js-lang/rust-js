@@ -726,4 +726,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^set_operators_find_by_value.rs$"],
     snapshots: true,
   },
+  {
+    name: "map-collect-filled-undropped",
+    breaks: "a collect into a map of values with a destructor fills a map nothing drops as a replaced value's drop panics, `$extendMap` where `$mapFrom` drops it (#1646)",
+    file: "src/lower/std_types/map.rs",
+    find: '                Expr::call(Expr::helper("$mapFrom"), list)\n',
+    replace: '                Expr::call(Expr::helper(if unwinds { "$mapFrom" } else { "$extendMap" }), list)\n',
+    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops_what_it_filled_as_a_replaced_drop_panics.rs$"],
+  },
 ];

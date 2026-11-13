@@ -5,7 +5,6 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
-  $extendMap,
   $foldToArray,
   $folded,
   $held,
@@ -284,7 +283,7 @@ function main() {
   for (const item of m.values()) {
     dDrop_drop(item);
   }
-  m = $extendMap(
+  m = $mapFrom(
     new Map(),
     $folded(
       $skipping($rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3), 2, dDrop_drop).map(
