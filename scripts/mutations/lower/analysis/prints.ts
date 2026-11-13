@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "        .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))\n",
     replace: "        .flat_map(|body| shown_by(body))\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "-t", "only prints doesn't write through a sink"],
   },
   {
     name: "written-into-writers-library-params-unseen",

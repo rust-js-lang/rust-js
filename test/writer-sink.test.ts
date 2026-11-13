@@ -9,7 +9,7 @@
 //   bun test test/writer-sink.test.ts
 
 import { beforeAll, expect, test } from "bun:test";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { chain, contract } from "./crates";
@@ -99,6 +99,85 @@ fn main() {
     expect(compiled.error, name).toContain("#1652");
     expect(compiled.error, name).toContain(said);
   }
+}, underLoad(120_000));
+
+// Only a writer shown into a writer writes through a sink: one the same
+// body only prints makes its text as before, `let f = ""`, so its JS
+// reads as it did (ADR 1135, step 2).
+test("a writer a body that writes into a writer only prints doesn't write through a sink", () => {
+  const dir = fixture("writer-sink-printed-only");
+  const file = join(dir, "printed.rs");
+  writeFileSync(
+    file,
+    `use std::fmt::{self, Write};
+struct Log(Vec<String>);
+impl Write for Log {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+struct Printed(i32);
+impl fmt::Display for Printed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<{}>", self.0)
+    }
+}
+fn main() {
+    let mut log = Log(Vec::new());
+    let n = 1;
+    write!(log, "{}", n).unwrap();
+    println!("{} {:?}", Printed(2), log.0);
+}
+`,
+  );
+  const compiled = compileJs(file, dir, "2021", false, piecewise);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const js = readFileSync(compiled.js, "utf8");
+  const writer = js.slice(js.indexOf("function printedDisplay_fmt"));
+  expect(writer.indexOf("\n}")).toBeGreaterThan(0);
+  expect(writer.slice(0, writer.indexOf("\n}"))).not.toContain("$sink()");
+}, underLoad(120_000));
+
+// A writer that writes through a sink as it prints (#1490), never shown
+// into a writer, writes its `write!` as it did, its text made whole, not
+// std's pieces (ADR 1135, step 2).
+test("a writer that prints, never shown into a writer, writes its text whole", () => {
+  const dir = fixture("writer-sink-printing-only");
+  const file = join(dir, "printing.rs");
+  writeFileSync(
+    file,
+    `use std::fmt::{self, Write};
+struct Log(Vec<String>);
+impl Write for Log {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+struct Noisy(i32);
+impl fmt::Display for Noisy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        println!("inside");
+        write!(f, "<{}>", self.0)
+    }
+}
+fn main() {
+    let mut log = Log(Vec::new());
+    let n = 1;
+    write!(log, "{}", n).unwrap();
+    println!("{} {:?}", Noisy(2), log.0);
+}
+`,
+  );
+  const compiled = compileJs(file, dir, "2021", false, piecewise);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const js = readFileSync(compiled.js, "utf8");
+  const writer = js.slice(js.indexOf("function noisyDisplay_fmt"));
+  expect(writer.indexOf("\n}")).toBeGreaterThan(0);
+  const body = writer.slice(0, writer.indexOf("\n}"));
+  expect(body).toContain("$sink()");
+  expect(body).not.toContain("$writeInteger");
 }, underLoad(120_000));
 
 /** The runtime's sink helpers, of `@rust-js/std`, and a sink recording

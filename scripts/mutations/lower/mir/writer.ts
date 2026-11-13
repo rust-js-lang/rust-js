@@ -380,6 +380,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "        state.writer.is_some() && self.krate.prints.writes_into_writers(owner)\n",
     replace: "        state.writer.is_some() && self.krate.prints.writes_through_sink(owner)\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "-t", "a writer that prints, never shown into a writer"],
   },
 ];
