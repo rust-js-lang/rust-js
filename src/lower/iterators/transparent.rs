@@ -17,8 +17,14 @@ use rustc_span::def_id::DefId;
 /// being transparent, the first of: an `Iterator` of the crate's; an
 /// iterator held apart it starts on; another source than an array, a
 /// `Vec`, a slice, a string or a range; an iterator that escapes; a
-/// destructor; or admitted.
-pub(in crate::lower) fn count_chains<'tcx>(recognition: &Recognition<'_, 'tcx>, thir: &Thir<'tcx>, owner: DefId) {
+/// destructor; an iterator method no table proves (`PROVED_LINKS`); an
+/// adapter's argument evaluated as it's given, whose order
+/// matters; a `Vec` collected where its capacity is read; or admitted.
+pub(in crate::lower) fn count_chains<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    (thir, owner): (&Thir<'tcx>, DefId),
+    keeps_capacity: bool,
+) {
     let tcx = recognition.tcx;
     let recognition = Recognition {
         typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner)),
@@ -26,7 +32,16 @@ pub(in crate::lower) fn count_chains<'tcx>(recognition: &Recognition<'_, 'tcx>, 
     };
     let iterator = std_item(tcx, StdItem::Iterator);
     let is_iterator = |ty: Ty<'tcx>| recognition.iterator_item(ty.peel_refs()).is_some();
-    // A link: a std function's call that makes an iterator or steps one.
+    // A method of `Iterator`, or of a trait over it, `DoubleEndedIterator`'s;
+    // `IntoIterator::into_iter` makes an iterator, as a source's maker does.
+    let iterator_method = |callee: DefId| {
+        (tcx.trait_of_assoc(callee))
+            .is_some_and(|tr| rustc_middle::ty::elaborate::supertrait_def_ids(tcx, tr).any(|t| t == iterator))
+    };
+    // A link: an iterator method's call, or a std function's that makes an
+    // iterator of what isn't one, a source's, `v.iter()`; not one that
+    // makes a range, the source itself, nor what's given an iterator to
+    // read, `{:?}`'s.
     let link = |e: ExprId| -> Option<(DefId, ty::GenericArgsRef<'tcx>, Option<ExprId>)> {
         let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             return None;
@@ -35,8 +50,8 @@ pub(in crate::lower) fn count_chains<'tcx>(recognition: &Recognition<'_, 'tcx>, 
             return None;
         };
         let first = args.first().map(|&arg| given(thir, arg));
-        let steps = first.is_some_and(|arg| is_iterator(thir[arg].ty));
-        (recognition.is_std(callee) && (is_iterator(thir[e].ty) || steps)).then_some((
+        let makes = is_iterator(thir[e].ty) && !is_plain_source(&recognition, thir[e].ty.peel_refs());
+        (recognition.is_std(callee) && (iterator_method(callee) || makes)).then_some((
             callee,
             callee_args.skip_binder(),
             first,
@@ -86,10 +101,58 @@ pub(in crate::lower) fn count_chains<'tcx>(recognition: &Recognition<'_, 'tcx>, 
             "escapes"
         } else if chain.iter().any(|&e| drops_in(tcx, &recognition, thir[e].ty, link(e))) {
             "drop-glue"
+        } else if chain
+            .iter()
+            .filter_map(|&e| link(e))
+            .any(|(callee, ..)| iterator_method(callee) && !crate::lower::recognition::is_proved_link(tcx, callee))
+        {
+            // An iterator method whose hand-written form no table proves.
+            "unproved"
+        } else if chain.iter().any(|&e| !arguments_inert(thir, e)) {
+            // An adapter's argument run as it's given, `chain(make())`,
+            // whose order a hand-written form may change (#1015).
+            "order"
+        } else if keeps_capacity && recognition.is_std_type(thir[root].ty, StdItem::Vec) {
+            // A `Vec` collected in a crate that reads capacities, which
+            // std's hint makes (#1635).
+            "capacity"
         } else {
             "admitted"
         };
         crate::decisions::record("transparent-chain", answer);
+    }
+}
+
+/// Whether each argument of the call `e` but its first is inert: a
+/// closure, a function, a constant or a place, which evaluating runs
+/// nothing.
+fn arguments_inert(thir: &Thir<'_>, e: ExprId) -> bool {
+    let ExprKind::Call { ref args, .. } = thir[e].kind else {
+        return true;
+    };
+    args.iter().skip(1).all(|&arg| inert(thir, arg))
+}
+
+/// Whether evaluating `e` runs nothing: a closure, a function item, a
+/// literal or a constant, a variable, a place of one, or a value made of
+/// them, a range's `..`.
+fn inert(thir: &Thir<'_>, e: ExprId) -> bool {
+    match thir[strip(thir, e)].kind {
+        ExprKind::Closure(_)
+        | ExprKind::ZstLiteral { .. }
+        | ExprKind::Literal { .. }
+        | ExprKind::NonHirLiteral { .. }
+        | ExprKind::NamedConst { .. }
+        | ExprKind::ConstParam { .. }
+        | ExprKind::VarRef { .. }
+        | ExprKind::UpvarRef { .. } => true,
+        ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } | ExprKind::Field { lhs: arg, .. } => inert(thir, arg),
+        // A value made of inert ones, a range's `..` or `a..b`.
+        ExprKind::Adt(ref adt) => {
+            adt.fields.iter().all(|field| inert(thir, field.expr))
+                && matches!(adt.base, rustc_middle::thir::AdtExprBase::None)
+        }
+        _ => false,
     }
 }
 

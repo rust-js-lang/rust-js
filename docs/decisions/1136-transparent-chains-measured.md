@@ -104,3 +104,42 @@ the corpus; 44% of them have no admitted chain at all, against 34%; and
 - `held` is the largest non-admitted reason in both the corpus and the
   port, and std's compiled struct is already what a held adapter is (ADR
   0871), so it's the cheapest first family.
+
+## Amendment: admission tightened (2026-11-13, #1681's change 2, step 2)
+
+Still a measurement: nothing reads `transparent-chain` yet. The held
+family's step is the first to.
+
+- **A link is an iterator method, or a maker of an iterator from what
+  isn't one.** A method of `Iterator` or of a trait over it
+  (`DoubleEndedIterator`, `ExactSizeIterator`), or a std function that
+  makes an iterator of what isn't one, a source's (`v.iter()`, `s.chars()`,
+  a `for` loop's `into_iter`). Not one that makes a range, which is the
+  source itself (`RangeInclusive::new` of `1..=3`), nor what's given an
+  iterator to read, `{:?}`'s `Argument::new_debug`.
+- **`unproved`: an iterator method no table proves.** `PROVED_LINKS`
+  (`recognition/compiled_std.rs`), resolved once with the catalog's rows
+  (ADR 0561, amended), lists the methods whose hand-written form the
+  iterator tables run against native Rust: 22 adapters and 18 steps.
+  `test/iterator-proved.test.ts` holds each to a row of
+  `test/iterator-matrix.ts`, the mirror held by running both.
+- **`order`: an adapter's argument evaluated as it's given.** Any argument
+  but the first that isn't inert: a closure, a function item, a literal or
+  a constant, a variable, a place of one, or a value made of those, a
+  range's `..`. A hand-written form may evaluate it at another time than
+  Rust does (#1015).
+- **`capacity`: a `Vec` collected in a crate that reads capacities**,
+  whose capacity std's hint makes (#1635).
+
+Measured at this commit: the corpus's 11,128 chains (fewer than above, as
+links are narrower) give admitted 2,483, held 2,908, escapes 1,758,
+user-iterator 1,674, drop-glue 1,054, source 869, unproved 177, order 155,
+capacity 50. The React port's 513 give admitted 300, held 123, drop-glue
+36, escapes 35, source 17, order 1, unproved 1. #1015's case now answers
+`order` and #1635's `unproved` (`cycle`): neither is admitted. Of the
+port's chains this step keeps out, two have no proof yet, which Tu's
+choice (b) asks for before they'd move: `call_sites.iter().skip(
+FRAMES_TO_SKIP.get())` (ReactFlightStackConfigV8.rs:64), an argument that
+is a call, and `a.encode_utf16().cmp(b.encode_utf16())`
+(ReactStrictModeWarnings.rs:93), `Iterator::cmp`, of no table's row.
+Mutations of each answer, caught by `test/decisions.test.ts`.

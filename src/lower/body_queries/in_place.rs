@@ -44,7 +44,7 @@ pub(in crate::lower) fn decide<'tcx>(
     // (#1673): a measurement, which decides nothing here.
     if crate::decisions::path().is_some() && !std_iterators {
         for body in bodies.iter() {
-            crate::lower::iterators::count_chains(&recognition, &body.thir, body.def_id);
+            crate::lower::iterators::count_chains(&recognition, (&body.thir, body.def_id), keeps_capacity);
         }
     }
     if std_iterators {

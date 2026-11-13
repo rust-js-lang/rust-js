@@ -562,7 +562,7 @@ function setterText(setter: Setter, it: string): string {
 const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" })[from.item];
 
 /** The adapters only the table runs, besides the matrix's. */
-const stepAdapters: Adapter[] = [
+export const stepAdapters: Adapter[] = [
   // Flattens of items whose sizes std's flatten counts, an array's
   // constant size and an `Option`'s one at most, which a `vec`'s hides
   // (#1323).
@@ -649,7 +649,7 @@ const back = (shape: Shape) => shape.back;
 /** The steps only the table runs, besides the matrix's consumers: each
  * step of the contract that isn't one already, and the folds by value of
  * a closure that holds what has a destructor (#734). */
-const stepConsumers: Consumer[] = [
+export const stepConsumers: Consumer[] = [
   // Given, made in place, to a function that asks its hint: what's given
   // there knows it as Rust's does, a flatten's of its items' constant
   // size, not JS's own `flatMap`'s `(0, None)` (#1323).

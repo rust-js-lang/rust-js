@@ -8,7 +8,7 @@
 
 use super::{
     COMPILED_STD, COMPILED_STD_FNS, COMPILED_STD_IO, COMPILED_STD_IO_PROVIDED, COMPILED_STD_NET, COMPILED_STD_PROVIDED,
-    HELD_COMPILED, std_iter_trait,
+    HELD_COMPILED, PROVED_LINKS, std_iter_trait,
 };
 use super::{StdCrate, registry};
 use crate::collections::IndexMap;
@@ -33,6 +33,8 @@ pub(crate) struct Rows {
     /// Each free function, `repeat_n`, and the type it makes, if a
     /// `MEANING_ONLY` one.
     pub(crate) fns: Vec<(DefId, Option<&'static str>)>,
+    /// `PROVED_LINKS`' methods, each an iterator trait's.
+    pub(crate) proved: crate::collections::IndexSet<DefId>,
 }
 
 impl Rows {
@@ -135,11 +137,19 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
             (id, makes)
         })
         .collect();
+    let proved = (PROVED_LINKS.iter())
+        .map(|&(trait_name, method)| {
+            std_iter_trait(tcx, trait_name)
+                .and_then(|trait_def| provided_of(trait_def, method))
+                .unwrap_or_else(|| unresolved((trait_name, method)))
+        })
+        .collect();
     Rows {
         iter,
         io,
         provided,
         io_provided,
         fns,
+        proved,
     }
 }

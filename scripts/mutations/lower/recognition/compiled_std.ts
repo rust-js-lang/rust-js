@@ -108,8 +108,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Filter` isn't made as its meaning: the build of std's structs alone steps a `rev()` through the recognizers' `filter`, `it.back is not a function` (ADR 0932)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Iterator", "filter"),\n',
-    replace: "",
+    find: '    ("Iterator", "enumerate"),\n    ("Iterator", "map"),\n    ("Iterator", "filter"),\n',
+    replace: '    ("Iterator", "enumerate"),\n    ("Iterator", "map"),\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^rev_of_lazy_chains with"],
   },
   {

@@ -94,9 +94,13 @@ test("a compile asked counts every answer of every decision, a 0 too, then what 
 
 // Which chains are transparent (#1673), each kept from it by the first
 // of: an `Iterator` of the crate's, an iterator held apart it starts on,
-// a source not an array, a string or a range, an iterator that escapes, a
-// destructor in its items or a closure's captures; `v.iter().map(..)`, `(0..10).filter(..)` and a
-// `for` loop's `v.iter().rev()` admitted.
+// a source not an array, a string or a range, an iterator that escapes
+// (`{:?}`'s of `v.iter()` too), a destructor in its items or a closure's
+// captures, an iterator method no table proves (`product`), an adapter's
+// argument run as it's given (`chain(more(&v))`), a `Vec` collected in a
+// crate that reads capacities; `(0..10).filter(..)`, `(1..=3).map(..)`,
+// whose `RangeInclusive::new` makes its source, and a `for` loop's
+// `v.iter().rev()` admitted.
 test("each chain is counted by what keeps it from being transparent", () => {
   const dir = fixture("decisions-transparent");
   const source = join(dir, "main.rs");
@@ -116,6 +120,10 @@ fn evens(v: &[i32]) -> impl Iterator<Item = &i32> {
     v.iter().filter(|x| **x % 2 == 0)
 }
 
+fn more(v: &[i32]) -> std::slice::Iter<'_, i32> {
+    v.iter()
+}
+
 pub fn main() {
     let v = vec![1, 2, 3, 4];
     let doubled: Vec<i32> = v.iter().map(|x| x * 2).collect();
@@ -128,6 +136,14 @@ pub fn main() {
     let total: i32 = set.iter().sum();
     let tag = String::from("tag");
     let tagged: Vec<usize> = v.iter().map(move |x| *x as usize + tag.len()).collect();
+    let product: i32 = v.iter().product();
+    let chained = v.iter().chain(more(&v)).count();
+    let kept: Vec<i32> = v.iter().copied().collect();
+    println!("{product} {chained} {}", kept.capacity());
+    let doubled_range: i32 = (1..=3).map(|x| x * 2).sum();
+    let mut drained = vec![1, 2];
+    let taken: Vec<i32> = drained.drain(..).collect();
+    println!("{doubled_range} {:?} {taken:?}", v.iter());
     for x in v.iter().rev() {
         print!("{x}");
     }
@@ -141,7 +157,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 1, source: 1, escapes: 1, "drop-glue": 2, admitted: 3 });
+  expect(given).toEqual({ "user-iterator": 1, held: 1, source: 1, escapes: 3, "drop-glue": 2, unproved: 1, order: 1, capacity: 3, admitted: 3 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not

@@ -477,6 +477,63 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Cycle", "cycle", false),
 ];
 
+/// The iterator traits' methods whose hand-written form the iterator
+/// tables prove against native Rust (ADRs 1090, 1092): each adapter and
+/// step of `test/iterator-matrix.ts`' rows, `collect` among them; a
+/// `for` loop's `into_iter` makes its iterator, as a source's maker does. A chain whose every link is one of these, or
+/// makes its source, may be written by hand (ADR 1136); another is std's
+/// compiled body. `test/iterator-proved.test.ts` holds each row to a row
+/// of the tables, the mirror run on both sides.
+pub(super) const PROVED_LINKS: &[(&str, &str)] = &[
+    ("Iterator", "map"),
+    ("Iterator", "filter"),
+    ("Iterator", "skip"),
+    ("Iterator", "take"),
+    ("Iterator", "fuse"),
+    ("Iterator", "peekable"),
+    ("Iterator", "enumerate"),
+    ("Iterator", "chain"),
+    ("Iterator", "rev"),
+    ("Iterator", "copied"),
+    ("Iterator", "cloned"),
+    ("Iterator", "step_by"),
+    ("Iterator", "flatten"),
+    ("Iterator", "zip"),
+    ("Iterator", "flat_map"),
+    ("Iterator", "take_while"),
+    ("Iterator", "skip_while"),
+    ("Iterator", "map_while"),
+    ("Iterator", "scan"),
+    ("Iterator", "inspect"),
+    ("Iterator", "filter_map"),
+    ("Iterator", "by_ref"),
+    ("Iterator", "fold"),
+    ("DoubleEndedIterator", "rfold"),
+    ("Iterator", "try_fold"),
+    ("Iterator", "any"),
+    ("Iterator", "all"),
+    ("Iterator", "count"),
+    ("Iterator", "last"),
+    ("Iterator", "nth"),
+    ("Iterator", "sum"),
+    ("Iterator", "collect"),
+    ("Iterator", "next"),
+    ("DoubleEndedIterator", "next_back"),
+    ("DoubleEndedIterator", "nth_back"),
+    ("DoubleEndedIterator", "rfind"),
+    ("Iterator", "find"),
+    ("Iterator", "position"),
+    ("Iterator", "size_hint"),
+    ("ExactSizeIterator", "len"),
+    ("Iterator", "for_each"),
+];
+
+/// Whether `id` is one of `PROVED_LINKS`', an iterator trait's method
+/// whose hand-written form the tables prove (ADR 1136).
+pub(crate) fn is_proved_link(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    compiled_rows(tcx).proved.contains(&id)
+}
+
 /// Of those, and of the plain structs a free function makes
 /// (`COMPILED_STD_FNS`), `repeat_n`'s, the ones std's struct is the meaning
 /// of alone, on their way to being held as it (ADR 0932): compiled into
