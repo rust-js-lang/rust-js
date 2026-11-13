@@ -104,6 +104,16 @@ say.
    rust-js refuses refuses every case, and a refusal passes. The harness
    fails a batch whose every case is refused (#854's first run of its
    keyed maps passed so, in 392 s).
+9. **std's MIR in a program's session aborts; it never says what unwinds.**
+   The toolchain's wasm32 std is built `panic=abort`, so in its MIR every
+   call reads `unwind unreachable` and no frame has a cleanup. A question
+   asked of it, "can this call unwind?", "what does it drop as a panic
+   passes?", must follow its calls to what they resolve to, never trust its
+   unwind actions: #1666's first fix read `Range::is_empty`'s `lt` as never
+   unwinding, though the `PartialOrd` it reaches is the program's and
+   panics. Only `--std-bodies` reads a std built to unwind (`std_sysroot`,
+   #424). An audit of every reader of a compiled body's unwind edges
+   (2026-11-13) found none else trusting them.
 
 ## Nets still to build
 
