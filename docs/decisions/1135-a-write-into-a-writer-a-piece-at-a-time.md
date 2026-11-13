@@ -61,9 +61,11 @@ Each step lands on main with its runtime helpers and their tests: the
 runtime's unit tests, `test/writer-sink.test.ts` against native Rust in
 both builds, and the formatting grid's `Log` column (test/format-grid.ts),
 which writes into a writer that records each call. Each runs where
-`RUST_JS_WRITES_PIECEWISE=1` is set. That switch is test-only, and the
-lowering doesn't read it by default, so each step leaves the corpus
-byte-identical. The last step removes the switch and makes this the one
+`RUST_JS_WRITES_PIECEWISE=1` is set. That switch is transitional, not an
+option. Only tests set it, and nothing reads it by default, so each step
+leaves the corpus byte-identical. The final commit, which routes `write!`
+through the sink, deletes it and every read of it, so rust-js never has
+two modes. The last step removes the switch and makes this the one
 way, once `crate-corpus --check` shows no crate doing worse. Then ADR
 0166's and 0180's whole-text rules, and the semantics page's difference,
 go.
