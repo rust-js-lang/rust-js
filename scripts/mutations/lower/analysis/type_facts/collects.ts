@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "asks no in-place layout"],
   },
+  {
+    name: "built-collect-trusted-unasked",
+    breaks: "generic code's collect into a `Vec` of an iterator built of its type parameters asks its callers nothing of whether it's `TrustedLen` (#1614)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "        asked.extend(trusted_asked(\n",
+    replace: "        drop(trusted_asked(\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
+  },
 ];

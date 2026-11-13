@@ -769,6 +769,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (self.compiled_struct(iter_ty, given) || folds_by_dropping_nth_back))
             .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
             .transpose()?;
+        // Of one built of type parameters, in a crate that keeps capacities,
+        // whether it's `TrustedLen` as its callers say, each fact that says
+        // it, `trusted_asked`'s (#1614).
+        let callers_trusted = match callers_trusted {
+            Some(trusted) => Some(trusted),
+            None => self.callers_say_trusted(iter_ty, trusted, span)?,
+        };
         let unroomed = it.clone();
         // Of a crate that keeps capacities, what isn't `TrustedLen` grown as
         // std's `SpecFromIterNested` grows it, `$roomForHint`'s, which keeps
@@ -877,6 +884,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `it`, what `collected_as_vec` collects, grown as std grows it, and
+    /// Whether `iter_ty`, built of type parameters and not `TrustedLen`
+    /// here, is one as its callers say, in a crate that keeps capacities:
+    /// each fact `vec_collect_trusted_facts` finds holds, `trusted_asked`'s
+    /// (#1614); `None` where none is asked.
+    fn callers_say_trusted(&mut self, iter_ty: Ty<'tcx>, trusted: bool, span: Span) -> R<Option<Expr>> {
+        if trusted || !self.krate.keeps_capacity {
+            return Ok(None);
+        }
+        let facts = crate::lower::generic_facts::trusted_len_asked(self.tcx, self.typing_env, iter_ty);
+        let mut said: Option<Expr> = None;
+        for (of, fact) in facts {
+            // A `ConstSize` is one where it's given, `undefined` where it isn't.
+            let value = match fact {
+                crate::lower::recognition::TypeFact::ConstSize => {
+                    Expr::bin(js::Op::Ne, self.type_fact_value(of, fact, span)?, Expr::undefined())
+                }
+                _ => self.type_fact_value(of, fact, span)?,
+            };
+            said = Some(match said {
+                Some(before) => Expr::bin(js::Op::And, before, value),
+                None => value,
+            });
+        }
+        Ok(said)
+    }
+
     /// what it was before, `unroomed`, collected: by its fold, its `next`,
     /// or the array it is.
     fn collected_grown(

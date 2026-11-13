@@ -727,4 +727,12 @@ export const mutations: Mutation[] = [
     replace: "            .then_some((collection, value, shunt)).filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
   },
+  {
+    name: "built-collect-callers-trusted-unread",
+    breaks: "generic code's collect into a `Vec` of an iterator built of its type parameters grows it as one that isn't `TrustedLen`, whatever its callers say: capacity 4 of a `FlatMap` of one array of three (#1614)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            None => self.callers_say_trusted(iter_ty, trusted, span)?,\n",
+    replace: "            None => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
+  },
 ];

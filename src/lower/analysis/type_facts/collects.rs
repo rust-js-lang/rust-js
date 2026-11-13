@@ -55,6 +55,13 @@ pub(super) fn collect_asks<'tcx>(
             keeps_capacity,
         ));
         asked.extend(room_asked(recognition, typing_env, owner, (callee, args)));
+        asked.extend(trusted_asked(
+            recognition,
+            typing_env,
+            owner,
+            (callee, args),
+            keeps_capacity,
+        ));
         asked.extend(table_room_asked(recognition, typing_env, owner, (callee, args)));
         asked
     };
@@ -215,6 +222,32 @@ fn grown_asked<'tcx>(
     }
     let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size));
     size.into_iter().collect()
+}
+
+/// Of a collect into a `Vec` of an iterator built of type parameters, in a
+/// crate that keeps capacities, what says whether it's `TrustedLen`, its
+/// callers' (`vec_collect_trusted_facts`): std asks room for exactly its
+/// hint's upper bound of one that is and folds it, and takes another's
+/// first item by `next`, then room for `max(4, lower + 1)` (#1614). Of
+/// one known by its bounds, `IVecCollect` says it (`vec_collected`).
+fn trusted_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    keeps_capacity: bool,
+) -> Vec<Asked<'tcx>> {
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let Some((iter, output, _, false)) = crate::lower::recognition::collected_items(tcx, typing_env, callee, args)
+    else {
+        return Vec::new();
+    };
+    if !keeps_capacity || !recognition.grows_as_vec(output) {
+        return Vec::new();
+    }
+    (crate::lower::generic_facts::trusted_len_asked(tcx, typing_env, iter).into_iter())
+        .filter_map(|fact| asked_of(tcx, foreign, typing_env, caller, fact))
+        .collect()
 }
 
 /// In any crate, of a call that checks std's room for items by their bytes

@@ -5,6 +5,7 @@ import {
   $capacity,
   $chars,
   $extend,
+  $foldToArray,
   $grownBy,
   $grownVec,
   $iter,
@@ -24,18 +25,18 @@ export function entry() {
   main();
 }
 
-function chained(it) {
+function chained(it, ITrustedLen) {
   const v = $grownVec(
-    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 4, false),
-    (grown) => Array.from(grown),
+    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 4, ITrustedLen),
+    (grown) => (ITrustedLen ? $foldToArray(grown) : Array.from(grown)),
   );
   return $capacity(v, 4);
 }
 
-function words(it) {
+function words(it, ITrustedLen) {
   const v = $grownVec(
-    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 8, false),
-    (grown) => Array.from(grown),
+    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 8, ITrustedLen),
+    (grown) => (ITrustedLen ? $foldToArray(grown) : Array.from(grown)),
   );
   return $capacity(v, 8);
 }
@@ -54,8 +55,8 @@ function extendedWords(it) {
 
 function main() {
   const s = "héllo wörld, this is a longer text, with commas, and more words in it";
-  console.log(`${chained($chars(s))}`);
-  console.log(`${words($iter(s.split(","), true))}`);
+  console.log(`${chained($chars(s), false)}`);
+  console.log(`${words($iter(s.split(","), true), false)}`);
   console.log(`${extended($chars(s))}`);
   console.log(`${extendedWords($iter(s.split(","), true))}`);
   console.log(
@@ -64,6 +65,7 @@ function main() {
         s.split(/\p{White_Space}+/u).filter((word) => word !== ""),
         true,
       ),
+      false,
     )}`,
   );
   console.log(`${extended($rev($chars(s)))}`);

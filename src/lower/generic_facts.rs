@@ -37,6 +37,7 @@
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `src/lower/instances.rs given_calls_of` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
+//! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `src/lower/generic_facts.rs trusted_len_asked` |
 //! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `src/lower/generic_facts.rs error_impl_has_type_id` |
 //! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `src/lower/generic_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
@@ -589,4 +590,29 @@ pub(in crate::lower) fn makes_a_param_field_first<'tcx>(tcx: rustc_middle::ty::T
         let fields = &variant.fields.raw;
         (fields.iter().rev().skip(1)).any(|field| field.ty(tcx, args).skip_normalization().has_param())
     })
+}
+
+/// Of a collect into a `Vec` of `iter`, an iterator built of type
+/// parameters, what says whether it's `TrustedLen` that only its callers
+/// know (#1614): `vec_collect_trusted_facts`'s, its parts rustc says here
+/// asked of no caller, one that's `TrustedLen` saying nothing and one that
+/// isn't, a `Chain`'s side, that it's never one. None of one known by its
+/// bounds, whose `IVecCollect` says it, nor of one of no type parameter.
+pub(in crate::lower) fn trusted_len_asked<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    iter: Ty<'tcx>,
+) -> Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact)> {
+    use crate::lower::recognition::{TypeFact, is_trusted_len, known_by_bounds, vec_collect_trusted_facts};
+    if !iter.has_param() || known_by_bounds(iter) {
+        return Vec::new();
+    }
+    let facts = vec_collect_trusted_facts(tcx, typing_env, iter);
+    let never = |&(part, fact): &(Ty<'tcx>, TypeFact)| {
+        fact == TypeFact::TrustedLen && !part.has_param() && !is_trusted_len(tcx, typing_env, part)
+    };
+    if facts.iter().any(never) {
+        return Vec::new();
+    }
+    facts.into_iter().filter(|&(part, _)| part.has_param()).collect()
 }

@@ -375,3 +375,37 @@ Given through a function, it still does, and asks, std's still. Held by
 js-collections' binding iteration (`held`, its value and its JS) and the
 mutation `binding-iterator-mark-not-held`; the port regenerated on it is
 the JS it commits, file for file.
+
+## Amendment (2026-11-13, #1614): whether an iterator built of type parameters is `TrustedLen` is its callers'
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. A trait's default's `self.flat_map(|x| x).collect()`
+over arrays gave a `Vec` of capacity 4 where native's is 3, and generic
+code's `it.chain(vec!["x"]).collect()` 8 where native's is 5. Each collect
+asked no caller whether its iterator, built of its type parameters, is
+`TrustedLen`, and grew it as one that isn't. #670 asked it only of a source
+folded by `nth_back`.
+
+Now, in a crate that keeps capacities, a collect into a `Vec` of an
+iterator built of type parameters asks its callers what says it,
+`trusted_len_asked`'s, the generic facts' owner of it, of
+`vec_collect_trusted_facts`'s (`trusted_asked`), and grows it as they say,
+by its fold where it is, as #670's are (`callers_say_trusted`):
+
+- Of a `Map<I, F>` or a `Chain<A, B>`, its parts' `TrustedLen`, those
+  rustc says here asked of no caller: one that is says nothing, and one
+  that isn't says it never is.
+- Of a `Flatten<I>` or a `FlatMap<I, U, F>`, std's `FlattenCompat` is
+  `TrustedLen` where its source is and its items are an array, a
+  `&[T; N]` or a `&mut [T; N]`, std's `ConstSizeIntoIterator`s: its
+  source's facts and its items' `ConstSize`, `!== undefined` where it's
+  given. Never the `FlatMap` whole, whose type names its closure, which a
+  library's contract can't say.
+
+Corpus cases trait_default_flat_map_of_arrays_collects_trusted against
+native Rust, a library's build too; capacity_of_text_patterns' snapshot
+asks `ITrustedLen`. Mutations `flatten-trusted-asked-whole`,
+`flatten-items-const-size-unasked` (`recognition/specialization.ts`),
+`trusted-part-decided-here-asked` (`generic_facts.ts`), `built-collect-trusted-unasked`
+(`analysis/type_facts/collects.ts`) and
+`built-collect-callers-trusted-unread` (`mir/iter/collect.ts`).

@@ -194,4 +194,20 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
   },
+  {
+    name: "flatten-trusted-asked-whole",
+    breaks: "a `FlatMap`'s `TrustedLen` is asked of its callers whole, of a type naming its closure, which a library's contract can't say, not as its source's and its items' `ConstSize` (#1614)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "    if let Some((source, made)) = flattened_source(tcx, of) {\n",
+    replace: "    if let Some((source, made)) = flattened_source(tcx, of).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
+  },
+  {
+    name: "flatten-items-const-size-unasked",
+    breaks: "a `FlatMap`'s `TrustedLen` asks only its source's, so a `Vec` of `Vec`s' collects as an array's does (#1614)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "            true => vec![(item, TypeFact::ConstSize)],\n",
+    replace: "            true => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
+  },
 ];

@@ -215,4 +215,13 @@ export const mutations: Mutation[] = [
     replace: "        (fields.iter()).any(|field| field.ty(tcx, args).skip_normalization().has_param())\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
+  {
+    name: "trusted-part-decided-here-asked",
+    breaks: "a `Chain`'s side rustc says is `TrustedLen` here is asked of its callers too, `ITrustedLen && true` (#1614)",
+    file: "src/lower/generic_facts.rs",
+    find: "    facts.into_iter().filter(|&(part, _)| part.has_param()).collect()\n",
+    replace: "    facts\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
+    snapshots: true,
+  },
 ];

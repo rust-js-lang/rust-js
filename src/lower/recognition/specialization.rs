@@ -280,7 +280,12 @@ pub(crate) fn vec_collect_way(in_place: bool, trusted: bool) -> &'static str {
 /// that say whether it's `TrustedLen`, where rustc can't say it of `of`,
 /// `I`'s of a `Map<I, F>`, or of one known by its bounds, its own: none
 /// where it can, of a type known here or a `Filter<I, P>`, never one
-/// (#1239).
+/// (#1239). Of a `Flatten<I>` or a `FlatMap<I, U, F>`, std's `FlattenCompat`
+/// is one where its source is and its items are an array, a `&[T; N]` or a
+/// `&mut [T; N]`, std's `ConstSizeIntoIterator`s: its source's facts, and
+/// its items' `ConstSize` where only its callers know them, given where
+/// they're one of those (#1614), never its closure, which no template can
+/// say.
 pub(crate) fn vec_collect_trusted_facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -292,11 +297,36 @@ pub(crate) fn vec_collect_trusted_facts<'tcx>(
     if is_trusted_len(tcx, typing_env, of) {
         return Vec::new();
     }
+    if let Some((source, made)) = flattened_source(tcx, of) {
+        let Some(item) = made.or_else(|| iterator_item_of(tcx, typing_env, source)) else {
+            return Vec::new();
+        };
+        let source_facts = vec_collect_trusted_facts(tcx, typing_env, source);
+        if source_facts.is_empty() && !is_trusted_len(tcx, typing_env, source) {
+            return Vec::new();
+        }
+        let item_fact = match known_by_bounds(item) {
+            true => vec![(item, TypeFact::ConstSize)],
+            false if const_size_into_iter(item) => Vec::new(),
+            false => return Vec::new(),
+        };
+        return [source_facts, item_fact].concat();
+    }
     let held = held_facts(tcx, typing_env, of, TypeFact::TrustedLen);
     match held.iter().any(|&(held, _)| held == of) {
         true => Vec::new(),
         false => held,
     }
+}
+
+/// Whether `ty` is one of std's `ConstSizeIntoIterator`s with a size, an
+/// array, a `&[T; N]` or a `&mut [T; N]`.
+fn const_size_into_iter(ty: Ty<'_>) -> bool {
+    let held = match *ty.kind() {
+        ty::Ref(_, to, _) => to,
+        _ => ty,
+    };
+    matches!(held.kind(), ty::Array(..))
 }
 
 /// What an iterator of `iterator` gives, its `Item`, normalized.
