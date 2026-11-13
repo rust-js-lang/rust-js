@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
     find: "                        || crate::lower::recognition::is_async_block(self.recognition.tcx, def_id)) =>\n",
     replace: "                        || true) =>\n",
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "-t",
       "an async block or closure drops what it took",
     ],

@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/settled.js",
     find: "  return thenable ? { $settled: value } : value;",
     replace: "  return value;",
-    tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
+    tests: ["test/lowering-async.test.ts", "-t", "thenable"],
   },
 ];

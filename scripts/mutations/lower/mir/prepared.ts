@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     find: "            true => awaits::awaits(tcx, &mut body),\n",
     replace: "            true => Default::default(),\n",
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "test/lowering-matches.test.ts",
       "-t",
       "an awaited reference given to a generic function is awaited|an async fn",

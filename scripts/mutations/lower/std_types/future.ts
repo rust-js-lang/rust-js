@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/future.rs",
     find: "                    && (self.is_callable(held) || self.is_unknown(held))\n",
     replace: "                    && false\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
+    tests: ["test/lowering-async.test.ts", "-t", "thenable"],
   },
   {
     name: "future-of-future-not-thenable",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/future.rs",
     find: "            ty::Adt(..) if let Some(inner) = self.option_of(ty) => self.may_be_thenable(inner),\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
+    tests: ["test/lowering-async.test.ts", "-t", "thenable"],
   },
   {
     name: "thenable-method-unsettled",

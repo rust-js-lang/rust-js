@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     replace:
       "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "-t",
       "only spawns an async block",
     ],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     find: '            && (name == "_" || name.starts_with("_$"))\n',
     replace: '            && name == "never"\n',
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "-t",
       "an async closure's ignored argument is no parameter",
     ],

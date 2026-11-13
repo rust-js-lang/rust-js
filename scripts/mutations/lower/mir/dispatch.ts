@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())\n",
     replace: "                || false)\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "an async closure"],
+    tests: ["test/lowering-async.test.ts", "-t", "an async closure"],
   },
   {
     name: "mir-imported-binding-called-static",
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: '            true => Expr::call_helper("$unsettled", vec![awaited]),\n',
     replace: "            true => awaited,\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
+    tests: ["test/lowering-async.test.ts", "-t", "thenable"],
   },
   {
     name: "rest-value-pointer-call-unspread",

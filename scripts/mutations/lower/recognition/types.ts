@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     find: "        ty::Coroutine(def_id, args) => (def_id, args.as_coroutine().upvar_tys()),\n",
     replace: "",
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "-t",
       "an async block or closure drops what it took",
     ],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     find: "        ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),\n",
     replace: "",
     tests: [
-      "test/lowering-functions.test.ts",
+      "test/lowering-async.test.ts",
       "-t",
       "an async block or closure drops what it took",
     ],
