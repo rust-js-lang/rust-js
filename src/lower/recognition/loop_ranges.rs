@@ -116,3 +116,13 @@ pub(in crate::lower) fn integer_min_max<'tcx>(
     };
     args.types().next().is_some_and(|ty| ty.is_integral()).then_some(max)
 }
+
+/// Whether a call is text's `len()`, `str`'s or a `String`'s own: its
+/// bytes, at most what an allocation holds (ADR 1137).
+pub(in crate::lower) fn text_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.item_name(def_id).as_str() == "len"
+        && tcx.inherent_impl_of_assoc(def_id).is_some_and(|impl_| {
+            let owner = tcx.type_of(impl_).instantiate_identity().skip_normalization();
+            owner.is_str() || matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String))
+        })
+}

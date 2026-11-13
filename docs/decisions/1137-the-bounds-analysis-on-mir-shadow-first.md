@@ -280,3 +280,25 @@ outputs changed: 53 checks left out that THIR kept, and 19 kept that it
 left out, each a precision gap with no wrong answer. Snapshots: 3 checks
 left out, in collections, numbers and report. The guide's output is
 unchanged, and the readability gate holds. Twenty-one mutations, caught.
+
+## M3, step 2 begun: wraps measured, two precision rules landed (2026-11-14)
+
+Switching the wrap decision to MIR (`exact_proved`, by the statement's
+location) costs ten elisions the lowering tests pin, so that switch is
+held as bounds' was. Two rules it needs land first:
+
+- **Narrowing.** After the widened fixed point, two passes in reverse
+  postorder recompute each block's entry as the join of what flows into
+  it, without widening. What a loop's test bounds, which widening at its
+  head let go, comes back: `a[i]` past `while i < 5 { i += 1 }`. Each
+  pass starts from a fixed point's flow, so it stays above what runs.
+- **Lengths at calls:**
+  - a JS string's `length`, a binding's, or `encode_utf16().count()` is at
+    most `2^31 - 1` (ADRs 0632, 0682), as THIR's ranges have it;
+  - text's `len()` (`recognition::text_length`) is at most what an
+    allocation holds.
+
+Bounds, which MIR decides, gain one check left out in the corpus
+(`loop_ends_in_its_break`'s `times[j]`), and the snapshots are unchanged.
+Mutations `intervals-unnarrowed` and `intervals-text-length-unbounded`,
+caught.

@@ -42,7 +42,7 @@ function untilPast(times, sizes, end) {
   while (i < times.length) {
     let j = i;
     while (j < times.length) {
-      if ($index(times, j) > end || $index(sizes, j) < 0) {
+      if (times[j] > end || $index(sizes, j) < 0) {
         break;
       }
       j++;

@@ -13,8 +13,11 @@
 //! type's.
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::bindings::is_rest_value;
-use crate::lower::recognition::{RangeStep, SliceLength, integer_min_max, range_of_integers, range_step, slice_length};
+use crate::lower::bindings::{is_rest_value, reads_string_length};
+use crate::lower::recognition::{
+    RangeStep, SliceLength, counts_utf16_units, integer_min_max, range_of_integers, range_step, slice_length,
+    text_length,
+};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
@@ -45,6 +48,14 @@ pub(crate) struct Given {
     intervals: Vec<Option<Interval>>,
     below: Vec<(usize, usize, bool)>,
 }
+
+/// The most a JS string's `length` is: `2^31 - 1`, as every engine's
+/// string is at most, so two add without passing `u32`'s most (ADRs 0632,
+/// 0682).
+const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
+
+/// How many passes narrow the fixed point widening reached.
+const NARROWING_PASSES: u32 = 2;
 
 /// How many times a block is visited before what still moves widens.
 const VISITS_BEFORE_WIDENING: u32 = 3;
@@ -210,6 +221,38 @@ impl<'tcx> Walk<'_, 'tcx> {
                     entry[target] = Some(joined);
                     work.insert((rank[target], target));
                 }
+            }
+        }
+        // Narrowing (ADR 1137): from the fixed point, each block's entry the
+        // join of what flows into it, no widening, a few passes in reverse
+        // postorder, each block's flow out its new one; what a loop's test
+        // bounds, which widening at its head let go, comes back, `i` of
+        // `i + 1 < len`. A fixed point's flow is one still, so each pass
+        // stays above what runs.
+        let flow = |state: &Option<State>, block: BasicBlock| -> Vec<(BasicBlock, State)> {
+            let Some(mut state) = state.clone() else {
+                return Vec::new();
+            };
+            for statement in &self.body.basic_blocks[block].statements {
+                self.statement(statement, &mut state);
+            }
+            self.edges(block, &state)
+        };
+        let mut outs: IndexVec<BasicBlock, Vec<(BasicBlock, State)>> = (self.body.basic_blocks.indices())
+            .map(|block| flow(&entry[block], block))
+            .collect();
+        let predecessors = self.body.basic_blocks.predecessors();
+        for _ in 0..NARROWING_PASSES {
+            for &block in self.body.basic_blocks.reverse_postorder() {
+                if block != mir::START_BLOCK {
+                    let into = (predecessors[block].iter())
+                        .flat_map(|&from| outs[from].iter().filter(|(to, _)| *to == block).map(|(_, out)| out))
+                        .fold(None::<State>, |joined, out| {
+                            Some(joined.map_or_else(|| out.clone(), |j| j.join(out)))
+                        });
+                    entry[block] = into;
+                }
+                outs[block] = flow(&entry[block], block);
             }
         }
         entry
@@ -1041,6 +1084,22 @@ impl<'tcx> Walk<'_, 'tcx> {
                                 end: End::AtMost(end),
                             },
                         );
+                    }
+                    // A JS string's `length`, a binding's, or its count of UTF-16
+                    // units, `s.encode_utf16().count()`: at most `2^31 - 1` (ADR
+                    // 0632); text's `len()`, its bytes, at most what an
+                    // allocation holds.
+                    if let Some((callee, callee_args)) = func.const_fn_def() {
+                        let js_string = reads_string_length(self.tcx, callee)
+                            || (callee_args.types().next()).is_some_and(|of| counts_utf16_units(self.tcx, callee, of));
+                        if js_string {
+                            after.intervals[local] = Some(Interval {
+                                lo: 0,
+                                hi: STRING_LENGTH_MOST,
+                            });
+                        } else if text_length(self.tcx, callee) {
+                            after.intervals[local] = self.length(self.tcx.types.str_);
+                        }
                     }
                     // A range's `into_iter()`, itself, and its `next()`, what
                     // it gives.

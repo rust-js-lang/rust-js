@@ -203,6 +203,13 @@ pub fn before_zero(v: &[u32]) -> u32 {
     }
     seen
 }
+pub fn past_five(a: [u32; 10]) -> u32 {
+    let mut i = 0;
+    while i < 5 {
+        i += 1;
+    }
+    a[i]
+}
 pub fn every_other(v: &[u32]) -> u32 {
     let mut total = 0;
     for i in (0..v.len()).step_by(2) {
@@ -220,4 +227,16 @@ pub fn every_other(v: &[u32]) -> u32 {
   expect(js).toContain("seen = v[i - 1];");
   // A range's `step_by(2)`: each value below its end.
   expect(js).toContain("total = (total + v[i]) >>> 0;");
+  // Narrowed past widening: `i <= 5` at the loop's head, `i == 5` past it.
+  expect(js).toContain("return a[i];");
+});
+
+test("text's `len()` is at most what an allocation holds: two summed never wrap, a wrap THIR's ranges keep", () => {
+  expect(shadowOf(`fn both(a: &str, b: &str) -> usize {
+    a.len() + b.len()
+}
+pub fn main() {
+    println!("{}", both("ab", "c"));
+}
+`)).toEqual(["mir-only-wrap both"]);
 });

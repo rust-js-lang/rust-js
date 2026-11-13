@@ -228,4 +228,20 @@ export const mutations: Mutation[] = [
     replace: "        if a2.lo > a2.hi || b2.lo > b2.hi {\n            return true;\n",
     tests: ["test/intervals-shadow.test.ts"],
   },
+  {
+    name: "intervals-unnarrowed",
+    breaks: "no narrowing pass follows the widened fixed point, so `i <= 5` of `while i < 5 { i += 1 }` is lost at its head and `a[i]` past it keeps its check",
+    file: "src/lower/analysis/intervals.rs",
+    find: "const NARROWING_PASSES: u32 = 2;\n",
+    replace: "const NARROWING_PASSES: u32 = 0;\n",
+    tests: ["test/intervals-shadow.test.ts"],
+  },
+  {
+    name: "intervals-text-length-unbounded",
+    breaks: "text's `len()` may be `usize::MAX`, so `a.len() + b.len()` of two `&str`s may wrap",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                        } else if text_length(self.tcx, callee) {\n",
+    replace: "                        } else if false && text_length(self.tcx, callee) {\n",
+    tests: ["test/intervals-shadow.test.ts"],
+  },
 ];
