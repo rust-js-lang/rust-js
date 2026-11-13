@@ -9,7 +9,7 @@
 //! the writer's, and called plainly it gives its text (#1652, step 6 of
 //! ADR 1135).
 
-use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, resolves_to_own};
+use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, resolves_to_own, std_formats_param};
 use super::*;
 use crate::lower::display::SinkWrite;
 use rustc_middle::mir::{Local, Rvalue, StatementKind, TerminatorKind};
@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (Some(operand), Some(&ty)) = (operands.get(i), arg_tys.get(i)) else {
                 continue;
             };
-            if !self.is_lang_adt(ty, LangItem::FormatArguments) {
+            if !self.is_lang_adt(ty, LangItem::FormatArguments) || !std_formats_param(&self.recognition(), callee, i) {
                 continue;
             }
             let text = (operand.place())

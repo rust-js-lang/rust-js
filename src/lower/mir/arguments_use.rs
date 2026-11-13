@@ -159,14 +159,16 @@ fn formatted_by_std<'tcx>(
                 // Not a std trait's method an impl of the crate's defines,
                 // `write_fmt`'s of a writer that writes it itself (#1695),
                 // nor one a dictionary says, which may be (#1652, step 6).
-                let std = crate::lower::fn_def(func.ty(decls, tcx)).is_some_and(|(id, generic_args)| {
+                let callee = crate::lower::fn_def(func.ty(decls, tcx));
+                let std = callee.is_some_and(|(id, generic_args)| {
                     crate::lower::recognition::is_std_crate(tcx, id)
                         && !resolves_to_own(recognition, id, generic_args)
                         && !recognition.writes_through_a_dictionary(id, generic_args)
                 });
-                std && args.iter().all(|arg| match &arg.node {
+                let declared = |at: usize| callee.is_some_and(|(id, _)| std_formats_param(recognition, id, at));
+                std && args.iter().enumerate().all(|(at, arg)| match &arg.node {
                     Operand::Copy(place) | Operand::Move(place) if place.local == local => {
-                        place.projection.is_empty() && holds_arguments(arg.node.ty(decls, tcx))
+                        place.projection.is_empty() && holds_arguments(arg.node.ty(decls, tcx)) && declared(at)
                     }
                     _ => true,
                 })
@@ -176,6 +178,20 @@ fn formatted_by_std<'tcx>(
         }
     };
     uses.uses.into_iter().all(given_to_std)
+}
+
+/// Whether std's function `id` formats what it's given at `at`, an
+/// `Arguments` or what holds one as it declares it, `_print(args)`,
+/// `assert_failed`'s `Option<Arguments>`; not its generic `T`, which it may
+/// keep, `Box::new(args)`, `v.push(args)` (#1726).
+pub(in crate::lower) fn std_formats_param(
+    recognition: &Recognition<'_, '_>,
+    id: rustc_span::def_id::DefId,
+    at: usize,
+) -> bool {
+    use rustc_middle::ty::TypeVisitableExt;
+    let inputs = recognition.tcx.fn_sig(id).skip_binder().skip_binder().inputs();
+    inputs.get(at).is_some_and(|input| !input.has_non_region_param())
 }
 
 /// Whether `lent`, a reference to an `Arguments`, is read only by its

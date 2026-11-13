@@ -190,7 +190,10 @@ on the issue, on the user's behalf.
 **One fact from MIR, `mir::arguments_use`, says which an `Arguments` a body
 makes is.** It's `InPlace`, its text as before, where each use of it is std's
 by value (`format`, `_print`, a `write_fmt`, `panic_fmt`), its `as_str()`, or
-a holder std alone is given, `assert_eq!`'s `Some(args)`. Otherwise it's
+a holder std alone is given, `assert_eq!`'s `Some(args)`. std's by value is
+a parameter std declares an `Arguments`, or a holder of one
+(`std_formats_param`); a generic one, `Box::new(args)`, `v.push(args)`,
+keeps it, given on, and std's formatting doesn't call it there (#1726). Otherwise it's
 `GivenOn`: a function of its text, `said(() => noisyDebug_fmt(value))`. One
 form per place: a parameter, a field, or any place the body didn't make its
 text in holds the function (`holds_text`). std's formatting, given one by

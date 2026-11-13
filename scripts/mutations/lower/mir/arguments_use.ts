@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     name: "arguments-given-to-crate-taken-in-place",
     breaks: "an `Arguments` given to a function of the crate's is taken to be formatted where it's made, its text, which the callee calls as a function",
     file: "src/lower/mir/arguments_use.rs",
-    find: "                std && args.iter().all(|arg| match &arg.node {\n",
-    replace: "                args.iter().all(|arg| match &arg.node {\n",
+    find: "                std && args.iter().enumerate().all(|(at, arg)| match &arg.node {\n",
+    replace: "                args.iter().enumerate().all(|(at, arg)| match &arg.node {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
   },
   {
@@ -51,5 +51,13 @@ export const mutations: Mutation[] = [
     find: "                        && !recognition.writes_through_a_dictionary(id, generic_args)\n                });\n",
     replace: "                });\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "std-formats-every-param",
+    breaks: "an `Arguments` a generic std function keeps, `Box::new(args)`, is made its text, and reading it calls a string (#1726)",
+    file: "src/lower/mir/arguments_use.rs",
+    find: "    inputs.get(at).is_some_and(|input| !input.has_non_region_param())\n",
+    replace: "    inputs.get(at).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^arguments_kept_by_a_generic_std_function.rs$"],
   },
 ];
