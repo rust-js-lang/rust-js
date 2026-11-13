@@ -165,6 +165,76 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 
+    /// The writes of a std value of `shown`, `value`, by `kind`, given the
+    /// `Formatter`'s `options` as it runs, `{:#?}` by them too: as
+    /// `sink_writes_given`, or for `Debug` `debug_sink_writes`, makes them.
+    /// `None` where its split isn't followed.
+    fn std_writes_by_options(
+        &mut self,
+        kind: Std,
+        shown: Ty<'tcx>,
+        (value, options): (&str, &str),
+        span: Span,
+    ) -> R<Option<Vec<SinkWrite>>> {
+        let given = Expr::var(options);
+        match kind {
+            Std::FmtDebug => {
+                let pretty = Pretty::When(given.clone()).alternate();
+                self.debug_sink_writes(Expr::var(value), shown, (&given, &pretty), span)
+            }
+            _ => self.sink_writes_given(Expr::var(value), (kind, shown), given, span),
+        }
+    }
+
+    /// A std formatting trait's `fmt` of `ty` taken as a `fn` pointer,
+    /// `self.format(f, fmt::Display::fmt)`, where a writer is shown into a
+    /// writer: the function that writes into the sink it claims, by the
+    /// `Formatter`'s options as it runs, `(value, options) => { const f =
+    /// $sink(); $writeInteger(f, value, options); return f.done(); }`, so a
+    /// framed writer that calls it arms it (#1652); called plainly, its
+    /// text. `None` where nothing is framed, or of the crate's own type,
+    /// whose writer is framed itself, of a type only a dictionary knows, or
+    /// where its split isn't followed.
+    pub(in crate::lower) fn std_fmt_fn_value(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        if self.krate.prints.framed.is_empty() || !crate::lower::recognition::is_fmt_method(self.tcx, def_id) {
+            return Ok(None);
+        }
+        let Some(ty) = args.types().next() else {
+            return Ok(None);
+        };
+        let shown = ty.peel_refs();
+        // Not the crate's own type's, nor what only a dictionary knows, whose
+        // `fmtInto` its caller's dictionary may not carry.
+        if matches!(shown.kind(), ty::Adt(adt, _) if adt.did().is_local())
+            || rustc_middle::ty::TypeVisitableExt::has_non_region_param(&shown)
+            || crate::lower::recognition::known_by_a_dictionary(shown)
+        {
+            return Ok(None);
+        }
+        let trait_id = self.tcx.trait_of_assoc(def_id).expect("a formatting trait's `fmt`");
+        let kind = match (self.radix_trait(trait_id), self.exp_trait(trait_id)) {
+            (Some(radix), _) => Std::FmtRadix(radix),
+            (_, Some(upper)) => Std::FmtExp(upper),
+            _ if crate::lower::recognition::is_std_def(self.tcx, trait_id, StdItem::Debug) => Std::FmtDebug,
+            _ if crate::lower::recognition::is_std_def(self.tcx, trait_id, StdItem::Display) => Std::FmtDisplay,
+            _ => return Ok(None),
+        };
+        let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
+        let Some(writes) = self.std_writes_by_options(kind, shown, (&value, &options), span)? else {
+            return Ok(None);
+        };
+        let f = Expr::var(&sink);
+        let mut body = vec![StmtKind::Const(sink.clone(), Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
+        body.extend(writes.into_iter().map(|write| write.written_into(&f, js::Span::NONE)));
+        body.push(StmtKind::Return(Some(Expr::call(Expr::member(f, "done"), Vec::new()))).at(js::Span::NONE));
+        Ok(Some(Expr::arrow(vec![value.into(), options.into()], body)))
+    }
+
     /// The `fmtInto` entry of a std dictionary of `kind` of `ty`, where a
     /// type that reaches a parameter written so is `ty`: its writes as
     /// `sink_writes_given`, or for `Debug` `debug_sink_writes`, makes them,
@@ -175,16 +245,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
-        let given = Expr::var(&options);
-        let shown = ty.peel_refs();
-        let writes = match kind {
-            Std::FmtDebug => {
-                let pretty = Pretty::When(given.clone()).alternate();
-                self.debug_sink_writes(Expr::var(&value), shown, (&given, &pretty), span)?
-            }
-            _ => self.sink_writes_given(Expr::var(&value), (kind, shown), given, span)?,
-        };
-        let Some(writes) = writes else {
+        let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (&value, &options), span)? else {
             return Err(self.refused_piecewise(span, &format!("a `{ty}` written into a writer through generic code")));
         };
         // One std function given just the value and its options is the

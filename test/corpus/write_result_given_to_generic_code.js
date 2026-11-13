@@ -15,6 +15,7 @@ import {
   $ioWriteAll,
   $ioWriteFmt,
   $print,
+  $sink,
   $stringError,
   $stringWriter,
   $writeCaught,
@@ -24,6 +25,8 @@ import {
   $writeTagged,
   $writeText,
   $writeTry,
+  $writerSink,
+  $writingInto,
 } from "@rust-js/std";
 
 export function entry() {
@@ -173,22 +176,23 @@ function tried(fail) {
   }
 }
 
-export const shownDisplay = { fmt: shownDisplay_fmt };
+export const shownDisplay = {
+  fmt: shownDisplay_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, shownDisplay_fmt, value, options),
+};
 function shownDisplay_fmt(shown) {
-  let f = "";
+  const f = $sink();
   try {
-    let r;
-    if (shown[0]) {
-      r = new $FmtError();
-    } else {
-      f += "shown";
-      r = undefined;
-    }
+    const r = shown[0]
+      ? new $FmtError()
+      : $writeTry(() => {
+          f.write("shown");
+        });
     $writeCheck($writeOf(errOr($writeTagged(r))));
   } catch (error) {
-    throw $fmtWritten(error, f);
+    throw $fmtWritten(error, f.done());
   }
-  return f;
+  return f.done();
 }
 
 function errOr(r) {
@@ -450,7 +454,7 @@ function main() {
   }
   $print(text$1);
   let text = "";
-  const receiver = {
+  const value$3 = {
     impl: $stringWriter,
     get value() {
       return text;
@@ -460,7 +464,18 @@ function main() {
     },
   };
   $print(
-    `${$writeTry(() => receiver.impl.writeStr(receiver, shownDisplay_fmt([true]))) === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(text)}\n`,
+    `${
+      $writeTry(() => {
+        const f = $writerSink(
+          value$3,
+          (arg, s) => arg.impl.writeStr(arg, s),
+          (arg, s) => arg.impl.writeChar(arg, s),
+        );
+        $writingInto(f, shownDisplay_fmt, [true]);
+      }) === undefined
+        ? "Ok(())"
+        : "Err(Error)"
+    } ${$debugStr(text)}\n`,
   );
 }
 //# sourceMappingURL=case.js.map

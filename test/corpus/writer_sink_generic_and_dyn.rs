@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code's values and `dyn`s written into a writer of the crate's
 // own, or a `W: fmt::Write`'s, a piece at a time, as std's `write_fmt`
 // does (#1652, step 5 of ADR 1135): each by its formatting dictionary's

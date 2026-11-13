@@ -104,7 +104,8 @@ pub fn generic(id: &ModuleId) -> String {
     shown(id)
 }
 `, "pub fn none() {}\n");
-  expect(lib).toContain("const moduleIdDisplay = { fmt: moduleIdDisplay_fmt };");
+  // Published, as a consumer may write it into a writer (ADR 1135).
+  expect(lib).toContain("export const moduleIdDisplay = {\n  fmt: moduleIdDisplay_fmt,\n  fmtInto:");
   expect(lib).toContain("  return shown(id, moduleIdDisplay);");
   const { generic, key } = await import(join(dir, "dep", "lib.js"));
   expect([generic(5), generic("m"), key(6)]).toEqual(["5", "m", "6"]);

@@ -14,13 +14,11 @@ const $stringWriter = {
     if (w.writeChar !== undefined) w.writeChar(c);
     else w.value += c;
   },
-  // Given the function of a `write!`'s `Arguments` where writes are
-  // followed a piece at a time, its text, and what it wrote before a value
-  // that failed, as std's writes each piece into the string; till ADR
-  // 1135's last step, its text where they aren't.
+  // Given the function of a `write!`'s `Arguments`, its text, and what it
+  // wrote before a value that failed, as std's writes each piece into the
+  // string (#1696); a sink's, each piece (ADR 1135).
   writeFmt(w, args) {
-    if (typeof args !== "function") w.value += args;
-    else if (w.writeChar !== undefined) $writingInto(w, args);
+    if (w.writeChar !== undefined) $writingInto(w, args);
     else w.value += $fmtTextOr(args, (text) => (w.value += text));
   },
 };

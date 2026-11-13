@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Formatter`'s `write_fmt` of an `Arguments` it didn't make in place
 // writes its text: one held in a variable, a parameter's, a constant's, a
 // literal's or one made with arguments, as `write!` writes its own

@@ -16,6 +16,17 @@ fn own<W: Write, T: fmt::Display>(w: &mut W, t: &T) -> fmt::Result {
     write!(w, "<{}>", t)
 }
 
+// Writes the library's list by its writer function, given its `Formatter`.
+struct Mine(dep::Listed);
+
+impl fmt::Display for Mine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("<")?;
+        self.0.joined(f, "|")?;
+        f.write_str(">")
+    }
+}
+
 pub fn main() {
     let mut text = String::new();
     own(&mut text, &dep::Meters(6)).unwrap();
@@ -39,5 +50,8 @@ pub fn main() {
         constraints: Some(dep::der(false)),
     };
     write!(log, "|{:?}|{:#?}", anchor, anchor.clone()).unwrap();
+    println!("{:?}", log.0);
+    let mut log = Log(Vec::new());
+    write!(log, "{}", Mine(dep::Listed(vec![1, 20, 3]))).unwrap();
     println!("{:?}", log.0);
 }

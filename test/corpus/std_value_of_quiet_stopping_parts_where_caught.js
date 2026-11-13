@@ -11,6 +11,8 @@ import {
   $out,
   $printing,
   $sink,
+  $writerSink,
+  $writerWriteFmt,
 } from "@rust-js/std";
 
 export function entry() {
@@ -47,7 +49,7 @@ function listedDebug_fmt(listed, options) {
 export const shortWrite = {
   writeStr: shortWrite_writeStr,
   writeChar: shortWrite_writeStr,
-  writeFmt: shortWrite_writeStr,
+  writeFmt: $writerWriteFmt(shortWrite_writeStr, shortWrite_writeStr),
 };
 function shortWrite_writeStr(short, s) {
   if ($byteLen(s) >= 3) {
@@ -59,7 +61,7 @@ export const writtenDebug = { fmt: writtenDebug_fmt };
 function writtenDebug_fmt(written, options) {
   const f = $sink();
   let short;
-  shortWrite_writeStr(
+  const f$1 = $writerSink(
     {
       get value() {
         return short;
@@ -68,8 +70,10 @@ function writtenDebug_fmt(written, options) {
         short = value;
       },
     },
-    String(written[0]),
+    shortWrite_writeStr,
+    shortWrite_writeStr,
   );
+  f$1.write(String(written[0]));
   f.write(`w${written[0]}`);
   return f.done();
 }

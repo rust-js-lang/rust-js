@@ -1,3 +1,4 @@
+//@ library-differs
 // ppv-lite86's storages (#1402): `x.into()` of a type parameter's value
 // where the bound is `Storage: From<W>`, a `From` of another type, made of
 // each half.

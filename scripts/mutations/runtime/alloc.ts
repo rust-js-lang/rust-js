@@ -48,6 +48,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/alloc.js",
     find: "  const integer = (g, n) => $writeDebugInteger(g, n, n.toString(16), n.toString(16).toUpperCase(), options);\n",
     replace: "  const integer = (g, n) => g.write(String(n));\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

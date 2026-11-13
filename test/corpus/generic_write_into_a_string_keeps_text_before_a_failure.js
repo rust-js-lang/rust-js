@@ -3,87 +3,67 @@
 import {
   $debugStr,
   $fmtError,
-  $fmtTextOr,
   $fmtWritten,
   $live,
   $mutWriter,
+  $sink,
   $stringWriter,
   $unwindsOn,
+  $writeInteger,
   $writeTry,
+  $writingInto,
 } from "@rust-js/std";
 
 export function entry() {
   main();
 }
 
-export const refusedDisplay = { fmt: refusedDisplay_fmt };
+export const refusedDisplay = {
+  fmt: refusedDisplay_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, refusedDisplay_fmt, value, options),
+};
 function refusedDisplay_fmt(refused) {
   try {
+    const value = $sink();
     $fmtError();
-    return "";
+    return value.done();
   } catch (error) {
     throw $fmtWritten(error, "");
   }
 }
 
 function put(w, n, WWrite) {
-  WWrite.writeFmt(
-    w,
-    $fmtTextOr(
-      () => {
-        let text = "";
-        try {
-          text += "x";
-          text += n;
-          text += "y";
-          text += refusedDisplay_fmt(undefined);
-        } catch (error) {
-          throw $fmtWritten(error, text);
-        }
-        return text;
-      },
-      (text) => $writeTry(() => WWrite.writeStr(w, text)),
-    ),
-  );
+  WWrite.writeFmt(w, () => {
+    const f = $sink();
+    try {
+      f.write("x");
+      $writeInteger(f, n);
+      f.write("y");
+      $writingInto(f, refusedDisplay_fmt);
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  });
 }
 
 function intoAny(w, args, WWrite) {
-  WWrite.writeFmt(
-    w,
-    $fmtTextOr(
-      () => {
-        let text = "";
-        try {
-          text += args();
-        } catch (error) {
-          throw $fmtWritten(error, text);
-        }
-        return text;
-      },
-      (text) => $writeTry(() => WWrite.writeStr(w, text)),
-    ),
-  );
+  WWrite.writeFmt(w, args);
 }
 
 function intoDyn(w, n) {
-  w.impl.writeFmt(
-    w,
-    $fmtTextOr(
-      () => {
-        let text = "";
-        try {
-          text += "[";
-          text += String(n).padStart(3);
-          text += "]";
-          text += refusedDisplay_fmt(undefined);
-        } catch (error) {
-          throw $fmtWritten(error, text);
-        }
-        return text;
-      },
-      (text) => $writeTry(() => w.impl.writeStr(w, text)),
-    ),
-  );
+  w.impl.writeFmt(w, () => {
+    const f = $sink();
+    try {
+      f.write("[");
+      $writeInteger(f, n, { width: 3, align: "Right" });
+      f.write("]");
+      $writingInto(f, refusedDisplay_fmt);
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  });
 }
 
 function main() {
@@ -98,14 +78,14 @@ function main() {
     intoAny(
       w$1,
       () => {
-        let text = "";
+        const f = $sink();
         try {
-          text += "a2b";
-          text += refusedDisplay_fmt(undefined);
+          f.write("a2b");
+          $writingInto(f, refusedDisplay_fmt);
         } catch (error) {
-          throw $fmtWritten(error, text);
+          throw $fmtWritten(error, f.done());
         }
-        return text;
+        return f.done();
       },
       $stringWriter,
     ),

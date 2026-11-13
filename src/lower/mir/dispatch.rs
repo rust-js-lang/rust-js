@@ -596,7 +596,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.arguments_formatted(state, callee, (operands, arg_tys), &mut values, span)?;
         self.arguments_given_to_writers(state, callee, operands, span)?;
-        self.partial_written_through_a_dictionary(state, callee, &mut values, span, out)?;
         // Of another crate's, one its crate's calls each give `null` or a
         // value, which its body tests `!== null`: what may be `undefined`
         // given it `?? null`, as its contract says.

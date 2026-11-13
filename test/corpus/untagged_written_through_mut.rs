@@ -1,3 +1,4 @@
+//@ library-differs
 // `*r = v` through a `&mut` to an untagged enum, whose value is its payload
 // (ADR 0214): of one that may be a number, a place, written where it is, an
 // array's item or a variable; of one whose payloads are each an object, the

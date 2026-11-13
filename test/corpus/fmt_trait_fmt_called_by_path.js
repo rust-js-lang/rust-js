@@ -8,27 +8,40 @@ import {
   $formatted,
   $lowerExp,
   $print,
+  $sink,
   $traitImpl,
+  $writeIntegral,
   $writeTry,
+  $writerSink,
+  $writerWriteFmt,
+  $writingInto,
 } from "@rust-js/std";
 
 export function entry() {
   main();
 }
 
-export const hexyLowerHex = { fmt: hexyLowerHex_fmt };
+export const hexyLowerHex = {
+  fmt: hexyLowerHex_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, hexyLowerHex_fmt, value, options),
+};
 function hexyLowerHex_fmt(hexy, options) {
-  let f = "";
+  const f = $sink();
   if (options?.alternate === true) {
-    f += "hex:";
+    f.write("hex:");
   }
-  f += $formatted((options?.alternate ? "0x" : "") + hexy[0].toString(16), options, true);
-  return f;
+  $writeIntegral(f, true, "0x", hexy[0].toString(16), options);
+  return f.done();
 }
 
-export const hexyDebug = { fmt: hexyDebug_fmt };
+export const hexyDebug = {
+  fmt: hexyDebug_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, hexyDebug_fmt, value, options),
+};
 function hexyDebug_fmt(hexy, options) {
-  return hexyLowerHex_fmt(hexy, options);
+  const f = $sink();
+  $writingInto(f, hexyLowerHex_fmt, hexy, options);
+  return f.done();
 }
 
 export const shownDisplay = { fmt: shownDisplay_fmt };
@@ -84,7 +97,7 @@ const $fullWrite_writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1)
 export const fullWrite = {
   writeStr: $fullWrite_writeStr,
   writeChar: $fullWrite_writeStr,
-  writeFmt: $fullWrite_writeStr,
+  writeFmt: $writerWriteFmt($fullWrite_writeStr, $fullWrite_writeStr),
 };
 function fullWrite_writeStr(full, s) {
   if ($byteLen(s) > full[0]) {
@@ -151,10 +164,24 @@ function main() {
   );
   const full = [4];
   console.log(
-    `${$writeTry(() => fullWrite_writeStr(full, hexyDebug_fmt([255]))) === undefined ? "Ok(())" : "Err(Error)"} ${full[0]}`,
+    `${
+      $writeTry(() => {
+        const f = $writerSink(full, fullWrite_writeStr, fullWrite_writeStr);
+        $writingInto(f, hexyDebug_fmt, [255]);
+      }) === undefined
+        ? "Ok(())"
+        : "Err(Error)"
+    } ${full[0]}`,
   );
   console.log(
-    `${$writeTry(() => fullWrite_writeStr(full, hexyDebug_fmt([11259375]))) === undefined ? "Ok(())" : "Err(Error)"} ${full[0]}`,
+    `${
+      $writeTry(() => {
+        const f = $writerSink(full, fullWrite_writeStr, fullWrite_writeStr);
+        $writingInto(f, hexyDebug_fmt, [11259375]);
+      }) === undefined
+        ? "Ok(())"
+        : "Err(Error)"
+    } ${full[0]}`,
   );
 }
 //# sourceMappingURL=case.js.map

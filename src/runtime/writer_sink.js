@@ -92,16 +92,24 @@ function $writeCharOf(f, c, options = {}) {
 // through a sink makes it, `$sink()`, as its first statement, so that call
 // claims it; any `$sink()` after, of a `format!` or a `to_string()` the
 // writer makes, is a string of its own.
+// A writer that claims it gives back nothing of its own, its sink's
+// `done()`, `""`; one that gives back its text didn't claim it, and a writer
+// it called claimed it in its place, so what was written isn't its text: an
+// error, never that text (#1735).
 let $writerArmed;
 function $writingInto(f, writer, ...args) {
   const outer = $writerArmed;
   $writerArmed = f;
+  let given;
   try {
-    writer(...args);
+    given = writer(...args);
   } finally {
     const unclaimed = $writerArmed === f;
     $writerArmed = outer;
     if (unclaimed) throw new Error("rust-js: a writer shown into a writer didn't write through its sink");
+  }
+  if (typeof given === "string" && given !== "") {
+    throw new Error("rust-js: a writer shown into a writer didn't write through its sink");
   }
 }
 // A `str`'s `Debug` into a writer, as std's writes it: its quote a

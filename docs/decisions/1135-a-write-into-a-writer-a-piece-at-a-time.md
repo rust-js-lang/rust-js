@@ -1,10 +1,10 @@
 # 1135. A `write!` into a writer is written a piece at a time
 
-Status: Accepted (2026-11-13, #1652, campaign #1681), landing in steps.
-Tu's decision (option A, std's exact split); the lead approved the design.
-It replaces [0166](0166-user-fmt-write.md) and the "one `write_fmt` of its
-text" rule of [0180](0180-generic-writers.md) once the last step makes it
-the one way; until then they stand.
+Status: Accepted (2026-11-13, #1652, campaign #1681), landed
+(2026-11-14): the one way. Tu's decision (option A, std's exact split);
+the lead approved the design. It supersedes [0166](0166-user-fmt-write.md)
+and the "one `write_fmt` of its text" rule of
+[0180](0180-generic-writers.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. std's
 `write_fmt` calls a writer's `write_str` once per piece, and a writer that
@@ -389,6 +389,66 @@ go.
      framing leaves, carries no `fmtInto` and isn't refused: nothing writes
      it so (`WrittenParams::given_adt`, the types given a parameter written
      so or held by one). Proof: the published piecewise pair; 1 mutation.
+
+9. The switch-over (landed). `writes_piecewise()` and
+   `RUST_JS_WRITES_PIECEWISE` are gone, with the default mode's whole-text
+   paths: a writer's own `write_fmt` entry that wrapped generic code's
+   text as a function, the `$fmtTextOr` call of a failing generic write
+   (#1696's interim patch), `$stringWriter`'s branch of a text, and the
+   formatting table's environment. test/writer-sink*.rs are corpus cases,
+   `writer_sink_*`, against native in both builds and as a library.
+   Library ABI 37.
+
+   **An `Arguments` is the function that writes into a sink only where
+   something may arm one** (`WrittenArguments::arms`, `arms_sinks`): a
+   library; a writer shown into a writer, `framed`; or a call that writes
+   one it's given into a writer a piece at a time, a writer of the crate's
+   own or a generic one, `fmt::write`, a function that does. A
+   `Formatter`'s `write_fmt`, or a writer function's given its
+   `Formatter`, of a writer not framed, writes its text. And it's kept by a
+   generic function only where its type parameter is in what that gives
+   back or in another parameter, `Box::new(args)`, `v.push(args)`; one that
+   only reads it, `args.to_string()`, makes its text at once. So one whose
+   only use is its text stays its template (the lead's ask). Measured on
+   the corpus: 14 `Arguments` became the function that writes into a sink
+   where they were a template, each written into a writer of the crate's
+   own or a generic one, `make(8, () => { const f = $sink(); f.write("1-2");
+   .. })` given to a writer's `write_fmt`, and 6 templates went; before the
+   gate and the narrowing, 40 and 33. The React port: none
+   (`react-in-rust.ts regen`'s diff is other commits').
+
+   The switch-over's last run found, each fixed here:
+   - A std formatting trait's `fmt` taken as a `fn` pointer,
+     `self.format(f, fmt::Display::fmt)`, was its text where a framed
+     writer armed it: "didn't write through its sink" at run time, in a
+     program that runs today. It's now the function that writes into the
+     sink it claims, by the `Formatter`'s options as it runs, where a
+     writer is framed (`std_fmt_fn_value`), its text called plainly.
+     Corpus case writer_sink_fn_value_of_a_std_fmt.
+   - A library's writer function given a consumer's framed `Formatter`,
+     the library's or the consumer's own copy of it, is framed
+     (`Foreign::frames_writer_fn`, `library_writer_framed`), and the
+     consumer arms it. A writer armed whose callee doesn't claim the sink
+     lets a callee of that callee claim it instead, a wrong answer, so
+     framing is held the same on both sides. Pair
+     librarys_writer_function_given_a_consumers_formatter, and
+     test/crates/pairs/library_writers_given_options.
+   - A library publishes its formatted types, which a program alone
+     doesn't: test/crates-compiled-here's library and program forms differ
+     by them now, and two tests' library JS reads so.
+   - The metamorphic `library` rewrite of the moved cases found two more,
+     which only the switch-over shows: a library's trait's method that
+     writes the `Arguments` it's given, called through a `dyn`, wasn't
+     known to by its consumer, as its contract lists items alone, so the
+     consumer gave a template and a writer it showed claimed the sink, its
+     own pieces lost (#1735, a wrong answer); its contract now lists its
+     traits' methods' too (`written_trait_arguments`). And a consumer's
+     callable given the `Formatter`, called by a library's writer, wasn't
+     framed (#1736); it is wherever a library it uses writes a piece at a
+     time. `$writingInto` now refuses a writer that gives back its text, a
+     writer it called having claimed the sink in its place: an error, never
+     that text. Pairs arguments_through_a_librarys_dyn_trait and
+     consumers_closure_called_by_a_librarys_writer.
 
 ## Alternatives
 

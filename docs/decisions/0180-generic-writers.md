@@ -1,6 +1,11 @@
 # 0180. Generic code that writes to any writer is given a `fmt::Write` dictionary
 
-Status: Accepted, amended: another rust-js crate's generic writer, which
+Status: Accepted, superseded in part by
+[1135](1135-a-write-into-a-writer-a-piece-at-a-time.md): generic code's
+`write!` calls its dictionary's `writeFmt`, given the function of the
+`Arguments` that writes each piece into the sink it claims, not its text;
+std's `writeFmt` writes it into the writer's `write_str` and `write_char` a
+piece at a time (#1652). Amended: another rust-js crate's generic writer, which
 its library exports (ADR 0100), is given a `Formatter` as the crate's own
 is, bitflags' `to_writer` its macro's `Debug` hands it, which the lowering
 from MIR (ADR 0364) had refused (`test/crates.test.ts`). Extends [0166](0166-user-fmt-write.md),

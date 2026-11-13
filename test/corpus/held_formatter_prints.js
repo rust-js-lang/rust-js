@@ -10,6 +10,8 @@ import {
   $sink,
   $stringWriter,
   $unwindsOn,
+  $writerSink,
+  $writerWriteFmt,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,7 +25,7 @@ const $quotedWrite_writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, a
 export const quotedWrite = {
   writeStr: $quotedWrite_writeStr,
   writeChar: $quotedWrite_writeStr,
-  writeFmt: $quotedWrite_writeStr,
+  writeFmt: $writerWriteFmt($quotedWrite_writeStr, $quotedWrite_writeStr),
   $drop: quotedDrop_drop,
 };
 function quotedWrite_writeStr(quoted, s) {
@@ -40,7 +42,8 @@ function messageDebug_fmt(message) {
   f.write('"');
   const quoted = [f];
   try {
-    const result = quotedWrite_writeStr(quoted, message[0]);
+    const f = $writerSink(quoted, quotedWrite_writeStr, quotedWrite_writeStr);
+    f.write(message[0]);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -103,7 +106,7 @@ const $collectedWrite_writeStr = (arg0, arg1) => collectedWrite_writeStr(arg0.va
 export const collectedWrite = {
   writeStr: $collectedWrite_writeStr,
   writeChar: $collectedWrite_writeStr,
-  writeFmt: $collectedWrite_writeStr,
+  writeFmt: $writerWriteFmt($collectedWrite_writeStr, $collectedWrite_writeStr),
 };
 function collectedWrite_writeStr(collected, s) {
   collected[0].value += s;

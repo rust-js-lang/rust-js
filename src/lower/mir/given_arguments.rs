@@ -197,7 +197,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// into a writer a piece at a time (`WrittenArguments::writes`): the
     /// function that writes into the sink it claims (#1652, step 6).
     pub(super) fn given_to_a_writer(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
-        crate::lower::analysis::given_to_a_write(&self.recognition(), &self.krate.written.arguments, body, local)
+        let marks = &self.krate.written.arguments;
+        marks.arms && crate::lower::analysis::given_to_a_write(&self.recognition(), marks, body, local)
     }
 
     /// Whether `operand`, an `Arguments` given to what writes it into a
@@ -347,66 +348,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         given && (!recognition.formatter_write_fmt(callee, generic_args) || self.writes_through_a_sink(state))
-    }
-}
-
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Of a `write_fmt`, `callee`, into a writer only a dictionary says, a
-    /// `W: fmt::Write`'s or a `dyn`'s, whose text may fail, `values`'
-    /// second (#1696): its text made by a function, and what it made before
-    /// the error written into the writer by its `write_str`, as std's
-    /// `write_fmt` writes each piece before it, `$fmtTextOr(() => {..},
-    /// (text) => W.writeStr(w, text))`; a `String`'s keeps it. Till ADR
-    /// 1135's switch-over makes each piece a write, where a dictionary's
-    /// `writeFmt` is given the function (step 6).
-    pub(super) fn partial_written_through_a_dictionary(
-        &mut self,
-        state: &mut State<'_, 'tcx>,
-        (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        values: &mut [Value<'tcx>],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
-        let tcx = self.tcx;
-        if crate::lower::recognition::writes_piecewise() || !crate::lower::recognition::is_write_fmt(tcx, callee) {
-            return Ok(());
-        }
-        let by_dictionary = (generic_args.types().next())
-            .is_some_and(|writer| crate::lower::recognition::known_by_a_dictionary(writer.peel_refs()));
-        let [writer, text @ Value::Fmt(Std::FmtNew, ..)] = values else {
-            return Ok(());
-        };
-        if !by_dictionary {
-            return Ok(());
-        }
-        self.flush(state, out)?;
-        let given = self.value_expr(std::mem::replace(writer, Value::Expr(Expr::undefined())), span)?;
-        let given = match given.kind {
-            js::ExprKind::Var(_) => given,
-            _ => self.spill(Base::Temporary, given, out),
-        };
-        *writer = Value::Expr(given.clone());
-        let Value::Expr(make) =
-            self.arguments_given_on(std::mem::replace(text, Value::Expr(Expr::undefined())), false, span)?
-        else {
-            return Err(self.unsupported(span, "this `write!`'s text, from its MIR"));
-        };
-        let trait_id = tcx.trait_of_assoc(callee).expect("`fmt::Write`'s method");
-        let write_str = crate::lower::recognition::trait_method(tcx, trait_id, "write_str");
-        let partial = self.fresh(Role::Text);
-        let mut body = Vec::new();
-        let written = self
-            .trait_call(
-                write_str,
-                generic_args,
-                vec![given, Expr::var(&partial)],
-                span,
-                &mut body,
-            )?
-            .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?;
-        body.push(StmtKind::Return(Some(written)).at(js::Span::NONE));
-        let partial = Expr::arrow(vec![js::Pattern::Name(partial)], body);
-        *text = Value::Expr(Expr::call_helper("$fmtTextOr", vec![make, partial]));
-        Ok(())
     }
 }

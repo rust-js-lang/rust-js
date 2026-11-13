@@ -1,3 +1,4 @@
+//@ library-differs
 // A class's `Display::fmt`, its prototype's `toString`, run where a
 // template interpolates its value: before a later format argument, as
 // Rust's `println!` and `format!` write each in turn, and where its text is

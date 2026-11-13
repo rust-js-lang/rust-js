@@ -11,6 +11,9 @@ import {
   $print,
   $sink,
   $writeTry,
+  $writerSink,
+  $writerWriteFmt,
+  $writingInto,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,7 +38,7 @@ const $smallWrite_writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg
 export const smallWrite = {
   writeStr: $smallWrite_writeStr,
   writeChar: $smallWrite_writeStr,
-  writeFmt: $smallWrite_writeStr,
+  writeFmt: $writerWriteFmt($smallWrite_writeStr, $smallWrite_writeStr),
 };
 function smallWrite_writeStr(small, s) {
   if ($byteLen(small.text) + $byteLen(s) > small.cap) {
@@ -46,7 +49,10 @@ function smallWrite_writeStr(small, s) {
 
 function make(cap, args) {
   const v = { text: "", cap };
-  const result = $writeTry(() => smallWrite_writeStr(v, args()));
+  const result = $writeTry(() => {
+    const f = $writerSink(v, smallWrite_writeStr, smallWrite_writeStr);
+    $writingInto(f, args);
+  });
   const result$1 = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: [result, cap] };
   if (result$1.TAG === "Err") {
     return result$1;
@@ -81,7 +87,17 @@ function main() {
             const tuple = $debugTuple(f, "Err");
             tuple.field(() => fullDebug_fmt(value._0, errorDebug));
             tuple.finish();
-          }))(make(8, () => "1-2"));
+          }))(
+      make(8, () => {
+        const f = $sink();
+        try {
+          f.write("1-2");
+        } catch (error) {
+          throw $fmtWritten(error, f.done());
+        }
+        return f.done();
+      }),
+    );
     text += "\n";
   } catch (error) {
     $fmtPrintFailed(error, text, false);
@@ -100,7 +116,17 @@ function main() {
             const tuple = $debugTuple(f, "Err");
             tuple.field(() => fullDebug_fmt(value._0, errorDebug));
             tuple.finish();
-          }))(make(2, () => "10-20"));
+          }))(
+      make(2, () => {
+        const f = $sink();
+        try {
+          f.write("10-20");
+        } catch (error) {
+          throw $fmtWritten(error, f.done());
+        }
+        return f.done();
+      }),
+    );
     text$1 += "\n";
   } catch (error) {
     $fmtPrintFailed(error, text$1, false);

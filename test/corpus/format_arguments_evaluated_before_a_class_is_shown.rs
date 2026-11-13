@@ -1,3 +1,4 @@
+//@ library-differs
 // Every argument of a format evaluated before any is formatted, as Rust's
 // `format_args!` takes them: a later argument's call before a class's
 // `Display::fmt`, which a format before it runs. The later argument ran

@@ -1,7 +1,7 @@
 // Mutations of src/lower/display/sink_writes.rs (ADR 1135, #1652).
 import type { Mutation } from "../../../mutations";
 
-const tests = ["test/writer-sink.test.ts"];
+const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
 
 export const mutations: Mutation[] = [
   {
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_writes.rs",
     find: "                    vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options],\n",
     replace: "                    vec![Expr::bool(true), Expr::str(\"\"), digits, options],\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
   {
     name: "framed-own-radix-refused",
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_writes.rs",
     find: "        let Some(fmt_trait) = self.fmt_trait_of(kind) else {\n",
     replace: "        let Some(fmt_trait) = self.fmt_trait_of(kind).filter(|_| matches!(kind, Std::FmtDisplay | Std::FmtDebug)) else {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "parse-error-display-given-the-formatter-refused",
@@ -98,6 +98,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_writes.rs",
     find: "        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) {\n",
     replace: "        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) && false {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

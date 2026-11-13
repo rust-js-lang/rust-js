@@ -1118,7 +1118,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&never_but_through_whats_shown, &failing),
         (library, &written_arguments),
     );
-    let written_params = written_params::written_params(&recognition, all_bodies, &prints, &foreign, written_arguments);
+    let mut written_params =
+        written_params::written_params(&recognition, all_bodies, &prints, &foreign, written_arguments);
+    written_params.arguments.arms = written_params::arms_sinks(
+        &recognition,
+        all_bodies,
+        (library, !prints.framed.is_empty()),
+        &written_params.arguments,
+    );
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function

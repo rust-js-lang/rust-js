@@ -4,9 +4,15 @@ import {
   $byteLen,
   $debugStr,
   $fmtError,
+  $fmtWritten,
+  $sink,
   $stringWriter,
+  $writeDebugList,
   $writeExpect,
+  $writeInteger,
   $writeTry,
+  $writerSink,
+  $writerWriteFmt,
 } from "@rust-js/std";
 
 export function entry() {
@@ -18,7 +24,7 @@ const $bufWrite_writeStr = (arg0, arg1) => bufWrite_writeStr(arg0.value, arg1);
 export const bufWrite = {
   writeStr: $bufWrite_writeStr,
   writeChar: $bufWrite_writeStr,
-  writeFmt: $bufWrite_writeStr,
+  writeFmt: $writerWriteFmt($bufWrite_writeStr, $bufWrite_writeStr),
 };
 function bufWrite_writeStr(buf, s) {
   if ($byteLen(buf.text) + $byteLen(s) > buf.cap) {
@@ -28,19 +34,44 @@ function bufWrite_writeStr(buf, s) {
 }
 
 function put(w, n) {
-  w.impl.writeFmt(w, `<${n}>`);
+  w.impl.writeFmt(w, () => {
+    const f = $sink();
+    try {
+      f.write("<");
+      f.write(String(n));
+      f.write(">");
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  });
 }
 
 function main() {
   const buf = { text: "", cap: 8 };
-  const receiver = { value: buf, impl: bufWrite };
-  const short = $writeTry(() => receiver.impl.writeStr(receiver, `[${[1, 2].join(", ")}]`));
+  const value = buf;
+  const impl = bufWrite;
+  const short = $writeTry(() => {
+    const f = $writerSink(
+      { value, impl },
+      (arg, s) => arg.impl.writeStr(arg, s),
+      (arg, s) => arg.impl.writeChar(arg, s),
+    );
+    $writeDebugList(
+      f,
+      [1, 2],
+      (f, value) => {
+        $writeInteger(f, value);
+      },
+      false,
+    );
+  });
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
-  const receiver$1 = { value: buf, impl: bufWrite };
-  const long = $writeTry(() => receiver$1.impl.writeStr(receiver$1, "too long"));
+  const receiver = { value: buf, impl: bufWrite };
+  const long = $writeTry(() => receiver.impl.writeStr(receiver, "too long"));
   console.log(`${long === undefined} ${$debugStr(buf.text)}`);
   let s = ">";
-  const receiver$2 = {
+  const receiver$1 = {
     impl: $stringWriter,
     get value() {
       return s;
@@ -49,7 +80,7 @@ function main() {
       s = value;
     },
   };
-  const result = $writeTry(() => receiver$2.impl.writeStr(receiver$2, "3-x"));
+  const result = $writeTry(() => receiver$1.impl.writeStr(receiver$1, "3-x"));
   $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s}`);
   const result$1 = $writeTry(() =>

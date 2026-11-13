@@ -1,3 +1,4 @@
+//@ library-differs
 // A writer function generic over a type, named as a `fn` pointer at one of
 // its instances, called through the pointer: its JS takes no `Formatter`,
 // nor does the pointer's, so what it's given is its own, and its

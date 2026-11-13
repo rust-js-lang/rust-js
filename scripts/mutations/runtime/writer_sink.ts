@@ -1,7 +1,7 @@
 // Mutations of src/runtime/writer_sink.js (ADR 1135, #1652).
 import type { Mutation } from "../../mutations";
 
-const tests = ["test/writer-sink.test.ts"];
+const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
 
 export const mutations: Mutation[] = [
   {
@@ -98,6 +98,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/writer_sink.js",
     find: "  return (w, args) => $writingInto($writerSink(w, writeStr, writeChar), args);\n",
     replace: "  return (w, args) => writeStr(w, args());\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
+  },
+  {
+    name: "writing-into-takes-a-thiefs-text",
+    breaks: "a writer armed that gives back its text, a writer it called claiming the sink in its place, passes, its text lost (#1735)",
+    file: "src/runtime/writer_sink.js",
+    find: "  if (typeof given === \"string\" && given !== \"\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a writer armed that gives back its text"],
   },
 ];

@@ -28,11 +28,12 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
 
 // #1026: a library's writer given as a value, `quoted` to a `fn(&u32, &mut
 // Formatter)`, is its import, as the crate's own is its name, not the arrow
-// of its call as MIR's.
+// of its call as MIR's; the library's writer function given it, the sink
+// armed for it, as it's framed (#1652).
 test("a library's writer given as a value is its import", () => {
   const out = chain(pairs, "library_writers_given_options", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  return Joined.format(joined, quoted, options);\n");
+  expect(app).toContain("  $writingInto(f, Joined.format, joined, quoted, options);\n");
 }, 300_000);
 
 // #1029: a closure a library's instance makes of a function rustc inlined
@@ -157,7 +158,11 @@ test("a library's generic function is its program's, alone or a dependency, and 
   const alone = fixture("program-form-alone");
   run([compiler, join(pairs, "program_form", "dep.rs"), "-o", join(alone, "lib.js"), "--", "--crate-name", "dep", "--crate-type=lib"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toBe(readFileSync(join(alone, "lib.js"), "utf8"));
+  // The same but for its formatted types, which a library publishes, as a
+  // consumer may write one into a writer a piece at a time, and a program
+  // alone doesn't (ADR 1135).
+  expect(dep).toContain("fmtInto: (f, value, options) => $writingInto(f, hourDisplay_fmt, value, options)");
+  expect(readFileSync(join(alone, "lib.js"), "utf8")).not.toContain("fmtInto");
   expect(dep).toContain("export function createContext(defaultValue) {\n  return {\n    currentValue: defaultValue,\n");
   expect(dep).toContain("export function useState(initialState, dispatcher) {\n  dispatcher = resolveDispatcher(dispatcher);\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");

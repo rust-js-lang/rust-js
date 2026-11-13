@@ -16,23 +16,34 @@ import {
   $sink,
   $unwrapErr,
   $writeTry,
+  $writingInto,
 } from "@rust-js/std";
 
 export function entry() {
   main();
 }
 
-export const noisyDebug = { fmt: noisyDebug_fmt };
+export const noisyDebug = {
+  fmt: noisyDebug_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, noisyDebug_fmt, value, options),
+};
 function noisyDebug_fmt(noisy) {
   const f = $sink();
   $out(`<noisy ${noisy[0]}>`);
-  f.write(`N${noisy[0]}`);
+  f.write("N");
+  f.write(String(noisy[0]));
   return f.done();
 }
 
-export const showsDisplay = { fmt: showsDisplay_fmt };
+export const showsDisplay = {
+  fmt: showsDisplay_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, showsDisplay_fmt, value, options),
+};
 function showsDisplay_fmt(shows) {
-  return `cell ${shows[0].value}`;
+  const f = $sink();
+  f.write("cell ");
+  f.write(String(shows[0].value));
+  return f.done();
 }
 
 export const panicsDebug = { fmt: panicsDebug_fmt };
@@ -40,16 +51,19 @@ function panicsDebug_fmt(panics) {
   throw new Error("formatted");
 }
 
-export const badDebug = { fmt: badDebug_fmt };
+export const badDebug = {
+  fmt: badDebug_fmt,
+  fmtInto: (f, value, options) => $writingInto(f, badDebug_fmt, value, options),
+};
 function badDebug_fmt(bad) {
-  let f = "";
+  const f = $sink();
   try {
-    f += "B";
+    f.write("B");
     $fmtError();
   } catch (error) {
-    throw $fmtWritten(error, f);
+    throw $fmtWritten(error, f.done());
   }
-  return f;
+  return f.done();
 }
 
 function said(what) {
@@ -107,7 +121,15 @@ function main() {
   const value = [1];
   said(() => noisyDebug_fmt(value));
   const value$1 = [2];
-  twice(() => noisyDebug_fmt(value$1));
+  twice(() => {
+    const f = $sink();
+    try {
+      $writingInto(f, noisyDebug_fmt, value$1);
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  });
   const value$2 = [3];
   never(() => noisyDebug_fmt(value$2));
   const value$3 = [4];
@@ -118,7 +140,17 @@ function main() {
 
   const cell = { value: 1 };
   const shows = [cell];
-  const held = { what: () => showsDisplay_fmt(shows) };
+  const held = {
+    what() {
+      const f = $sink();
+      try {
+        $writingInto(f, showsDisplay_fmt, shows);
+      } catch (error) {
+        throw $fmtWritten(error, f.done());
+      }
+      return f.done();
+    },
+  };
   cell.value = 2;
   $printing(() => {
     try {
@@ -143,13 +175,33 @@ function main() {
   effect.value = (effect.value + 1) >>> 0;
   const value$5 = effect.value;
   const value$6 = [12];
-  const counted = () => `${value$5} ${noisyDebug_fmt(value$6)}`;
+  function counted() {
+    const f = $sink();
+    try {
+      f.write(String(value$5));
+      f.write(" ");
+      $writingInto(f, noisyDebug_fmt, value$6);
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  }
   twice(counted);
   $print(`effect ran ${effect.value}\n`);
 
   const value$7 = bump(effect);
   const value$8 = effect.value;
-  const bumped = () => `${value$7} then ${value$8}`;
+  function bumped() {
+    const f = $sink();
+    try {
+      f.write(String(value$7));
+      f.write(" then ");
+      f.write(String(value$8));
+    } catch (error) {
+      throw $fmtWritten(error, f.done());
+    }
+    return f.done();
+  }
   effect.value = 10;
   twice(bumped);
   $print(`bumped ${effect.value}\n`);

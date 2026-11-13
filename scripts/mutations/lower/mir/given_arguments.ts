@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "            match fails || self.krate.failing.any {\n",
     replace: "            match false {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "sink-form-given-of-text",
@@ -59,15 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "                    if arguments_use(&recognition, body, local) != ArgumentsUse::GivenOn {\n",
     replace: "                    if false {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of writes is native Rust's, in the plain build"],
-  },
-  {
-    name: "partial-not-written-through-a-dictionary",
-    breaks: "a `write!` through generic code's writer of a value that fails makes its text whole, so what came before the value is lost (#1696)",
-    file: "src/lower/mir/given_arguments.rs",
-    find: "        if crate::lower::recognition::writes_piecewise() || !crate::lower::recognition::is_write_fmt(tcx, callee) {\n",
-    replace: "        if true || !crate::lower::recognition::is_write_fmt(tcx, callee) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_write_into_a_string_keeps_text_before_a_failure.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_pieces.rs$"],
   },
   {
     name: "sink-form-of-a-place-unseen",
@@ -75,7 +67,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "                    Some(from) if read(from) => {}\n",
     replace: "                    Some(from) if read(from) => return false,\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "sink-form-of-a-constant-unseen",
@@ -83,7 +75,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "            return operand.constant().is_some();\n",
     replace: "            return false;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "sink-form-of-a-call-result-unseen",
@@ -91,6 +83,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "                Some(_) => continue,\n",
     replace: "                Some(_) => return false,\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
+  },
+  {
+    name: "arguments-sink-form-where-nothing-arms",
+    breaks: "an `Arguments` given on is the function that writes into a sink where nothing arms one, its only use its text, where its template reads plainly",
+    file: "src/lower/mir/given_arguments.rs",
+    find: "        marks.arms && crate::lower::analysis::given_to_a_write(&self.recognition(), marks, body, local)\n",
+    replace: "        crate::lower::analysis::given_to_a_write(&self.recognition(), marks, body, local)\n",
+    tests: ["test/corpus.test.ts", "-t", "^arguments_kept_by_a_generic_std_function.rs$"],
   },
 ];

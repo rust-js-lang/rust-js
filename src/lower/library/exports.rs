@@ -219,6 +219,17 @@ pub(in crate::lower) fn exports<'tcx>(
             .collect(),
         leaves_unended: prints.unended,
         written_into: sorted_keys(tcx, written.local_adts(tcx).iter()),
+        written_trait_arguments: {
+            let mut of: Vec<(String, Vec<u32>)> = (written.arguments.trait_methods(tcx).into_iter())
+                .map(|(id, params)| (key(tcx, id), params))
+                .collect();
+            of.sort();
+            of
+        },
+        framed_writers: sorted_keys(
+            tcx,
+            (prints.framed.iter()).filter(|id| id.is_local() && tcx.trait_impl_of_assoc(**id).is_none()),
+        ),
         dyn_written_into: written.dyn_written,
         makes_fmt_dyns: *makes_fmt_dyns && !written.dyn_written,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),

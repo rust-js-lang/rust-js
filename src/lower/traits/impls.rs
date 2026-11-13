@@ -411,16 +411,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
-            // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
-            // Where writes are followed a piece at a time, std's `write_fmt`
-            // is `fmt::write` of the function of its `Arguments` into its
-            // sink, `$writerWriteFmt(writeStr, writeChar)` (#1652, step 6).
+            // `char`'s text, and `fmt::write` of the function of a `write!`'s
+            // `Arguments` into its sink, `$writerWriteFmt(writeStr,
+            // writeChar)`, a piece at a time, as std's write them (ADR 1135).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
                 let write_str = bindings::trait_method_name(self.tcx, tr.def_id, "write_str");
                 let write_str = self.shared_entry(&mut props, &mut shared, &write_str, span)?;
-                let entry = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id)
-                    && crate::lower::recognition::writes_piecewise()
-                {
+                let entry = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id) {
                     true => {
                         let write_char = bindings::trait_method_name(self.tcx, tr.def_id, "write_char");
                         let write_char = self.shared_entry(&mut props, &mut shared, &write_char, span)?;
@@ -777,52 +774,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (true, None) => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),
                 (false, _) => arrow,
             };
-            // A writer's own `write_fmt`, which takes its `Arguments` as the
-            // function that makes its text (#1565), given generic code's
-            // text (ADR 0180) as that function (#1695).
-            // Where writes are followed a piece at a time, generic code gives
-            // it that function, as it is (#1652, step 6).
-            let value = match crate::lower::recognition::is_write_fmt(self.tcx, item.def_id)
-                && !crate::lower::recognition::writes_piecewise()
-            {
-                true => {
-                    let made = |text: &str| {
-                        Expr::arrow(
-                            Vec::new(),
-                            vec![StmtKind::Return(Some(Expr::var(text))).at(js::Span::NONE)],
-                        )
-                    };
-                    // Of an entry that takes it apart, `(arg0, arg1) =>
-                    // ..(arg0.value, arg1)`, its text made that function where
-                    // it's passed on.
-                    let given = match &value.kind {
-                        js::ExprKind::Arrow(params, body) => match (&params[..], &body[..]) {
-                            ([_, js::Pattern::Name(text)], [only]) => match &only.kind {
-                                StmtKind::Return(Some(call)) => call
-                                    .substitute(&|v: &str| (v == text.as_str()).then(|| made(text)))
-                                    .map(|call| {
-                                        Expr::arrow(
-                                            params.clone(),
-                                            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
-                                        )
-                                    }),
-                                _ => None,
-                            },
-                            _ => None,
-                        },
-                        _ => None,
-                    };
-                    given.unwrap_or_else(|| {
-                        let (writer, text) = (self.fresh(Role::Arg), self.fresh(Role::Text));
-                        let call = Expr::call(value, vec![Expr::var(&writer), made(&text)]);
-                        Expr::arrow(
-                            vec![writer.into(), text.into()],
-                            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
-                        )
-                    })
-                }
-                false => value,
-            };
+            // A writer's own `write_fmt` takes the function of its
+            // `Arguments` as generic code gives it (#1565, ADR 1135).
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }
         props.extend(self.dictionary_drop(tr.self_ty(), span)?);

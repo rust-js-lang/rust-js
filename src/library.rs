@@ -100,8 +100,12 @@ use std::path::Path;
 /// `fmt::Arguments` parameters each function writes into a writer a piece
 /// at a time, `written_arguments`, given the function that writes into the
 /// sink it claims; and each `fmt::Write` dictionary's `writeFmt` given that
-/// function, not its text (#1652, step 6 of ADR 1135).
-pub const VERSION: u32 = 36;
+/// function, not its text (#1652, step 6 of ADR 1135). 37: a `write!`
+/// into a writer is written a piece at a time, the one way: a library's
+/// published types, its writer functions, and the `fmt::Arguments` it
+/// keeps or returns are written so, which a consumer arms (#1652, ADR
+/// 1135's switch-over).
+pub const VERSION: u32 = 37;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -499,6 +503,19 @@ pub struct Library {
     /// through generic code or a `dyn`, is refused (#1688).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub written_into: Vec<String>,
+    /// Its writer functions, given a `Formatter`, not a formatting impl's,
+    /// that write a piece at a time, as a writer shown into a writer gives
+    /// them its `Formatter`, by key (#1652, ADR 1135): a consumer's framed
+    /// writer arms one, and its own copy of one writes so too.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub framed_writers: Vec<String>,
+    /// Of each of its traits' methods an impl of its writes so, the
+    /// `fmt::Arguments` parameters, by index (#1652, ADR 1135): a
+    /// consumer's call of one through a `dyn` or generic code gives the
+    /// function that writes into the sink it claims, `Calling.written_arguments`
+    /// of a trait's method, which isn't an item.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub written_trait_arguments: Vec<(String, Vec<u32>)>,
     /// Whether it writes a `dyn` of a formatting trait it's given into a
     /// writer a piece at a time: a consumer's values made such a `dyn`
     /// carry `fmtInto` (#1652).
@@ -852,6 +869,10 @@ pub struct Exports {
     pub leaves_unended: [bool; 2],
     /// Its types whose formatting dictionaries carry `fmtInto`, by key (#1652).
     pub written_into: IndexSet<String>,
+    /// Its writer functions that write a piece at a time (`framed_writers`).
+    pub framed_writers: IndexSet<String>,
+    /// Its traits' methods' `Arguments` written so (`written_trait_arguments`).
+    pub written_trait_arguments: IndexMap<String, Vec<u32>>,
     /// Whether it writes a `dyn` it's given into a writer piecewise (#1652).
     pub dyn_written_into: bool,
     /// Whether it makes a `dyn` whose dictionary may lack `fmtInto` (#1652).
@@ -972,6 +993,8 @@ impl Exports {
             stopping_where_caught,
             leaves_unended,
             written_into,
+            framed_writers,
+            written_trait_arguments,
             dyn_written_into,
             makes_fmt_dyns,
             makes_dropping_anys,
@@ -1019,6 +1042,8 @@ impl Exports {
             stopping_where_caught: stopping_where_caught.into_iter().collect(),
             leaves_unended,
             written_into: written_into.into_iter().collect(),
+            framed_writers: framed_writers.into_iter().collect(),
+            written_trait_arguments: written_trait_arguments.into_iter().collect(),
             dyn_written_into,
             makes_fmt_dyns,
             makes_dropping_anys,

@@ -377,6 +377,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/borrow.js",
     find: "  if (cell.borrows < 0) return f.write(\"<borrowed>\");\n",
     replace: "",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

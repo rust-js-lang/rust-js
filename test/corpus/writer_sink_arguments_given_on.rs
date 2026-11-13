@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Arguments` given on to what writes it into a writer is written a
 // piece at a time, as std's `write_fmt` writes it, wherever it was made:
 // by a function's parameter, given on through another, a trait's method

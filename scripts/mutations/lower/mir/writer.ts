@@ -378,8 +378,8 @@ export const mutations: Mutation[] = [
     name: "framed-is-every-sink-writer",
     breaks: "a writer that writes through a sink for printing writes as one shown into a writer, so its generic part is refused though it's never shown into one (#1652)",
     file: "src/lower/mir/writer.rs",
-    find: "        state.writer.is_some() && self.krate.prints.writes_into_writers(self.writer_owner(state))\n",
-    replace: "        state.writer.is_some() && self.krate.prints.writes_through_sink(self.writer_owner(state))\n",
+    find: "        state.writer.is_some() && (self.krate.prints.writes_into_writers(owner) || self.library_writer_framed(owner))\n",
+    replace: "        state.writer.is_some() && (self.krate.prints.writes_through_sink(owner) || self.library_writer_framed(owner))\n",
     tests: ["test/writer-sink.test.ts", "-t", "a writer that prints, never shown into a writer"],
   },
   {
@@ -396,6 +396,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "        let body = state.body.source.def_id();\n",
     replace: "        let body = self.item;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of callables' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_callables.rs$"],
   },
 ];

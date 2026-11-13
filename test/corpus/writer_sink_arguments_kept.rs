@@ -136,6 +136,11 @@ fn log_to(w: &mut Log, args: fmt::Arguments<'_>) -> fmt::Result {
     w.write_fmt(args)
 }
 
+// Only read, its text made at once: its template, as nothing keeps it.
+fn said(what: fmt::Arguments<'_>) -> usize {
+    what.to_string().len()
+}
+
 fn logged<T: Display>(value: &T) -> String {
     let mut log = Log(Vec::new());
     write!(log, "{value}").unwrap();
@@ -184,4 +189,5 @@ fn main() {
     let mut log = Log(Vec::new());
     log_to(&mut log, given(format_args!("{}|{:>3}", 1, 'k'))).unwrap();
     println!("{:?}", log.0);
+    println!("{}", said(format_args!("{}-{}", 12, 'z')));
 }

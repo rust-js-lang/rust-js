@@ -24,15 +24,15 @@ export const mutations: Mutation[] = [
     file: "src/runtime/string_writer.js",
     find: "    else w.value += $fmtTextOr(args, (text) => (w.value += text));\n",
     replace: "    else w.value += $fmtTextOr(() => (args(), args()), (text) => (w.value += text));\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "string-writer-sink-written-whole",
     breaks: "a `Formatter` given as a `W: fmt::Write`, of a writer shown into a writer, writes a `write!`'s text whole, one `write_str`",
     file: "src/runtime/string_writer.js",
-    find: "    else if (w.writeChar !== undefined) $writingInto(w, args);\n",
-    replace: "",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    find: "    if (w.writeChar !== undefined) $writingInto(w, args);\n    else w.value",
+    replace: "    w.value",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "string-writer-sink-char-as-str",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/string_writer.js",
     find: "    if (w.writeChar !== undefined) w.writeChar(c);\n    else w.value += c;\n",
     replace: "    w.value += c;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "string-writer-partial-lost",
@@ -48,6 +48,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/string_writer.js",
     find: "    else w.value += $fmtTextOr(args, (text) => (w.value += text));\n",
     replace: "    else w.value += $fmtTextOr(args, () => {});\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
 ];

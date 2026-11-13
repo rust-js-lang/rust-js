@@ -1,7 +1,7 @@
 // Mutations of src/runtime/write_float.js (ADR 1135, #1652).
 import type { Mutation } from "../../mutations";
 
-const tests = ["test/writer-sink.test.ts"];
+const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
 
 export const mutations: Mutation[] = [
   {
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/write_float.js",
     find: "    while (coefPrec !== 0 && coef % 10n === 0n) {\n",
     replace: "    while (false) {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "int-exp-half-rounds-up",
@@ -66,6 +66,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/write_float.js",
     find: "    const roundUp = over < half ? 0n : over > half ? 1n : floor & 1n;\n",
     replace: "    const roundUp = over < half ? 0n : 1n;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

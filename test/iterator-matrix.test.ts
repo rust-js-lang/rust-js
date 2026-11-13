@@ -168,7 +168,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
     const at = join(dir, `${build}-${round}`);
     writeFileSync(file, text);
     mkdirSync(at, { recursive: true });
-    const compiled = compileJs(file, at, "2024", false, of.env ?? {}, flags, rustc);
+    const compiled = compileJs(file, at, "2024", false, {}, flags, rustc);
     if ("error" in compiled) {
       const refused = compiled.kind === "rejected" ? refusedCases(compiled.error, text, pending, file) : new Map<Row, string>();
       if (refused.size === 0) {

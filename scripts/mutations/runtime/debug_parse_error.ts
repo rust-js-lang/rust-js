@@ -24,6 +24,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_parse_error.js",
     find: "  if (name === \"TryFromIntError\") return $writeDebugTuple(f, name, [kind], pretty);\n",
     replace: "  if (name === \"TryFromIntError\") return $writeDebugTuple(f, name, [[undefined, (g) => g.write(\"()\")]], pretty);\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

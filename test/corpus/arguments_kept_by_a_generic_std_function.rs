@@ -1,3 +1,4 @@
+//@ library-differs
 // An `fmt::Arguments` given to a generic std function that keeps it,
 // `Box::new`, `Vec::push`, `Rc::new`, is the function that makes its text,
 // as any `Arguments` kept is, so where it's read it's formatted (ADR 0034,

@@ -5,6 +5,7 @@ import {
   $fmtError,
   $print,
   $writeTry,
+  $writerWriteFmt,
   inspectDebug_fmt,
   iterator_inspect,
 } from "@rust-js/std";
@@ -16,7 +17,7 @@ export function entry() {
 export const fullWrite = {
   writeStr: fullWrite_writeStr,
   writeChar: fullWrite_writeStr,
-  writeFmt: fullWrite_writeStr,
+  writeFmt: $writerWriteFmt(fullWrite_writeStr, fullWrite_writeStr),
 };
 function fullWrite_writeStr(full, _) {
   return $fmtError();

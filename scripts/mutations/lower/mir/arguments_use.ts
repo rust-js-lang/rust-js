@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/arguments_use.rs",
     find: "    let in_place = arguments_use(recognition, body, local) == ArgumentsUse::InPlace;\n",
     replace: "    let in_place = false;\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "own-write-fmt-given-text",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/arguments_use.rs",
     find: "                        && !recognition.writes_through_a_dictionary(id, generic_args)\n                });\n",
     replace: "                });\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "std-formats-every-param",

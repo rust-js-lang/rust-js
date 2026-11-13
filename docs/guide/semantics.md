@@ -338,20 +338,43 @@ what's held before it, as a browser's console takes whole lines
   its text, `said(() => noisyDebug_fmt(value))`, its operands evaluated
   where the macro is, and its `Display`s and `Debug`s run where the
   callee formats it, as often as it does
-  ([0034](../decisions/0034-strings-and-chars.md), amended, #1565).
+  ([0034](../decisions/0034-strings-and-chars.md), amended, #1565). One
+  given to a parameter a function writes into a writer writes into the
+  sink it claims, `() => { const f = $sink(); f.write("a"); ..; return
+  f.done(); }`, so each piece is a call of the writer's, and called plainly
+  it gives its text
+  ([1135](../decisions/1135-a-write-into-a-writer-a-piece-at-a-time.md)).
 - **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
   `LowerExp`, `Pointer` and the like,** given the placeholder's options
   ([0165](../decisions/0165-other-fmt-traits.md)).
-- **A writer of the crate's, `impl fmt::Write`, is given its text whole:**
-  one `write_str` for a `write!`, where Rust's gives it a piece at a time
-  ([0166](../decisions/0166-user-fmt-write.md)).
+- **A writer of the crate's, `impl fmt::Write`, is given each piece std
+  gives it:** a `write!`'s literal pieces, each value's as its `fmt` writes
+  it, an integer's sign apart, a float's parts, each fill char a
+  `write_char`, the writer's own where it has one. A writer of the crate's
+  shown into it writes into it too, `$writingInto(f, pointDisplay_fmt, p)`
+  ([1135](../decisions/1135-a-write-into-a-writer-a-piece-at-a-time.md)):
+
+  ```js
+  const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
+  f.write("at ");
+  $writingInto(f, pointDisplay_fmt, p);
+  $writePadded(f, "zoë", { width: 6, align: "Right" });
+  ```
+
+  A library's type reachable from outside it, of no type parameters, is
+  written so too, by its dictionary, `Dep.hexyDebug.fmtInto(f, h,
+  options)`: its library compiles its writer to write through a sink. A
+  generic one's isn't yet (#1712).
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`
-  ([0180](../decisions/0180-generic-writers.md)). A `write!` of a value
-  whose `Display` fails keeps what it wrote before it, given to the
-  writer's `write_str`, as Rust's does,
-  `$fmtTextOr(() => {..}, (text) => WWrite.writeStr(w, text))` (#1696).
+  ([0180](../decisions/0180-generic-writers.md)). Its `write!` calls the
+  dictionary's `writeFmt`, as Rust calls `W::write_fmt`, given the function
+  of its `Arguments` that writes each piece into the sink it claims, `() =>
+  { const f = $sink(); ..; return f.done(); }`: a writer's own `write_fmt`
+  runs, and std's writes each piece into its `write_str`
+  ([1135](../decisions/1135-a-write-into-a-writer-a-piece-at-a-time.md)).
+  A `String` keeps what it was written before a value that fails (#1696).
 - **`fmt::write(w, args)` is std's own `write_fmt`:** what it writes is
   given to the writer's `write_str`, never to a `write_fmt` of the
   writer's own, so a writer whose `write_fmt` is `fmt::write(self, args)`
@@ -2053,7 +2076,6 @@ React and JSX are [their own pages](README.md#react).
 12. A value with a destructor that JS holds is never dropped, a function
     handed to a binding too, even where JS gives it back to Rust (ADR
     0873).
-13. A writer of the crate's is given each `write!`'s text in one `write_str`.
 14. A generic iterator's `size_hint()` is its array's or its range's length
     ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), a range's
     `step_by`'s of it, a `rev()`'s of either

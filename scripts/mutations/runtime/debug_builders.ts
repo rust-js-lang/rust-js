@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_builders.js",
     find: '        if (line === "") continue;\n',
     replace: "",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "pad-adapter-indent-joined",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_builders.js",
     find: '        if (state.onNewline) f.write("    ");\n        state.onNewline = line.endsWith("\\n");\n        f.write(line);\n',
     replace: '        const indent = state.onNewline ? "    " : "";\n        state.onNewline = line.endsWith("\\n");\n        f.write(indent + line);\n',
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "struct-field-name-joined",
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_builders.js",
     find: '          f.write(name);\n          f.write(": ");\n          write(f, value);\n',
     replace: '          f.write(name + ": ");\n          write(f, value);\n',
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "tuple-empty-name-unwritten",
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_builders.js",
     find: "function $debugTuple(f, name, pretty) {\n  f.write(name);\n",
     replace: 'function $debugTuple(f, name, pretty) {\n  if (name !== "") f.write(name);\n',
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "write-debug-map-key-as-value",
@@ -135,6 +135,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug_builders.js",
     find: "  map.entriesWith(entries, writeKey, writeValue);\n",
     replace: "  map.entriesWith(entries, writeValue, writeKey);\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

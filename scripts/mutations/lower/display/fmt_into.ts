@@ -3,7 +3,7 @@
 // step 5 of ADR 1135).
 import type { Mutation } from "../../../mutations";
 
-const sink = ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"];
+const sink = ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/fmt_into.rs",
     find: "            let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());\n",
     replace: "            let debug = false;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
   {
     name: "published-library-type-refused",
@@ -85,5 +85,13 @@ export const mutations: Mutation[] = [
     find: "        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt) {\n",
     replace: "        if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
+  },
+  {
+    name: "std-fmt-fn-value-plain",
+    breaks: "a std formatting trait's `fmt` taken as a `fn` pointer, `self.format(f, fmt::Display::fmt)`, is its text where a framed writer arms it, \"didn't write through its sink\"",
+    file: "src/lower/display/fmt_into.rs",
+    find: "        if self.krate.prints.framed.is_empty() || !crate::lower::recognition::is_fmt_method(self.tcx, def_id) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_value_of_a_std_fmt.rs$"],
   },
 ];

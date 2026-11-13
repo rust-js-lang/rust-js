@@ -1,3 +1,4 @@
+//@ library-differs
 // A `#[rust_js::nullable]` field of an `Option` of a value that's never
 // `null` but may be `undefined`, an untagged enum's `#[rust_js::undefined]`
 // variant or a `()`, upstream's `serverModuleMap: null | ServerManifest`

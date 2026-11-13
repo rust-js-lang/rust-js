@@ -1,10 +1,8 @@
 // A `write!` into a writer of the crate's own, or a `W: fmt::Write`'s, a
-// piece at a time (#1652, ADR 1135): test/writer-sink.rs, whose writers
-// record each call they're given, run natively and as JS in both builds,
-// where `RUST_JS_WRITES_PIECEWISE=1` writes it so. The switch goes once
-// every value's split is `display::sink_writes`', and this case joins the
-// corpus then. And the runtime's sink, `$writerSink` and std's `pad` and
-// `pad_integral` into it, given each option, call by call.
+// piece at a time (#1652, ADR 1135), what the corpus's writer_sink_* cases
+// don't hold: what's refused, what writes through a sink, the runtime's
+// sink, `$writerSink` and std's `pad` and `pad_integral` into it, given
+// each option, call by call, and pairs of a library and its consumer.
 //
 //   bun test test/writer-sink.test.ts
 
@@ -20,44 +18,7 @@ import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler);
 
-const piecewise = { RUST_JS_WRITES_PIECEWISE: "1" };
 
-/** The two builds: the default, and std's iterator structs (ADR 0908). */
-const builds: [string, string[]][] = [
-  ["plain", []],
-  ["std", ["--std-iterators"]],
-];
-
-/** The cases: test/writer-sink.rs, and test/writer-sink-generic.rs, generic
- * code's values and `dyn`s (step 5), apart, as a `dyn` written into a
- * writer frames every writer of its crate. */
-const cases: [string, string][] = [
-  ["", "test/writer-sink.rs"],
-  ["generic code's and dyns' ", "test/writer-sink-generic.rs"],
-  ["Arguments given on's ", "test/writer-sink-arguments.rs"],
-  ["own write_fmt's through generic code's ", "test/writer-sink-own-write-fmt.rs"],
-  ["the rest's ", "test/writer-sink-rest.rs"],
-  ["callables' ", "test/writer-sink-callables.rs"],
-  ["a writer generic over a constant's ", "test/writer-sink-const-generic.rs"],
-  ["a writer function's pointer's ", "test/writer-sink-fn-pointer.rs"],
-  ["an impl Display's ", "test/writer-sink-impl-display.rs"],
-  ["Arguments kept's ", "test/writer-sink-arguments-kept.rs"],
-];
-
-for (const [build, flags] of builds) for (const [which, path] of cases) {
-  test(`each of ${which}writes is native Rust's, in the ${build} build`, () => {
-    const dir = fixture(`writer-sink-${build}-${path.replace(/^test\/|\.rs$/g, "")}`);
-    const file = join(root, path);
-    const native = runNative(file, dir, "2021");
-    if (typeof native === "string") throw new Error(native);
-    const compiled = compileJs(file, dir, "2021", false, piecewise, flags);
-    if (!("js" in compiled)) throw new Error(compiled.error);
-    const [, runtime] = runtimes[0];
-    const js = runJs(runtime, compiled.js, dir, "js");
-    expect(js.stdout).toBe(native.stdout);
-    expect(show(js.outcome)).toBe(show(native.outcome));
-  }, underLoad(120_000));
-}
 
 /** A writer shown into a writer whose split isn't followed: each `fmt` of
  * `Shown`, written into `Log`, is refused, naming #1652. */
@@ -98,7 +59,7 @@ fn main() {
 }
 `,
     );
-    const compiled = compileJs(file, dir, "2021", false, piecewise);
+    const compiled = compileJs(file, dir, "2021", false);
     if ("js" in compiled) throw new Error(`${name}: compiled`);
     expect(compiled.error, name).toContain("which isn't followed for it (#1652)");
     expect(compiled.error, name).not.toContain("(#1652) yet");
@@ -136,7 +97,7 @@ fn main() {
 }
 `,
   );
-  const compiled = compileJs(file, dir, "2021", false, piecewise);
+  const compiled = compileJs(file, dir, "2021", false);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
   const writer = js.slice(js.indexOf("function printedDisplay_fmt"));
@@ -175,7 +136,7 @@ fn main() {
 }
 `,
   );
-  const compiled = compileJs(file, dir, "2021", false, piecewise);
+  const compiled = compileJs(file, dir, "2021", false);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
   const writer = js.slice(js.indexOf("function noisyDisplay_fmt"));
@@ -359,7 +320,7 @@ const piecewisePairs = join(root, "test", "crates", "piecewise");
 /** `cases/name`'s crates, as `chain` compiles them, where writes into a
  * writer are followed a piece at a time. */
 function piecewiseChain(cases: string, name: string, refused?: string[]) {
-  return chain(cases, name, ["dep", "app"], refused, undefined, piecewise);
+  return chain(cases, name, ["dep", "app"], refused);
 }
 
 // Step 5: a library's generic writer writes what a consumer gives it by
@@ -384,8 +345,39 @@ test("a library's generic writer, and a library's type written through generic c
 // private type whose `Debug` nothing shows.
 test("a library's published type is written into a consumer's writer a piece at a time", () => {
   const out = piecewiseChain(piecewisePairs, "librarys_published_type_through_generic_code");
-  expect(contract(out).written_into.length).toBe(6);
+  expect(contract(out).written_into.length).toBe(7);
 }, underLoad(300_000));
+
+// A library's writer function, which no writer of its own calls, is
+// framed, as a consumer's writer may give it its `Formatter`.
+test("a library's writer function given a consumer's Formatter writes a piece at a time", () => {
+  piecewiseChain(piecewisePairs, "librarys_writer_function_given_a_consumers_formatter");
+}, underLoad(300_000));
+
+// A library's trait's method that writes the `Arguments` it's given, as
+// its contract says (`written_trait_arguments`), given a consumer's through
+// a `dyn` (#1735); and a consumer's callables a library's writer calls
+// with its `Formatter`, framed (#1736).
+test("a consumer's Arguments given a library's trait's method through a dyn writes a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "arguments_through_a_librarys_dyn_trait");
+  expect(contract(out).written_trait_arguments.length).toBe(1);
+}, underLoad(300_000));
+
+test("a consumer's closure and fn pointer a library's writer calls write a piece at a time", () => {
+  piecewiseChain(piecewisePairs, "consumers_closure_called_by_a_librarys_writer");
+}, underLoad(300_000));
+
+test("a writer armed that gives back its text, a writer it called claiming the sink, is an error, not that text", async () => {
+  const std: Record<string, any> = await import(helpersModule);
+  const f = std.$writerSink([], (w: string[], s: string) => w.push(s), (w: string[], c: string) => w.push(c));
+  const claiming = () => {
+    const g = std.$sink();
+    g.write("x");
+    return g.done();
+  };
+  expect(() => std.$writingInto(f, () => `a${claiming()}`)).toThrow("didn't write through its sink");
+  expect(() => std.$writingInto(f, claiming)).not.toThrow();
+});
 
 // A library's derived `Debug` of more than five fields makes `&dyn Debug`s
 // of them that never leave it: it makes no `dyn` a consumer may write, so

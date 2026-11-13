@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_debug.rs",
     find: '            return helper("$writeDebugList", vec![value, write, pretty.clone()]);\n',
     replace: '            return helper("$writeDebugList", vec![value, write, Expr::bool(false)]);\n',
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "sink-map-set-debug-unfollowed",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_debug.rs",
     find: "            && (self.is_set(ty) || self.is_map(ty))\n",
     replace: "            && false\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "sink-cell-debug-refused",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_debug.rs",
     find: "            && (cell(crate::lower::recognition::StdItem::Cell) || cell(crate::lower::recognition::StdItem::RefCell))\n",
     replace: "            && false\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "sink-layout-debug-refused",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_debug.rs",
     find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
     replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "sink-parse-error-debug-refused",
@@ -40,6 +40,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_debug.rs",
     find: "        if self.recognition().is_parse_error(ty)\n",
     replace: "        if self.recognition().is_parse_error(ty) && false\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
 ];

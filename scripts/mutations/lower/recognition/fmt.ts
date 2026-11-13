@@ -180,6 +180,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/fmt.rs",
     find: "        !self.is_fmt_write(def_id)\n            && self.writes_arguments_piecewise(def_id, generic_args)\n",
     replace: "        false && self.writes_arguments_piecewise(def_id, generic_args)\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
 ];

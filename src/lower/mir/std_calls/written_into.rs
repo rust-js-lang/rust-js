@@ -233,10 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `as_statically_known_str` writes it.
     pub(super) fn arguments_not_written(&self, def_id: DefId, values: &[Value<'tcx>], span: Span) -> R<()> {
         let literal = matches!(values.get(1), Some(Value::Expr(text)) if matches!(text.kind, js::ExprKind::Str(_)));
-        if !crate::lower::recognition::writes_piecewise()
-            || self.tcx.item_name(def_id).as_str() != "write_fmt"
-            || literal
-        {
+        if self.tcx.item_name(def_id).as_str() != "write_fmt" || literal {
             return Ok(());
         }
         Err(self.refused_piecewise(
@@ -441,12 +438,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             WriteCall::Function | WriteCall::Trait | WriteCall::OtherFmt => {
+                // The crate's own, or its copy of a library's it frames
+                // (`listed_writers_compiled_here`), or a library's writer
+                // function, which its library frames.
                 let framed = match self.resolve_self_instance(def_id, generic_args) {
-                    Ok(Some(instance))
-                        if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()) =>
-                    {
-                        Some(instance)
-                    }
+                    Ok(Some(instance)) if self.writes_through_sink(instance.def_id()) => Some(instance),
                     _ => None,
                 };
                 let mut given = Vec::new();

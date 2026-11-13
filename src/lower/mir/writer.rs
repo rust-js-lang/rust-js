@@ -828,7 +828,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its maker, shown into a writer by `write!`, so each piece it writes
     /// is std's, a call of that writer's (#1652, ADR 1135)?
     pub(super) fn writes_into_writers(&self, state: &State<'_, 'tcx>) -> bool {
-        state.writer.is_some() && self.krate.prints.writes_into_writers(self.writer_owner(state))
+        let owner = self.writer_owner(state);
+        state.writer.is_some() && (self.krate.prints.writes_into_writers(owner) || self.library_writer_framed(owner))
     }
 
     /// The writer whose text the body writes: the body's own, a closure's

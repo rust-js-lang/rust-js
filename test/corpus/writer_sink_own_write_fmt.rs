@@ -1,3 +1,4 @@
+//@ library-differs
 // A `write!` through generic code's `W: fmt::Write` calls `W::write_fmt`,
 // as Rust does: a writer's own `write_fmt` where it defines one, std's
 // otherwise, which writes each piece into its `write_str` (#1652, step 6

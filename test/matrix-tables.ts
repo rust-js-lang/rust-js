@@ -43,9 +43,6 @@ export type TableOf<C extends Row> = {
   slice(all: C[][]): number[];
   pairs?(cases: C[], perPair: number): C[];
   prepare?(): string[];
-  /** What the compiler's environment says besides, of a table that proves
-   * what the lowering doesn't do by default yet (#1652). */
-  env?: Record<string, string>;
 };
 
 /** `of`, an iterator table, as the harness runs it. */
@@ -71,8 +68,6 @@ const formatTable: TableOf<FormatCase> = {
   program: formatProgram,
   batches: (all) => batches(all),
   slice: (all) => slice(all, formatStrata),
-  // Its `Log` cases a piece at a time, as `write!` will be by default (#1652).
-  env: { RUST_JS_WRITES_PIECEWISE: "1" },
 };
 
 /** The numbers grid (#940), test/number-grid.ts's cases. */

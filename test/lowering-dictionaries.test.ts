@@ -415,8 +415,19 @@ pub mod hidden {
   const library = fixture("identity-eq-in-a-library-load-cycle");
   writeFileSync(join(library, "lib.rs"), program);
   run([compiler, join(library, "lib.rs"), "-o", join(library, "lib.js"), "--library", "--manifest", join(library, "m.json")]);
-  const body = (js: string) => js.slice(js.indexOf("\n"));
-  expect(body(readFileSync(join(library, "queue.js"), "utf8"))).toBe(body(queue));
+  // As the program's, but its formatted types, which a library publishes,
+  // its writer framed, as a consumer may write one into a writer a piece at
+  // a time (ADR 1135).
+  const libraryQueue = readFileSync(join(library, "queue.js"), "utf8");
+  for (const line of [
+    "return a != b;",
+    "return a === b && Hidden.has([a], b, $partialEq({ eq: (a, b) => a === b }));",
+    "export function values(a, b) {\n  return a === b;\n}",
+  ]) {
+    expect(libraryQueue).toContain(line);
+  }
+  expect(libraryQueue).not.toContain("PartialEq");
+  expect(libraryQueue).toContain("fmtInto: (f, value, options) => $writingInto(f, updateDisplay_fmt, value, options)");
 });
 
 // #944: an `Ord` dictionary holds its `PartialOrd()`, which holds its

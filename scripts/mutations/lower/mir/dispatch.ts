@@ -861,7 +861,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            made if given_on => self.arguments_given_on(made, sink, span),\n",
     replace: "            made if given_on => self.arguments_given_on(made, sink && false, span),\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "library-writer-fn-value-takes-its-formatter",

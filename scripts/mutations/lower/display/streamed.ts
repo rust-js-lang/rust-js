@@ -25,6 +25,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/streamed.rs",
     find: '                ("entryWith", vec![key, value, write_key, write_value])\n',
     replace: '                ("entryWith", vec![key, value, write_value, write_key])\n',
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
 ];

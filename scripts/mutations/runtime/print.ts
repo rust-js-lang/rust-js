@@ -176,6 +176,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/print.js",
     find: "    $writerArmed = undefined;\n",
     replace: "",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
 ];

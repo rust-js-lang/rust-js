@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/io_error.js",
     find: "  if (e.error !== undefined) return e.error.impl.Display().fmtInto(f, e.error.value, options);\n",
     replace: "  if (e.error !== undefined) return f.write(e.error.impl.Display().fmt(e.error.value));\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
   {
     name: "io-error-written-os-whole",

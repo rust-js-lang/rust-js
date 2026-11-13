@@ -224,9 +224,9 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-unseen",
     breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "        (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));\n",
+    find: "    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));\n",
     replace: "",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "written-into-writers-shown-unseen",
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            if of_shown && found.insert(writer.def_id) {\n                shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));\n",
     replace: "            if of_shown && found.insert(writer.def_id) {\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "written-into-writers-called-unseen",
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee) {\n",
     replace: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee && false) {\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "written-into-writers-dyn-made-unseen",
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            } => Some(body.thir[source].ty),\n",
     replace: "            } => None.or(Some(body.thir[source].ty)).filter(|_| false),\n",
-    tests: ["test/writer-sink.test.ts"],
+    tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
   {
     name: "written-into-writers-every-shown-of-the-body",
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            if !marks.writes(recognition, (id, generic_args), at) {\n",
     replace: "            if at != 1 || !recognition.writes_arguments_piecewise(id, generic_args) {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "closure-given-formatter-unframed",
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                        if tcx\n                            .trait_of_assoc(callee)\n                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
     replace: "                        if false =>\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "held-callables-unframed",
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            if by_body.is_some_and(|by| calls_held(by)) {\n",
     replace: "            if false {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of callables' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_callables.rs$"],
   },
   {
     name: "library-types-unpublished",
@@ -306,13 +306,13 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                && tcx.def_kind(body.def_id).is_fn_like()\n",
     replace: "",
-    tests: ["test/writer-sink.test.ts", "-t", "each of a writer generic over a constant's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_const_generic.rs$"],
   },
   {
     name: "listed-writers-compiled-here-unframed",
     breaks: "a consumer's own copy of a library's derived `Debug` its contract lists isn't framed, so its dictionary's `fmtInto` is refused",
     file: "src/lower/analysis/prints.rs",
-    find: "        found.framed.extend(listed_writers_compiled_here(recognition));\n",
+    find: "    found.framed.extend(listed_writers_compiled_here(recognition));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
   },
@@ -322,6 +322,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "        .map(|ty| crate::lower::mir::revealed(tcx, ty))\n",
     replace: "",
-    tests: ["test/writer-sink.test.ts", "-t", "each of an impl Display's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_impl_display.rs$"],
+  },
+  {
+    name: "held-writers-unframed-for-libraries",
+    breaks: "a consumer's callable given the `Formatter`, called by a library's writer, isn't framed, \"didn't write through its sink\" (#1736)",
+    file: "src/lower/analysis/prints.rs",
+    find: "    if recognition.foreign.writes_piecewise() {\n",
+    replace: "    if false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a consumer's closure and fn pointer a library's writer calls"],
   },
 ];

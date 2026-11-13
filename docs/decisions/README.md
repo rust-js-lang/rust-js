@@ -123,7 +123,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1132 A move of a local whose address is taken copies it](1132-a-move-of-an-addressed-local-copies-it.md) *(#1535, #1500: `moved_apart_places` names the moves, `copies.rs`' `moved_apart` the copy; a std type's move refused, #1551)*
 - [1133 A CSS Module's binding is checked against its file](1133-a-css-modules-binding-is-checked-against-its-file.md) *(#1512: `#[rust_js::css_module]`, each getter's class one the file exports, by Lightning CSS `=1.0.0-alpha.72`, `css_modules.rs`; the file in the build's dep-info; ICSS and `@value` refused, #1617; amends 0378)*
 - [1134 std types' serde forms are one catalog](1134-std-types-serde-forms-are-one-catalog.md) *(#1623: `serde/std_forms.rs`'s `std_form`, a row per std type whose impl is serde's own, a struct form or an enum form; ranges and bounds first)*
-- [1135 A `write!` into a writer is written a piece at a time](1135-a-write-into-a-writer-a-piece-at-a-time.md) *(#1652: `$writerSink`, `display::sink_writes` the owner of std's split; landing in steps)*
+- [1135 A `write!` into a writer is written a piece at a time](1135-a-write-into-a-writer-a-piece-at-a-time.md) *(#1652: `$writerSink`, `display::sink_writes` the owner of std's split; landed, the one way)*
 - [1136 Transparent iterator chains, measured](1136-transparent-chains-measured.md) *(#1673: `transparent-chain`, `iterators/transparent.rs`; a measurement for #1681's change 2)*
 - [1137 The bounds analysis on MIR, run in shadow first](1137-the-bounds-analysis-on-mir-shadow-first.md) *(#1672: a forward interval dataflow over the MIR the emitter reads; `--intervals-shadow` logs each check THIR's ranges leave out that it doesn't prove)*
 - [1138 Effects are opt-in: JS's own calls are marked where lowering makes them, and what a value's text runs is called](1138-effects-are-opt-in.md) *(#1674, #1663, #1664, #1676: `Known::BuiltIn`, `Expr::is_js_own_call`; a class's text `p.toString()`, a binding's JS value's `$shown(v)`; no name list decides what runs nothing)*
@@ -205,7 +205,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0163 A trait's generic method is given drops for its own type parameters, as its trait declares them](0163-trait-method-drops.md)
 - [0164 An iterator of the crate's from both ends, and of a known length](0164-double-ended-iterators.md)
 - [0165 `{:x}`, `{:e}` and `{:p}` of the crate's types call its own impls](0165-other-fmt-traits.md)
-- [0166 A writer of the crate's is given its text a `write!` at a time](0166-user-fmt-write.md)
+- [0166 A writer of the crate's is given its text a `write!` at a time](0166-user-fmt-write.md) *(superseded by 1135)*
 - [0167 `Borrow`: a dictionary, the value itself for std's](0167-borrow.md)
 - [0168 A type's own `Hash` is allowed, and never lowered](0168-user-hash.md)
 - [0169 A type's own `AsMut` and `BorrowMut`, called on the type](0169-user-as-mut.md)
@@ -219,7 +219,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0177 A `NonZero` integer is its number](0177-nonzero.md) *(amended: read from JSON as serde reads it, #1538)*
 - [0178 An impl's dictionary has its associated types' drops](0178-associated-type-drops.md)
 - [0179 `filter` and `map_or` drop what they don't keep](0179-option-filter-map-or-drops.md)
-- [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](0180-generic-writers.md)
+- [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](0180-generic-writers.md) *(superseded in part by 1135)*
 - [0181 A clone of std's iterator over an array is what's left of the array](0181-iterator-clones.md)
 - [0182 Boundary matrices: each operation on the values where implementations go wrong](0182-boundary-matrices.md) *(extended by 1090: iterators' steps, drops and unwinding, a generated matrix)*
 - [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](0183-code-point-order-and-trim.md) *(extended by 0945: a sort by their `encode_utf16()`s is JS's `sort()`)*

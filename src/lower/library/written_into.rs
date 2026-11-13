@@ -1,7 +1,7 @@
 //! What a library's contract says of its writes into a writer a piece at a
 //! time (#1652, ADR 1135): its types whose formatting dictionaries carry
-//! `fmtInto`, the parameters its functions write so, and the `dyn`s it
-//! writes or makes.
+//! `fmtInto`, the writer functions it frames, the parameters its functions
+//! and its traits' methods write so, and the `dyn`s it writes or makes.
 
 use super::{Foreign, key};
 use rustc_span::def_id::DefId;
@@ -25,6 +25,27 @@ impl Foreign<'_, '_> {
             && self
                 .library(adt.krate)
                 .is_some_and(|library| !library.builtin && library.written_into.contains(&key(self.tcx, adt)))
+    }
+
+    /// Does any of the libraries write a value into a writer a piece at a
+    /// time: frame a writer, publish a type, or write one it's given so
+    /// (#1652)?
+    pub(in crate::lower) fn writes_piecewise(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| {
+            !library.builtin
+                && (!library.framed_writers.is_empty() || !library.written_into.is_empty() || library.dyn_written_into)
+        })
+    }
+
+    /// Is `id` a library's writer function, given a `Formatter`, which its
+    /// library frames so it writes through the sink a consumer's writer
+    /// arms for it, as its contract says (`framed_writers`, #1652): not a
+    /// formatting impl's, which `lists_fmt_into` says.
+    pub(in crate::lower) fn frames_writer_fn(&self, id: DefId) -> bool {
+        !id.is_local()
+            && self
+                .library(id.krate)
+                .is_some_and(|library| !library.builtin && library.framed_writers.contains(&key(self.tcx, id)))
     }
 
     /// Does any of the libraries write a `dyn` it's given into a writer a
@@ -57,6 +78,10 @@ impl Foreign<'_, '_> {
         (self.library(id.krate))
             .and_then(|library| library.items.get(&key(self.tcx, id)))
             .map(|item| item.calling.written_arguments.clone())
+            .or_else(|| {
+                (self.library(id.krate))
+                    .and_then(|library| library.written_trait_arguments.get(&key(self.tcx, id)).cloned())
+            })
             .unwrap_or_default()
     }
 }

@@ -2,7 +2,7 @@
 // dictionaries carry `fmtInto` (#1652, step 5 of ADR 1135).
 import type { Mutation } from "../../../mutations";
 
-const sink = ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"];
+const sink = ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"];
 const pairs = ["test/writer-sink.test.ts", "-t", "library"];
 
 export const mutations: Mutation[] = [
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "                    holders.push(to);\n",
     replace: "                    let _ = to;\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "written-arguments-trait-unmarked",
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && declared.is_local()\n",
     replace: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && false\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "written-arguments-contract-unread",
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "            calls.push((owner, callee, args, span));\n",
     replace: "            let _ = (callee, args, span);\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of a writer function's pointer's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_pointer.rs$"],
   },
   {
     name: "written-asked-outside-the-body",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "        typing_env: ty::TypingEnv::non_body_analysis(tcx, tcx.typeck_root_def_id(body)),\n",
     replace: "        typing_env: recognition.typing_env,\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of a writer generic over a constant's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_const_generic.rs$"],
   },
   {
     name: "published-dictionaries-without-fmt-into",
@@ -100,31 +100,31 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "                        || matches!(assign.1, Rvalue::Ref(..)) && from.projection[..] == [mir::ProjectionElem::Deref])\n",
     replace: "                        || false)\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "kept-arguments-plain",
     breaks: "an `Arguments` kept in a field or a capture is made plain, so a write of it later throws that it didn't write through its sink",
     file: "src/lower/analysis/written_params.rs",
-    find: "                if piecewise\n                    && let StatementKind::Assign(assign) = &statement.kind\n",
-    replace: "                if false\n                    && let StatementKind::Assign(assign) = &statement.kind\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    find: "                if let StatementKind::Assign(assign) = &statement.kind\n                    && match &assign.1 {\n",
+    replace: "                if false\n                    && let StatementKind::Assign(assign) = &statement.kind\n                    && match &assign.1 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "arguments-kept-by-a-generic-plain",
     breaks: "an `Arguments` given to a generic function, `Some(args)` aside, `Box::new(args)`, is made plain though the function may keep it",
     file: "src/lower/analysis/written_params.rs",
-    find: "                            || piecewise && kept_by_a_generic(recognition, callee, i))\n",
-    replace: "                            || false && kept_by_a_generic(recognition, callee, i))\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    find: "                        && (marks.writes(recognition, callee, i) || kept_by_a_generic(recognition, callee, i))\n",
+    replace: "                        && (marks.writes(recognition, callee, i) || false && kept_by_a_generic(recognition, callee, i))\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "returned-arguments-plain",
     breaks: "an `Arguments` a constant or a function returns is made plain, so a write of it throws that it didn't write through its sink",
     file: "src/lower/analysis/written_params.rs",
-    find: "    if piecewise && local == mir::RETURN_PLACE {\n",
+    find: "    if local == mir::RETURN_PLACE {\n",
     replace: "    if false {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
   {
     name: "derived-debug-makes-fmt-dyns",
@@ -133,5 +133,22 @@ export const mutations: Mutation[] = [
     find: "        .filter(|body| !derived(body))\n",
     replace: "        .filter(|body| !derived(body) || true)\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's dyn written beside a library's derived Debug of six fields"],
+  },
+  {
+    name: "arguments-read-by-a-generic-kept",
+    breaks: "an `Arguments` a generic function only reads, `args.to_string()`, is taken as kept, the function that writes into a sink, where its template reads plainly",
+    file: "src/lower/analysis/written_params.rs",
+    find: "    (sig.inputs().iter().enumerate()).any(|(at, &input)| at != index && holds_arguments(input))\n        || holds_arguments(sig.output())\n",
+    replace: "    true\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
+  },
+  {
+    name: "formatter-writer-function-arms",
+    breaks: "a writer function given its `Formatter` and an `Arguments`, of a writer not framed, is taken to arm a sink, so `Arguments` are the functions that write into one where their template reads plainly",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                            && recognition.formatter_param(callee.0).is_none()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_write_fmt_of_held_arguments.rs$"],
   },
 ];

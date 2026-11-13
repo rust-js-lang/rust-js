@@ -1,3 +1,4 @@
+//@ library-differs
 // A `write!` into a writer of the crate's own, or a `W: fmt::Write`'s, a
 // `dyn`'s too, gives its `write_str` a piece at a time, as std's
 // `write_fmt` does: each literal piece, each string a value writes, an

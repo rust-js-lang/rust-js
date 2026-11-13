@@ -27,9 +27,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Does `writer`, a writer of the crate's, write its text through a
     /// sink, piece by piece: the line it formats into, as it may print, or a
-    /// string of its own, as a builder's step may fail (#1557)?
+    /// string of its own, as a builder's step may fail (#1557)? Or the
+    /// crate's own of a library's writer function, framed as its library
+    /// frames it (`Foreign::frames_writer_fn`, #1652).
     pub(in crate::lower) fn writes_through_sink(&self, writer: DefId) -> bool {
-        self.krate.prints.writes_through_sink(writer)
+        self.krate.prints.writes_through_sink(writer) || self.library_writer_framed(writer)
+    }
+
+    /// Is `writer` a library's writer function, given a `Formatter`, which
+    /// its library frames, the crate's own of it too
+    /// (`Foreign::frames_writer_fn`, #1652)?
+    pub(in crate::lower) fn library_writer_framed(&self, writer: DefId) -> bool {
+        self.krate.foreign.frames_writer_fn(writer) && self.recognition().formatter_param(writer).is_some()
     }
 
     /// `text`, a `format_args!`'s whose formatting may print, made for

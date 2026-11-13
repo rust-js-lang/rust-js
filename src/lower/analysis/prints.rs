@@ -175,11 +175,9 @@ pub(super) fn prints<'tcx>(
             })
             .map(|body| body.def_id),
     );
-    if crate::lower::recognition::writes_piecewise() {
-        (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
-        found.framed.extend(listed_writers_compiled_here(recognition));
-        found.through_sink.extend(found.framed.iter().copied());
-    }
+    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
+    found.framed.extend(listed_writers_compiled_here(recognition));
+    found.through_sink.extend(found.framed.iter().copied());
     found
 }
 
@@ -299,6 +297,19 @@ fn written_into_writers<'tcx>(
     };
     shown.extend((published.iter()).map(|&adt| (tcx.type_of(adt).instantiate_identity().skip_normalization(), true)));
     let mut found: IndexSet<DefId> = IndexSet::default();
+    // Where a library it uses writes a piece at a time, each callable of the
+    // crate's given a `Formatter` as a value: a library's writer may call
+    // it with its sink armed, `(self.0)(f)` of a boxed closure (#1736).
+    if recognition.foreign.writes_piecewise() {
+        for &held in &held_writers {
+            if found.insert(held)
+                && let Some(writer) = writers.iter().find(|writer| writer.def_id == held)
+            {
+                shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
+                shown.push((tcx.types.unit, true));
+            }
+        }
+    }
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
     let mut called_up_to = 0;

@@ -1,7 +1,7 @@
 // Mutations of src/lower/mir/std_calls/written_into.rs (ADR 1135, #1652).
 import type { Mutation } from "../../../../mutations";
 
-const tests = ["test/writer-sink.test.ts"];
+const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
 
 export const mutations: Mutation[] = [
   {
@@ -56,8 +56,8 @@ export const mutations: Mutation[] = [
     name: "framed-writer-function-refused",
     breaks: "a writer function a framed writer gives its `Formatter` is refused, not called with the sink armed (#1652)",
     file: "src/lower/mir/std_calls/written_into.rs",
-    find: "                        if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()) =>\n",
-    replace: "                        if false =>\n",
+    find: "                    Ok(Some(instance)) if self.writes_through_sink(instance.def_id()) => Some(instance),\n",
+    replace: "                    Ok(Some(instance)) if false => Some(instance),\n",
     tests,
   },
   {
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "                        (true, false) if self.arguments_given_as_sink(state) => {\n",
     replace: "                        (true, false) if false => {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "dyn-writer-char-as-str",
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "            _ if (generic_args.types().next())\n",
     replace: "            _ if false && (generic_args.types().next())\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
   },
   {
     name: "fmt-write-takes-own-write-fmt",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "            && (std_write_fmt || !self.recognition().writes_through_a_dictionary(def_id, generic_args))\n",
     replace: "            && !self.recognition().writes_through_a_dictionary(def_id, generic_args)\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
   {
     name: "derived-debug-fields-refused",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "            WriteCall::Struct | WriteCall::Tuple | WriteCall::StructFields | WriteCall::TupleFields => {\n",
     replace: "            WriteCall::Struct | WriteCall::Tuple => {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "held-formatter-char-as-str",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
     replace: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Str(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "formatter-other-fmt-refused",
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "            WriteCall::OtherFmt if !self.own_writer(def_id, generic_args) => {\n",
     replace: "            WriteCall::OtherFmt if false => {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "displayed-arguments-refused",
@@ -130,6 +130,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "                            _ if arguments && self.arguments_given_as_sink_at(state, 0) => {\n",
     replace: "                            _ if arguments && false => {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "each of Arguments kept's writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
 ];

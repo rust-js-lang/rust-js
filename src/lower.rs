@@ -759,6 +759,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.tcx.dcx().span_err(span, why));
         }
+        // A std formatting trait's `fmt` where a writer is shown into a
+        // writer: the function that writes into the sink it claims (#1652).
+        if let Some(value) = self.std_fmt_fn_value(def_id, args, span)? {
+            return Ok(Some(value));
+        }
         // And a library's that takes its caller's location, given the one
         // where it's defined, as rustc's shim of it calls it (ADR 0427;
         // #1032), its call's arrow giving the place it's made a value.

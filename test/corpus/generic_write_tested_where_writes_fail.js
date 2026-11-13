@@ -5,13 +5,16 @@ import {
   $cellOf,
   $debugStr,
   $fmtError,
+  $fmtWritten,
   $ioErrorDisplay,
   $ioWriteAll,
   $ioWriteFmt,
+  $sink,
   $stringError,
   $stringWriter,
   $vecWriter,
   $writeTry,
+  $writerWriteFmt,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,7 +41,19 @@ function emitOr(out, WWrite) {
 }
 
 function rendered(out, n, WWrite) {
-  const result = $writeTry(() => WWrite.writeFmt(out, `<${n}>`));
+  const result = $writeTry(() =>
+    WWrite.writeFmt(out, () => {
+      const f = $sink();
+      try {
+        f.write("<");
+        f.write(String(n));
+        f.write(">");
+      } catch (error) {
+        throw $fmtWritten(error, f.done());
+      }
+      return f.done();
+    }),
+  );
   return result === undefined;
 }
 
@@ -64,7 +79,7 @@ const $refusingFmtWrite_writeStr = (arg0, arg1) => refusingFmtWrite_writeStr(arg
 export const refusingFmtWrite = {
   writeStr: $refusingFmtWrite_writeStr,
   writeChar: $refusingFmtWrite_writeStr,
-  writeFmt: $refusingFmtWrite_writeStr,
+  writeFmt: $writerWriteFmt($refusingFmtWrite_writeStr, $refusingFmtWrite_writeStr),
 };
 function refusingFmtWrite_writeStr(refusing, _) {
   if (refusing[0] === 0) {

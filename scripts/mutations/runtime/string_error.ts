@@ -24,6 +24,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/string_error.js",
     find: "fmtInto: $writePadded }),",
     replace: "fmtInto: (f, message) => f.write(message) }),",
-    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
 ];

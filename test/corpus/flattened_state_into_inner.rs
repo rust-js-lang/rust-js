@@ -1,3 +1,4 @@
+//@ library-differs
 // A class's flattened state moved out of its class, `into_inner`: a copy of
 // its variant's keys, apart from the class's object, whose other fields
 // are still its own (#687, ADR 1044); after a write of one variant over

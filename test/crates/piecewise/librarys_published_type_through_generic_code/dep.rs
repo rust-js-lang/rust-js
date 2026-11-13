@@ -59,3 +59,19 @@ pub struct Anchor<'a> {
     pub subject: Der<'a>,
     pub constraints: Option<Der<'a>>,
 }
+
+/// A list a writer of a consumer's writes by the library's writer function,
+/// which no writer of the library's own calls.
+pub struct Listed(pub Vec<u32>);
+
+impl Listed {
+    pub fn joined(&self, f: &mut fmt::Formatter<'_>, sep: &str) -> fmt::Result {
+        for (i, x) in self.0.iter().enumerate() {
+            if i > 0 {
+                f.write_str(sep)?;
+            }
+            write!(f, "{x}")?;
+        }
+        Ok(())
+    }
+}

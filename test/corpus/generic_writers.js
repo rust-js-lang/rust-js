@@ -6,9 +6,12 @@ import {
   $live,
   $mutWriter,
   $pad,
+  $sink,
   $stringWriter,
   $unwindsOn,
-  $zeroPad,
+  $writeInteger,
+  $writeIntegral,
+  $writerWriteFmt,
 } from "@rust-js/std";
 
 export function entry() {
@@ -30,7 +33,16 @@ function writeTime(w, hours, minutes, label, WWrite) {
   writeTwo(w, minutes, WWrite);
   if (label !== "") {
     WWrite.writeStr(w, " ");
-    WWrite.writeFmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
+    const value = (hours + minutes) & 255;
+    WWrite.writeFmt(w, () => {
+      const f = $sink();
+      f.write("[");
+      f.write(label);
+      f.write(":");
+      $writeInteger(f, value, { width: 3, align: "Right" });
+      f.write("]");
+      return f.done();
+    });
   }
 }
 
@@ -59,7 +71,7 @@ const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value,
 export const counterWrite = {
   writeStr: $counterWrite_writeStr,
   writeChar: $counterWrite_writeStr,
-  writeFmt: $counterWrite_writeStr,
+  writeFmt: $writerWriteFmt($counterWrite_writeStr, $counterWrite_writeStr),
 };
 function counterWrite_writeStr(counter, s) {
   const length = Array.from(s).length;
@@ -77,10 +89,21 @@ function toWriter(bits, writer, Write) {
   const self$1 = { value: writer };
   Write.writeChar(self$1, "=");
   writer = self$1.value;
-  const self$2 = { value: writer };
-  const result = Write.writeFmt(self$2, $zeroPad(`0x${bits.toString(16)}`, 4));
-  writer = self$2.value;
-  return result;
+  return Write.writeFmt(
+    {
+      get value() {
+        return writer;
+      },
+      set value(value) {
+        writer = value;
+      },
+    },
+    () => {
+      const f = $sink();
+      $writeIntegral(f, true, "0x", bits.toString(16), { alternate: true, width: 4, zero: true });
+      return f.done();
+    },
+  );
 }
 
 export const flagsDisplay = { fmt: flagsDisplay_fmt };

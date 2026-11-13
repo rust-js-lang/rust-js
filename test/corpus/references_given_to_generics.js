@@ -18,6 +18,7 @@ import {
   $rangeNext,
   $reduceBy,
   $roomForHint,
+  $sink,
   $sipHasher,
   $stringWriter,
   $unwrap,
@@ -75,9 +76,21 @@ function twice(f) {
   return f(f(1));
 }
 function fill(w, WWrite) {
-  const self = { value: w };
-  WWrite.writeFmt(self, "x=1");
-  w = self.value;
+  WWrite.writeFmt(
+    {
+      get value() {
+        return w;
+      },
+      set value(value) {
+        w = value;
+      },
+    },
+    () => {
+      const f = $sink();
+      f.write("x=1");
+      return f.done();
+    },
+  );
   return w;
 }
 function pathLen(p, PAsRefPath) {

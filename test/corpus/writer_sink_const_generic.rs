@@ -1,3 +1,4 @@
+//@ library-differs
 // A writer generic over a constant, as arrayvec's `ArrayString<CAP>` is,
 // written a piece at a time, directly and through its `TryFrom<Arguments>`,
 // whose `write_fmt` of what it's given writes each piece; one that fills

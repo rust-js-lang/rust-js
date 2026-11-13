@@ -35,9 +35,7 @@ pub(in crate::lower) fn arguments_use<'tcx>(
     local: Local,
 ) -> ArgumentsUse {
     match formatted_by_std(recognition, body, local, 2) {
-        true if crate::lower::recognition::writes_piecewise() && written_into_writer(recognition, body, local) => {
-            ArgumentsUse::Written
-        }
+        true if written_into_writer(recognition, body, local) => ArgumentsUse::Written,
         true => ArgumentsUse::InPlace,
         false => ArgumentsUse::GivenOn,
     }
