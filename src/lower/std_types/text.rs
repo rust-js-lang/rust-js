@@ -342,8 +342,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a closure that may panic, std's `String::retain` leaves
             // what it kept of the characters before (#1171).
             StringEdit::Retain if unwinds => {
-                let set = vec![StmtKind::Assign(current.clone(), Expr::var("kept")).at(js::Span::NONE)];
-                given.push(Expr::arrow(vec!["kept".into()], set));
+                let kept = Expr::param_apart("kept", &[&current]);
+                let set = vec![StmtKind::Assign(current.clone(), Expr::var(&kept)).at(js::Span::NONE)];
+                given.push(Expr::arrow(vec![kept.into()], set));
                 (helper("$retainText", given), None)
             }
             StringEdit::Retain => {
@@ -427,11 +428,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && item.is_char()
         {
             let set = values[at].clone();
-            let one_of = Expr::builtin(set, "includes", vec![Expr::var("c")]);
-            values[at] = Expr::arrow(
-                vec!["c".into()],
-                vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)],
-            );
+            let c = Expr::param_apart("c", &[&set]);
+            let one_of = Expr::builtin(set, "includes", vec![Expr::var(&c)]);
+            values[at] = Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)]);
         }
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");

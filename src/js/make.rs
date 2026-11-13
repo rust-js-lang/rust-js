@@ -908,6 +908,22 @@ impl Expr {
         Expr::new(ExprKind::Arrow(params, body))
     }
 
+    /// The name of a parameter of an arrow lowering makes around the
+    /// program's values, `embedded`, which its body holds: `base`, or given
+    /// apart from each name they read, so it never hides one,
+    /// `next_if_eq(&item)`'s `(item$1) => item$1 === item` (#1667).
+    pub fn param_apart(base: &str, embedded: &[&Expr]) -> String {
+        let mut taken = crate::collections::IndexSet::default();
+        let held: Vec<Stmt> = (embedded.iter())
+            .map(|e| StmtKind::Expr((*e).clone()).at(Span::NONE))
+            .collect();
+        names_in(&held, &mut taken);
+        match taken.contains(base) {
+            true => crate::names::fresh_apart(&mut taken, base),
+            false => base.to_string(),
+        }
+    }
+
     pub fn async_arrow(params: Vec<Pattern>, body: Vec<Stmt>) -> Expr {
         Expr::new(ExprKind::AsyncArrow(params, body))
     }

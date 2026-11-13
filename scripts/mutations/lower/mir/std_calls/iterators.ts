@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "mir-next-if-eq-unequal",
     breaks: "`p.next_if_eq(&x)` takes what isn't `x`",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: 'Expr::bin(Op::Eq, Expr::var("item"), x)',
-    replace: 'Expr::bin(Op::Ne, Expr::var("item"), x)',
+    find: 'Expr::bin(Op::Eq, Expr::var(&item), x)',
+    replace: 'Expr::bin(Op::Ne, Expr::var(&item), x)',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {

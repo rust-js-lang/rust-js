@@ -149,7 +149,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let mut body = Vec::new();
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        // Named apart from the comparator or key the program gives (#1667).
+        let embedded: Vec<&Expr> = by.iter().collect();
+        let names = (Expr::param_apart("a", &embedded), Expr::param_apart("b", &embedded));
+        let (a, b) = (Expr::var(&names.0), Expr::var(&names.1));
         let less = match with {
             SortWith::Order => self.operator_value(Op::Lt, a, b, item, span, &mut body)?,
             SortWith::By => {
@@ -178,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         body.push(StmtKind::Return(Some(less)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
+        Ok(Expr::arrow(vec![names.0.into(), names.1.into()], body))
     }
 
     /// `$sortUnstable(items, isLess, kind)`, or `$selectNthUnstable` of an

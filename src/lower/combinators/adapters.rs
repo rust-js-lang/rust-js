@@ -208,7 +208,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     (name.clone(), value.clone())
                 }
-                _ => ("item".to_string(), Expr::call(f, vec![Expr::var("item")])),
+                _ => {
+                    let item = Expr::param_apart("item", &[&f]);
+                    (item.clone(), Expr::call(f, vec![Expr::var(&item)]))
+                }
             },
             None => ("item".to_string(), Expr::var("item")),
         };
@@ -249,7 +252,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     (name.clone(), value.clone())
                 }
-                _ => ("item".to_string(), Expr::call(f, vec![Expr::var("item")])),
+                _ => {
+                    let item = Expr::param_apart("item", &[&f]);
+                    (item.clone(), Expr::call(f, vec![Expr::var(&item)]))
+                }
             },
             None => ("item".to_string(), Expr::var("item")),
         };
@@ -604,7 +610,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.spill(Role::Inspect, f, out)
                 };
-                let item = Expr::var("item");
+                let param = Expr::param_apart("item", &[&f]);
+                let item = Expr::var(&param);
                 let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
                 let mut inspected = vec![inspected];
                 if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {
@@ -612,7 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     inspected = crate::lower::drops::dropped_unwinding(inspected, dropped, js::Span::NONE);
                 }
                 inspected.push(StmtKind::Return(Some(item)).at(js::Span::NONE));
-                let each = Expr::arrow(vec!["item".into()], inspected);
+                let each = Expr::arrow(vec![param.into()], inspected);
                 method(items, "map", vec![each])
             }
             // Of `&T`s into `partition::<B, F>`'s `B` of `T`s, after `Self`,

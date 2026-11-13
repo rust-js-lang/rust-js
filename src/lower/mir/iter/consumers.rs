@@ -336,9 +336,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = self.unary_callback(f, own);
             return Ok(Expr::call(Expr::member(it, "forEach"), vec![f]));
         };
+        let x = Expr::param_apart("x", &[&f]);
         let each = Expr::arrow(
-            vec!["_".into(), "x".into()],
-            vec![StmtKind::Expr(Expr::call(f, vec![Expr::var("x")])).at(js::Span::NONE)],
+            vec!["_".into(), x.clone().into()],
+            vec![StmtKind::Expr(Expr::call(f, vec![Expr::var(&x)])).at(js::Span::NONE)],
         );
         let args = vec![it, Expr::str("fold"), Expr::undefined(), each, Expr::undefined(), ends];
         Ok(Expr::call_helper("$consume", args))

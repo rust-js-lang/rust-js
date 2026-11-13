@@ -171,7 +171,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let values = std::iter::once(items).chain(key).collect();
             return self.stable_sort_call(with, values, generic_args, span, out);
         }
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        // Named apart from the key the program gives (#1667).
+        let embedded: Vec<&Expr> = key.iter().collect();
+        let names = (Expr::param_apart("a", &embedded), Expr::param_apart("b", &embedded));
+        let (a, b) = (Expr::var(&names.0), Expr::var(&names.1));
         Ok(match key {
             // Sorting, in place (ADR 0036). JS's `sort()` compares as strings:
             // right for `bool`s, and numbers need `a - b`, strings `$cmp`, by
@@ -185,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if Num::of(elem).is_some_and(|n| !n.big()) {
                     let js_span = self.js_span(span);
                     let f = Expr::arrow(
-                        vec!["a".into(), "b".into()],
+                        vec![names.0.clone().into(), names.1.clone().into()],
                         vec![StmtKind::Return(Some(Expr::bin(Op::Sub, a, b))).at(js_span)],
                     );
                     method(items, "sort", vec![f])
@@ -219,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )?;
                 // A key read more than once, like a tuple's, is a `const` first.
                 body.push(StmtKind::Return(Some(compare)).at(js_span));
-                let f = Expr::arrow(vec!["a".into(), "b".into()], body);
+                let f = Expr::arrow(vec![names.0.into(), names.1.into()], body);
                 match receiver_ty.peel_refs().kind() {
                     ty::Slice(elem) | ty::Array(elem, _) => self.sort_by_compare(items, f, *elem),
                     _ => method(items, "sort", vec![f]),

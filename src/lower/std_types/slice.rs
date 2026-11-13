@@ -344,10 +344,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Vec::new(),
                     vec![StmtKind::Return(Some(Expr::call_helper("$someValue", vec![to.clone()]))).at(js::Span::NONE)],
                 );
+                let v = Expr::param_apart("v", &[&to]);
                 let setter = Expr::arrow(
-                    vec!["v".into()],
+                    vec![v.clone().into()],
                     vec![
-                        StmtKind::Assign(to.clone(), Expr::call_helper("$some", vec![Expr::var("v")]))
+                        StmtKind::Assign(to.clone(), Expr::call_helper("$some", vec![Expr::var(&v)]))
                             .at(js::Span::NONE),
                     ],
                 );
@@ -413,9 +414,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Vec::new(),
                 vec![StmtKind::Return(Some(js::result::held(to.clone()))).at(js::Span::NONE)],
             );
-            let replaced = js::result::made(ok, Expr::var("v"));
+            let v = Expr::param_apart("v", &[&to]);
+            let replaced = js::result::made(ok, Expr::var(&v));
             let setter = Expr::arrow(
-                vec!["v".into()],
+                vec![v.into()],
                 vec![StmtKind::Assign(to.clone(), replaced).at(js::Span::NONE)],
             );
             let made = Expr::object(vec![

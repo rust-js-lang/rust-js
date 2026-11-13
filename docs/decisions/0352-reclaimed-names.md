@@ -79,3 +79,20 @@ and the hosts' rust-js reads, `console`, `TextEncoder`, `globalThis` and
 the rest; reclaiming gives the name back where the module never reads the
 global, so a program that doesn't sees no change. Held by
 `test/corpus/js_global_names.rs`.
+
+## Amendment: an arrow the compiler makes around the program's values
+
+An arrow lowering makes around a value the program gives, `next_if_eq`'s
+test `(item) => item === x`, `inspect`'s `(item) => { f(item); .. }`, a
+sort's by a key, `contains`, `binary_search`, a `for_each` fold's, a char
+set's pattern, `String::retain`'s and an `Option`'s or `Result`'s setter,
+named its parameter by a word of its own: where that value read the same
+name, a variable the program calls `item`, the parameter hid it, and
+`next_if_eq(&item)` was always true (#1667, a wrong answer). Its name is
+`Expr::param_apart(base, embedded)`'s: the word, or given apart from each
+name the values it holds read, `(item$1) => item$1 === item`; nothing
+changes where none does. Held by
+`test/corpus/arrow_parameters_named_apart_from_program_values.rs`, native
+compared, and mutation `param-shadows-what-its-arrow-holds`. That a name
+is the identity of what it reads, which this rule works within, goes with
+review #1671's change 3 (per-item variable ids).

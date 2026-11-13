@@ -321,10 +321,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 } else {
                                     this.spill(Role::Expected, x, out)
                                 };
+                                // Its parameter named apart from what it compares
+                                // with, a variable the program calls `item` (#1667).
+                                let item = Expr::param_apart("item", &[&x]);
                                 let same = Expr::arrow(
-                                    vec!["item".into()],
+                                    vec![item.clone().into()],
                                     vec![
-                                        StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x)))
+                                        StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var(&item), x)))
                                             .at(js::Span::NONE),
                                     ],
                                 );

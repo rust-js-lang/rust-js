@@ -368,9 +368,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill(Role::Item, x, out),
         };
         let mut body = Vec::new();
-        let same = self.eq_value(Expr::var("each"), x.clone(), item, span, &mut body)?;
+        let param = Expr::param_apart("each", &[&x]);
+        let same = self.eq_value(Expr::var(&param), x.clone(), item, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
-            if matches!(&each.kind, js::ExprKind::Var(v) if v == "each") && **of == x);
+            if matches!(&each.kind, js::ExprKind::Var(v) if *v == param) && **of == x);
         // Of what's never `NaN`, an object equal only to itself (ADR
         // 1016), `includes`, which finds what `indexOf` does.
         if body.is_empty() && strict {
@@ -380,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
-        let f = Expr::arrow(vec!["each".into()], body);
+        let f = Expr::arrow(vec![param.into()], body);
         Ok(Expr::call(Expr::member(items, "some"), vec![f]))
     }
 
