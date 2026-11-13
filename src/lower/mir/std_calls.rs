@@ -405,8 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // a writer that writes through a sink a `write!` into a writer
                     // may arm: one `write_str` of a string, the rest refused
                     // till each piece is followed (#1652).
-                    if crate::lower::recognition::writes_piecewise()
-                        && this.writes_through_a_sink(state)
+                    if this.writes_into_writers(state)
                         && this.recognition().is_formatter_type(arg_tys[0].peel_refs())
                         && (this.recognition().is_write_char(def_id)
                             || (this.recognition().formatter_write_fmt(def_id, generic_args)

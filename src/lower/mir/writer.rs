@@ -184,7 +184,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Kept: a loop's exit, its `finish`, may be lowered before
                 // the steps its body makes (#1026).
                 (step, Taken::Streamed(builder)) => {
-                    let call = self.streamed_step(kind, &builder, (step, typed, generic_args), span, out)?;
+                    let taken = (step, typed, generic_args);
+                    let call = match self.writes_into_writers(state) {
+                        true => self.streamed_step_written(kind, &builder, taken, span, out)?,
+                        false => self.streamed_step(kind, &builder, taken, span, out)?,
+                    };
                     self.flush(state, out)?;
                     out.push(StmtKind::Expr(call).at(self.js_span(span)));
                     state
@@ -248,7 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(at) =
                 (self.recognition()).callable_formatter(def_id, generic_args, destination.ty(decls, self.tcx).ty)
         {
-            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+            if self.writes_into_writers(state) {
                 return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
             }
             let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
@@ -268,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (args.get(at).and_then(|a| a.node.place()))
                 .is_some_and(|p| p.projection.is_empty() && aliases.contains(&p.local))
         {
-            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+            if self.writes_into_writers(state) {
                 return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
             }
             let given: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
@@ -324,9 +328,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // model, which writes each piece as it's taken, its opening
                 // now (#1533).
                 if self.writes_through_a_sink(state) {
-                    if crate::lower::recognition::writes_piecewise() {
-                        return Err(self.refused_in_a_writer("a `Debug` builder", span));
-                    }
                     let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
                     let (made, role) = self.streamed_builder(kind, sink, type_name);
                     let builder = self.fresh(role);
@@ -364,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let values = self.take_operands(state, &others, out)?;
             // Of a writer that writes through a sink a `write!` into a
             // writer may arm: each piece as std makes it (#1652).
-            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+            if self.writes_into_writers(state) {
                 let callee = (def_id, generic_args);
                 return (self.written_through_the_sink(state, callee, operation, values, destination, span, out))
                     .map(Some);
@@ -811,6 +812,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// maker's, its maker's?
     pub(super) fn writes_through_a_sink(&self, state: &State<'_, 'tcx>) -> bool {
         state.writer.is_some() && self.writer_owner_writes_through_a_sink(state)
+    }
+
+    /// Is the writer being lowered, or of a closure that writes its maker's,
+    /// its maker, shown into a writer by `write!`, so each piece it writes
+    /// is std's, a call of that writer's (#1652, ADR 1135)?
+    pub(super) fn writes_into_writers(&self, state: &State<'_, 'tcx>) -> bool {
+        let owner = match state.writes_captured {
+            true => self.tcx.typeck_root_def_id(self.item),
+            false => self.item,
+        };
+        state.writer.is_some() && self.krate.prints.writes_into_writers(owner)
     }
 
     /// Does the writer whose text the body writes, its own or, of a closure

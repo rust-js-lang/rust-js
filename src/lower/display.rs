@@ -6,6 +6,7 @@
 mod composed;
 mod debug;
 mod printing;
+mod sink_debug;
 mod sink_writes;
 mod streamed;
 mod written;

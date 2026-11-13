@@ -68,4 +68,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests,
   },
+  {
+    name: "framed-derived-struct-as-tuple",
+    breaks: "a derived struct's `Debug` written into a writer is written as a tuple's, its field names shown as values (#1652)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: '                let helper = if named { "$writeDebugStruct" } else { "$writeDebugTuple" };\n',
+    replace: '                let helper = if named { "$writeDebugTuple" } else { "$writeDebugTuple" };\n',
+    tests,
+  },
 ];

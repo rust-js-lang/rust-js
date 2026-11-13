@@ -65,14 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(made_when_taken(this.debug_string_with(value, ty, span, &pretty)?))
         };
         let (method, args) = match (kind, step) {
-            (_, BuilderStep::Finish { non_exhaustive }) => {
-                let method = if non_exhaustive {
-                    "finishNonExhaustive"
-                } else {
-                    "finish"
-                };
-                (method, Vec::new())
-            }
+            (_, BuilderStep::Finish { non_exhaustive }) => (finish_method(non_exhaustive), Vec::new()),
             (DebugBuilder::Struct, BuilderStep::Field) => {
                 let (field, value) = (values.next().expect("a name"), values.next().expect("a value"));
                 ("field", vec![field.0, shown(self, value)?])
@@ -97,6 +90,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }));
                 args.extend(entries.drop);
                 ("entries", args)
+            }
+            _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
+        };
+        Ok(Expr::call(Expr::member(Expr::var(builder), method), args))
+    }
+
+    /// `streamed_step` of a writer shown into a writer, each value given with
+    /// the writing function that writes it into the step's sink by its
+    /// `Debug`, `fieldWith("x", x, (g, x) => ..)`, `entriesWith(items, (g,
+    /// entry) => ..)`, so each piece is a call of that writer's (#1652).
+    #[allow(clippy::type_complexity)]
+    pub(in crate::lower) fn streamed_step_written(
+        &mut self,
+        kind: DebugBuilder,
+        builder: &str,
+        (step, values, generic_args): (BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+        let pretty = self.writer_pretty().alternate();
+        let refused = |this: &Self, ty: Ty<'tcx>| {
+            this.refused_in_a_writer(&format!("a `Debug` builder's step of a `{ty}`"), span)
+        };
+        let written = |this: &mut Self, ty: Ty<'tcx>| -> R<Expr> {
+            (this.writing_fn(|cx, value| cx.debug_sink_writes(value, ty, (&options, &pretty), span))?)
+                .ok_or_else(|| refused(this, ty))
+        };
+        let mut values = values.into_iter();
+        let (method, args) = match (kind, step) {
+            (_, BuilderStep::Finish { non_exhaustive }) => (finish_method(non_exhaustive), Vec::new()),
+            (DebugBuilder::Struct, BuilderStep::Field) => {
+                let (field, (value, ty)) = (values.next().expect("a name"), values.next().expect("a value"));
+                ("fieldWith", vec![field.0, value, written(self, ty)?])
+            }
+            (DebugBuilder::Tuple, BuilderStep::Field) => {
+                let (value, ty) = values.next().expect("a value");
+                ("fieldWith", vec![value, written(self, ty)?])
+            }
+            (DebugBuilder::List | DebugBuilder::Set, BuilderStep::Entry) => {
+                let (value, ty) = values.next().expect("a value");
+                ("entryWith", vec![value, written(self, ty)?])
+            }
+            (DebugBuilder::Map, BuilderStep::Entry) => {
+                let ((key, key_ty), (value, value_ty)) =
+                    (values.next().expect("a key"), values.next().expect("a value"));
+                let (write_key, write_value) = (written(self, key_ty)?, written(self, value_ty)?);
+                ("entryWith", vec![key, value, write_key, write_value])
+            }
+            (DebugBuilder::List | DebugBuilder::Set | DebugBuilder::Map, BuilderStep::Entries) => {
+                let items = values.next().expect("the entries").0;
+                let entries = self.entries_shown(kind, items, generic_args, span, out)?;
+                let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
+                let mut args = vec![entries.items];
+                match kind {
+                    DebugBuilder::Map => {
+                        args.push(written(self, tys[0])?);
+                        args.push(written(self, tys[1])?);
+                    }
+                    _ => args.push(written(self, tys[0])?),
+                }
+                args.extend(entries.drop);
+                ("entriesWith", args)
             }
             _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
         };
@@ -164,4 +220,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// that failed isn't made, as std's builders skip it.
 fn made_when_taken(shown: Expr) -> Expr {
     Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
+}
+
+/// A builder's `finish`, or its `finish_non_exhaustive`.
+fn finish_method(non_exhaustive: bool) -> &'static str {
+    match non_exhaustive {
+        true => "finishNonExhaustive",
+        false => "finish",
+    }
 }

@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     name: "builder-separator-before-first",
     breaks: "a list's first entry is written after `, `, as if it had fields before it",
     file: "src/runtime/debug_builders.js",
-    find: "        if (inner.fields > 0) f.write(\", \");\n",
-    replace: "        if (inner.fields >= 0) f.write(\", \");\n",
+    find: "        if (inner.fields > 0) f.write(\", \");\n        f.write(show());\n",
+    replace: "        if (inner.fields >= 0) f.write(\", \");\n        f.write(show());\n",
     tests: grids,
   },
   {
@@ -96,5 +96,37 @@ export const mutations: Mutation[] = [
       "-t",
       "stderr_between"
     ]
+  },
+  {
+    name: "pad-adapter-writes-empty",
+    breaks: "std's `PadAdapter` given `\"\"` at a line's start writes its indent, where std's writes nothing (#1652)",
+    file: "src/runtime/debug_builders.js",
+    find: '        if (line === "") continue;\n',
+    replace: "",
+    tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "pad-adapter-indent-joined",
+    breaks: "std's `PadAdapter` writes its indent with the line, one `write_str`, where std's writes it apart (#1652)",
+    file: "src/runtime/debug_builders.js",
+    find: '        if (state.onNewline) f.write("    ");\n        state.onNewline = line.endsWith("\\n");\n        f.write(line);\n',
+    replace: '        const indent = state.onNewline ? "    " : "";\n        state.onNewline = line.endsWith("\\n");\n        f.write(indent + line);\n',
+    tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "struct-field-name-joined",
+    breaks: "a builder's field written into a writer gives its name and `: ` in one `write_str`, where std's writes them apart (#1652)",
+    file: "src/runtime/debug_builders.js",
+    find: '          f.write(name);\n          f.write(": ");\n          write(f, value);\n',
+    replace: '          f.write(name + ": ");\n          write(f, value);\n',
+    tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "tuple-empty-name-unwritten",
+    breaks: "a tuple's `Debug` written into a writer leaves out its empty name, `\"\"`, which std's `debug_tuple(\"\")` writes (#1652)",
+    file: "src/runtime/debug_builders.js",
+    find: "function $debugTuple(f, name, pretty) {\n  f.write(name);\n",
+    replace: 'function $debugTuple(f, name, pretty) {\n  if (name !== "") f.write(name);\n',
+    tests: ["test/writer-sink.test.ts"],
   },
 ];

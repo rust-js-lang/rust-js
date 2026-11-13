@@ -53,14 +53,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "sink-own-writer-debug-hex-refused",
-    breaks: "a writer of the crate's own shown by `{:x?}` into a writer is refused, its options not given on (#1652)",
-    file: "src/lower/display/sink_writes.rs",
-    find: "            (_, Some(_)) if float.is_none() && !self.writes_into_a_writer(kind, ty) => return Ok(None),\n",
-    replace: "            (_, Some(_)) if float.is_none() => return Ok(None),\n",
-    tests,
-  },
-  {
     name: "sink-float-exp-case-swapped",
     breaks: "a float's `{:e}` into a writer is written by `UpperExp`, `1E2`",
     file: "src/lower/display/sink_writes.rs",

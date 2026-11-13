@@ -45,10 +45,10 @@ for (const [build, flags] of builds) {
 /** A writer shown into a writer whose split isn't followed yet: each `fmt`
  * of `Shown`, written into `Log`, is refused, naming #1652. */
 const refusedWriters: [string, string, string][] = [
-  ["a builder", "builder", 'f.debug_struct("S").field("a", &1).finish()'],
+  ["a builder's dyn Debug", "dyn", 'let d: &dyn fmt::Debug = &1;\n        f.debug_list().entry(d).finish()'],
   ["a write through a held Formatter", "held where it isn't", 'let held = Held(f);\n        let n = [-1, 2];\n        write!(held.0, "{}", n[0])'],
   ["a closure given the Formatter", "Formatter", "let w = |f: &mut fmt::Formatter<'_>| f.write_str(\"x\");\n        w(f)"],
-  ["a str's Debug", "by its `Debug`", 'let s = ["a\\"b"];\n        write!(f, "{:?}", s[0])'],
+  ["a HashMap's Debug", "by its `Debug`", 'let m = std::collections::HashMap::from([(1, 2)]);\n        write!(f, "{:?}", m)'],
   ["a write_fmt of Arguments made elsewhere", "made elsewhere", 'f.write_fmt(given(format_args!("{}", 1)))'],
 ];
 
@@ -165,6 +165,47 @@ test("a float is written by flt2dec's parts, as pad_formatted_parts writes them"
   for (const [x, by, f32, options, want] of cases) {
     expect(await recorded((f, std) => std.$writeFloat(f, x, by, f32, options))).toEqual(want);
   }
+});
+
+test("std's PadAdapter writes each line apart, its indent a write of its own, nothing of an empty one", async () => {
+  expect(
+    await recorded((f, std) => {
+      const g = std.$padAdapter(f);
+      g.write("a\nb");
+      g.write("");
+      g.writeChar("\n");
+      g.writeChar("c");
+      g.write("\n\n");
+    }),
+  ).toEqual(["s    ", "sa\n", "s    ", "sb", "c\n", "s    ", "cc", "s\n", "s    ", "s\n"]);
+});
+
+test("a builder's step of a writing function writes each piece, pretty ones through the adapter", async () => {
+  const int = (g: any, n: number) => g.write(String(n));
+  expect(
+    await recorded((f, std) => {
+      const s = std.$debugStruct(f, "P", false);
+      s.fieldWith("x", 1, int);
+      s.fieldWith("y", 2, int);
+      s.finish();
+    }),
+  ).toEqual(["sP", "s { ", "sx", "s: ", "s1", "s, ", "sy", "s: ", "s2", "s }"]);
+  expect(
+    await recorded((f, std) => {
+      const t = std.$debugTuple(f, "", true);
+      t.fieldWith(1, int);
+      t.finish();
+    }),
+  ).toEqual(["s", "s(\n", "s    ", "s1", "s,\n", "s)"]);
+  expect(await recorded((f, std) => std.$writeDebugList(f, [1, 2], int, false))).toEqual(["s[", "s1", "s, ", "s2", "s]"]);
+  expect(await recorded((f, std) => std.$writeDebugOption(f, undefined, int, false))).toEqual(["sNone"]);
+});
+
+test("a str's and a char's Debug write each escape apart", async () => {
+  expect(await recorded((f, std) => std.$writeDebugStr(f, 'a"b\\'))).toEqual(['c"', "sa", 's\\"', "sb", "s\\\\", "s", 'c"']);
+  expect(await recorded((f, std) => std.$writeDebugStr(f, ""))).toEqual(['c"', "s", 'c"']);
+  expect(await recorded((f, std) => std.$writeDebugChar(f, "é"))).toEqual(["c'", "cé", "c'"]);
+  expect(await recorded((f, std) => std.$writeDebugChar(f, "\n"))).toEqual(["c'", "s\\n", "c'"]);
 });
 
 test("a char's Display by a writer's options is its write_char, or pad given a width", async () => {

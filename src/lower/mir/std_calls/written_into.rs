@@ -19,8 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (state.called_into.and_then(|place| place.as_local())).is_some_and(|local| {
             let recognition = self.recognition();
             arguments_use(&recognition, state.body, local) == ArgumentsUse::Written
-                || (crate::lower::recognition::writes_piecewise()
-                    && self.writes_through_a_sink(state)
+                || (self.writes_into_writers(state)
                     && (state.writer.as_ref())
                         .is_some_and(|(aliases, _)| written_into_formatter(&recognition, state.body, local, aliases)))
         })
@@ -280,7 +279,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         };
                         let ty = generic_args.type_at(0).peel_refs();
                         let value = given.into_iter().next().expect("a `fmt`'s value");
-                        match self.sink_writes_given(value, (kind, ty), options, span)? {
+                        let written = match kind {
+                            Std::FmtDebug => {
+                                let pretty = self.writer_pretty().alternate();
+                                self.debug_sink_writes(value, ty, (&options, &pretty), span)?
+                            }
+                            _ => self.sink_writes_given(value, (kind, ty), options, span)?,
+                        };
+                        match written {
                             Some(writes) => writes,
                             None => {
                                 let what = format!("a `fmt` of a `{ty}` given its `Formatter`");
@@ -323,7 +329,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             WriteCall::OtherFmt => {
                 return Err(self.refused_in_a_writer("a `{:x}`, `{:e}` or the like given the `Formatter`", span));
             }
-            _ => return Err(self.refused_in_a_writer("a derived `Debug`'s fields", span)),
+            // A derived `Debug`'s, `debug_struct_field2_finish(f, "P", "x",
+            // &self.x, ..)`: core's builder, each field a step, its value
+            // written by its `Debug` into the step's sink.
+            WriteCall::Struct | WriteCall::Tuple => {
+                let named = operation == WriteCall::Struct;
+                let Some(type_name) = values.next() else {
+                    return Err(self.unsupported(span, "this derived `Debug`, from its MIR"));
+                };
+                let type_name = self.shown_in_place(type_name, span)?;
+                let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+                let pretty = self.writer_pretty().alternate();
+                let mut fields = Vec::new();
+                while let Some(first) = values.next() {
+                    let (name, value) = match named {
+                        true => (Some(self.shown_in_place(first, span)?), values.next()),
+                        false => (None, Some(first)),
+                    };
+                    let Some(Value::DynDebug(from, _, value)) = value else {
+                        return Err(self.refused_in_a_writer("a derived `Debug` of a `dyn Debug` given on", span));
+                    };
+                    let ty = self.pointee(from);
+                    let Some(write) =
+                        self.writing_fn(|cx, field| cx.debug_sink_writes(field, ty, (&options, &pretty), span))?
+                    else {
+                        let what = format!("a derived `Debug`'s field of a `{ty}`");
+                        return Err(self.refused_in_a_writer(&what, span));
+                    };
+                    let mut field: Vec<Expr> = name.into_iter().collect();
+                    field.extend([value, write]);
+                    fields.push(Expr::array(field));
+                }
+                let helper = if named { "$writeDebugStruct" } else { "$writeDebugTuple" };
+                vec![SinkWrite::Helper(helper, vec![type_name, Expr::array(fields), pretty])]
+            }
+            _ => return Err(self.refused_in_a_writer("a derived `Debug` of more than five fields", span)),
         };
         self.flush(state, out)?;
         let js_span = self.js_span(span);

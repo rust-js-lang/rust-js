@@ -35,6 +35,10 @@ pub(in crate::lower) struct Prints {
     /// answer, so what they wrote before it is kept, as std's builders write
     /// it (#1557).
     pub(in crate::lower) through_sink: IndexSet<DefId>,
+    /// Of those, the writers shown into a writer by `write!`, each piece a
+    /// call of that writer's, `written_into_writers`' (#1652, ADR 1135):
+    /// each writes as std's `Formatter` does, a piece at a time.
+    pub(in crate::lower) framed: IndexSet<DefId>,
     /// The bodies that may run while a line is formatted: those writers and
     /// what each may run. A print of one is written through stdout's line
     /// (`$out`), and a writer's text it makes for anything but that line,
@@ -69,6 +73,12 @@ impl Prints {
     /// line it formats into, where it prints, or a string of its own?
     pub(in crate::lower) fn writes_through_sink(&self, writer: DefId) -> bool {
         self.through_sink.contains(&writer)
+    }
+
+    /// Is `writer` shown into a writer by `write!`, so it writes a piece
+    /// at a time, each a call of that writer's (#1652)?
+    pub(in crate::lower) fn writes_into_writers(&self, writer: DefId) -> bool {
+        self.framed.contains(&writer)
     }
 
     /// May any writer of the crate's print as it formats: what may run in
@@ -160,7 +170,8 @@ pub(super) fn prints<'tcx>(
             .map(|body| body.def_id),
     );
     if crate::lower::recognition::writes_piecewise() {
-        found.through_sink.extend(written_into_writers(recognition, all_bodies));
+        found.framed = written_into_writers(recognition, all_bodies);
+        found.through_sink.extend(found.framed.iter().copied());
     }
     found
 }
@@ -170,7 +181,10 @@ pub(super) fn prints<'tcx>(
 /// of a type a `write!` into a writer of the crate's own, or a generic
 /// one, shows; and to a fixed point, those of a type such a writer shows,
 /// by its own `write!` or by a `fmt` it's given its `Formatter` to. A type
-/// only a caller, or a `dyn`, says may be any, so every writer is. Each
+/// only a caller, or a `dyn`, says may be any, so every writer is; but one
+/// a writer of a generic type shows of its own type parameters, `Pair<T>`'s
+/// `T`, is what the types it's shown as give, `Pair<u8>`'s `u8`, each shown
+/// too, and a writer function's, what its callers give it. Each
 /// writes through a sink, which a `write!` into a writer arms with its
 /// writer's (`$writingInto`). Never `types` or `while_formatting`, which
 /// route what's printed.
@@ -187,6 +201,16 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
                     );
                 shown.then(|| args.types().next()).flatten()
             })
+            // And what's made a `&dyn Debug`, a builder's step's, a derived
+            // `Debug`'s field's, which std's `Debug` of it shows.
+            .chain((body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
+                ExprKind::PointerCoercion {
+                    cast: ty::adjustment::PointerCoercion::Unsize,
+                    source,
+                    ..
+                } => Some(body.thir[source].ty),
+                _ => None,
+            }))
             .collect()
     };
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
@@ -202,31 +226,35 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
                 .did(),
         )
     };
-    let mut shown: Vec<ty::Ty<'tcx>> = (all_bodies.iter())
+    // Each type shown, and whether it's a writer's, whose own type
+    // parameters the types it's shown as give.
+    let mut shown: Vec<(ty::Ty<'tcx>, bool)> = (all_bodies.iter())
         .filter(|body| {
             (crate::lower::instances::calls_of(body).into_iter())
                 .any(|(callee, args, _)| recognition.writes_arguments_piecewise(callee, args))
         })
-        .flat_map(|body| shown_by(body))
+        .flat_map(|body| written_arguments(recognition, body).unwrap_or_else(|| shown_by(body)))
+        .map(|ty| (ty, false))
         .collect();
     let mut found: IndexSet<DefId> = IndexSet::default();
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
     let mut called_up_to = 0;
-    while let Some(ty) = shown.pop() {
+    while let Some((ty, instantiated)) = shown.pop() {
         for part in ty.walk().filter_map(|part| part.as_type()) {
             match part.kind() {
                 ty::Adt(adt, _) if adt.did().is_local() => {
                     types.insert(adt.did());
                 }
-                _ if crate::lower::recognition::known_by_a_dictionary(part) => any = true,
+                ty::Dynamic(..) => any = true,
+                _ if !instantiated && crate::lower::recognition::known_by_a_dictionary(part) => any = true,
                 _ => {}
             }
         }
         for writer in &writers {
             let of_shown = any || type_of(writer.def_id).is_some_and(|did| types.contains(&did));
             if of_shown && found.insert(writer.def_id) {
-                shown.extend(shown_by(writer));
+                shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
             }
         }
         // And each writer of the crate's such a writer gives its
@@ -236,11 +264,12 @@ fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &
             let calls = (writers.iter().find(|writer| writer.def_id == by))
                 .map(|by| crate::lower::instances::calls_of(by))
                 .unwrap_or_default();
-            for (callee, _, _) in calls {
-                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee)
-                    && found.insert(callee)
-                {
-                    shown.extend(shown_by(writer));
+            for (callee, args, _) in calls {
+                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee) {
+                    shown.extend(args.types().map(|ty| (ty, true)));
+                    if found.insert(callee) {
+                        shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
+                    }
                 }
             }
         }
@@ -773,4 +802,62 @@ fn leaves_unended<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, 
             None => recognition.writes_stream(id, generics.skip_binder(), error),
         }
     })
+}
+
+/// The types each `write!` of `body` into a writer std writes a piece at a
+/// time shows, the `T` of each `Argument::new_*::<T>` of the
+/// `format_args!` it's given where it's made: not what the rest of the body
+/// formats, a `println!`'s. `None` where an `Arguments` is given made
+/// elsewhere, a local's, of which every type the body shows is asked.
+fn written_arguments<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> Option<Vec<ty::Ty<'tcx>>> {
+    struct Arguments<'a, 'tcx> {
+        tcx: ty::TyCtxt<'tcx>,
+        thir: &'a Thir<'tcx>,
+        found: Vec<ty::Ty<'tcx>>,
+        made: bool,
+    }
+    impl<'a, 'tcx> Visitor<'a, 'tcx> for Arguments<'a, 'tcx> {
+        fn thir(&self) -> &'a Thir<'tcx> {
+            self.thir
+        }
+        fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+            if let ExprKind::Call { fun, .. } = expr.kind
+                && let ty::FnDef(id, args) = *self.thir[fun].ty.kind()
+            {
+                if crate::lower::recognition::is_fmt_argument(self.tcx, id) {
+                    self.found.extend(args.skip_binder().types().next());
+                }
+                self.made |= matches!(expr.ty.kind(), ty::Adt(adt, _)
+                    if self.tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::FormatArguments));
+            }
+            walk_expr(self, expr);
+        }
+    }
+    body.root()?;
+    let mut found = Vec::new();
+    for expr in body.thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        let ty::FnDef(id, generic_args) = *body.thir[fun].ty.kind() else {
+            continue;
+        };
+        if !recognition.writes_arguments_piecewise(id, generic_args.skip_binder()) {
+            continue;
+        }
+        let mut arguments = Arguments {
+            tcx: recognition.tcx,
+            thir: &body.thir,
+            found: Vec::new(),
+            made: false,
+        };
+        for &arg in args.iter() {
+            arguments.visit_expr(&body.thir[arg]);
+        }
+        if !arguments.made {
+            return None;
+        }
+        found.extend(arguments.found);
+    }
+    Some(found)
 }

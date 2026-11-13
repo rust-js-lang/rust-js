@@ -97,3 +97,32 @@ function $writingInto(f, writer, ...args) {
     if (unclaimed) throw new Error("rust-js: a writer shown into a writer didn't write through its sink");
   }
 }
+// A `str`'s `Debug` into a writer, as std's writes it: its quote a
+// `write_char`; each run of `char`s shown as they are one `write_str`, then
+// each escape one, `\"` or `\u{301}`; the rest one, `""` too; then its
+// closing quote. Its width and precision change nothing.
+function $writeDebugStr(f, s) {
+  f.writeChar('"');
+  let run = "";
+  for (const c of s) {
+    const escaped = $debugChar(c, '"');
+    if (escaped === c) {
+      run += c;
+      continue;
+    }
+    f.write(run);
+    f.write(escaped);
+    run = "";
+  }
+  f.write(run);
+  f.writeChar('"');
+}
+// A `char`'s `Debug` into a writer: its quotes and itself, each a
+// `write_char`, or its escape, one `write_str`, between them.
+function $writeDebugChar(f, c) {
+  f.writeChar("'");
+  const escaped = $debugChar(c, "'");
+  if (escaped === c) f.writeChar(c);
+  else f.write(escaped);
+  f.writeChar("'");
+}

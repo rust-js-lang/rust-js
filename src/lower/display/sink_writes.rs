@@ -42,8 +42,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What one placeholder writes into a writer's sink: `value`, shown as
     /// `kind` says, with `spec`'s options and its `width` and `precision`,
     /// each piece as std's `fmt` of it writes it. `None` of a value whose
-    /// split isn't followed yet (#1652): a `Debug` of text, a composite's,
-    /// a generic or `dyn` value's.
+    /// split isn't followed yet (#1652): a composite's, a generic or `dyn`
+    /// value's.
     pub(in crate::lower) fn sink_writes(
         &mut self,
         value: Expr,
@@ -59,16 +59,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = ty.peel_refs();
         let int = shown_num(ty).filter(|num| !num.float());
         let float = shown_num(ty).filter(|num| num.float());
-        // `{:x?}` of an integer is its `{:x}` (ADR 0559); of a float,
-        // nothing, as its `Debug` reads no hex flag.
+        // `{:x?}` of an integer is its `{:x}` (ADR 0559); of another leaf,
+        // a float, a string, a `char` or a `bool`, nothing, as its `Debug`
+        // reads no hex flag; a composite, and a writer of the crate's own, is
+        // given it among its options, which each integer it shows reads.
         let kind = match (kind, spec.debug_hex) {
             (Std::FmtDebug, Some(radix)) if int.is_some() => Std::FmtRadix(radix),
-            // A writer of the crate's own is given it among its options.
-            (_, Some(_)) if float.is_none() && !self.writes_into_a_writer(kind, ty) => return Ok(None),
             _ => kind,
         };
         let options = width.is_some()
             || precision.is_some()
+            || spec.debug_hex.is_some()
             || spec.plus
             || spec.alternate
             || spec.zero
@@ -126,6 +127,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
                 padded(text)
             }
+            // A string's and a `char`'s `Debug`: its escapes, each a write
+            // of its own, its options unread.
+            Std::FmtDebug if ty.is_char() => SinkWrite::Helper("$writeDebugChar", vec![value]),
+            Std::FmtDebug if self.is_string_like(ty) => {
+                let text = self.format_value(value, (Std::FmtDisplay, ty), Spec::plain(), (None, None), span)?;
+                SinkWrite::Helper("$writeDebugStr", vec![text])
+            }
             // A writer of the crate's own, which writes through a sink:
             // called with the writer's sink armed, so each piece it writes is
             // a call of the writer's (`$writingInto`), given the
@@ -136,6 +144,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(write) => write,
                     None => return Ok(None),
                 }
+            }
+            // A composite's `Debug`, by core's builders (step 4).
+            Std::FmtDebug => {
+                let given = match options {
+                    true => options_given(),
+                    false => Expr::undefined(),
+                };
+                return self.debug_sink_writes(value, ty, (&given, &Expr::bool(spec.alternate)), span);
             }
             _ => return Ok(None),
         }]))
@@ -192,8 +208,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
                 SinkWrite::Helper("$writePadded", given(text))
             }
+            Std::FmtDebug if ty.is_char() => SinkWrite::Helper("$writeDebugChar", vec![value]),
+            Std::FmtDebug if self.is_string_like(ty) => {
+                let text = self.format_value(value, (Std::FmtDisplay, ty), Spec::plain(), (None, None), span)?;
+                SinkWrite::Helper("$writeDebugStr", vec![text])
+            }
             Std::FmtDisplay | Std::FmtDebug if self.writes_into_a_writer(kind, ty) => {
-                let pretty = self.writer_pretty();
+                // Given the `Formatter`'s options, as std's hands them on.
+                let pretty = match options.kind {
+                    js::ExprKind::Undefined => Pretty::Plain,
+                    _ => Pretty::When(options.clone()),
+                };
                 match self.written_into_a_writer(kind, ty, value, &pretty, span)? {
                     Some(write) => write,
                     None => return Ok(None),

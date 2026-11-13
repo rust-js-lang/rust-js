@@ -56,6 +56,12 @@ $writeInteger(f, n);
 - **A writer of the crate's own shown into a writer writes into it too**,
   one model with `analysis::prints`' `through_sink` (step 2): it writes
   through a sink, and the `write!` calls it with that writer's sink armed,
+  `prints`' `framed` set. A writer is framed when a `write!` into a writer
+  shows its type: the types are taken from the `format_args!` that write
+  is given, not from the rest of its body. So are the writers a framed
+  writer shows, makes a `&dyn Debug` of, or gives its `Formatter` to. Only
+  a framed writer writes std's pieces; one that writes through a sink only
+  for printing makes its text as before. For example:
   `$writingInto(f, pointDisplay_fmt, p, options)`. Its own `write!` is
   written by `sink_writes`; `write_str` is one call and `write_char` the
   writer's `write_char`; `pad`, `pad_integral` and a `fmt` it gives its
@@ -76,11 +82,11 @@ $writeInteger(f, n);
   text written whole. `writes_into_a_writer` arms only a writer of the
   crate's own that writes through a sink; another crate's, made whole in
   its library, is refused.
-- **What isn't followed yet is refused, naming #1652**: a
-  `Debug` of text or of a composite, a builder or derived `Debug` in a
-  framed writer, a write through a `Formatter` a struct holds, a closure
-  or `fn` pointer given the `Formatter`, a `dyn` or generic value, and an
-  `Arguments` made elsewhere.
+- **What isn't followed yet is refused, naming #1652**: a map's or a
+  set's `Debug`, a derived `Debug` of more than five fields, a write
+  through a `Formatter` a struct holds, a closure or `fn` pointer given the
+  `Formatter`, a `dyn` or generic value, and an `Arguments` made
+  elsewhere.
 
 ## Landing
 
@@ -114,7 +120,29 @@ go.
    column, against native Rust in both builds, and the runtime's unit test
    of each form.
 4. `Debug` escapes of `str` and `char`, and std's builders, pretty ones by
-   std's `PadAdapter`.
+   std's `PadAdapter` (landed). A string's `Debug` writes its quote by
+   `write_char`, each run of `char`s shown as they are by one `write_str`,
+   each escape by one, and the rest by one, even `""`; a `char`'s writes
+   its quotes and itself by `write_char`, or its escape. Neither pads.
+   The builders keep one model, the runtime's `debug_builders.js` of #1533:
+   each step is std's `field` of a text, which the printing writers of
+   #1533 and #1561 give it, or its `field_with`, `fieldWith(name, value,
+   write)`, of a writing function that writes the value into the step's
+   sink. For `{:#?}` that sink is `$padAdapter`, which does exactly what
+   std's `PadAdapter` does: each line is one write, the four spaces before
+   a line's start are another, and an empty write writes nothing. A
+   `finish_non_exhaustive`'s `..` goes through it too. A std composite's
+   `Debug` is written by those builders (`display::debug_sink_writes`):
+   a sequence's list, an `Option`'s or a `Result`'s derived tuple, a
+   tuple's `debug_tuple("")`, with a `Box` or a reference showing what it
+   holds. The `Formatter`'s options are given to each part. A derived
+   `Debug` (`debug_struct_field2_finish` and the rest) and a builder in a
+   framed writer are written so too. A type a framed writer makes a
+   `&dyn Debug` of is framed, and a generic type's writer frames what the
+   types it's shown as give, not every writer. Proof: the `Debug` cases of
+   `test/writer-sink.rs` against native Rust in both builds, the runtime's
+   unit tests of the adapter and the steps, and the grid's `Log` column,
+   now 1,368 cases, every value but a map's, a set's and a generic field's.
 5. A generic or `dyn` value's `fmt` through its dictionary into the sink.
 6. An `Arguments` passed on, a writing function, so either's and
    arrayvec's own `write_fmt` pass it on.

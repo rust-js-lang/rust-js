@@ -183,6 +183,67 @@ impl fmt::Display for Celsius {
     }
 }
 
+// A `Debug` of the crate's own by each of std's builders, `{:#?}`'s through
+// std's `PadAdapter`.
+struct Unit;
+
+impl fmt::Debug for Unit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Unit")
+    }
+}
+
+struct Manual(Vec<u8>);
+
+impl fmt::Debug for Manual {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Manual").field("a", &1).field("b", &"two").finish()?;
+        f.debug_tuple("T").field(&3.5).field(&Unit).finish()?;
+        f.debug_list().entries(self.0.iter()).entry(&-1).finish()?;
+        f.debug_map().entry(&"k", &'v').entries([(1, "x")]).finish()?;
+        f.debug_set().entry(&Unit).finish()?;
+        f.debug_struct("More").field("c", &None::<u8>).finish_non_exhaustive()?;
+        f.debug_struct("Empty").finish()?;
+        f.debug_tuple("").field(&()).finish()
+    }
+}
+
+// Derived, of std's composites and of the crate's own.
+#[derive(Debug)]
+struct Holder {
+    m: Manual,
+    tags: Vec<&'static str>,
+    pair: (i8, Option<char>),
+}
+
+#[derive(Debug)]
+struct Wrapped(u8, char);
+
+#[derive(Debug)]
+enum Shape {
+    Dot,
+    Line(i32),
+    Box { sides: Vec<u8> },
+}
+
+// Fails at its builder's second field, where the writer fails.
+#[derive(Debug)]
+struct Fields {
+    first: i32,
+    second: &'static str,
+}
+
+// Prints as it formats, so it writes through a sink, but is never shown
+// into a writer: its text is made as before, a generic part and all.
+struct Echo<T>(T);
+
+impl<T: fmt::Display> fmt::Display for Echo<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        println!("echo");
+        write!(f, "({})", self.0)
+    }
+}
+
 // Shown only by `Branch`'s writer, which is shown into a writer.
 struct Leaf(i8);
 
@@ -321,6 +382,7 @@ fn main() {
     let at = nums.len() + 1;
     let ended = catch_unwind(AssertUnwindSafe(|| write!(early, "{}{}", s, nums[at])));
     println!("{} {:?}", ended.is_err(), early.0);
+    println!("{} {}", Echo(1), Echo("two"));
 
     let p = Point { x: -1, y: 2 };
     let mut framed = Log(Vec::new());
@@ -405,6 +467,79 @@ fn main() {
         write!(l, "{}|{:?}|{:.3}|{:e}|{:.60}|{:>12.2e}", y, y, y, y, y, y).unwrap();
         println!("{} {:?}", y, l.0);
     }
+    // A string's `Debug`: its quote a `write_char`, each run of `char`s as
+    // they are a `write_str`, each escape one, the rest one, `""` too; a
+    // `char`'s, its quotes and itself `write_char`s, or its escape. Neither
+    // pads to a width.
+    let texts = ["a\"b\nc", "", "plain", "é\u{301}x\u{7f}y'z\\", "\u{200b}\u{10ffff}"];
+    for s in texts {
+        let mut l = Chars(Vec::new());
+        write!(l, "{:?}|{:10?}|{:<12?}|{:?}", s, s, s, String::from(s)).unwrap();
+        println!("{:?}", l.0);
+    }
+    for c in ['a', '\'', '"', '\n', '\u{301}', 'é', '\0', '\u{ad}'] {
+        let mut l = Chars(Vec::new());
+        write!(l, "{:?}|{:5?}|{:x?}", c, c, c).unwrap();
+        println!("{:?}", l.0);
+    }
+    // std's composites and builders, each piece as core's builders write
+    // it, `{:#?}`'s through std's `PadAdapter`, its options given to each
+    // leaf, a derived `Debug`'s and one of the crate's own builders.
+    let composites = Holder {
+        m: Manual(vec![1]),
+        tags: vec!["x", "y\n"],
+        pair: (-2, Some('\n')),
+    };
+    let nested = vec![vec![1u8, 2], vec![]];
+    let some: Option<i32> = Some(-1);
+    let none: Option<&str> = None;
+    let ok: Result<u8, String> = Ok(3);
+    let err: Result<u8, String> = Err("bad".to_string());
+    let options = [Some('a'), None];
+    let mut l = Chars(Vec::new());
+    write!(
+        l,
+        "{:?}|{:#?}|{:?}|{:#?}|{:?}|{:?}",
+        nested, nested, some, none, ok, err
+    )
+    .unwrap();
+    write!(
+        l,
+        "{:?}|{:#?}|{:?}|{:#?}|{:5?}|{:#x?}",
+        (1, "x"),
+        (2.5f32,),
+        options,
+        options,
+        nested,
+        nested
+    )
+    .unwrap();
+    write!(l, "{:?}|{:08.2?}|{:?}", (), (1.5, -2.25), Box::new(some)).unwrap();
+    println!("{:?}", l.0);
+    let mut l = Log(Vec::new());
+    write!(l, "{:?}|{:#?}|{:4?}", composites, composites, composites).unwrap();
+    write!(l, "{:?}|{:#?}", Manual(vec![7, 8]), Manual(vec![])).unwrap();
+    println!("{:?}", l.0);
+    let mut l = Chars(Vec::new());
+    write!(
+        l,
+        "{:?}|{:?}|{:?}|{:#?}|{:?}",
+        Wrapped(1, 'c'),
+        Shape::Dot,
+        Shape::Line(-3),
+        Shape::Box { sides: vec![1, 2] },
+        [Shape::Dot]
+    )
+    .unwrap();
+    println!("{:?}", l.0);
+    for n in 1..12 {
+        let mut nth = Nth(0, n, String::new());
+        let r = write!(nth, "{:?}", Fields { first: -1, second: "s" });
+        let mut pretty = Nth(0, n, String::new());
+        let p = write!(pretty, "{:#?}", vec![Some(1)]);
+        println!("{} {:?} {:?} | {:?} {:?}", n, nth.2, r, pretty.2, p);
+    }
+
     let mut celsius = Chars(Vec::new());
     write!(
         celsius,
