@@ -227,4 +227,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
   },
+  {
+    name: "own-mut-hasher-taken-as-std-forwarding",
+    breaks: "the crate's own `impl Hasher for &mut Tally` given to generic code is taken for std's `impl Hasher for &mut H`, which asks a `Tally: Hasher` there's none of, and is refused (#1730)",
+    file: "src/lower/std_types/hash.rs",
+    find: "            if !std_impl {\n",
+    replace: "            if false && !std_impl {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_of_a_mut_given_to_generic_code.rs$"],
+  },
+  {
+    name: "own-mut-hasher-state-uncrossed",
+    breaks: "`\"text\".hash(&mut t)` of the crate's own `&mut Tally` hasher gives its dictionary, generic code's, the caller's box of `t`, not generic code's, a TypeError (#1730)",
+    file: "src/lower/std_types/hash.rs",
+    find: "            .is_some_and(|(impl_id, _)| !crate::lower::recognition::is_std_crate(self.tcx, impl_id))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_of_a_mut_given_to_generic_code.rs$"],
+  },
+  {
+    name: "own-mut-hasher-not-written-back",
+    breaks: "a crossed hasher's `&mut` isn't written back after `hash`'s writes, so a `write` that repoints it leaves the caller's `t` where it was (#1730)",
+    file: "src/lower/std_types/hash.rs",
+    find: "            Some(back) => out.push(StmtKind::Try(body, vec![back.clone()]).at(js::Span::NONE)),\n",
+    replace: "            Some(_) => out.extend(body),\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_of_a_mut_given_to_generic_code.rs$"],
+  },
 ];

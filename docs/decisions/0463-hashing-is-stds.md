@@ -353,3 +353,20 @@ Of the hasher itself, and of one `&mut` to it, nothing is read, as before.
 `Box<H>`'s forwarding impl stays refused. Mutations
 `hasher-mut-unrecognised` and `hasher-mut-not-read-through` replace
 `hasher-mut-finish-unrecognised`.
+
+## Amendment: the crate's own `impl Hasher for &mut Tally` (2026-11-14, #1730)
+
+The dictionary of a `&mut H`'s `Hasher` took it for std's `impl Hasher for
+&mut H`, which forwards to `H`'s, and asked a `Tally: Hasher` there's none
+of: generic code given the crate's own `impl Hasher for &mut Tally`, and
+`"text".hash(&mut t)` of it, were refused. Now that arm is std's impl's
+alone, as the selected impl says (`traits::evidence_impl`), and another's
+is its impl's dictionary, generic code's. Where std's `hash` writes to such
+a hasher inline, `hash_call` gives that dictionary the state as generic
+code holds it, a box of an in-place cell of what the `&mut` is to, and
+writes the `&mut` back after the writes, `try { .. } finally { .. }`, as a
+generic function's call does, so a `write` that repoints it (`*self = ..`,
+#1732) is the caller's. Held by corpus
+`hasher_of_a_mut_given_to_generic_code`, native-compared; mutations
+`own-mut-hasher-taken-as-std-forwarding`, `own-mut-hasher-state-uncrossed`
+and `own-mut-hasher-not-written-back`, caught.

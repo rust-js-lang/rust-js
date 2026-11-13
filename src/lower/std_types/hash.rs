@@ -125,6 +125,9 @@ struct Hasher {
     state: Expr,
     dictionary: Expr,
     own: Option<Expr>,
+    /// Of a state crossed into generic code's form (`hasher`), the write
+    /// back of the `&mut` it held, after the writes (#1730).
+    back: Option<Stmt>,
 }
 
 impl Hasher {
@@ -220,10 +223,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HashOp::Provided => {
                 let state = values.next().expect("a hasher");
                 let hasher = self.hasher(state, call.generic_args.type_at(0), call.span, out)?;
-                hasher.call(
+                let call = hasher.call(
                     &crate::lower::bindings::fn_name(self.tcx, call.def_id),
                     values.collect(),
-                )
+                );
+                // A write, of no value: written back after, where it's crossed.
+                match hasher.back {
+                    None => call,
+                    Some(_) => {
+                        Self::written_back(&hasher, vec![StmtKind::Expr(call).at(js::Span::NONE)], out);
+                        Expr::undefined()
+                    }
+                }
             }
             HashOp::RandomState => Expr::undefined(),
             HashOp::BuildHasher => self.built_hasher(&call)?.0,
@@ -241,17 +252,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let state = values.next().expect("a hasher");
                 let hasher = self.hasher(state, call.generic_args.type_at(1), call.span, out)?;
                 let hashed = call.generic_args.type_at(0);
+                let mut body = Vec::new();
                 match op {
-                    HashOp::Hash => self.hash_writes(value, hashed, &hasher, call.span, out)?,
+                    HashOp::Hash => self.hash_writes(value, hashed, &hasher, call.span, &mut body)?,
                     HashOp::Address => {
                         let pointer = ty::Ty::new_imm_ptr(self.tcx, hashed);
-                        self.hash_writes(value, pointer, &hasher, call.span, out)?
+                        self.hash_writes(value, pointer, &hasher, call.span, &mut body)?
                     }
                     _ => {
-                        let value = self.spilled(value, out);
-                        self.item_writes(value, hashed, &hasher, call.span, out)?;
+                        let value = self.spilled(value, &mut body);
+                        self.item_writes(value, hashed, &hasher, call.span, &mut body)?;
                     }
                 }
+                Self::written_back(&hasher, body, out);
                 Expr::undefined()
             }
         }))
@@ -270,11 +283,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let hasher_trait = self.recognition().hasher_trait().expect("std has `Hasher`");
         let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, hasher_trait, [ty]), span)?;
+        // The crate's own `impl Hasher for &mut Tally`, whose dictionary is
+        // generic code's: given the `&mut` as generic code holds it, an
+        // in-place cell of what it's to, in a box, and written back after the
+        // writes, as a generic function's call gives it (#1730). Not std's
+        // `impl Hasher for &mut H`, whose dictionary is `H`'s.
+        if let ty::Ref(_, pointee, ty::Mutability::Mut) = *ty.kind()
+            && !own
+            && self.in_generic_box(ty)
+            && self.mut_ref_form(ty).is_cell()
+            && crate::lower::traits::evidence_impl(
+                self.tcx,
+                self.typing_env,
+                ty::TraitRef::new(self.tcx, hasher_trait, [ty]),
+            )
+            .is_some_and(|(impl_id, _)| !crate::lower::recognition::is_std_crate(self.tcx, impl_id))
+        {
+            let cell = self.in_place_cell(Expr::held(state.clone()), pointee, span)?;
+            let crossed = self.spill(Role::Hasher, boxed(cell), out);
+            let back = StmtKind::Assign(Expr::held(state), Expr::held(Expr::held(crossed.clone())));
+            return Ok(Hasher {
+                state: crossed,
+                dictionary,
+                own: None,
+                back: Some(back.at(js::Span::NONE)),
+            });
+        }
         Ok(Hasher {
             state: held,
             dictionary,
             own: own.then_some(state),
+            back: None,
         })
+    }
+
+    /// `body`, the writes to `hasher`, into `out`: where its state was
+    /// crossed into generic code's form, `try { body } finally { back }`,
+    /// its `&mut` written back however they end, as a generic call's is
+    /// (#1730).
+    fn written_back(hasher: &Hasher, body: Vec<Stmt>, out: &mut Vec<Stmt>) {
+        match &hasher.back {
+            None => out.extend(body),
+            Some(back) => out.push(StmtKind::Try(body, vec![back.clone()]).at(js::Span::NONE)),
+        }
     }
 
     /// Does `hash` of a `ty` run a hand-written `Hash`, the crate's or a
@@ -354,12 +405,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // std's `impl Hasher for &mut H` and `Box<H>`, which call what
             // they point at: an object's, a `dyn`'s pair too, which its `&mut`
-            // is.
+            // is. Not the crate's own `impl Hasher for &mut Tally`, whose
+            // `Tally` has none: its impl's dictionary (#1730).
             let pointee = match *ty.kind() {
                 ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
                 ty::Adt(_, args) if ty.is_box() => args.type_at(0),
                 _ => return Ok(None),
             };
+            let std_impl = crate::lower::traits::evidence_impl(self.tcx, self.typing_env, tr)
+                .is_none_or(|(impl_id, _)| crate::lower::recognition::is_std_crate(self.tcx, impl_id));
+            if !std_impl {
+                return Ok(None);
+            }
             if !self.is_object(pointee) {
                 return Ok(None);
             }
@@ -375,6 +432,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state: Expr::var(&state),
             dictionary: Expr::var(&dictionary),
             own: None,
+            back: None,
         };
         let mut body = Vec::new();
         self.hash_writes(Expr::var(&value), ty, &hasher, span, &mut body)?;

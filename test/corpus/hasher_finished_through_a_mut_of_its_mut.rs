@@ -4,7 +4,7 @@
 // is to (#1724). And a `&mut` to a type whose own `impl Hasher for &mut
 // Tally` has a body: std's impl passes the call on to that impl, never past
 // it to the type, which has no `Hasher`. (Given to generic code, it's
-// refused, #1730.)
+// `hasher_of_a_mut_given_to_generic_code`'s.)
 use std::hash::Hasher;
 
 struct Fnv(u64);
