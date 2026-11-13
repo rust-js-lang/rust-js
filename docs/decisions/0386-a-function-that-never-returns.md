@@ -51,3 +51,36 @@ export function fail(message: string): never;
 - **It's tested**: the corpus's `never_returns.rs` calls one in an `if` and
   a `let .. else`, one that loops forever, and panics through one; the declarations
   test declares one `never`; and the four rustc tests pass.
+
+## Amendment: `Infallible` is `!` since Rust 1.100 (2026-11-13)
+
+Case: A, as before: no value of `!` is made, so no program sees how it's
+declared, and the declaration says exactly the values there are.
+
+Rust 1.100 made `std::convert::Infallible` an alias, `pub type Infallible
+= !;`, where it was std's `enum Infallible {}`. Its declaration was `any`
+before, not a decision but the fallback for another crate's type
+(`declarations.rs`, "Any other is `any`"); now it's `!`'s, `never`, as
+the crate's own enum of no variants, chrono's `enum Void {}`, already was.
+So `!` is `never` in every position, a value's as a result's:
+
+```rust
+pub fn set_current_update_priority(new_priority: EventPriority, _unused: Option<Infallible>) {}
+```
+
+```ts
+export function setCurrentUpdatePriority(newPriority: EventPriority, unused?: never | null | undefined): void;
+```
+
+- **It's what the value can be**: an `Option<Infallible>` is only ever
+  `None`, so `never | null | undefined`, which is `null | undefined`, is
+  exact. `any` was looser than the value, a port gap (AGENTS.md).
+- **It's what upstream writes**: React's port declares two such
+  parameters and fields, which upstream writes as Flow's `empty`,
+  `IntentionallyUnusedArgument?: empty` (ReactDOMUpdatePriority.js), and
+  `null` (`reason: null`, ReactFlightClient.js). A union that held one,
+  `ReactPromise`'s `value`, is now its other members' union, `unknown`,
+  where `any` absorbed them.
+- **It's tested**: test/declarations-never.test.ts declares an
+  `Option<Infallible>` parameter and field and an `Infallible` parameter,
+  and TypeScript takes `null` and `undefined` for one and refuses `0`.

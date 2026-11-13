@@ -2390,7 +2390,7 @@ export { delete$ as delete };
 | a type alias | `export type`, by its name where it's used, a library's consumer's too ([ADR 0240](../../decisions/0240-reexports.md), amended) |
 | a type alias whose `#[rust_js::types]` writes a type of its own, `pub type ReactServerValue = Unknown;` of `"string \| number \| ReactServerValue[]"` | `export type ReactServerValue = string \| number \| ReactServerValue[];`, by its name where it's used, a library's consumer's too ([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md), amended) |
 | another module's struct or enum, or a library crate's whose declarations export it | `import type { Context } from "../react/ReactContext.js"`, by its name ([ADR 0210](../../decisions/0210-declarations-import-module-types.md), amended) |
-| a function that never returns, `-> !` | `never` |
+| a function that never returns, `-> !`; any value of `!` or `Infallible`, which Rust 1.100 made `!`, and an enum of no variants | `never`, so an `Option<Infallible>` is `never \| null \| undefined`, only ever `null` or `undefined` ([ADR 0386](../../decisions/0386-a-function-that-never-returns.md), amended) |
 | a `pub use` of a function | `export { firstWord } from "./text.js"` |
 | a `pub use` of a struct, an enum or an alias another module declares | `export type { Kind, Size as Measure } from "./shapes.js"` ([ADR 0240](../../decisions/0240-reexports.md), amended) |
 | a doc comment | its JSDoc |
