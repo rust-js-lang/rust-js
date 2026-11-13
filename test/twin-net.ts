@@ -360,7 +360,9 @@ export function helpersOf(dir = twinHelpers): { pitted: Set<string>; unpitted: S
   const used = new Set<string>();
   let judged = 0;
   let of = 0;
-  for (const file of existsSync(dir) ? readdirSync(dir) : []) {
+  // In its batches' order, not the directory's, which Linux's ext4 gives
+  // by its hash, so the helpers come in one order everywhere.
+  for (const file of existsSync(dir) ? readdirSync(dir).sort() : []) {
     const batch: { judged: number; of: number; plain: string[]; std: string[] } = JSON.parse(readFileSync(join(dir, file), "utf8"));
     judged += batch.judged;
     of += batch.of;
