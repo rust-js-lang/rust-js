@@ -441,6 +441,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
+        // A generic writer function's instance, a library's: what its JS
+        // takes, its `Formatter` none, nor a call through it (ADR 0538,
+        // #1710), its options where it takes them, then its dictionaries.
+        if let Some(at) = self.recognition().formatter_param(def_id)
+            && let evidence = self.evidence_args(def_id, args, span)?
+            && !evidence.is_empty()
+        {
+            let mut params: Vec<String> = (0..sig.inputs().len())
+                .filter(|&i| i != at)
+                .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
+                .collect();
+            if self.takes_options(def_id) {
+                params.push(self.fresh(Role::Options));
+            }
+            let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
+            let call = Expr::call(self.fn_ref(def_id), values);
+            return Ok(Expr::arrow(
+                params.into_iter().map(Into::into).collect(),
+                vec![StmtKind::Return(Some(call)).at(self.js_span(span))],
+            ));
+        }
         let mut inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
         let params: Vec<String> = match inputs.len() {
             // Named by its type: `(s) => ..` of a string.

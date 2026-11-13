@@ -371,4 +371,12 @@ export const mutations: Mutation[] = [
     replace: "    if (exclusive) $cleanup(() => $poison(cell), undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
   },
+  {
+    name: "write-borrowed-reads-while-borrowed",
+    breaks: "a mutably borrowed `RefCell`'s `{:?}` into a writer reads what it holds, where std writes `<borrowed>`",
+    file: "src/runtime/borrow.js",
+    find: "  if (cell.borrows < 0) return f.write(\"<borrowed>\");\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

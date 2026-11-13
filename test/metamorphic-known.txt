@@ -108,3 +108,6 @@ plain std loud-drop thread_local_with_nested.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
+
+#1714 P1: a closure passing a &mut it's given to a generic fn's &mut T gives the object, not generic code's box
+plain std closure-fn writer_fn_pointer_at_an_instance.rs

@@ -15,7 +15,7 @@ import {
   $sortedKeys,
 } from "@rust-js/std";
 
-const listedVecU32 = (arg0) => listed(arg0, { inPlace: 4 });
+const listedVecU32 = (c) => listed(c, { inPlace: 4 });
 
 export function entry() {
   main();

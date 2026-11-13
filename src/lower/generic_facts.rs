@@ -357,7 +357,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it gives back in its type's, `.value` (#1187). One for the instance,
     /// its module's `const`, so two pointers to it are one, as a generic
     /// function's value is (ADR 0395); of an instance of the caller's own
-    /// type parameters, the arrow made there.
+    /// type parameters, the arrow made there. Of a writer function, its
+    /// `Formatter` none of its JS takes (ADR 0054), which a call through
+    /// the pointer gives none of either (ADR 0538): not a parameter of the
+    /// arrow (#1710).
     pub(in crate::lower) fn reified_pointer(
         &mut self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
@@ -369,13 +372,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        let inputs: Vec<Crossing<'tcx>> = (declared.inputs().iter())
-            .map(|&input| (def_id, input, self.instantiated(input, args)))
+        let formatter = self.recognition().formatter_param(def_id);
+        let inputs: Vec<Crossing<'tcx>> = (declared.inputs().iter().enumerate())
+            .filter(|&(at, _)| Some(at) != formatter)
+            .map(|(_, &input)| (def_id, input, self.instantiated(input, args)))
+            .collect();
+        // Each named as the function names it, `(p) => ..`.
+        let idents = self.tcx.fn_arg_idents(def_id);
+        let names: Vec<String> = (0..declared.inputs().len())
+            .filter(|&at| Some(at) != formatter)
+            .map(|at| match idents.get(at).copied().flatten() {
+                Some(ident) if !ident.name.as_str().starts_with('_') && ident.name.as_str() != "self" => {
+                    super::camel_case(ident.name.as_str())
+                }
+                _ => format!("arg{at}"),
+            })
             .collect();
         let output = (def_id, declared.output(), self.instantiated(declared.output(), args));
         let span = self.tcx.def_span(def_id);
         let made = move |cx: &mut Self| -> super::R<Expr> {
-            let params: Vec<String> = (0..inputs.len()).map(|i| format!("arg{i}")).collect();
+            let params: Vec<String> = (names.iter())
+                .map(|name| cx.fresh(super::temporary_names::Base::Named(name)))
+                .collect();
             let given = (params.iter().zip(&inputs))
                 .map(|(name, &given)| match cx.form_of(given) {
                     Some(form) => cx.form_given(form, given, Expr::var(name), span),

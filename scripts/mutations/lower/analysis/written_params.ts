@@ -70,4 +70,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "an Arguments, and a library"],
   },
+  {
+    name: "written-params-named-fns-unseen",
+    breaks: "a generic writer named as a `fn` pointer at an instance isn't seen to write that instance's types, so their dictionaries carry no `fmtInto` (#1710)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            calls.push((owner, callee, args, span));\n",
+    replace: "            let _ = (callee, args, span);\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of a writer function's pointer's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "written-asked-outside-the-body",
+    breaks: "a body's calls are classified in the crate's empty typing environment, which crashes rustc on a writer generic over a constant, arrayvec's `ArrayString<CAP>`",
+    file: "src/lower/analysis/written_params.rs",
+    find: "        typing_env: ty::TypingEnv::non_body_analysis(tcx, tcx.typeck_root_def_id(body)),\n",
+    replace: "        typing_env: recognition.typing_env,\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of a writer generic over a constant's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "published-dictionaries-without-fmt-into",
+    breaks: "a library's published types' dictionaries carry no `fmtInto`, which a consumer's write of one calls",
+    file: "src/lower/analysis/written_params.rs",
+    find: "    found.adts.extend(prints.published.iter().copied());\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "published type"],
+  },
 ];

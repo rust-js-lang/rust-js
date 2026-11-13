@@ -2,18 +2,18 @@
 
 import { $apart, $at, $cellOf, $debugStr, $ptrTo } from "@rust-js/std";
 
-const viewVecU8Fn = (arg0) => view($cellOf(arg0));
-const replaceWithVecStringFn = (arg0, arg1) => replaceWith($cellOf(arg0), arg1);
-const backU8SliceFn = (arg0) => back($cellOf(arg0)).value;
-const sameU8SliceFn = (arg0) => same($ptrTo(arg0)).value;
+const viewVecU8Fn = (r) => view($cellOf(r));
+const replaceWithVecStringFn = (slot, with$) => replaceWith($cellOf(slot), with$);
+const backU8SliceFn = (r) => back($cellOf(r)).value;
+const sameU8SliceFn = (p) => same($ptrTo(p)).value;
 
 export function entry() {
   main();
 }
 
 const u8SliceLen = { length: u8SliceLen_length };
-const measuredU8Slice = (arg0) => measured(arg0, u8SliceLen);
-const measuredU8SliceFn = (arg0) => measuredU8Slice($ptrTo(arg0)).value;
+const measuredU8Slice = (p) => measured(p, u8SliceLen);
+const measuredU8SliceFn = (p) => measuredU8Slice($ptrTo(p)).value;
 
 function u8SliceLen_length(self) {
   return self.length;

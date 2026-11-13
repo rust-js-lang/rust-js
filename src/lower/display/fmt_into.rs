@@ -17,7 +17,7 @@ pub(in crate::lower) const FMT_INTO: &str = "fmtInto";
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The formatting trait `kind` shows a value by: `Display`, `Debug`, a
     /// radix's, `LowerExp` or `UpperExp`, or `Pointer`.
-    fn fmt_trait_of(&self, kind: Std) -> Option<DefId> {
+    pub(in crate::lower) fn fmt_trait_of(&self, kind: Std) -> Option<DefId> {
         match kind {
             Std::FmtDisplay => Some(self.display_trait()),
             Std::FmtDebug => Some(self.debug_trait()),
@@ -40,7 +40,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a dictionary knows how, given `options`, a `Formatter`'s: a `T`'s, its
     /// caller's dictionary's `fmtInto`, `TDisplay.fmtInto(f, t, options)`;
     /// a `dyn`'s that's a pair, its pair's, `d.impl.fmtInto(f, d.value,
-    /// options)`. `None` of a value something else writes.
+    /// options)`; a library's type's whose contract lists it, its
+    /// dictionary's, `Dep.hexyDebug.fmtInto(f, h, options)`, as its library
+    /// compiled its writer. `None` of a value something else writes.
     pub(in crate::lower) fn written_by_dictionary(
         &mut self,
         value: Expr,
@@ -82,6 +84,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
             let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             (dictionary, value)
+        } else if (ty.ty_adt_def()).is_some_and(|adt| self.krate.foreign.lists_fmt_into(adt.did())) {
+            let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
+            (self.dictionary(tr, span)?, value)
         } else {
             return Ok(None);
         };

@@ -2,9 +2,9 @@
 
 import { $cellOf } from "@rust-js/std";
 
-const doubleI32 = (arg0) => double(arg0, { into: (n) => BigInt(n) });
-const doubleI64 = (arg0) => double(arg0, { into: (n) => n });
-const shownU8 = (arg0) => shown(arg0, { fmt: String });
+const doubleI32 = (x) => double(x, { into: (n) => BigInt(n) });
+const doubleI64 = (x) => double(x, { into: (n) => n });
+const shownU8 = (value) => shown(value, { fmt: String });
 
 export function entry() {
   main();
@@ -19,7 +19,7 @@ function shown(value, TDisplay) {
 }
 
 const counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
-const bumpedCounter = (arg0) => bumped(arg0, counterBump);
+const bumpedCounter = (b) => bumped(b, counterBump);
 
 function counterBump_bump(counter) {
   counter.n = (counter.n + 10) | 0;

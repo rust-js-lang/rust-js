@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "                    vec![Expr::bool(true), Expr::str(\"\"), digits, options],\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
   },
+  {
+    name: "framed-own-radix-refused",
+    breaks: "`{:x}` of a type of the crate's own whose `LowerHex` writes through a sink is refused in a `write!` into a writer",
+    file: "src/lower/display/sink_writes.rs",
+    find: "        let Some(fmt_trait) = self.fmt_trait_of(kind) else {\n",
+    replace: "        let Some(fmt_trait) = self.fmt_trait_of(kind).filter(|_| matches!(kind, Std::FmtDisplay | Std::FmtDebug)) else {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

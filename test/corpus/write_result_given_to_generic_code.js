@@ -119,8 +119,8 @@ const Holder = {
   },
 };
 
-const shown__Error = (arg0) => shown(arg0, { fmt: (value) => "()" }, { fmt: (value) => "Error" });
-const shown__ErrorFn = (arg0) => shown__Error($writeTagged(arg0));
+const shown__Error = (r) => shown(r, { fmt: (value) => "()" }, { fmt: (value) => "Error" });
+const shown__ErrorFn = (r) => shown__Error($writeTagged(r));
 
 function tail(fail) {
   let r;

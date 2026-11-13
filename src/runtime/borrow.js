@@ -213,6 +213,14 @@ function $showBorrowed(cell, show, itself) {
   return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, itself);
 }
 
+// A `RefCell`'s `{:?}` into a writer's sink `f`: what it holds, written
+// by `write(f, value)` while it's borrowed, or `<borrowed>`, one
+// `write_str`, where it's mutably borrowed (#1652).
+function $writeBorrowed(f, cell, write, itself) {
+  if (cell.borrows < 0) return f.write("<borrowed>");
+  $withBorrow(cell, (value) => write(f, value), itself);
+}
+
 // A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
 // it's mutably borrowed, the cell itself for a number or text (ADR 0074),
 // and what it makes in its place. Of one that's the object it holds

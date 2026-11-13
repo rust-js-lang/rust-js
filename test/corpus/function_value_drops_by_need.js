@@ -12,7 +12,7 @@ import {
   $unwindsOn,
 } from "@rust-js/std";
 
-const firstLoud = (arg0) => first(arg0, loudDrop_drop);
+const firstLoud = (items) => first(items, loudDrop_drop);
 
 export function entry() {
   main();

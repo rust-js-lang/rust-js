@@ -12189,7 +12189,7 @@ export function flattenCompatIUIterator2_last(
         dropUItem,
         dropU,
       );
-    const captured$1 = (arg0, arg1) => iterator_last_some(arg0, arg1, dropUItem);
+    const captured$1 = (arg0, x) => iterator_last_some(arg0, x, dropUItem);
     const iter = $someValue(value);
     let result$1;
     try {

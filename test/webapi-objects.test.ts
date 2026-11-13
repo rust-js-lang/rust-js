@@ -1065,7 +1065,7 @@ pub fn roundtrip(blob: &'static Blob) -> &'static Blob {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("(arg0) => read($ptrTo(arg0))");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("(p) => read($ptrTo(p))");
   const lib = await import(join(dir, "lib.js"));
   const blob = new Blob(["b"]);
   expect(lib.roundtrip(blob)).toBe(blob);

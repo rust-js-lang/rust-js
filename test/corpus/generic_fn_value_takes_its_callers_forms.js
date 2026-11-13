@@ -13,13 +13,13 @@ import {
   $vecWriter,
 } from "@rust-js/std";
 
-const viewVecU8Fn = (arg0) => view($cellOf(arg0));
-const longestU8 = (arg0) => longest(arg0, { default: () => 0 });
-const emptiedVecU8 = (arg0) => emptied(arg0, { default: () => [] });
-const stampedRefMutVec = (arg0) => stamped(arg0, $mutWriter($vecWriter));
-const stampedRefMutVecFn = (arg0) => $heldObjectOf(stampedRefMutVec($heldCellOf(arg0)));
-const stampRefMutVec = (arg0) => stamp(arg0, $mutWriter($vecWriter));
-const stampRefMutVecFn = (arg0) => stampRefMutVec($heldCellOf(arg0));
+const viewVecU8Fn = (r) => view($cellOf(r));
+const longestU8 = (r) => longest(r, { default: () => 0 });
+const emptiedVecU8 = (t) => emptied(t, { default: () => [] });
+const stampedRefMutVec = (w) => stamped(w, $mutWriter($vecWriter));
+const stampedRefMutVecFn = (w) => $heldObjectOf(stampedRefMutVec($heldCellOf(w)));
+const stampRefMutVec = (w) => stamp(w, $mutWriter($vecWriter));
+const stampRefMutVecFn = (w) => stampRefMutVec($heldCellOf(w));
 
 export function entry() {
   main();

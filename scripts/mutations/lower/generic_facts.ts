@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     replace: "        _ => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_written_whole_through_a_pin_is_its_own.rs$"],
   },
+  {
+    name: "reified-writer-takes-its-formatter",
+    breaks: "a generic writer function's pointer whose forms differ from its callers' takes its `Formatter`, which its JS doesn't (#1710)",
+    file: "src/lower/generic_facts.rs",
+    find: "            .filter(|&(at, _)| Some(at) != formatter)\n",
+    replace: "            .filter(|_| true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
+  },
 ];

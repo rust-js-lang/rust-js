@@ -5,6 +5,7 @@
 // `Formatter` a struct holds. Each writer
 // records every call it's given, and one fails part way. A `dyn Debug`'s
 // is test/writer-sink-generic.rs's, as a `dyn` written frames every writer.
+use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Write};
 
@@ -110,6 +111,30 @@ impl fmt::Display for Shown {
     }
 }
 
+// A `Cell` and a `RefCell`, a mutably borrowed one `<borrowed>`.
+#[derive(Debug)]
+struct Celled {
+    count: Cell<i32>,
+    names: RefCell<Vec<&'static str>>,
+}
+
+// Its own `LowerHex`, written by `{:x}`, and one that gives its
+// `Formatter` on to a number's `LowerHex` and `LowerExp`, by its options.
+struct Hexy(u32);
+
+impl fmt::LowerHex for Hexy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("h")?;
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::LowerExp for Hexy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerExp::fmt(&self.0, f)
+    }
+}
+
 fn main() {
     let m = HashMap::from([("k", -1)]);
     let b = BTreeMap::from([(1, "a\"b"), (2, "c")]);
@@ -171,4 +196,29 @@ fn main() {
     let mut failing = Failing(Vec::new());
     let r = write!(failing, "{}", Shown(-2, "a\"b"));
     println!("{:?} {:?}", failing.0, r);
+
+    let celled = Celled {
+        count: Cell::new(-3),
+        names: RefCell::new(vec!["a"]),
+    };
+    let mut log = Log(Vec::new());
+    write!(log, "{:?}|", celled).unwrap();
+    let borrowed = celled.names.borrow_mut();
+    write!(log, "{:#?}", celled).unwrap();
+    drop(borrowed);
+    let lone = RefCell::new(Some(2u8));
+    write!(log, "|{:?}", lone).unwrap();
+    println!("{:?}", log.0);
+
+    let mut chars = Chars(Vec::new());
+    write!(
+        chars,
+        "{:x}|{:#8x}|{:e}|{:.1e}",
+        Hexy(255),
+        Hexy(10),
+        Hexy(1500),
+        Hexy(25)
+    )
+    .unwrap();
+    println!("{:?}", chars.0);
 }

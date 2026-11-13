@@ -294,6 +294,48 @@ go.
      `Asked`'s, a map's, a set's and an integer's `{:e}` among them;
    - a library pair refused;
    - 15 mutations.
+8. What the switch-over's first full runs found (landed, under the
+   switch). The corpus and the crate corpus with the switch on refused or
+   crashed where they compile today:
+   - **A library publishes its formatted types** (the lead's decision,
+     option A). A consumer may write any type reachable from outside a
+     library into a writer of its own, `write!(log, "{:?}",
+     dep::Hexy(255))`, so:
+     - the library frames each formatting impl of such a type of no type
+       or constant parameters (`Prints::published`), one sink body that
+       serves both a plain call, which gives its text, and its
+       dictionary's `fmtInto`;
+     - its contract lists the type (`written_into`);
+     - a consumer writes it by that dictionary, `Dep.hexyDebug.fmtInto(f,
+       h, options)` (`Foreign::lists_fmt_into`);
+     - private types keep their form. A generic one isn't published yet
+       (#1712).
+
+     Measured with the switch on: the React port's regeneration
+     unchanged; the readability gate unmoved; the 7 crates' verdicts as
+     before.
+   - A framed writer writes every formatting trait of the crate's own
+     type, `{:x}` of its own `LowerHex` too. A `{:x}`, `{:e}` or the like
+     of a std number given the `Formatter`, `LowerHex::fmt(&self.0, f)`, is
+     written by the `Formatter`'s options as it runs, an integer's `{:e}`
+     too.
+   - A `Cell`'s and a `RefCell`'s `Debug` is `debug_struct`'s one field,
+     and `<borrowed>` of a `RefCell` mutably borrowed (`$writeBorrowed`).
+   - Two ICEs are gone. Framing asked `fn_sig` of a constant's body, and
+     now asks only function bodies. The analyses classified a body's calls
+     in the crate's empty typing environment, and arrayvec's
+     `ArrayString<CAP>` crashed; each body's calls are now asked within
+     its own (`written_params::within`).
+   - #1710 is fixed, in every program: a generic writer function's
+     instance as a `fn` pointer takes no `Formatter`, as its JS doesn't.
+     `written_params` sees an instance named so as a call.
+
+   Proof:
+   - test/writer-sink-rest.rs (cells, own and std radixes and exponents);
+   - test/writer-sink-const-generic.rs and test/writer-sink-fn-pointer.rs;
+   - a published library pair;
+   - the corpus case writer_fn_pointer_at_an_instance;
+   - 13 mutations.
 
 ## Alternatives
 

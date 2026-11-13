@@ -872,4 +872,12 @@ export const mutations: Mutation[] = [
     replace: "            made if given_on => self.arguments_given_on(made, sink && false, span),\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of Arguments given on's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "library-writer-fn-value-takes-its-formatter",
+    breaks: "a library's generic writer function's instance as a value takes its `Formatter`, which its JS doesn't, so a call through the pointer gives its dictionary `undefined` (#1710)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if let Some(at) = self.recognition().formatter_param(def_id)\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
+    replace: "        if let Some(at) = None::<usize>\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
+    tests: ["test/crates.test.ts", "-t", "library_writer_fn_pointer_at_an_instance"],
+  },
 ];

@@ -908,6 +908,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 .is_some_and(|library| !library.builtin && !library.written_into.contains(&key(self.tcx, adt)))
     }
 
+    /// Is `adt` a library's type whose formatting dictionaries its contract
+    /// says carry `fmtInto`, which writes it into a writer a piece at a time
+    /// (#1652): one it publishes, or writes so itself.
+    pub(super) fn lists_fmt_into(&self, adt: DefId) -> bool {
+        !adt.is_local()
+            && self
+                .library(adt.krate)
+                .is_some_and(|library| !library.builtin && library.written_into.contains(&key(self.tcx, adt)))
+    }
+
     /// Does any of the libraries write a `dyn` it's given into a writer a
     /// piece at a time (#1652)?
     pub(super) fn writes_dyns_given(&self) -> bool {

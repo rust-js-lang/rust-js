@@ -159,7 +159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // called with the writer's sink armed, so each piece it writes is
             // a call of the writer's (`$writingInto`), given the
             // placeholder's options.
-            Std::FmtDisplay | Std::FmtDebug if self.writes_into_a_writer(kind, ty) => {
+            _ if self.writes_into_a_writer(kind, ty) => {
                 let (given, options) = crate::lower::format_spec::placeholder_given(spec, (width, precision));
                 match self.with_options(options, |cx| cx.written_into_a_writer(kind, ty, value, &given, span))? {
                     Some(write) => write,
@@ -212,6 +212,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options],
                 )
             }
+            // An integer's `{:e}`, core's `exp_u64`'s.
+            Std::FmtExp(upper) if int.is_some() => {
+                SinkWrite::Helper("$writeIntExp", vec![value, Expr::bool(upper), options.clone()])
+            }
             Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_)
                 if let Some(num) = shown_num(ty).filter(|num| num.float()) =>
             {
@@ -250,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.format_value(value, (Std::FmtDisplay, ty), Spec::plain(), (None, None), span)?;
                 SinkWrite::Helper("$writeDebugStr", vec![text])
             }
-            Std::FmtDisplay | Std::FmtDebug if self.writes_into_a_writer(kind, ty) => {
+            _ if self.writes_into_a_writer(kind, ty) => {
                 // Given the `Formatter`'s options, as std's hands them on.
                 let pretty = match options.kind {
                     js::ExprKind::Undefined => Pretty::Plain,
@@ -270,10 +274,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `written_into_writers`): a writer of the crate's own type, which it
     /// compiles. Another crate's writer makes its text whole.
     pub(in crate::lower) fn writes_into_a_writer(&self, kind: Std, ty: Ty<'tcx>) -> bool {
-        let fmt_trait = match kind {
-            Std::FmtDisplay => self.display_trait(),
-            Std::FmtDebug => self.debug_trait(),
-            _ => return false,
+        let Some(fmt_trait) = self.fmt_trait_of(kind) else {
+            return false;
         };
         if !ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
             return false;
@@ -296,10 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
         span: Span,
     ) -> R<Option<SinkWrite>> {
-        let fmt_trait = match kind {
-            Std::FmtDisplay => self.display_trait(),
-            _ => self.debug_trait(),
-        };
+        let fmt_trait = self.fmt_trait_of(kind).expect("a formatting trait");
         let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
         let args = self.tcx.mk_args(&[ty.into()]);
         let (writer, values) = self.writer_given(fmt, args, value, pretty, span)?;

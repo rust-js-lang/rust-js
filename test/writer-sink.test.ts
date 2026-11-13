@@ -38,6 +38,8 @@ const cases: [string, string][] = [
   ["own write_fmt's through generic code's ", "test/writer-sink-own-write-fmt.rs"],
   ["the rest's ", "test/writer-sink-rest.rs"],
   ["callables' ", "test/writer-sink-callables.rs"],
+  ["a writer generic over a constant's ", "test/writer-sink-const-generic.rs"],
+  ["a writer function's pointer's ", "test/writer-sink-fn-pointer.rs"],
 ];
 
 for (const [build, flags] of builds) for (const [which, path] of cases) {
@@ -408,15 +410,13 @@ test("a library's generic writer, and a library's type written through generic c
   expect(written.map((param: { index: number }) => param.index)).toEqual([1]);
 }, underLoad(300_000));
 
-// A library's type its contract doesn't list, written through generic
-// code, is refused, naming #1688.
-test("a library's type whose dictionary carries no fmtInto, written through generic code, is refused", () => {
-  const native = piecewiseChain(piecewisePairs, "writer_into_of_a_librarys_type", [
-    "writing a `dep::Meters` into a writer of the crate's own or a generic one through generic code or a `dyn`",
-    "#1688",
-    "app.rs:11:5",
-  ]);
-  expect(native).toBe("<6m>\n");
+// A library's type reachable from outside it is published: its writer
+// writes through a sink and its dictionary carries `fmtInto`, which its
+// contract lists, so a consumer writes it into a writer a piece at a time,
+// through generic code and directly.
+test("a library's published type is written into a consumer's writer a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "librarys_published_type_through_generic_code");
+  expect(contract(out).written_into.length).toBe(1);
 }, underLoad(300_000));
 
 // A type of the consumer's given only to the library's generic writer,

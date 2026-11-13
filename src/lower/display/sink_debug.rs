@@ -88,6 +88,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![value, Expr::str(""), Expr::array(fields), pretty.clone()],
             );
         }
+        // A `Cell`'s and a `RefCell`'s, `debug_struct("RefCell")`'s one
+        // field, `value`: what it holds, or of a `RefCell` mutably borrowed,
+        // `<borrowed>` (ADR 0328).
+        let cell = |item| self.recognition().is_std_type(ty, item);
+        if let ty::Adt(_, args) = ty.kind()
+            && (cell(crate::lower::recognition::StdItem::Cell) || cell(crate::lower::recognition::StdItem::RefCell))
+        {
+            let refcell = cell(crate::lower::recognition::StdItem::RefCell);
+            let inner = args.type_at(0);
+            let Some(write) = self.writing_fn(|cx, held| cx.debug_sink_writes(held, inner, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            let (shown, write) = match refcell && !matches!(value.kind, js::ExprKind::Handle(..)) {
+                true => {
+                    let itself = Expr::bool(self.is_value_cell(ty));
+                    let borrowed = self.writing_fn(|_, cell| {
+                        Ok(Some(vec![SinkWrite::Helper(
+                            "$writeBorrowed",
+                            vec![cell, write.clone(), itself.clone()],
+                        )]))
+                    })?;
+                    (value, borrowed.expect("a write"))
+                }
+                false => (Expr::held(value), write),
+            };
+            let name = if refcell { "RefCell" } else { "Cell" };
+            let field = Expr::array(vec![Expr::str("value"), shown, write]);
+            return helper(
+                "$writeDebugStruct",
+                vec![Expr::str(name), Expr::array(vec![field]), pretty.clone()],
+            );
+        }
         // A set's, `debug_set().entries(..)`, and a map's,
         // `debug_map().entries(..)`, each in the order its `Debug` shows them.
         if let ty::Adt(_, args) = ty.kind()

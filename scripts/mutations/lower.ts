@@ -405,4 +405,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "writer-fn-value-takes-its-formatter",
+    breaks: "a generic writer function's instance as a value takes its `Formatter`, which its JS doesn't, so a call through the pointer gives its dictionary `undefined` (#1710)",
+    file: "src/lower.rs",
+    find: "                .filter(|&i| Some(i) != formatter)\n                .map(|i| match idents.get(i).copied().flatten() {\n",
+    replace: "                .filter(|_| true)\n                .map(|i| match idents.get(i).copied().flatten() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
+  },
 ];

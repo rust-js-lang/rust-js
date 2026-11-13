@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "sink-cell-debug-refused",
+    breaks: "a `Cell`'s or a `RefCell`'s `Debug` written into a writer is refused, where std writes it by `debug_struct`",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            && (cell(crate::lower::recognition::StdItem::Cell) || cell(crate::lower::recognition::StdItem::RefCell))\n",
+    replace: "            && false\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

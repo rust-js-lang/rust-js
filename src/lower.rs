@@ -839,18 +839,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Some(callee));
             }
+            // Each named as the function names it, `(n) => bracketed(n,
+            // IsI32)`; of a writer function, but its `Formatter`, which none
+            // of its JS takes nor a call through its pointer gives (ADR 0538,
+            // #1710).
             let count = (self.tcx.fn_sig(def_id).instantiate(self.tcx, args))
                 .skip_normalization()
                 .skip_binder()
                 .inputs()
                 .len();
+            let formatter = self.recognition().formatter_param(def_id);
+            let idents = self.tcx.fn_arg_idents(def_id);
+            let param_names: Vec<String> = (0..count)
+                .filter(|&i| Some(i) != formatter)
+                .map(|i| match idents.get(i).copied().flatten() {
+                    Some(ident) if !ident.name.as_str().starts_with('_') && ident.name.as_str() != "self" => {
+                        camel_case(ident.name.as_str())
+                    }
+                    _ => format!("arg{i}"),
+                })
+                .collect();
             let name = match &callee.kind {
                 js::ExprKind::Var(name) => name.clone(),
                 _ => camel_case(self.tcx.item_name(def_id).as_str()),
             };
             let made = move |cx: &mut Self| {
                 let evidence = cx.evidence_args_with(def_id, args, location, span)?;
-                let params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
+                let params: Vec<String> = (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
                 let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
                 Ok(Expr::arrow(
                     params.into_iter().map(Into::into).collect(),

@@ -40,6 +40,11 @@ pub(in crate::lower) struct Prints {
     /// call of that writer's, `written_into_writers`' (#1652, ADR 1135):
     /// each writes as std's `Formatter` does, a piece at a time.
     pub(in crate::lower) framed: IndexSet<DefId>,
+    /// Of a library, its types reachable from outside it with a formatting
+    /// impl of its own, each of whose writers is framed, as a consumer may
+    /// write one into a writer, and whose dictionaries carry `fmtInto`
+    /// (ADR 1135, the switch-over).
+    pub(in crate::lower) published: IndexSet<DefId>,
     /// The bodies that may run while a line is formatted: those writers and
     /// what each may run. A print of one is written through stdout's line
     /// (`$out`), and a writer's text it makes for anything but that line,
@@ -171,7 +176,7 @@ pub(super) fn prints<'tcx>(
             .map(|body| body.def_id),
     );
     if crate::lower::recognition::writes_piecewise() {
-        found.framed = written_into_writers(recognition, all_bodies, arguments);
+        (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
         found.through_sink.extend(found.framed.iter().copied());
     }
     found
@@ -193,12 +198,16 @@ pub(super) fn prints<'tcx>(
 fn written_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    arguments: &WrittenArguments,
-) -> IndexSet<DefId> {
+    (library, arguments): (bool, &WrittenArguments),
+) -> (IndexSet<DefId>, IndexSet<DefId>) {
     let tcx = recognition.tcx;
     let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
-        .filter(|body| body.def_id.is_local() && recognition.formatter_param(body.def_id).is_some())
+        .filter(|body| {
+            body.def_id.is_local()
+                && tcx.def_kind(body.def_id).is_fn_like()
+                && recognition.formatter_param(body.def_id).is_some()
+        })
         .collect();
     let type_of = |writer: DefId| {
         let imp = tcx.impl_of_assoc(writer)?;
@@ -213,7 +222,10 @@ fn written_into_writers<'tcx>(
     // Each type shown, and whether it's a writer's, whose own type
     // parameters the types it's shown as give.
     let mut shown: Vec<(ty::Ty<'tcx>, bool)> = (all_bodies.iter())
-        .filter_map(|body| shown_into_writers(recognition, body, arguments).map(|shown| (body, shown)))
+        .filter_map(|body| {
+            let recognition = super::written_params::within(recognition, body.def_id);
+            shown_into_writers(&recognition, body, arguments).map(|shown| (body, shown))
+        })
         .flat_map(|(body, shown)| shown.unwrap_or_else(|| shown_by(body)))
         .map(|ty| (ty, false))
         .collect();
@@ -268,6 +280,23 @@ fn written_into_writers<'tcx>(
             _ => false,
         })
     };
+    // Of a library, each type of its own reachable from outside it that a
+    // writer of its own formats, of no type or constant parameters: a
+    // consumer may write it into a writer, so each is shown so. A generic
+    // one's writer writes what its parameters are by dictionaries a
+    // consumer gives, which may carry no `fmtInto`: not yet (#1712).
+    let published: IndexSet<DefId> = match library {
+        true => (writers.iter())
+            .filter_map(|writer| type_of(writer.def_id))
+            .filter(|&adt| {
+                adt.as_local()
+                    .is_some_and(|adt| tcx.effective_visibilities(()).is_reachable(adt))
+                    && !tcx.generics_of(adt).requires_monomorphization(tcx)
+            })
+            .collect(),
+        false => IndexSet::default(),
+    };
+    shown.extend((published.iter()).map(|&adt| (tcx.type_of(adt).instantiate_identity().skip_normalization(), true)));
     let mut found: IndexSet<DefId> = IndexSet::default();
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
@@ -329,7 +358,7 @@ fn written_into_writers<'tcx>(
             }
         }
     }
-    found
+    (found, published)
 }
 
 /// The types `body`, a writer shown into a writer, shows: each a `write!`

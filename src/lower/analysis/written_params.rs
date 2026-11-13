@@ -148,6 +148,9 @@ pub(super) fn written_params<'tcx>(
     if !crate::lower::recognition::writes_piecewise() {
         return found;
     }
+    // Of a library, its types a consumer may write into a writer, which
+    // `prints` framed: their dictionaries carry `fmtInto`.
+    found.adts.extend(prints.published.iter().copied());
     let is_dyn = |ty: Ty<'tcx>| {
         ty.walk()
             .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(..))))
@@ -171,6 +174,7 @@ pub(super) fn written_params<'tcx>(
     let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>, Span)> = Vec::new();
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
+        let recognition = &within(recognition, body.def_id);
         let mut written = Vec::new();
         let writes_into = (body.thir.exprs.iter()).find(|expr| match expr.kind {
             ExprKind::Call { fun, ref args, .. } => fn_def(body.thir[fun].ty).is_some_and(|callee| {
@@ -191,12 +195,10 @@ pub(super) fn written_params<'tcx>(
             }
             found.give(tcx, owner, ty);
         }
-        for expr in body.thir.exprs.iter() {
-            if let ExprKind::Call { fun, .. } = expr.kind
-                && let Some((callee, args)) = fn_def(body.thir[fun].ty)
-            {
-                calls.push((owner, callee, args, expr.span));
-            }
+        // Each function it calls or names, a `fn` pointer of an instance
+        // too, `bumped::<Point>`, which writes what it's given so (#1710).
+        for (callee, args, span) in crate::lower::instances::calls_of(body) {
+            calls.push((owner, callee, args, span));
         }
     }
     // Where a `dyn` is written so, here or by a library given one, each
@@ -401,8 +403,9 @@ pub(super) fn written_arguments<'tcx>(
     loop {
         let mut changed = false;
         for &(body, mir, ref params) in &params {
+            let recognition = within(recognition, body.def_id);
             for &param in params {
-                if given_to_a_write(recognition, &found, mir, param) {
+                if given_to_a_write(&recognition, &found, mir, param) {
                     changed |= found.mark(tcx, body.def_id, param.as_u32() - 1);
                 }
             }
@@ -455,4 +458,14 @@ pub(in crate::lower) fn given_to_a_write<'tcx>(
         }
     }
     false
+}
+
+/// `recognition` asked within `body`, its generic parameters its own, which
+/// a call of `body`'s may name, `<Small<CAP> as Write>::write_fmt`.
+pub(super) fn within<'r, 'tcx>(recognition: &Recognition<'r, 'tcx>, body: DefId) -> Recognition<'r, 'tcx> {
+    let tcx = recognition.tcx;
+    Recognition {
+        typing_env: ty::TypingEnv::non_body_analysis(tcx, tcx.typeck_root_def_id(body)),
+        ..*recognition
+    }
 }

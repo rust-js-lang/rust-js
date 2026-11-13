@@ -62,4 +62,12 @@ export const mutations: Mutation[] = [
     replace: "            let debug = false;\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
   },
+  {
+    name: "published-library-type-refused",
+    breaks: "a library's published type written into a consumer's own writer is refused, though its dictionary's `fmtInto` writes it",
+    file: "src/lower/display/fmt_into.rs",
+    find: "        } else if (ty.ty_adt_def()).is_some_and(|adt| self.krate.foreign.lists_fmt_into(adt.did())) {\n",
+    replace: "        } else if false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "published type"],
+  },
 ];

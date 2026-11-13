@@ -393,7 +393,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Another writer of the crate's own given this one's `Formatter`,
             // `helper(f, n)`, which writes through a sink: called with this
             // writer's sink armed for it.
-            WriteCall::Function | WriteCall::Trait => {
+            // `{:x}`, `{:e}` and the like of a std value given the
+            // `Formatter`, `LowerHex::fmt(&self.0, f)`: its writes by the
+            // `Formatter`'s options as it runs; of a writer of the crate's
+            // own, as another's below.
+            WriteCall::OtherFmt if !self.own_writer(def_id, generic_args) => {
+                let trait_id = self.tcx.trait_of_assoc(def_id).expect("a formatting trait's `fmt`");
+                let kind = match (self.radix_trait(trait_id), self.exp_trait(trait_id)) {
+                    (Some(radix), _) => Some(Std::FmtRadix(radix)),
+                    (_, Some(upper)) => Some(Std::FmtExp(upper)),
+                    _ => None,
+                };
+                let ty = generic_args.type_at(0).peel_refs();
+                let value = match values.next() {
+                    Some(value) => self.shown_in_place(value, span)?,
+                    None => return Err(self.unsupported(span, "this `fmt`'s value, from its MIR")),
+                };
+                let written = match kind {
+                    Some(kind) => self.sink_writes_given(value, (kind, ty), options, span)?,
+                    None => None,
+                };
+                match written {
+                    Some(writes) => writes,
+                    None => {
+                        let what = format!("a `{{:x}}`, `{{:e}}` or the like of a `{ty}` given the `Formatter`");
+                        return Err(self.refused_in_a_writer(&what, span));
+                    }
+                }
+            }
+            WriteCall::Function | WriteCall::Trait | WriteCall::OtherFmt => {
                 let framed = match self.resolve_self_instance(def_id, generic_args) {
                     Ok(Some(instance))
                         if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()) =>
@@ -419,9 +447,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.refused_in_a_writer("a function given the writer's `Formatter`", span));
                     }
                 }
-            }
-            WriteCall::OtherFmt => {
-                return Err(self.refused_in_a_writer("a `{:x}`, `{:e}` or the like given the `Formatter`", span));
             }
             // A derived `Debug`'s, `debug_struct_field2_finish(f, "P", "x",
             // &self.x, ..)`: core's builder, each field a step, its value
@@ -607,5 +632,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|write| write.written_into(&handle, js_span))
             .collect();
         Ok(self.fmt_try(written))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `def_id` of `generic_args` resolves to a writer of the
+    /// crate's own that writes through a sink, which a writer may arm.
+    fn own_writer(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        matches!(self.resolve_self_instance(def_id, generic_args), Ok(Some(instance))
+            if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))
     }
 }

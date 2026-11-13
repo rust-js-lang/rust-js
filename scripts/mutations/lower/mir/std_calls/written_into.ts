@@ -116,4 +116,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Str(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "formatter-other-fmt-refused",
+    breaks: "a framed writer's `LowerHex::fmt(&self.0, f)` of a number is refused, where it's written by the `Formatter`'s options",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "            WriteCall::OtherFmt if !self.own_writer(def_id, generic_args) => {\n",
+    replace: "            WriteCall::OtherFmt if false => {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

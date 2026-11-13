@@ -60,7 +60,7 @@ pub fn shows() -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // The arrow that gives it its caller's dictionaries, made each time the
   // function that takes it runs.
-  expect(js).toContain("function pick(TDebug) {\n  return (arg0) => shown(arg0, TDebug);\n}");
+  expect(js).toContain("function pick(TDebug) {\n  return (value) => shown(value, TDebug);\n}");
   // Native Rust's answers are all `true` with one codegen unit; Rust
   // promises none of them but the last.
   const lib = await import(join(dir, "lib.js"));

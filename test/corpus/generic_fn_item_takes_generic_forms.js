@@ -2,8 +2,8 @@
 
 import { $at, $ptrTo } from "@rust-js/std";
 
-const bumpU32 = (arg0, arg1) =>
-  bump(arg0, arg1, {
+const bumpU32 = (r, by) =>
+  bump(r, by, {
     addAssign(cell, b) {
       cell.value = (cell.value + b) >>> 0;
     },
@@ -14,8 +14,8 @@ export function entry() {
 }
 
 const u8SliceLen = { length: u8SliceLen_length };
-const measuredU8Slice = (arg0) => measured(arg0, u8SliceLen);
-const sharedLenU8Slice = (arg0) => sharedLen(arg0, u8SliceLen);
+const measuredU8Slice = (p) => measured(p, u8SliceLen);
+const sharedLenU8Slice = (r) => sharedLen(r, u8SliceLen);
 
 function u8SliceLen_length(self) {
   return self.length;

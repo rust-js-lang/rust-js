@@ -2,7 +2,7 @@
 
 import { $debugStr, $ptrTo } from "@rust-js/std";
 
-const showOfU32 = (arg0) => showOf(arg0, { fmt: String });
+const showOfU32 = (p) => showOf(p, { fmt: String });
 
 export function entry() {
   main();
@@ -25,7 +25,7 @@ const NUMBER = {
   show: showOfU32,
 };
 
-const showOfRefStr = (arg0) => showOf(arg0, { fmt: (value) => value });
+const showOfRefStr = (p) => showOf(p, { fmt: (value) => value });
 
 const TEXT = {
   name: "text",

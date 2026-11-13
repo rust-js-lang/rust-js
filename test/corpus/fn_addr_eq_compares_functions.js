@@ -2,7 +2,7 @@
 
 import { $index, $position, $unwrap } from "@rust-js/std";
 
-const widenedU8 = (arg0) => widened(arg0, { into: (n) => BigInt(n) });
+const widenedU8 = (x) => widened(x, { into: (n) => BigInt(n) });
 
 export function entry() {
   main();
