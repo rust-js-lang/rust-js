@@ -673,4 +673,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^ranges_end_at_a_diverging_call.rs$"],
     snapshots: true,
   },
+  {
+    name: "guard-failure-unjoined",
+    breaks: "each match arm is tried from the state before the match alone, so what an earlier arm's failed guard changed, a `v.pop()`, is unseen and the next arm's index unchecked (#1659)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                        before = either(before, here.clone());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^match_guard_that_shrank_a_vec_keeps_the_next_arms_index_checked.rs$"],
+  },
+  {
+    name: "assign-op-place-first",
+    breaks: "a compound assignment's place is walked before its right side, so the operator reads the place as it was and the right side's index is judged narrowed (#1660)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                let r = self.expr(rhs, known);\n                let current = self.expr(lhs, known);\n",
+    replace: "                let current = self.expr(lhs, known);\n                let r = self.expr(rhs, known);\n",
+    tests: ["test/corpus.test.ts", "-t", "^compound_assignment_(reads_its_place_after_its_right_side|right_side_index_checked_first).rs$"],
+  },
 ];

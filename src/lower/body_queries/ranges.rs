@@ -563,9 +563,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 None
             }
+            // A built-in operator's, which THIR keeps apart from an
+            // overloaded one's call: its right side first, then its place,
+            // as Rust evaluates it, so what the right side changes, `x` of
+            // `x += { x = n; 1 }` or a `Vec` it grows, is what the place
+            // and the operator see (#1660).
             ExprKind::AssignOp { op, lhs, rhs } => {
-                let current = self.expr(lhs, known);
                 let r = self.expr(rhs, known);
+                let current = self.expr(lhs, known);
                 let value = match (current, r, type_range(thir[lhs].ty)) {
                     (Some(l), Some(r), Some(bounds)) => {
                         let of = (self.value_base(lhs), self.value_base(rhs));
@@ -605,7 +610,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     return None;
                 }
                 let found = self.expr(scrutinee, known);
-                let before = known.take();
+                // Where each arm is tried from: before the match, or after
+                // an earlier arm's guard ran and failed, whose effects, a
+                // `v.pop()`, reach the arms after it (#1659).
+                let mut before = known.take();
                 // Of a slice's `len()`, what each arm knows of it (rd21).
                 let (length, mut passed) = (self.length_matched(scrutinee), 0);
                 for &arm in arms.iter() {
@@ -617,6 +625,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     }
                     if let Some(guard) = thir[arm].guard {
                         self.expr(guard, &mut here);
+                        before = either(before, here.clone());
                     }
                     self.expr(thir[arm].body, &mut here);
                     *known = either(known.take(), here);

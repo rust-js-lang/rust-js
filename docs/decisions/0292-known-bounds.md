@@ -53,3 +53,29 @@ knows only what its own conditions show.
 
 - Most indexes stay checked: an index a condition doesn't show, as
   `while i < xs.len()` with `i += 1`, is `$index`.
+
+## Amendment (2026-11-13, #1659, #1660): the walk follows Rust's evaluation order
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. Two places where the range walk's order wasn't Rust's
+dropped a check:
+
+- **A match arm after a failed guard (#1659).** Each arm started from the
+  state before the match, so what an earlier arm's guard changed, `true if
+  v.pop().is_none()`, never reached the arms tried after it, and the next
+  arm's `v[i]` lost its bounds check. Now each arm starts from the state
+  before the match joined with the state after each earlier guard.
+- **A compound assignment (#1660).** The walk took the place, then the right
+  side, then the place again. Rust evaluates a built-in compound
+  assignment's right side first, and THIR keeps an overloaded one apart, as
+  a call. So the operator saw the place as it was before the right side
+  wrote it: `x += { x = n; 1 }` lost its wrap. And the first walk's index
+  narrowed `i` for the right side's own `v[i]`, whose check was dropped. Now
+  it's the right side, then the place.
+
+No snapshot moves. Corpus cases
+match_guard_that_shrank_a_vec_keeps_the_next_arms_index_checked,
+compound_assignment_reads_its_place_after_its_right_side and
+compound_assignment_right_side_index_checked_first against native Rust;
+mutations `guard-failure-unjoined` and `assign-op-place-first`
+(`body_queries/ranges.ts`).
