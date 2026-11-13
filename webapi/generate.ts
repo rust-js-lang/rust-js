@@ -1444,6 +1444,8 @@ const NAMED: Record<string, string> = {
   "EventTarget.removeEventListener": "remove_event_listener_named",
   "Document.createElement": "create_element_named",
   "Document.createElementNS": "create_element_ns_named",
+  "HTMLCanvasElement.getContext": "get_context_named",
+  "OffscreenCanvas.getContext": "get_context_named",
 };
 
 /** `onerror`'s first argument, TypeScript's `Event | string`. */
@@ -2123,7 +2125,54 @@ const LEGACY_LISTENERS = [
   typed([`[MDN](${mdn("MediaQueryList", "addListener")}): \`callback\` called of each change, as`, "`add_event_listener(Change, callback, None)` calls it."], "addListener", "add_listener(&self, callback: impl IntoEventListener<MediaQueryListEvent>)"),
   typed([`[MDN](${mdn("MediaQueryList", "removeListener")}): \`callback\`, added before, gone: the one`, "added, `listener(..)`'s or a named `fn`."], "removeListener", "remove_listener(&self, callback: impl IntoAddedEventListener<MediaQueryListEvent>)"),
 ];
+// Each canvas context by its id, as HTML's `getContext()` says and
+// TypeScript's overloads type it (#1698): the context an
+// `HTMLCanvasElement`'s is, an `OffscreenCanvas`'s, and its options'
+// dictionary, a struct given by value; `"webgpu"` takes none,
+// `NoContextOptions`, of which only `None` is written. Each overload
+// `@types/web` has, and only those, checked below.
+const CANVAS_CONTEXTS = [
+  { id: "2d", type: "Context2d", canvas: "CanvasRenderingContext2D", offscreen: "OffscreenCanvasRenderingContext2D", options: "CanvasRenderingContext2DSettings" },
+  { id: "bitmaprenderer", type: "BitmapRenderer", canvas: "ImageBitmapRenderingContext", offscreen: "ImageBitmapRenderingContext", options: "ImageBitmapRenderingContextSettings" },
+  { id: "webgl", type: "Webgl", canvas: "WebGLRenderingContext", offscreen: "WebGLRenderingContext", options: "WebGLContextAttributes" },
+  { id: "webgl2", type: "Webgl2", canvas: "WebGL2RenderingContext", offscreen: "WebGL2RenderingContext", options: "WebGLContextAttributes" },
+  { id: "webgpu", type: "Webgpu", canvas: "GPUCanvasContext", offscreen: "GPUCanvasContext", options: undefined },
+].map((c) => {
+  if (c.options === undefined) return { ...c, options: "NoContextOptions" };
+  const options = dictionaries.get(c.options);
+  const rust = options && dictionaryType(options);
+  if (typeof rust !== "string" || !known.has(c.canvas) || !known.has(c.offscreen)) throw new Error(`canvas context "${c.id}" has no binding of ${c.canvas}, ${c.offscreen} or ${c.options}`);
+  return { ...c, options: rust };
+});
+// The typed `getContext` of a canvas, `HTMLCanvasElement`'s or
+// `OffscreenCanvas`'s: by a context's id's type, its context or `None`
+// where the canvas has another context already, JS's `null`.
+{
+  // `@types/web`'s overloads of each canvas's `getContext`, `"2d"` and
+  // what it gives, are the catalog's, each and no more.
+  const types = readFileSync(new URL("./node_modules/@types/web/index.d.ts", import.meta.url), "utf8");
+  for (const [canvas, gives] of [["HTMLCanvasElement", "canvas"], ["OffscreenCanvas", "offscreen"]] as const) {
+    const body = types.split("\ninterface ").find((d) => d.startsWith(`${canvas} `)) ?? "";
+    const overloads = [...body.matchAll(/getContext\(contextId: "([^"]+)"(?:, options\?: (\w+))?\): (\w+) \| null;/g)].map((m) => `${m[1]} ${m[3]}`);
+    const ours = CANVAS_CONTEXTS.map((c) => `${c.id} ${c[gives]}`);
+    if (overloads.join() !== ours.join()) throw new Error(`${canvas}.getContext's overloads are ${overloads.join(", ")}, the catalog's ${ours.join(", ")}: CANVAS_CONTEXTS lists each (#1698)`);
+  }
+}
+const canvasContext = (on: string, gives: "Context" | "Offscreen", untyped: string) =>
+  [
+    `    /// [MDN](${mdn(on, "getContext")}): the context its id is (#1698),`,
+    `    /// \`get_context(contexts::Context2d, None)\` ${gives === "Context" ? "a \`CanvasRenderingContext2D\`" : "an \`OffscreenCanvasRenderingContext2D\`"}, \`None\``,
+    `    /// where the canvas has another kind of context already. Another id is`,
+    `    /// \`get_context_named\`'s, ${untyped}.`,
+    `    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]`,
+    `    #[cfg_attr(rust_js, rust_js::nullable)]`,
+    `    pub fn get_context<C: CanvasContext>(&self, context: C, options: Option<<C as CanvasContext>::Options>) -> Option<&'static <C as CanvasContext>::${gives}> {`,
+    `        unreachable!()`,
+    `    }`,
+  ].join("\n");
 const TYPED: Record<string, string[]> = {
+  HTMLCanvasElement: [canvasContext("HTMLCanvasElement", "Context", "a `RenderingContext`")],
+  OffscreenCanvas: [canvasContext("OffscreenCanvas", "Offscreen", "an `OffscreenRenderingContext`")],
   MediaQueryList: LEGACY_LISTENERS,
   Window: TIMERS_GONE,
   Document: [
@@ -3006,6 +3055,33 @@ line(`/// The SVG element a tag makes, as TypeScript's \`SVGElementTagNameMap\`:
 line(`pub trait SVGTag {`);
 line(`    type Element;`);
 line(`}`);
+line();
+line(`/// A canvas context's id, a type whose value is its string, and the context`);
+line(`/// each canvas gives of it, as TypeScript's \`getContext\` overloads (#1698):`);
+line(`/// \`Context2d\`'s is a \`CanvasRenderingContext2D\`, an \`OffscreenCanvas\`'s an`);
+line(`/// \`OffscreenCanvasRenderingContext2D\`, its options a \`CanvasRenderingContext2DSettings\`.`);
+line(`pub trait CanvasContext {`);
+line(`    type Context;`);
+line(`    type Offscreen;`);
+line(`    type Options;`);
+line(`}`);
+line();
+line(`/// The options of a canvas context that takes none, \`Webgpu\`'s: no value, so only \`None\` is given (#1698).`);
+line(`pub enum NoContextOptions {}`);
+line();
+line(`/// Each canvas context's id, a type whose value is its string: \`Context2d\` is \`"2d"\` (#1698).`);
+line(`pub mod contexts {`);
+CANVAS_CONTEXTS.forEach((c, k) => {
+  if (k > 0) line();
+  line(`    /// \`"${c.id}"\``);
+  line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(c.id)})]`);
+  line(`    pub struct ${c.type};`);
+});
+line(`}`);
+line();
+for (const c of CANVAS_CONTEXTS) {
+  line(`impl CanvasContext for contexts::${c.type} { type Context = ${typeName(c.canvas)}; type Offscreen = ${typeName(c.offscreen)}; type Options = ${c.options}; }`);
+}
 line();
 line(`/// The namespaces \`create_element_ns\` makes an element of a tag in, each a type whose value is its URI.`);
 line(`pub mod namespaces {`);

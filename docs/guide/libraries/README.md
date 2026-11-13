@@ -399,7 +399,14 @@ How WebIDL maps to Rust, one rule for each:
   `webapi::tags::Button`: a listener is given the event its target and
   name give, a `PointerEvent` of a button's click, and `create_element`
   the element of its tag
-  ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)).
+  ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)). So is
+  a canvas context's id, `webapi::contexts::Context2d`: a canvas's
+  `get_context(Context2d, None)` is an `Option<&CanvasRenderingContext2D>`,
+  `canvas.getContext("2d")`, `None` of its `null`, its options a struct,
+  `CanvasRenderingContext2DSettings`, as TypeScript's overloads type them;
+  `BitmapRenderer`, `Webgl`, `Webgl2` and `Webgpu` too, `Webgpu` of no
+  options, only `None`, and an `OffscreenCanvas`'s its own contexts. Any other id is `get_context_named(id, None)`'s,
+  the `RenderingContext` union (ADR 0223, amended, #1698).
   `EventTargetExt` gives every target `add_event_listener` and
   `remove_event_listener` ([ADR 0282](../../decisions/0282-event-listener-methods.md)).
   A listener is TypeScript's `EventListenerOrEventListenerObject`: a

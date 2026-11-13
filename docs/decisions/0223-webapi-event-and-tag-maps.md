@@ -4,6 +4,7 @@ Status: Accepted. Extends [0024](0024-web-crate.md), [0102](0102-js-and-webapi.m
 and [0013](0013-fieldless-enums.md).
 Amended by [0282](0282-event-listener-methods.md): listener registration and
 removal are methods, with direct closures and shared callbacks for reuse.
+Amended below: a canvas context's id is a type too (#1698).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -123,3 +124,43 @@ button.addEventListener("click", (e) => {
 - `webapi/src/lib.rs` grows by 4,600 lines, an impl per interface and event.
 - Two more pinned inputs, `@webref/events` and `@webref/elements`.
 - The string forms are `_named`: breaking, for code written against them.
+
+## Amendment: a canvas context's id is a type too (#1698)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; `getContext("2d")`
+gives what it gives, typed.
+
+`canvas.get_context("2d", None)` gave the `RenderingContext` union, whose
+match is refused: its members are classes, which `instanceof` can't tell
+apart across realms. But the id says the context already, as HTML's
+`getContext()` and TypeScript's overloads do: `"2d"` is a
+`CanvasRenderingContext2D | null`. A consumer's canvas app was blocked.
+
+As a tag is (`create_element(Button)`), a context's id is a type whose
+value is its string, `webapi::contexts::Context2d` being `"2d"`, and the
+trait `CanvasContext` says what each canvas gives of it, and its options:
+
+- `Context2d`, a `CanvasRenderingContext2D`, an `OffscreenCanvas`'s an
+  `OffscreenCanvasRenderingContext2D`, of `CanvasRenderingContext2DSettings`;
+- `BitmapRenderer`, an `ImageBitmapRenderingContext`, of
+  `ImageBitmapRenderingContextSettings`;
+- `Webgl` and `Webgl2`, a `WebGLRenderingContext` and a
+  `WebGL2RenderingContext`, of `WebGLContextAttributes`;
+- `Webgpu`, a `GPUCanvasContext`, which takes no options: its
+  `NoContextOptions` has no value, so only `None` is written.
+
+`get_context<C: CanvasContext>(&self, context: C, options:
+Option<C::Options>) -> Option<&'static C::Context>`, `#[rust_js::nullable]`,
+is `canvas.getContext("2d")`, its `None` JS's `null`, where the canvas has
+another kind of context already. The form that takes any string is
+`get_context_named`, as `create_element_named` is, the union as it was.
+`webapi/generate.ts` owns the catalog, `CANVAS_CONTEXTS`, the ids HTML
+names; it binds each options dictionary as a struct given by value, and
+it fails where `@types/web`'s overloads of either canvas's `getContext`,
+each id and what it gives, aren't the catalog's, so one TypeScript adds
+is a token here too.
+
+Held by `test/webapi-canvas.test.ts`: each form's JS, no `instanceof`, run
+against a canvas of no constructor global, as another realm's is, its
+context and its `null`.
+

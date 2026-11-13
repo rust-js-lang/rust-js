@@ -11594,7 +11594,7 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn get_context(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<RenderingContext<'static>> {
+    pub fn get_context_named(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<RenderingContext<'static>> {
         unreachable!()
     }
 
@@ -11621,6 +11621,16 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/captureStream)
     #[cfg_attr(rust_js, rust_js::link_name = "captureStream")]
     pub fn capture_stream(&self, frame_request_rate: Option<f64>) -> &'static MediaStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext): the context its id is (#1698),
+    /// `get_context(contexts::Context2d, None)` a `CanvasRenderingContext2D`, `None`
+    /// where the canvas has another kind of context already. Another id is
+    /// `get_context_named`'s, a `RenderingContext`.
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub fn get_context<C: CanvasContext>(&self, context: C, options: Option<<C as CanvasContext>::Options>) -> Option<&'static <C as CanvasContext>::Context> {
         unreachable!()
     }
 
@@ -60423,7 +60433,7 @@ impl OffscreenCanvas {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn get_context(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<OffscreenRenderingContext<'static>> {
+    pub fn get_context_named(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<OffscreenRenderingContext<'static>> {
         unreachable!()
     }
 
@@ -60466,6 +60476,16 @@ impl OffscreenCanvas {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn set_oncontextrestored(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext): the context its id is (#1698),
+    /// `get_context(contexts::Context2d, None)` an `OffscreenCanvasRenderingContext2D`, `None`
+    /// where the canvas has another kind of context already. Another id is
+    /// `get_context_named`'s, an `OffscreenRenderingContext`.
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub fn get_context<C: CanvasContext>(&self, context: C, options: Option<<C as CanvasContext>::Options>) -> Option<&'static <C as CanvasContext>::Offscreen> {
         unreachable!()
     }
 
@@ -84442,6 +84462,37 @@ impl<R: 'static, F: FnMut(&'static NavigationPrecommitController) -> R + 'static
 pub trait IntoViewTransitionUpdateCallback: promised::IntoViewTransitionUpdateCallback {}
 impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallback for F {}
 
+/// The `CanvasRenderingContext2DSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct CanvasRenderingContext2DSettings {
+    pub alpha: Option<bool>,
+    pub desynchronized: Option<bool>,
+    pub color_space: Option<String>,
+    pub color_type: Option<String>,
+    pub will_read_frequently: Option<bool>,
+}
+
+/// The `ImageBitmapRenderingContextSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ImageBitmapRenderingContextSettings {
+    pub alpha: Option<bool>,
+}
+
+/// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct WebGLContextAttributes {
+    pub alpha: Option<bool>,
+    pub depth: Option<bool>,
+    pub stencil: Option<bool>,
+    pub antialias: Option<bool>,
+    pub premultiplied_alpha: Option<bool>,
+    pub preserve_drawing_buffer: Option<bool>,
+    pub power_preference: Option<String>,
+    pub fail_if_major_performance_caveat: Option<bool>,
+    pub desynchronized: Option<bool>,
+    pub xr_compatible: Option<bool>,
+}
+
 /// The `SanitizerConfig` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct SanitizerConfig {
@@ -84629,16 +84680,6 @@ pub struct CSSNumericType {
     pub flex: Option<f64>,
     pub percent: Option<f64>,
     pub percent_hint: Option<String>,
-}
-
-/// The `CanvasRenderingContext2DSettings` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
-pub struct CanvasRenderingContext2DSettings {
-    pub alpha: Option<bool>,
-    pub desynchronized: Option<bool>,
-    pub color_space: Option<String>,
-    pub color_type: Option<String>,
-    pub will_read_frequently: Option<bool>,
 }
 
 /// The `CookieListItem` dictionary: a JS object with these fields, a `None` one not there.
@@ -85473,21 +85514,6 @@ pub struct VideoEncoderSupport {
 pub struct PlaneLayout {
     pub offset: f64,
     pub stride: f64,
-}
-
-/// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
-pub struct WebGLContextAttributes {
-    pub alpha: Option<bool>,
-    pub depth: Option<bool>,
-    pub stencil: Option<bool>,
-    pub antialias: Option<bool>,
-    pub premultiplied_alpha: Option<bool>,
-    pub preserve_drawing_buffer: Option<bool>,
-    pub power_preference: Option<String>,
-    pub fail_if_major_performance_caveat: Option<bool>,
-    pub desynchronized: Option<bool>,
-    pub xr_compatible: Option<bool>,
 }
 
 /// The `WebTransportConnectionStats` dictionary: a JS object with these fields, a `None` one not there.
@@ -104428,6 +104454,48 @@ pub trait Tag {
 pub trait SVGTag {
     type Element;
 }
+
+/// A canvas context's id, a type whose value is its string, and the context
+/// each canvas gives of it, as TypeScript's `getContext` overloads (#1698):
+/// `Context2d`'s is a `CanvasRenderingContext2D`, an `OffscreenCanvas`'s an
+/// `OffscreenCanvasRenderingContext2D`, its options a `CanvasRenderingContext2DSettings`.
+pub trait CanvasContext {
+    type Context;
+    type Offscreen;
+    type Options;
+}
+
+/// The options of a canvas context that takes none, `Webgpu`'s: no value, so only `None` is given (#1698).
+pub enum NoContextOptions {}
+
+/// Each canvas context's id, a type whose value is its string: `Context2d` is `"2d"` (#1698).
+pub mod contexts {
+    /// `"2d"`
+    #[cfg_attr(rust_js, rust_js::name = "2d")]
+    pub struct Context2d;
+
+    /// `"bitmaprenderer"`
+    #[cfg_attr(rust_js, rust_js::name = "bitmaprenderer")]
+    pub struct BitmapRenderer;
+
+    /// `"webgl"`
+    #[cfg_attr(rust_js, rust_js::name = "webgl")]
+    pub struct Webgl;
+
+    /// `"webgl2"`
+    #[cfg_attr(rust_js, rust_js::name = "webgl2")]
+    pub struct Webgl2;
+
+    /// `"webgpu"`
+    #[cfg_attr(rust_js, rust_js::name = "webgpu")]
+    pub struct Webgpu;
+}
+
+impl CanvasContext for contexts::Context2d { type Context = CanvasRenderingContext2D; type Offscreen = OffscreenCanvasRenderingContext2D; type Options = CanvasRenderingContext2DSettings; }
+impl CanvasContext for contexts::BitmapRenderer { type Context = ImageBitmapRenderingContext; type Offscreen = ImageBitmapRenderingContext; type Options = ImageBitmapRenderingContextSettings; }
+impl CanvasContext for contexts::Webgl { type Context = WebGLRenderingContext; type Offscreen = WebGLRenderingContext; type Options = WebGLContextAttributes; }
+impl CanvasContext for contexts::Webgl2 { type Context = WebGL2RenderingContext; type Offscreen = WebGL2RenderingContext; type Options = WebGLContextAttributes; }
+impl CanvasContext for contexts::Webgpu { type Context = GPUCanvasContext; type Offscreen = GPUCanvasContext; type Options = NoContextOptions; }
 
 /// The namespaces `create_element_ns` makes an element of a tag in, each a type whose value is its URI.
 pub mod namespaces {
