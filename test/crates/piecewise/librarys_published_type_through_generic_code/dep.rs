@@ -4,7 +4,9 @@
 //! lists (`written_into`, ADR 1135's switch-over). One of a lifetime alone
 //! is published too, as a lifetime changes nothing of its JS; and one whose
 //! `Debug` is derived, which the library exports none of and a consumer
-//! compiles its own of, framed as the library's would be.
+//! compiles its own of, framed as the library's would be. A private type
+//! only a published one's field holds, whose `Debug` nothing shows, as
+//! rustls-pki-types' `BytesInner`, carries no `fmtInto` and isn't refused.
 use std::fmt;
 
 pub struct Meters(pub u32);
@@ -25,3 +27,35 @@ impl fmt::Display for Prefixed<'_> {
 
 #[derive(Debug)]
 pub struct Pair(pub i32, pub &'static str);
+
+#[derive(Debug, Clone)]
+enum Bytes<'a> {
+    Owned(Vec<u8>),
+    Borrowed(&'a [u8]),
+}
+
+#[derive(Clone)]
+pub struct Der<'a>(Bytes<'a>);
+
+pub fn der(owned: bool) -> Der<'static> {
+    match owned {
+        true => Der(Bytes::Owned(vec![1, 2, 3])),
+        false => Der(Bytes::Borrowed(b"ab")),
+    }
+}
+
+impl fmt::Debug for Der<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let len = match &self.0 {
+            Bytes::Owned(bytes) => bytes.len(),
+            Bytes::Borrowed(bytes) => bytes.len(),
+        };
+        write!(f, "Der({len})")
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Anchor<'a> {
+    pub subject: Der<'a>,
+    pub constraints: Option<Der<'a>>,
+}

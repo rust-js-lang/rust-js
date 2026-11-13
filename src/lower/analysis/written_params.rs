@@ -37,6 +37,9 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     pub(in crate::lower) params: IndexMap<DefId, IndexSet<u32>>,
     types: IndexSet<Ty<'tcx>>,
     adts: IndexSet<DefId>,
+    /// The types given such a parameter, or held by what is
+    /// (`given_adt`).
+    given_adts: IndexSet<DefId>,
     /// Whether a `dyn` of a formatting trait is written so, by the crate
     /// or a library it gives one to: every impl of the crate's own carries
     /// `fmtInto`.
@@ -63,6 +66,14 @@ impl<'tcx> WrittenParams<'tcx> {
     /// or as a `dyn` is written so?
     pub(in crate::lower) fn of_adt(&self, adt: DefId) -> bool {
         self.dyn_written || self.adts.contains(&adt)
+    }
+
+    /// Is `adt` given such a parameter itself, or held by what is, `Vec<T>`'s
+    /// `T`, or a `dyn` written so: not reached only as a field of the crate's
+    /// type, whose writer writes it so only where framing frames its writer
+    /// too, `Der`'s private `BytesInner`, which its own `Debug` never shows.
+    pub(in crate::lower) fn given_adt(&self, adt: DefId) -> bool {
+        self.dyn_written || self.given_adts.contains(&adt)
     }
 
     /// The crate's types whose impls' dictionaries carry `fmtInto`, which a
@@ -94,6 +105,8 @@ impl<'tcx> WrittenParams<'tcx> {
     /// each type `ty` is made of, reach it.
     fn give(&mut self, tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> bool {
         let mut changed = false;
+        let given = (ty.walk().filter_map(|part| part.as_type())).filter_map(|part| part.ty_adt_def());
+        self.given_adts.extend(given.map(|adt| adt.did()));
         let identity = ty::GenericArgs::identity_for_item(tcx, owner);
         for (index, param) in identity.iter().enumerate() {
             if param.as_type().is_some() && ty.walk().any(|part| part == param) {

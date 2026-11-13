@@ -130,6 +130,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::Prop::Field(name, value) if name == "fmt" => Some(value.clone()),
             _ => None,
         });
+        // Reached only as a field of a type whose writer never shows it,
+        // which framing leaves, nothing writes so (`given_adt`).
+        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt) {
+            return Ok(None);
+        }
         let (Some(entry), true) = (entry, writes_through_sink) else {
             let what = format!(
                 "a `{}` written into a writer through generic code or a `dyn` whose writer doesn't write a piece at a time (#1652)",

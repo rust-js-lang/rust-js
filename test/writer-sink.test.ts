@@ -379,11 +379,12 @@ test("a library's generic writer, and a library's type written through generic c
 // A library's type reachable from outside it is published: its writer
 // writes through a sink and its dictionary carries `fmtInto`, which its
 // contract lists, so a consumer writes it into a writer a piece at a time,
-// through generic code and directly; one of a lifetime alone too, and
-// one whose derived `Debug` the consumer compiles its own of.
+// through generic code and directly; one of a lifetime alone too, one
+// whose derived `Debug` the consumer compiles its own of, and one holding a
+// private type whose `Debug` nothing shows.
 test("a library's published type is written into a consumer's writer a piece at a time", () => {
   const out = piecewiseChain(piecewisePairs, "librarys_published_type_through_generic_code");
-  expect(contract(out).written_into.length).toBe(3);
+  expect(contract(out).written_into.length).toBe(6);
 }, underLoad(300_000));
 
 // A library's derived `Debug` of more than five fields makes `&dyn Debug`s

@@ -32,4 +32,12 @@ pub fn main() {
     write!(log, "{:?}|{:#?}", dep::Pair(1, "a\""), dep::Pair(-2, "b")).unwrap();
     own(&mut log, &format!("{:?}", dep::Pair(3, "c"))).unwrap();
     println!("{:?}", log.0);
+    let mut log = Log(Vec::new());
+    write!(log, "{:?}|{:?}", dep::der(true), dep::der(false)).unwrap();
+    let anchor = dep::Anchor {
+        subject: dep::der(true),
+        constraints: Some(dep::der(false)),
+    };
+    write!(log, "|{:?}|{:#?}", anchor, anchor.clone()).unwrap();
+    println!("{:?}", log.0);
 }

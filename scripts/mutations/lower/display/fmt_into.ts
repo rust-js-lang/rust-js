@@ -78,4 +78,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, _) if false && self.krate.foreign.lists_fmt_into(adt.did()) => adt.did(),\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
   },
+  {
+    name: "field-only-type-refused",
+    breaks: "a private type only a published one's field holds, whose `Debug` nothing shows, rustls-pki-types' `BytesInner`, is refused for a `fmtInto` nothing calls",
+    file: "src/lower/display/fmt_into.rs",
+    find: "        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt) {\n",
+    replace: "        if false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
+  },
 ];

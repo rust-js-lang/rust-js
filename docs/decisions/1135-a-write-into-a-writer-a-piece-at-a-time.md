@@ -384,6 +384,11 @@ go.
      `self.effects.render().fmt(f)`, is the type it hides where framing
      reads what a writer shows, as its MIR is lowered, so that type's
      writer is framed. Proof: test/writer-sink-impl-display.rs; 1 mutation.
+   - A type reached only as a field of the crate's type, whose writer
+     never shows it, rustls-pki-types' private `BytesInner` in `Der`, which
+     framing leaves, carries no `fmtInto` and isn't refused: nothing writes
+     it so (`WrittenParams::given_adt`, the types given a parameter written
+     so or held by one). Proof: the published piecewise pair; 1 mutation.
 
 ## Alternatives
 
