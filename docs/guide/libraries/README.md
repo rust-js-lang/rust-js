@@ -741,7 +741,10 @@ or a two-item array, a `Bound` as `"Unbounded"` or `{"Included":3}`, a
 `Duration` as `{"secs":1,"nanos":500000000}` and a `SystemTime` as
 `{"secs_since_epoch":..,"nanos_since_epoch":..}`, with serde's errors, one
 before the epoch or past what a `Duration` holds; a `Wrapping` and a
-`Reverse` as what they hold, and a `PhantomData` as `null`
+`Reverse` as what they hold, and a `PhantomData` as `null`; a `Cell`, a
+`RefCell`, a `Mutex` and an `RwLock` as what they hold, read through them
+as serde's impl reads them, `already mutably borrowed` or `lock poison
+error while serializing` where it can't
 ([ADR 1134](../../decisions/1134-std-types-serde-forms-are-one-catalog.md)).
 The others are refused for now (#1623).
 

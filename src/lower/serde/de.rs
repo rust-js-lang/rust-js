@@ -597,15 +597,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Expr::undefined();
         }
-        match self.shape(Ty::new_adt(self.tcx, adt, args)) {
-            Shape::Object(fields) => Expr::object(
-                fields
+        // Each field what it holds of its value read, as any struct made is:
+        // of a cell that's the property it holds, a `Cell`'s, what the cell
+        // holds (`holding`, ADR 0288).
+        let ty = Ty::new_adt(self.tcx, adt, args);
+        let held = |(i, (value, field_ty)): (usize, (Expr, Ty<'tcx>))| {
+            self.holding(value, self.struct_field_def(ty, i), field_ty)
+        };
+        match self.shape(ty) {
+            Shape::Object(fields) => {
+                let keys: Vec<String> = fields.iter().map(|(key, _)| key.text().to_owned()).collect();
+                let values = items
                     .into_iter()
-                    .zip(items)
-                    .map(|((key, _), value)| Prop::Field(key.text().to_owned(), value))
-                    .collect(),
-            ),
-            Shape::Array(_) => Expr::array(items),
+                    .zip(fields.into_iter().map(|(_, t)| t))
+                    .enumerate()
+                    .map(held);
+                Expr::object(
+                    keys.into_iter()
+                        .zip(values)
+                        .map(|(key, value)| Prop::Field(key, value))
+                        .collect(),
+                )
+            }
+            Shape::Array(tys) => Expr::array(items.into_iter().zip(tys).enumerate().map(held).collect()),
             Shape::Other => Expr::undefined(),
         }
     }

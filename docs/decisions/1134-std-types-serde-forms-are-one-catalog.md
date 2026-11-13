@@ -102,3 +102,31 @@ read as serde's unit, `invalid type: integer `1`, expected unit`. Probes
 visitor, which clamps what's out of range. The cells and locks, whose
 value and borrow are what the cell analysis decides for each, come after
 a design of their own (#1623).
+
+## Amendment: cells and locks (2026-11-13, #1623)
+
+A cell form: what a `Cell`, a `RefCell`, a `Mutex` or an `RwLock` holds,
+read through it as serde's impl does, and read as `::new` of what's read
+(serde's `forwarded_impl`). Each asks the cell's own rules, which
+`std_types/cell.rs` now has as one function each, `::new`'s and `get`'s
+arms calling them too: `cell_made(ty, value)`, `{ value }` or, of a
+`RefCell` of an object, the object (ADR 0863); and `cell_held(ty, cell)`,
+what `get()` reads. Written:
+
+- a `Cell`, what it holds, `get()`'s;
+- a `RefCell`, `try_borrow()`'s, `$jsonBorrowed`: `already mutably
+  borrowed` where it's mutably borrowed; a handle on a field no borrow of
+  which is counted (ADR 0863, amended), as it's held;
+- a `Mutex`, `lock()`'s, and an `RwLock`, `read()`'s, `$jsonLocked`: `lock
+  poison error while serializing` where a panic poisoned it; locked again
+  while the thread holds it, rust-js's lock's own refusal of Rust's
+  deadlock (ADR 0328's decision, unchanged); a panic as its value is
+  written poisons a `Mutex`, as its guard dropped while the panic unwinds
+  does, and a write's error, a `Result`, doesn't.
+
+The two helpers are emitted only where a `RefCell`, a `Mutex` or an
+`RwLock` is serialized. A derived reader now makes each field as any struct
+literal does (`holding`, ADR 0288): a struct's `Cell` field is what the
+cell holds, which a `{ value }` read from JSON wasn't, `get()` then reading
+`[object Object]`. Probes `std_07`, `std_08` and `std_20` give native's
+answer in all three modes.

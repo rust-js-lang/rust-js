@@ -13,6 +13,11 @@
 //! - A newtype form is what it holds, written and read as that, `Wrapping(3)`
 //!   as `3`; and a unit form, `PhantomData`, is `null`, read as serde's
 //!   unit, `invalid type: integer `1`, expected unit`.
+//! - A cell form is what a `Cell`, a `RefCell`, a `Mutex` or an `RwLock`
+//!   holds, read through it as serde's impl does, `get()`, `try_borrow()`,
+//!   `lock()` or `read()`, with its errors, `already mutably borrowed` and
+//!   `lock poison error while serializing`; read as `::new` of it, by the
+//!   cell's own rules (`cell_held`, `cell_made`).
 //! - An enum form is externally tagged, `"Unbounded"` or `{"Included":3}`,
 //!   each variant written and read as a derive of the enum's own
 //!   definition does, the variants named in serde's order, which its
@@ -37,9 +42,24 @@ pub(super) enum StdForm<'tcx> {
     Newtype(Ty<'tcx>),
     /// A unit struct's, `null`.
     Unit,
+    /// What a cell of this type holds, of this type, read through it as
+    /// its kind says.
+    Cell(Ty<'tcx>, Ty<'tcx>, CellKind),
     /// What a derive of the enum's own definition writes and reads, its
     /// variants named in this order, serde's.
     Enum(ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>, &'static [&'static str]),
+}
+
+/// How a cell form's value is read, as serde's impl reads it.
+#[derive(Clone, Copy)]
+pub(super) enum CellKind {
+    /// `Cell::get()`.
+    Cell,
+    /// `RefCell::try_borrow()`, else `already mutably borrowed`.
+    RefCell,
+    /// `Mutex::lock()` (`exclusive`) or `RwLock::read()`, else `lock poison
+    /// error while serializing`.
+    Lock { exclusive: bool },
 }
 
 /// How a struct form's JS value holds its fields.
@@ -109,6 +129,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_reverse(ty) || self.is_std_type(ty, StdItem::Wrapping) {
             return Some(StdForm::Newtype(args.type_at(0)));
         }
+        // Cells and locks, as `get()`, `try_borrow()`, `lock()` or `read()`
+        // read them.
+        let cell = [
+            (StdItem::Cell, CellKind::Cell),
+            (StdItem::RefCell, CellKind::RefCell),
+            (StdItem::Mutex, CellKind::Lock { exclusive: true }),
+            (StdItem::RwLock, CellKind::Lock { exclusive: false }),
+        ]
+        .into_iter()
+        .find(|&(item, _)| self.is_std_type(ty, item));
+        if let Some((_, kind)) = cell {
+            return Some(StdForm::Cell(ty, args.type_at(0), kind));
+        }
         if self.is_lang_adt(ty, rustc_hir::attrs::lang_items::LangItem::PhantomData) {
             return Some(StdForm::Unit);
         }
@@ -163,6 +196,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "null", Vec::new(), out);
                 Ok(())
             }
+            // A handle on a field that holds its value, where no borrow of it
+            // is counted, is read as it's held (ADR 0863, amended).
+            StdForm::Cell(_, inner, CellKind::RefCell) if matches!(value.kind, js::ExprKind::Handle(..)) => {
+                self.write_json(Expr::held(value), json, inner, span, out)
+            }
+            StdForm::Cell(cell, inner, CellKind::Cell) => {
+                let held = self.cell_held(cell, value);
+                self.write_json(held, json, inner, span, out)
+            }
+            // `$jsonBorrowed(cell, (value) => .., itself)`, `$jsonLocked(..)`.
+            StdForm::Cell(cell, inner, kind) => {
+                let held = self.fresh(Role::Value);
+                let mut body = Vec::new();
+                self.write_json(Expr::var(&held), json, inner, span, &mut body)?;
+                let write = Expr::arrow(vec![held.into()], body);
+                let call = match kind {
+                    CellKind::Lock { exclusive } => {
+                        Expr::call_helper("$jsonLocked", vec![value, write, Expr::bool(exclusive)])
+                    }
+                    _ => {
+                        let mut given = vec![value, write];
+                        // Of one that's the object it holds, the object (ADR 0863).
+                        if self.is_value_cell(cell) {
+                            given.push(Expr::bool(true));
+                        }
+                        Expr::call_helper("$jsonBorrowed", given)
+                    }
+                };
+                out.push(StmtKind::Expr(call).at(js::Span::NONE));
+                Ok(())
+            }
             StdForm::Enum(adt, args, _) => self.write_adt(value, json, adt, args, span, out),
         }
     }
@@ -174,11 +238,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.fresh(Role::Json);
         let inner = match form {
             StdForm::Unit => return Ok(Expr::member(Expr::helper("$json"), "unit")),
-            StdForm::Newtype(inner) => Some(self.json_reader(inner, span)?),
+            StdForm::Newtype(inner) | StdForm::Cell(_, inner, _) => Some(self.json_reader(inner, span)?),
             _ => None,
         };
         if let Some(read) = inner {
-            let made = Expr::array(vec![Expr::call(read, vec![Expr::var(&json)])]);
+            let read = Expr::call(read, vec![Expr::var(&json)]);
+            let made = match form {
+                // `::new` of what's read, by the cell's own rule.
+                StdForm::Cell(cell, ..) => self.cell_made(cell, read),
+                _ => Expr::array(vec![read]),
+            };
             return Ok(Expr::arrow(
                 vec![json.into()],
                 vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
@@ -231,7 +300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => read,
                 }
             }
-            StdForm::Newtype(_) | StdForm::Unit => unreachable!("read above"),
+            StdForm::Newtype(_) | StdForm::Unit | StdForm::Cell(..) => unreachable!("read above"),
             StdForm::Enum(adt, args, order) => {
                 let variants = (order.iter())
                     .map(|name| {

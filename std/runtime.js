@@ -17339,6 +17339,34 @@ export function $systemTimeOfJson(offset) {
   return offset;
 }
 
+// A `RefCell`'s value written by `write` while it's borrowed, serde's
+// `try_borrow()`: `already mutably borrowed` where it's mutably borrowed.
+// Of one that's the object it holds (`itself`, ADR 0863), the cell.
+export function $jsonBorrowed(cell, write, itself) {
+  if (cell.borrows < 0) throw $jsonError("already mutably borrowed");
+  $withBorrow(cell, write, itself);
+}
+
+// A `Mutex`'s or an `RwLock`'s value written by `write` while it's locked,
+// serde's `lock()`, or `read()` of an `RwLock` (not `exclusive`): `lock
+// poison error while serializing` where a panic poisoned it; locked again
+// while the thread holds it, rust-js's lock's own refusal of Rust's
+// deadlock (ADR 0328). Its guard released as a panic unwinds out of
+// `write`, by `$unwinds`, a `Mutex`'s poisoning it, as its guard dropped as
+// a panic unwinds does (`$unlock`); a write's error, a `Result`
+// (`$jsonTry`'s), released as any return is, and given on.
+export function $jsonLocked(cell, write, exclusive) {
+  const locked = $locked(cell, exclusive);
+  const release = exclusive ? () => $unlock(cell) : () => $unborrow(cell);
+  if (locked.TAG === "Err") {
+    release();
+    throw $jsonError("lock poison error while serializing");
+  }
+  const written = $unwinds(() => $jsonTry(() => write(cell.value)), release);
+  release();
+  if (written.TAG === "Err") throw written._0;
+}
+
 // std's error of a message, which `Box<dyn Error>::from("..")` makes: a
 // `dyn Error`'s dictionary, whose `value` is the message (ADR 0141).
 // Its `type_id` is std's private `StringError`'s, which no program can

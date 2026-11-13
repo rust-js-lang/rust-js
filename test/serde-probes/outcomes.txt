@@ -47,12 +47,9 @@ refused more_27
 refused num_i128
 refused pos_19
 refused std_02
-refused std_07
-refused std_08
 refused std_11
 refused std_18
 refused std_19
-refused std_20
 refused std_21
 refused stream_00
 refused stream_01
@@ -293,6 +290,8 @@ same std_03
 same std_04
 same std_05
 same std_06
+same std_07
+same std_08
 same std_09
 same std_10
 same std_12
@@ -301,6 +300,7 @@ same std_14
 same std_15
 same std_16
 same std_17
+same std_20
 same std_22
 same std_24
 same std_25

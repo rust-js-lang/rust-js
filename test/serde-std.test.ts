@@ -243,3 +243,111 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// Cells and locks: what each holds, read through it as serde's impl does,
+// `get()`, `try_borrow()`, `lock()` and `read()`: serde's `already mutably
+// borrowed` while a `RefCell` is mutably borrowed, and `lock poison error
+// while serializing` of a `Mutex` a caught panic poisoned; read as `::new`
+// of what's read.
+test("serde: a Cell, a RefCell, a Mutex and an RwLock are written and read as serde's own impls do", async () => {
+  const dir = fixture("serde-std-cells");
+  writeFileSync(join(dir, "cases.rs"), harness + String.raw`
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+use std::sync::{Mutex, RwLock};
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Shared {
+    pub hits: Cell<u32>,
+    pub names: RefCell<Vec<String>>,
+    pub guarded: Mutex<i64>,
+    pub read_mostly: RwLock<String>,
+}
+
+fn write_result<T: serde::Serialize>(out: &mut String, value: &T) {
+    match serde_json::to_string(value) {
+        Ok(text) => out.push_str(&format!("{text}\n")),
+        Err(e) => out.push_str(&format!("error: {e}\n")),
+    }
+}
+
+/// Panics as it's written; and gives a write's error.
+pub struct Panics;
+impl serde::Serialize for Panics {
+    fn serialize<S: serde::Serializer>(&self, _s: S) -> Result<S::Ok, S::Error> {
+        panic!("written")
+    }
+}
+pub struct Fails;
+impl serde::Serialize for Fails {
+    fn serialize<S: serde::Serializer>(&self, _s: S) -> Result<S::Ok, S::Error> {
+        Err(serde::ser::Error::custom("fails"))
+    }
+}
+
+pub fn report() -> String {
+    let mut out = String::new();
+    let panicking = Mutex::new(Panics);
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| serde_json::to_string(&panicking)));
+    out.push_str(&format!("panicked {} poisoned {}\n", caught.is_err(), panicking.is_poisoned()));
+    let failing = Mutex::new(Fails);
+    write_result(&mut out, &failing);
+    out.push_str(&format!("poisoned {}\n", failing.is_poisoned()));
+    let reading = RwLock::new(Panics);
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| serde_json::to_string(&reading)));
+    out.push_str(&format!("panicked {} poisoned {}\n", caught.is_err(), reading.is_poisoned()));
+    let shared = Shared {
+        hits: Cell::new(2),
+        names: RefCell::new(vec!["a".into()]),
+        guarded: Mutex::new(-5),
+        read_mostly: RwLock::new("r".into()),
+    };
+    write(&mut out, &shared);
+    shared.hits.set(3);
+    shared.names.borrow_mut().push("b".into());
+    write(&mut out, &shared);
+    {
+        let _held = shared.names.borrow();
+        write_result(&mut out, &shared);
+    }
+    {
+        let _held = shared.names.borrow_mut();
+        write_result(&mut out, &shared);
+        write_result(&mut out, &vec![1u8]);
+    }
+    let poisoned = Mutex::new(7u8);
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _guard = poisoned.lock().unwrap();
+        panic!("poison");
+    }));
+    out.push_str(&format!("caught {}\n", caught.is_err()));
+    write_result(&mut out, &poisoned);
+    write_result(&mut out, &(1u8, &poisoned));
+    let shared_cell = Rc::new(RefCell::new(vec![1u8, 2]));
+    let other = Rc::clone(&shared_cell);
+    other.borrow_mut().push(3);
+    write(&mut out, &*shared_cell);
+    for text in [
+        r#"{"hits":1,"names":["x"],"guarded":2,"read_mostly":"s"}"#,
+        r#"{"hits":-1,"names":[],"guarded":2,"read_mostly":"s"}"#,
+        r#"{"hits":1,"names":"x","guarded":2,"read_mostly":"s"}"#,
+    ] {
+        match serde_json::from_str::<Shared>(text) {
+            Ok(s) => {
+                s.names.borrow_mut().push("added".into());
+                *s.guarded.lock().unwrap() += 1;
+                out.push_str(&format!("{text} -> {} {:?} {} {}\n", s.hits.get(), s.names.borrow(), s.guarded.lock().unwrap(), s.read_mostly.read().unwrap()));
+            }
+            Err(e) => out.push_str(&format!("{text} -> error: {e}\n")),
+        }
+    }
+    read::<Cell<u8>>(&mut out, "4");
+    read::<RefCell<u8>>(&mut out, "300");
+    read::<Mutex<String>>(&mut out, "\"m\"");
+    read_value::<RwLock<bool>>(&mut out, serde_json::json!(true));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

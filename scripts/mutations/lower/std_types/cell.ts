@@ -293,8 +293,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell` of an object is made a `{ value }`, which the rest reads as the object it isn't",
     file: "src/lower/std_types/cell.rs",
-    find: "            Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),\n",
-    replace: "",
+    find: "            true => value,\n            false => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
+    replace: "            true | false => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
@@ -338,8 +338,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell` of an object's `into_inner` is its `value`, `undefined`",
     file: "src/lower/std_types/cell.rs",
-    find: "            Std::CellGet if self.is_value_cell(tys[0]) => arg(),\n",
-    replace: "",
+    find: "            true => cell,\n            false => Expr::held(cell),\n",
+    replace: "            true | false => Expr::held(cell),\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {

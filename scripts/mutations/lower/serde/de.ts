@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = read;\n",
     tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
   },
+  {
+    name: "derived-read-cell-field-unheld",
+    breaks: "a derived reader makes a struct's `Cell` field the cell, where the field holds what the cell holds, so `get()` reads `[object Object]` (#1623, ADR 0288)",
+    file: "src/lower/serde/de.rs",
+    find: "            self.holding(value, self.struct_field_def(ty, i), field_ty)\n",
+    replace: "            { let _ = (i, field_ty); value }\n",
+    tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
+  },
 ];

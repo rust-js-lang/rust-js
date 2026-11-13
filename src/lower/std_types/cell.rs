@@ -30,6 +30,27 @@ pub(in crate::lower) enum GuardMapOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A cell of `ty`, a `Cell`, a `RefCell`, a `Mutex` or an `RwLock`, made
+    /// of `value`: `{ value }`, so everyone sharing it sees a change; a
+    /// `RefCell` of an object, the object (ADR 0863). The one rule of it,
+    /// `::new`'s and a JSON reader's (#1623).
+    pub(in crate::lower) fn cell_made(&self, ty: Ty<'tcx>, value: Expr) -> Expr {
+        match self.is_value_cell(ty) {
+            true => value,
+            false => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),
+        }
+    }
+
+    /// What `cell`, of `ty`, holds, as `Cell::get` reads it: of one that's
+    /// its value, itself (ADR 0863). The one rule of it, `get`'s and a JSON
+    /// writer's (#1623).
+    pub(in crate::lower) fn cell_held(&self, ty: Ty<'tcx>, cell: Expr) -> Expr {
+        match self.is_value_cell(ty) {
+            true => cell,
+            false => Expr::held(cell),
+        }
+    }
+
     /// A guard of type `guard_ty` mapped by `f` (#1275): `$guardMap(guard,
     /// () => f(<what it guards>), form)`, `$guardFilterMap` or
     /// `$guardMapSplit`, each guard it gives in the form a guard of its
@@ -245,15 +266,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => value,
         };
         Ok(Some(match known {
-            // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it
-            // sees a change; a `RefCell` of an object, the object (ADR 0863).
-            Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),
-            Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
+            Std::CellNew => self.cell_made(self.owner_of(call.def_id, generic_args), arg()),
             // `RefCell::into_inner`'s, of one that's its object, the object.
             // A nullable thread-local's, `null` or a value, is what MIR
             // says its call gives (`nulled::reads_nullable_local`, ADR 0949).
-            Std::CellGet if self.is_value_cell(tys[0]) => arg(),
-            Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
+            Std::CellGet => {
+                let held = self.cell_held(tys[0], arg());
+                match self.is_value_cell(tys[0]) {
+                    true => held,
+                    false => self.copy_if_needed(held, generic_args.type_at(0)),
+                }
+            }
             // An `UnsafeCell`'s pointer to what it holds: the cell, the
             // handle on its `value` (ADR 0407, #1420).
             Std::CellPointer => arg(),
