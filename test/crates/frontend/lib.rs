@@ -1,6 +1,6 @@
 //! The app (ADR 0100): it uses `models`, and through it `validation`, as
 //! rust-js compiles each on its own. Native Rust runs the same `main`.
-use models::{Bag, Email, Note, Point, Role, User};
+use models::{Bag, Celsius, Email, Note, Point, Role, User};
 
 struct Loud(&'static str);
 
@@ -55,6 +55,17 @@ pub fn main() {
     for text in [r#"{"name": 5}"#, r#"{"name": "a", "email": "b", "age": -1, "role": "Admin"}"#] {
         match serde_json::from_str::<User>(text) {
             Ok(user) => println!("parsed {user:?}"),
+            Err(e) => println!("error: {e}"),
+        }
+    }
+
+    // A library's hand-written `Serialize` and `Deserialize`, its own
+    // `Visitor`'s, which this crate compiles itself (#1560).
+    let warm = serde_json::to_string(&Celsius(21.5)).unwrap();
+    println!("{warm} {:?}", serde_json::from_str::<Celsius>(&warm));
+    for text in [r#""-4C""#, r#""hot""#, "5"] {
+        match serde_json::from_str::<Celsius>(text) {
+            Ok(degrees) => println!("read {degrees:?}"),
             Err(e) => println!("error: {e}"),
         }
     }

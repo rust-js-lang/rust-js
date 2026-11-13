@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-evidence.test.ts"],
   },
+  {
+    name: "library-hand-written-codec-unreached",
+    breaks: "a library's hand-written `Serialize`, generic over its `Serializer`, which its JS doesn't export, is no codec the consumer calls, so serializing its type is refused where the crate compiles it itself (#1560)",
+    file: "src/lower/serde/codecs.rs",
+    find: "(method.is_local() || self.krate.foreign.compiled(method)).then_some(method)",
+    replace: "(method.is_local() || self.krate.foreign.item(method).is_some()).then_some(method)",
+    tests: ["test/crates.test.ts", "-t", "an app using two crates"],
+  },
 ];

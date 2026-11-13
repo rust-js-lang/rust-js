@@ -456,3 +456,26 @@ visitor's strings of each, an `Option`, a hand-written impl reading a
 Mutations `value-deserializer-unread`, `value-reference-deserializer-owned`
 and `value-seq-kind-unkept`, caught.
 
+
+## Amendment: a library's hand-written impl, compiled by its consumer (2026-11-13, #1560)
+
+A hand-written `Serialize` or `Deserialize` is generic over serde's
+`Serializer` or `Deserializer`, so its library's JS doesn't export it
+(ADR 0914): a consumer that serializes the library's type compiles its own
+copy, from the MIR the library's metadata keeps, as it does any of a
+library's generic functions it calls. Two places asked only whether the
+library exported it, and refused: a type's codec (`codec_fn`) and a
+hand-written `Deserialize`'s `Visitor` (`serde_visitor_impl`). Each now
+asks `Foreign::compiled`, the one answer to whether a library's item has
+JS the crate calls, exported or compiled here. No contract field: the
+consumer reads the impl's body from rustc's metadata, as it does every
+other generic function's. Case ([0262](0262-when-rust-and-js-disagree.md)):
+no observable difference, the same codec run as one crate's.
+
+Proof: the crate graph's `models` gains `Celsius`, a hand-written
+`Serialize` and a `Deserialize` with its own `Visitor`, used by
+`frontend` against native (`test/crates.test.ts`, "an app using two
+crates"); the serde probes' split mode, 19 refused before now native's
+answer, `manual_*`, `issue_1545`, `issue_1546` and `drop_01` among them,
+and all three modes now the same, 277 native's, 89 refused, none
+different; two mutations.

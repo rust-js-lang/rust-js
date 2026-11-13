@@ -86,3 +86,38 @@ impl Bag {
         self.items.push(n);
     }
 }
+
+/// A temperature written by hand as one string, `"21.5C"`, as serde's own
+/// guide writes a type it can't derive: its `Serialize` and its
+/// `Deserialize` with a `Visitor` of its own, each generic over serde's
+/// `Serializer` or `Deserializer`, which a consumer compiles itself (ADR
+/// 0914, #1560).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Celsius(pub f64);
+
+impl Serialize for Celsius {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&format!("{}C", self.0))
+    }
+}
+
+struct CelsiusVisitor;
+
+impl serde::de::Visitor<'_> for CelsiusVisitor {
+    type Value = Celsius;
+
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("a temperature like 21.5C")
+    }
+
+    fn visit_str<E: serde::de::Error>(self, text: &str) -> Result<Celsius, E> {
+        let degrees = text.strip_suffix('C').ok_or_else(|| E::custom("no C"))?;
+        degrees.parse().map(Celsius).map_err(E::custom)
+    }
+}
+
+impl<'de> Deserialize<'de> for Celsius {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_str(CelsiusVisitor)
+    }
+}

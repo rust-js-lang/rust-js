@@ -13,13 +13,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A type's `serialize`, or `deserialize`: of the crate's own impl, or of
-    /// one a library of it exports (ADR 0100), the impl rustc selects for
-    /// `ty` (`codec_impl`).
+    /// a library's that has JS the crate calls (`Foreign::compiled`): a
+    /// derived one it exports (ADR 0100), or a hand-written one, generic
+    /// over its `Serializer`, which the crate compiles itself (ADR 0914,
+    /// #1560); the impl rustc selects for `ty` (`codec_impl`).
     pub(in crate::lower) fn codec_fn(&self, ty: Ty<'tcx>, serialize: bool) -> Option<DefId> {
         let (imp, _) = self.codec_impl(ty, serialize)?;
         let method = self.tcx.associated_item_def_ids(imp)[0];
-        let foreign = imp.krate != rustc_span::def_id::LOCAL_CRATE;
-        (!foreign || self.krate.foreign.item(method).is_some()).then_some(method)
+        (method.is_local() || self.krate.foreign.compiled(method)).then_some(method)
     }
 
     /// The impl of serde's `Serialize`, or `Deserialize`, that rustc selects

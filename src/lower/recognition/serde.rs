@@ -31,8 +31,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && !super::traits::implementable(self.tcx, self.foreign, trait_id)
     }
 
-    /// The crate's impl of serde's `Visitor` for `ty`, a hand-written
-    /// `Deserialize`'s (ADR 0459).
+    /// The impl of serde's `Visitor` for `ty`, a hand-written
+    /// `Deserialize`'s (ADR 0459): the crate's own, or a library's whose
+    /// methods have JS the crate calls (`Foreign::compiled`), which it
+    /// compiles itself where its JS doesn't export them, as a library's
+    /// hand-written `Deserialize` that gives it is (ADR 0914, #1560).
     pub(in crate::lower) fn serde_visitor_impl(&self, ty: Ty<'tcx>) -> Option<DefId> {
         let visitor = (self.tcx.all_traits_including_private()).find(|&id| serde_visitor(self.tcx, id))?;
         // `Visitor<'de>` of `ty`: its `Self`, and its lifetime erased.
@@ -42,7 +45,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         });
         let tr = ty::TraitRef::new_from_args(self.tcx, visitor, args);
         match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
-            Ok(ImplSource::UserDefined(imp)) if self.trait_impls.contains(&imp.impl_def_id) => Some(imp.impl_def_id),
+            Ok(ImplSource::UserDefined(imp))
+                if self.trait_impls.contains(&imp.impl_def_id) || self.foreign.compiled(imp.impl_def_id) =>
+            {
+                Some(imp.impl_def_id)
+            }
             _ => None,
         }
     }

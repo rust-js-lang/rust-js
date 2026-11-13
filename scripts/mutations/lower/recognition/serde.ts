@@ -62,4 +62,12 @@ export const mutations: Mutation[] = [
     replace: '            "serialize_u128" => SerdeOp::Write(SerdeScalar::Int { wide: None }),\n',
     tests: ["test/serde-protocol.test.ts", "-t", "a 128-bit integer is written by each serializer"],
   },
+  {
+    name: "library-visitor-unreached",
+    breaks: "a library's own `Visitor`, which its hand-written `Deserialize` gives, is no visitor the consumer compiles, so deserializing its type is refused (#1560)",
+    file: "src/lower/recognition/serde.rs",
+    find: "self.trait_impls.contains(&imp.impl_def_id) || self.foreign.compiled(imp.impl_def_id)",
+    replace: "self.trait_impls.contains(&imp.impl_def_id)",
+    tests: ["test/crates.test.ts", "-t", "an app using two crates"],
+  },
 ];
