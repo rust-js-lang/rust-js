@@ -14,9 +14,9 @@ function patternTable(word) {
   let suffixIndex = 1;
   while (suffixIndex < p.length) {
     if ($index(p, prefixIndex) === p[suffixIndex]) {
-      patternTable[suffixIndex] = (prefixIndex + 1) >>> 0;
+      patternTable[suffixIndex] = prefixIndex + 1;
       suffixIndex++;
-      prefixIndex = (prefixIndex + 1) >>> 0;
+      prefixIndex++;
     } else if (prefixIndex === 0) {
       patternTable[suffixIndex] = 0;
       suffixIndex++;

@@ -39,7 +39,7 @@ function main() {
     $roomFor(n, 4);
     return new Array(n).fill(i);
   });
-  const spans = live.map((v) => [$addr($ptr(v, 0), 4), (v.length * 4) >>> 0]);
+  const spans = live.map((v) => [$addr($ptr(v, 0), 4), v.length * 4]);
   $storedItems(spans, 8);
   spans.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   $storedItems(spans, 8);

@@ -202,7 +202,7 @@ export function chainRead_readToEnd(chain, buf, TRead, URead, dropT, dropU) {
     if (readToEnd.TAG === "Err") {
       return readToEnd;
     }
-    read = (read + readToEnd._0) >>> 0;
+    read += readToEnd._0;
     chain.doneFirst = true;
   }
   const self = { value: chain.second };
@@ -295,7 +295,7 @@ export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dro
     if (readUntil.TAG === "Err") {
       return readUntil;
     }
-    read = (read + readUntil._0) >>> 0;
+    read += readUntil._0;
     const b = buf.at(-1);
     if (b != null) {
       if (b === byte) {

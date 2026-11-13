@@ -29,7 +29,7 @@ export const BlockRng64 = {
   // rand_core 0.5.1's block.rs:353.
   nextU32(blockRng64, RBlockRngCore, RResultsAsRefU64Slice, RResultsAsMutU64Slice) {
     let index = (((blockRng64.index * 2) >>> 0) - (blockRng64.halfUsed ? 1 : 0)) >>> 0;
-    if (index >= (RResultsAsRefU64Slice.asRef(blockRng64.results).length * 2) >>> 0) {
+    if (index >= RResultsAsRefU64Slice.asRef(blockRng64.results).length * 2) {
       const self = { value: blockRng64.core };
       const results = { value: blockRng64.results };
       try {

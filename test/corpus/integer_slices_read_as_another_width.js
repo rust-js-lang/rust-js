@@ -74,7 +74,7 @@ function readU64(results, index) {
 
 // impls.rs's `fill_via_chunks!`: integers copied into bytes.
 function fillFromU32(src, dst) {
-  const n = Math.min((src.length * 4) >>> 0, dst.length);
+  const n = Math.min(src.length * 4, dst.length);
   $ptrCopy(
     $ptrBytes(
       $ptr(src, 0),
@@ -89,7 +89,7 @@ function fillFromU32(src, dst) {
 }
 
 function fillFromU64(src, dst) {
-  const n = Math.min((src.length * 8) >>> 0, dst.length);
+  const n = Math.min(src.length * 8, dst.length);
   $ptrCopy(
     $ptrBytes(
       $ptr(src, 0),
@@ -106,7 +106,7 @@ function fillFromU64(src, dst) {
 // le.rs's `read_slice!`: bytes copied into integers.
 function readU32Into(src, dst) {
   const length = src.length;
-  const value = (4 * dst.length) >>> 0;
+  const value = 4 * dst.length;
   if (length !== value) {
     $assertFailed("Eq", String(length), String(value));
   }
@@ -127,7 +127,7 @@ function readU32Into(src, dst) {
 
 function readU64Into(src, dst) {
   const length = src.length;
-  const value = (8 * dst.length) >>> 0;
+  const value = 8 * dst.length;
   if (length !== value) {
     $assertFailed("Eq", String(length), String(value));
   }

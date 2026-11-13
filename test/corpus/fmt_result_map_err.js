@@ -38,7 +38,7 @@ export const smallWrite = {
   writeFmt: $smallWrite_writeStr,
 };
 function smallWrite_writeStr(small, s) {
-  if (($byteLen(small.text) + $byteLen(s)) >>> 0 > small.cap) {
+  if ($byteLen(small.text) + $byteLen(s) > small.cap) {
     return $fmtError();
   }
   small.text += s;

@@ -63,10 +63,15 @@ pub(super) struct State {
     /// A `for` loop's range of integers, by the local holding it, a `&mut`
     /// of it, or the `Option` its `next()` gave.
     pub(super) ranges: IndexMap<Local, Ranged>,
-    /// `t = x + c` of a constant at least one that never wraps, by `t`:
-    /// what `x` is and `c`. Of `t < y`, `x < y` too; and `x + c` again
-    /// is `t`, `items[i + 1]` under `i + 1 < len`.
-    pub(super) sums: IndexMap<Local, (Local, i128)>,
+    /// `t = x + c` of a constant at least one, by `t`: what `x` is, `c`,
+    /// and whether it never wraps. `x + c` again is `t`, wrapped or not,
+    /// `i += 1` past `i + 1 < n`; and of one that never wraps, `t < y`
+    /// is `x < y` too, `items[i + 1]` under `i + 1 < len`.
+    pub(super) sums: IndexMap<Local, (Local, i128, bool)>,
+    /// A slice's `get(index)`, by the `Option` it gave or its discriminant:
+    /// the index, and the most an index below the slice's length is, which
+    /// its `Some` knows it is.
+    pub(super) gets: IndexMap<Local, (Local, i128)>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -157,6 +162,10 @@ impl State {
                 .filter(|&(k, v)| other.sums.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
+            gets: (self.gets.iter())
+                .filter(|&(k, v)| other.gets.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
         }
     }
 
@@ -210,7 +219,9 @@ impl State {
         self.empties.retain(|&holder, &mut of| holder != local && of != local);
         self.ranges.shift_remove(&local);
         self.ranges.retain(|_, ranged| !ranged.end.of(local));
-        self.sums.retain(|&sum, &mut (of, _)| sum != local && of != local);
+        self.sums.retain(|&sum, &mut (of, _, _)| sum != local && of != local);
+        self.gets
+            .retain(|&gave, &mut (index, _)| gave != local && index != local);
     }
 
     /// What `local` is a copy or a reborrow of, else itself.

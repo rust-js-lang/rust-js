@@ -16,14 +16,14 @@ function runWithPriority(priorityLevel) {
       priorityLevel = 3;
       break;
   }
-  return (priorityLevel * 10) & 255;
+  return priorityLevel * 10;
 }
 
 function guarded(level, strict) {
   switch (level) {
     case 1:
       if (strict) {
-        level = (level + 100) >>> 0;
+        level += 100;
         break;
       }
     // falls through
@@ -34,7 +34,7 @@ function guarded(level, strict) {
       level = 0;
       break;
   }
-  return (level + 1) >>> 0;
+  return level + 1;
 }
 
 // A case that declares the name itself: its own, and the shadow apart.
@@ -65,8 +65,8 @@ function ranged(level) {
   if (level >= 1 && level <= 3) {
     level$1 = level;
   } else if (level === 4 || level === 5 || level === 6) {
-    const tripled = (level * 3) >>> 0;
-    level$1 = (tripled + 1) >>> 0;
+    const tripled = level * 3;
+    level$1 = tripled + 1;
   } else {
     level$1 = 0;
   }
@@ -97,7 +97,7 @@ function readAfter(level) {
     case 1:
     case 2:
     case 3:
-      level$1 = (level + 1) & 255;
+      level$1 = level + 1;
       break;
     default:
       level$1 = 0;

@@ -45,7 +45,7 @@ function oddSquares(limit) {
 function counters(n) {
   const made = [];
   for (let i = -2; i <= n; i++) {
-    made.push(() => i * 10);
+    made.push(() => (i * 10) | 0);
   }
   return made;
 }
@@ -75,7 +75,7 @@ function main() {
   console.log(`${sumTo(0)} ${sumTo(1)} ${sumTo(100)}`);
   console.log(`[${bytesFrom(250).join(", ")}]`);
   console.log(`[${bytesFrom(255).join(", ")}]`);
-  console.log(`${lastFew(4294967292)} ${lastFew(4294967295)}`);
+  console.log(`${lastFew(4294967295 - 3)} ${lastFew(4294967295)}`);
   console.log(`[${oddSquares(20).join(", ")}]`);
   console.log(`[${oddSquares(0).join(", ")}]`);
   const made = counters(1);

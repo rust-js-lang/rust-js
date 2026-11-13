@@ -528,10 +528,12 @@ pub fn named(n: u32) -> String {
 }
 `);
   expect(js).not.toContain("$catchUnwind");
+  // `d - 1` in `catch_unwind`'s closure keeps its wrap: `d != 0` of its
+  // parent isn't carried into it yet (#1701).
   expect(js).toContain(`  let thrown;
   if (segment == null) {
     try {
-      renderNode(d - 1, entered, wrote);
+      renderNode((d - 1) >>> 0, entered, wrote);
       return;
     } catch (thrown$1) {
       $catchable(thrown$1);
@@ -541,14 +543,14 @@ pub fn named(n: u32) -> String {
     }
   } else {`);
   expect(js).toContain(`  try {
-    restored(d - 1, entered, wrote, thrown);
+    restored((d - 1) >>> 0, entered, wrote, thrown);
   } catch (x) {
     $catchable(x);
     wrote.value = (wrote.value + thrown) >>> 0;
     throw x;
   }`);
   expect(js).toContain(`  try {
-    guarded(d - 1, entered, wrote, thrown);
+    guarded((d - 1) >>> 0, entered, wrote, thrown);
   } catch (x) {
     $catchable(x);
     wrote.value = (wrote.value + thrown) >>> 0;

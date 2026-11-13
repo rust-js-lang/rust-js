@@ -34,7 +34,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$1;
   n = 2;
@@ -55,7 +55,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$2;
   n = 4;
@@ -76,7 +76,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$3;
   n = 8;
@@ -97,7 +97,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$4;
   n = 16;
@@ -118,7 +118,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   console.log(
     `0x${res.toString(16)} 0x${res$1.toString(16)} 0x${res$2.toString(16)} 0x${res$3.toString(16)} 0x${res$4.toString(16)}`,
@@ -142,7 +142,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$6;
   n = 2;
@@ -163,7 +163,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$7;
   n = 4;
@@ -184,7 +184,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$8;
   n = 8;
@@ -205,7 +205,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$9;
   n = 16;
@@ -226,7 +226,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   console.log(`${res$5} ${res$6} ${res$7} ${res$8} ${res$9}`);
   let res$10;
@@ -248,7 +248,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   let res$11;
   n = 8;
@@ -269,7 +269,7 @@ function main() {
     n,
   );
   for (let i = 0; i < dst.length; i++) {
-    dst[i] = (17 * ((((i & 255) % 3) + 1) & 255)) & 255;
+    dst[i] = 17 * (((i & 255) % 3) + 1);
   }
   console.log(`${$displayF32(res$10)} ${$displayF64(res$11)}`);
 

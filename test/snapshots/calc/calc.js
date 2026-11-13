@@ -170,11 +170,11 @@ export function caesar(s, k) {
     $mapEnds($chars(s), (c) => {
       if (/^[a-z]$/.test(c)) {
         return String.fromCharCode(
-          (((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97) & 255,
+          ((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97,
         );
       } else if (/^[A-Z]$/.test(c)) {
         return String.fromCharCode(
-          (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
+          ((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65,
         );
       } else {
         return c;

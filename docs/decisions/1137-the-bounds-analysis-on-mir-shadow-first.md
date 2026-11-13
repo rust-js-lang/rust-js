@@ -327,3 +327,61 @@ At main, before the wrap switch, four mutations survived:
   same suites. The rule stays, being the semantics a walk should have (a
   way no value takes isn't taken), and the mutation is removed as
   equivalent (ADR 0093).
+
+## M3, step 2 landed: wraps decided by MIR (2026-11-14)
+
+MIR's intervals decide whether a `+`, `-` or `*` lowered from a MIR
+statement is JS's own operator (`exact_proved`, by the statement's
+location in the very body proved). Its wrap is left out where MIR proves
+the value stays in its type's range, and isn't `-0` of a product.
+Operations MIR's walk doesn't see keep what THIR's ranges know until it
+does: a call's, `+=` of a trait or an atomic, generic number code, a std
+body's overflowing forms.
+
+Recovered through MIR's precision:
+- **Narrowing past widening** (before this step), and widening at any block
+  after three visits (the loop heads' rule went, being equivalent).
+- **A sum computed again is the first one,** the same value though it
+  wraps: `i += 1` past `i + 1 < n` takes that test's bound. And
+  `x + c < y ⇒ x < y` holds of a sum that never wraps.
+- **`x < y + 1 ⇒ x ≤ y`,** though `y + 1` wraps, its least being below
+  nothing; of a comparison, and of a range's end, `k` of
+  `for k in 1..line + 1`.
+- **`t = x + c`** of `x + (c - 1)` strictly below a value is at most that
+  value: `i += 2` past `i + 1 < len`.
+- **A slice's `get(index)`:** its `Some` puts `index` below the slice's
+  length, through `Option::cloned()` and `copied()` too.
+- **A JS string's `length`** is at most `2^31 - 1`, and is a length of the
+  text: a UTF-16 count is at most the bytes, so what's below it is below
+  them. Text's `len()` is at most what an allocation holds.
+- **Two locals compared record the relation their intervals show:** a
+  loop's invariant, `n < limit`, that its first turn seeds.
+- **An integer local lent `&mut` is forgotten where it's lent,** not in the
+  whole body. Borrowck holds that it isn't assigned while the borrow lives,
+  so once assigned again it's known. A raw pointer's local stays unknown
+  in the whole body. While building this, the forget first came after an
+  early return for a lent destination, which proved `k - 2` after
+  `f(&mut k)`. The test caught it before anything landed.
+
+Measured against main:
+- **Corpus:** all 2,492 cases pass against native. 83 outputs changed: 110 wraps left out that THIR kept, 52 kept that it left out, each a precision gap.
+- **Snapshots:** 6 files, a wrap left out in each.
+- **Guide:** one wrap left out in `objects.md`; two kept in `advanced.md`, both in closures (#1701).
+- **Lost, pinned in their tests:**
+  - closures' captures (#1701): `catch_unwind` arms, `with_borrow`'s
+    `get(i)`;
+  - `Vec::push`'s length (#1700): `prevLength - 1`.
+- **Gains the lowering tests had pinned as THIR's conservatism,** updated:
+  - `skips`'s `i + 1 < items.len()`, `i` being at most the slice's length
+    round the loop;
+  - `index + 1` past `slots[index]`'s check;
+  - a counted `for` over `text.len()`;
+  - `usize::BITS - 1`, now JS's own `32 - 1`.
+
+A literal fold tried in `binary` broke the tidy pass's merge of
+`Some(x) | Some(x)`'s guards, adding renames to `match_trees_chained`, and
+was dropped. The readability gate holds.
+
+The concept splits, each a commit of its own:
+- `intervals/calls.rs`, what a call tells the walk;
+- `test/lowering-integer-ranges.test.ts`, out of `lowering-numbers`.

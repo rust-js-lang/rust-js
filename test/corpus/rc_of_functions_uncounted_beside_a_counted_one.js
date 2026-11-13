@@ -14,7 +14,7 @@ function shared(f) {
 }
 function main() {
   const k = 0;
-  const add = (x) => x + k;
+  const add = (x) => (x + k) >>> 0;
   const a = shared(double);
   const b = shared(add);
   const c = shared(add);

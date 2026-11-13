@@ -1034,7 +1034,7 @@ test("a blank line before an if let is before what its test's take() prints firs
 `);
   expect(js).toContain("  out.push(index);\n\n  const length = slots.length;\n");
   expect(js).toContain("  slots[index] = undefined;\n  if (values != null) {\n");
-  expect(js).toMatch(/\n  }\n\n  \/\/ Then the rest\.\n  const \w+ = \(index \+ 1\)/);
+  expect(js).toMatch(/\n  }\n\n  \/\/ Then the rest\.\n  const \w+ = index \+ 1;/);
   expect(js).not.toMatch(/undefined;\n\n  (\/\/ Then the rest\.\n  )?if/);
   const slots: (number[] | undefined)[] = [[1, 2], [3]];
   const out: number[] = [];

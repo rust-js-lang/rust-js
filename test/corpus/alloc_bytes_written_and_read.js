@@ -64,7 +64,7 @@ function main() {
   layout = $unwrapOk($layout(4, 1), undefined, (e) => "LayoutError");
   const q = $alloc(layout);
   for (let i = 0; i < 4; i++) {
-    $ptrAdd(q, i).value = (119 + i) & 255;
+    $ptrAdd(q, i).value = 119 + i;
   }
   const owned = $vecFromRaw(q, 4, 4);
   console.log(

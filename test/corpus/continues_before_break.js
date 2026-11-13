@@ -18,7 +18,7 @@ function described(props, room) {
       continue;
     }
     const shown = String(value);
-    room = BigInt.asIntN(64, room - BigInt(((($byteLen(name) + $byteLen(shown)) >>> 0) + 2) >>> 0));
+    room = BigInt.asIntN(64, room - BigInt(($byteLen(name) + $byteLen(shown) + 2) >>> 0));
     if (room < 0n) {
       content += " ...";
       break;

@@ -133,7 +133,7 @@ function observed(pairs) {
   for (let i = 0; i < pairs.length; i++) {
     const [a, b] = pairs[i];
     let level = 0;
-    const look = () => level * 10;
+    const look = () => (level * 10) >>> 0;
     if (a === 1 || b === 1) {
       level = 1;
     } else if (a === 2 && b === 2) {
@@ -292,7 +292,7 @@ function observedRows(rows) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     let level = 0;
-    const look = () => level * 10;
+    const look = () => (level * 10) >>> 0;
     if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
       level = 1;
     } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {

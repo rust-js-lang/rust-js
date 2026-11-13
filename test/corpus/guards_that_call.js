@@ -80,7 +80,7 @@ function counted(values) {
       return n > 2;
     }
     const kind = v === 0 ? 0 : bump(v) ? 1 : calls > 0 ? 2 : 3;
-    out.push((((kind * 10) >>> 0) + calls) >>> 0);
+    out.push((kind * 10 + calls) >>> 0);
   }
   return out;
 }

@@ -16,7 +16,7 @@ function describe(keys, indent, out) {
         desc = `<${keys[0]} … />`;
         break desc;
       }
-      let width = (keys.length * 10) >>> 0;
+      let width = keys.length * 10;
       while (true) {
         out.push(String(width));
         if (width <= indent) {

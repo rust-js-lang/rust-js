@@ -21,7 +21,7 @@ export const bufWrite = {
   writeFmt: $bufWrite_writeStr,
 };
 function bufWrite_writeStr(buf, s) {
-  if (($byteLen(buf.text) + $byteLen(s)) >>> 0 > buf.cap) {
+  if ($byteLen(buf.text) + $byteLen(s) > buf.cap) {
     return $fmtError();
   }
   buf.text += s;

@@ -179,7 +179,20 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
 // `i + 1` that may have wrapped shows nothing of `i`.
 test("a counter below a JS string's length doesn't wrap", async () => {
   const dir = fixture("string-length-counter");
-  writeFileSync(join(dir, "lib.rs"), `pub fn count(format_string: &str) -> u32 {
+  writeFileSync(join(dir, "lib.rs"), `pub fn placeholders(format: &str) -> u32 {
+    let mut n = 0;
+    let mut i = 0;
+    while i + 1 < js::string::length(format) {
+        if js::string::char_code_at(format, i) == 37.0 {
+            n += 1;
+            i += 1;
+        }
+        i += 1;
+    }
+    n
+}
+
+pub fn count(format_string: &str) -> u32 {
     let mut n = 0;
     let mut i = 0;
     while i + 1 < js::string::length(format_string) {
@@ -245,10 +258,16 @@ pub fn upto(n: u8) -> u8 {
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
   expect(js).toContain("  while (i + 1 < n) {\n    i++;\n  }\n");
+  // A JS string's length a length of the text: `i` at most it round the
+  // loop, its `i + 1` and its steps of two in range (MIR's intervals).
+  expect(js).toContain("  while (i + 1 < format.length) {\n");
   expect(js).toContain("    if (formatString.charCodeAt(i) !== 37) {\n      i++;\n      continue;\n    }\n    i++;\n    n = (n + 1) >>> 0;\n    i++;\n");
   expect(js).toContain("  for (let i = 0; i + 1 < items.length; i++) {\n");
   expect(js).toContain("    s = (s ^ (items[i] ^ items[i + 1])) >>> 0;\n  }\n  return s;");
-  expect(js).toContain("  while ((i + 1) >>> 0 < items.length) {\n");
+  // `items[i]`'s check is made before each step, so `i` is at most the
+  // slice's length round the loop, a length of `f64`s far below `u32`'s
+  // most: `i + 1` can't wrap (MIR's intervals, ADR 1137, #1672).
+  expect(js).toContain("  while (i + 1 < items.length) {\n");
   expect(js).toContain("    i = (i + 2) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.count("a%b%c"), lib.count("%%%%"), lib.count(""), lib.count("%")]).toEqual([2, 2, 0, 0]);
@@ -592,7 +611,9 @@ pub fn deep(indent: usize) -> usize {
   expect(js).toContain("    seen++;\n");
   expect(js).toContain("n > FLOOR ? n - 1 : FLOOR");
   // Of constants alone, the constant.
-  expect(js).toContain("return n >>> 31;");
+  // MIR's intervals prove `usize::BITS - 1` in range: JS's own `-` of
+  // the constants rustc gives (ADR 1137).
+  expect(js).toContain("return n >>> (32 - 1);");
   // Past a test it isn't below, its `+ 1` may wrap.
   expect(js).toContain("(indent + 1) >>> 0");
   const lib = await import(join(dir, "lib.js"));
@@ -640,7 +661,9 @@ pub fn first_of_some(keys: &[String]) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
+  // `prevLength - 1` keeps its wrap: that `push` made the vector at least
+  // one long is what MIR's intervals don't know yet (#1700).
+  expect(js).toContain('properties[(prevLength - 1) >>> 0][1] = "unchanged";');
   expect(js).toContain('return length === 1 && keys[0] === "children";');
   expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
   const lib = await import(join(dir, "lib.js"));
@@ -653,7 +676,8 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(lib.firstOfSome(["ab", "c"])).toBe("c");
   expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
   const of = performanceTrack();
-  expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
+  // As above, its wrap kept until MIR knows `push`'s length (#1700).
+  expect(of("addObjectDiffToProperties")).toContain("properties[(prevLength - 1) >>> 0][1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 }, underLoad(60_000));
 
@@ -714,7 +738,9 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js.match(/    i\+\+;\n/g)).toHaveLength(2);
+  // `summed`'s; `flushed`'s `get(i)` is in `with_borrow`'s closure, whose
+  // `Some` MIR's intervals don't carry out of it yet (#1701).
+  expect(js.match(/    i\+\+;\n/g)).toHaveLength(1);
   expect(js).toContain("i = (i + 1) >>> 0;");
   expect(js).toContain("?? (i + 1) >>> 0");
   const lib = await import(join(dir, "lib.js"));

@@ -76,7 +76,7 @@ function guarded(limit) {
       return;
     }
   } else {
-    count = limit + 1;
+    count = (limit + 1) >>> 0;
   }
   console.log(`guarded ${limit}`);
 }

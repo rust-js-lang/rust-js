@@ -45,7 +45,7 @@ function stepped(n) {
   const STEP = 5;
   const a = step(n);
   function step(x) {
-    return (x + STEP) >>> 0;
+    return x + STEP;
   }
   return a;
 }
@@ -69,13 +69,13 @@ function priority(level) {
 // Its own name apart from the module's `BASE`, which it reads too.
 function based(n) {
   const OWN_BASE = (BASE * 2) >>> 0;
-  return (((n * OWN_BASE) >>> 0) + BASE) >>> 0;
+  return n * OWN_BASE + BASE;
 }
 
 // Named as a variable of the function is: the variable apart.
 function totalled(n) {
   const total = 10;
-  const total$1 = (n + total) >>> 0;
+  const total$1 = n + total;
   return total$1 * 2;
 }
 
@@ -84,7 +84,7 @@ const UNIT = 3;
 
 function scaled(n) {
   const DOUBLE = (UNIT * 2) >>> 0;
-  return (((n * DOUBLE) >>> 0) + UNIT) >>> 0;
+  return n * DOUBLE + UNIT;
 }
 
 // Read by a method of a type written in the body, which is the module's:

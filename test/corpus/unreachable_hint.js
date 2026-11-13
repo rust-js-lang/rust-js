@@ -24,7 +24,7 @@ function named(body) {
 }
 
 function digit(c) {
-  return (c - 48) & 255;
+  return c - 48;
 }
 
 function loud(n) {

@@ -69,7 +69,7 @@ function main() {
     (bytes) => $fromBytes(bytes, 2, true, false),
   );
   const repr = ptrToRepr(heap);
-  const topBit = $addr(repr, 1) >>> 31;
+  const topBit = $addr(repr, 1) >>> (32 - 1);
   const original = reprToPtr(repr);
   console.log(`${topBit} ${$ptrEq(original, heap, 1)} ${$ptrEq(repr, heap, 1)}`);
   console.log(`${$ptrRetyped(original, 2, false).value}`);

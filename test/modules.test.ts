@@ -629,7 +629,7 @@ pub fn to_array() -> [u32; 2] {
   // by that, the other through their module's namespace (ADR 1018), not
   // the names it exports them by.
   expect(js).toContain('import { IMMEDIATE } from "./priorities.js";\nimport * as Priorities from "./priorities.js";\n');
-  expect(js).toContain("return (IMMEDIATE + Priorities.IDLE) >>> 0;");
+  expect(js).toContain("return IMMEDIATE + Priorities.IDLE;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unstable_now(), lib.timeNow(), lib.MAX_LIMIT, lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 9, 1, 5]);
   expect([lib.currentTime, lib.LIMIT, lib.toArray()]).toEqual([undefined, undefined, [6, 9]]);

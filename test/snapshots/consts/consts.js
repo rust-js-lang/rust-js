@@ -68,6 +68,6 @@ export function limits() {
 /** A `const` inside a function. */
 export function local() {
   const STEP = 3;
-  return (STEP * 2) >>> 0;
+  return STEP * 2;
 }
 //# sourceMappingURL=consts.js.map

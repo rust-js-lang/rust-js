@@ -23,6 +23,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
+        // Of an operation MIR's intervals don't walk, a call's, `+=` of a
+        // trait's or an atomic's, what THIR's ranges know, until MIR walks it
+        // (#1672 M3).
+        let thir_exact = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) && self.exact_at(span);
+        self.binary_proved(op, l, r, known, ty, span, thir_exact)
+    }
+
+    /// `binary`, of a `+`, `-` or `*` MIR's intervals prove stays in its
+    /// type's range where `proved`, the MIR statement's it lowers (ADR 1137).
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::lower) fn binary_proved(
+        &mut self,
+        op: BinOp,
+        l: Expr,
+        r: Expr,
+        known: Option<i128>,
+        ty: Ty<'tcx>,
+        span: Span,
+        proved: bool,
+    ) -> R<Expr> {
         let comparison = match op {
             BinOp::Eq => Some(Op::Eq),
             BinOp::Ne => Some(Op::Ne),
@@ -94,11 +114,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.big_binary(op, l, r, known, num, span);
         }
 
-        // What the body's ranges show stays in range is JS's own (ADR 0576).
+        // What MIR's intervals prove stays in range, `proved`, the caller's
+        // of the statement it lowers, is JS's own (ADRs 0576, 1137); the
+        // shadow compares what THIR's ranges knew (#1672 M3).
         let arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul);
-        let exact = arithmetic && self.exact_at(span);
+        let exact = arithmetic && proved;
         if arithmetic {
-            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, exact, || {
+            let thir_exact = self.exact_at(span);
+            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_exact, || {
                 Some(crate::lower::analysis::LeftOut::Wrap)
             });
         }

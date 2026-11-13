@@ -354,7 +354,7 @@ function main() {
   console.log(`[${evensUntil(numbers, 5).join(", ")}] [${evensUntil(numbers, 9).join(", ")}]`);
   const value$13 = $lock(numbers);
   try {
-    value$13.value.push(4294967294);
+    value$13.value.push(4294967295 - 1);
   } catch (error) {
     $poison(value$13);
     throw error;

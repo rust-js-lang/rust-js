@@ -24,7 +24,7 @@ function main() {
   let tmp$3;
   let tmp$6;
   while (round < id(3)) {
-    round = (round + 1) >>> 0;
+    round++;
     let tmp$5;
     const value = id(14);
     value$live = true;

@@ -67,7 +67,7 @@ function firstDiff(server, client) {
   if (firstDiff > 3) {
     clientText = "..." + clientText;
   }
-  return (firstDiff + $byteLen(clientText)) >>> 0;
+  return firstDiff + $byteLen(clientText);
 }
 
 function main() {

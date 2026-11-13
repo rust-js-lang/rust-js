@@ -43,7 +43,7 @@ function main() {
   console.log(`${fourth(60)}`);
   console.log(`${fifth(100)}`);
   console.log(`${sixth(101)}`);
-  for (const n of [0, 100, 101, 4294967294]) {
+  for (const n of [0, 100, 101, 4294967295 - 1]) {
     const arg = any(n);
     console.log(`any ${n} ${arg}`);
   }

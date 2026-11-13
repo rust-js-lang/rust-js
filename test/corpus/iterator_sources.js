@@ -50,8 +50,8 @@ function countdown(from) {
   return Array.from(
     $fromFn(() => {
       if (n !== 0) {
-        n--;
-        return n + 1;
+        n = (n - 1) >>> 0;
+        return (n + 1) >>> 0;
       }
     }),
   );

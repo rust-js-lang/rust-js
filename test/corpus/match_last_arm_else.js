@@ -63,7 +63,7 @@ function summed(items) {
   while ((get = $someAt(items, i)) != null) {
     const item = $someValue(get);
     sum = (sum + (item ?? 10)) >>> 0;
-    i = (i + 1) >>> 0;
+    i++;
   }
   return sum;
 }

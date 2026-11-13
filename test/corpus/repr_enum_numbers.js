@@ -58,9 +58,7 @@ function main() {
   for (let i = 0; i < kinds.length; i++) {
     const kind = kinds[i];
     const arg = describe(kind);
-    console.log(
-      `${["Empty", "Complex", "Primitive", "Entries"][kind]} ${arg} ${kind} ${(kind + 1) | 0}`,
-    );
+    console.log(`${["Empty", "Complex", "Primitive", "Entries"][kind]} ${arg} ${kind} ${kind + 1}`);
   }
   console.log(`${kinds[0] === Empty} ${kinds[1] < kinds[2]}`);
   const sorted = kinds.slice();

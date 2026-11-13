@@ -61,7 +61,7 @@ function main() {
     `${nthBack == null ? "None" : `Some(${nthBack})`} ${(w.exhausted ?? w).start & 255}..=${(w.exhausted ?? w).end & 255}${w.exhausted !== undefined || w.start > 255 || w.end < 0 ? " (exhausted)" : ""}\n`,
   );
 
-  const wide = { start: 4294967294, end: 4294967295 };
+  const wide = { start: 4294967295 - 1, end: 4294967295 };
   const value$3 = $rangeInclusiveNext(wide);
   const value$4 = $rangeInclusiveNext(wide);
   $print(

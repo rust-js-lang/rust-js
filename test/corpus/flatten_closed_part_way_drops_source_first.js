@@ -297,7 +297,7 @@ function foldedIntoAString() {
           if (seen === 2) {
             throw new Error("consumer");
           }
-          return String.fromCharCode((97 + (x[0] % 26)) & 255);
+          return String.fromCharCode(97 + (x[0] % 26));
         } catch (error) {
           throw $unwindsOn(error);
         } finally {

@@ -68,7 +68,7 @@ function tier(variant) {
       rank = 3;
       break;
   }
-  return (rank + 1) & 255;
+  return rank + 1;
 }
 
 function main() {

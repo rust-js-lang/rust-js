@@ -153,7 +153,7 @@ export function processReply(depth) {
     if (depth === 0) {
       return `$${id}`;
     } else {
-      const arg = part((depth - 1) >>> 0);
+      const arg = part(depth - 1);
       return `$${id}:${arg}`;
     }
   }

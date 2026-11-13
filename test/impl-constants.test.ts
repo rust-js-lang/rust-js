@@ -51,7 +51,7 @@ test("a private type's constants, and a generic impl's, are no object", () => {
   );
   expect(js).not.toContain("Limits");
   expect(js).not.toContain("Wrapped");
-  expect(js).toContain("return 10;");
+  expect(js).toContain("return 9 + 1;");
   expect(dts).not.toContain("Limits");
   expect(dts).not.toContain("export const Wrapped");
 });

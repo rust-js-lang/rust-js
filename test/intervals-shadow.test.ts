@@ -211,6 +211,37 @@ pub fn past_five(a: [u32; 10]) -> u32 {
     }
     a[i]
 }
+pub fn later_lent(f: fn(&mut usize)) -> usize {
+    let mut k = 1;
+    k += 1;
+    let before = k - 2;
+    f(&mut k);
+    let after = k - 2;
+    before + after
+}
+fn merged(limit: u32) -> u32 {
+    let mut n = 0;
+    loop {
+        let seen = n * 10;
+        n += 1;
+        if n == limit {
+            break seen;
+        }
+    }
+}
+pub fn merged_four() -> u32 {
+    merged(4)
+}
+pub fn leading(items: &[(u32, u32)]) -> usize {
+    let mut i = 0;
+    while let Some((a, _)) = items.get(i).cloned() {
+        if a == 0 {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
 pub fn every_other(v: &[u32]) -> u32 {
     let mut total = 0;
     for i in (0..v.len()).step_by(2) {
@@ -230,6 +261,16 @@ pub fn every_other(v: &[u32]) -> u32 {
   expect(js).toContain("total = (total + v[i]) >>> 0;");
   // Narrowed past widening: `i <= 5` at the loop's head, `i == 5` past it.
   expect(js).toContain("return a[i];");
+  // An integer lent `&mut` is forgotten where it's lent: known before,
+  // anything after, its wrap kept.
+  // `n < limit` its first turn seeds, of `limit` 4 its one caller gives:
+  // `n * 10` at most 30.
+  expect(js).toContain("const seen = n * 10;");
+  // `get(i).cloned()`'s `Some`: `i` below the slice's length.
+  const leading = js.slice(js.indexOf("function leading"));
+  expect(leading.slice(0, leading.indexOf("\n}\n"))).toContain("i++;");
+  expect(js).toContain("const before = k - 2;");
+  expect(js).toContain("const after = (k - 2) >>> 0;");
 });
 
 test("text's `len()` is at most what an allocation holds: two summed never wrap, a wrap THIR's ranges keep", () => {

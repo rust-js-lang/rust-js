@@ -117,15 +117,15 @@ export const mutations: Mutation[] = [
   {
     name: "mir-known-bounds-checked",
     breaks:
-      "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
+      "THIR's facts know no index in bounds, so the shadow logs each MIR proves of `for i in 1..len` as one THIR keeps (#1672: THIR's bounds facts are the shadow's alone)",
     file: "src/lower/mir/bounds.rs",
     find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
     replace:
       "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
     tests: [
-      "test/lowering-loops.test.ts",
+      "test/intervals-shadow.test.ts",
       "-t",
-      "early returns and index loops from MIR",
+      "for loop.s value over a range",
     ],
   },
   {

@@ -207,9 +207,9 @@ export const mutations: Mutation[] = [
     name: "mir-named-divisor-unknown",
     breaks: "MIR's division by a named constant that can't panic is `$div`",
     file: "src/lower/mir/rvalues.rs",
-    find: "                    _ => self.binary(*op, l, r, known, ty, span)?,\n",
+    find: "                    _ => self.binary_proved(*op, l, r, known, ty, span, proved)?,\n",
     replace:
-      "                    _ => self.binary(*op, l, r, None.or(known.filter(|_| false)), ty, span)?,\n",
+      "                    _ => self.binary_proved(*op, l, r, None.or(known.filter(|_| false)), ty, span, proved)?,\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -856,5 +856,13 @@ export const mutations: Mutation[] = [
     find: "                            if sliced {\n",
     replace: "                            if false && sliced {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_vec_iterator_skips_as_one_slice.rs$"],
+  },
+  {
+    name: "wraps-mir-unproved",
+    breaks: "MIR's intervals decide no `+`, `-` or `*` in range, so each keeps its wrap, `(i + 1) >>> 0` of `i + 1 < len`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                let proved = crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
+    replace: "                let proved = false && crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
 ];

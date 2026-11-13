@@ -181,7 +181,7 @@ function main() {
             if (a[0] === 42) {
               throw new Error("map");
             }
-            result = String.fromCharCode((97 + ((((a[0] + b[0]) >>> 0) & 255) % 26)) & 255);
+            result = String.fromCharCode(97 + ((((a[0] + b[0]) >>> 0) & 255) % 26));
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -283,7 +283,7 @@ function main() {
         dDrop_drop,
       ).map((d) => {
         try {
-          return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
+          return String.fromCharCode(97 + ((d[0] & 255) % 26));
         } catch (error) {
           throw $unwindsOn(error);
         } finally {

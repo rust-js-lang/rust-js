@@ -44,7 +44,7 @@ function scan(codes, log) {
     } else if (codes[i] === 100) {
       if (n !== 0) {
         if (n >= 1 && n < 10) {
-          n = (n + 100) >>> 0;
+          n += 100;
         }
       } else {
         break;

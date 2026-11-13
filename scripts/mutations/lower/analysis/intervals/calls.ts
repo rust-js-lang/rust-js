@@ -44,4 +44,28 @@ export const mutations: Mutation[] = [
     replace: "            } else if false && text_length(self.tcx, callee) {\n",
     tests: ["test/intervals-shadow.test.ts"],
   },
+  {
+    name: "intervals-slice-get-unknown",
+    breaks: "a slice's `get(i)`'s `Some` doesn't put `i` below its length, so `i += 1` of `while let Some(&item) = items.get(i)` keeps its wrap",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "            after.gets.insert(local, (state.root(index), most.hi - 1));\n",
+    replace: "            let _ = (index, most);\n",
+    tests: ["test/lowering-integer-ranges.test.ts","-t","an index an item is there at counts on"],
+  },
+  {
+    name: "intervals-option-copied-unknown",
+    breaks: "an `Option`'s `cloned()` of a slice's `get(i)` isn't `Some` where that was, so `i += 1` of `while let Some(..) = items.get(i).cloned()` keeps its wrap",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "            after.gets.insert(local, got);\n",
+    replace: "            let _ = got;\n",
+    tests: ["test/intervals-shadow.test.ts","-t","MIR decides"],
+  },
+  {
+    name: "intervals-js-length-no-length",
+    breaks: "a JS string's `length` of text isn't a length of it, so `i` of `while i + 1 < js::string::length(format)` stepping by two isn't kept below it and `i + 1` keeps its wrap",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "                    after.lens.insert(local, of);\n                }\n            } else if text_length(self.tcx, callee) {\n",
+    replace: "                    let _ = of;\n                }\n            } else if text_length(self.tcx, callee) {\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter below a JS string"],
+  },
 ];

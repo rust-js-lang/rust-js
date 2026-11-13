@@ -16,7 +16,7 @@ function droppedAfter() {
   let w = 0;
   try {
     while (w < id(2)) {
-      w = (w + 1) >>> 0;
+      w++;
       const value = new $BTreeMap().size;
       const y = id(1);
       let size;
@@ -44,7 +44,7 @@ function droppedAfter() {
 function droppedEachPass() {
   let w = 0;
   while (w < id(2)) {
-    w = (w + 1) >>> 0;
+    w++;
     const each = (w + 10) >>> 0;
     try {
       const value = new $BTreeMap().size;

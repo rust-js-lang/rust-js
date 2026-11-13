@@ -41,7 +41,7 @@ function codes(items) {
     switch (code) {
       case 1:
       case 2:
-        out.push((code * 10) >>> 0);
+        out.push(code * 10);
         continue;
       case 3:
         continue;

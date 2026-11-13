@@ -63,7 +63,7 @@ function skipped(codes) {
         break;
       }
       if (n >= 1 && n < 10) {
-        n = (n + 100) >>> 0;
+        n += 100;
       }
     }
     i++;

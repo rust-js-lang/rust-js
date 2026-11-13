@@ -11,7 +11,7 @@ function checked(limit) {
     if (x > limit) {
       throw new Error(`${x} is over ${limit}`);
     }
-    return x * 2;
+    return (x * 2) >>> 0;
   };
 }
 

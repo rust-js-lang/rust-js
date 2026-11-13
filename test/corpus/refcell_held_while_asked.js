@@ -139,7 +139,7 @@ function main() {
   const value$2 = $borrow(cell, true);
   let m;
   try {
-    m = (value$2.length + peeks.map((item) => peekClone_clone(item)).length) >>> 0;
+    m = value$2.length + peeks.map((item) => peekClone_clone(item)).length;
   } finally {
     $unborrow(value$2);
   }
@@ -149,9 +149,7 @@ function main() {
   let k;
   try {
     k =
-      (value$3.length +
-        options.map((item) => (item == null ? item : peekClone_clone(item))).length) >>>
-      0;
+      value$3.length + options.map((item) => (item == null ? item : peekClone_clone(item))).length;
   } finally {
     $unborrow(value$3);
   }

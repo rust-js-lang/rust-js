@@ -378,7 +378,7 @@ pub fn keyframes() -> Vec<&'static js::JsObject> {
   const short = ["f", "b"];
   lib.unbadged(short as never, 1 as never, "y" as never);
   expect(short).toEqual(["f", "y"]);
-  expect(js).toContain("  updated[key] = copyWithDeleteImpl(inner, path, (index + 1) >>> 0);\n");
+  expect(js).toContain("  updated[key] = copyWithDeleteImpl(inner, path, index + 1);\n");
   const state = { a: { b: [1, 2, 3], c: 4 }, d: 5 };
   const copy = lib.copyWithDelete(state as never, ["a", "b", 1] as never) as any;
   expect(copy).toEqual({ a: { b: [1, 3], c: 4 }, d: 5 });

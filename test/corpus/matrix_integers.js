@@ -53,7 +53,7 @@ function f32Bits(x) {
 }
 
 function main() {
-  let values = [-128, -127, -1, 0, 1, 2, 7, 126, 127];
+  let values = [-128, -128 + 1, -1, 0, 1, 2, 7, 127 - 1, 127];
   let bits = 8;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -69,7 +69,7 @@ function main() {
     const value$9 = $checked(-a, -128, 127);
     const value$10 = ($pow(a, 0) << 24) >> 24;
     const value$11 = ($pow(a, 2) << 24) >> 24;
-    const value$12 = ($pow(a, (bits - 1) >>> 0) << 24) >> 24;
+    const value$12 = ($pow(a, bits - 1) << 24) >> 24;
     const arg = $checkedPow(a, 3, -128, 127);
     console.log(
       `i8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & ((-a << 24) >> 24)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${(-a << 24) >> 24} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -88,7 +88,7 @@ function main() {
     console.log(
       `i8 ${a}: as ${a} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 8 ? ((a << (s & 7)) << 24) >> 24 : undefined;
       const value$1 = s < 8 ? a >> (s & 7) : undefined;
       console.log(
@@ -128,7 +128,7 @@ function main() {
       );
     }
   }
-  values = [-32768, -32767, -1, 0, 1, 2, 7, 32766, 32767];
+  values = [-32768, -32768 + 1, -1, 0, 1, 2, 7, 32767 - 1, 32767];
   bits = 16;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -144,7 +144,7 @@ function main() {
     const value$9 = $checked(-a, -32768, 32767);
     const value$10 = ($pow(a, 0) << 16) >> 16;
     const value$11 = ($pow(a, 2) << 16) >> 16;
-    const value$12 = ($pow(a, (bits - 1) >>> 0) << 16) >> 16;
+    const value$12 = ($pow(a, bits - 1) << 16) >> 16;
     const arg = $checkedPow(a, 3, -32768, 32767);
     console.log(
       `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & ((-a << 16) >> 16)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${(-a << 16) >> 16} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -163,7 +163,7 @@ function main() {
     console.log(
       `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
       const value$1 = s < 16 ? a >> (s & 15) : undefined;
       console.log(
@@ -203,7 +203,7 @@ function main() {
       );
     }
   }
-  values = [-2147483648, -2147483647, -1, 0, 1, 2, 7, 2147483646, 2147483647];
+  values = [-2147483648, -2147483648 + 1, -1, 0, 1, 2, 7, 2147483647 - 1, 2147483647];
   bits = 32;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -217,7 +217,7 @@ function main() {
     const value$7 = $checked(-a, -2147483648, 2147483647);
     const value$8 = $pow(a, 0);
     const value$9 = $pow(a, 2);
-    const value$10 = $pow(a, (bits - 1) >>> 0);
+    const value$10 = $pow(a, bits - 1);
     const arg = $checkedPow(a, 3, -2147483648, 2147483647);
     console.log(
       `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & -a} ${value$4} swap ${value$5} rev ${value$6} rot ${(a << 1) | (a >>> 31)} ${(a << 29) | (a >>> 3)} neg ${-a | 0} ${value$7 == null ? "None" : `Some(${value$7})`} pow ${value$8} ${value$9} ${value$10} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -236,7 +236,7 @@ function main() {
     console.log(
       `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$12} ${value$13} ${a & 255} ${a & 65535} ${a >>> 0} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 32 ? a << s : undefined;
       const value$1 = s < 32 ? a >> s : undefined;
       console.log(
@@ -305,7 +305,7 @@ function main() {
     const value$11 = $bigChecked(-a, -9223372036854775808n, 9223372036854775807n);
     const value$12 = BigInt.asIntN(64, $bigPow(a, 0));
     const value$13 = BigInt.asIntN(64, $bigPow(a, 2));
-    const value$14 = BigInt.asIntN(64, $bigPow(a, (bits - 1) >>> 0));
+    const value$14 = BigInt.asIntN(64, $bigPow(a, bits - 1));
     const arg = $checkedPow(a, 3, -9223372036854775808n, 9223372036854775807n);
     console.log(
       `i64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -333,7 +333,7 @@ function main() {
     console.log(
       `i64 ${a}: as ${value$16} ${value$17} ${value$18} ${a} ${a} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} f32 ${value$24} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = BigInt.asIntN(64, a << (BigInt(s) & 63n));
       const value$1 = a >> (BigInt(s) & 63n);
       const value$2 = s < 64 ? BigInt.asIntN(64, a << (BigInt(s) & 63n)) : undefined;
@@ -432,7 +432,7 @@ function main() {
     );
     const value$12 = BigInt.asIntN(128, $bigPow(a, 0, 128));
     const value$13 = BigInt.asIntN(128, $bigPow(a, 2, 128));
-    const value$14 = BigInt.asIntN(128, $bigPow(a, (bits - 1) >>> 0, 128));
+    const value$14 = BigInt.asIntN(128, $bigPow(a, bits - 1, 128));
     const arg = $checkedPow(
       a,
       3,
@@ -470,7 +470,7 @@ function main() {
     console.log(
       `i128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} f32 ${value$25} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = BigInt.asIntN(128, a << (BigInt(s) & 127n));
       const value$1 = a >> (BigInt(s) & 127n);
       const value$2 = s < 128 ? BigInt.asIntN(128, a << (BigInt(s) & 127n)) : undefined;
@@ -564,7 +564,7 @@ function main() {
       );
     }
   }
-  values = [0, 1, 255, 0, 1, 2, 7, 254, 255];
+  values = [0, 0 + 1, 255, 0, 1, 2, 7, 255 - 1, 255];
   bits = 8;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -580,7 +580,7 @@ function main() {
     const value$9 = $checked(-a, 0, 255);
     const value$10 = $pow(a, 0) & 255;
     const value$11 = $pow(a, 2) & 255;
-    const value$12 = $pow(a, (bits - 1) >>> 0) & 255;
+    const value$12 = $pow(a, bits - 1) & 255;
     const arg = $checkedPow(a, 3, 0, 255);
     console.log(
       `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & (-a & 255)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a & 255} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -599,7 +599,7 @@ function main() {
     console.log(
       `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 8 ? (a << (s & 7)) & 255 : undefined;
       const value$1 = s < 8 ? a >>> (s & 7) : undefined;
       console.log(
@@ -632,7 +632,7 @@ function main() {
       );
     }
   }
-  values = [0, 1, 65535, 0, 1, 2, 7, 65534, 65535];
+  values = [0, 0 + 1, 65535, 0, 1, 2, 7, 65535 - 1, 65535];
   bits = 16;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -648,7 +648,7 @@ function main() {
     const value$9 = $checked(-a, 0, 65535);
     const value$10 = $pow(a, 0) & 65535;
     const value$11 = $pow(a, 2) & 65535;
-    const value$12 = $pow(a, (bits - 1) >>> 0) & 65535;
+    const value$12 = $pow(a, bits - 1) & 65535;
     const arg = $checkedPow(a, 3, 0, 65535);
     console.log(
       `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & (-a & 65535)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a & 65535} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -667,7 +667,7 @@ function main() {
     console.log(
       `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$14} ${value$15} ${a & 255} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 16 ? (a << (s & 15)) & 65535 : undefined;
       const value$1 = s < 16 ? a >>> (s & 15) : undefined;
       console.log(
@@ -700,7 +700,7 @@ function main() {
       );
     }
   }
-  values = [0, 1, 4294967295, 0, 1, 2, 7, 4294967294, 4294967295];
+  values = [0, 0 + 1, 4294967295, 0, 1, 2, 7, 4294967295 - 1, 4294967295];
   bits = 32;
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
@@ -714,7 +714,7 @@ function main() {
     const value$7 = $checked(-a, 0, 4294967295);
     const value$8 = $pow(a, 0) >>> 0;
     const value$9 = $pow(a, 2) >>> 0;
-    const value$10 = $pow(a, (bits - 1) >>> 0) >>> 0;
+    const value$10 = $pow(a, bits - 1) >>> 0;
     const arg = $checkedPow(a, 3, 0, 4294967295);
     console.log(
       `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${(a & -a) >>> 0} ${value$4} swap ${value$5} rev ${value$6} rot ${((a << 1) | (a >>> 31)) >>> 0} ${((a << 29) | (a >>> 3)) >>> 0} neg ${-a >>> 0} ${value$7 == null ? "None" : `Some(${value$7})`} pow ${value$8} ${value$9} ${value$10} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -733,7 +733,7 @@ function main() {
     console.log(
       `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$12} ${value$13} ${a & 255} ${a & 65535} ${a} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 32 ? (a << s) >>> 0 : undefined;
       const value$1 = s < 32 ? a >>> s : undefined;
       console.log(
@@ -795,7 +795,7 @@ function main() {
     const value$11 = $bigChecked(-a, 0n, 18446744073709551615n);
     const value$12 = BigInt.asUintN(64, $bigPow(a, 0));
     const value$13 = BigInt.asUintN(64, $bigPow(a, 2));
-    const value$14 = BigInt.asUintN(64, $bigPow(a, (bits - 1) >>> 0));
+    const value$14 = BigInt.asUintN(64, $bigPow(a, bits - 1));
     const arg = $checkedPow(a, 3, 0n, 18446744073709551615n);
     console.log(
       `u64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -817,7 +817,7 @@ function main() {
     console.log(
       `u64 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${a} ${a} f32 ${value$23} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = BigInt.asUintN(64, a << (BigInt(s) & 63n));
       const value$1 = a >> (BigInt(s) & 63n);
       const value$2 = s < 64 ? BigInt.asUintN(64, a << (BigInt(s) & 63n)) : undefined;
@@ -899,7 +899,7 @@ function main() {
     const value$11 = $bigChecked(-a, 0n, 340282366920938463463374607431768211455n);
     const value$12 = BigInt.asUintN(128, $bigPow(a, 0, 128));
     const value$13 = BigInt.asUintN(128, $bigPow(a, 2, 128));
-    const value$14 = BigInt.asUintN(128, $bigPow(a, (bits - 1) >>> 0, 128));
+    const value$14 = BigInt.asUintN(128, $bigPow(a, bits - 1, 128));
     const arg = $checkedPow(a, 3, 0n, 340282366920938463463374607431768211455n);
     console.log(
       `u128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -923,7 +923,7 @@ function main() {
     console.log(
       `u128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} ${a} f32 ${value$25} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
+    for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = BigInt.asUintN(128, a << (BigInt(s) & 127n));
       const value$1 = a >> (BigInt(s) & 127n);
       const value$2 = s < 128 ? BigInt.asUintN(128, a << (BigInt(s) & 127n)) : undefined;

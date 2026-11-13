@@ -80,7 +80,7 @@ export const StepBy = {
       throw new Error("assertion failed: step != 0");
     }
     const iter$1 = tSpecRangeSetupT_setup(iter, step, dropI);
-    return { iter: iter$1, stepMinusOne: (step - 1) >>> 0, firstTake: true };
+    return { iter: iter$1, stepMinusOne: step - 1, firstTake: true };
   },
   nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem) {
     const n = (stepBy.stepMinusOne + 1) >>> 0;
@@ -89,7 +89,7 @@ export const StepBy = {
       if (rem === 0) {
         return stepBy.stepMinusOne;
       }
-      return (rem - 1) >>> 0;
+      return rem - 1;
     }
     return rem;
   },
@@ -930,12 +930,7 @@ export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, d
         return $someValue(peeked);
       }
       try {
-        v = $nthDropping(
-          $lent($given(peekable.iter, IIterator, true)),
-          (n - 1) >>> 0,
-          dropIItem,
-          true,
-        );
+        v = $nthDropping($lent($given(peekable.iter, IIterator, true)), n - 1, dropIItem, true);
       } catch (error) {
         $cleanup(() => {
           if (peeked != null) {
@@ -6892,7 +6887,7 @@ export function skipIterator_tryFold(
   if (n > 0) {
     let nth;
     try {
-      nth = $nthDropping($lent($given(skip.iter, IIterator, true)), (n - 1) >>> 0, dropIItem, true);
+      nth = $nthDropping($lent($given(skip.iter, IIterator, true)), n - 1, dropIItem, true);
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
@@ -7086,7 +7081,7 @@ export function skipDoubleEndedIterator_nthBack(
       if (value > 0) {
         const nthBack = $nthBack(
           $given(skip.iter, IIterator, true, IDoubleEndedIterator),
-          (value - 1) >>> 0,
+          value - 1,
           $some,
           dropIItem,
         );
@@ -7295,7 +7290,7 @@ export function takeIterator_sizeHint(take, IIterator = { next: $next }, dropI, 
 
 export function takeIterator_nth(take, n, IIterator = { next: $next }, dropI, dropIItem) {
   if (take.n > n) {
-    take.n = (take.n - ((n + 1) >>> 0)) >>> 0;
+    take.n = (take.n - (n + 1)) >>> 0;
     return $nthDropping($lent($given(take.iter, IIterator, true)), n, dropIItem, true);
   }
   if (take.n > 0) {
@@ -7465,13 +7460,13 @@ export function takeIDoubleEndedIterator_nthBack(
   const len = IExactSizeIterator.len(take.iter);
   if (take.n > n) {
     const m = (Math.max(len - take.n, 0) + n) >>> 0;
-    take.n = (take.n - ((n + 1) >>> 0)) >>> 0;
+    take.n = (take.n - (n + 1)) >>> 0;
     return $nthBack($given(take.iter, IIterator, true, IDoubleEndedIterator), m, $some, dropIItem);
   }
   if (len > 0) {
     const nthBack = $nthBack(
       $given(take.iter, IIterator, true, IDoubleEndedIterator),
-      (len - 1) >>> 0,
+      len - 1,
       $some,
       dropIItem,
     );
@@ -12989,10 +12984,10 @@ export function stepByStepByImplI_specSizeHint(
       if (n === 0) {
         return 0;
       }
-      return (1 + ($div((n - 1) >>> 0, value) >>> 0)) >>> 0;
+      return (1 + ($div(n - 1, value) >>> 0)) >>> 0;
     }
     return [
-      low === 0 ? 0 : (1 + ($div((low - 1) >>> 0, value) >>> 0)) >>> 0,
+      low === 0 ? 0 : (1 + ($div(low - 1, value) >>> 0)) >>> 0,
       high != null ? f(high) : undefined,
     ];
   }
@@ -13916,7 +13911,7 @@ export function zipZipImplAB_nextBack(
   const value$1 = BExactSizeIterator.len(zip.b);
   if (value !== value$1) {
     if (value > value$1) {
-      const iter = (value - value$1) >>> 0;
+      const iter = value - value$1;
       let iter$1 = 0;
       while (true) {
         if (iter$1 >= iter) {
@@ -13929,7 +13924,7 @@ export function zipZipImplAB_nextBack(
         }
       }
     } else {
-      const iter$1 = (value$1 - value) >>> 0;
+      const iter$1 = value$1 - value;
       let iter = 0;
       while (true) {
         if (iter >= iter$1) {
@@ -14014,7 +14009,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
     if (szA !== szB) {
       if (oldLen === szA || oldLen === szB) {
         if (szA > oldLen) {
-          const iter = (szA - oldLen) >>> 0;
+          const iter = szA - oldLen;
           let iter$1 = 0;
           while (true) {
             if (iter$1 >= iter) {
@@ -14028,7 +14023,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
           }
         }
         if (szB > oldLen) {
-          const iter$1 = (szB - oldLen) >>> 0;
+          const iter$1 = szB - oldLen;
           let iter = 0;
           while (true) {
             if (iter >= iter$1) {
@@ -14073,7 +14068,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   const value$1 = BExactSizeIterator.len(zip.b);
   if (value !== value$1) {
     if (value > value$1) {
-      const iter = (value - value$1) >>> 0;
+      const iter = value - value$1;
       let iter$1 = 0;
       while (true) {
         if (iter$1 >= iter) {
@@ -14086,7 +14081,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
         }
       }
     } else {
-      const iter$1 = (value$1 - value) >>> 0;
+      const iter$1 = value$1 - value;
       let iter = 0;
       while (true) {
         if (iter >= iter$1) {

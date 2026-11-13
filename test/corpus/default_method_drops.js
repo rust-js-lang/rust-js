@@ -34,7 +34,7 @@ const personGreet = {
     let result;
     try {
       try {
-        result = ($byteLen(shown.impl.fmt(shown.value)) + slice.length) >>> 0;
+        result = $byteLen(shown.impl.fmt(shown.value)) + slice.length;
       } catch (error) {
         throw $unwindsOn(error);
       } finally {

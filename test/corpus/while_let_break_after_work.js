@@ -28,7 +28,7 @@ function untilZeroAt(counts, log) {
   let n;
   while ((n = counts[i]) != null) {
     if (n === 0) {
-      const at = (i * 2) >>> 0;
+      const at = i * 2;
       log.push(`zero, twice ${at}`);
       break;
     }

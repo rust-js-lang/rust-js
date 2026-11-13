@@ -105,7 +105,7 @@ function renamed(k) {
     $catchable(thrown);
     let x = $unwound(thrown);
     const text = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
-    let n = ($byteLen(text) + k) >>> 0;
+    let n = $byteLen(text) + k;
     console.log(`renamed ${n}`);
     x = k * 3;
     n = x + 1;

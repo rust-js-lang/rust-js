@@ -14,7 +14,7 @@ function given(f, original) {
 
 function main() {
   const m = 7;
-  const c3 = () => m * 2;
+  const c3 = () => (m * 2) | 0;
   const c4 = c3.bind();
   console.log(`${eqOf(c3, c4)} ${eqOf(c3, c3)} ${(c3() + c4()) | 0}`);
   console.log(`${given(c3.bind(), c3)}`);

@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   let s = "abcd";
-  const start = ($byteLen(s) + 1) >>> 0;
+  const start = $byteLen(s) + 1;
   const drained = $strDrain(s, start);
   s = drained[0];
   console.log(`${drained[1].length}`);

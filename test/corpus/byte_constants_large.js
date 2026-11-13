@@ -788,9 +788,11 @@ const SLICE_PAST = $bytes(
 
 function made(N) {
   const bytes = new Array(N).fill(0);
-  for (let i = 0; i < N; i++) {
+  let i = 0;
+  while (i < N) {
     const value = ((i * 7) >>> 0) % 251;
     bytes[$at(bytes, i)] = value & 255;
+    i = (i + 1) >>> 0;
   }
   return bytes;
 }
@@ -807,7 +809,7 @@ function report(name, bytes) {
   const collect = bytes.toReversed().slice(0, 3);
   const arg = sum(bytes, { asRef: (value) => value });
   console.log(
-    `${name}: ${bytes.length} ${value} ${bytes[(bytes.length - 1) >>> 0]} [${value$1.join(", ")}] [${collect.join(", ")}] ${arg}`,
+    `${name}: ${bytes.length} ${value} ${bytes[bytes.length - 1]} [${value$1.join(", ")}] [${collect.join(", ")}] ${arg}`,
   );
 }
 

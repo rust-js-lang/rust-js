@@ -114,7 +114,7 @@ function twice(n) {
 }
 
 function reported(n) {
-  const reported = () => n * 2;
+  const reported = () => (n * 2) >>> 0;
   try {
     return work(n);
   } catch (error) {

@@ -27,7 +27,7 @@ function held(m) {
   const locked = $locked(m, true);
   const peeked = locked.TAG === "Ok" ? locked._0.value.length : locked._0.data.value.length;
   const value = locked.TAG === "Ok" ? locked._0 : locked._0.data;
-  const result = (peeked + value.value.length) >>> 0;
+  const result = peeked + value.value.length;
   $unlock(value);
   return result;
 }

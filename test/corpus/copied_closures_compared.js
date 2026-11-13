@@ -10,7 +10,7 @@ function same(a, b) {
 
 function main() {
   const n = 3;
-  const c1 = () => n + 1;
+  const c1 = () => (n + 1) | 0;
   const c2 = c1.bind();
   console.log(`${same(c1, c2)} ${same(c1, c1)} ${(c1() + c2()) | 0}`);
   // Copied into a struct's field.

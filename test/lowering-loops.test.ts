@@ -32,7 +32,7 @@ test("a loop after a loop is after it", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  while (i < $byteLen(text)) {\n");
+  expect(js).toContain("  for (let i = 0; i < $byteLen(text); i++) {\n");
   expect(js).toContain("  }\n  for (let j = 0; j < n; j++) {\n");
   expect(js).not.toContain("while (true)");
   expect((await import(join(dir, "lib.js"))).padded("xy", 3)).toBe("aabbb");

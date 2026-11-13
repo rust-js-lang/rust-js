@@ -53,7 +53,7 @@ function main() {
   if (at !== -1) {
     const left = s.slice(0, at);
     const right = s.slice(at);
-    console.log(`${left}|${right} ${($byteLen(left) + $byteLen(right)) >>> 0}`);
+    console.log(`${left}|${right} ${$byteLen(left) + $byteLen(right)}`);
   }
 }
 //# sourceMappingURL=case.js.map

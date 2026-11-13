@@ -110,7 +110,7 @@ export function discriminants(i) {
   return [
     ["Low", "Mid", "High"].indexOf(level),
     { Ok: 200, NotFound: 404, Teapot: 418 }[status],
-    (418 - { Ok: 200, NotFound: 404, Teapot: 418 }[status]) | 0,
+    (418 + 0 - { Ok: 200, NotFound: 404, Teapot: 418 }[status]) | 0,
   ];
 }
 

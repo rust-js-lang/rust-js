@@ -100,7 +100,8 @@ function main() {
     $roomFor(v.length + n, 1);
   });
   check("reserve_exact", () => {
-    $roomFor(v.length + 4294967294, 1);
+    const n = 4294967295 - 1;
+    $roomFor(v.length + n, 1);
   });
   check("reserve(5)", () => {
     $roomFor(v.length + 5, 1);
@@ -108,14 +109,16 @@ function main() {
   check("reserve(0)", () => {});
   const units = [undefined, undefined, undefined];
   check("Vec<()>::reserve over", () => {
-    $roomFor(units.length + 4294967293, 0);
+    const n = 4294967295 - 2;
+    $roomFor(units.length + n, 0);
   });
   check("Vec<()>::reserve", () => {
-    $roomFor(units.length + 4294967292, 0);
+    const n = 4294967295 - 3;
+    $roomFor(units.length + n, 0);
   });
   let s = "ab";
   check("String::reserve", () => {
-    $textRoomFor(s, 4294967294);
+    $textRoomFor(s, 4294967295 - 1);
   });
   check("String::reserve(8)", () => {
     $textRoomFor(s, 8);

@@ -26,7 +26,7 @@ function flush(endTime) {
   let callback;
   while ((callback = callbacks[i]) != null) {
     callback(endTime);
-    i++;
+    i = (i + 1) >>> 0;
   }
   callbacks = [];
   return i;

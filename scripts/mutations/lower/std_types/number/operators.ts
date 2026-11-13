@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        let exact = arithmetic && self.exact_at(span);\n",
+    find: "        let exact = arithmetic && proved;\n",
     replace: "        let exact = arithmetic && false;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },

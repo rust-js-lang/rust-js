@@ -126,3 +126,27 @@ pub(in crate::lower) fn text_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             owner.is_str() || matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String))
         })
 }
+
+/// Whether a call is a slice's `get(index)` of a `usize`, a `Vec`'s too
+/// through its `Deref`: its `Some` of an index below the slice's length
+/// (ADR 1137).
+pub(in crate::lower) fn slice_get<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.item_name(def_id).as_str() == "get"
+        && (tcx.inherent_impl_of_assoc(def_id)).is_some_and(|impl_| {
+            tcx.type_of(impl_)
+                .instantiate_identity()
+                .skip_normalization()
+                .is_slice()
+        })
+        && args.types().nth(1).is_some_and(|index| index.is_usize())
+}
+
+/// Whether a call is an `Option`'s `cloned()` or `copied()`: `Some` where
+/// what it's given is (ADR 1137).
+pub(in crate::lower) fn option_copied(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(tcx.item_name(def_id).as_str(), "cloned" | "copied")
+        && (tcx.inherent_impl_of_assoc(def_id)).is_some_and(|impl_| {
+            matches!(tcx.type_of(impl_).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
+        })
+}

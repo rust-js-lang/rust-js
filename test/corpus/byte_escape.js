@@ -30,10 +30,10 @@ function debugByteDebug_fmt(debugByte) {
     const i = value[0];
     let b = value[1];
     if (i >= 2 && 97 <= b && b <= 102) {
-      b = (b - 32) & 255;
+      b -= 32;
     }
     bytes[$at(bytes, len)] = b;
-    len = (len + 1) >>> 0;
+    len++;
   }
   return $unwrapOk($fromUtf8($slice(bytes, 0, len)), undefined, $debugUtf8Error);
 }

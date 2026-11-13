@@ -29,7 +29,7 @@ function main() {
   let lists = Array.from({ length: 2 });
   for (let i = 0; i < lists.length; i++) {
     const item = i & 255;
-    const n = (i + 1) >>> 0;
+    const n = i + 1;
     $roomFor(n, 1);
     lists[i] = new Array(n).fill(item);
   }

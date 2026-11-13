@@ -17,7 +17,7 @@ export function fibMatch(n) {
     case 1:
       return 1;
     default:
-      return (fibMatch((n - 1) >>> 0) + fibMatch((n - 2) >>> 0)) >>> 0;
+      return (fibMatch(n - 1) + fibMatch(n - 2)) >>> 0;
   }
 }
 

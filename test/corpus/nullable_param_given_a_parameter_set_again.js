@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function commit(reason) {
-  return reason != null ? ($byteLen(reason) + 1) >>> 0 : 0;
+  return reason != null ? $byteLen(reason) + 1 : 0;
 }
 
 function some(x) {

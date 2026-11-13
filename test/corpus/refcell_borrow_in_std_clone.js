@@ -25,9 +25,7 @@ function main() {
   let n;
   try {
     n =
-      (borrow.length +
-        holders.map((item) => ({ ...item, peek: peekClone_clone(item.peek) })).length) >>>
-      0;
+      borrow.length + holders.map((item) => ({ ...item, peek: peekClone_clone(item.peek) })).length;
   } finally {
     $unborrow(borrow);
   }

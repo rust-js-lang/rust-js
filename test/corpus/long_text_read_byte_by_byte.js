@@ -68,7 +68,7 @@ function digits(input) {
     if (!(b >= 48) || !(b <= 57)) {
       break;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
   return i;
 }
@@ -92,15 +92,15 @@ function widths(input) {
           : bytes[i] >= 224 && bytes[i] <= 239
             ? 3
             : 4;
-    const value = (width - 1) >>> 0;
+    const value = width - 1;
     counts[value] = (counts[value] + 1) >>> 0;
-    tail = (tail + ($byteLen($strSlice(input, (i + width) >>> 0)) % 7)) >>> 0;
-    const len = $byteLen($strSlice(input, i, (i + width) >>> 0));
+    tail = (tail + ($byteLen($strSlice(input, i + width)) % 7)) >>> 0;
+    const len = $byteLen($strSlice(input, i, i + width));
     const value$1 = width;
     if (len !== value$1) {
       $assertFailed("Eq", String(len), String(value$1));
     }
-    i = (i + width) >>> 0;
+    i += width;
   }
   return [counts.slice(), tail];
 }

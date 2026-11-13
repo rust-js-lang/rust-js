@@ -15,8 +15,8 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
-    RangeStep, SliceLength, counts_utf16_units, integer_min_max, range_of_integers, range_step, slice_length,
-    text_length,
+    RangeStep, SliceLength, counts_utf16_units, integer_min_max, option_copied, range_of_integers, range_step,
+    slice_get, slice_length, text_length,
 };
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
@@ -91,6 +91,21 @@ fn proofs<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, body: &Body<
     walk(tcx, typing_env, body, given).run()
 }
 
+/// Whether `place`, lent `&mut`, is an integer local the walk forgets
+/// where it's lent, not in the whole body: borrowck holds that it's never
+/// assigned while the borrow lives, so once it's assigned again it's what
+/// that gave, `k` of `k += 1` before a later `&mut k`. Not one a raw pointer
+/// is made of, which may write it after.
+fn lent_where_borrowed(body: &Body<'_>, place: &mir::Place<'_>) -> bool {
+    let pointed = (body.basic_blocks.iter())
+        .flat_map(|data| &data.statements)
+        .any(|statement| {
+            matches!(&statement.kind, StatementKind::Assign(assign)
+            if matches!(&assign.1, Rvalue::RawPtr(_, of) if of.local == place.local))
+        });
+    place.projection.is_empty() && body.local_decls[place.local].ty.is_integral() && !pointed
+}
+
 fn walk<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -115,6 +130,7 @@ fn walk<'a, 'tcx>(
             _ => None,
         })
         .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && fixed_length(place.local)))
+        .filter(|place| !lent_where_borrowed(body, place))
         .map(|place| place.local)
         .collect();
     let stepped = stepped_ranges(tcx, body);
@@ -179,6 +195,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             empties: IndexMap::default(),
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
+            gets: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -508,6 +525,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             empties: IndexMap::default(),
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
+            gets: IndexMap::default(),
         }
     }
 
@@ -521,6 +539,15 @@ impl<'tcx> Walk<'_, 'tcx> {
         let Some(local) = place.as_local() else {
             return;
         };
+        // An integer local lent `&mut` where the walk forgets it, not lent in
+        // the whole body (`lent_where_borrowed`): what it held may be
+        // written through the borrow, until it's assigned again.
+        if let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) = rvalue
+            && let Some(of) = of.as_local()
+            && lent_where_borrowed(self.body, &mir::Place::from(of))
+        {
+            state.forget(of);
+        }
         let ranged = self.ranged(rvalue, state);
         if self.lent.contains(&local) {
             state.forget(local);
@@ -579,34 +606,40 @@ impl<'tcx> Walk<'_, 'tcx> {
                     .map(|&(_, y, strict)| (y, strict)),
             );
         }
-        // `t = x + c` of a constant at least one, where it never wraps: a
-        // sum known again, `x + c` computed before, is that one.
-        let mut sum: Option<(Local, i128)> = None;
+        // `t = x + c` of a constant at least one: a sum known again, `x + c`
+        // computed before, is that one, the same value though it wraps.
+        let mut sum: Option<(Local, i128, bool)> = None;
         if let Rvalue::BinaryOp(BinOp::Add, operands) = rvalue
             && let Some(x) = operands.0.place().and_then(|p| p.as_local())
             && !self.lent.contains(&x)
             && let Some(c) = self.operand(&operands.1, state).filter(|c| c.lo == c.hi && c.lo >= 1)
-            && self
-                .arithmetic(BinOp::Add, &operands.0, &operands.1, state)
-                .is_some_and(|i| fits(&i))
         {
-            sum = Some((state.root(x), c.lo));
+            let exact = (self.arithmetic(BinOp::Add, &operands.0, &operands.1, state)).is_some_and(|i| fits(&i));
+            sum = Some((state.root(x), c.lo, exact));
         }
-        let again = sum.and_then(|key| {
+        let again = sum.and_then(|(of, c, _)| {
             (state.sums.iter())
-                .find(|&(&t, &of)| of == key && t != local)
+                .find(|&(&t, &(o, k, _))| (o, k) == (of, c) && t != local)
                 .map(|(&t, _)| t)
         });
-        // `t = i + 1` of `i` strictly below: at most what it's below,
-        // `codes[i - 1]` after `codes[i]`'s check and `i += 1`.
+        // `t = i + c` of `i + (c - 1)` strictly below, `i` itself where `c` is
+        // one: at most what that's below, `codes[i - 1]` after `codes[i]`'s
+        // check and `i += 1`; `i += 2` past `i + 1 < len`.
         if let Rvalue::BinaryOp(BinOp::Add, operands) = rvalue
             && let Some(i) = operands.0.place().and_then(|p| p.as_local())
-            && self.operand(&operands.1, state) == Some(Interval { lo: 1, hi: 1 })
+            && let Some(c) = self.operand(&operands.1, state).filter(|c| c.lo == c.hi && c.lo >= 1)
         {
             let i = state.root(i);
+            let before: Vec<Local> = match c.lo {
+                1 => vec![i],
+                c => (state.sums.iter())
+                    .filter(|&(_, &(of, k, exact))| of == i && k == c - 1 && exact)
+                    .map(|(&t, _)| t)
+                    .collect(),
+            };
             below_as.extend(
                 (state.below.iter())
-                    .filter(|&&(x, _, strict)| x == i && strict)
+                    .filter(|&&(x, _, strict)| before.contains(&x) && strict)
                     .map(|&(_, y, _)| (y, false)),
             );
         }
@@ -661,6 +694,10 @@ impl<'tcx> Walk<'_, 'tcx> {
                             .filter(|&&(x, _, _)| x == state.root(l))
                             .map(|&(_, y, s)| (y, s || strict)),
                     );
+                    // Below `y + 1`: at most `y`, `k` of `for k in 1..line + 1`.
+                    if strict && let Some(&(of, 1, _)) = state.sums.get(&state.root(l)) {
+                        below_as.push((Term::Int(of), false));
+                    }
                 }
                 end_most
                     .map(|most| Interval {
@@ -721,6 +758,9 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
             _ => None,
         };
+        // A sum known again: that one's value, as narrowed, `i += 1` past
+        // `i + 1 < n`.
+        let interval = again.and_then(|t| state.intervals[t]).or(interval);
         state.forget(local);
         state.intervals[local] = interval.or(range).filter(|_| range.is_some());
         if let Some(c) = comparison {
@@ -740,7 +780,13 @@ impl<'tcx> Walk<'_, 'tcx> {
                 }
             }
         }
-        if let Some(key) = sum.filter(|&(of, _)| of != local) {
+        // The discriminant of a slice's `get(index)`: its `Some` the index's.
+        if let Rvalue::Discriminant(of) = rvalue
+            && let Some(&got) = of.as_local().and_then(|of| state.gets.get(&of))
+        {
+            state.gets.insert(local, got);
+        }
+        if let Some(key) = sum.filter(|&(of, _, _)| of != local) {
             state.sums.insert(local, key);
         }
         if let Some(of) = length_of.filter(|&of| of != local) {
@@ -870,6 +916,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                 // An integer switched on: each value on its way, and of the
                 // rest, its least and most passed over each listed.
                 let integer = switched.filter(|&l| self.range(self.body.local_decls[l].ty).is_some());
+                // A slice's `get(index)`'s discriminant: of `Some`, the index
+                // below the slice's length.
+                let gotten = switched.and_then(|l| state.gets.get(&l).copied());
                 let values: Vec<u128> = targets.iter().map(|(value, _)| value).collect();
                 let mut out = Vec::new();
                 for (value, target) in targets.iter() {
@@ -885,6 +934,20 @@ impl<'tcx> Walk<'_, 'tcx> {
                     {
                         let least = narrowed.least.entry(slice).or_insert(0);
                         *least = (*least).max(1);
+                    }
+                    if let Some((index, most)) = gotten
+                        && value == 1
+                        && let Some(known) =
+                            (narrowed.intervals[index]).or_else(|| self.range(self.body.local_decls[index].ty))
+                        && known.lo <= most
+                    {
+                        narrowed.narrowed_to(
+                            index,
+                            Interval {
+                                lo: known.lo,
+                                hi: known.hi.min(most),
+                            },
+                        );
                     }
                     if let Some(l) = integer
                         && let Ok(v) = i128::try_from(value)
@@ -995,8 +1058,16 @@ impl<'tcx> Walk<'_, 'tcx> {
         {
             state.related(x, y, strict);
             // `x + c < y` of a sum that never wraps: `x < y`.
-            if let Some(&(of, _)) = state.sums.get(&x) {
+            if let Some(&(of, _, true)) = state.sums.get(&x) {
                 state.related(of, y, true);
+            }
+            // `x < y + 1`: `x <= y`, `k` of `for k in 1..line + 1`, though `y + 1`
+            // wraps, its least then, which nothing is below.
+            if strict
+                && let Term::Int(t) = y
+                && let Some(&(of, 1, _)) = state.sums.get(&t)
+            {
+                state.related(x, Term::Int(of), false);
             }
         }
         // `x <= y` known and `x != y`: `x < y`, `s != len` of `s <= len`.
@@ -1092,6 +1163,16 @@ impl<'tcx> Walk<'_, 'tcx> {
                 if let Some(slice) = state.length_of(l) {
                     let least = state.least.entry(slice).or_insert(0);
                     *least = (*least).max(narrowed.lo);
+                }
+            }
+        }
+        // Of two locals compared, the relation their intervals show there,
+        // `n < limit` of `n = 1` and `limit = 4`: a loop's invariant a first
+        // turn seeds, which the join at its head keeps.
+        if let (Value::Local(a), Value::Local(b)) = (c.a, c.b) {
+            for (x, y) in [(a, b), (b, a)] {
+                if let Some(strict) = state.below_by_intervals(x, Term::Int(y)) {
+                    state.related(x, Term::Int(y), strict);
                 }
             }
         }

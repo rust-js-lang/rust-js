@@ -146,7 +146,7 @@ function reboundMadeTwice(a, b) {
   } else {
     return 3;
   }
-  reason = (reason * 2) | 0;
+  reason *= 2;
   return reason;
 }
 

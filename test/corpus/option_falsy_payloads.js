@@ -60,7 +60,7 @@ function stringTried(s) {
   if (s == null) {
     return;
   }
-  return ($byteLen(s) + 1) >>> 0;
+  return $byteLen(s) + 1;
 }
 
 function flagBranch(f) {
@@ -116,7 +116,7 @@ function poppedText(stack) {
   let n = 0;
   let s;
   while ((s = stack.pop()) != null) {
-    n = (n + (($byteLen(s) + 1) >>> 0)) >>> 0;
+    n = (n + ($byteLen(s) + 1)) >>> 0;
   }
   return n;
 }

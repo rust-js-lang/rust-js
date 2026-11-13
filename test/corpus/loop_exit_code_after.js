@@ -68,7 +68,7 @@ function stopped(items, limit) {
     if (sum > limit) {
       break;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
   const tail = (sum * 2) >>> 0;
   return `${i} ${sum} ${tail}`;

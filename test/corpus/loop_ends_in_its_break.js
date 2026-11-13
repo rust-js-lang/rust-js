@@ -28,7 +28,7 @@ function average(times, sizes, end) {
       j++;
     }
     i = j;
-    count++;
+    count = (count + 1) | 0;
     if (count > 10) {
       break;
     }

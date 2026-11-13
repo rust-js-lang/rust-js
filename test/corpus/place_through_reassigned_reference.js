@@ -24,10 +24,6 @@ function writtenInValue(v, i) {
   i++;
   v[$at(v, i)] = 7;
   const value = i - 1;
-  const length = v.length;
-  if (value >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is ${value}`);
-  }
   i++;
   v[value] = (v[value] + 3) >>> 0;
   function next() {

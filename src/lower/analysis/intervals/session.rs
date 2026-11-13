@@ -157,3 +157,13 @@ pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: B
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.bounds.contains(&block))
 }
+
+/// Whether MIR proves the `+`, `-` or `*` at `location` of `body` stays in
+/// its type's range, JS's own operator its value (#1672 M3): none of a body
+/// not the one being lowered.
+pub(in crate::lower) fn exact_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.exact.contains(&location))
+}

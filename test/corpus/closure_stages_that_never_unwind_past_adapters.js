@@ -160,7 +160,7 @@ function main() {
       dDrop_drop,
       true,
     );
-    const result = (kept + value.length) >>> 0;
+    const result = kept + value.length;
     $dropItems(value, dDrop_drop);
     return result;
   });

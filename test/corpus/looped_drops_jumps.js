@@ -79,9 +79,9 @@ function nestedWhiles() {
         }
       }
       held = noisy;
-      j = (j + 1) >>> 0;
+      j++;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
   console.log(`whiles end with ${held[0]}`);
   console.log(`drop ${held[0]}`);

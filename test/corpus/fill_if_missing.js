@@ -23,8 +23,8 @@ function infoOf(cache, id, made) {
 function sizeOf(sizes, id) {
   let size = sizes.get(id);
   if (size == null) {
-    const doubled = ($byteLen(id) * 2) >>> 0;
-    size = (doubled + 1) >>> 0;
+    const doubled = $byteLen(id) * 2;
+    size = doubled + 1;
   }
   return size;
 }

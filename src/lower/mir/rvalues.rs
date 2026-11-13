@@ -352,6 +352,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::BinaryOp(op, operands) => {
                 let (l, r) = &**operands;
                 let (ty, r_ty) = (l.ty(decls, tcx), r.ty(decls, tcx));
+                // What MIR's intervals prove of it, where it is (ADR 1137).
+                let proved = crate::lower::analysis::exact_proved(tcx, state.body, state.location());
                 // An enum's discriminant compared with a variant's, an inlined
                 // `is_some()`'s in a std body (ADR 0561): the variant's test.
                 if let BinOp::Eq | BinOp::Ne = op
@@ -499,9 +501,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             BinOp::SubUnchecked => BinOp::Sub,
                             _ => BinOp::Mul,
                         };
-                        self.binary(op, l, r, known, ty, span)?
+                        self.binary_proved(op, l, r, known, ty, span, proved)?
                     }
-                    _ => self.binary(*op, l, r, known, ty, span)?,
+                    _ => self.binary_proved(*op, l, r, known, ty, span, proved)?,
                 }
             }
             Rvalue::UnaryOp(op, operand) => {

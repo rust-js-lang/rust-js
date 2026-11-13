@@ -144,7 +144,7 @@ function main() {
             if (seen === 2) {
               throw new Error("collect");
             }
-            return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
+            return String.fromCharCode(97 + ((d[0] & 255) % 26));
           } catch (error) {
             throw $unwindsOn(error);
           } finally {

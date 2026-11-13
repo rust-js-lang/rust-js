@@ -33,9 +33,9 @@ function shadowed(words) {
     if (i === words.length || words[i] === "stop") {
       break;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
-  count = (count - i) >>> 0;
+  count -= i;
   console.log(`${count} left`);
   return count;
 }
@@ -95,7 +95,7 @@ function setInLoop(values) {
       found = values[i];
       break;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
   console.log(`found ${found} at ${i}`);
   return found;
@@ -107,7 +107,7 @@ function reshadowed(limit) {
   console.log(`label ${label}`);
   let n = 0;
   do {
-    n = (n + 3) >>> 0;
+    n += 3;
   } while (n <= limit);
   label = `n=${n}`;
   return label;
@@ -120,7 +120,7 @@ function firstBig(values) {
     if ($index(values, i) > 10) {
       return (values[i] * 2) | 0;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
 }
 
@@ -131,7 +131,7 @@ function firstEven(values) {
     if ($index(values, i) % 2 === 0) {
       return (values[i] + 1) | 0;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
 }
 

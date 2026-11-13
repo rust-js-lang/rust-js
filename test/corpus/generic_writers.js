@@ -16,7 +16,7 @@ export function entry() {
 }
 
 function writeDigit(w, v, Write) {
-  return Write.writeChar(w, String.fromCharCode((48 + v) & 255));
+  return Write.writeChar(w, String.fromCharCode(48 + v));
 }
 
 function writeTwo(w, v, Write) {
