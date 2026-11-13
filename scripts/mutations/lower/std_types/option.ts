@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a getter's function unwrapped where it's called keeps `$unwrap`, `$unwrap(console.createTask).bind(console, ..)`, where the user chose the read (rd519, ADR 1066)",
     file: "src/lower/std_types/option.rs",
-    find: "                if self.frame.facts.getter_unwraps.contains(&span)\n",
-    replace: "                if self.frame.facts.getter_unwraps.contains(&span) && false\n",
+    find: "                if unwrap.is_some_and(|id| self.frame.facts.getter_unwraps.contains(&id))\n",
+    replace: "                if unwrap.is_some_and(|id| self.frame.facts.getter_unwraps.contains(&id)) && false\n",
     tests: ["test/js-globals.test.ts", "-t", "a getter's function unwrapped where it's called"],
   },
   {
@@ -422,8 +422,8 @@ export const mutations: Mutation[] = [
     name: "set-read-checked",
     breaks: "a cell's `get().unwrap()` right after it's set to a `Some` keeps `$unwrap`, ReactART's `createContainer($unwrap(this._surface), ..)` (rd331e)",
     file: "src/lower/std_types/option.rs",
-    find: "                if self.frame.facts.set_then_unwrapped.contains(&span) && !list[1..].iter().any(Expr::has_effects) {\n",
-    replace: "                if false && self.frame.facts.set_then_unwrapped.contains(&span) {\n",
+    find: "                if unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))\n                    && !list[1..].iter().any(Expr::has_effects)\n",
+    replace: "                if false && unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))\n                    && !list[1..].iter().any(Expr::has_effects)\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^cell_set_then_read_back.rs$"],
   },
@@ -431,8 +431,8 @@ export const mutations: Mutation[] = [
     name: "set-read-message-dropped",
     breaks: "an `expect` of a cell read back after its set drops its message's code, `noted(..)` never run",
     file: "src/lower/std_types/option.rs",
-    find: "                if self.frame.facts.set_then_unwrapped.contains(&span) && !list[1..].iter().any(Expr::has_effects) {\n",
-    replace: "                if self.frame.facts.set_then_unwrapped.contains(&span) {\n",
+    find: "                if unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))\n                    && !list[1..].iter().any(Expr::has_effects)\n",
+    replace: "                if unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_set_then_read_back.rs$"],
   },
   {

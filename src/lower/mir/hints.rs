@@ -700,11 +700,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // nothing: the arm is as one without it.
                 let guards: Vec<Option<thir::ExprId>> = (arms.iter())
                     .map(|arm| {
-                        (arm.guard).filter(|&guard| {
-                            !held.contains(
-                                &self.frame.thir[crate::lower::body_queries::strip(self.frame.thir, guard)].span,
-                            )
-                        })
+                        (arm.guard)
+                            .filter(|&guard| !held.contains(&crate::lower::body_queries::strip(self.frame.thir, guard)))
                     })
                     .collect();
                 // An `Option<bool>`'s, of `Some(false)`, `Some(true)` and the

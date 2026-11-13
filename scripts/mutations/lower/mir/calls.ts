@@ -239,8 +239,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value read as the registry's symbol whose `Some` the program tells is the value itself, so a string is its `Some`",
     file: "src/lower/mir/calls.rs",
-    find: "            return Ok(match self.frame.facts.registered_reads.contains(&span) {\n",
-    replace: "            return Ok(match true {\n",
+    find: "                match read.is_some_and(|read| self.frame.facts.registered_reads.contains(&read)) {\n",
+    replace: "                match true {\n",
     tests: [
       "test/lowering-symbols.test.ts",
       "-t",
@@ -252,8 +252,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value read as the registry's symbol only tested against them is checked, `switch ($symbolFor(type))`, not the value",
     file: "src/lower/mir/calls.rs",
-    find: "            return Ok(match self.frame.facts.registered_reads.contains(&span) {\n",
-    replace: "            return Ok(match false {\n",
+    find: "                match read.is_some_and(|read| self.frame.facts.registered_reads.contains(&read)) {\n",
+    replace: "                match false {\n",
     tests: [
       "test/lowering-symbols.test.ts",
       "-t",

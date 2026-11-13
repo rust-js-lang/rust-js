@@ -24,7 +24,7 @@ mod method_calls;
 mod ranges;
 mod set_reads;
 mod span_join;
-pub(in crate::lower) use span_join::{the_one, the_one_at};
+pub(in crate::lower) use span_join::{the_call_at, the_one, the_one_at};
 mod total_orders;
 mod values;
 mod whole_casts;
@@ -152,25 +152,25 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) set_empty: IndexSet<ExprId>,
     /// Where each read of a registered symbol is that's only tested against
     /// the registry's, `registered_reads`'s (ADR 0634).
-    pub(super) registered_reads: IndexSet<Span>,
+    pub(super) registered_reads: IndexSet<ExprId>,
     /// Where each `==` or `!=` of such a read and a `Some(..)` is,
     /// `registered_equalities`'s (ADR 0771).
-    pub(super) registered_equalities: IndexSet<Span>,
+    pub(super) registered_equalities: IndexSet<ExprId>,
     /// Where each guard is that holds where its arm matched,
     /// `held_guards`'s.
-    pub(super) held_guards: IndexSet<Span>,
+    pub(super) held_guards: IndexSet<ExprId>,
     /// Where each call is whose value is told present, `present_calls`'s.
-    pub(super) present_calls: IndexSet<Span>,
+    pub(super) present_calls: IndexSet<ExprId>,
     /// Where each `resume_unwind(x)` is of a payload as it was given,
     /// `resumed_as_given`'s (rd550).
     pub(super) resumed_as_given: IndexSet<Span>,
     /// Where each `unwrap` or `expect` is of a cell's `get` read right
     /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
-    pub(super) set_then_unwrapped: IndexSet<Span>,
+    pub(super) set_then_unwrapped: IndexSet<ExprId>,
     /// Where each `unwrap()` is of a binding getter's function or object
     /// read only as the callee or the `this` of the call it's made for,
     /// `getter_unwraps`'s (rd519).
-    pub(super) getter_unwraps: IndexSet<Span>,
+    pub(super) getter_unwraps: IndexSet<ExprId>,
     /// Where each `function::call` is of a `js::method` of one step whose
     /// `this` is the path's value, the method's call, and where each such
     /// `js::method` is, `method_calls`'s (rd334).
@@ -797,10 +797,10 @@ pub(super) fn consts_named(thir: &Thir<'_>) -> IndexSet<DefId> {
 }
 
 /// Where `e` is a call of a binding that's its argument, `this`, giving an
-/// untagged enum of a `Some(..)`, `js::classify(Some(value))`: its
-/// `fn_span`. What it gives is there, never `undefined` nor `null`, so no
+/// untagged enum of a `Some(..)`, `js::classify(Some(value))`: that call.
+/// What it gives is there, never `undefined` nor `null`, so no
 /// variant's test leaves those out (ADR 0676).
-pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
+pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<ExprId> {
     let through = |mut e: ExprId| {
         while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
             e = inner;
@@ -808,10 +808,7 @@ pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: E
         e
     };
     e = through(e);
-    let ExprKind::Call {
-        fun, ref args, fn_span, ..
-    } = thir[e].kind
-    else {
+    let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
         return None;
     };
     let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
@@ -825,7 +822,7 @@ pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: E
                 && tcx.is_lang_item(adt.adt_def.variant(adt.variant_index).def_id, LangItem::OptionSome))
     };
     let untagged = super::untagged::untagged_adt(tcx, thir[e].ty).is_some();
-    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)
+    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)
 }
 
 /// The value of an integer `const` of no generic arguments, rustc's own,
@@ -842,8 +839,8 @@ pub(super) fn constant_integer<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty:
     }
 }
 
-/// Each call `given_present` says is of what's there: its `fn_span`.
-fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+/// Each call `given_present` says is of what's there.
+fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     (thir.exprs.indices())
         .filter_map(|e| given_present(tcx, thir, e))
         .collect()
@@ -851,7 +848,7 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
 
 /// Each guard `if let Some(v) = value` of an arm of `match
 /// js::classify(value) { .. }` whose variants are each one of what's there,
-/// `Kind::Object(_) | Kind::Array(_)`: where it's written. A binding that's
+/// `Kind::Object(_) | Kind::Array(_)`: the guard. A binding that's
 /// its argument (`given_present`'s) says of a `None`, `undefined`, only a
 /// variant that's `undefined` or `null` (ADR 0676), so where one of the
 /// arm's matched, `value` is a `Some`, and the guard holds: it tests
@@ -859,7 +856,7 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
 /// `value`, read where it's bound: of a `value` the arm then sets, a copy
 /// of it there, `const value$1 = value;`, as any variable set again is
 /// read where it is (ADR 0853).
-fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     // The variable a call of a binding that's its argument, giving an
     // untagged enum, reads: `classify(value)`'s `value`, an `Option` of a
     // reference, whose `None` is `undefined`.
@@ -912,28 +909,27 @@ fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
                     if tcx.is_lang_item(adt_def.variant(*variant_index).def_id, LangItem::OptionSome)
                         && matches!(&subpatterns[..], [only] if matches!(only.pattern.kind, PatKind::Binding { subpattern: None, .. } | PatKind::Wild)));
                 let same = matches!(thir[strip(thir, expr)].kind, ExprKind::VarRef { id } if id == var);
-                (some && same && present(tcx, adt, &arm.pattern)).then_some(thir[guard].span)
+                (some && same && present(tcx, adt, &arm.pattern)).then_some(guard)
             })
         })
         .collect()
 }
 
-/// Where each `js::SymbolFor::from_value(value)` is called, its `fn_span`,
-/// whose value the body only tests against the registry's symbols: what a
+/// Each call of `js::SymbolFor::from_value(value)` whose value the body only tests against the registry's symbols: what a
 /// `match`, a `matches!` or an `if let` compares, of patterns each `_` or a
 /// `Some` of them, `Some(REACT_MEMO_TYPE | REACT_LAZY_TYPE)`, binding
 /// nothing. There, no other value is one of them, so the value itself
 /// answers each as its `Some` would (ADR 0634).
-fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     (thir.exprs.indices())
         .filter_map(|e| match thir[e].kind {
             ExprKind::Match {
                 scrutinee, ref arms, ..
             } => {
-                let span = registered_read(tcx, thir, scrutinee)?;
+                let read = registered_read(tcx, thir, scrutinee)?;
                 (arms.iter())
                     .all(|&arm| tests_registered(tcx, &thir[arm].pattern))
-                    .then_some(span)
+                    .then_some(read)
             }
             ExprKind::Let { expr, ref pat } => tests_registered(tcx, pat).then_some(registered_read(tcx, thir, expr)?),
             _ => registered_equality(tcx, thir, e).map(|(read, _)| read),
@@ -942,9 +938,9 @@ fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span
         .collect()
 }
 
-/// Where each `==` or `!=` `registered_reads` reads one for is, its
-/// `fn_span`: compared by `===`, whatever the `Some` is (ADR 0771).
-fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+/// Each `==` or `!=` `registered_reads` reads one for: compared by
+/// `===`, whatever the `Some` is (ADR 0771).
+fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     (thir.exprs.indices())
         .filter_map(|e| registered_equality(tcx, thir, e).map(|(_, equality)| equality))
         .chain(
@@ -959,14 +955,11 @@ fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet
 /// SymbolFor::from_value(..)`, whose every read is an `==` or `!=` of it
 /// and a `Some(..)`, React's mountLazyComponent's `if ($$typeof ===
 /// REACT_FORWARD_REF_TYPE) .. else if ($$typeof === REACT_MEMO_TYPE)`: the
-/// read's `fn_span`, and each comparison's, as of the read in place (ADR
+/// read's call, and each comparison's, as of the read in place (ADR
 /// 0771, amended).
-fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(Span, Vec<Span>)> {
-    let compared = |e: ExprId| -> Option<(LocalVarId, Span)> {
-        let ExprKind::Call {
-            fun, ref args, fn_span, ..
-        } = thir[e].kind
-        else {
+fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(ExprId, Vec<ExprId>)> {
+    let compared = |e: ExprId| -> Option<(LocalVarId, ExprId)> {
+        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             return None;
         };
         let &[a, b] = &args[..] else {
@@ -981,12 +974,12 @@ fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(Span, Vec
         };
         let (a, b) = (borrowed(thir, a)?, borrowed(thir, b)?);
         match (var(a), var(b)) {
-            (Some(id), None) if is_some(tcx, thir, b) => Some((id, fn_span)),
-            (None, Some(id)) if is_some(tcx, thir, a) => Some((id, fn_span)),
+            (Some(id), None) if is_some(tcx, thir, b) => Some((id, e)),
+            (None, Some(id)) if is_some(tcx, thir, a) => Some((id, e)),
             _ => None,
         }
     };
-    let comparisons: Vec<(LocalVarId, Span)> = thir.exprs.indices().filter_map(compared).collect();
+    let comparisons: Vec<(LocalVarId, ExprId)> = thir.exprs.indices().filter_map(compared).collect();
     (thir.stmts.iter())
         .filter_map(|stmt| {
             let thir::StmtKind::Let {
@@ -1010,24 +1003,24 @@ fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(Span, Vec
             let reads = (thir.exprs.iter())
                 .filter(|e| matches!(e.kind, ExprKind::VarRef { id } if id == var))
                 .count();
-            let equalities: Vec<Span> = (comparisons.iter())
+            let equalities: Vec<ExprId> = (comparisons.iter())
                 .filter(|(id, _)| *id == var)
-                .map(|&(_, span)| span)
+                .map(|&(_, equality)| equality)
                 .collect();
             (reads > 0 && reads == equalities.len()).then_some((read, equalities))
         })
         .collect()
 }
 
-/// The `fn_span` of `e`, a call of `js::SymbolFor::from_value`, in what
-/// holds no more than its value.
-fn registered_read<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
+/// The call `e` is of `js::SymbolFor::from_value`, in what holds no more
+/// than its value.
+fn registered_read<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<ExprId> {
     while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
         e = inner;
     }
     match thir[e].kind {
-        ExprKind::Call { fun, fn_span, .. } => match *thir[fun].ty.kind() {
-            ty::FnDef(def_id, _) if super::recognition::is_symbol_for_read(tcx, def_id) => Some(fn_span),
+        ExprKind::Call { fun, .. } => match *thir[fun].ty.kind() {
+            ty::FnDef(def_id, _) if super::recognition::is_symbol_for_read(tcx, def_id) => Some(e),
             _ => None,
         },
         _ => None,
@@ -1036,12 +1029,9 @@ fn registered_read<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) ->
 
 /// Of `e`, an `==` or `!=` of a `from_value` read and a `Some(..)`, either
 /// way round, which says what `matches!(.., Some(s))` does, the value the
-/// symbol `s` is: the read's `fn_span` and the comparison's (ADR 0771).
-fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Option<(Span, Span)> {
-    let ExprKind::Call {
-        fun, ref args, fn_span, ..
-    } = thir[e].kind
-    else {
+/// symbol `s` is: the read's call and the comparison's (ADR 0771).
+fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Option<(ExprId, ExprId)> {
+    let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
         return None;
     };
     let &[a, b] = &args[..] else {
@@ -1056,7 +1046,7 @@ fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) ->
         (None, Some(read)) if is_some(tcx, thir, a) => read,
         _ => return None,
     };
-    Some((read, fn_span))
+    Some((read, e))
 }
 
 /// Whether `fun` is `PartialEq`'s `eq` or `ne`, an `==`'s or a `!=`'s.

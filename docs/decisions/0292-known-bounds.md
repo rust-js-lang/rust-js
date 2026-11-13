@@ -107,3 +107,26 @@ bounds join free of `any`. No snapshot moves. Corpus case
 macro_repeated_index_keeps_each_check against native Rust; mutations
 `bounds-join-any`, `assigned-operator-span-off` (moved to `mir/bounds.ts`),
 `exact-wrapped` and `mir-jsx-shapeless` (refitted), caught.
+
+## Amendment (2026-11-13, #1672 change 1 M1b): the facts that leave out a panic or a test are of nodes too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; nothing a program
+observes changes. Six more facts that license leaving out a check were
+span sets:
+- an `unwrap` whose `None` check goes: `set_then_unwrapped` and
+  `getter_unwraps`;
+- a value told present, whose `undefined` test goes: `present_calls`;
+- a guard that holds, whose test goes: `held_guards`;
+- a registry read or comparison, whose `$symbolFor` goes:
+  `registered_reads` and `registered_equalities`.
+
+They are now `ExprId` sets, of the call or the guard. MIR's call is joined
+to its node by `span_join::the_call_at`, the one call at its `fn_span` or
+none. A held guard joins MIR's statements by its span only where no other
+guard is written there. No snapshot moves.
+
+`test/architecture-mut-refs.test.ts` holds all ten deletion facts
+node-keyed. The body's remaining span sets choose a form, not whether a
+check runs, so they are outside this rule: `resumed_as_given`,
+`method_calls`, the in-place adapters and the collect sources. Twelve
+mutations were refitted to the new joins, all caught.

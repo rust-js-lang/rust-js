@@ -22,6 +22,15 @@ pub(in crate::lower) fn the_one_at<'tcx>(
     )
 }
 
+/// The one call of `thir` whose `fn_span` is `span`, MIR's call there,
+/// or none: none there, or more than one, of a macro's expansion.
+pub(in crate::lower) fn the_call_at(thir: &Thir<'_>, span: Span) -> Option<ExprId> {
+    the_one((thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
+        rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span => Some(id),
+        _ => None,
+    }))
+}
+
 /// The one of `found`, or none: none found, or more than one.
 pub(in crate::lower) fn the_one<T>(mut found: impl Iterator<Item = T>) -> Option<T> {
     let one = found.next()?;

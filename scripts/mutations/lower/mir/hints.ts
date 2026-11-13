@@ -373,8 +373,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match js::classify(value)` whose object arm's guard holds stays an `if` chain, not a `switch` (ADR 0790)",
     file: "src/lower/mir/hints.rs",
-    find: "                            !held.contains(\n",
-    replace: "                            true || !held.contains(\n",
+    find: "                            .filter(|&guard| !held.contains(&crate::lower::body_queries::strip(self.frame.thir, guard)))\n",
+    replace: "                            .filter(|&guard| true || !held.contains(&crate::lower::body_queries::strip(self.frame.thir, guard)))\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",

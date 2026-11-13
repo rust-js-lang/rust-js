@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `unwrap()` of any call's `Option` called is its value, `maker()(1)`, its `None` a `TypeError` where nothing decided so (rd519)",
     file: "src/lower/body_queries/getter_unwraps.rs",
-    find: "    (bindings::is_binding(tcx, getter) && matches!(bindings::js_form(tcx, getter), JsForm::Get(_))).then_some(fn_span)\n",
-    replace: "    let _ = getter;\n    Some(fn_span)\n",
+    find: "    (bindings::is_binding(tcx, getter) && matches!(bindings::js_form(tcx, getter), JsForm::Get(_))).then_some(e)\n",
+    replace: "    let _ = getter;\n    Some(e)\n",
     tests,
   },
 ];

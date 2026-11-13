@@ -291,7 +291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
-            held: self.frame.facts.held_guards.clone(),
+            held: self.held_guard_spans(),
             held_results,
         }
     }
@@ -518,6 +518,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tests
     }
 
+    /// Where each guard that holds is written, of each one no other guard
+    /// of the body is written at: a MIR statement is joined to its guard by
+    /// its span alone, so to the one guard there or none (`the_one`, #1672).
+    fn held_guard_spans(&self) -> IndexSet<Span> {
+        let thir = self.frame.thir;
+        let guards = || {
+            (thir.arms.iter()).filter_map(|arm| arm.guard.map(|guard| crate::lower::body_queries::strip(thir, guard)))
+        };
+        (self.frame.facts.held_guards.iter())
+            .map(|&guard| thir[guard].span)
+            .filter(|&span| {
+                crate::lower::body_queries::the_one(guards().filter(|&guard| thir[guard].span == span)).is_some()
+            })
+            .collect()
+    }
+
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
     fn mir_present(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
@@ -526,7 +542,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {
                     destination, fn_span, ..
-                } if destination.projection.is_empty() && calls.contains(fn_span) => Some(destination.local),
+                } if destination.projection.is_empty()
+                    && crate::lower::body_queries::the_call_at(self.frame.thir, *fn_span)
+                        .is_some_and(|call| calls.contains(&call)) =>
+                {
+                    Some(destination.local)
+                }
                 _ => None,
             })
             .collect()
@@ -545,7 +566,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     fn_span,
                     ..
                 } if destination.projection.is_empty()
-                    && reads.contains(fn_span)
+                    && crate::lower::body_queries::the_call_at(self.frame.thir, *fn_span)
+                        .is_some_and(|read| reads.contains(&read))
                     && fn_def(func.ty(&body.local_decls, self.tcx))
                         .is_some_and(|(def_id, _)| crate::lower::recognition::is_symbol_for_read(self.tcx, def_id)) =>
                 {

@@ -406,10 +406,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself where it's one, `undefined` where not, `$symbolFor(value)`.
         if crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             let value = values.into_iter().next().expect("the value read");
-            return Ok(match self.frame.facts.registered_reads.contains(&span) {
-                true => value,
-                false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
-            });
+            let read = crate::lower::body_queries::the_call_at(self.frame.thir, span);
+            return Ok(
+                match read.is_some_and(|read| self.frame.facts.registered_reads.contains(&read)) {
+                    true => value,
+                    false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
+                },
+            );
         }
         match bindings::js_form(tcx, def_id) {
             bindings::JsForm::Jsx(tag) => {

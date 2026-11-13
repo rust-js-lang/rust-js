@@ -824,7 +824,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             operand.place().is_some_and(|place| {
                 place.projection.is_empty() && state.facts.options().made_some.contains(&place.local)
             })
-        }) || self.frame.facts.registered_equalities.contains(&span))
+        }) || crate::lower::body_queries::the_call_at(self.frame.thir, span)
+            .is_some_and(|equality| self.frame.facts.registered_equalities.contains(&equality)))
     }
 
     /// A call, `mir_call_values_given`'s, and of what makes std's struct

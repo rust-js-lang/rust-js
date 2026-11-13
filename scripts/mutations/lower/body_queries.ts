@@ -48,9 +48,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
     file: "src/lower/body_queries.rs",
-    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
-    replace:
-      "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(fn_span)",
+    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)",
+    replace: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(e)",
     tests: [
       "test/lowering-switches.test.ts",
       "-t",
@@ -62,8 +61,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`classify(value)` of an `Option` is taken as there, so its object's test takes `null`",
     file: "src/lower/body_queries.rs",
-    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
-    replace: "    (identity && untagged).then_some(fn_span)",
+    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)",
+    replace: "    (identity && untagged).then_some(e)",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {

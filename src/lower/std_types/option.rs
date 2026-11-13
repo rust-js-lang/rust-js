@@ -306,7 +306,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 // Of a cell's `get` read right after it's set to a `Some`,
                 // which nothing could take out between: its value (rd331e).
-                if self.frame.facts.set_then_unwrapped.contains(&span) && !list[1..].iter().any(Expr::has_effects) {
+                let unwrap = crate::lower::body_queries::the_call_at(self.frame.thir, span);
+                if unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))
+                    && !list[1..].iter().any(Expr::has_effects)
+                {
                     let value = list.into_iter().next().expect("the `Option`");
                     return Ok(Some(match self.boxed_payload(generic_args.type_at(0)) {
                         true => self.some_value(value),
@@ -317,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `this` of a method, where it's unwrapped: the getter's read,
                 // whose `None` JS's call throws on, a `TypeError` (rd519, the
                 // user's decision; semantics.md).
-                if self.frame.facts.getter_unwraps.contains(&span)
+                if unwrap.is_some_and(|id| self.frame.facts.getter_unwraps.contains(&id))
                     && list.len() == 1
                     && !self.boxed_payload(generic_args.type_at(0))
                 {

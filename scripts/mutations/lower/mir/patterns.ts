@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what `classify(Some(value))` gives isn't known to be there, so a test of its object leaves out `null`",
     file: "src/lower/mir/patterns.rs",
-    find: "                } if destination.projection.is_empty() && calls.contains(fn_span) => Some(destination.local),\n",
-    replace:
-      "                } if false && calls.contains(fn_span) => Some(destination.local),\n",
+    find: "                        .is_some_and(|call| calls.contains(&call)) =>\n",
+    replace: "                        .is_some_and(|call| false && calls.contains(&call)) =>\n",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {
@@ -112,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every value read as the registry's symbol is the value itself, where the program tells its `None` too",
     file: "src/lower/mir/patterns.rs",
-    find: "                    && reads.contains(fn_span)\n",
+    find: "                    && crate::lower::body_queries::the_call_at(self.frame.thir, *fn_span)\n                        .is_some_and(|read| reads.contains(&read))\n",
     replace: "",
     tests: [
       "test/lowering-symbols.test.ts",

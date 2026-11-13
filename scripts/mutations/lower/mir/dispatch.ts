@@ -583,8 +583,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`from_value(x) == Some(SymbolFor("k"))` is `x == Symbol.for("k")`, true of an object that turns into the symbol, which isn\'t one',
     file: "src/lower/mir/dispatch.rs",
-    find: "        }) || self.frame.facts.registered_equalities.contains(&span))\n",
-    replace: "        }) || false)\n",
+    find: "            .is_some_and(|equality| self.frame.facts.registered_equalities.contains(&equality)))\n",
+    replace: "            .is_some_and(|equality| false && self.frame.facts.registered_equalities.contains(&equality)))\n",
     tests: [
       "test/lowering-symbols.test.ts",
       "-t",

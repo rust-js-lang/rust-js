@@ -6,7 +6,6 @@ use crate::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{self, AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Span;
 
 use super::strip;
 use crate::lower::recognition::{CellMethod, cell_own_method};
@@ -18,7 +17,7 @@ use crate::lower::recognition::{CellMethod, cell_own_method};
 /// say, can set it between: what it reads is the `Some` just set, and its
 /// `unwrap` is the value (rd331e). A `get`'s cell is of a `Copy` value,
 /// so its set runs no drop of the old one after it stores.
-pub(super) fn set_then_unwrapped<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+pub(super) fn set_then_unwrapped<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     let mut found = IndexSet::default();
     for block in thir.blocks.iter() {
         for (k, &stmt) in block.stmts.iter().enumerate() {
@@ -38,10 +37,10 @@ pub(super) fn set_then_unwrapped<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> 
             };
             if let Some(read) = cell_get(tcx, thir, call)
                 && same_place(thir, cell, read)
-                && let ExprKind::Call { fun, fn_span, .. } = thir[unwrap].kind
+                && let ExprKind::Call { fun, .. } = thir[unwrap].kind
                 && is_option_unwrap(tcx, thir[fun].ty)
             {
-                found.insert(fn_span);
+                found.insert(unwrap);
             }
         }
     }

@@ -8,7 +8,6 @@ use crate::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Span;
 
 use super::strip;
 use crate::lower::bindings::{self, JsForm};
@@ -16,10 +15,10 @@ use crate::lower::bindings::{self, JsForm};
 /// Each `unwrap()` of what a binding's getter gives, an
 /// `Option` of a function or an object, read only as the callee of the
 /// call it's made for, or as the `this` of a binding's method, the one
-/// place its value goes: its `fn_span`. Its value is the getter's read
+/// place its value goes: that call. Its value is the getter's read
 /// itself; of a `None`, JS's call or method read throws a `TypeError`
 /// where Rust's `unwrap()` panics (ADR 0262's exception, ADR 1066).
-pub(super) fn getter_unwraps<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+pub(super) fn getter_unwraps<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     let mut found = IndexSet::default();
     for expr in thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
@@ -40,16 +39,16 @@ pub(super) fn getter_unwraps<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Inde
             continue;
         }
         let Some(&first) = args.first() else { continue };
-        if let Some(span) = unwrapped_getter(tcx, thir, first) {
-            found.insert(span);
+        if let Some(unwrap) = unwrapped_getter(tcx, thir, first) {
+            found.insert(unwrap);
         }
     }
     found
 }
 
-/// The `fn_span` of the `unwrap()` `e` is, through borrows and derefs, of
-/// a binding getter's call.
-fn unwrapped_getter<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
+/// The `unwrap()` `e` is, through borrows and derefs, of a binding
+/// getter's call.
+fn unwrapped_getter<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<ExprId> {
     loop {
         e = strip(thir, e);
         match thir[e].kind {
@@ -57,10 +56,7 @@ fn unwrapped_getter<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -
             _ => break,
         }
     }
-    let ExprKind::Call {
-        fun, ref args, fn_span, ..
-    } = thir[e].kind
-    else {
+    let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
         return None;
     };
     let ty::FnDef(unwrap, _) = *thir[fun].ty.kind() else {
@@ -80,5 +76,5 @@ fn unwrapped_getter<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -
     let ty::FnDef(getter, _) = *thir[getter].ty.kind() else {
         return None;
     };
-    (bindings::is_binding(tcx, getter) && matches!(bindings::js_form(tcx, getter), JsForm::Get(_))).then_some(fn_span)
+    (bindings::is_binding(tcx, getter) && matches!(bindings::js_form(tcx, getter), JsForm::Get(_))).then_some(e)
 }
