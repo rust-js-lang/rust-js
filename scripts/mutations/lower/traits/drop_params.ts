@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/drop_params.rs",
     find: "    for &own in tcx.associated_item_def_ids(id) {\n        if !matches!(tcx.def_kind(own), DefKind::AssocFn) {\n",
     replace: "    for &own in tcx.associated_item_def_ids(id) {\n        if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_)?impl_method_drops_its_items_iterator.rs$"],
   },
   {
     name: "from-iter-entry-given-no-trusted-len",

@@ -258,3 +258,19 @@ struct or an enum of the program's own with a destructor, which runs
 whatever its parameters are. No snapshot moves. Corpus case
 generic_struct_with_a_destructor_dropped_on_an_early_return against native
 Rust; mutation `generic-destructors-unseen` (`analysis/drops.ts`).
+
+## Amendment (2026-11-13): an impl's own method's slot, of a blanket impl
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. With the normalization route gone (above), an
+impl's own method's where clause gives the impl a slot only where it names
+the impl's own parameter's associated type as written: of a blanket impl,
+`impl<I: Iterator> Keeping for I`, whose `Self::Item: IntoIterator` is
+`<I as Iterator>::Item: IntoIterator`, so the impl takes
+`dropIItemIntoIter`, which a caller through it never knows. The survivor
+`impl-written-clauses-unslotted`, which left out the impl's own methods,
+showed `impl_method_drops_its_items_iterator.rs`, of a `Wrapper<I>`, no
+longer reached it. The corpus case
+`blanket_impl_method_drops_its_items_iterator.rs` does: without the slot, its call through `held_through`, a
+`K: Keeping`, drops nothing of its `Held`s' iterators, `drop 6` missing, where native
+Rust prints it. The mutation names both cases.
