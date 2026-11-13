@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "        None if is_local_borrow(tcx, def_id) => {\n",
     replace: "        None if false && is_local_borrow(tcx, def_id) => {\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "an index an item is there at counts on without its wrap",
     ],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     find: "                hi: current.hi.min(MOST - 1),\n",
     replace: "                hi: current.hi.min(MOST),\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "an index an item is there at counts on without its wrap",
     ],

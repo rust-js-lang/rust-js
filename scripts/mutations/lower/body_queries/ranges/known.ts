@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "            None if by_value(slice) => None,\n",
     replace: "",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a counter below a JS string's length",
     ],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     find: "            None => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
     replace: "            None => None,\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a signed index tested not negative",
     ],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.c <= 1 << self.s && self.b <= -(1 << self.s)",
     replace: "        self.c <= 1 << self.s && self.b <= 0",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "pop-as-push",
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     find: "            None if by > 0 => _ = self.lengths.insert(slice.clone(), by),\n",
     replace: "            None if by > 0 => {}\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a length held in a variable",
     ],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     find: "        if least > 0 {\n",
     replace: "        if least > 1 {\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a length held in a variable",
     ],

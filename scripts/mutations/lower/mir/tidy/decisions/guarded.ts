@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions/guarded.rs",
     find: "        && (!pure(test) || guard())\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
   },
   {
     name: "binding-set-first-always",

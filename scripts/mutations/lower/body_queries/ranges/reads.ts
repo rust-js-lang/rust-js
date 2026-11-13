@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/reads.rs",
     find: "                ) || reads_string_length(tcx, def_id)\n",
     replace: "                ) || false\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
   },
   {
     name: "cell-read-impure",

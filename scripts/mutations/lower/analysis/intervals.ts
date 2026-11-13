@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "                            Some(most) if known.lo <= most => Interval {\n",
     replace: "                            Some(most) if false && known.lo <= most => Interval {\n",
-    tests: ["test/lowering-numbers.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
   {
     name: "intervals-sums-unshared",
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "        if let Some(of) = copy_of.or(again).filter(|&of| of != local) {\n",
     replace: "        if let Some(of) = copy_of.filter(|&of| of != local) {\n",
-    tests: ["test/lowering-numbers.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
   {
     name: "intervals-casts-uncopied",
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "                if kept.is_some()\n",
     replace: "                if kept.is_some() && false\n",
-    tests: ["test/lowering-numbers.test.ts","-t","a signed index tested not negative"],
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a signed index tested not negative"],
   },
   {
     name: "intervals-unequal-unrelated",
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "        if op == BinOp::Ne\n",
     replace: "        if op == BinOp::Ne && false\n",
-    tests: ["test/lowering-numbers.test.ts","-t","a signed index tested not negative"],
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a signed index tested not negative"],
   },
   {
     name: "intervals-narrowed-length-least-unraised",
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "                    *least = (*least).max(narrowed.lo);\n",
     replace: "                    let _ = narrowed;\n",
-    tests: ["test/lowering-numbers.test.ts","-t","a length held in a variable"],
+    tests: ["test/lowering-integer-ranges.test.ts","-t","a length held in a variable"],
   },
   {
     name: "intervals-raw-reborrow-unknown",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/loop_ranges.rs",
     find: '            "rev" => RangeStep::Rev,\n',
     replace: '            "rev_" => RangeStep::Rev,\n',
-    tests: ["test/lowering-numbers.test.ts", "-t", "an integer below another's value doesn't wrap"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer below another's value doesn't wrap"],
   },
   {
     name: "loop-ranges-min-unrecognized",

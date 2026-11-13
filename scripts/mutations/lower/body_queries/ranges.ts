@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    .map_or(i128::MIN, |x| -x.b);\n",
     replace: "                    .map_or(i128::MIN, |_| i128::MIN);\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
     name: "value-difference-past-bound",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    .map_or(i128::MIN, |x| -x.b);\n",
     replace: "                    .map_or(i128::MIN, |_| 0);\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
     name: "value-wrapped-sum-forgets",
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "            (None, Some(made)) if op == BinOp::Add && (l.lo >= 0 || r.lo >= 0) => Range {\n",
     replace: "            (None, Some(made)) if false => Range {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
     name: "value-assigned-keeps-own-bound",
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                value.below.retain(|((_, v), _)| *v != var);\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
     name: "call-keeps-cells",
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     find: "        if !block.targeted_by_break {\n            return walk(self, known);\n",
     replace: "        if true {\n            return walk(self, known);\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a labeled block and a named constant",
     ],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     find: "            Some(broken) => {\n                *known = either(known.take(), Some(broken));\n                top\n            }\n",
     replace: "            Some(_) => top,\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a labeled block and a named constant",
     ],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     replace:
       "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => None::<i128>.filter(|_| constant_integer(self.tcx, def_id, args).is_some())\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a labeled block and a named constant",
     ],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     replace:
       "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a labeled block and a named constant",
     ],
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     find: "                let kept = value.filter(|v| ty_range.is_some_and(|(lo, hi)| lo <= v.lo && v.hi <= hi));\n",
     replace: "                let kept = value;\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a signed index tested not negative",
     ],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     find: "            .is_ok_and(|layout| !layout.is_zst())\n",
     replace: "            .is_ok()\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a signed index tested not negative",
     ],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     find: "            true => SIZED_SLICE_LENGTH_MOST,\n",
     replace: "            true => u32::MAX as i128,\n",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a signed index tested not negative",
     ],
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                .map(|_| Range::of(0, STRING_LENGTH_MOST)),\n",
     replace: "                .map(|_| Range::of(0, u32::MAX as i128)),\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
   },
   {
     name: "string-length-past-int32",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;\n",
     replace: "const STRING_LENGTH_MOST: i128 = 1 << 31;\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "lengths add without"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "lengths add without"],
   },
   {
     name: "string-length-below-engines",
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;\n",
     replace: "const STRING_LENGTH_MOST: i128 = (1 << 30) - 1;\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "lengths add without"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "lengths add without"],
   },
   {
     name: "ranges-return-goes-on",
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "        let within = made.clone().filter(|m| m.lo >= lo && m.hi <= hi);",
     replace: "        let within = made.clone().filter(|m| m.lo >= lo);",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-shift-unscaled",
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "Below { s: x.s + k as u32, ..x }.lowest()",
     replace: "Below { s: x.s, ..x }.lowest()",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-swap-unjudged",
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
     find: "                for index in ranges.into_iter().skip(1) {",
     replace:
       "                for index in ranges.into_iter().skip(1).filter(|_| false) {",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "callee-untold",

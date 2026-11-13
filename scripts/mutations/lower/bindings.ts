@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "            .is_some_and(|this| this.peel_refs().is_str())\n",
     replace: "            .is_some()\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
   },
   {
     name: "primitive-thread-local-camel",

@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))",
     replace: "(self.thir_call(def_id, span)).is_some_and(|_| false)",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "swap-remove-shifted",
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     find: '            _ => Expr::call(Expr::member(items, "pop"), Vec::new()),',
     replace:
       '            _ => Expr::call(Expr::member(items, "shift"), Vec::new()),',
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "swap-remove-last-unswapped",
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     find: '                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                (exprs.remove(0), last)',
     replace:
       '                let _ = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                let i = exprs.remove(0);\n                (i.clone(), i)',
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "mir-index-mut-a-value",
@@ -220,6 +220,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "            thir::ExprKind::Assign { rhs, .. } if e.span == span => {\n",
     replace: "            thir::ExprKind::Assign { rhs, .. } if false && e.span == span => {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a signed index tested not negative"],
   },
 ];

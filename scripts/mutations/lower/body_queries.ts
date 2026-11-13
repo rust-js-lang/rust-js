@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     replace:
       "        _ => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
     tests: [
-      "test/lowering-numbers.test.ts",
+      "test/lowering-integer-ranges.test.ts",
       "-t",
       "a labeled block and a named constant",
     ],

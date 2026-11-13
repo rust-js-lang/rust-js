@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: '        "swap" => Some(SliceLength::Swap),\n',
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "vec-deref-unseen",
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "            Some(VecView::Slice)\n",
     replace: "            None\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "index-mut-unasked",

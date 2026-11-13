@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "        let exact = arithmetic && self.exact_at(span);\n",
     replace: "        let exact = arithmetic && false;\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "mul-by-constant-imul",
