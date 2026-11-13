@@ -2,8 +2,9 @@
 
 import {
   $cleanup,
+  $closing,
   $disposeIterator,
-  $dropItems,
+  $dropEach,
   $droppingIterator,
   $iter,
   $next,
@@ -21,9 +22,9 @@ function loudDrop_drop(loud) {
 }
 
 function items() {
-  const it = $iter([[1], [2], [3]]);
+  const it = $closing($iter([[1], [2], [3]]), $dropEach(loudDrop_drop));
   return $droppingIterator(it, () => {
-    $dropItems(it, loudDrop_drop);
+    it.return();
   });
 }
 

@@ -48,13 +48,13 @@ function $droppingOnce(f, drop) {
 // allocation holding it: one of its own that steps it carries the new drop,
 // which drops the one it holds, its own kept.
 function $droppingIterator(it, drop) {
-  const lent = Object.hasOwn(it, $disposeKey) ? $lent(it) : it;
   // Stepped as Rust's, `$Steps`: its `map`, `filter`, `take`, `drop` and
   // `flatMap` std's adapters, which close what they step only where Rust
   // drops it, not JS's own helpers, which close it as their function
   // throws, dropping what the box holds before the fold's accumulator and
-  // what a closure took (#1690).
-  const own = lent instanceof $Steps ? lent : $stepsAround(lent);
+  // what a closure took; and only what `Box<dyn Iterator>` forwards to what
+  // it holds its own (#1690).
+  const own = $stepsAround(it);
   // Run once, wherever it's dropped first: its `Box`'s drop, or a consumer
   // that took it by value closing it as it ends, `count()`'s, `collect()`'s,
   // a `for`'s that breaks, as std's drops the `Box` it was given. A drop
@@ -75,8 +75,8 @@ function $droppingIterator(it, drop) {
   return own;
 }
 
-// `it`, a JS iterator, stepped as a `$Steps`: its `next`, its `return`, and
-// its hint, where it knows one (#1690).
+// `it`, a JS iterator behind a `Box<dyn Iterator>`, stepped as a `$Steps`:
+// its `next`, its `return`, its hint, and what the box forwards (#1690).
 function $stepsAround(it) {
   const steps = new $Steps(
     () => it.next(),
@@ -84,6 +84,17 @@ function $stepsAround(it) {
   );
   steps.from = [it];
   steps.sizeHint = () => $sizeHint(it);
+  // What `Box<I>` forwards of an unsized `I`, a `dyn`'s: `nth`, and of a
+  // double-ended one `next_back` and `nth_back`, of an exact-size one
+  // `len`, each its own where what it holds owns it, a `Vec`'s `nth`
+  // dropping what it passes as one slice. Not `last` nor `count` nor a
+  // fold, which only a sized `I`'s box forwards: a `dyn`'s are std's
+  // defaults, of its `next`.
+  for (const [step, own] of [["nth", "nth"], ["back", undefined], ["nthBack", "nthBack"], ["len", undefined]]) {
+    if (typeof it[step] !== "function") continue;
+    steps[step] = (...args) => it[step](...args);
+    if (own !== undefined) $ownsAs(steps, it, own);
+  }
   return steps;
 }
 

@@ -591,18 +591,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let carried = to.is_box()
                                 && !self.recognition().is_dyn_iter(iterator)
                                 && self.drops(iterator) != crate::lower::drops::Drops::Nothing;
-                            let value = match carried && !value.reads_same() {
-                                true => self.spill(Role::It, value, out),
-                                false => value,
+                            let back = self.knows_its_back(*to);
+                            // What it is behind the `dyn`, of a double-ended one
+                            // what knows its back too.
+                            let made = |this: &mut Self, value: Expr| -> R<Expr> {
+                                let it = match back {
+                                    true => this.as_double_ended(value, iterator, span)?,
+                                    false => this.as_js_iterator(value, iterator, span)?,
+                                };
+                                Ok(crate::lower::iterators::behind_a_dyn(it))
                             };
-                            let it = match self.knows_its_back(*to) {
-                                true => self.as_double_ended(value.clone(), iterator, span)?,
-                                false => self.as_js_iterator(value.clone(), iterator, span)?,
-                            };
-                            let it = crate::lower::iterators::behind_a_dyn(it);
                             if !carried {
-                                return Ok(Value::Expr(it));
+                                return Ok(Value::Expr(made(self, value)?));
                             }
+                            // Of a slice's items, a `Vec`'s, dropped each by
+                            // `$dropEach`, `$closing(it, $dropEach(..))`: a `$Steps` that
+                            // keeps its slice steps, its `nth` dropping what it
+                            // passes as one slice, which `Box`'s `nth` forwards
+                            // to; the box's drop closes it, dropping what's left
+                            // as one, once (#1690).
+                            let sliced = (self.closing_drop(iterator, span)?)
+                                .is_some_and(|drop| !matches!(drop.kind, js::ExprKind::Arrow(..)));
+                            if sliced {
+                                let it = made(self, value.clone())?;
+                                let closed = self.closing(it, iterator, span)?;
+                                let closed = self.spill(Role::It, closed, out);
+                                let close =
+                                    js::StmtKind::Expr(Expr::call(Expr::member(closed.clone(), "return"), Vec::new()))
+                                        .at(js::Span::NONE);
+                                return Ok(Value::Expr(Expr::call_helper(
+                                    "$droppingIterator",
+                                    vec![closed, Expr::arrow(Vec::new(), vec![close])],
+                                )));
+                            }
+                            let value = match value.reads_same() {
+                                true => value,
+                                false => self.spill(Role::It, value, out),
+                            };
+                            let it = made(self, value.clone())?;
                             let mut dropped = Vec::new();
                             self.drop_value(value, iterator, span, &mut dropped)?;
                             return Ok(Value::Expr(Expr::call_helper(

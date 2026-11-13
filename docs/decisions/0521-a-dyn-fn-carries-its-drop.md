@@ -404,3 +404,26 @@ under #1690. Corpus cases
 `boxed_iterator_summed_drops_its_rest_after_the_total` and
 `boxed_iterator_drop_panicking_as_it_unwinds_aborts`, each failing before;
 mutation `dropping-iterator-js-helpers`, caught.
+
+## Amendment: a box forwards only what `Box<dyn Iterator>` forwards, and a `Vec`'s keeps its slice steps (2026-11-14, #1690)
+
+The box's `$Steps` (`$stepsAround`) owns, of what it holds, only what std's
+`Box<I>` forwards for an unsized `I`, a `dyn`'s: `nth`, and of a
+double-ended one `next_back` and `nth_back`, of an exact-size one `len`.
+Not `last`, `count` or a fold, which only a sized `I`'s box forwards: a
+`dyn`'s are std's defaults over `next`. Forwarding the inner's `last` too
+broke 20 table cases, which shows the rule is needed.
+
+A `Vec`'s iterator made a `Box<dyn Iterator>` of what drops is now
+`$closing($iter(items), $dropEach(drop))`, the form a `Vec`'s iterator has
+in a chain, whose `nth` drops what it passes as one slice. The box's drop
+closes it. So `step_by` over the box, which skips by `nth`, drops a skipped
+slice's rest past a panic before the fold's accumulator, as native does:
+the last 8 of #1690's table rows. It applies only to what drops each of a
+slice's items (`$dropEach`). The crate's own iterator boxed is as before.
+Each box is now a new `$Steps`, so re-boxing needs no `$lent`. Corpus case
+`boxed_vec_iterator_skips_as_one_slice`; mutations
+`boxed-vec-iterator-unsliced` and `dyn-box-nth-not-forwarded`, caught;
+`test/runtime-package.test.ts`' "an iterator carrying a Rust drop never
+reaches JS's own iterator helpers" holds the rule in the runtime. #1690's
+rows are all off `test/iterator-matrix-known.txt`.

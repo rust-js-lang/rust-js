@@ -2,8 +2,10 @@
 
 import {
   $cleanup,
+  $closing,
   $collectDropping,
   $disposeIterator,
+  $dropEach,
   $dropItems,
   $droppingIterator,
   $iter,
@@ -36,17 +38,16 @@ function counter(left, tag) {
 }
 
 function ds(tags) {
-  const it = $iter(tags.map((t) => [t]));
+  const it = $closing($iter(tags.map((t) => [t])), $dropEach(dDrop_drop));
   return $droppingIterator(it, () => {
-    for (const item of it) {
-      dDrop_drop(item);
-    }
+    it.return();
   });
 }
 
 function boxed(it, dropI) {
-  return $droppingIterator(Iterator.from(it), () => {
-    dropI?.(it);
+  const it$1 = $closing(Iterator.from(it), dropI, false);
+  return $droppingIterator(it$1, () => {
+    it$1.return();
   });
 }
 

@@ -3,6 +3,8 @@
 import {
   $catchUnwind,
   $cleanup,
+  $closing,
+  $dropEach,
   $droppingIterator,
   $foldDropping,
   $iter,
@@ -14,6 +16,9 @@ export function entry() {
   main();
 }
 
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+}
 function totalDrop_drop(total) {
   console.log(`drop total ${total[0]}`);
 }
@@ -26,7 +31,7 @@ function totalSumD_sum(iter, dropI) {
       (t, d) => {
         t[0] = (t[0] + d[0]) >>> 0;
         const result = t;
-        console.log(`drop ${d[0]}`);
+        dDrop_drop(d);
         return result;
       },
       totalDrop_drop,
@@ -45,11 +50,9 @@ function totalSumD_sum(iter, dropI) {
   return result;
 }
 function boxed(items) {
-  const it = $iter(items);
+  const it = $closing($iter(items), $dropEach(dDrop_drop));
   return $droppingIterator(it, () => {
-    for (const item of it) {
-      console.log(`drop ${item[0]}`);
-    }
+    it.return();
   });
 }
 
@@ -68,7 +71,7 @@ function main() {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            console.log(`drop ${x[0]}`);
+            dDrop_drop(x);
           }
         }
       }),

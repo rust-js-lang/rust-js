@@ -1057,6 +1057,30 @@ console.log(rows.map(([inPlace, trusted]) => way($vecCollectWay(inPlace === "tru
 // is dropped once, by what it carries. A drop that panics throws out of
 // its `Box`'s drop. One boxed again is another that steps it, whose drop
 // drops the one it holds.
+// A `dyn Iterator` carrying a Rust drop is stepped as Rust's, its adapters
+// std's: JS's own helpers close what they step as their function throws,
+// which runs the box's drop before the fold's accumulator (#1690). Of what
+// it holds it owns only what `Box<dyn Iterator>` forwards: `nth`, a
+// `Vec`'s dropping what it passes as one slice, not `last` (#1690).
+test("an iterator carrying a Rust drop never reaches JS's own iterator helpers", async () => {
+  const { $droppingIterator, $iter } = await import(helpersModule);
+  function* items() {
+    yield 1;
+    yield 2;
+  }
+  const boxed = $droppingIterator(items(), () => {});
+  for (const helper of ["map", "filter", "take", "drop", "flatMap", "reduce", "some", "every", "find", "forEach"]) {
+    expect([helper, boxed[helper] === (Iterator.prototype as unknown as Record<string, unknown>)[helper]]).toEqual([helper, false]);
+  }
+  const held = $iter([1, 2, 3]);
+  held.nth = () => ({ done: false, value: "own" });
+  held.ownNth = true;
+  held.last = () => "own last";
+  const box = $droppingIterator(held, () => {});
+  expect([box.ownNth, box.nth(1).value]).toEqual([true, "own"]);
+  expect(box.last === held.last).toBe(false);
+});
+
 test("a dyn Iterator's drop is its own, run once, never Iterator.prototype's Symbol.dispose", async () => {
   const { $droppingIterator, $disposeIterator } = await import(helpersModule);
   let closed = 0;

@@ -365,9 +365,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                true => self.as_double_ended(value.clone(), iterator, span)?,\n",
-    replace:
-      "                                true => self.as_js_iterator(value.clone(), iterator, span)?,\n",
+    find: "                                    true => this.as_double_ended(value, iterator, span)?,\n",
+    replace: "                                    true => this.as_js_iterator(value, iterator, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -475,8 +474,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            let it = crate::lower::iterators::behind_a_dyn(it);\n",
-    replace: "",
+    find: "                                Ok(crate::lower::iterators::behind_a_dyn(it))\n",
+    replace: "                                Ok(it)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
@@ -849,5 +848,13 @@ export const mutations: Mutation[] = [
     find: "                    && self.given_its_pointer_here(state.body, param)\n                {\n                    return self.read_local_value(state, place.local, out);\n",
     replace: "                {\n                    return self.read_local_value(state, place.local, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^reference_returned_as_a_parameter_given_no_pointer_refused.rs$"],
+  },
+  {
+    name: "boxed-vec-iterator-unsliced",
+    breaks: "a `Vec`'s iterator made a `Box<dyn Iterator>` of what drops loses its slice steps, so a `step_by` over it drops what it skips one by one, a panic of one leaving the rest until after the fold's accumulator (#1690)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            if sliced {\n",
+    replace: "                            if false && sliced {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_vec_iterator_skips_as_one_slice.rs$"],
   },
 ];
