@@ -92,3 +92,21 @@ names.sort();
 - Mutations `utf16-order-of-either-parameter`, `utf16-order-of-any-cmp`
   (`body_queries.rs`), `utf16-sort-by-kept` (`std_types/vec.rs`) and
   `utf16-sort-unstable-kept` (`std_types/slice.rs`).
+
+## Amendment (2026-11-13, #1645): a comparator that does nothing else
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+A comparator that orders strings by their UTF-16 units,
+`a.encode_utf16().cmp(b.encode_utf16())`, was JS's `sort()` even where
+its closure did more than compare. `orders_by_utf16_units` read the
+block's tail alone, so `calls += 1;` before it was lost: `0` calls where
+native Rust's are `5`. It reads the body's value only where the body does
+nothing else (`tail_alone`, `body_queries.rs`). Any other comparator keeps
+its closure, run as the sort Rust's is.
+
+`test/corpus/utf16_comparator_with_effects.rs` counts the calls of a
+stable and an unstable sort's comparator against native Rust in both
+builds; a pure one is still `sort()`. Mutation
+`utf16-comparator-with-effects-sorted-plain` (`lower/body_queries.ts`).

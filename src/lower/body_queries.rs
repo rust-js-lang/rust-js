@@ -386,6 +386,20 @@ pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
     }
 }
 
+/// `tail` of a block that does nothing but give its value, through its
+/// blocks: `None` where one runs a statement first, `calls += 1;`, whose
+/// effects a recognition of its value alone would lose (#1645).
+fn tail_alone(thir: &Thir<'_>, e: ExprId) -> Option<ExprId> {
+    let e = strip(thir, e);
+    match thir[e].kind {
+        ExprKind::Block { block } => match (thir[block].stmts.is_empty(), thir[block].expr) {
+            (true, Some(value)) => tail_alone(thir, value),
+            _ => None,
+        },
+        _ => Some(e),
+    }
+}
+
 /// What a body's facts take of the crate's other bodies, before lowering:
 /// each resume of a payload a closure captured (`resumes_as_given`). Which
 /// adapters each makes in place is decided later, once the crate's
@@ -516,7 +530,11 @@ pub(super) fn orders_by_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, 
             _ => None,
         })
         .collect();
-    let e = tail(thir, root);
+    // Its value alone: a body that does more, `calls += 1;`, is no
+    // `sort()`, which would lose it (#1645).
+    let Some(e) = tail_alone(thir, root) else {
+        return false;
+    };
     let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
         return false;
     };

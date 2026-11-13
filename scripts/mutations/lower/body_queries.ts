@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => e = lhs,\n            ExprKind::Deref { arg: lhs } if !thir[lhs].ty.is_box() => e = lhs,\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
   },
+  {
+    name: "utf16-comparator-with-effects-sorted-plain",
+    breaks: "a UTF-16 comparator that does more than compare, `calls += 1;`, is JS's `sort()`, which loses its effects, `0` calls where Rust's are `5` (#1645)",
+    file: "src/lower/body_queries.rs",
+    find: "    let Some(e) = tail_alone(thir, root) else {\n",
+    replace: "    let Some(e) = Some(tail(thir, root)) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^utf16_comparator_with_effects.rs$"],
+  },
 ];
