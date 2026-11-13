@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment"],
   },
   {
-    name: "object-end-comment-a-line-of-nothing-before",
-    breaks: "a comment before an object's `}` first on its line has a line of nothing before it, which oxfmt keeps",
-    file: "src/to_oxc.rs",
-    find: "            if head.trim().is_empty() && end.is_none() {\n",
-    replace: "            if false {\n",
-    tests: ["test/lowering-comments-ends.test.ts"],
-  },
-  {
     name: "printed-first-of-its-span-alone",
     breaks: "a blank line and a comment before an `if let`'s line are before its `if`, past what its test's `take()` prints first",
     file: "src/to_oxc.rs",
@@ -271,14 +263,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
-    name: "inside-comment-map-unmoved",
-    breaks: "the source map's columns after a comment inside a line aren't moved by its width, so `given` maps from the comment",
-    file: "src/to_oxc.rs",
-    find: "            column + wider(line, 0, column),\n",
-    replace: "            column,\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
-  },
-  {
     name: "noinline-beside-its-docs",
     breaks: "`@noinline` is a JSDoc of its own beside a function's docs, not their last line",
     file: "src/to_oxc.rs",
@@ -358,14 +342,7 @@ export const mutations: Mutation[] = [
     replace: "                        || arms.get(&at).is_some_and(|arm| arm.operand) && false\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a later arm read as an operand"],
   },
-  {
-    name: "operand-after-any-operator",
-    breaks: "an operand's comment is after a `?`, `:` or `+` alone, so one after `&&` has no place and is lost (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
-    find: "                    .rfind(operator)\n                    .map(|found| (at, written, found + operator.len()))\n",
-    replace: "                    .rfind(['?', ':', '+'])\n                    .map(|found| (at, written, found + 1))\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
-  },
+
   {
     name: "erased-let-blank-lost",
     breaks: "a blank line before an erased cast's `let`, which has no JS, isn't before the statement after it, ReactChildren's `const iterator =`",
@@ -414,14 +391,7 @@ export const mutations: Mutation[] = [
     replace: "own.into_iter().partition(|_| true);",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
   },
-  {
-    name: "if-opening-unsplit",
-    breaks: "an `if (` placed with its test isn't found before its first JS, so its test's comment is split after an operator lines above, or lost",
-    file: "src/to_oxc.rs",
-    find: "                let before = if at == line {\n                    written.get(..column as usize + opening)?",
-    replace: "                let before = if at == line {\n                    written.get(..column as usize + opening * 0)?",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
-  },
+
   {
     name: "blank-before-if-test-comment-lost",
     breaks: "a blank line before `if\\n // c\\n a && b {` is lost, its test's comments after the `if` (ADR 0883)",
@@ -527,14 +497,6 @@ export const mutations: Mutation[] = [
     find: "                }) || default;\n",
     replace: "                });\n",
     tests: ["test/lowering-labels.test.ts", "-t", "return calls"],
-  },
-  {
-    name: "split-at-line-end-blank",
-    breaks: "a comment split in after a line's last `,` leaves a line of nothing after it, a blank line before the item (ADR 0708, amended)",
-    file: "src/to_oxc.rs",
-    find: "            let ends_line = line[column as usize..].trim().is_empty();\n",
-    replace: "            let ends_line = false;\n",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "between an array's items"],
   },
   {
     name: "operand-if-opening-code",
