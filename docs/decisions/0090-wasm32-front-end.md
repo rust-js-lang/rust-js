@@ -167,8 +167,10 @@ not-given` and `panic-runtime-aborts`, whose survivor at 1.100 (main's
 check 43391346121) showed it. Sessions still unwind, `-Cpanic=unwind`, as
 above. The toolchain is pinned (ADR 0109): a later rustc that checks it
 before linking again fails loudly at that upgrade, every `--test` and bin
-refused, which is when to bring the runtime back. The playground's patch
-0007 is unchanged. Held by the suite in both compilers: the manifest's
+refused, which is when to bring the runtime back. The playground, which
+downloads only the sysroot's crates a compile reads, downloads its
+`panic_unwind` for `--test` now, as the runtime it was given stood for
+it (`wasm/web/site.ts`'s `NEEDED`). Its patch 0007 is unchanged. Held by the suite in both compilers: the manifest's
 test of a test harness, every corpus case's bin, `cargo test`'s and
 `rust-js build`'s tests, and the playground's and snapshots' tests on
 rust-js.wasm.
