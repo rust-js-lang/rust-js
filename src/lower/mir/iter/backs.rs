@@ -408,11 +408,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(item) = self.iterator_item(output) {
                     given.extend(self.std_drop_function(item, span)?);
                 }
-                // And its length, of its source made exact-sized, which a
-                // variable that holds it keeps, for what asks it there, a
-                // crate's that reads a `Vec`'s capacity (#1317).
+                // Its length follows from its back, of its source made
+                // exact-sized, an array's `$iter`: what a variable that holds
+                // it asks there, a crate's that reads a `Vec`'s capacity
+                // (#1317), `knows_its_length_of` answers of a `take` or a
+                // `skip` kept over an array's items made knowing its back.
                 let made = Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given);
-                crate::lower::iterators::made_knowing_its_length(crate::lower::iterators::made_knowing_its_back(made))
+                crate::lower::iterators::made_knowing_its_back(made)
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it

@@ -742,8 +742,8 @@ export const mutations: Mutation[] = [
     name: "counted-made-knowing-unmarked",
     breaks: "a `skip(n)` or a `take(n)` made knowing its back by its maker isn't marked so, and a variable holding it, given to a `rev()` whose `len()` is asked, is refused (#814)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "made_knowing_its_length(crate::lower::iterators::made_knowing_its_back(made))\n",
-    replace: "made_knowing_its_length(made)\n",
+    find: "                crate::lower::iterators::made_knowing_its_back(made)\n",
+    replace: "                made\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
   {
@@ -834,14 +834,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                if (self.made_stepped_from_its_back() || self.made_counted_from_its_back()) && !held.is_ref() =>\n",
     replace: "                if self.made_stepped_from_its_back() && !held.is_ref() =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
-  },
-  {
-    name: "back-stepped-take-length-unmarked",
-    breaks: "a `$skipping` or `$taking` made knowing its back of a source made exact-sized isn't marked knowing its length, so a variable that holds it, a held `skip(1)` a crate that reads a `Vec`'s capacity asks the length of, is refused (#1317)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                crate::lower::iterators::made_knowing_its_length(crate::lower::iterators::made_knowing_its_back(made))\n",
-    replace: "                crate::lower::iterators::made_knowing_its_back(made)\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
   {

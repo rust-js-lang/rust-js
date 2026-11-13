@@ -10,10 +10,12 @@ import {
   $lazyRange,
   $mapEnds,
   $mapFrom,
+  $range,
   $reserveHint,
   $rev,
   $roomForHint,
   $skipping,
+  $slice,
   $taking,
 } from "@rust-js/std";
 
@@ -51,8 +53,7 @@ function main() {
   const value = limit();
   const v = $grownVec(
     $roomForHint(
-      $mapEnds(
-        $taking($closing($iter(values), $dropEach(loudDrop_drop), false), value, loudDrop_drop),
+      $taking($closing($iter(values), $dropEach(loudDrop_drop), false), value, loudDrop_drop).map(
         mapped,
       ),
       4,
@@ -79,12 +80,14 @@ function main() {
   );
   const arg$1 = $capacity(w, 12);
   console.log(`${w.length} ${arg$1}`);
-  const s = $skipping($iter([1, 2, 3, 4, 5]), 1);
+  const items = $range(1, 41);
+  const s = $skipping($iter(items), 1);
   const r = $grownVec($roomForHint($rev($mapEnds(s, (x) => (x + 1) >>> 0)), 4, false), (grown) =>
     Array.from(grown),
   );
-  const arg$2 = $capacity(r, 4) >= 4;
-  console.log(`[${r.join(", ")}] ${arg$2}`);
+  const value$1 = $slice(r, 0, 3);
+  const arg$2 = $capacity(r, 4);
+  console.log(`${r.length} [${value$1.join(", ")}] ${arg$2}`);
   const t = $skipping($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
   const u = $grownVec($roomForHint($rev($mapEnds(t, mapped)), 4, false), (grown) =>
     $collectDropping(grown),

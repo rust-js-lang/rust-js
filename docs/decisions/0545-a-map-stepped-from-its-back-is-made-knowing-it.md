@@ -1826,3 +1826,18 @@ and of items with a destructor) against native Rust in both builds. Both
 pairs run as native Rust does and are taken off test/neighbours-known.txt.
 Mutations `grown-take-uncounted`, `counted-take-unmade` and
 `back-stepped-take-length-unmarked` are new.
+
+## Amendment: a counted `take` or `skip` is marked knowing its back alone (2026-11-14)
+
+The `take(n)` or `skip(n)` made `$taking` or `$skipping` of a source made
+exact-sized (#1317) was marked knowing its length as well as its back. No
+result depends on the length mark: `knows_its_length_of` knows the length
+of a `take` or a `skip` kept over an array's items made knowing its back,
+and this source is always an array's `$iter`. What it changed was a form:
+a `map` of it was `$mapEnds(..)`, which it no longer needs, as a
+`$taking`'s own `map` keeps its hint; it's `$taking(..).map(..)` now,
+native's either way. Its mutation, `back-stepped-take-length-unmarked`,
+survived every case's run, `counted_adapters_where_capacity_is_read` made
+exact and `held_skip_stepped_from_its_back_knows_its_length` added. So the
+mark is removed (ADR 0093), and `counted-made-knowing-unmarked` holds the
+back mark.

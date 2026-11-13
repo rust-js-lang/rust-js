@@ -31,9 +31,10 @@ fn main() {
     let n: HashMap<u32, String> = (1..40).map(|n| (n, n.to_string())).collect();
     let w: Vec<String> = n.into_values().take(10).map(|s| s + "!").collect();
     println!("{} {}", w.len(), w.capacity());
-    let s = vec![1u32, 2, 3, 4, 5].into_iter().skip(1);
+    let items: Vec<u32> = (1..41).collect();
+    let s = items.into_iter().skip(1);
     let r: Vec<u32> = s.map(|x| x + 1).rev().collect();
-    println!("{r:?} {}", r.capacity() >= 4);
+    println!("{} {:?} {}", r.len(), &r[..3], r.capacity());
     let t = vec![Loud(7), Loud(8), Loud(9)].into_iter().skip(1);
     let u: Vec<u32> = t.map(mapped).rev().collect();
     println!("{u:?} {}", u.capacity() >= 2);
