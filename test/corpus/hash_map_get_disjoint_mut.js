@@ -17,6 +17,9 @@ export function entry() {
   main();
 }
 
+function wordDebug_fmt(word) {
+  return `Word(${$debugStr(word[0])})`;
+}
 export const wordPartialEq = $partialEq({ eq: wordPartialEq_eq });
 function wordPartialEq_eq(word, other) {
   return $asciiCase(word[0]) === $asciiCase(other[0]);
@@ -24,6 +27,10 @@ function wordPartialEq_eq(word, other) {
 export const wordHash = { hash: wordHash_hash, hashSlice: $hashSlice(wordHash_hash) };
 function wordHash_hash(word, state, HHasher) {
   HHasher.writeStr(state, $asciiCase(word[0]));
+}
+
+function scoreDebug_fmt(score) {
+  return `Score { points: ${score.points} }`;
 }
 
 function sorted(m) {
@@ -79,9 +86,10 @@ function main() {
     one.points = (one.points + three.points) >>> 0;
     three.points = 0;
   }
-  const seen = Array.from(scores).map(([k, s]) => [k, s.points]);
-  seen.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  console.log(`[${seen.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  const seen = Array.from(scores);
+  const key = ([k]) => k;
+  seen.sort((a, b) => $cmp(key(a), key(b)));
+  console.log(`[${seen.map((item) => `(${item[0]}, ${scoreDebug_fmt(item[1])})`).join(", ")}]`);
 
   const words = new ($hashedMap(wordHash, wordPartialEq_eq))([
     [["Apple"], 1],
@@ -96,8 +104,8 @@ function main() {
     const p = value[0];
     p.value = (p.value + 5) >>> 0;
   }
-  const w = Array.from(words).map(([k, v]) => [k[0], v]);
-  w.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  console.log(`[${w.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`);
+  const w = Array.from(words);
+  w.sort(([a], [b]) => $cmp(a[0], b[0]));
+  console.log(`[${w.map((item) => `(${wordDebug_fmt(item[0])}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

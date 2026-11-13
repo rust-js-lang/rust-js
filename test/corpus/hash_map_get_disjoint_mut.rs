@@ -2,10 +2,12 @@
 // A hash map's `get_disjoint_mut`: each key's value, written in place
 // through its `&mut`, a number's and a struct's alike, `None` of a key it
 // doesn't hold, which may repeat; two keys that find one entry panic with
-// std's message, the map as it was (#1276).
+// std's message, the map as it was (#1276). Each map is read in key order,
+// taken into a `Vec`, so its values drop in an order no hash seed decides:
+// a loud rewrite's drops, and a panic in one, print as native's do.
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 #[derive(Debug)]
 struct Word(String);
@@ -54,8 +56,8 @@ fn main() {
         one.points += three.points;
         three.points = 0;
     }
-    let mut seen: Vec<(u32, u32)> = scores.iter().map(|(k, s)| (*k, s.points)).collect();
-    seen.sort();
+    let mut seen: Vec<(u32, Score)> = scores.into_iter().collect();
+    seen.sort_by_key(|&(k, _)| k);
     println!("{seen:?}");
 
     let mut words: HashMap<Word, u32> = HashMap::from([(Word("Apple".into()), 1), (Word("pear".into()), 2)]);
@@ -66,7 +68,7 @@ fn main() {
     if let [Some(p), None] = words.get_disjoint_mut([&Word("PEAR".into()), &Word("plum".into())]) {
         *p += 5;
     }
-    let mut w: Vec<(String, u32)> = words.iter().map(|(k, v)| (k.0.clone(), *v)).collect();
-    w.sort();
+    let mut w: Vec<(Word, u32)> = words.into_iter().collect();
+    w.sort_by(|(a, _), (b, _)| a.0.cmp(&b.0));
     println!("{w:?}");
 }
