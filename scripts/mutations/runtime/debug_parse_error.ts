@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) return",
     tests: ["test/corpus.test.ts", "-t", "^char_try_from.rs$"],
   },
+  {
+    name: "write-try-from-int-error-of-unit",
+    breaks: "a `TryFromIntError`'s `Debug` written into a writer shows `()` where Rust shows its kind",
+    file: "src/runtime/debug_parse_error.js",
+    find: "  if (name === \"TryFromIntError\") return $writeDebugTuple(f, name, [kind], pretty);\n",
+    replace: "  if (name === \"TryFromIntError\") return $writeDebugTuple(f, name, [[undefined, (g) => g.write(\"()\")]], pretty);\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

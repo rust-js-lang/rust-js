@@ -135,6 +135,17 @@ impl fmt::LowerExp for Hexy {
     }
 }
 
+// Parse errors a derived `Debug` shows, thiserror's of a `&ParseIntError`.
+#[derive(Debug)]
+struct Errors<'a> {
+    int: &'a std::num::ParseIntError,
+    float: std::num::ParseFloatError,
+    boolean: std::str::ParseBoolError,
+    narrow: std::num::TryFromIntError,
+    char_from: std::char::CharTryFromError,
+    char_parse: std::char::ParseCharError,
+}
+
 // A parse error's `Display` given its `Formatter`, `pad` of its message.
 struct ParseFailed(std::num::ParseIntError);
 
@@ -257,4 +268,17 @@ fn main() {
     let mut failing = Failing(Vec::new());
     let r = write!(failing, "{:?}", sized);
     println!("{:?} {:?}", failing.0, r);
+
+    let int = "x".parse::<i32>().unwrap_err();
+    let errors = Errors {
+        int: &int,
+        float: "y".parse::<f64>().unwrap_err(),
+        boolean: "z".parse::<bool>().unwrap_err(),
+        narrow: u8::try_from(300i32).unwrap_err(),
+        char_from: char::try_from(0xD800u32).unwrap_err(),
+        char_parse: "ab".parse::<char>().unwrap_err(),
+    };
+    let mut log = Log(Vec::new());
+    write!(log, "{:?}|{:#?}", errors, errors).unwrap();
+    println!("{:?}", log.0);
 }

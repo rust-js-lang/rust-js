@@ -364,6 +364,10 @@ go.
      `size` a `usize`'s by the options (#1728), its `align` an
      `Alignment`'s `write!` of its own (`$writeDebugLayout`). Proof:
      test/writer-sink-rest.rs; 2 mutations.
+   - A parse error's `Debug` in a framed writer, thiserror's derived
+     `Debug` of a `&ParseIntError`, is its derived `Debug`'s pieces, its
+     kind one `write_str` (`$writeDebugParseError`). Proof:
+     test/writer-sink-rest.rs; 2 mutations.
 
 ## Alternatives
 

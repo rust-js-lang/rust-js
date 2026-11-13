@@ -15,6 +15,19 @@ function $parseErrorKind(message) {
   return kinds[message];
 }
 
+// Its derived `Debug` into a writer's sink `f`, a piece at a time, as
+// `$debugParseError` shows it (#1652): its name; a `()` field's, `()`; or
+// its kind, one `write_str` of its variant's name, a field's or a tuple's.
+function $writeDebugParseError(f, message, name, pretty) {
+  if (name === "ParseBoolError") return f.write(name);
+  if (name === "CharTryFromError" || name === "TryFromCharError") {
+    return $writeDebugTuple(f, name, [[undefined, (g) => g.write("()")]], pretty);
+  }
+  const kind = [$parseErrorKind(message), (g, kind) => g.write(kind)];
+  if (name === "TryFromIntError") return $writeDebugTuple(f, name, [kind], pretty);
+  $writeDebugStruct(f, name, [["kind", ...kind]], pretty);
+}
+
 // Its derived `Debug`; with `{:#?}`, `options.alternate`, on lines of
 // their own, indented.
 function $debugParseError(message, name, options) {

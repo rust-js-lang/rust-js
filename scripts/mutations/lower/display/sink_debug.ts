@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "sink-parse-error-debug-refused",
+    breaks: "a parse error's `Debug` in a framed writer, thiserror's derived `Debug` of a `&ParseIntError`, is refused",
+    file: "src/lower/display/sink_debug.rs",
+    find: "        if self.recognition().is_parse_error(ty)\n",
+    replace: "        if self.recognition().is_parse_error(ty) && false\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

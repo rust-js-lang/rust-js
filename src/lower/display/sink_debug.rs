@@ -31,6 +31,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(written));
         }
         let helper = |name: &'static str, args: Vec<Expr>| Ok(Some(vec![SinkWrite::Helper(name, args)]));
+        // A parse error's derived `Debug`, of its message (ADR 0063).
+        if self.recognition().is_parse_error(ty)
+            && let ty::Adt(adt, _) = ty.kind()
+        {
+            let name = Expr::str(self.tcx.item_name(adt.did()).as_str());
+            return helper("$writeDebugParseError", vec![value, name, pretty.clone()]);
+        }
         // A `Layout`'s derived `Debug`, `Layout { size: 8, align: 4 (1 <<
         // 2) }`, its `size` by the options, and a `LayoutError`'s, its name
         // (ADR 0417, #1728).
