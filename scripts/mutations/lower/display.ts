@@ -404,4 +404,20 @@ export const mutations: Mutation[] = [
     replace: "            || !self.call_may_fail(def_id, args)\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
   },
+  {
+    name: "valued-call-not-a-trait-methods",
+    breaks: "a trait's method called through a dictionary isn't asked whether its write result is `Form::Valued`, so `?` of a value its entry gives goes on past its `Err` (#1634)",
+    file: "src/lower/display.rs",
+    find: "        let generic = self.is_rust_fn(def_id) || self.tcx.trait_of_assoc(def_id).is_some();\n",
+    replace: "        let generic = self.is_rust_fn(def_id);\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_through_a_dictionary.rs$"],
+  },
+  {
+    name: "valued-given-back-unchecked",
+    breaks: "a write's result `same<T>(t: T) -> T` or a dictionary's `fn is(self) -> T` gives back is the error as a value where its caller's call throws it, so `same(r)?` of an `Err` goes on (#1410, #1634)",
+    file: "src/lower/display.rs",
+    find: "            true => Expr::call_helper(\"$writeCheck\", vec![value]),\n",
+    replace: "            true => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(write_result_given_to_generic_code|write_result_through_a_dictionary).rs$"],
+  },
 ];

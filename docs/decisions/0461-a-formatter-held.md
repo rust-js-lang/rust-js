@@ -142,3 +142,32 @@ what the method writes, appended to the handle's text, `self.0.value +=
 `std_calls.rs` writes it beside `push_str`. The corpus's
 `fmt_to_held_formatter.rs` holds anyhow's `Quoted` and a generic `show`
 through a held `Formatter` against native Rust.
+
+## Amendment: a call's `Form::Valued` crossing has one owner (2026-11-13, #1634)
+
+A trait's method whose signature gives a type parameter back, `fn is(self)
+-> T`, called through a dictionary with `T` a write's result, threw the
+write's `Err` where Rust gives it as a value: `const again =
+$writeCheck($writeTry(() => IsResult.is(w)))`. Two places crossed a call's
+`Form::Valued`. `generic_result_values` (mut_refs.rs) threw it,
+`$writeCheck(r)`, and `fmt_result_value` (display.rs) caught a call's
+throw, `$writeTry(..)`. A generic function's call did them in that order
+(`mir/calls.rs`). A trait method's call did `fmt_result_value` inside
+`trait_call`, and `generic_result_values` after it (`mir/dispatch.rs`), so
+the throw landed outside the catch.
+
+**`fmt_result_value` is now the one owner of a call's write result:** of a
+`Form::Valued` crossing it makes `$writeTry(() => $writeCheck(r))`, the
+error thrown as a call of the caller's throws it, then caught with what the
+call threw. A dictionary's entry that holds it as a value, `impl<T> Is<T>
+for T`'s, and one that throws it, `impl Is<fmt::Result> for Writes`'s, give
+the same, and `?` of it unwraps to `$writeCheck(IsResult.is(w))`, which
+throws either way. `generic_result_values` leaves `Form::Valued` alone, and
+`form_back` of it is unreachable. Its output is asked of the normalized
+type, so `made<M: Make>(m) -> M::Out` with `M::Out` an `io::Result<()>`
+crosses too, where its call threw the `Err` past the `let`.
+
+Results change, so Rust's behavior is kept (ADR 0262). Found by the
+metamorphic net's `impl-owned` rewrite of `printing_std_wrappers_stopped_part_way`.
+Corpus case `write_result_through_a_dictionary` against native Rust in
+both builds.

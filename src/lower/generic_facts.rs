@@ -90,9 +90,10 @@ pub(in crate::lower) enum Form {
     /// what a function gives back: generic code holds it as a value,
     /// `undefined` or its error, where a call of the caller's function
     /// throws its error. A function given there gives it back
-    /// `$writeTry(() => f(..))`; given back to its caller, its error is
-    /// thrown, `$writeCheck(r)`, as a call of one throws (#1410). As an
-    /// argument, the same form on both sides.
+    /// `$writeTry(() => f(..))`; given back to its caller, a call's value,
+    /// its error is thrown, `$writeCheck(r)`, as a call of one throws, and
+    /// caught again, `fmt_result_value`'s, its one owner (#1410, #1634). As
+    /// an argument, the same form on both sides.
     Valued,
 }
 
@@ -454,7 +455,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Form::Handle | Form::Box => Expr::held(value),
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
             Form::Tagged => Expr::call_helper("$writeOf", vec![value]),
-            Form::Valued => Expr::call_helper("$writeCheck", vec![value]),
+            Form::Valued => unreachable!("a call's write result, `fmt_result_value`'s (#1634)"),
         }
     }
 }

@@ -138,15 +138,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fmt::Error` it threw caught (ADR 0187). A writer's write, given its
     /// `Formatter`, is its writer's to pass on.
     pub(super) fn fmt_result_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
-        let output = self
-            .tcx
-            .fn_sig(def_id)
-            .instantiate(self.tcx, args)
-            .skip_normalization()
-            .skip_binder()
-            .output();
-        // One whose generic code holds it as a value, `same<T>(t: T) -> T`'s,
-        // whose error its caller's form throws, `Form::Valued`'s (#1410).
+        // One whose generic code holds it as a value, `same<T>(t: T) -> T`'s
+        // or a trait's `fn is(self) -> T` through a dictionary,
+        // `Form::Valued`'s (#1410): its error thrown, as a call of the
+        // caller's throws it, `$writeCheck(r)`, then caught with what the
+        // call threw, so an entry that holds it as a value and one that
+        // throws it give the same. This is the one place a call's value
+        // crosses so (#1634).
         let declared = (self
             .tcx
             .fn_sig(def_id)
@@ -154,8 +152,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder())
         .output();
+        // What the caller has, normalized: `M::Out`'s `io::Result<()>`.
+        let output = self.instantiated(declared, args);
+        let generic = self.is_rust_fn(def_id) || self.tcx.trait_of_assoc(def_id).is_some();
         let valued = self.krate.failing.any
-            && self.is_rust_fn(def_id)
+            && generic
             && self.form_differs(crate::lower::generic_facts::Form::Valued, (def_id, declared, output));
         if !self.is_write_result(output)
             || self.formatter_param(def_id).is_some()
@@ -163,6 +164,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return value;
         }
+        let value = match valued {
+            true => Expr::call_helper("$writeCheck", vec![value]),
+            false => value,
+        };
         self.fmt_try(vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
     }
 

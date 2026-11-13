@@ -989,9 +989,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(held) = self.write_result_inside(crossing) {
             return Err(self.unsupported(span, &crate::lower::generic_facts::held_write_result(held)));
         }
+        // A write's result generic code holds as a value, `Form::Valued`'s,
+        // crosses in `fmt_result_value`, the one owner of a call's write
+        // result, inside the `$writeTry` it makes (#1634).
         Ok(match self.form_of_result(crossing) {
+            Some(crate::lower::generic_facts::Form::Valued) | None => value,
             Some(form) => self.form_back(form, crossing, value),
-            None => value,
         })
     }
 }

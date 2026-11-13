@@ -159,14 +159,6 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^write_result_items with"],
   },
   {
-    name: "valued-given-back-unchecked",
-    breaks: "a write's result `same<T>(t: T) -> T` gives back is the error as a value where its caller's call throws it, so `same(r)?` of an `Err` goes on (#1410)",
-    file: "src/lower/generic_facts.rs",
-    find: "            Form::Valued => Expr::call_helper(\"$writeCheck\", vec![value]),\n",
-    replace: "            Form::Valued => value,\n",
-    tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
-  },
-  {
     name: "write-result-through-bound-allowed",
     breaks: "a write's result given for an `impl Get<Result<T, E>>` is given as it is, which generic code reads as `{ TAG }` through the bound (#1416)",
     file: "src/lower/generic_facts.rs",

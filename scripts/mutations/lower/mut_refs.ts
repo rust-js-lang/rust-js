@@ -467,4 +467,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module"],
   },
+  {
+    name: "valued-thrown-after-caught",
+    breaks: "a call's `Form::Valued` write result is thrown again after `fmt_result_value` caught it, so `let r = w.is()` panics with its `Err` (#1634)",
+    file: "src/lower/mut_refs.rs",
+    find: "            Some(crate::lower::generic_facts::Form::Valued) | None => value,\n",
+    replace: "            Some(crate::lower::generic_facts::Form::Valued) => Expr::call_helper(\"$writeCheck\", vec![value]),\n            None => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_through_a_dictionary.rs$"],
+  },
 ];
