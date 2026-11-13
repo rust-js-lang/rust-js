@@ -143,3 +143,33 @@ FRAMES_TO_SKIP.get())` (ReactFlightStackConfigV8.rs:64), an argument that
 is a call, and `a.encode_utf16().cmp(b.encode_utf16())`
 (ReactStrictModeWarnings.rs:93), `Iterator::cmp`, of no table's row.
 Mutations of each answer, caught by `test/decisions.test.ts`.
+
+## Amendment: two sources of a `Box<dyn Iterator>` in the tables (2026-11-13, #1681's held step (i))
+
+The React port's held chains, 118 of 123, start on a `Box<dyn Iterator>`
+a call gives, most a binding's JS iterable (webapi's `keys()`, `entries()`,
+an element list's). No table had one. The matrix, the conformance table
+and the points table gain two sources, appended so no existing case moves:
+
+- **`boxed dyn`**: `boxed(ds())`, a `Box<dyn Iterator<Item = D>>` a function
+  returns of a `Vec`'s, its items printing as they drop.
+- **`js values`**: `js_values(&nums)`, a binding (`link_name = "values"`)
+  that gives JS's own iterator of an array behind the box. Natively it's an
+  iterator of the same items that knows no hint, `std::iter::from_fn`, as
+  a JS iterator doesn't (`(0, None)`).
+
+They found two wrong answers, filed first as P0s and listed in
+`test/iterator-matrix-known.txt` under them:
+
+- **#1690**: a `Box<dyn Iterator>` of a Rust iterator, unwinding from a
+  step, drops what it still holds before what native drops first: the
+  consumer's accumulator, a closure's capture. In both builds, and a drop
+  panicking while unwinding doesn't abort. 502 case-builds.
+- **#1691**: `take(n)` of an iterator with no upper bound hints `(0,
+  None)` in the plain build, where std's `Take` hints `(0, Some(n))`. 2
+  case-builds.
+
+Every other case of both sources runs as native Rust does, in both builds:
+each adapter and consumer, at each panic site and point. So a binding's
+JS iterator behind a box is proved but for `take`'s hint (#1691), and a
+Rust iterator behind one isn't, until #1690 is fixed.

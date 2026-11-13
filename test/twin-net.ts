@@ -133,6 +133,8 @@ export const shared: Record<string, keyof typeof why> = {
   "$debugStr": "format",
   "$decodeUtf16": "iterators", // ADR 0327, #1584: `char::decode_utf16`'s, whose error is its code, where std's body makes `DecodeUtf16Error { code }`
   "$dedupBy": "collections",
+  "$disposeIterator": "js-own", // ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator, a binding's, closed as JS's own
+  "$droppingIterator": "js-own", // ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator stepped dropping what it gives, as JS's own
   "$dedupByCells": "collections",
   "$dequeInsert": "collections",
   "$dequeSwapRemove": "collections",

@@ -221,6 +221,10 @@ export const sources: Source[] = [
   ...owns.map((own) => ownSource(own)),
   { name: "generic vec", shape: { item: "D", owns: true, back: true, exact: true }, expr: () => "ds().into_iter()", own: false, generic: true },
   ownSource(owns.find((own) => own.name === "Every")!, true),
+  // A `Box<dyn Iterator>` a function gives, and one a binding gives, JS's
+  // own iterator of an array, as webapi's `keys()` is (ADR 1136).
+  { name: "boxed dyn", shape: { item: "D", owns: true, back: false, exact: false }, expr: () => "boxed(ds())", own: false },
+  { name: "js values", shape: { item: "N", owns: false, back: false, exact: false }, before: "let js_nums: Vec<u32> = vec![1, 2, 3, 4, 5];", expr: () => "js_values(&js_nums)", own: false },
 ];
 
 /** An adapter: the shape it makes of `from`, or none where it doesn't
@@ -817,7 +821,7 @@ export const stepConsumers: Consumer[] = [
 
 // The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
 // a collect into a `Vec` reserves by (#733).
-const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every"];
+const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values"];
 // The sources whose `size_hint` prints as it runs, of which alone a
 // consumer that asks it shows when (#820).
 const hinting = ["own Hints", "own Exact", "own Every", "generic own Every"];

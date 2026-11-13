@@ -121,6 +121,26 @@ fn ds() -> Vec<D> {
     vec![D(1), D(2), D(3), D(4), D(5)]
 }
 
+/** What a function gives as a \`Box<dyn Iterator>\`, as a crate's or a
+ * library's does (ADR 1136). */
+fn boxed(items: Vec<D>) -> Box<dyn Iterator<Item = D>> {
+    Box::new(items.into_iter())
+}
+
+/** \`items.values()\`: JS's own iterator of an array, as a binding gives one,
+ * webapi's \`keys()\` and \`entries()\` (ADR 1136); natively, an iterator
+ * of the same items that, as a JS iterator, knows no hint, \`(0, None)\`. */
+#[cfg_attr(rust_js, rust_js::link_name = "values")]
+fn js_values(this: &Vec<u32>) -> Box<dyn Iterator<Item = u32>> {
+    #[cfg(not(rust_js))]
+    return {
+        let mut items = this.clone().into_iter();
+        Box::new(std::iter::from_fn(move || items.next()))
+    };
+    #[cfg(rust_js)]
+    unreachable!()
+}
+
 /** A crate iterator's item \`n\`, or its panic. */
 fn yielded(n: u32, boom: u32) -> Option<D> {
     if n == boom {
