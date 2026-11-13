@@ -690,3 +690,20 @@ byte-identical. Mutations `own-facts-through-a-library-dictionary-reanalyzed`,
 `trait-method-facts-unlisted` and `entry-given-facts-unread`, caught.
 A trait default's `flat_map` of arrays collecting at capacity 4 where
 native's is 3 is #1614, apart.
+
+## Amendment: a tuple counts toward how deep a relayed type may nest (2026-11-14, #1708)
+
+A built ask is relayed to callers only while no type constructor nests
+past `NESTED_AT_MOST` within it (#1430). Tuples didn't count. A key of a
+tuple of a type parameter, which a caller makes of its own key, the
+metamorphic net's `default-copy` rewrite of
+`map_keyed_by_a_tuple_of_a_type_parameter`, grew one tuple wider each
+round, `(T, T)` then `((T, T), (T, T))`, doubling, and never reached the
+bound: the compile never ended, its time spent in `nests_past_bound`. A
+tuple now counts as one level, so past `NESTED_AT_MOST` of them the ask
+isn't relayed, as of any constructor. A refusal where a caller would have
+to give it, not a hang (ADR 0262: no result changes; a program that
+compiled still does). Corpus case
+`map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy`, the
+rewrite itself; mutation `relayed-tuples-uncounted`, caught (its compile
+times out).

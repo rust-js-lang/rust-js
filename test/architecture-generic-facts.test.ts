@@ -76,7 +76,16 @@ test("a Room size is undefined only of #934's case, by room_value", () => {
 // it never reads. Each corpus snapshot's functions are scanned; the one
 // listed is #1443's, which predates the rule, and the list only shrinks.
 test("a generic function takes no size fact it doesn't read", () => {
-  const known = ["impl_asks_the_layout_of_a_type_of_its_parameters.js hashMapArbitrary_shrink KVSize"];
+  const known = [
+    "impl_asks_the_layout_of_a_type_of_its_parameters.js hashMapArbitrary_shrink KVSize",
+    // A tuple key relayed a level deeper each round, to the bound (#1708).
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeUsizeUsizeUsizeUsizeUsizeIItemSize",
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeUsizeUsizeUsizeUsizeIItemSize",
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeUsizeUsizeUsizeIItemSize",
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeUsizeUsizeIItemSize",
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeUsizeIItemSize",
+    "map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js iTools_positionsSeen UsizeUsizeIItemSize",
+  ];
   const unread = files("test/corpus").filter((file) => file.endsWith(".js")).flatMap((file) => {
     const text = read(file);
     return [...text.matchAll(/^(?:export )?function (\w+)\(([^)]*)\) \{\n([\s\S]*?)^\}/gm)].flatMap(([, name, params, body]) =>

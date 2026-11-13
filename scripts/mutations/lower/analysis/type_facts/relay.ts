@@ -77,4 +77,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Projection { def_id: _ } => None,\n",
     tests: ["test/diagnostics.test.ts", "-t", "nests in itself without end"],
   },
+  {
+    name: "relayed-tuples-uncounted",
+    breaks: "a tuple doesn't count toward how deep a relayed type may nest, so a key of a tuple of a type parameter a caller makes of its own key grows a tuple wider each round, doubling, and the compile never ends (#1708)",
+    file: "src/lower/analysis/type_facts/relay.rs",
+    find: "        ty::Tuple(parts) => tuples >= NESTED_AT_MOST || parts.iter().any(|part| nests_past(part, held, tuples + 1)),\n",
+    replace: "        ty::Tuple(parts) => parts.iter().any(|part| nests_past(part, held, tuples)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.rs$"],
+  },
 ];

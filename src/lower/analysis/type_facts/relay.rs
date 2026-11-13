@@ -93,9 +93,17 @@ pub(super) type CarriedAsks = IndexSet<(DefId, TypeFact)>;
 const NESTED_AT_MOST: usize = 8;
 
 /// Whether `ty` holds a type constructor, or an associated type's
-/// projection, `<<T as Shape>::Uninit as Shape>::Uninit`, within itself
-/// more than `NESTED_AT_MOST` deep, `held` the constructors around it.
+/// projection, `<<T as Shape>::Uninit as Shape>::Uninit`, or a tuple,
+/// `((T, T), (T, T))`, within itself more than `NESTED_AT_MOST` deep,
+/// `held` the constructors around it, `tuples` how many tuples. A tuple
+/// counts too: a key of a tuple of a type parameter a caller makes of its
+/// own key grows one wider each round, which never settles, doubling as
+/// it goes (#1708).
 fn nests_past_bound(ty: ty::Ty<'_>, held: &mut Vec<DefId>) -> bool {
+    nests_past(ty, held, 0)
+}
+
+fn nests_past(ty: ty::Ty<'_>, held: &mut Vec<DefId>, tuples: usize) -> bool {
     let constructed = match ty.kind() {
         ty::Adt(adt, args) => Some((adt.did(), *args)),
         ty::Alias(_, alias) => match alias.kind {
@@ -109,16 +117,15 @@ fn nests_past_bound(ty: ty::Ty<'_>, held: &mut Vec<DefId>) -> bool {
             return true;
         }
         held.push(id);
-        let past = args.types().any(|part| nests_past_bound(part, held));
+        let past = args.types().any(|part| nests_past(part, held, tuples));
         held.pop();
         return past;
     }
-    let parts: Vec<ty::Ty<'_>> = match ty.kind() {
-        ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => vec![*inner],
-        ty::Tuple(parts) => parts.iter().collect(),
-        _ => Vec::new(),
-    };
-    parts.into_iter().any(|part| nests_past_bound(part, held))
+    match ty.kind() {
+        ty::Tuple(parts) => tuples >= NESTED_AT_MOST || parts.iter().any(|part| nests_past(part, held, tuples + 1)),
+        ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => nests_past(*inner, held, tuples),
+        _ => false,
+    }
 }
 
 /// `caller` asks `asked`: whether that's new.
