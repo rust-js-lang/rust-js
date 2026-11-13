@@ -1,9 +1,10 @@
 // The loop's timings (scripts/timing.ts): how a step's time is said
 // against its usual, and when it's slower.
 import { expect, test } from "bun:test";
-import { mkdirSync, realpathSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 
+import { keepFailedLogs } from "../scripts/checkLogs";
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
 import { compared, median, shown, slower, type Timing } from "../scripts/timing";
@@ -131,4 +132,14 @@ test("a job the change sizes is expected to take its size at its runs' pace", ()
   expect(expected(undefined).longest).toBe(Number.POSITIVE_INFINITY);
   recordJobTimes([{ name: "fmt", seconds: 8, cores: 1 }], { store, now: 5, free: roomy });
   expect(readJobTimes(store).fmt.sizes).toBeUndefined();
+});
+
+test("check:fast keeps each failing job's whole output, a file each, in its run's directory", () => {
+  const store = fixture("check-logs");
+  expect(keepFailedLogs([], { store })).toBeUndefined();
+  const log = `${"x".repeat(5000)}\nthe last line`;
+  const run = keepFailedLogs([{ name: "corpus 6/14", log }, { name: "test/child.test.ts", log: "flaked" }], { store, now: new Date(0) });
+  expect(run).toBe(join(store, `1970-01-01T00-00-00-000Z-${process.pid}`));
+  expect(readdirSync(run!).sort()).toEqual(["corpus-6-14.log", "test-child.test.ts.log"]);
+  expect(readFileSync(join(run!, "corpus-6-14.log"), "utf8")).toBe(log);
 });

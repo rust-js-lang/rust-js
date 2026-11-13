@@ -27,6 +27,7 @@ import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touches
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
+import { keepFailedLogs } from "./checkLogs";
 import { expected, readJobTimes, recordJobTimes } from "./jobTimes";
 import { elapsed, loadScale, median, timed } from "./timing";
 
@@ -809,6 +810,9 @@ if (import.meta.main) {
   const leftAtEnd = said(strays(root));
   if (leftAtEnd) console.warn(`warning: ${leftAtEnd}`);
   for (const { job: { name }, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
+  // Each failing job's whole output, kept past the next run (#1622).
+  const keptLogs = keepFailedLogs(failed.map(({ job: { name }, log }) => ({ name, log })));
+  if (keptLogs !== undefined) console.log(`\neach failing job's whole output: ${keptLogs}`);
   // From its start, its build too.
   const total = elapsed();
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : check.shared ? "check:fast" : "check:fast, the change's";
