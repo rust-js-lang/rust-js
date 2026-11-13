@@ -125,6 +125,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1134 std types' serde forms are one catalog](1134-std-types-serde-forms-are-one-catalog.md) *(#1623: `serde/std_forms.rs`'s `std_form`, a row per std type whose impl is serde's own, a struct form or an enum form; ranges and bounds first)*
 - [1135 A `write!` into a writer is written a piece at a time](1135-a-write-into-a-writer-a-piece-at-a-time.md) *(#1652: `$writerSink`, `display::sink_writes` the owner of std's split; landing in steps)*
 - [1136 Transparent iterator chains, measured](1136-transparent-chains-measured.md) *(#1673: `transparent-chain`, `iterators/transparent.rs`; a measurement for #1681's change 2)*
+- [1137 The bounds analysis on MIR, run in shadow first](1137-the-bounds-analysis-on-mir-shadow-first.md) *(#1672: a forward interval dataflow over the MIR the emitter reads; `--intervals-shadow` logs each check THIR's ranges leave out that it doesn't prove)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place; a library's struct of functions is one too)*

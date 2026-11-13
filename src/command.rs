@@ -109,6 +109,9 @@ pub(crate) struct Build {
     /// changed in place, to see that a write in place refuses where its
     /// copies are left out (#1665).
     pub without_mutated: Vec<String>,
+    /// `--intervals-shadow <file>`: where to write each check THIR's ranges
+    /// leave out that MIR's intervals don't prove, a line each (#1672).
+    pub intervals_shadow: Option<PathBuf>,
     /// `--recognizers-found <file>`: where to write which std functions a
     /// recogniser took, a line each (ADR 1128).
     pub recognizers_found: Option<PathBuf>,
@@ -218,6 +221,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_recognizers.push(path);
     }
     let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
+    let intervals_shadow = valued(&mut ours, "--intervals-shadow", "a path")?.map(PathBuf::from);
     let mut without_mutated = Vec::new();
     while let Some(ty) = valued(&mut ours, "--without-mutated", "a type, as rustc prints it")? {
         without_mutated.push(ty);
@@ -258,6 +262,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         knowns_found,
         without_recognizers,
         without_mutated,
+        intervals_shadow,
         recognizers_found,
         std_iterators,
         js_made_all,

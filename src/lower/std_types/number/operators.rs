@@ -98,6 +98,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let BinOp::Add | BinOp::Sub | BinOp::Mul = op
             && self.exact_at(span)
         {
+            crate::lower::analysis::shadow_left_out(self.tcx, self.frame.owner, span, || {
+                Some(crate::lower::analysis::LeftOut::Wrap)
+            });
             let js_op = match op {
                 BinOp::Add => Op::Add,
                 BinOp::Sub => Op::Sub,

@@ -937,9 +937,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let threaded = self.mir_threaded(held);
         // Its decisions, of a body of the crate's own or another's (ADR 1124).
         let own = mir.body.source.def_id().is_local();
-        let lowered = crate::decisions::in_body(own, || {
-            self.mir_function(threaded.as_ref().unwrap_or(held), captures, seed)
-        });
+        // Where the session records it, what MIR proves of the body lowered,
+        // beside what THIR's ranges leave out (ADR 1137).
+        let lowering = threaded.as_ref().unwrap_or(held);
+        let _shadow = crate::lower::analysis::shadow_body(self.tcx, self.typing_env, &lowering.body);
+        let lowered = crate::decisions::in_body(own, || self.mir_function(lowering, captures, seed));
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;
         lowered

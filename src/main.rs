@@ -149,6 +149,9 @@ struct RustJs {
     /// `--without-mutated <type>`, the types forgotten from what's changed
     /// in place in this compile (#1665).
     without_mutated: Vec<String>,
+    /// `--intervals-shadow <file>`, where to write the checks THIR leaves out
+    /// that MIR doesn't prove (#1672).
+    intervals_shadow: Option<PathBuf>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -323,6 +326,7 @@ impl Callbacks for RustJs {
                 without_recognizers: std::mem::take(&mut self.without_recognizers),
                 without_mutated: std::mem::take(&mut self.without_mutated),
                 records_recognized: self.recognizers_found.is_some(),
+                records_intervals_shadow: self.intervals_shadow.is_some(),
             },
         );
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
@@ -390,6 +394,12 @@ impl Callbacks for RustJs {
         // every body's lowering, where it's asked (ADR 1128).
         if let Some(path) = &self.recognizers_found
             && let Err(error) = std::fs::write(path, lower::session::recognized(tcx))
+        {
+            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
+        // Each check THIR's ranges leave out that MIR doesn't prove (#1672).
+        if let Some(path) = &self.intervals_shadow
+            && let Err(error) = std::fs::write(path, lower::session::intervals_shadow(tcx))
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -701,6 +711,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         without_recognizers: build_without_recognizers,
         recognizers_found: build_recognizers_found,
         without_mutated,
+        intervals_shadow,
         std_iterators,
         js_made_all,
         ..
@@ -730,11 +741,17 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     // What it writes beside its JS where it's asked, each a file its record
     // of the build names as written (ADR 1099), so a compile given again
     // from the tests' cache writes it again (#1526).
-    let reports: Vec<PathBuf> = [&prepare_fired, &knowns_found, &build_recognizers_found, &tidy_fired]
-        .into_iter()
-        .flatten()
-        .map(|path| paths::absolute(path))
-        .collect::<Result<_, _>>()?;
+    let reports: Vec<PathBuf> = [
+        &prepare_fired,
+        &knowns_found,
+        &build_recognizers_found,
+        &tidy_fired,
+        &intervals_shadow,
+    ]
+    .into_iter()
+    .flatten()
+    .map(|path| paths::absolute(path))
+    .collect::<Result<_, _>>()?;
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
     let (without_recognizers, recognizers_found) = (build_without_recognizers, build_recognizers_found);
@@ -752,6 +769,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         without_recognizers,
         recognizers_found,
         without_mutated,
+        intervals_shadow,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),

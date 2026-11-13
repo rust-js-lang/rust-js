@@ -52,6 +52,9 @@ pub(crate) struct Caches {
     /// The types this session forgets of what's changed in place, as
     /// `{ty}` prints them, `--without-mutated`'s (#1665).
     pub without_mutated: IndexSet<String>,
+    /// Each check THIR's facts leave out that MIR doesn't prove, where the
+    /// session records them, `--intervals-shadow`'s (#1672).
+    pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
     /// The std functions a recogniser took, each once, in the order it
     /// first did, where the session records them (`--recognizers-found`).
     pub recognized: Option<RefCell<IndexSet<&'static str>>>,
@@ -72,6 +75,12 @@ pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
         return String::new();
     };
     recognized.borrow().iter().map(|path| format!("{path}\n")).collect()
+}
+
+/// Each check THIR's ranges leave out that MIR's intervals don't prove, a
+/// line each: what `--intervals-shadow` writes (#1672).
+pub(crate) fn intervals_shadow(tcx: TyCtxt<'_>) -> String {
+    super::analysis::intervals_shadow_report(tcx)
 }
 
 /// Records which of tidy's passes change a body, for the rest of the
@@ -115,6 +124,8 @@ pub(crate) struct Flags {
     pub without_mutated: Vec<String>,
     /// Whether the functions a recogniser takes are recorded.
     pub records_recognized: bool,
+    /// Whether the checks THIR leaves out that MIR doesn't prove are.
+    pub records_intervals_shadow: bool,
 }
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
@@ -156,6 +167,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             debug_shown: OnceCell::new(),
             without_recognizers: flags.without_recognizers.into_iter().collect(),
             without_mutated: flags.without_mutated.into_iter().collect(),
+            intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
             recognized: flags.records_recognized.then(RefCell::default),
         }));
     });
