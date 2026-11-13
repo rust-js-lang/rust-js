@@ -4,75 +4,91 @@
 
 use super::*;
 
-/// What `--intervals-shadow` records: each line, and the proofs of each
-/// body being lowered, the innermost last.
+/// What MIR proves of the session's bodies: what each function only calls
+/// reach is given (`parameter_intervals`), and the proofs of each body
+/// being lowered, the innermost last, with, where the session records the
+/// shadow, of each span its operators are written at whether each is
+/// proved.
+#[derive(Default)]
+pub(crate) struct Intervals {
+    given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
+    bodies: Vec<(Proofs, IndexMap<Span, bool>)>,
+}
+
+/// What `--intervals-shadow` records: each line.
 #[derive(Default)]
 pub(crate) struct Shadow {
     lines: IndexSet<String>,
-    bodies: Vec<(Proofs, IndexMap<Span, bool>)>,
-    /// What each function only calls reach is given (`parameter_intervals`).
-    given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
 }
 
-/// The crate's caller-given parameters, worked out where the session
-/// records the shadow, of `bodies`, each a function's MIR the emitter
-/// reads, by the call graph of them (#1672 M2b-2).
-pub(in crate::lower) fn shadow_parameters<'tcx>(
+/// The crate's caller-given parameters, of `bodies`, each a function's
+/// MIR the emitter reads, by the call graph of them (#1672 M2b-2).
+pub(in crate::lower) fn given_parameters<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
 ) {
-    let caches = crate::lower::session::caches(tcx);
-    let Some(shadow) = &caches.intervals_shadow else {
+    // Until MIR decides a check (#1672 M3), only the shadow asks it.
+    if crate::lower::session::caches(tcx).intervals_shadow.is_none() {
         return;
-    };
+    }
     let listed: Vec<(rustc_span::def_id::DefId, &Body<'tcx>)> = bodies.iter().map(|(&id, &body)| (id, body)).collect();
     let graph = crate::lower::call_graph::call_graph(tcx, &listed);
     let only_called = crate::lower::analysis::only_called::only_called(tcx);
-    shadow.borrow_mut().given = parameter_intervals(tcx, &graph, bodies, &only_called);
+    let given = parameter_intervals(tcx, &graph, bodies, &only_called);
+    crate::lower::session::caches(tcx).intervals.borrow_mut().given = given;
 }
 
-/// A body's lowering begun, of a session that records the shadow: its
-/// proofs, and of each span its operators are written at whether each is
+/// A body's lowering begun: its proofs, and where the session records the
+/// shadow, of each span its operators are written at whether each is
 /// proved, until the guard it gives drops.
-pub(in crate::lower) fn shadow_body<'tcx>(
+pub(in crate::lower) fn body_proofs<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     body: &Body<'tcx>,
-) -> Option<ShadowScope<'tcx>> {
+) -> ProofsScope<'tcx> {
     let caches = crate::lower::session::caches(tcx);
-    let shadow = caches.intervals_shadow.as_ref()?;
-    let given = shadow
-        .borrow()
-        .given
-        .get(&body.source.def_id())
-        .cloned()
-        .unwrap_or_default();
-    let proofs = proofs(tcx, typing_env, body, given);
+    let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
+    // Of a body with no bounds check and no `+`, `-` or `*`, nothing to
+    // prove, its walk left out; of every body, until MIR decides a check
+    // (#1672 M3), where the session records no shadow.
+    let asks = caches.intervals_shadow.is_some()
+        && (body.basic_blocks.iter()).any(|data| {
+        matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
+            || (data.statements.iter()).any(|statement| {
+                matches!(&statement.kind, StatementKind::Assign(assign)
+                    if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _)))
+            })
+    });
+    let proofs = match asks {
+        true => proofs(tcx, typing_env, body, given),
+        false => Proofs::default(),
+    };
     let mut exact: IndexMap<Span, bool> = IndexMap::default();
-    for (block, data) in body.basic_blocks.iter_enumerated() {
-        for (statement_index, statement) in data.statements.iter().enumerate() {
-            if let StatementKind::Assign(assign) = &statement.kind
-                && let Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) = &assign.1
-            {
-                let proved = proofs.exact.contains(&Location { block, statement_index });
-                *exact.entry(statement.source_info.span).or_insert(true) &= proved;
+    if caches.intervals_shadow.is_some() {
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            for (statement_index, statement) in data.statements.iter().enumerate() {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) = &assign.1
+                {
+                    let proved = proofs.exact.contains(&Location { block, statement_index });
+                    *exact.entry(statement.source_info.span).or_insert(true) &= proved;
+                }
             }
         }
     }
-    shadow.borrow_mut().bodies.push((proofs, exact));
-    Some(ShadowScope { tcx })
+    caches.intervals.borrow_mut().bodies.push((proofs, exact));
+    ProofsScope { tcx }
 }
 
-/// Holds a body's proofs in the shadow while it's lowered.
-pub(in crate::lower) struct ShadowScope<'tcx> {
+/// Holds a body's proofs while it's lowered.
+pub(in crate::lower) struct ProofsScope<'tcx> {
     tcx: TyCtxt<'tcx>,
 }
 
-impl Drop for ShadowScope<'_> {
+impl Drop for ProofsScope<'_> {
     fn drop(&mut self) {
-        if let Some(shadow) = &crate::lower::session::caches(self.tcx).intervals_shadow {
-            shadow.borrow_mut().bodies.pop();
-        }
+        let caches = crate::lower::session::caches(self.tcx);
+        caches.intervals.borrow_mut().bodies.pop();
     }
 }
 
@@ -102,8 +118,8 @@ pub(in crate::lower) fn shadow_check(
     let Some(check) = check() else {
         return;
     };
-    let mut shadow = shadow.borrow_mut();
-    let Some((proofs, exact)) = shadow.bodies.last() else {
+    let intervals = caches.intervals.borrow();
+    let Some((proofs, exact)) = intervals.bodies.last() else {
         return;
     };
     let (kind, proved) = match check {
@@ -117,7 +133,7 @@ pub(in crate::lower) fn shadow_check(
     };
     let at = tcx.sess.source_map().span_to_diagnostic_string(span);
     let line = format!("{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
-    shadow.lines.insert(line);
+    shadow.borrow_mut().lines.insert(line);
 }
 
 /// Each check THIR's facts leave out that MIR doesn't prove, a line each,

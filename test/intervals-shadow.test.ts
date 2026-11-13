@@ -138,3 +138,46 @@ pub fn main() {
 }
 `)).toEqual([]);
 });
+
+test("a for loop's value over a range is at least its start and below its end, `path[i - 1]` of `for i in 1..len`; not of a range whose end is written in the loop", () => {
+  expect(shadowOf(`fn walk(path: &[u32]) -> u32 {
+    let len = path.len();
+    let mut t = 0;
+    for i in 1..len {
+        t += path[i - 1] + path[i];
+    }
+    t
+}
+fn changed(v: &[u32]) -> u32 {
+    let mut n = v.len();
+    let mut t = 0;
+    for i in 0..n {
+        n = 0;
+        t += v[i] + n as u32;
+    }
+    t
+}
+pub fn main() {
+    println!("{} {}", walk(&[1, 2, 3]), changed(&[7]));
+}
+`)).toEqual(["bounds changed"]);
+});
+
+test("`i - 1` under `i < len` alone isn't below `len`: of `i = 0` it wraps; nor is a value of a range written a field at a time below the end it was made with", () => {
+  expect(shadowOf(`fn before(p: &[u32], i: usize) -> u32 {
+    if i < p.len() { p[i - 1] } else { 0 }
+}
+fn total(v: &[u32]) -> u32 {
+    let mut r = 0..v.len();
+    r.end = 3;
+    let mut t = 0;
+    for i in r {
+        t += v[i];
+    }
+    t
+}
+pub fn main() {
+    println!("{} {}", before(&[1, 2], std::hint::black_box(1)), total(&[1, 2, 3]));
+}
+`)).toEqual([]);
+});

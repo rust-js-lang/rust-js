@@ -165,3 +165,58 @@ mir-only bounds, 57 mir-only wraps. Mutations `intervals-quotients-unknown`,
 `intervals-remainder-reaches-its-divisor`, `intervals-unequal-unnarrowed`,
 `intervals-negative-zero-exact`, `intervals-mir-only-unreported` and
 `intervals-copies-unnarrowed`, caught.
+
+## M3, step 1: bounds asserts, measured and held (2026-11-13)
+
+MIR's intervals were switched to decide each bounds `assert`, by the
+block it ends, of the very body proved. The switch was measured and then
+held: THIR still decides, and MIR's proof is compared in the shadow.
+
+- **Why held.** The lowering tests pin elisions THIR makes that MIR
+  doesn't yet:
+  - `xs[Math.min(i, xs.length - 1)]` and `xs[Math.max(i, j)]`;
+  - `iter().enumerate()`'s index;
+  - `heap[(index - 1) >>> 1]`;
+  - `items[i + 1]` under `i + 1 < len`;
+  - a closure's capture below two lengths;
+  - `counts[i]--` of an element known positive;
+  - rest arguments' `value[0]` under `value.length === 0 ?`;
+  - `a[s - 1]` under `s >= 1` of a counter below a length.
+
+  The switch lands once the shadow shows none of these, and no `bounds`
+  line on the corpus, recovered through MIR's precision alone. In the
+  measured run, the corpus passed against native with 23 checks left out
+  that THIR kept and 16 kept that it left out.
+- **A wrong answer the switch would have shipped.** `t = i - c` was taken
+  below what `i` is below, though `i` may be under `c`: `p[i - 1]` under
+  `i < p.len()` alone, at `i = 0`, read `p[4294967295]`, `undefined`,
+  where native Rust panics. The relation now needs `i` known at least `c`.
+  THIR keeps that check, so this was never on main. Case
+  `index_one_below_a_value_that_may_be_zero`, and a shadow test.
+- **Faults the shadow had hidden.** Its script ignored a crashed compile,
+  and now fails on one:
+  - the dominators of a transformed body's unreachable block panicked;
+  - a `u128`'s range overflowed `i128`, and `-i128::MIN` overflowed. A
+    128-bit integer is now never known.
+- **Cost, for when MIR decides.**
+  - A body with no bounds check and no `+`, `-` or `*` isn't walked.
+  - The worklist visits blocks in reverse postorder, each queued once.
+  - A loop no head dominates, of a transformed body's irreducible flow,
+    widens anywhere after 12 visits, so the walk ends.
+
+  Serde's `inbox`, decided by MIR, hung past 120 s, and with these takes
+  15 s. Until the switch, a session with no shadow walks nothing.
+- **Precision:**
+  - **A `for` loop over a range of integers.** Its desugaring's
+    `into_iter()` and `next()` are recognized by lang item
+    (`recognition::range_step`). Each value is at least the range's start
+    and below its end, of a range only `next()` changes: each `&mut` of it,
+    or a reborrow, is `next()`'s argument alone, and nothing is written
+    into its fields (`intervals/ranges.rs`). Case
+    `range_end_written_before_its_loop` has one written a field at a time.
+  - **`t = i + 1` of `i` strictly below a length:** at most that length.
+  - **`len - c` of a length known at least `c`:** strictly below it.
+
+Mutations `intervals-minus-one-may-wrap`, `intervals-range-next-unknown`,
+`intervals-range-written-kept`, `ranges-field-writes-unseen` and
+`ranges-reborrows-unfollowed`, caught.

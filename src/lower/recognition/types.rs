@@ -1274,3 +1274,32 @@ pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(in crate::lower) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(b, _) if std_path(tcx, b.did()) == "std::backtrace::Backtrace")
 }
+
+/// What a `for` loop over a range of integers calls of it, `for i in a..b`'s
+/// desugaring: its `into_iter()`, the range itself, and each `next()`,
+/// which gives its start and steps it, never past its end. By the lang
+/// items the desugaring calls, of a `Range` of an integer type (ADR 1137).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum RangeStep {
+    IntoIter,
+    Next,
+}
+
+pub(in crate::lower) fn range_step<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<RangeStep> {
+    let step = if tcx.is_lang_item(def_id, LangItem::IntoIterIntoIter) {
+        RangeStep::IntoIter
+    } else if tcx.is_lang_item(def_id, LangItem::IteratorNext) {
+        RangeStep::Next
+    } else {
+        return None;
+    };
+    let of_integers = args.types().next().is_some_and(|ty| {
+        matches!(ty.kind(), ty::Adt(adt, item) if tcx.is_lang_item(adt.did(), LangItem::Range)
+            && item.types().next().is_some_and(|item| item.is_integral()))
+    });
+    of_integers.then_some(step)
+}

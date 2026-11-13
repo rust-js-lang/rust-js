@@ -13,7 +13,8 @@
 //! type's.
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::recognition::{SliceLength, slice_length};
+use crate::lower::recognition::{RangeStep, SliceLength, range_step, slice_length};
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
     self, AssertKind, BasicBlock, BinOp, Body, CastKind, Local, Location, Operand, Rvalue, StatementKind,
@@ -22,15 +23,23 @@ use rustc_middle::mir::{
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
+use std::collections::BTreeSet;
 
 mod callers;
+mod ranges;
 mod session;
 
 use callers::parameter_intervals;
+use ranges::stepped_ranges;
 pub(in crate::lower) use session::*;
 
 /// How many times a block is visited before what still moves widens.
 const VISITS_BEFORE_WIDENING: u32 = 3;
+
+/// How many times any block is visited before what still moves widens: a
+/// loop no head dominates, of an irreducible flow a transformed body may
+/// have, still ends.
+const VISITS_BEFORE_WIDENING_ANYWHERE: u32 = 12;
 
 /// What MIR proves of a body: each bounds check that never fails, by the
 /// block its `assert` ends, and each `+`, `-` and `*` that never leaves its
@@ -97,6 +106,28 @@ struct State {
     below: IndexSet<(Local, Term, bool)>,
     least: IndexMap<Local, i128>,
     empties: IndexMap<Local, Local>,
+    /// A `for` loop's range of integers, by the local holding it, a `&mut`
+    /// of it, or the `Option` its `next()` gave.
+    ranges: IndexMap<Local, Ranged>,
+}
+
+/// A range of integers `next()` alone steps (`stepped_ranges`): what its
+/// start is at least, and its end, which never changes while it's known.
+/// Each value its `next()` gives is at least the one and below the other.
+#[derive(Clone, Copy, PartialEq)]
+struct Ranged {
+    held: Held,
+    least: i128,
+    end: Value,
+}
+
+/// What holds a range: a local, the range; a `&mut` of it, lent to its
+/// `next()`; or what `next()` gave.
+#[derive(Clone, Copy, PartialEq)]
+enum Held {
+    Range,
+    Lent,
+    Next,
 }
 
 impl State {
@@ -120,6 +151,18 @@ impl State {
         let least = (self.least.iter())
             .filter_map(|(&k, &n)| other.least.get(&k).map(|&m| (k, n.min(m))))
             .collect();
+        let ranges = (self.ranges.iter())
+            .filter_map(|(&k, &a)| {
+                let b = other.ranges.get(&k)?;
+                (a.held == b.held && a.end == b.end).then_some((
+                    k,
+                    Ranged {
+                        least: a.least.min(b.least),
+                        ..a
+                    },
+                ))
+            })
+            .collect();
         State {
             intervals,
             comparisons,
@@ -128,6 +171,7 @@ impl State {
             below: self.below.intersection(&other.below).copied().collect(),
             least,
             empties: both(&self.empties, &other.empties),
+            ranges,
         }
     }
 
@@ -143,6 +187,8 @@ impl State {
             .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
         self.least.shift_remove(&local);
         self.empties.retain(|&holder, &mut of| holder != local && of != local);
+        self.ranges.shift_remove(&local);
+        self.ranges.retain(|_, ranged| ranged.end != Value::Local(local));
     }
 
     /// What `local` is a copy or a reborrow of, else itself.
@@ -179,6 +225,8 @@ struct Walk<'a, 'tcx> {
     body: &'a Body<'tcx>,
     /// The locals whose place is lent `&mut` or as a raw pointer.
     lent: IndexSet<Local>,
+    /// The ranges of integers only their `next()` steps (`stepped_ranges`).
+    stepped: IndexSet<Local>,
     /// What its callers give each of its parameters, of a function only
     /// calls reach (`parameter_intervals`); none where it's anything.
     from_callers: Vec<Option<Interval>>,
@@ -210,11 +258,13 @@ fn walk<'a, 'tcx>(
             _ => None,
         })
         .collect();
+    let stepped = stepped_ranges(tcx, body);
     Walk {
         tcx,
         typing_env,
         body,
         lent,
+        stepped,
         from_callers: given,
     }
 }
@@ -259,18 +309,27 @@ impl<'tcx> Walk<'_, 'tcx> {
             below: IndexSet::default(),
             least: IndexMap::default(),
             empties: IndexMap::default(),
+            ranges: IndexMap::default(),
         });
         // A loop's heads, each the target of an edge back from a block it
         // dominates: where what still moves widens, and nowhere else, so
-        // what a switch narrows past the head stays narrowed.
+        // what a switch narrows past the head stays narrowed. Of a block
+        // the start reaches, which a transformed body's may not.
         let dominators = self.body.basic_blocks.dominators();
         let heads: IndexSet<BasicBlock> = (self.body.basic_blocks.iter_enumerated())
             .flat_map(|(from, data)| data.terminator().successors().map(move |to| (from, to)))
-            .filter(|&(from, to)| dominators.dominates(to, from))
+            .filter(|&(from, to)| dominators.is_reachable(from) && dominators.dominates(to, from))
             .map(|(_, to)| to)
             .collect();
-        let mut work: Vec<BasicBlock> = vec![mir::START_BLOCK];
-        while let Some(block) = work.pop() {
+        // Each block waiting, once, by its place in reverse postorder: what
+        // flows into a block is visited before it, so each is visited
+        // fewer times than a stack would.
+        let mut rank: IndexVec<BasicBlock, usize> = IndexVec::from_elem_n(usize::MAX, blocks);
+        for (at, &block) in self.body.basic_blocks.reverse_postorder().iter().enumerate() {
+            rank[block] = at;
+        }
+        let mut work: BTreeSet<(usize, BasicBlock)> = BTreeSet::from([(rank[mir::START_BLOCK], mir::START_BLOCK)]);
+        while let Some((_, block)) = work.pop_first() {
             let Some(mut state) = entry[block].clone() else {
                 continue;
             };
@@ -283,7 +342,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                 let joined = match &entry[target] {
                     Some(old) => {
                         let mut joined = old.join(&out);
-                        if heads.contains(&target) && visits[target] >= VISITS_BEFORE_WIDENING {
+                        let widens = heads.contains(&target) && visits[target] >= VISITS_BEFORE_WIDENING
+                            || visits[target] >= VISITS_BEFORE_WIDENING_ANYWHERE;
+                        if widens {
                             self.widen(old, &mut joined);
                         }
                         joined
@@ -292,7 +353,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 };
                 if entry[target].as_ref() != Some(&joined) {
                     entry[target] = Some(joined);
-                    work.push(target);
+                    work.insert((rank[target], target));
                 }
             }
         }
@@ -363,6 +424,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             ty::Int(i) => (true, i.bit_width().map_or(pointer, |w| w as u32)),
             _ => return None,
         };
+        // A 128-bit integer is never known: a `u128`'s range is past an
+        // `i128`'s, and an `i128`'s ends are where `x + 1` or `-x` of them
+        // would wrap here.
+        if width >= 128 {
+            return None;
+        }
         Some(match signed {
             true => Interval {
                 lo: -(1i128 << (width - 1)),
@@ -511,6 +578,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             below: IndexSet::default(),
             least: IndexMap::default(),
             empties: IndexMap::default(),
+            ranges: IndexMap::default(),
         }
     }
 
@@ -524,28 +592,89 @@ impl<'tcx> Walk<'_, 'tcx> {
         let Some(local) = place.as_local() else {
             return;
         };
+        let ranged = self.ranged(rvalue, state);
         if self.lent.contains(&local) {
             state.forget(local);
+            state.ranges.extend(
+                ranged
+                    .filter(|r| r.held != Held::Range || self.stepped.contains(&local))
+                    .map(|ranged| (local, ranged)),
+            );
             return;
         }
         let range = self.range(place.ty(&self.body.local_decls, self.tcx).ty);
         let fits = |r: &Interval| range.is_some_and(|t| t.lo <= r.lo && r.hi <= t.hi);
         let unlent = |of: &mir::Place<'tcx>| of.as_local().filter(|of| !self.lent.contains(of));
         let (mut comparison, mut copy_of, mut length_of) = (None, None, None);
-        // `t = i - c` of a constant at least none: below what `i` is, and
-        // strictly where `c` is one or more, `path[i - 1]` under `i < len`.
+        // `t = i - c` of a constant at least none, where `i` is known at
+        // least `c`, so it never wraps: below what `i` is, and strictly
+        // where `c` is one or more, `path[i - 1]` under `1 <= i < len`.
+        // Of `i = 0`, `i - 1` wraps, and is past every length. And where
+        // `i` holds a slice's length, at least `c`, strictly below it,
+        // `list[list.len() - 1]` of a list not empty.
         let mut below_as: Vec<(Term, bool)> = Vec::new();
         if let Rvalue::BinaryOp(BinOp::Sub, operands) = rvalue
             && let Some(i) = operands.0.place().and_then(|p| p.as_local())
             && let Some(c) = self.operand(&operands.1, state).filter(|c| c.lo >= 0)
+            && let Some(at_least) = self.operand(&operands.0, state).map(|i| i.lo)
+        {
+            let slice = state.length_of(i);
+            let least = slice.and_then(|s| state.least.get(&s).copied()).unwrap_or(0);
+            if at_least.max(least) >= c.hi {
+                let i = state.root(i);
+                below_as = (state.below.iter())
+                    .filter(|&&(x, _, _)| x == i)
+                    .map(|&(_, y, strict)| (y, strict || c.lo >= 1))
+                    .collect();
+                if let Some(slice) = slice.filter(|_| c.lo >= 1) {
+                    below_as.push((Term::Len(slice), true));
+                }
+            }
+        }
+        // `t = i + 1` of `i` strictly below: at most what it's below,
+        // `codes[i - 1]` after `codes[i]`'s check and `i += 1`.
+        if let Rvalue::BinaryOp(BinOp::Add, operands) = rvalue
+            && let Some(i) = operands.0.place().and_then(|p| p.as_local())
+            && self.operand(&operands.1, state) == Some(Interval { lo: 1, hi: 1 })
         {
             let i = state.root(i);
-            below_as = (state.below.iter())
-                .filter(|&&(x, _, _)| x == i)
-                .map(|&(_, y, strict)| (y, strict || c.lo >= 1))
-                .collect();
+            below_as.extend(
+                (state.below.iter())
+                    .filter(|&&(x, _, strict)| x == i && strict)
+                    .map(|&(_, y, _)| (y, false)),
+            );
         }
         let interval = match rvalue {
+            // A value a range's `next()` gave, `i` of `for i in a..b`: at
+            // least `a`, below `b`.
+            Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) | Rvalue::CopyForDeref(of)
+                if let [mir::PlaceElem::Downcast(_, variant), mir::PlaceElem::Field(field, _)] =
+                    of.projection.as_slice()
+                    && variant.as_u32() == 1
+                    && field.as_u32() == 0
+                    && let Some(&Ranged {
+                        held: Held::Next,
+                        least,
+                        end,
+                    }) = state.ranges.get(&of.local) =>
+            {
+                let end_most = match end {
+                    Value::Constant(n) => Some(n),
+                    Value::Local(l) => state.intervals[l]
+                        .or_else(|| self.range(self.body.local_decls[l].ty))
+                        .map(|i| i.hi),
+                };
+                if let Value::Local(l) = end {
+                    below_as.push((state.length_of(l).map_or(Term::Int(l), Term::Len), true));
+                }
+                end_most
+                    .map(|most| Interval {
+                        lo: least,
+                        hi: most - 1,
+                    })
+                    .filter(|i| i.lo <= i.hi)
+                    .filter(fits)
+            }
             Rvalue::Use(operand, _) => {
                 if let Operand::Copy(of) | Operand::Move(of) = operand {
                     copy_of = unlent(of).map(|of| state.root(of));
@@ -595,10 +724,50 @@ impl<'tcx> Walk<'_, 'tcx> {
         if let Some(of) = length_of.filter(|&of| of != local) {
             state.lens.insert(local, of);
         }
+        state.ranges.extend(
+            ranged
+                .filter(|r| r.held != Held::Range || self.stepped.contains(&local))
+                .map(|ranged| (local, ranged)),
+        );
         for (y, strict) in below_as {
             if y != Term::Len(local) && y != Term::Int(local) {
                 state.below.insert((local, y, strict));
             }
+        }
+    }
+
+    /// What `rvalue` makes of a range of integers: one built, `a..b`, or
+    /// one moved or copied, or a `&mut` of one `next()` alone steps.
+    fn ranged(&self, rvalue: &Rvalue<'tcx>, state: &State) -> Option<Ranged> {
+        match rvalue {
+            Rvalue::Aggregate(kind, fields)
+                if let mir::AggregateKind::Adt(adt, ..) = **kind
+                    && self.tcx.is_lang_item(adt, LangItem::Range)
+                    && let [start, end] = fields.raw.as_slice() =>
+            {
+                Some(Ranged {
+                    held: Held::Range,
+                    least: self.operand(start, state)?.lo,
+                    end: self.value(end, state)?,
+                })
+            }
+            Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) => {
+                let ranged = *state.ranges.get(&of.as_local()?)?;
+                (ranged.held == Held::Range).then_some(ranged)
+            }
+            Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => {
+                let ranged = *state.ranges.get(&of.local)?;
+                match (of.projection.as_slice(), ranged.held) {
+                    ([], Held::Range) if self.stepped.contains(&of.local) => Some(Ranged {
+                        held: Held::Lent,
+                        ..ranged
+                    }),
+                    // A reborrow of one lent, `&mut (*lent)`.
+                    ([mir::PlaceElem::Deref], Held::Lent) => Some(ranged),
+                    _ => None,
+                }
+            }
+            _ => None,
         }
     }
 
@@ -774,6 +943,31 @@ impl<'tcx> Walk<'_, 'tcx> {
                             }
                             Some(SliceLength::IsEmpty) => {
                                 after.empties.insert(local, of);
+                            }
+                            _ => {}
+                        }
+                    }
+                    // A range's `into_iter()`, itself, and its `next()`, what
+                    // it gives.
+                    let given = (args.first())
+                        .and_then(|arg| arg.node.place())
+                        .and_then(|p| p.as_local())
+                        .and_then(|of| state.ranges.get(&of).copied());
+                    if let Some((callee, callee_args)) = func.const_fn_def()
+                        && let Some(given) = given
+                    {
+                        match (range_step(self.tcx, callee, callee_args), given.held) {
+                            (Some(RangeStep::IntoIter), Held::Range) if self.stepped.contains(&local) => {
+                                after.ranges.insert(local, given);
+                            }
+                            (Some(RangeStep::Next), Held::Lent) => {
+                                after.ranges.insert(
+                                    local,
+                                    Ranged {
+                                        held: Held::Next,
+                                        ..given
+                                    },
+                                );
                             }
                             _ => {}
                         }

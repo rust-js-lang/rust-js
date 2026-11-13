@@ -777,22 +777,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return None;
         };
-        let in_bounds = self.known_in_bounds(msg, terminator.source_info.span);
-        if matches!(**msg, mir::AssertKind::BoundsCheck { .. }) {
+        // A bounds check THIR's facts know in bounds isn't made; the MIR
+        // intervals' shadow compares MIR's proof of it, its block the one
+        // whose terminator this is, until MIR decides (ADR 1137, #1672 M3).
+        let block = (matches!(**msg, mir::AssertKind::BoundsCheck { .. }))
+            .then(|| body.basic_blocks.iter_enumerated())
+            .and_then(|mut blocks| blocks.find(|(_, data)| std::ptr::eq(data.terminator(), terminator)))
+            .map(|(block, _)| block);
+        if let Some(block) = block {
+            let thir_in_bounds = self.known_in_bounds(msg, terminator.source_info.span);
             crate::lower::analysis::shadow_check(
                 self.tcx,
                 self.frame.owner,
                 terminator.source_info.span,
-                in_bounds,
-                || {
-                    let mut blocks = body.basic_blocks.iter_enumerated();
-                    let block = blocks.find(|(_, data)| std::ptr::eq(data.terminator(), terminator))?.0;
-                    Some(crate::lower::analysis::LeftOut::Bounds(block))
-                },
+                thir_in_bounds,
+                || Some(crate::lower::analysis::LeftOut::Bounds(block)),
             );
-        }
-        if in_bounds {
-            return Some(Check::Unchecked);
+            if thir_in_bounds {
+                return Some(Check::Unchecked);
+            }
         }
         if constant_truth((self.tcx, self.typing_env), body, cond) == Some(*expected) {
             return Some(Check::Unchecked);

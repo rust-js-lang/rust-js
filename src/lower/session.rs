@@ -55,6 +55,9 @@ pub(crate) struct Caches {
     /// Each check THIR's facts leave out that MIR doesn't prove, where the
     /// session records them, `--intervals-shadow`'s (#1672).
     pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
+    /// What MIR proves of the bodies being lowered, and what each function
+    /// only calls reach is given (#1672, ADR 1137).
+    pub intervals: RefCell<super::analysis::Intervals>,
     /// The std functions a recogniser took, each once, in the order it
     /// first did, where the session records them (`--recognizers-found`).
     pub recognized: Option<RefCell<IndexSet<&'static str>>>,
@@ -168,6 +171,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             without_recognizers: flags.without_recognizers.into_iter().collect(),
             without_mutated: flags.without_mutated.into_iter().collect(),
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
+            intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),
         }));
     });

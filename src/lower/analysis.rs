@@ -64,7 +64,7 @@ mod intervals;
 mod tests;
 mod throwing;
 pub(in crate::lower) use intervals::shadow_report as intervals_shadow_report;
-pub(in crate::lower) use intervals::{LeftOut, Shadow, shadow_body, shadow_check, shadow_parameters};
+pub(in crate::lower) use intervals::{Intervals, LeftOut, Shadow, body_proofs, given_parameters, shadow_check};
 mod unwinding;
 pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};
 mod wholes;
@@ -998,13 +998,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     let paths: IndexMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
-    // Where the session records the MIR intervals' shadow, what each
-    // function only calls reach is given at its calls (ADR 1137, M2b-2).
+    // What each function only calls reach is given at its calls, for the
+    // MIR intervals (ADR 1137, M2b-2).
     let mirs: IndexMap<DefId, &rustc_middle::mir::Body<'tcx>> = (all_bodies.iter())
         .filter(|body| body.def_id.is_local())
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
         .collect();
-    shadow_parameters(tcx, &mirs);
+    given_parameters(tcx, &mirs);
     let mutated = mutated_types(tcx, all_bodies);
     // Less what the session forgets of it, to see that a write in place
     // refuses where its copies are left out (#1665).

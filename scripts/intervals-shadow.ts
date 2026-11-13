@@ -20,15 +20,22 @@ const out = outAt >= 0 ? process.argv[outAt + 1] : undefined;
 const work = mkdtempSync(join(tmpdir(), "intervals-shadow-"));
 const cases = readdirSync(corpus).filter((name) => name.endsWith(".rs")).sort();
 
+// The cases whose compile failed: none, or a crash of the analysis would
+// pass as a case with nothing to say.
+const failed: string[] = [];
+
 async function shadowOf(name: string): Promise<string[]> {
   const file = join(corpus, name);
   const want = directives(readFileSync(file, "utf8"));
   if (typeof want === "string" || want.kind === "compile-fail") return [];
   const log = join(work, `${name}.shadow`);
-  const proc = Bun.spawn([compiler, "--intervals-shadow", log, file, "-o", join(work, `${name}.js`), "--", `--edition=${want.edition}`], { stdout: "ignore", stderr: "ignore" });
+  const proc = Bun.spawn([compiler, "--intervals-shadow", log, file, "-o", join(work, `${name}.js`), "--", `--edition=${want.edition}`], { stdout: "ignore", stderr: "pipe" });
   const timer = setTimeout(() => proc.kill(), 120_000);
-  await proc.exited;
+  const stderr = await new Response(proc.stderr).text();
+  const code = await proc.exited;
   clearTimeout(timer);
+  // A refusal is the case's to make (`error:`), not a crash.
+  if (code !== 0 && (want.kind !== "ignore-rust-js" || stderr.includes("panicked"))) failed.push(name);
   return existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => `${line}\t${name}`) : [];
 }
 
@@ -44,3 +51,7 @@ const counts = new Map<string, number>();
 for (const line of lines) counts.set(line.split("\t")[0], (counts.get(line.split("\t")[0]) ?? 0) + 1);
 console.log(`${cases.length} cases, ${lines.length} lines (a kind: THIR leaves out what MIR doesn't prove; mir-only: MIR proves what THIR keeps): ${[...counts].map(([k, n]) => `${k} ${n}`).join(", ")}`);
 if (out) writeFileSync(out, lines.join("\n") + "\n");
+if (failed.length > 0) {
+  console.error(`${failed.length} cases failed to compile: ${failed.join(", ")}`);
+  process.exit(1);
+}

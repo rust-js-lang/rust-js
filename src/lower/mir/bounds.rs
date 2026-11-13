@@ -10,7 +10,8 @@ use rustc_hir::attrs::lang_items::LangItem;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an `Assert` at `span` checks an index THIR's facts know is in
-    /// bounds: the index there, `a[i]`, is among them.
+    /// bounds: the index there, `a[i]`, is among them. Asked now by the MIR
+    /// intervals' shadow alone, which compares it with MIR's proof (#1672).
     pub(super) fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
         matches!(msg, mir::AssertKind::BoundsCheck { .. })
             && the_one_at(self.frame.thir, span, |e| {
