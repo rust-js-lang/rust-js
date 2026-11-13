@@ -92,6 +92,58 @@ test("a compile asked counts every answer of every decision, a 0 too, then what 
   expect(after.filter((row) => Number(row[4]) === 0)).toEqual([]);
 }, underLoad(240_000));
 
+// Which chains are transparent (#1673), each kept from it by the first
+// of: an `Iterator` of the crate's, an iterator held apart it starts on,
+// a source not an array, a string or a range, an iterator that escapes, a
+// destructor in its items or a closure's captures; `v.iter().map(..)`, `(0..10).filter(..)` and a
+// `for` loop's `v.iter().rev()` admitted.
+test("each chain is counted by what keeps it from being transparent", () => {
+  const dir = fixture("decisions-transparent");
+  const source = join(dir, "main.rs");
+  writeFileSync(source, `use std::collections::BTreeSet;
+
+struct Counter(u32);
+
+impl Iterator for Counter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        self.0 += 1;
+        (self.0 < 4).then_some(self.0)
+    }
+}
+
+fn evens(v: &[i32]) -> impl Iterator<Item = &i32> {
+    v.iter().filter(|x| **x % 2 == 0)
+}
+
+pub fn main() {
+    let v = vec![1, 2, 3, 4];
+    let doubled: Vec<i32> = v.iter().map(|x| x * 2).collect();
+    let thirds: i32 = (0..10).filter(|x| x % 3 == 0).sum();
+    let counted: u32 = Counter(0).map(|x| x + 1).sum();
+    let names = vec![String::from("a"), String::from("b")];
+    let shouted: Vec<String> = names.into_iter().map(|s| s + "!").collect();
+    let even = evens(&v).count();
+    let set = BTreeSet::from([3, 1, 2]);
+    let total: i32 = set.iter().sum();
+    let tag = String::from("tag");
+    let tagged: Vec<usize> = v.iter().map(move |x| *x as usize + tag.len()).collect();
+    for x in v.iter().rev() {
+        print!("{x}");
+    }
+    println!("{doubled:?} {thirds} {counted} {shouted:?} {even} {total} {tagged:?}");
+}
+`);
+  const counts = join(dir, "counts.tsv");
+  rmSync(counts, { force: true });
+  run([compiler, source, "-o", join(dir, "main.js"), "--", "--crate-type=lib"], 120_000, { RUST_JS_DECISIONS: counts });
+  const given: Record<string, number> = {};
+  for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
+    if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
+  }
+  expect(given).toEqual({ "user-iterator": 1, held: 1, source: 1, escapes: 1, "drop-glue": 2, admitted: 3 });
+}, underLoad(120_000));
+
 // An answer given only by a program that reaches it is counted, not
 // refused as uncatalogued: `generic-form`'s `tagged`, a write's result
 // given to generic code, crashed every compile the nightly counted that

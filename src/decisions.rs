@@ -31,6 +31,12 @@ pub(crate) struct Decision {
 /// catalogue, which a record of another answer or decision is refused by.
 pub(crate) const CATALOGUE: &[Decision] = &[
     Decision {
+        name: "transparent-chain",
+        owner: "src/lower/iterators/transparent.rs count_chains",
+        answers: &["user-iterator", "held", "source", "escapes", "drop-glue", "admitted"],
+        typed: false,
+    },
+    Decision {
         name: "refcell-borrow",
         owner: "src/lower/std_types/cell.rs Std::Borrow",
         answers: &["unchecked", "momentary", "counted"],

@@ -40,6 +40,13 @@ pub(in crate::lower) fn decide<'tcx>(
     std_iterators: bool,
 ) {
     let tcx = recognition.tcx;
+    // Which chains are transparent, counted where decisions are asked
+    // (#1673): a measurement, which decides nothing here.
+    if crate::decisions::path().is_some() && !std_iterators {
+        for body in bodies.iter() {
+            crate::lower::iterators::count_chains(&recognition, &body.thir, body.def_id);
+        }
+    }
     if std_iterators {
         for body in bodies.iter_mut() {
             body.facts.in_place_adapters = super::InPlace::decided(IndexSet::default());
