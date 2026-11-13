@@ -830,20 +830,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
-        // `write!(s, ..)` into a `String`: `s += ..`, as `push_str` is; writing
-        // to a string can't fail, so its `fmt::Result` is nothing (ADR 0148).
-        if self.is_lang_adt(ty.peel_refs(), LangItem::String)
-            && tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
-        {
-            return match tcx.item_name(def_id).as_str() {
-                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),
-                _ => None,
-            };
-        }
-        // A writer of the crate's own, or a `W: fmt::Write`: what `write!`
-        // and `write_char` give its `write_str` (ADR 0166, #1652).
-        if self.writes_through_write_str(def_id, trait_, ty) {
-            return Some(Std::UserWrite);
+        if let Some(write) = self.classify_fmt_write(def_id, trait_, ty) {
+            return write;
         }
         // Writing to a standard stream or a `Vec<u8>` (ADRs 0132, 0392).
         if let Some(write) = self.classify_io_write(def_id, trait_, ty) {

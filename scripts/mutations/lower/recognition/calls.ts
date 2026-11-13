@@ -86,14 +86,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
-    name: "write-to-string-unrecognized",
-    breaks: "`write!(s, ..)` into a `String` is an error, not `s += ..`",
-    file: "src/lower/recognition/calls.rs",
-    find: '                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),',
-    replace: '                "write_fmt_" => Some(Std::PushStr),',
-    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
-  },
-  {
     name: "user-size-hint-unknown",
     breaks:
       "`size_hint()` of an iterator of the crate's that keeps std's is an error",

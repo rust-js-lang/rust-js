@@ -306,25 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A writer of the crate's own: what `write!` and `write_char` give
             // its `write_str` (ADR 0166).
             Std::UserWrite => lower(move |this, state, values, out| {
-                let mut values: Vec<_> = values.collect();
-                // A `write!`'s, a piece at a time (#1652).
-                if let [writer, Value::Writes(writes, fails)] = &mut values[..] {
-                    let (writer, writes) = (this.value_expr(writer.clone(), span)?, std::mem::take(writes));
-                    let writes = (writes, *fails);
-                    return this.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
-                }
-                this.arguments_not_written(def_id, &values, span)?;
-                Ok(Value::Expr({
-                    let exprs = values
-                        .into_iter()
-                        .map(|v| this.value_expr(v, span))
-                        .collect::<R<Vec<_>>>()?;
-                    let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
-                    let write_str = trait_method(tcx, trait_id, "write_str");
-                    this.flush(state, out)?;
-                    this.trait_call(write_str, generic_args, exprs, span, out)?
-                        .ok_or_else(|| this.unsupported(span, "this writer's `write_str`"))?
-                }))
+                this.user_write(state, (def_id, generic_args), values.collect(), span, out)
             }),
             // A writer of bytes of the crate's own: its dictionary's
             // `write_all` or `write_fmt`, given it in a box, as generic code

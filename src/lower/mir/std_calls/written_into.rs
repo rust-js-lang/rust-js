@@ -92,6 +92,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Value::Writes(writes, fails))
     }
 
+    /// A writer of the crate's own, or a `W: fmt::Write`, `Std::UserWrite`'s
+    /// call of `def_id` of `generic_args`, given `values`: a `write!`'s
+    /// writes, a piece at a time (#1652), into its sink; else what `write!`
+    /// and `write_char` give its `write_str` (ADR 0166).
+    pub(super) fn user_write(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        mut values: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let tcx = self.tcx;
+        // A `write!`'s, a piece at a time (#1652).
+        if let [writer, Value::Writes(writes, fails)] = &mut values[..] {
+            let (writer, writes) = (self.value_expr(writer.clone(), span)?, std::mem::take(writes));
+            let writes = (writes, *fails);
+            return self.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
+        }
+        self.arguments_not_written(def_id, &values, span)?;
+        Ok(Value::Expr({
+            let exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
+            let write_str = trait_method(tcx, trait_id, "write_str");
+            self.flush(state, out)?;
+            self.trait_call(write_str, generic_args, exprs, span, out)?
+                .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?
+        }))
+    }
+
     /// `w.write_fmt(args)` of `writes`, `args`' (`arguments_writes`), into
     /// `writer`, a writer `fmt::Write`'s `def_id` of `generic_args` is
     /// called on: each written into its sink, `$writerSink(w, writeStr,

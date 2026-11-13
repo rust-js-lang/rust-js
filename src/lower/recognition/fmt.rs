@@ -132,6 +132,32 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
     }
 
+    /// A `fmt::Write`'s method, `def_id` of `trait_` on `ty`: `Some` once
+    /// decided, of what it is or that it's none of std's, and `None` to
+    /// look further. `write!(s, ..)` into a `String` is `s += ..`, as
+    /// `push_str` is; writing to a string can't fail, so its `fmt::Result`
+    /// is nothing (ADR 0148). A writer of the crate's own, or a `W:
+    /// fmt::Write`: what `write!` and `write_char` give its `write_str` (ADR
+    /// 0166, #1652).
+    pub(in crate::lower) fn classify_fmt_write(
+        &self,
+        def_id: DefId,
+        trait_: DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<Option<Std>> {
+        let tcx = self.tcx;
+        if self.is_lang_adt(ty.peel_refs(), LangItem::String)
+            && tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
+        {
+            return Some(match tcx.item_name(def_id).as_str() {
+                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),
+                _ => None,
+            });
+        }
+        self.writes_through_write_str(def_id, trait_, ty)
+            .then_some(Some(Std::UserWrite))
+    }
+
     /// Whether a call of `def_id` of `generic_args` is a `write_fmt` into a
     /// writer std writes a piece at a time (`writes_through_write_str`):
     /// `w.write_fmt(args)`, or `fmt::write(w, args)`, which is it.

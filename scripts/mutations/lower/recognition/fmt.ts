@@ -166,4 +166,12 @@ export const mutations: Mutation[] = [
     replace: '                _ => false,\n',
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
   },
+  {
+    name: "write-to-string-unrecognized",
+    breaks: "`write!(s, ..)` into a `String` is an error, not `s += ..`",
+    file: "src/lower/recognition/fmt.rs",
+    find: '                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),',
+    replace: '                "write_fmt_" => Some(Std::PushStr),',
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+  },
 ];
