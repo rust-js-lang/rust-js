@@ -60,6 +60,30 @@ fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Bo
     })
 }
 
+/// Whether `local`, an `Arguments` std formats where it's made
+/// (`ArgumentsUse::InPlace`), is given by value to a `write!` into a
+/// writer's own `Formatter`, one of `aliases`: of a writer shown into a
+/// writer, each piece a call of that writer's (#1652, ADR 1135).
+pub(in crate::lower) fn written_into_formatter<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    body: &mir::Body<'tcx>,
+    local: Local,
+    aliases: &[Local],
+) -> bool {
+    let tcx = recognition.tcx;
+    let given = |arg: &Operand<'tcx>| arg.place().is_some_and(|p| p.local == local && p.projection.is_empty());
+    arguments_use(recognition, body, local) == ArgumentsUse::InPlace
+        && body.basic_blocks.iter().any(|data| match &data.terminator().kind {
+            TerminatorKind::Call { func, args, .. } => {
+                args.iter().any(|arg| given(&arg.node))
+                    && (args.first().and_then(|arg| arg.node.place())).is_some_and(|p| aliases.contains(&p.local))
+                    && crate::lower::fn_def(func.ty(&body.local_decls, tcx))
+                        .is_some_and(|(id, generic_args)| recognition.formatter_write_fmt(id, generic_args))
+            }
+            _ => false,
+        })
+}
+
 /// Whether each use of `local`, which holds an `Arguments` or what holds
 /// one, `assert_eq!`'s `Some(args)`, is std's by value, or `as_str()`'s,
 /// through as many such holders as `depth`.

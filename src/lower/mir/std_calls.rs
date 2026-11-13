@@ -308,8 +308,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::UserWrite => lower(move |this, state, values, out| {
                 let mut values: Vec<_> = values.collect();
                 // A `write!`'s, a piece at a time (#1652).
-                if let [writer, Value::Writes(writes)] = &mut values[..] {
+                if let [writer, Value::Writes(writes, fails)] = &mut values[..] {
                     let (writer, writes) = (this.value_expr(writer.clone(), span)?, std::mem::take(writes));
+                    let writes = (writes, *fails);
                     return this.written_into_writer(state, (def_id, generic_args), writer, writes, span, out);
                 }
                 this.arguments_not_written(def_id, &values, span)?;
@@ -400,6 +401,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .text_place(values.next(), arg_tys[0])
                         .ok_or_else(|| this.unsupported(span, "`push_str` on this, from its MIR"))?;
                     let given = values.next().expect("what's pushed");
+                    // Through a `Formatter` held where it isn't its writer's, of
+                    // a writer that writes through a sink a `write!` into a writer
+                    // may arm: one `write_str` of a string, the rest refused
+                    // till each piece is followed (#1652).
+                    if crate::lower::recognition::writes_piecewise()
+                        && this.writes_through_a_sink(state)
+                        && this.recognition().is_formatter_type(arg_tys[0].peel_refs())
+                        && (this.recognition().is_write_char(def_id)
+                            || (this.recognition().formatter_write_fmt(def_id, generic_args)
+                                && !matches!(&given, Value::Expr(e) if matches!(e.kind, js::ExprKind::Str(_)))))
+                    {
+                        return Err(this.refused_in_a_writer(
+                            "a write through a `Formatter` held where it isn't its writer's",
+                            span,
+                        ));
+                    }
                     // A `write!` of what may fail: piece by piece, what came before
                     // written, its `fmt::Result` the error, if any (ADR 0187); to a
                     // place reached through a call, `*s.as_mut().unwrap()`, held (#1011).

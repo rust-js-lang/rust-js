@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:#x}` and `{:>10b}` of a type of the crate's give its impl no options, so no `0x` and no padding",
     file: "src/lower/format_spec.rs",
-    find: "            if !options && !spec.alternate {",
-    replace: "            if true {",
+    find: "    if !options && !spec.alternate {\n        return (Pretty::Plain, None);",
+    replace: "    if true {\n        return (Pretty::Plain, None);",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {

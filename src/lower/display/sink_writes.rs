@@ -8,7 +8,7 @@
 //! is refused (#1652).
 
 use super::*;
-use crate::lower::format_spec::{Spec, options_object};
+use crate::lower::format_spec::{Radix, Spec, options_object};
 
 /// One write into a writer's sink, `f` (`$writerSink`), as std makes it.
 #[derive(Clone)]
@@ -60,7 +60,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `{:x?}` of an integer is its `{:x}` (ADR 0559).
         let kind = match (kind, spec.debug_hex) {
             (Std::FmtDebug, Some(radix)) if int.is_some() => Std::FmtRadix(radix),
-            (_, Some(_)) => return Ok(None),
+            // A writer of the crate's own is given it among its options.
+            (_, Some(_)) if !self.writes_into_a_writer(kind, ty) => return Ok(None),
             _ => kind,
         };
         let options = width.is_some()
@@ -115,7 +116,119 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
                 padded(text)
             }
+            // A writer of the crate's own, which writes through a sink:
+            // called with the writer's sink armed, so each piece it writes is
+            // a call of the writer's (`$writingInto`), given the
+            // placeholder's options.
+            Std::FmtDisplay | Std::FmtDebug if self.writes_into_a_writer(kind, ty) => {
+                let (given, options) = crate::lower::format_spec::placeholder_given(spec, (width, precision));
+                match self.with_options(options, |cx| cx.written_into_a_writer(kind, ty, value, &given, span))? {
+                    Some(write) => write,
+                    None => return Ok(None),
+                }
+            }
             _ => return Ok(None),
         }]))
+    }
+
+    /// What a `fmt` of `value`, a `kind` of `ty`, given the `Formatter` of a
+    /// writer that writes through a sink, writes into it, by `options`, the
+    /// writer's `Formatter`'s, known as it runs: std's `pad_integral` of an
+    /// integer, `pad` of a string or a `bool`, a `char`'s `write_char` or
+    /// `pad`, and a writer of the crate's own with the sink armed for it.
+    /// `None` of a value whose split isn't followed yet (#1652): a float's,
+    /// a `Debug` of text, a composite's, an integer's `Debug` where a
+    /// placeholder may ask it in hex.
+    pub(in crate::lower) fn sink_writes_given(
+        &mut self,
+        value: Expr,
+        (kind, ty): (Std, Ty<'tcx>),
+        options: Expr,
+        span: Span,
+    ) -> R<Option<Vec<SinkWrite>>> {
+        let int = shown_num(ty).filter(|num| !num.float());
+        let debug_hex = self.debug_hex();
+        let given = |value: Expr| vec![value, options.clone()];
+        Ok(Some(vec![match kind {
+            Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),
+            Std::FmtDebug if int.is_some() && !debug_hex => SinkWrite::Helper("$writeInteger", given(value)),
+            // Where a placeholder may ask it, `{:x?}`, its hex digits, by
+            // `LowerHex` or `UpperHex` as its options say (ADR 0559).
+            Std::FmtDebug if let Some(num) = int => {
+                if value.has_effects() {
+                    return Ok(None);
+                }
+                let lower = Radix::LowerHex.digits(value.clone(), num);
+                let upper = Radix::UpperHex.digits(value.clone(), num);
+                SinkWrite::Helper("$writeDebugInteger", vec![value, lower, upper, options])
+            }
+            Std::FmtDisplay if ty.is_char() => SinkWrite::Helper("$writeCharOf", given(value)),
+            Std::FmtDisplay | Std::FmtDebug if ty.is_bool() => SinkWrite::Helper(
+                "$writePadded",
+                given(Expr::cond(value, Expr::str("true"), Expr::str("false"))),
+            ),
+            Std::FmtDisplay if self.is_string_like(ty) => {
+                let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
+                SinkWrite::Helper("$writePadded", given(text))
+            }
+            Std::FmtDisplay | Std::FmtDebug if self.writes_into_a_writer(kind, ty) => {
+                let pretty = self.writer_pretty();
+                match self.written_into_a_writer(kind, ty, value, &pretty, span)? {
+                    Some(write) => write,
+                    None => return Ok(None),
+                }
+            }
+            _ => return Ok(None),
+        }]))
+    }
+
+    /// Does `ty`'s `fmt` of `kind`, `Display` or `Debug`, write through a
+    /// sink a `write!` into a writer arms (`analysis::prints`'
+    /// `written_into_writers`): a writer of the crate's own type, which it
+    /// compiles. Another crate's writer makes its text whole.
+    pub(in crate::lower) fn writes_into_a_writer(&self, kind: Std, ty: Ty<'tcx>) -> bool {
+        let fmt_trait = match kind {
+            Std::FmtDisplay => self.display_trait(),
+            Std::FmtDebug => self.debug_trait(),
+            _ => return false,
+        };
+        if !ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
+            return false;
+        }
+        let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
+        let args = self.tcx.mk_args(&[ty.into()]);
+        matches!(self.resolve_self_instance(fmt, args), Ok(Some(instance))
+            if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))
+    }
+
+    /// `ty`'s writer of `kind`, such a writer, called given `value` and
+    /// `pretty`'s options with the sink armed for it, `$writingInto(f,
+    /// pointDisplay_fmt, p, options)`: its arguments evaluated before it's
+    /// armed. `None` of one called through a value, a class's.
+    pub(in crate::lower) fn written_into_a_writer(
+        &mut self,
+        kind: Std,
+        ty: Ty<'tcx>,
+        value: Expr,
+        pretty: &Pretty,
+        span: Span,
+    ) -> R<Option<SinkWrite>> {
+        let fmt_trait = match kind {
+            Std::FmtDisplay => self.display_trait(),
+            _ => self.debug_trait(),
+        };
+        let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
+        let args = self.tcx.mk_args(&[ty.into()]);
+        let (writer, values) = self.writer_given(fmt, args, value, pretty, span)?;
+        Ok(self.writer_armed(writer, values))
+    }
+
+    /// `writer`, a writer of the crate's own that writes through a sink,
+    /// given `values`, called with the sink armed for it. `None` of one
+    /// called through a value, a class's.
+    pub(in crate::lower) fn writer_armed(&self, writer: DefId, values: Vec<Expr>) -> Option<SinkWrite> {
+        let mut given = vec![self.crate_callee(writer)?];
+        given.extend(values);
+        Some(SinkWrite::Helper("$writingInto", given))
     }
 }

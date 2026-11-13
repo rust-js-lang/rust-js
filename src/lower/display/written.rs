@@ -148,8 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Another writer, given this one's `Formatter`: its options.
             WriteCall::Function => {
-                values.extend(self.given_to_writer(Some(def_id)));
-                values.extend(self.evidence_args(def_id, generic_args, span)?);
+                let values = self.writer_function_given(def_id, generic_args, values, span)?;
                 Expr::call(self.fn_ref(def_id), values)
             }
             WriteCall::Trait => {
@@ -167,6 +166,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         })
+    }
+
+    /// What a writer function of `def_id`, given this writer's
+    /// `Formatter`, is given: `values`, this writer's options where it
+    /// takes them, and its evidence.
+    pub(in crate::lower) fn writer_function_given(
+        &mut self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        mut values: Vec<Expr>,
+        span: Span,
+    ) -> R<Vec<Expr>> {
+        values.extend(self.given_to_writer(Some(def_id)));
+        values.extend(self.evidence_args(def_id, generic_args, span)?);
+        Ok(values)
     }
 
     /// What a `Debug` builder of `kind`, a `DebugStruct` say, writes as

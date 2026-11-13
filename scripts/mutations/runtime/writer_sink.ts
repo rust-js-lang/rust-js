@@ -68,4 +68,28 @@ export const mutations: Mutation[] = [
     replace: '  return $writeIntegral(f, n >= 0, "", String(n), options);\n',
     tests,
   },
+  {
+    name: "writer-never-armed",
+    breaks: "`$writingInto` arms no sink, so the writer it calls writes a string of its own (#1652)",
+    file: "src/runtime/writer_sink.js",
+    find: "  $writerArmed = f;\n",
+    replace: "",
+    tests,
+  },
+  {
+    name: "writer-debug-hex-ignored",
+    breaks: "an integer's `Debug` given a framed writer's `{:x?}` is written in decimal",
+    file: "src/runtime/writer_sink.js",
+    find: '  if (options.debugHex === "x") return $writeIntegral(f, true, "0x", lower, options);\n',
+    replace: "",
+    tests,
+  },
+  {
+    name: "writer-char-never-padded",
+    breaks: "a `char`'s `Display` given a framed writer's width is its `write_char`, unpadded",
+    file: "src/runtime/writer_sink.js",
+    find: "  if (options.width === undefined && options.precision === undefined) return f.writeChar(c);\n",
+    replace: "  return f.writeChar(c);\n",
+    tests,
+  },
 ];

@@ -163,7 +163,7 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         Value::Place(_) => true,
         // A view, made where it's used, which checks its range there; and
         // writes, each of which runs the writer's code.
-        Value::Ref(_) | Value::View(..) | Value::Writes(_) => false,
+        Value::Ref(_) | Value::View(..) | Value::Writes(..) => false,
     }
 }
 

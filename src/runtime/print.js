@@ -209,6 +209,13 @@ function $printing(write) {
 // `h.value += s`: each `value` set is written, and what's read is nothing,
 // so an append writes what it adds (#1637).
 function $sink() {
+  // Of a writer shown into a writer by `write!`, that writer's sink, whose
+  // calls are its `write_str` and `write_char` (#1652, `$writingInto`).
+  if ($writerArmed !== undefined) {
+    const into = $writerArmed;
+    $writerArmed = undefined;
+    return $sinkOf(into.write, () => "", into.writeChar);
+  }
   if ($printFrames.at(-1) !== $out) {
     let text = "";
     return $sinkOf(
@@ -232,9 +239,10 @@ function $sink() {
     },
   );
 }
-function $sinkOf(write, done) {
+function $sinkOf(write, done, writeChar = write) {
   return {
     write,
+    writeChar,
     done,
     get value() {
       return "";

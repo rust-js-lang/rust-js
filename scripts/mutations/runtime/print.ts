@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "    set value(more) {\n",
     tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
   },
+  {
+    name: "writer-armed-for-every-sink",
+    breaks: "a sink armed for a writer shown into a writer stays armed once claimed, so a `format!` or `to_string()` the writer makes writes into the writer too (#1652)",
+    file: "src/runtime/print.js",
+    find: "    $writerArmed = undefined;\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts"],
+  },
 ];

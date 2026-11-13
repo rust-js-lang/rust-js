@@ -11,10 +11,18 @@ use rustc_span::def_id::DefId;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether the `format_args!` being lowered, which stores to
     /// `destination`, is written into such a writer (`ArgumentsUse::Written`).
+    /// And one a writer that writes through a sink gives its own
+    /// `Formatter`, which a `write!` into a writer may arm with its
+    /// writer's (`$writingInto`), so each piece is a call of that writer's.
     pub(super) fn arguments_written(&self, state: &State<'_, 'tcx>) -> bool {
+        use super::super::arguments_use::{ArgumentsUse, arguments_use, written_into_formatter};
         (state.called_into.and_then(|place| place.as_local())).is_some_and(|local| {
-            super::super::arguments_use::arguments_use(&self.recognition(), state.body, local)
-                == super::super::arguments_use::ArgumentsUse::Written
+            let recognition = self.recognition();
+            arguments_use(&recognition, state.body, local) == ArgumentsUse::Written
+                || (crate::lower::recognition::writes_piecewise()
+                    && self.writes_through_a_sink(state)
+                    && (state.writer.as_ref())
+                        .is_some_and(|(aliases, _)| written_into_formatter(&recognition, state.body, local, aliases)))
         })
     }
 
@@ -75,7 +83,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        Ok(Value::Writes(writes))
+        // Of what may fail of its own, a writer of the crate's own that
+        // returns its `Err`, its `fmt::Result` is a value (ADR 0187).
+        let fails = items.iter().any(|item| match *item {
+            Value::Fmt(Std::FmtDisplay, ty, _) => self.fmt_may_fail(self.display_trait(), ty),
+            Value::Fmt(Std::FmtDebug, ty, _) => self.fmt_may_fail(self.debug_trait(), ty),
+            _ => false,
+        });
+        Ok(Value::Writes(writes, fails))
     }
 
     /// `w.write_fmt(args)` of `writes`, `args`' (`arguments_writes`), into
@@ -90,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         writer: Expr,
-        writes: Vec<SinkWrite>,
+        (writes, shown_fails): (Vec<SinkWrite>, bool),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
@@ -109,8 +124,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.writer_entry(write_char, generic_args, span)?,
             false => write_str_entry.clone(),
         };
-        let fails =
-            self.call_may_fail(write_str, generic_args) || (own_char && self.call_may_fail(write_char, generic_args));
+        let fails = shown_fails
+            || self.call_may_fail(write_str, generic_args)
+            || (own_char && self.call_may_fail(write_char, generic_args));
         let js_span = self.js_span(span);
         let sink = self.fresh(Role::F);
         let mut body = vec![
@@ -193,6 +209,144 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(
             crate::lower::passed_on::passed_on(&arrow, crate::lower::passed_on::Taker::Made, self.forwarding())
                 .unwrap_or(arrow),
+        )
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call that writes to the `Formatter` of a writer that writes through
+    /// a sink, `operation` of `def_id`, given `values`, its arguments but
+    /// the `Formatter`: each piece written into the sink as std makes it,
+    /// which a `write!` into a writer may arm with its writer's, so each is
+    /// a call of that writer's (#1652, ADR 1135). Its own `write!`, each
+    /// write `sink_writes` says; `write_str`, one; `write_char`, one of the
+    /// writer's `write_char`; `pad` and `pad_integral`, std's, given its
+    /// `Formatter`'s options; and a `fmt` given its `Formatter`, a std
+    /// value's by those options, a writer's of the crate's own with the
+    /// sink armed for it. What isn't followed yet is refused. Its result,
+    /// kept as a value, is what `$writeTry` caught, as the sink's calls may
+    /// throw the writer's `Err`.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::lower::mir) fn written_through_the_sink(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        operation: crate::lower::recognition::WriteCall,
+        values: Vec<Value<'tcx>>,
+        destination: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        use crate::lower::recognition::WriteCall;
+        let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
+        let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+        let mut values = values.into_iter();
+        let writes = match operation {
+            WriteCall::Text => match values.next() {
+                Some(Value::Writes(writes, _)) => writes,
+                Some(value) => {
+                    let value = self.shown_in_place(value, span)?;
+                    let literal = matches!(value.kind, js::ExprKind::Str(_));
+                    match (self.recognition().formatter_write_fmt(def_id, generic_args), literal) {
+                        (true, false) => {
+                            return Err(
+                                self.refused_in_a_writer("a `write_fmt` of a `fmt::Arguments` made elsewhere", span)
+                            );
+                        }
+                        _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],
+                        _ => vec![SinkWrite::Str(value)],
+                    }
+                }
+                None => return Err(self.unsupported(span, "this write's arguments, from its MIR")),
+            },
+            WriteCall::Pad | WriteCall::PadIntegral | WriteCall::Display | WriteCall::Debug => {
+                let mut given = Vec::new();
+                for value in values {
+                    given.push(self.shown_in_place(value, span)?);
+                }
+                match operation {
+                    WriteCall::Pad => {
+                        given.push(options);
+                        vec![SinkWrite::Helper("$writePadded", given)]
+                    }
+                    WriteCall::PadIntegral => {
+                        given.push(options);
+                        vec![SinkWrite::Helper("$writeIntegral", given)]
+                    }
+                    _ => {
+                        let kind = match operation {
+                            WriteCall::Display => Std::FmtDisplay,
+                            _ => Std::FmtDebug,
+                        };
+                        let ty = generic_args.type_at(0).peel_refs();
+                        let value = given.into_iter().next().expect("a `fmt`'s value");
+                        match self.sink_writes_given(value, (kind, ty), options, span)? {
+                            Some(writes) => writes,
+                            None => {
+                                let what = format!("a `fmt` of a `{ty}` given its `Formatter`");
+                                return Err(self.refused_in_a_writer(&what, span));
+                            }
+                        }
+                    }
+                }
+            }
+            // Another writer of the crate's own given this one's `Formatter`,
+            // `helper(f, n)`, which writes through a sink: called with this
+            // writer's sink armed for it.
+            WriteCall::Function | WriteCall::Trait => {
+                let framed = match self.resolve_self_instance(def_id, generic_args) {
+                    Ok(Some(instance))
+                        if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()) =>
+                    {
+                        Some(instance)
+                    }
+                    _ => None,
+                };
+                let mut given = Vec::new();
+                for value in values {
+                    given.push(self.shown_in_place(value, span)?);
+                }
+                let armed = match framed {
+                    Some(instance) => {
+                        let given = self.writer_function_given(instance.def_id(), instance.args, given, span)?;
+                        self.writer_armed(instance.def_id(), given)
+                    }
+                    None => None,
+                };
+                match armed {
+                    Some(write) => vec![write],
+                    None => {
+                        return Err(self.refused_in_a_writer("a function given the writer's `Formatter`", span));
+                    }
+                }
+            }
+            WriteCall::OtherFmt => {
+                return Err(self.refused_in_a_writer("a `{:x}`, `{:e}` or the like given the `Formatter`", span));
+            }
+            _ => return Err(self.refused_in_a_writer("a derived `Debug`'s fields", span)),
+        };
+        self.flush(state, out)?;
+        let js_span = self.js_span(span);
+        let written: Vec<Stmt> = (writes.into_iter())
+            .map(|write| write.written_into(&sink, js_span))
+            .collect();
+        use super::super::result_use::{ResultUse, result_use};
+        if result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected {
+            return Ok(Value::Expr(self.fmt_try(written)));
+        }
+        out.extend(written);
+        Ok(Value::Expr(Expr::undefined()))
+    }
+
+    /// The refusal of `what`, written by a writer that writes through a
+    /// sink a `write!` into a writer may arm, where its split isn't
+    /// followed yet (#1652).
+    pub(in crate::lower) fn refused_in_a_writer(&self, what: &str, span: Span) -> rustc_span::ErrorGuaranteed {
+        self.unsupported(
+            span,
+            &format!(
+                "{what} in a writer shown into a writer by `write!`: std writes it a piece at a time, each a call of the writer's, which isn't followed for it yet (#1652)"
+            ),
         )
     }
 }

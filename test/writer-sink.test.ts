@@ -9,6 +9,7 @@
 //   bun test test/writer-sink.test.ts
 
 import { beforeAll, expect, test } from "bun:test";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { helpersModule } from "./packages-of";
@@ -40,6 +41,56 @@ for (const [build, flags] of builds) {
     expect(show(js.outcome)).toBe(show(native.outcome));
   }, underLoad(120_000));
 }
+
+/** A writer shown into a writer whose split isn't followed yet: each `fmt`
+ * of `Shown`, written into `Log`, is refused, naming #1652. */
+const refusedWriters: [string, string, string][] = [
+  ["a builder", "builder", 'f.debug_struct("S").field("a", &1).finish()'],
+  ["a write through a held Formatter", "held where it isn't", 'let held = Held(f);\n        let n = [-1, 2];\n        write!(held.0, "{}", n[0])'],
+  ["a closure given the Formatter", "Formatter", "let w = |f: &mut fmt::Formatter<'_>| f.write_str(\"x\");\n        w(f)"],
+  ["a float", "f64", 'write!(f, "{}", 1.5_f64)'],
+  ["a write_fmt of Arguments made elsewhere", "made elsewhere", 'f.write_fmt(given(format_args!("{}", 1)))'],
+];
+
+test("a writer shown into a writer whose split isn't followed is refused, naming #1652", () => {
+  const dir = fixture("writer-sink-refused");
+  for (const [name, said, body] of refusedWriters) {
+    const file = join(dir, `${name.replaceAll(" ", "_")}.rs`);
+    writeFileSync(
+      file,
+      `use std::fmt::{self, Write};
+struct Log(Vec<String>);
+impl Write for Log {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+#[allow(dead_code)]
+struct Held<'a, 'b>(&'a mut fmt::Formatter<'b>);
+#[allow(dead_code)]
+fn given(args: fmt::Arguments<'_>) -> fmt::Arguments<'_> {
+    args
+}
+struct Shown;
+impl fmt::Display for Shown {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        ${body}
+    }
+}
+fn main() {
+    let mut log = Log(Vec::new());
+    write!(log, "{}", Shown).unwrap();
+    println!("{:?}", log.0);
+}
+`,
+    );
+    const compiled = compileJs(file, dir, "2021", false, piecewise);
+    if ("js" in compiled) throw new Error(`${name}: compiled`);
+    expect(compiled.error, name).toContain("#1652");
+    expect(compiled.error, name).toContain(said);
+  }
+}, underLoad(120_000));
 
 /** The runtime's sink helpers, of `@rust-js/std`, and a sink recording
  * each call: `s` a `write_str`'s, `c` a `write_char`'s. */
@@ -86,4 +137,44 @@ test("an integer's Display writes its sign apart, of a number or a BigInt", asyn
   expect(await recorded((f, std) => std.$writeInteger(f, -2147483648))).toEqual(["c-", "s2147483648"]);
   expect(await recorded((f, std) => std.$writeInteger(f, -5n, { width: 4 }))).toEqual(["c ", "c ", "c-", "s5"]);
   expect(await recorded((f, std) => std.$writeInteger(f, 0))).toEqual(["s0"]);
+});
+
+test("an integer's Debug by a writer's options is its hex where {:x?} asks", async () => {
+  const debug = (options?: object) => recorded((f, std) => std.$writeDebugInteger(f, -2, "fe", "FE", options));
+  expect(await debug()).toEqual(["c-", "s2"]);
+  expect(await debug({ debugHex: "x", width: 4 })).toEqual(["c ", "c ", "sfe"]);
+  expect(await debug({ debugHex: "X", alternate: true })).toEqual(["s0x", "sFE"]);
+});
+
+test("a char's Display by a writer's options is its write_char, or pad given a width", async () => {
+  expect(await recorded((f, std) => std.$writeCharOf(f, "é"))).toEqual(["cé"]);
+  expect(await recorded((f, std) => std.$writeCharOf(f, "é", { plus: true }))).toEqual(["cé"]);
+  expect(await recorded((f, std) => std.$writeCharOf(f, "é", { width: 2 }))).toEqual(["sé", "c "]);
+});
+
+test("a writer shown into a writer writes through the sink its first $sink() claims, and no other", async () => {
+  const std: Record<string, any> = await import(helpersModule);
+  const calls: string[] = [];
+  const f = std.$writerSink(calls, (w: string[], s: string) => w.push(`s${s}`), (w: string[], c: string) => w.push(`c${c}`));
+  // A writer that writes, then makes a string of its own with another.
+  const inner = () => {
+    const g = std.$sink();
+    g.write("in");
+    return g.done();
+  };
+  const writer = (x: string) => {
+    const g = std.$sink();
+    g.write(x);
+    g.writeChar("!");
+    g.write(`[${inner()}]`);
+    return g.done();
+  };
+  std.$writingInto(f, writer, "a");
+  expect(calls).toEqual(["sa", "c!", "s[in]"]);
+  // A writer that never makes its sink is rust-js's error, not its text whole.
+  expect(() => std.$writingInto(f, () => "text")).toThrow("didn't write through its sink");
+  // Nothing armed after: a sink made now is a string of its own.
+  const after = std.$sink();
+  after.write("x");
+  expect(after.done()).toBe("x");
 });

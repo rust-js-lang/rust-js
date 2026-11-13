@@ -283,6 +283,7 @@ const ownUnwinding: Record<string, string> = {
   "src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",
   "src/runtime/to_json.js": "serde's encoding error caught to become a `Result`, not a drop",
   "src/runtime/try.js": "`?`'s early return of an `Err` thrown and caught, not a drop",
+  "src/runtime/writer_sink.js": "the sink armed for a writer shown into a writer disarmed as the writer returns or panics, and a writer that never claimed it rust-js's error, not a drop (#1652)",
   "src/runtime/unwind.js": "`catch_unwind`, the one catch of a panic",
 };
 

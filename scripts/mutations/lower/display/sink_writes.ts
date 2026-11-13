@@ -36,4 +36,28 @@ export const mutations: Mutation[] = [
     replace: "        let padded = |text: Expr| match true {\n",
     tests,
   },
+  {
+    name: "sink-given-integer-whole",
+    breaks: "an integer's `Display` given a framed writer's `Formatter` is one `write_str`, its sign not apart",
+    file: "src/lower/display/sink_writes.rs",
+    find: '            Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),\n',
+    replace: '            Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeIntegral", vec![Expr::bool(true), Expr::str(""), value, options]),\n',
+    tests,
+  },
+  {
+    name: "sink-given-char-unpadded",
+    breaks: "a `char`'s `Display` given a framed writer's `Formatter` is its `write_char`, whatever its width",
+    file: "src/lower/display/sink_writes.rs",
+    find: '            Std::FmtDisplay if ty.is_char() => SinkWrite::Helper("$writeCharOf", given(value)),\n',
+    replace: "            Std::FmtDisplay if ty.is_char() => SinkWrite::Char(value),\n",
+    tests,
+  },
+  {
+    name: "sink-own-writer-debug-hex-refused",
+    breaks: "a writer of the crate's own shown by `{:x?}` into a writer is refused, its options not given on (#1652)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            (_, Some(_)) if !self.writes_into_a_writer(kind, ty) => return Ok(None),\n",
+    replace: "            (_, Some(_)) => return Ok(None),\n",
+    tests,
+  },
 ];

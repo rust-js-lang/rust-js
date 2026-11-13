@@ -220,4 +220,28 @@ export const mutations: Mutation[] = [
     replace: "            &type_of,\n            &IndexSet::default(),\n        );\n        found.stopping_where_caught",
     tests: ["test/crates.test.ts", "-t", "dependency's writer that may stop part-way"],
   },
+  {
+    name: "written-into-writers-unseen",
+    breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
+    file: "src/lower/analysis/prints.rs",
+    find: "        found.through_sink.extend(written_into_writers(recognition, all_bodies));\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "written-into-writers-shown-unseen",
+    breaks: "a writer a framed writer shows, `Wrap`'s `Point`, doesn't write through a sink, so the framed writer's `write!` of it is refused (#1652)",
+    file: "src/lower/analysis/prints.rs",
+    find: "            if of_shown && found.insert(writer.def_id) {\n                shown.extend(shown_by(writer));\n",
+    replace: "            if of_shown && found.insert(writer.def_id) {\n",
+    tests: ["test/writer-sink.test.ts"],
+  },
+  {
+    name: "written-into-writers-called-unseen",
+    breaks: "a writer function a framed writer gives its `Formatter`, `bracketed(f, n)`, doesn't write through a sink, so the call is refused (#1652)",
+    file: "src/lower/analysis/prints.rs",
+    find: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee)\n",
+    replace: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee && false)\n",
+    tests: ["test/writer-sink.test.ts"],
+  },
 ];

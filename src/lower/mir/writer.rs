@@ -248,6 +248,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(at) =
                 (self.recognition()).callable_formatter(def_id, generic_args, destination.ty(decls, self.tcx).ty)
         {
+            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+                return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
+            }
             let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
             let values = self.take_operands(state, &[&args[0].node, &args[1].node], out)?;
             let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;
@@ -265,6 +268,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (args.get(at).and_then(|a| a.node.place()))
                 .is_some_and(|p| p.projection.is_empty() && aliases.contains(&p.local))
         {
+            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+                return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
+            }
             let given: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
             let arg_tys = [callee, Ty::new_tup(self.tcx, &given)];
             let mut operands = vec![func];
@@ -318,6 +324,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // model, which writes each piece as it's taken, its opening
                 // now (#1533).
                 if self.writes_through_a_sink(state) {
+                    if crate::lower::recognition::writes_piecewise() {
+                        return Err(self.refused_in_a_writer("a `Debug` builder", span));
+                    }
                     let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
                     let (made, role) = self.streamed_builder(kind, sink, type_name);
                     let builder = self.fresh(role);
@@ -353,6 +362,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));
             let values = self.take_operands(state, &others, out)?;
+            // Of a writer that writes through a sink a `write!` into a
+            // writer may arm: each piece as std makes it (#1652).
+            if crate::lower::recognition::writes_piecewise() && self.writes_through_a_sink(state) {
+                let callee = (def_id, generic_args);
+                return (self.written_through_the_sink(state, callee, operation, values, destination, span, out))
+                    .map(Some);
+            }
             // A `write!` of what may fail: piece by piece, what came before
             // written (ADR 0187).
             let pieces = (values.iter()).any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..) | Value::Printing(..)));
@@ -887,9 +903,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A writer's text declared, `let f = ""`, or of one that writes through
+    /// a sink, `const f = $sink()`, first of its body.
+    pub(super) fn writer_text_declared(&self, state: &State<'_, 'tcx>, out: &mut Vec<Stmt>) {
+        let Some(name) = state.made_writing() else { return };
+        let made = StmtKind::Let(name.clone(), Some(self.writer_text_made(state))).at(js::Span::NONE);
+        // A sink first, before anything of the body runs, so it claims what
+        // `$writingInto` armed for this writer and nothing else does (#1652,
+        // ADR 1135).
+        match self.writes_through_a_sink(state) {
+            true => out.insert(0, made),
+            false => out.push(made),
+        }
+    }
+
     /// What a writer's text starts as: `""`, or, of one that writes through
     /// the line it formats into, what it writes through, `$sink()` (#1490).
-    pub(super) fn writer_text_made(&self, state: &State<'_, 'tcx>) -> Expr {
+    fn writer_text_made(&self, state: &State<'_, 'tcx>) -> Expr {
         match self.writes_through_a_sink(state) {
             true => Expr::call_helper("$sink", Vec::new()),
             false => Expr::str(""),

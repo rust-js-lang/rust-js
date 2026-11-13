@@ -159,6 +159,92 @@ pub(super) fn prints<'tcx>(
             })
             .map(|body| body.def_id),
     );
+    if crate::lower::recognition::writes_piecewise() {
+        found.through_sink.extend(written_into_writers(recognition, all_bodies));
+    }
+    found
+}
+
+/// The crate's writers shown into a writer by `write!`, which std writes a
+/// piece at a time, each a call of the writer's (#1652, ADR 1135): those
+/// of a type a `write!` into a writer of the crate's own, or a generic
+/// one, shows; and to a fixed point, those of a type such a writer shows,
+/// by its own `write!` or by a `fmt` it's given its `Formatter` to. A type
+/// only a caller, or a `dyn`, says may be any, so every writer is. Each
+/// writes through a sink, which a `write!` into a writer arms with its
+/// writer's (`$writingInto`). Never `types` or `while_formatting`, which
+/// route what's printed.
+fn written_into_writers<'tcx>(recognition: &Recognition<'_, 'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
+    use crate::lower::recognition::{WriteCall, is_fmt_argument};
+    let tcx = recognition.tcx;
+    let shown_by = |body: &Body<'tcx>| -> Vec<ty::Ty<'tcx>> {
+        (crate::lower::instances::calls_of(body).into_iter())
+            .filter_map(|(callee, args, _)| {
+                let shown = is_fmt_argument(tcx, callee)
+                    || matches!(
+                        recognition.write_call(callee, false),
+                        WriteCall::Display | WriteCall::Debug | WriteCall::OtherFmt
+                    );
+                shown.then(|| args.types().next()).flatten()
+            })
+            .collect()
+    };
+    let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
+        .filter(|body| body.def_id.is_local() && recognition.formatter_param(body.def_id).is_some())
+        .collect();
+    let type_of = |writer: DefId| {
+        let imp = tcx.impl_of_assoc(writer)?;
+        Some(
+            tcx.type_of(imp)
+                .instantiate_identity()
+                .skip_normalization()
+                .ty_adt_def()?
+                .did(),
+        )
+    };
+    let mut shown: Vec<ty::Ty<'tcx>> = (all_bodies.iter())
+        .filter(|body| {
+            (crate::lower::instances::calls_of(body).into_iter())
+                .any(|(callee, args, _)| recognition.writes_arguments_piecewise(callee, args))
+        })
+        .flat_map(|body| shown_by(body))
+        .collect();
+    let mut found: IndexSet<DefId> = IndexSet::default();
+    let mut types: IndexSet<DefId> = IndexSet::default();
+    let mut any = false;
+    let mut called_up_to = 0;
+    while let Some(ty) = shown.pop() {
+        for part in ty.walk().filter_map(|part| part.as_type()) {
+            match part.kind() {
+                ty::Adt(adt, _) if adt.did().is_local() => {
+                    types.insert(adt.did());
+                }
+                _ if crate::lower::recognition::known_by_a_dictionary(part) => any = true,
+                _ => {}
+            }
+        }
+        for writer in &writers {
+            let of_shown = any || type_of(writer.def_id).is_some_and(|did| types.contains(&did));
+            if of_shown && found.insert(writer.def_id) {
+                shown.extend(shown_by(writer));
+            }
+        }
+        // And each writer of the crate's such a writer gives its
+        // `Formatter`, `helper(f, n)`, written through its sink too.
+        while let Some(by) = found.get_index(called_up_to).copied() {
+            called_up_to += 1;
+            let calls = (writers.iter().find(|writer| writer.def_id == by))
+                .map(|by| crate::lower::instances::calls_of(by))
+                .unwrap_or_default();
+            for (callee, _, _) in calls {
+                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee)
+                    && found.insert(callee)
+                {
+                    shown.extend(shown_by(writer));
+                }
+            }
+        }
+    }
     found
 }
 

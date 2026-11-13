@@ -171,6 +171,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || self.fmt_write_on_formatter(def_id, args)
     }
 
+    /// `write!(f, ..)` of a `Formatter`, inherent or `fmt::Write`'s.
+    pub(in crate::lower) fn formatter_write_fmt(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        self.tcx.item_name(def_id).as_str() == "write_fmt" && self.formatter_write(def_id, args)
+    }
+
+    /// Is `def_id` a `write_char`, a `Formatter`'s or `fmt::Write`'s?
+    pub(in crate::lower) fn is_write_char(&self, def_id: DefId) -> bool {
+        self.tcx.item_name(def_id).as_str() == "write_char"
+    }
+
     /// `Display::fmt(&x, f)`, `Debug::fmt` or another `fmt` trait's, called
     /// as a function, on a `Formatter` held where it isn't its writer's
     /// (ADR 0461): what it writes.

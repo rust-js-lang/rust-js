@@ -959,7 +959,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<bool> {
         // Not a `write!`'s writes (#1652), which aren't values.
-        if values.iter().any(|value| matches!(value, Value::Writes(_))) {
+        if values.iter().any(|value| matches!(value, Value::Writes(..))) {
             return Ok(false);
         }
         let receiver = values.first().and_then(|receiver| match receiver {

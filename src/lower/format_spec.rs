@@ -245,12 +245,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let fmt = self.tcx.associated_item_def_ids(trait_id)[0];
             let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
-            if !options && !spec.alternate {
-                return self.writer_call(fmt, args, value, &Pretty::Plain, span);
-            }
-            let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
-            let options = Options { spec, width, precision };
-            return self.with_options(Some(options), |cx| cx.writer_call(fmt, args, value, &given, span));
+            let (given, options) = placeholder_given(spec, (width, precision));
+            return self.with_options(options, |cx| cx.writer_call(fmt, args, value, &given, span));
         }
         let text = match kind {
             // A raw pointer's address, which JS hasn't (ADR 0407).
@@ -363,6 +359,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// A placeholder's options as the object a `fmt` is given (ADR 0058):
 /// `{ width: 6, align: ">" }`, with only those it has.
+/// What a placeholder gives the crate's own `fmt` it shows a value by:
+/// nothing, given no options, else its options object, `{:#}`'s too, and
+/// those options, which what it shows is given (ADR 0165).
+pub(super) fn placeholder_given(
+    spec: Spec,
+    (width, precision): (Option<Expr>, Option<Expr>),
+) -> (Pretty, Option<Options>) {
+    let options = width.is_some()
+        || precision.is_some()
+        || spec.plus
+        || spec.debug_hex.is_some()
+        || spec.align.is_some()
+        || spec.fill != ' '
+        || spec.zero;
+    if !options && !spec.alternate {
+        return (Pretty::Plain, None);
+    }
+    let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
+    (given, Some(Options { spec, width, precision }))
+}
+
 pub(super) fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) -> Expr {
     let mut fields = Vec::new();
     let mut field = |name: &str, value: Expr| fields.push(Prop::Field(name.into(), value));

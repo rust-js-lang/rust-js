@@ -53,7 +53,34 @@ $writeInteger(f, n);
 - **A literal-only `Arguments` is one `write_str`**, as std's
   `as_statically_known_str` writes it, and so is an argument rustc folds
   into the template, `b{}` of `1`.
-- **What isn't followed yet is refused, naming #1652.**
+- **A writer of the crate's own shown into a writer writes into it too**,
+  one model with `analysis::prints`' `through_sink` (step 2): it writes
+  through a sink, and the `write!` calls it with that writer's sink armed,
+  `$writingInto(f, pointDisplay_fmt, p, options)`. Its own `write!` is
+  written by `sink_writes`; `write_str` is one call and `write_char` the
+  writer's `write_char`; `pad`, `pad_integral` and a `fmt` it gives its
+  `Formatter`, a std value's, write by its `Formatter`'s options as they
+  are when it runs (`sink_writes_given`); a writer of the crate's own it
+  shows, or gives its `Formatter` to, `helper(f, n)`, is armed the same
+  way. A write whose `Result` it keeps is in `$writeTry`, as the sink's
+  calls may throw the writer's `Err`, and one that returns its own `Err`
+  ends the `write!` with it.
+- **The armed sink belongs to the writer `$writingInto` calls, and to no
+  other.** Its arguments are evaluated before it's armed, as JS evaluates
+  a call's arguments before the call, and the writer's first statement is
+  its `$sink()` (`writer_text_made`, pushed before anything else of its
+  body), which claims and disarms it. So a `format!`, `to_string()` or
+  `write!` into a `String` the writer makes, whatever claims a sink after,
+  is a string of its own, written where the writer writes it, as Rust's
+  is. A writer that never claimed it is rust-js's error, thrown, never its
+  text written whole. `writes_into_a_writer` arms only a writer of the
+  crate's own that writes through a sink; another crate's, made whole in
+  its library, is refused.
+- **What isn't followed yet is refused, naming #1652**: a float, a
+  `Debug` of text or of a composite, a builder or derived `Debug` in a
+  framed writer, a write through a `Formatter` a struct holds, a closure
+  or `fn` pointer given the `Formatter`, a `dyn` or generic value, and an
+  `Arguments` made elsewhere.
 
 ## Landing
 
@@ -73,7 +100,8 @@ go.
 1. Integers, strings, `char`s and `bool`s with every option (landed with
    this ADR).
 2. A crate's own `Display` and `Debug` framed on the caller's sink, one
-   model with `analysis::prints`' `through_sink`.
+   model with `analysis::prints`' `through_sink` (landed: the framed cases
+   of `test/writer-sink.rs`, the grid's own `Display` in its `Log` column).
 3. Floats by `flt2dec`'s parts.
 4. `Debug` escapes of `str` and `char`, and std's builders, pretty ones by
    std's `PadAdapter`.

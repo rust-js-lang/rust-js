@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(fmt_arguments_as_str|format_args_given_on_formatted_where_written)\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "formatter-arguments-whole",
+    breaks: "a framed writer's own `write!` is its text whole, one `write_str` of the writer's, where std writes each piece (#1652)",
+    file: "src/lower/mir/arguments_use.rs",
+    find: "    arguments_use(recognition, body, local) == ArgumentsUse::InPlace\n",
+    replace: "    arguments_use(recognition, body, local) == ArgumentsUse::InPlace && false\n",
+    tests: ["test/writer-sink.test.ts"],
+  },
 ];

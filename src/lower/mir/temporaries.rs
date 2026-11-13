@@ -207,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `format_args!` written into a writer: kept for its
             // `write_fmt`, its arguments held where it's made (#1652).
-            if !named && let Value::Writes(_) = &value {
+            if !named && let Value::Writes(..) = &value {
                 state.places.insert(local, value);
                 continue;
             }
@@ -853,7 +853,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Place(e) => e,
             Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
             // Only its `write_fmt` writes it (`ArgumentsUse::Written`).
-            Value::Writes(_) => panic!("DEBUGWRITES"),
+            Value::Writes(..) => {
+                return Err(self.unsupported(
+                    span,
+                    "a `fmt::Arguments` written into a writer, read as a value, from its MIR",
+                ));
+            }
             Value::Tested(..) | Value::Cut(..) => {
                 return Err(self.unsupported(span, "an `Option` read as a test, as a value, from its MIR"));
             }

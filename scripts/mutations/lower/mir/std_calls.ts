@@ -802,4 +802,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug)\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "held-formatter-write-unrefused",
+    breaks: "a framed writer's `write!` through a `Formatter` a struct holds is one `write_str` of its text, where std writes each piece (#1652)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        && (this.recognition().is_write_char(def_id)\n",
+    replace: "                        && false && (this.recognition().is_write_char(def_id)\n",
+    tests: ["test/writer-sink.test.ts"],
+  },
 ];

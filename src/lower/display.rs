@@ -683,6 +683,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(entry, values));
         }
+        let (writer, values) = self.writer_given(method, args, value, pretty, span)?;
+        // A class's `toString` is called on the value (#358).
+        Ok(self.crate_called(writer, values))
+    }
+
+    /// The crate's own `fmt` of `method`'s `args`, compiled here, and what
+    /// it's given, `value`, its options where it takes them, and its
+    /// evidence: `writer_call`'s, apart, so a `write!` into a writer calls
+    /// it with that writer's sink armed (#1652, `sink_writes`).
+    pub(super) fn writer_given(
+        &mut self,
+        method: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        value: Expr,
+        pretty: &Pretty,
+        span: Span,
+    ) -> R<(DefId, Vec<Expr>)> {
+        let args = self.tcx.erase_and_anonymize_regions(args);
         let instance = self
             .resolve_instance(method, args)?
             .filter(|i| self.is_rust_fn(i.def_id()))
@@ -697,8 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.push(pretty.options());
         }
         values.extend(evidence);
-        // A class's `toString` is called on the value (#358).
-        Ok(self.crate_called(instance.def_id(), values))
+        Ok((instance.def_id(), values))
     }
 
     /// `Box<T>` and `Rc<T>`: shown as their `T`, which is the value they are

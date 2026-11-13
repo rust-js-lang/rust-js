@@ -214,12 +214,16 @@ type Sink = (typeof sinks)[number];
 /** Whether `display::sink_writes` follows std's split of `spec` of
  * `value`, so `write!` into a writer of the crate's own writes it a piece
  * at a time (#1652): an integer's, by any trait but an exponent's, and a
- * `char`'s, a string's or a `bool`'s `Display`, and a `bool`'s `Debug`. As
- * each value's split lands, more do; the rest are written to a `String`. */
+ * `char`'s, a string's or a `bool`'s `Display`, and a `bool`'s `Debug`; and
+ * the crate's own `Display` that writes those, framed on the writer's sink
+ * (step 2). As each value's split lands, more do; the rest are written to
+ * a `String`. */
 const pieced = (spec: Spec, value: Value) =>
   value.kind === "integer"
     ? !["e", "E"].includes(spec.trait)
-    : ["char", "str", "String", "bool"].includes(value.kind) && (spec.trait === "D" || (spec.trait === "G" && value.kind === "bool" && !/[xX]\?/.test(spec.text)));
+    : value.kind === "own Display"
+      ? ["Padded", "Alt", "Written", "Nested"].includes(value.ty)
+      : ["char", "str", "String", "bool"].includes(value.kind) && (spec.trait === "D" || (spec.trait === "G" && value.kind === "bool" && !/[xX]\?/.test(spec.text)));
 
 export type FormatCase = Row & { spec: Spec; value: Value; sink: Sink };
 

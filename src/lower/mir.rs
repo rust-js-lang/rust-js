@@ -117,8 +117,9 @@ enum Value<'tcx> {
     /// it's made (`$printing`); and whether it may fail (ADR 0187).
     Printing(Expr, bool),
     /// A `format_args!` written into a writer of the crate's own, or a
-    /// `W: fmt::Write`'s: each write std's `write_fmt` makes (#1652).
-    Writes(Vec<crate::lower::display::SinkWrite>),
+    /// `W: fmt::Write`'s: each write std's `write_fmt` makes (#1652); and
+    /// whether a value's `fmt` may fail of its own (ADR 0187).
+    Writes(Vec<crate::lower::display::SinkWrite>, bool),
     /// A value made a `&dyn Debug` here, of its type and the `dyn`'s:
     /// shown where it's made, by a placeholder, a `Debug` builder's step or
     /// a derived `Debug`'s fields, the string it shows (`shown_in_place`);
@@ -1181,9 +1182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         state.naming = local_facts::NamingFacts::new(boxes, borrowed_names, flags);
-        if let Some(name) = state.made_writing() {
-            out.push(StmtKind::Let(name.clone(), Some(self.writer_text_made(&state))).at(js::Span::NONE));
-        }
+        self.writer_text_declared(&state, &mut out);
         // Locals assigned more than once are `let`s, declared first.
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg

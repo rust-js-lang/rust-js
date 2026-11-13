@@ -7,6 +7,14 @@
 // written before its `Err` stays, and nothing after it is written. A
 // literal argument rustc writes into the format string, `b{}` of `1`, is
 // one piece, as Rust's is.
+//
+// A writer of the crate's own shown into one writes into that writer too,
+// a piece at a time, as std's `Formatter` does: its own `write!`, each
+// `write_str` and `write_char`, `pad` and `pad_integral` by its options, a
+// `fmt` it gives its `Formatter` and a writer function it gives it to. A
+// `format!`, a `to_string()` or a `write!` into a `String` it makes is a
+// string of its own, written where the writer writes it. A writer's own
+// `Err`, and the writer's, end the `write!` where Rust's does.
 use std::fmt::{self, Write};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -72,6 +80,164 @@ impl Write for Counted {
         self.text.push_str(s);
         Ok(())
     }
+}
+
+// Fails on the nth call.
+struct Nth(u32, u32, String);
+
+impl Write for Nth {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0 += 1;
+        if self.0 == self.1 {
+            return Err(fmt::Error);
+        }
+        self.2.push_str(s);
+        Ok(())
+    }
+}
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl fmt::Debug for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("P")?;
+        fmt::Display::fmt(&self.x, f)?;
+        f.write_char(';')?;
+        fmt::Debug::fmt(&self.y, f)
+    }
+}
+
+struct Name(&'static str);
+
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_char('<')?;
+        f.pad(self.0)?;
+        f.write_str(">")
+    }
+}
+
+// Gives its `Formatter`, and its options, to std's `char`, `bool` and `str`.
+struct Letter(char, bool, &'static str);
+
+impl fmt::Display for Letter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)?;
+        fmt::Display::fmt(&self.1, f)?;
+        fmt::Debug::fmt(&self.1, f)?;
+        fmt::Display::fmt(self.2, f)
+    }
+}
+
+// Formats its inner value into a `String` first, three ways, then writes
+// the text: each made apart, then written whole, one call.
+struct Staged(Point);
+
+impl fmt::Display for Staged {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let inner = format!("{}", self.0);
+        let again = self.0.to_string();
+        let mut built = String::new();
+        write!(built, "{}|{}", self.0, Name("n"))?;
+        write!(f, "{inner}/{again}/{built}")
+    }
+}
+
+// Makes its inner value's text before it writes anything.
+struct Early(Point);
+
+impl fmt::Display for Early {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = self.0.to_string();
+        f.write_str(&text)
+    }
+}
+
+struct Wrap(Point);
+
+impl fmt::Display for Wrap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}]", self.0)?;
+        fmt::Display::fmt(&self.0.x, f)?;
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+// Shown only by `Branch`'s writer, which is shown into a writer.
+struct Leaf(i8);
+
+impl fmt::Display for Leaf {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{{}}}", self.0)
+    }
+}
+
+struct Branch(Leaf);
+
+impl fmt::Display for Branch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "b{}", self.0)
+    }
+}
+
+// Keeps each write's result and carries on.
+struct Stubborn(i32);
+
+impl fmt::Display for Stubborn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let first = f.write_str("a");
+        let second = write!(f, "{}", self.0);
+        if first.is_err() || second.is_err() {
+            f.write_str("!")?;
+        }
+        f.write_str("z")
+    }
+}
+
+// Fails of its own, after writing.
+struct Refuses;
+
+impl fmt::Display for Refuses {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("r")?;
+        Err(fmt::Error)
+    }
+}
+
+struct Nothing;
+
+impl fmt::Display for Nothing {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(())
+    }
+}
+
+fn bracketed(f: &mut fmt::Formatter<'_>, n: i32) -> fmt::Result {
+    write!(f, "<{}>", n)
+}
+
+// Gives its `Formatter` to a function, and prints as it formats.
+struct Helped(i32);
+
+impl fmt::Display for Helped {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        bracketed(f, self.0)?;
+        println!("inside Helped");
+        f.write_str("!")
+    }
+}
+
+fn shown<W: Write>(w: &mut W, p: &Point) -> fmt::Result {
+    write!(w, "{}{:?}", p, p)
 }
 
 fn main() {
@@ -144,4 +310,58 @@ fn main() {
     let at = nums.len() + 1;
     let ended = catch_unwind(AssertUnwindSafe(|| write!(early, "{}{}", s, nums[at])));
     println!("{} {:?}", ended.is_err(), early.0);
+
+    let p = Point { x: -1, y: 2 };
+    let mut framed = Log(Vec::new());
+    write!(framed, "a{}b{:?}", p, p).unwrap();
+    write!(framed, "{:x?}|{:#X?}|{:5?}", p, p, p).unwrap();
+    write!(
+        framed,
+        "{:>6}|{}|{:<4}|{:^5}",
+        Name("hi"),
+        Name("x"),
+        Name("é"),
+        Name("ab")
+    )
+    .unwrap();
+    write!(framed, "{}", Wrap(Point { x: 3, y: -4 })).unwrap();
+    write!(framed, "{:+}", Wrap(Point { x: 3, y: -4 })).unwrap();
+    write!(framed, "{}", Staged(Point { x: 5, y: 6 })).unwrap();
+    write!(framed, "{}{}", Early(Point { x: 7, y: -8 }), Nothing).unwrap();
+    write!(framed, "<{}>{}", Stubborn(-9), Helped(-1)).unwrap();
+    write!(framed, "{}", Branch(Leaf(-7))).unwrap();
+    println!("{:?}", framed.0);
+
+    let mut chars = Chars(Vec::new());
+    write!(chars, "{:*>4}{}", Name("c"), p).unwrap();
+    write!(
+        chars,
+        "{}|{:>3}|{:-<2.1}",
+        Letter('é', true, "ab"),
+        Letter('x', false, "cd"),
+        Letter('y', true, "ef")
+    )
+    .unwrap();
+    shown(&mut chars, &p).unwrap();
+    println!("{:?}", chars.0);
+
+    for n in 1..9 {
+        let mut nth = Nth(0, n, String::new());
+        let r = write!(nth, "{}", Wrap(Point { x: 1, y: -2 }));
+        let mut stubborn = Nth(0, n, String::new());
+        let s = write!(stubborn, "{}", Stubborn(4));
+        println!("{} {:?} {:?} | {:?} {:?}", n, nth.2, r, stubborn.2, s);
+    }
+    let mut refused = Log(Vec::new());
+    let r = write!(refused, "a{}b", Refuses);
+    println!("{:?} {:?}", refused.0, r);
+
+    println!(
+        "{} {:?} {:>5} {} {}",
+        p,
+        p,
+        Name("q"),
+        Wrap(Point { x: 0, y: 0 }),
+        Staged(Point { x: 1, y: 1 })
+    );
 }

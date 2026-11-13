@@ -19,7 +19,7 @@ function $writePadding(f, count, align, fill) {
 // std's `pad` into a writer, `f.pad(s)`: `s` cut to its precision in
 // `char`s, one `write_str`, with the fill chars that pad it to its width
 // before and after it, each a `write_char`.
-function $writePadded(f, s, options) {
+function $writePadded(f, s, options = {}) {
   const { width, precision } = options;
   if (width === undefined && precision === undefined) return f.write(s);
   let chars = Array.from(s);
@@ -63,4 +63,37 @@ function $writeIntegral(f, nonNegative, prefix, digits, options = {}) {
 // digits, its sign apart.
 function $writeInteger(f, n, options) {
   return $writeIntegral(f, n >= 0, "", String(n < 0 ? -n : n), options);
+}
+// An integer's `Debug` into a writer, given its `Formatter`'s options as
+// the writer it's shown in has them: its `LowerHex`, `lower` its digits,
+// or `UpperHex`, `upper`, where `{:x?}` or `{:X?}` asks, else its `Display`.
+function $writeDebugInteger(f, n, lower, upper, options = {}) {
+  if (options.debugHex === "x") return $writeIntegral(f, true, "0x", lower, options);
+  if (options.debugHex === "X") return $writeIntegral(f, true, "0x", upper, options);
+  return $writeInteger(f, n, options);
+}
+// A `char`'s `Display` into a writer, given its `Formatter`'s options as
+// the writer it's shown in has them: its `write_char` where it has no width
+// and no precision, else `pad` of its text.
+function $writeCharOf(f, c, options = {}) {
+  if (options.width === undefined && options.precision === undefined) return f.writeChar(c);
+  return $writePadded(f, c, options);
+}
+// A writer of the crate's own shown into a writer, `f`, a piece at a time
+// (#1652, ADR 1135): `writer` called with `args`, the sink armed for it.
+// Its arguments are evaluated before it's armed, and a writer that writes
+// through a sink makes it, `$sink()`, as its first statement, so that call
+// claims it; any `$sink()` after, of a `format!` or a `to_string()` the
+// writer makes, is a string of its own.
+let $writerArmed;
+function $writingInto(f, writer, ...args) {
+  const outer = $writerArmed;
+  $writerArmed = f;
+  try {
+    writer(...args);
+  } finally {
+    const unclaimed = $writerArmed === f;
+    $writerArmed = outer;
+    if (unclaimed) throw new Error("rust-js: a writer shown into a writer didn't write through its sink");
+  }
 }

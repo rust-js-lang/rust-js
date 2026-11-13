@@ -739,6 +739,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.crate_called_copy((def_id, None, None), None, args)
     }
 
+    /// The function `crate_called` calls of `def_id`, given its arguments
+    /// apart: of a plain function, the one it forwards to where that's
+    /// what its module has (`forwarded_fn`); `None` of a class's or a
+    /// namespace's member, called through its value.
+    pub(in crate::lower) fn crate_callee(&self, def_id: rustc_span::def_id::DefId) -> Option<Expr> {
+        if crate::lower::classes::member(self.tcx, def_id).is_some() {
+            return None;
+        }
+        Some(self.fn_ref(self.forwarded_fn(def_id)))
+    }
+
+    /// `def_id`, or the function it passes its parameters on to, which its
+    /// module re-exports by its name, where a call is of that.
+    fn forwarded_fn(&self, def_id: rustc_span::def_id::DefId) -> rustc_span::def_id::DefId {
+        let module_of = |id| self.krate.fns.get(&id).map(|info: &crate::lower::FnInfo| info.module);
+        match self.krate.forwarded.get(&def_id) {
+            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,
+            _ => def_id,
+        }
+    }
+
     /// Whether the JS a namespace's method's value has of `def_id`, its own,
     /// leaves out the `Some` of `p` where a call of it needs `copy` of it,
     /// and of no other: of the crate's, `copy` takes its type parameters as
@@ -804,11 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of its own module's function, which is what its module exports by
         // that name, that function's anywhere, by the name a module imports
         // it by, `closeFlight` (#566).
-        let module_of = |id| self.krate.fns.get(&id).map(|info: &crate::lower::FnInfo| info.module);
-        let def_id = match self.krate.forwarded.get(&def_id) {
-            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,
-            _ => def_id,
-        };
+        let def_id = self.forwarded_fn(def_id);
         let callee = match (copy, named) {
             (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
             (Some(_), None) => self.own_fn_ref(def_id, copy),

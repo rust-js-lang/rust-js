@@ -316,8 +316,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `toString` a writer calls with options is `Position.toString(p, options)`, `this` the constructor (#358)",
     file: "src/lower/display.rs",
-    find: "        Ok(self.crate_called(instance.def_id(), values))\n",
-    replace: "        Ok(Expr::call(self.fn_ref(instance.def_id()), values))\n",
+    find: "        Ok(self.crate_called(writer, values))\n",
+    replace: "        Ok(Expr::call(self.fn_ref(writer), values))\n",
     tests: ["test/corpus.test.ts", "-t", "^class_display.rs$"],
   },
   {

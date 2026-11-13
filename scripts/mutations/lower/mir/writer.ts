@@ -358,8 +358,8 @@ export const mutations: Mutation[] = [
     name: "builder-assembled-in-a-printing-writer",
     breaks: "a `Debug` builder of a writer that writes through a sink is assembled at its `finish`, so what the writer prints between its steps lands before its text, `<step 1><step 2>[1, 2]` (#1533)",
     file: "src/lower/mir/writer.rs",
-    find: "                if self.writes_through_a_sink(state) {\n                    let sink = Expr::var(&state.writer.as_ref().expect(\"a writer\").1);\n",
-    replace: "                if false {\n                    let sink = Expr::var(&state.writer.as_ref().expect(\"a writer\").1);\n",
+    find: "                if self.writes_through_a_sink(state) {\n                    if crate::lower::recognition::writes_piecewise() {\n",
+    replace: "                if false {\n                    if crate::lower::recognition::writes_piecewise() {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step\\.rs$"],
   },
   {
@@ -373,5 +373,13 @@ export const mutations: Mutation[] = [
       "-t",
       "eprinted_while_formatting"
     ]
+  },
+  {
+    name: "framed-builder-unrefused",
+    breaks: "a framed writer's `Debug` builder is written by #1533's streamed model, whose pieces aren't std's, not refused (#1652)",
+    file: "src/lower/mir/writer.rs",
+    find: "                    if crate::lower::recognition::writes_piecewise() {\n                        return Err(self.refused_in_a_writer(\"a `Debug` builder\", span));\n",
+    replace: "                    if false {\n                        return Err(self.refused_in_a_writer(\"a `Debug` builder\", span));\n",
+    tests: ["test/writer-sink.test.ts"],
   },
 ];
