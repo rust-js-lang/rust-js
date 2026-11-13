@@ -1747,6 +1747,8 @@ Differences:
   ($live()) { .. } }`, and a cleanup `$cleanup(() => { .. }, error)`, each
   aborting before its drops. A library's export a JS host calls gives the
   host the engine's error, thrown ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md), amended, #1193).
+  Where a program asks, `js::catch_stack_overflow(f)` catches it, and
+  inside it an overflow is a panic whose payload is the engine's error ([exceptions](interop/exceptions.md#catch-a-stack-overflow-jscatch_stack_overflow), [1140](../decisions/1140-catch-stack-overflow.md)).
 - **What rust-js doesn't support as a program runs is refused then,**
   `rust-js does not support ..`, which no `catch_unwind` takes for a panic
   and past which no drop runs (`$unsupported`, #1132, #1180).
@@ -2056,7 +2058,12 @@ React and JSX are [their own pages](README.md#react).
     or `(0, None)`: of a JS iterator JS gives it. An endless `n..`'s is
     Rust's, `(usize::MAX, None)`.
 15. Recursion deeper than about 10,000 calls overflows the JS engine's
-    stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193).
+    stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193),
+    or, inside `js::catch_stack_overflow`, a panic, the catcher's `Err`
+    where no `catch_unwind` takes it. Where the overflow leaves a frame no room to run its
+    drops, those drops may be skipped, or, for a drop that may panic, the
+    program aborts; a frame whose calls rust-js knows can't panic skips
+    its drops as an overflow passes (ADR 1140).
 16. Where the crate's iterator's impl writes its own `fold`, std's
     consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
     an accumulator with a destructor that it drops, or that a panic in it

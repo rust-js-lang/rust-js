@@ -173,3 +173,9 @@ takes an exit 134 whose handler had no room to write as the abort.
 `stack_overflow_no_drops_aborts.rs` hold it against native Rust; 564 snapshots take the new forms; React's port moves
 its pin.
 
+## Amendment: a stack overflow caught where a program asks
+
+Inside `js::catch_stack_overflow(f)`, the engine's stack overflow is a
+panic whose payload is the engine's error: each frame's drops run, a
+`catch_unwind` takes it, and the catcher gives what none took as `Err`. With none open it's Rust's
+abort, as above (#1692, [1140](1140-catch-stack-overflow.md)).

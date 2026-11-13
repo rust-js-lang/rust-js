@@ -18,6 +18,7 @@ it writes, without its header comment and source-map line.
 - [Arithmetic and indexing](#arithmetic-and-indexing)
 - [Assertions, `unreachable!` and `todo!`](#assertions-unreachable-and-todo)
 - [Catch an unwind: `catch_unwind`](#catch-an-unwind-catch_unwind)
+- [Catch a stack overflow: `js::catch_stack_overflow`](#catch-a-stack-overflow-jscatch_stack_overflow)
 - [Throw a JS value: `js::throw`](#throw-a-js-value-jsthrow)
 - [Exiting the process](#exiting-the-process)
 
@@ -988,6 +989,97 @@ error: rust-js does not support unwinding where a panic aborts, `panic = "abort"
 ```
 
 Return a `Result` for a failure the caller handles.
+
+## Catch a stack overflow: `js::catch_stack_overflow`
+
+A recursion deeper than the JS engine's stack, some ten thousand calls,
+overflows where Rust's 8 MB wouldn't, and that's Rust's abort
+([semantics](../semantics.md#differences-from-native-rust-in-one-list)). Where a
+program recovers, as React's Fizz renders a tree too deep for the stack
+again from a task of its own, `js::catch_stack_overflow(f)` catches it:
+inside it, a stack overflow unwinds as a panic whose payload is the
+engine's error; outside one, it's Rust's abort. Its `Result` is `Ok` of
+what `f()` gives, or `Err` of what the engine threw, a `&'static JsError`
+([ADR 1140](../../decisions/1140-catch-stack-overflow.md)). Natively,
+where an overflow aborts, it's `Ok(f())`:
+
+```rust
+use std::panic::{self, AssertUnwindSafe};
+
+fn depth(n: u64) -> u64 {
+    if n == 0 { 0 } else { depth(n - 1).checked_add(1).unwrap() }
+}
+
+pub fn measured(n: u64) -> String {
+    match js::catch_stack_overflow(|| depth(n)) {
+        Ok(depth) => format!("{depth} deep"),
+        Err(_) => "too deep for the stack".to_string(),
+    }
+}
+
+pub fn restored(n: u64, log: &mut Vec<String>) -> bool {
+    js::catch_stack_overflow(AssertUnwindSafe(|| {
+        log.push("rendering".to_string());
+        if let Err(payload) = panic::catch_unwind(|| depth(n)) {
+            log.pop();
+            panic::resume_unwind(payload);
+        }
+        log.pop();
+    }))
+    .is_err()
+}
+```
+
+```js
+import { $bigChecked, $catchStackOverflow, $catchable, $unwrap } from "@rust-js/std";
+
+function depth(n) {
+  return n === 0n
+    ? 0n
+    : $unwrap($bigChecked(depth(BigInt.asUintN(64, n - 1n)) + 1n, 0n, 18446744073709551615n));
+}
+
+export function measured(n) {
+  const value = $catchStackOverflow(() => depth(n));
+  if (value.TAG === "Ok") {
+    const depth = value._0;
+    return `${depth} deep`;
+  } else {
+    return "too deep for the stack";
+  }
+}
+
+export function restored(n, log) {
+  return (
+    $catchStackOverflow(() => {
+      log.push("rendering");
+      try {
+        depth(n);
+      } catch (payload) {
+        $catchable(payload);
+        log.pop();
+        throw payload;
+      }
+      log.pop();
+    }).TAG === "Err"
+  );
+}
+```
+
+- **Inside it, an overflow is a panic**: each frame's drops run, a
+  `RefCell`'s guard among them; a `catch_unwind` takes it, as JS's
+  `catch` does, so what it set is restored before `resume_unwind` gives
+  it back; and a drop that may panic and overflows as it unwinds aborts.
+  The innermost `catch_stack_overflow` catches. What's done with its
+  `Result` runs after it, outside it, and so does work it spawns: an
+  overflow there is Rust's abort.
+- **Where the overflow leaves a frame no room to run its drops, those
+  drops may be skipped, or, for a drop that may panic, the program
+  aborts.** And **a frame whose calls rust-js knows can't panic skips its
+  drops as an overflow passes**: Rust gives it no unwinding path, as its
+  overflow aborts. What's caught is for rendering again, not for a
+  program that counts on every drop.
+- **A program that never calls it is as it was**, its JS and its abort.
 
 ## Throw a JS value: `js::throw`
 

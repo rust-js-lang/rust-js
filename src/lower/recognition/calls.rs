@@ -1248,8 +1248,12 @@ pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool>
 }
 
 /// Which of unwinding's functions `def_id` is, `catch_unwind` or
-/// `resume_unwind` (ADR 0660).
+/// `resume_unwind` (ADR 0660), or the js crate's `catch_stack_overflow`
+/// (ADR 1140).
 pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<UnwindOp> {
+    if super::js_items::is_catch_stack_overflow(tcx, def_id) {
+        return Some(UnwindOp::CatchStackOverflow);
+    }
     if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }

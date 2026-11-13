@@ -1947,6 +1947,21 @@ pub fn spawn(this: Box<dyn core::future::Future<Output = ()>>) {
     unreachable!()
 }
 
+/// `f()`, or an `Err` of the JS engine's stack overflow, what it throws
+/// where calls go deeper than its stack holds (`RangeError: Maximum call
+/// stack size exceeded` in V8), as React's Fizz recovers from a tree too
+/// deep to render by rendering it again from a task of its own. A JS
+/// engine's stack is some ten thousand calls, where Rust's main thread has
+/// 8 MB. An overflow no `catch_stack_overflow` is open around is Rust's
+/// abort, as Rust's is; inside one, it unwinds as a panic does: each
+/// frame's drops run, a drop that throws as it unwinds aborts, and no
+/// `catch_unwind` takes it. A frame the overflow leaves no room in may
+/// skip its drops. Natively, where an overflow aborts, it's `Ok(f())`
+/// (ADR 1140).
+pub fn catch_stack_overflow<F: FnOnce() -> R + core::panic::UnwindSafe, R>(f: F) -> Result<R, &'static JsError> {
+    Ok(f())
+}
+
 /// [`encodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent):
 /// `component`, text, a number or a `bool`, for a part of a URL, a query's
 /// value say.

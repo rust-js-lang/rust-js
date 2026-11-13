@@ -78,8 +78,16 @@ function $catchUnwind(f) {
 // the runtime's own bug (#870), what rust-js doesn't support as it runs
 // (`$Unsupported`); and a stack overflow, which Rust aborts the process of
 // (`$overflowed`, #1193).
+//
+// Inside a `js::catch_stack_overflow`, a stack overflow is a panic, which
+// a `catch_unwind` takes as JS's `catch` does, its payload the engine's
+// error (ADR 1140): told first, with no call, where the stack may have no
+// room for one.
 function $catchable(e) {
-  if (e instanceof RangeError || e?.name === "InternalError") $suspect = e;
+  if (e instanceof RangeError || e?.name === "InternalError") {
+    if ($overflowCatchers > 0) return;
+    $suspect = e;
+  }
   if (e instanceof $Abort) $abortEnds();
   if ($endsTheProgram(e)) throw e;
   if ($isStackOverflow(e)) throw $overflowed(e);
@@ -100,9 +108,16 @@ function $endsTheProgram(e) {
 // little room: so first, before it calls anything, what may be one is
 // kept, `$suspect`, which that frame's `finally` reads (`$live`), as small
 // a call, where this one had no room to say more.
+//
+// Inside a `js::catch_stack_overflow`, `e` unwinds as a panic does, told
+// with no call, where the stack may have no room for one (ADR 1140).
 let $suspect;
 function $unwindsOn(e) {
   if (e instanceof RangeError || e?.name === "InternalError") $suspect = e;
+  if ($overflowCatchers > 0) {
+    if (e instanceof $Abort) $abortEnds();
+    return e;
+  }
   return $unwindsOnTold(e);
 }
 function $unwindsOnTold(e) {
@@ -129,13 +144,16 @@ function $cleanup(run, e) {
   if (!$live()) return;
   if (e !== undefined) {
     if ($endsTheProgram(e)) return;
-    if ($isStackOverflow(e)) throw $overflowed(e);
+    if ($overflowCatchers === 0 && $isStackOverflow(e)) throw $overflowed(e);
   }
   $cleanupDepth++;
   try {
     run();
   } catch (second) {
     if (second instanceof $InternalError || second instanceof $Unsupported) throw second;
+    // A drop that overflows as an overflow a `js::catch_stack_overflow`
+    // catches unwinds: Rust's abort of an overflow (ADR 1140).
+    if ($overflowCatchers > 0 && $isStackOverflow(second)) throw $overflowed(second);
     throw $abort(second);
   } finally {
     $cleanupDepth--;
@@ -177,6 +195,26 @@ function $isStackOverflow(e) {
     }
   }
   return e.constructor === $overflowSeen?.constructor && e.message === $overflowSeen?.message;
+}
+
+// `js::catch_stack_overflow(f)` (ADR 1140): `Ok` of what `f()` gives, or
+// `Err` of the engine's stack overflow. Inside it, an overflow is a panic,
+// each frame's drops run as it unwinds, and a `catch_unwind` takes it;
+// none open, it's Rust's abort (#1193). How many are open is what the
+// runtime's unwinding reads; what the program does with its `Result` runs
+// after it returns, outside it, as Rust's does after the closure returns.
+let $overflowCatchers = 0;
+function $catchStackOverflow(f) {
+  $overflowCatchers++;
+  try {
+    return { TAG: "Ok", _0: f() };
+  } catch (e) {
+    if (!$isStackOverflow(e)) throw e;
+    $suspect = undefined;
+    return { TAG: "Err", _0: e };
+  } finally {
+    $overflowCatchers--;
+  }
 }
 
 // The process ended by Rust's abort of a stack overflow, `cause`: std's
@@ -243,9 +281,11 @@ function $abortEnds() {
 // it yet (#1193).
 //
 // Of a stack overflow that `$unwindsOn` kept, `$suspect`, where it had no
-// room to abort, the abort, here or further out (#1193).
+// room to abort, the abort, here or further out (#1193); inside a
+// `js::catch_stack_overflow`, where an overflow unwinds as a panic does,
+// none (ADR 1140).
 function $live() {
-  if (!$aborted && $suspect === undefined) return true;
+  if (!$aborted && ($suspect === undefined || $overflowCatchers > 0)) return true;
   return $liveTold();
 }
 function $liveTold() {

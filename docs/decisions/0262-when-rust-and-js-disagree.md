@@ -79,6 +79,15 @@ react.dev's TopNav passes the same closure instead.
   decides no disagreement, tooling, bindings' shape or the output's
   layout. An unobservable difference says why the program can't tell; a
   rare one lists where it can, under Consequences.
+- **A JS stack overflow is caught where a program asks**, the fourth
+  case's, a decided exception at the JS boundary, the user's decision
+  (2026-11-13, #1692): inside `js::catch_stack_overflow(f)`, the engine's
+  overflow is a panic whose payload is the engine's error, where Rust's
+  aborts, and its `Err` where no `catch_unwind` takes it; natively it's
+  `Ok(f())`. A frame the overflow leaves no
+  room in may skip its drops, or abort for a drop that may panic, and one
+  whose calls can't panic skips them. Listed in the guide's differences
+  (`semantics.md`, 15) ([1140](1140-catch-stack-overflow.md)).
 - **A once-callback passed on is the function it calls**, the second
   case's, which the user decided (2026-10-26): a closure given to a
   binding's `FnOnce` callback that only passes its call on to a function

@@ -19,6 +19,10 @@ pub(in crate::lower) enum UnwindOp {
     Catch,
     /// `panic::resume_unwind(payload)`.
     Resume,
+    /// `js::catch_stack_overflow(f)`, `$catchStackOverflow(f)`: `Ok` of
+    /// `f()`, or `Err` of the engine's stack overflow, which unwinds inside
+    /// it as a panic does (ADR 1140).
+    CatchStackOverflow,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -44,6 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = values.next().expect("rustc checked the arguments");
         Ok(Some(match op {
             UnwindOp::Catch => Expr::caught_unwind(value),
+            UnwindOp::CatchStackOverflow => Expr::call_helper("$catchStackOverflow", vec![value]),
             UnwindOp::Resume => {
                 let mut thrown = Expr::call_helper("$unwinding", vec![value]);
                 // Of a payload as it was given, which a `catch` throws

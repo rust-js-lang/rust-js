@@ -43,6 +43,14 @@ pub(in crate::lower) fn is_symbol_for_constructor(tcx: TyCtxt<'_>, did: DefId) -
     matches!(tcx.def_kind(did), rustc_hir::def::DefKind::Ctor(..)) && is_symbol_for_def(tcx, did)
 }
 
+/// Whether `did` is `js::catch_stack_overflow`, which catches the JS
+/// engine's stack overflow (ADR 1140): the builtins crate's.
+pub(in crate::lower) fn is_catch_stack_overflow(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "catch_stack_overflow"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
 /// Whether `did` is `js::any_of`, a type parameter's value as any value
 /// (ADR 0909): the builtins crate's.
 pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
