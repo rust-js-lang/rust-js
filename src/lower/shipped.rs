@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `iterator_rev(it, { next: $next }, { next_back: $nextBack })` (ADR
     /// 0871).
     fn held_rev(&mut self, it: Expr) -> Expr {
-        let rev = super::recognition::compiled_provided_method(self.tcx, "Iterator", "rev").expect("std's `rev`");
+        let rev = super::recognition::compiled_provided_method(self.tcx, "Iterator", "rev");
         let dictionary =
             |name: &str, step: &'static str| Expr::object(vec![js::Prop::Field(name.into(), Expr::helper(step))]);
         Expr::call(

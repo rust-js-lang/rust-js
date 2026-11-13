@@ -5,6 +5,9 @@
 
 use super::*;
 
+mod rows;
+pub(crate) use rows::Rows;
+
 /// std's bodies rust-js compiles from the MIR of a `core` built to unwind
 /// (#424), into
 /// `@rust-js/std` (ADR 0561): each by its type, as
@@ -196,11 +199,9 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Skip", Some("DoubleEndedIterator"), "nth_back"),
     ("Skip", Some("DoubleEndedIterator"), "try_rfold"),
     ("Skip", Some("DoubleEndedIterator"), "rfold"),
-    ("Skip", Some("ExactSizeIterator"), "len"),
     ("Skip", Some("Clone"), "clone"),
     ("Skip", Some("Debug"), "fmt"),
     ("Take", Some("Iterator"), "next"),
-    ("Take", Some("Iterator"), "__iterator_get_unchecked"),
     ("Take", Some("Iterator"), "size_hint"),
     ("Take", Some("Iterator"), "nth"),
     ("Take", Some("Iterator"), "advance_by"),
@@ -593,8 +594,7 @@ pub(crate) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
 /// goes, its instance's, as `is_compiled_std` is of a body's.
 pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
     // A maker of `HELD_COMPILED`'s adapters, `filter`, of the type it makes.
-    let maker =
-        (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id));
+    let maker = (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == id);
     if maker {
         let made = tcx
             .fn_sig(id)
@@ -640,32 +640,15 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let not_called = |name: &str| MEANING_ONLY.contains(&name) && !called_for_build(tcx, name);
     owner.is_some_and(|adt| (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(not_called))
         || (HELD_COMPILED.iter())
-            .any(|&(name, method, _)| not_called(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
-        || (COMPILED_STD_FNS.iter()).any(|&(module, name, makes)| {
-            makes.is_some_and(not_called) && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)
-        })
+            .any(|&(name, method, _)| not_called(name) && compiled_provided_method(tcx, "Iterator", method) == id)
+        || (compiled_rows(tcx).fns.iter()).any(|&(fn_id, makes)| makes.is_some_and(not_called) && fn_id == id)
 }
 
 /// The provided method `method` of std's trait `trait_name` compiled into
-/// `@rust-js/std`, `Iterator::fuse`'s: the one place that finds it.
-pub(crate) fn compiled_provided_method(
-    tcx: TyCtxt<'_>,
-    trait_name: &'static str,
-    method: &'static str,
-) -> Option<DefId> {
-    // Found once a session: whether a call is one of `HELD_COMPILED`'s
-    // makers asks it of each (#884).
-    let caches = crate::lower::session::caches(tcx);
-    if let Some(id) = caches.provided.get(&(trait_name, method)) {
-        return id;
-    }
-    let trait_def = std_iter_trait(tcx, trait_name);
-    let id = trait_def.and_then(|trait_def| {
-        (tcx.associated_items(trait_def).in_definition_order())
-            .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-            .map(|item| item.def_id)
-    });
-    caches.provided.keep((trait_name, method), id)
+/// `@rust-js/std`, `Iterator::fuse`'s: a row of the catalog, resolved once
+/// (`compiled_rows`); asked of one it hasn't, an internal error.
+pub(crate) fn compiled_provided_method(tcx: TyCtxt<'_>, trait_name: &'static str, method: &'static str) -> DefId {
+    compiled_rows(tcx).provided(trait_name, method)
 }
 
 /// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
@@ -712,44 +695,24 @@ fn std_iter_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
         .or_else(|| registry::by_path(tcx, StdCrate::Alloc, &["io", name]))
 }
 
+/// The catalog's rows resolved, once a session (`rows`): a row that
+/// resolves to nothing is an internal error.
+pub(crate) fn compiled_rows(tcx: TyCtxt<'_>) -> std::rc::Rc<Rows> {
+    (crate::lower::session::caches(tcx).rows)
+        .get_or_init(|| std::rc::Rc::new(rows::resolve(tcx)))
+        .clone()
+}
+
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
+    let rows = compiled_rows(tcx);
     let mut found = Vec::new();
-    let iter = (COMPILED_STD.iter())
-        .filter(|&&(type_name, ..)| called_for_build(tcx, type_name))
-        .map(|entry| (StdCrate::Core, "iter", entry));
-    let io = COMPILED_STD_IO.iter().map(|entry| (StdCrate::Alloc, "io", entry));
-    let net = COMPILED_STD_NET.iter().map(|entry| (StdCrate::Core, "net", entry));
-    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io).chain(net) {
-        // `io`'s of `alloc`'s or `core`'s, `Cursor`.
-        let Some(adt) = registry::by_path(tcx, krate, &[module, type_name])
-            .or_else(|| registry::by_path(tcx, StdCrate::Core, &[module, type_name]))
-        else {
-            continue;
-        };
-        // A trait std keeps private is beside the type, `FuseImpl` in
-        // `Fuse`'s module.
-        let private_trait = |name: &str| {
-            (tcx.module_children(tcx.parent(adt)).iter())
-                .find(|child| child.ident.as_str() == name)
-                .and_then(|child| child.res.opt_def_id())
-        };
-        let impls: Vec<DefId> = match trait_name {
-            None => tcx.inherent_impls(adt).to_vec(),
-            Some(trait_name) => match std_iter_trait(tcx, trait_name).or_else(|| private_trait(trait_name)) {
-                Some(trait_def) => tcx
-                    .all_impls(trait_def)
-                    .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
-                    .collect(),
-                None => Vec::new(),
-            },
-        };
-        for imp in impls {
-            found.extend(
-                (tcx.associated_items(imp).in_definition_order())
-                    .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-                    .map(|item| item.def_id),
-            );
+    for ((type_name, ..), methods) in &rows.iter {
+        if called_for_build(tcx, type_name) {
+            found.extend(methods);
         }
+    }
+    for (_, methods) in &rows.io {
+        found.extend(methods);
     }
     // Its makers, but a `MEANING_ONLY` adapter's outside a build of it.
     let made_for_build = |method: &str| {
@@ -761,25 +724,14 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         .iter()
         .filter(|&&(_, method)| made_for_build(method))
     {
-        found.extend(compiled_provided_method(tcx, trait_name, method));
+        found.push(rows.provided(trait_name, method));
     }
     // `io`'s traits' provided methods (#1156): each a function over `Self`,
     // given its dictionary, as `Iterator`'s are.
-    for &(trait_name, method) in COMPILED_STD_IO_PROVIDED {
-        let Some(trait_def) = registry::by_path(tcx, StdCrate::Alloc, &["io", trait_name])
-            .or_else(|| registry::by_path(tcx, StdCrate::Core, &["io", trait_name]))
-        else {
-            continue;
-        };
-        found.extend(
-            (tcx.associated_items(trait_def).in_definition_order())
-                .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-                .map(|item| item.def_id),
-        );
-    }
-    for &(module, name, makes) in COMPILED_STD_FNS {
+    found.extend(&rows.io_provided);
+    for &(id, makes) in &rows.fns {
         if makes.is_none_or(|type_name| called_for_build(tcx, type_name)) {
-            found.extend(registry::by_path(tcx, StdCrate::Core, &[module, name]));
+            found.push(id);
         }
     }
     // And each function std keeps private that a compiled body calls,
@@ -897,7 +849,7 @@ fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> V
 /// made in place.
 pub(crate) fn makes_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, made: ty::Ty<'tcx>) -> bool {
     compiled_for(tcx, made)
-        && (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
+        && (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == id)
 }
 
 /// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place,
@@ -905,7 +857,7 @@ pub(crate) fn makes_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, made: ty::
 pub(crate) fn sized_in_place<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, made: ty::Ty<'tcx>) -> bool {
     compiled_for(tcx, made)
         && (HELD_COMPILED.iter())
-            .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
+            .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == id)
 }
 
 /// A std type whose bodies are compiled into `@rust-js/std` (the std-bodies

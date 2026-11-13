@@ -565,8 +565,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `Iterator::fuse`'s compiled body is called in this module, where
     /// the module imports it: `consumed_into_iters`'s `fuse`.
     pub(in crate::lower) fn fuse_import(&self) -> Option<String> {
-        crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "fuse")
-            .and_then(|id| self.krate.foreign.import_key(id, self.module))
+        let id = crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "fuse");
+        (self.krate.foreign.import_key(id, self.module))
             .and_then(|export| self.krate.imports.get(&self.module)?.get(&export))
             .cloned()
     }

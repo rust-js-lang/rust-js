@@ -662,7 +662,7 @@ pub(super) fn stepped_locals<'tcx>(
                 // given by its `next_back`, not one a std method's form
                 // reverses where it's made (ADR 0871): what it's given made
                 // knowing its back (#851).
-                if Some(callee) == rev
+                if callee == rev
                     && !body.facts.in_place_adapters.contains(fn_span)
                     && let Some(arg) = args.first()
                     && let mir::Operand::Move(place) | mir::Operand::Copy(place) = &arg.node
@@ -674,7 +674,7 @@ pub(super) fn stepped_locals<'tcx>(
                 // the length of `b`, a map whose closure has a destructor:
                 // made knowing its length where it's made, as `back_stepped`'s
                 // rule of its type says (#775).
-                if Some(callee) == zip
+                if callee == zip
                     && let [a, b] = generic_args.types().collect::<Vec<_>>()[..]
                     && !rustc_middle::ty::TypeVisitableExt::has_param(&(a, b))
                     && let [_, arg] = &args[..]

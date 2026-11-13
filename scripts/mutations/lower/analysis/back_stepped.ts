@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a `rev()` held in a variable is given, std's `Rev` stepping it by `next_back`, isn't made knowing its back (#851)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                if Some(callee) == rev\n",
+    find: "                if callee == rev\n",
     replace: "                if false\n",
     tests: ["test/corpus.test.ts", "-t", "^held_revs_of_lazy_sources.rs$"],
   },

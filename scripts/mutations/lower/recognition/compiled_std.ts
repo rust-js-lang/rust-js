@@ -216,8 +216,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the plain build calls std's compiled `repeat_n`, `repeatN(L(7), 3, clone)`, not the runtime's `$repeatingN(L(7), 3)`, though `RepeatN` is compiled as its meaning alone (#1458)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "            makes.is_some_and(not_called) && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)\n",
-    replace: "            false && registry::by_path(tcx, StdCrate::Core, &[module, name]) == Some(id)\n",
+    find: "makes.is_some_and(not_called) && fn_id == id",
+    replace: "false && fn_id == id",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_drops_what_it_holds.rs$"],
     snapshots: true,
   },
@@ -259,13 +259,5 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
     snapshots: true,
-  },
-  {
-    name: "net-addresses-uncompiled",
-    breaks: "`core::net`'s addresses aren't compiled into `@rust-js/std`, so `Ipv4Addr::new` is refused again (#1420)",
-    file: "src/lower/recognition/compiled_std.rs",
-    find: "    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io).chain(net) {\n",
-    replace: "    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io) {\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

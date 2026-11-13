@@ -628,3 +628,28 @@ too. Mutations `next-if-item-leaked-as-test-panics` and
 `next-if-some-item-leaked-as-test-panics` (`runtime/next_if.ts`),
 `next-if-given-no-drop` and `next-if-drop-given-a-test-that-cant-panic`
 (`lower/mir/std_calls/iterators.ts`).
+
+## Amendment: the catalog's rows are resolved once, and a row that resolves to nothing is an internal error (2026-11-13, #1681)
+
+Review #1671's change 2 makes std's compiled bodies the default meaning
+of an iterator chain, so the catalog of which bodies are compiled has to
+be exact. It was resolved by name, and silently: a row whose type, trait or
+method a toolchain didn't have compiled nothing, with no error, and each
+provided method was found again by name wherever it was asked.
+
+**`compiled_std/rows.rs` resolves every row once a session**
+(`compiled_rows`): `COMPILED_STD`'s, `COMPILED_STD_IO`'s and
+`COMPILED_STD_NET`'s to their methods, each provided method a catalog
+names (`HELD_COMPILED`'s makers too), `io`'s provided methods, and each
+free function. A row that resolves to nothing panics as an internal error
+naming the row, every compile of std's bodies. `compiled_provided_method`
+reads the table and gives a `DefId`, and a pair no row names is an internal
+error too. Resolving everything, whatever the build, holds `MEANING_ONLY`'s
+rows as well.
+
+It found two dead rows on Rust 1.100, which compiled nothing:
+`("Skip", ExactSizeIterator, "len")` and `("Take", Iterator,
+"__iterator_get_unchecked")`. Neither impl defines that method. Both are
+removed, `@rust-js/std` is byte for byte the same, and so is every
+compile. Mutations `net-addresses-uncompiled` (moved here) and
+`catalog-private-trait-unfound` are caught by `test/std-package.test.ts`.

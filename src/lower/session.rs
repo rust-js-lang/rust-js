@@ -34,8 +34,8 @@ pub(crate) struct Caches {
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
     pub compiled: OnceCell<Rc<Vec<DefId>>>,
-    /// A trait's provided method of std's, by the trait's and its name.
-    pub provided: OnceMap<(&'static str, &'static str), Option<DefId>>,
+    /// std's catalog of compiled bodies, each row resolved (#1681).
+    pub rows: OnceCell<Rc<crate::lower::recognition::Rows>>,
     /// That this session builds std's structs as their meaning (ADR 0932).
     pub meaning: Cell<bool>,
     /// That every struct outside the crate is one JS may make (ADR 1105).
@@ -161,7 +161,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             impl_short_names: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
-            provided: OnceMap::default(),
+            rows: OnceCell::new(),
             meaning: Cell::new(flags.meaning),
             every_outside_struct: Cell::new(flags.every_outside_struct),
             debug_shown: OnceCell::new(),
