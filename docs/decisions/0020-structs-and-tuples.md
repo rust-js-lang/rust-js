@@ -1,7 +1,8 @@
 # 0020. Structs are objects, tuples are arrays
 
 Status: Accepted. Extends [0013](0013-fieldless-enums.md) to types with fields.
-(Amended: an array of what's changed in place contains it too.)
+(Amended: an array of what's changed in place contains it too; amended
+again: what React keeps and gives again is copied where it's changed, #1723.)
 Amended by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): a `()`
 as a `dyn` JS is given the value of is an array too, `useEffect(f, [])`.
 Amended by [0775](0775-a-unit-given-to-js-is-undefined.md): a `()` given to
@@ -158,7 +159,9 @@ return { x, y };
 
 - A JS caller that passes an object to a function taking it by value (moved,
   or into a `mut` parameter) may see the function change it. In Rust, the
-  caller gave it up.
+  caller gave it up. Not React, which keeps what it gives a component or a
+  reducer and gives it again: such a function copies what it changes of
+  it (amendment below, #1723).
 - Copying is decided per type, for the whole crate: once any `Point` field
   is assigned anywhere, every `Point` read copies, even where the source is
   never used again. Knowing a read is a variable's last use would remove
@@ -322,3 +325,63 @@ of what the function gives uncopied, a variable nothing reads after,
 which rustc's MIR writes last, isn't made of custom MIR, which may write
 the variable after: `RET = _5` then `(_5 as A).0 = 7`. Rustlantis's seed
 1646 printed `_2 = -64` where Rust's is `0`; now as Rust.
+
+## Amendment: what React keeps and gives again is copied where it's changed (#1723)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept.
+
+The consequence above, that a JS caller giving an object by value may
+see the function change it, holds of a caller that gives it up, as Rust's
+does. React doesn't. It keeps a component's props and renders it again
+with the same object: twice for each render in `<StrictMode>`, again for
+an element it kept, a memo's, a state's or `children`, and again for a
+render concurrent React set aside. It keeps a reducer's action, and
+`<StrictMode>` calls the reducer twice with it; and an initializer's
+argument, which it may call twice with. Rust's component is called once
+with props it owns, and its reducer with an action it owns, so what one
+changes in place no call after sees. Its JS changed React's object:
+`let mut at = props.at; at.x += 1.0;` was `const at = props.at; at.x++;`,
+and `<Moved at={{ x: 1 }} />` showed 3 under `<StrictMode>` where Rust's
+gives 2; a reducer pushing to its action's `Vec` gave 12 where Rust's
+gives 11.
+
+**The react bindings say which functions React gives again what it
+kept, `#[rust_js::gives_again]`, once:**
+
+- on the `Rendered` trait, bare: each function whose return is one, an
+  `Element` or an `Option` of one, is a component's, as React's
+  `ComponentType` takes any `Fn(P) -> R` where `R: Rendered`. A component
+  given in JSX and one exported to hand-written JS alike; a closure
+  `forward_ref` renders too. A function of the crate's that gives an
+  element and is only called by Rust is counted too: it copies what it
+  changes of what it owns, which no one can tell from its own.
+- on a binding, naming its callbacks: `use_reducer`'s and
+  `use_optimistic_with`'s `reducer`, `use_reducer_with`'s `reducer` and
+  `init`, `use_action_state`'s `action`. Its state, given by `&`, Rust
+  changes nothing of, nor an updater's (`update(|v| ..)` is `Fn(&T) ->
+  T`), whose clone copies (ADR 0052).
+
+`analysis/given_again.rs` reads them, and `copies/kept.rs`, the copy
+owner's, answers what's copied. A function's parameter given by value,
+not a reference, is kept by React. Where its body changes it in place,
+a field written or lent as a `&mut`, it's copied first, `props = {
+...props, at: { ...props.at } }`, and a part its pattern takes, `({ at })`,
+`at = { ...at }`. Where it changes a part it moved out, followed through
+each move and each value made of one, or gives one by value to the
+crate's own code, which owns it and may change it, the part's copied
+where it's moved: `const at = { ...props.at };`. Given on to React or any
+JS unchanged, `<Moved at={props.at} />`, it isn't. The copy shares
+nothing that may change in place with React's: a struct's parts that
+may, a `Vec`'s `slice()` or its items' copies, an `Option`'s `Some`'s, an
+enum's variant's. What it can't copy, a map JS holds in a form of its
+own, changed in place, is refused, as is a reducer rust-js can't see,
+a function pointer or a `dyn Fn`, given an object: both are #1727.
+
+Held by `test/react-kept.test.ts`: each kind, props moved out and changed,
+changed themselves, taken apart, a `Vec`'s items, a reducer's action, an
+initializer's argument, a `forward_ref` render's props, rendered in real
+React under `<StrictMode>` to Rust's answer, React's objects unchanged,
+and the updater's clone; props given on unchanged not copied; the refusal.
+Thirteen mutations, each caught.
+

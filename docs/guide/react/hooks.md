@@ -328,6 +328,15 @@ An enum's JS shape is [its own page's](../interop/objects.md).
 `use_reducer_with(reducer, arg, init)` is `useReducer(reducer, arg, init)`:
 the first state is `init(arg)`.
 
+React keeps an action and may call the reducer twice with it, as
+`<StrictMode>` does, and `init` with its `arg`. A reducer owns its action,
+as Rust gives it by value, so one that changes it in place, `mut step:
+Step` pushing to `step.by`, gets a copy first, `step = { ...step, by:
+step.by.slice() };`, and each call is Rust's
+([ADR 0020](../../decisions/0020-structs-and-tuples.md), amended, #1723).
+A reducer given as a function pointer or a `dyn Fn`, which rust-js can't
+see, of an action that holds an object, is refused (#1727).
+
 ## Custom hooks
 
 A custom hook is a function named `use_..` that calls hooks. It's camelCase

@@ -1159,7 +1159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.locals.mir.plain.insert(format!("...{name}"));
             }
         }
-        let mut out = self.held_parameters(&state);
+        let mut out = self.parameters_first(&state)?;
         // Each parameter a pointer is taken to, its cell, of what it's given.
         for (name, given) in cell_params {
             let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);

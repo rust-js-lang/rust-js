@@ -45,6 +45,8 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     pub(in crate::lower) searches_whole: bool,
     /// The trait constants generic code reads (ADR 0106).
     pub(in crate::lower) generic_consts: &'a IndexSet<DefId>,
+    /// The functions JS gives again what it gave them (#1723).
+    pub(in crate::lower) given_again: &'a IndexSet<DefId>,
     pub(in crate::lower) changed_vecs: &'a IndexSet<Ty<'tcx>>,
     /// The types whose objects say where they're stored (#1113).
     pub(in crate::lower) stored_places: &'a analysis::StoredPlaces<'tcx>,

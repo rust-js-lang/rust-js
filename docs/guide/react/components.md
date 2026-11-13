@@ -172,6 +172,14 @@ To give some props and take the rest from another struct, use Rust's
 struct update, `{..base}`, last: `<Title text="New" {..props} />`. See
 [spreads](jsx.md#spreads).
 
+A component owns its props, as any Rust function owns what it's given by
+value, so it may change them: `let mut at = props.at; at.x += 1.0;`.
+React keeps the props object and renders again with it, twice in
+`<StrictMode>`, so what's changed is copied first, as a clone would be,
+`const at = { ...props.at };`, and each render is Rust's. Props given on
+unchanged, `<Dot at={props.at} />`, aren't copied
+([ADR 0020](../../decisions/0020-structs-and-tuples.md), amended, #1723).
+
 ## Children
 
 A `children` field holds what's written between the tags. Type it as

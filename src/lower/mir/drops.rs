@@ -214,13 +214,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.owned_where_run(state, place.local)
     }
 
+    /// What the body does first of its parameters: the copy of each JS
+    /// gives again that it changes in place (`kept_starts`, #1723); and
     /// `$held(it);` of each parameter that holds an iterator dropped by
     /// closing it the body drops, as a variable's is held where it's
     /// made: the function owns what it's given, and drops it where Rust
     /// does, not as it's done (#392). Not std's struct, compiled, which
     /// steps what it holds as Rust does, and has no `hold()`.
-    pub(super) fn held_parameters(&self, state: &State<'_, 'tcx>) -> Vec<Stmt> {
-        let mut out = Vec::new();
+    pub(super) fn parameters_first(&self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
+        // Each JS gives again that it changes, its copy (#1723).
+        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;
         for local in state.body.args_iter() {
             let ty = state.body.local_decls[local].ty;
             if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
@@ -231,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));
             }
         }
-        out
+        Ok(out)
     }
 
     /// Whether the body drops `local` where it runs on, not only as a panic

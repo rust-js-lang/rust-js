@@ -34,6 +34,7 @@ pub(in crate::lower) use fmt_failures::{Failing, call_may_fail};
 pub(in crate::lower) use fresh_strings::fresh_string_given;
 pub(super) mod fn_pointers;
 mod generic_consts;
+mod given_again;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
 mod held_adapters;
 mod iterator_steps;
@@ -254,6 +255,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
     pub asks_capacity: bool,
     pub generic_consts: IndexSet<DefId>,
+    /// The functions JS gives again what it gave them, which it keeps: a
+    /// component, a reducer (#1723).
+    pub given_again: IndexSet<DefId>,
     /// What its writers take beyond their arguments, and which of its
     /// functions read a `Formatter`'s options (ADRs 0058, 0137, 0559).
     pub writer_facts: WriterFacts,
@@ -1130,6 +1134,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Generic code's `extend` asking the crate's own hint, refused at its caller where none's kept (#849).
     crate::lower::iterators::refuse_unknown_capacity_extends(&recognition, all_bodies, kept.1);
     let generic_consts = generic_consts(tcx, all_bodies);
+    let given_again = given_again::given_again(tcx, all_bodies).ok()?;
     // A program its tests use whose dictionaries lack a constant (#597).
     programs::refuse_lacked_consts(tcx, &foreign, &generic_consts);
 
@@ -1188,6 +1193,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         caller_locations,
         asks_capacity,
         generic_consts,
+        given_again,
         writer_facts,
         prints,
         shown_params,

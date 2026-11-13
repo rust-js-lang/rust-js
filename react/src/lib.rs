@@ -825,6 +825,7 @@ pub type TransitionFunction<R = ()> = Box<dyn FnOnce() -> R>;
 /// and what sends it actions, which `reducer` turns into the next state.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useReducer")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
+#[cfg_attr(rust_js, rust_js::gives_again(reducer))]
 pub fn use_reducer<S, A>(reducer: impl Fn(&S, A) -> S + 'static, initial: S) -> (&'static S, Dispatch<A>) {
     unreachable!()
 }
@@ -833,6 +834,7 @@ pub fn use_reducer<S, A>(reducer: impl Fn(&S, A) -> S + 'static, initial: S) -> 
 /// on the first render only.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useReducer")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
+#[cfg_attr(rust_js, rust_js::gives_again(reducer, init))]
 pub fn use_reducer_with<S, A, I>(
     reducer: impl Fn(&S, A) -> S + 'static,
     arg: I,
@@ -863,6 +865,7 @@ impl<A> Dispatch<A> {
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useActionState")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
+#[cfg_attr(rust_js, rust_js::gives_again(action))]
 pub fn use_action_state<S, P>(
     action: impl Fn(&S, P) -> S + 'static,
     initial: S,
@@ -875,6 +878,7 @@ pub fn use_action_state<S, P>(
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useActionState")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
+#[cfg_attr(rust_js, rust_js::gives_again(action))]
 pub fn use_async_action_state<S, P, F: Future<Output = S>>(
     action: impl Fn(&S, P) -> F + 'static,
     initial: S,
@@ -896,6 +900,7 @@ pub fn use_optimistic<S>(value: S) -> (&'static S, SetOptimistic<S>) {
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useOptimistic")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
+#[cfg_attr(rust_js, rust_js::gives_again(reducer))]
 pub fn use_optimistic_with<S, A>(value: S, reducer: impl Fn(&S, A) -> S + 'static) -> (&'static S, Dispatch<A>) {
     unreachable!()
 }
@@ -1267,6 +1272,9 @@ impl<P> ComponentType<P, Constructed> for ClassComponent<P> {}
 
 /// What a component function renders: an [`Element`], or an `Option` of
 /// one, `undefined` where it renders nothing, JS's `return null` (ADR 0286).
+// React renders a component again with the props it kept, twice in
+// `<StrictMode>`: what one changes in place of them is copied first (#1723).
+#[cfg_attr(rust_js, rust_js::gives_again)]
 pub trait Rendered {}
 
 impl Rendered for Element {}

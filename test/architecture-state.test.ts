@@ -151,7 +151,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
   "src/lower/mir/closures.rs": ["at", "body", "in_place", "locals"],
   "src/lower/mir/dispatch.rs": ["at", "body", "called_into", "defaults", "flattened", "iter_locals", "locals"],
-  "src/lower/mir/drops.rs": ["body", "branches", "locals", "pending"],
+  "src/lower/mir/drops.rs": ["body", "branches", "locals", "parts", "pending"],
   "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
   "src/lower/mir/dispatch/known_calls.rs": ["at", "body"],
   "src/lower/mir/hints/clones.rs": ["locals"],

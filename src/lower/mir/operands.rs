@@ -57,6 +57,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, Span::default())?;
             return Ok(Value::Expr(self.boxed_of_held(held, ty, out)));
         }
+        // A part moved out of what JS gives again, which it keeps, that the
+        // body changes: its copy (#1723, `kept_copies`).
+        if let Operand::Move(place) = operand
+            && self.kept_param(state.body, place.local)
+            && !place.projection.iter().any(|e| matches!(e, PlaceElem::Deref))
+            && self.kept_copies(state.body).at_moves.contains(&place.local)
+        {
+            let ty = operand.ty(&state.body.local_decls, self.tcx);
+            let span = state.body.local_decls[place.local].source_info.span;
+            let held = self.value_expr(read, span)?;
+            return Ok(Value::Expr(self.kept_copy(held, ty, span)?));
+        }
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);

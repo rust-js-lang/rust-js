@@ -379,4 +379,11 @@ export const mutations: Mutation[] = [
     replace: "adt.is_struct()",
     tests: ["test/crates.test.ts", "-t", "never crashes its consumer"],
   },
-];
+  {
+    name: "kept-move-copy-unasked",
+    breaks: "a move out of what React kept is never copied, as it was (#1723)",
+    file: "src/lower/mir/operands.rs",
+    find: "            && self.kept_copies(state.body).at_moves.contains(&place.local)\n",
+    replace: "            && false\n",
+    tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
+  },];

@@ -32,9 +32,9 @@ mod value_only;
 mod whole;
 
 pub(super) use effects::{
-    called_constructs, calls_with_resolvers, cannot_throw, gives_back, gives_plain_data, iterates_receiver,
-    keeps_in_collection, reads_only_its_parameters, reject_unkept_collections, reject_unread_parameters, runs_nothing,
-    runs_only_given,
+    called_constructs, calls_with_resolvers, cannot_throw, gives_again, gives_back, gives_plain_data,
+    iterates_receiver, keeps_in_collection, reads_only_its_parameters, reject_unkept_collections,
+    reject_unread_parameters, runs_nothing, runs_only_given,
 };
 pub(in crate::lower) use flattened::is_flattened_state_field;
 pub(super) use flattened::{Flattened, Keyed, flattened, flattened_state, keyed_test};

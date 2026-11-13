@@ -2,7 +2,8 @@
 //! that it can't throw (ADR 0301), that it runs nothing (ADR 0867), or
 //! only what it's given (ADR 0898), or calls what it's given with a
 //! promise's resolving functions (rd654), or gives back what it was given
-//! (ADR 1022), or keeps what it's given only in its collection (ADR 1050).
+//! (ADR 1022), or keeps what it's given only in its collection (ADR 1050),
+//! or gives a function again what it kept (#1723).
 
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
@@ -63,6 +64,22 @@ pub(in crate::lower) fn iterates_receiver(tcx: TyCtxt<'_>, def_id: DefId) -> boo
 pub(in crate::lower) fn gives_back(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("gives_back")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// `#[rust_js::gives_again]`: what JS gives a function it keeps, and may
+/// give again (#1723, ADR 0020, amended). Of a binding, the parameters it
+/// names are functions it gives what it keeps, `use_reducer`'s `reducer`
+/// its state's actions; of a trait, every function whose return is of it
+/// is, React's `Rendered`, a component's, which React renders again with
+/// the props it kept. `None` where it's unsaid; of a trait, no names.
+pub(in crate::lower) fn gives_again(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<Symbol>> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("gives_again")];
+    let attr = tcx.get_attrs_by_path(def_id, &path).next()?;
+    Some(
+        (attr.meta_item_list().into_iter().flatten())
+            .filter_map(|item| item.ident().map(|ident| ident.name))
+            .collect(),
+    )
 }
 
 /// `#[rust_js::gives_plain_data]`: a binding that gives fresh plain data, an

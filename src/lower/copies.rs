@@ -3,6 +3,7 @@
 //! place, which is found once for each type (ADRs 0020, 0052, 0100).
 
 mod in_place;
+mod kept;
 pub(in crate::lower) use in_place::InPlaceWriter;
 
 use super::recognition::StdItem;
