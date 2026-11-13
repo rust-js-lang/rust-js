@@ -15,7 +15,13 @@ use super::*;
 /// `value` that reads no `x` being none (rd514).
 /// Past what's only declared between, `let typeofNextType;` of what the
 /// test's branches set.
-pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>) {
+/// And of a `filter`'s, `const x = v != null && p ? v : undefined`, a `v`
+/// that may be `None`, tested first: `x != null` exactly where `t` holds
+/// too. Where `v` is a temporary made just before, `const v = m.get(k)`,
+/// read nowhere else, it's named `x`, the program's binding, one value
+/// tested where it's made, `const chunk = chunks.get(id); if (chunk == null
+/// || ..)`, as upstream React writes it (#1619).
+pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>, user: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let declared = |s: &Stmt| matches!(s.kind, StmtKind::Let(_, None));
@@ -23,14 +29,48 @@ pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>)
         if at < stmts.len()
             && let Some((tested, rest)) = tested_option(&stmts[i], &stmts[at], &stmts[at + 1..], changing)
         {
+            let filtered = filtered_names(&stmts[i]);
             stmts[at].kind = tested;
             if let Some(rest) = rest {
                 stmts.splice(at + 1.., rest);
             }
             stmts.remove(i);
+            // The filter's temporary named as the program's binding.
+            if let Some((x, v)) = filtered
+                && i > 0
+                && matches!(&stmts[i - 1].kind, StmtKind::Const(name, _) if *name == v)
+                && !user.contains(&v)
+                && js::mentions_in(&stmts[i - 1..], &x) == 0
+            {
+                js::renamed(&mut stmts[i - 1..], &v, &x);
+            }
         }
         i += 1;
     }
+}
+
+/// Whether `test`, a chain of `&&`, tests first that `v` is there, `v !=
+/// null && ..`: where it holds, `v` is.
+fn tests_present_first(test: &Expr, v: &str) -> bool {
+    let mut first = test;
+    while let ExprKind::Binary(js::Op::And, left, _) = &first.kind {
+        first = left;
+    }
+    !std::ptr::eq(first, test)
+        && js::null_test(first, true).is_some_and(|tested| matches!(&tested.kind, ExprKind::Var(n) if n == v))
+}
+
+/// Of `const x = v != null && .. ? v : undefined`, a filter's `Option`,
+/// `x` and `v`.
+fn filtered_names(made: &Stmt) -> Option<(String, String)> {
+    let StmtKind::Const(x, made) = &made.kind else {
+        return None;
+    };
+    let ExprKind::Cond(test, value, _) = &made.kind else {
+        return None;
+    };
+    let ExprKind::Var(v) = &value.kind else { return None };
+    tests_present_first(test, v).then(|| (x.clone(), v.clone()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and
@@ -49,7 +89,8 @@ fn tested_option(
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Present) || changing.contains(v) {
+    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);
+    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {

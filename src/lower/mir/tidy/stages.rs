@@ -375,9 +375,9 @@ pub(super) const STAGES: &[Stage] = &[
             // kind.object()`: the test it's made by (ADR 0910); before its
             // branches are one value, `o?.$$typeof` of `if (o) { t =
             // o.$$typeof; } else { t = undefined; }`, which it's no test of.
-            pass("tested options", |b, _| {
+            pass("tested options", |b, h| {
                 let changing = changing(b);
-                js::statement_lists(b, &mut |s| tested_options(s, &changing))
+                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))
             }),
             pass("branch values", branch_values_of),
             pass("declarations", |b, _| declarations(b)),

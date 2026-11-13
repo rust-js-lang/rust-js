@@ -921,9 +921,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` made where it's tested is read after its branches are one value, `o?.$$typeof`, which it's no test of, so `v = t ? v : undefined; const r = v?.$$typeof;` stays (ADR 0910, amended)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("tested options", |b, _| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing))\n            }),\n            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n',
+    find: '            pass("tested options", |b, h| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))\n            }),\n            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n',
     replace:
-      '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("tested options", |b, _| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing))\n            }),\n',
+      '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("tested options", |b, h| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))\n            }),\n',
     tests: [
       "test/js-object.test.ts",
       "-t",

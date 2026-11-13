@@ -7,8 +7,7 @@ export function entry() {
 }
 
 function processed(queue, replace) {
-  queue = queue != null && queue.length !== 0 ? queue : undefined;
-  if (queue != null) {
+  if (queue != null && queue.length !== 0) {
     let total = replace ? queue[0] : 100;
     for (let i = replace ? 1 : 0; i < queue.length; i++) {
       const part = queue[i];
@@ -21,8 +20,7 @@ function processed(queue, replace) {
 }
 
 function anyTest(queue, replace) {
-  queue = queue != null && queue.length < 3 ? queue : undefined;
-  if (queue != null) {
+  if (queue != null && queue.length < 3) {
     let total = 0;
     for (const part of $slice(queue, replace ? 1 : 0)) {
       total = (total + part) | 0;

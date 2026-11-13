@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Present) || changing.contains(v) {\n",
-    replace:
-      "    if !matches!(none.kind, ExprKind::Undefined) || changing.contains(v) {\n",
+    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
+    replace: "    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {
@@ -17,9 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of a variable that changes where it's read is read as the variable, so `changed(true)` says `after then after` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Present) || changing.contains(v) {\n",
-    replace:
-      "    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Present) {\n",
+    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {\n",
+    replace: "    if !matches!(none.kind, ExprKind::Undefined) || !present {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {
@@ -128,6 +126,24 @@ export const mutations: Mutation[] = [
     find: "    while i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
     replace: "    while false && i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "filtered-option-left-apart",
+    breaks: "a `filter`'s `Option` of what may be `None`, tested first, stays a `const` apart from its test, `const chunk = option != null && .. ? option : undefined; if (chunk == null)` (#1619)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    !std::ptr::eq(first, test)\n",
+    replace: "    false && !std::ptr::eq(first, test)\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "filtered-temporary-unnamed",
+    breaks: "a `filter`'s temporary keeps its own name where it's tested where it's made, `const option = chunks.get(id); if (option == null || ..)`, not the program's binding's, `chunk`, as upstream writes it (#1619)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "                js::renamed(&mut stmts[i - 1..], &v, &x);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
     snapshots: true,
   },
 ];

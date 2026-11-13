@@ -244,3 +244,26 @@ mutations are `nullable-local-read-present` (`mir/structure.ts`),
 (`combinators.ts`), and `presence-of-a-made-option`, `map-some-undefined`,
 `kind-object-any-value` and `tested-option-*`, which now mutate
 `Known::Present`.
+
+## Amendment (2026-11-13, #1619): a filter's `Option` is tested where it's made, its value named as the program binds it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; the same tests
+run in the same order, and no program reads a temporary's name.
+React's Flight client's `stopStream`, `let Some(chunk) =
+chunks.get(&id).filter(|chunk| ..) else { return; }`, read as three
+statements, `const option = chunks.get(id); const chunk = option != null
+&& option.state === "Ready" ? option : undefined; if (chunk == null) {
+return; }`, where upstream writes one value, `const chunk =
+chunks.get(id); if (!chunk || ..) { return; }`.
+
+`tested_options` took only an `Option` of a value known to be there. Of
+a `filter`'s, `const x = v != null && p ? v : undefined`, a `v` that may
+be `None` is tested first, so `x != null` holds exactly where the test
+does too: its test is the `if`'s, `x` read as `v` past it. And where `v`
+is a temporary made just before, `const v = chunks.get(id)`, which the
+program names nowhere (`Named::user`), it takes `x`'s name: `const chunk
+= chunks.get(id); if (chunk == null || chunk.state !== "Ready") {
+return; }`. `filtered_not_empty`'s `queue` reads so too. Corpus case
+filter_then_let_else_tests_one_value against native Rust; mutations
+`filtered-option-left-apart` and `filtered-temporary-unnamed`
+(`mir/tidy/options.ts`).
