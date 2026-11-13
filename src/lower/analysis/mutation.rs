@@ -2,7 +2,7 @@
 //! it's read (ADR 0052).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::recognition::{assign_operator, flattens_mut, replaces_whole};
+use crate::lower::recognition::{assign_operator, flattens_mut};
 use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -227,18 +227,6 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                 && object_like(tcx, body.thir[arg].ty)
             {
                 mutated.insert(body.thir[arg].ty);
-            }
-            if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                && let ty::FnDef(def_id, _) = *body.thir[fun].ty.kind()
-                && replaces_whole(tcx, def_id)
-            {
-                for &arg in args.iter() {
-                    if let ty::Ref(_, inner, Mutability::Mut) = *body.thir[arg].ty.kind()
-                        && object_like(tcx, inner)
-                    {
-                        mutated.insert(inner);
-                    }
-                }
             }
             // What a raw pointer points to has a place of its own, which a copy
             // shared with another wouldn't be (ADR 0407): copied as if changed.

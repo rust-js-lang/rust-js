@@ -21,15 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
   },
   {
-    name: "mem-swap-not-mutation",
-    breaks:
-      "`mem::swap` of two `&mut` objects isn't a change in place, so a `Copy` value shared with the swapped one changes too",
-    file: "src/lower/analysis/mutation.rs",
-    find: "                && replaces_whole(tcx, def_id)",
-    replace: "                && replaces_whole(tcx, def_id) && false",
-    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
-  },
-  {
     name: "replaced-string-mutated",
     breaks:
       "a `String` replaced through a `&mut` counts as changed in place, so its `clone()` is refused",
@@ -276,7 +267,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "            generic_writes(tcx, &mir.body, &mut mutated);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^copy_(written_whole_by_generic_code|written_by_clone_from|swapped_and_replaced_by_generic_code)_is_its_own.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(copy_(written_whole_by_generic_code|written_by_clone_from|swapped_and_replaced_by_generic_code)_is_its_own|in_place_cell_moved_out|replace_through_mut)\\.rs$"],
   },
   {
     name: "generic-writes-unresolved",

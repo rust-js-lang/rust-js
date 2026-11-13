@@ -271,15 +271,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
   {
-    name: "from-mut-not-whole",
-    breaks:
-      "a `Copy` struct `get()` of `Cell::from_mut`'s cell, then `set`, reads the new value: the cell's write in place not counted, so the read isn't copied (#527)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "\"std::mem::take\" | \"std::cell::Cell::<T>::from_mut\"",
-    replace: "\"std::mem::take\"",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
-  },
-  {
     name: "std-memchr-unanswered",
     breaks: "core's own `memchr`, which `read_until` calls, is no recognizer's, and std's body is refused",
     file: "src/lower/recognition/std_items.rs",
