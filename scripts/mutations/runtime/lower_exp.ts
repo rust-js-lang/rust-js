@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
+  {
+    name: "lower-exp-js-shortest-digits",
+    breaks: "`{:e}` of an `f64` takes JS's shortest digits, `toExponential()`'s, the even of two equally near, where Rust takes the larger (#1682)",
+    file: "src/runtime/lower_exp.js",
+    find: "  const [digits, point] = f32 ? $f32Digits(Math.abs(x)) : $f64Digits(Math.abs(x));\n",
+    replace: '  const [digits, point] = f32 ? $f32Digits(Math.abs(x)) : ((m) => [m[0].replace(".", ""), Number(m[1]) + 1])(Math.abs(x).toExponential().split("e"));\n',
+    tests: ["test/corpus.test.ts", "-t", "^float_shortest_digits_tie_to_the_larger.rs$"],
+  },
 ];

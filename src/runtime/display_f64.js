@@ -1,16 +1,11 @@
-// Shortest round-trip decimal, using exact rational arithmetic.
-// Rust Display uses decimal notation, including for very small/large values.
-// Not JS's `String(x)`, though its digits are also the shortest: when two are
-// equally close, JS takes the even one (1888570120608320.2), and Rust the
-// larger (1888570120608320.3).
-function $displayF64(value) {
-  if (Number.isNaN(value)) return 'NaN';
-  if (value === Infinity) return 'inf';
-  if (value === -Infinity) return '-inf';
-  const sign = value < 0 || Object.is(value, -0) ? '-' : '';
-  const x = Math.abs(value);
-  if (x === 0) return sign + '0';
-
+// The shortest digits of the positive `f64` `x` that read back as `x`, the
+// nearest to it of those, as Rust's: `[digits, point]`, `x` being `0.digits`
+// times 10 to `point`, as `$f32Digits` gives an `f32`'s (ADR 0122). Exact
+// rational arithmetic, not JS's `toString()` or `toExponential()`, whose
+// digits are also the shortest: when two are equally close, JS takes the
+// even one (1888570120608320.2), and Rust the larger (1888570120608320.3)
+// (#1682).
+function $f64Digits(x) {
   const bitsView = new DataView(new ArrayBuffer(8));
   bitsView.setFloat64(0, x);
   const bits = bitsView.getBigUint64(0);
@@ -23,9 +18,8 @@ function $displayF64(value) {
 
   // The floating-point logarithm is only an estimate; correct it exactly.
   let exponent = Math.floor(Math.log10(x));
-  const atLeastPowerOfTen = e => e >= 0
-    ? numerator >= denominator * 10n ** BigInt(e)
-    : numerator * 10n ** BigInt(-e) >= denominator;
+  const atLeastPowerOfTen = (e) =>
+    e >= 0 ? numerator >= denominator * 10n ** BigInt(e) : numerator * 10n ** BigInt(-e) >= denominator;
   while (!atLeastPowerOfTen(exponent)) exponent--;
   while (atLeastPowerOfTen(exponent + 1)) exponent++;
 
@@ -51,16 +45,31 @@ function $displayF64(value) {
     if (best !== undefined) {
       let digits = best.toString();
       let decimalPower = power;
-      while (digits.endsWith('0')) {
+      while (digits.endsWith("0")) {
         digits = digits.slice(0, -1);
         decimalPower++;
       }
-      const point = digits.length + decimalPower;
-      const body = point <= 0 ? '0.' + '0'.repeat(-point) + digits
-        : point >= digits.length ? digits + '0'.repeat(point - digits.length)
-        : digits.slice(0, point) + '.' + digits.slice(point);
-      return sign + body;
+      return [digits, digits.length + decimalPower];
     }
   }
-  throw new Error('No f64 round-trip decimal found');
+  throw new Error("No f64 round-trip decimal found");
+}
+
+// Rust's `Display` of an `f64`: its shortest digits, in decimal notation,
+// for very small and large values too.
+function $displayF64(value) {
+  if (Number.isNaN(value)) return "NaN";
+  if (value === Infinity) return "inf";
+  if (value === -Infinity) return "-inf";
+  const sign = value < 0 || Object.is(value, -0) ? "-" : "";
+  const x = Math.abs(value);
+  if (x === 0) return sign + "0";
+  const [digits, point] = $f64Digits(x);
+  const body =
+    point <= 0
+      ? "0." + "0".repeat(-point) + digits
+      : point >= digits.length
+        ? digits + "0".repeat(point - digits.length)
+        : digits.slice(0, point) + "." + digits.slice(point);
+  return sign + body;
 }

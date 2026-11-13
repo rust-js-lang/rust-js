@@ -1,5 +1,6 @@
 // `{:e}` of a number, as Rust writes it: the shortest digits that read back
-// as `x`, `1.2345e3`. An `f32`'s are its own (ADR 0122), not its `f64`'s; a
+// as `x`, `1.2345e3`, the larger of two equally near (`$f64Digits`, #1682).
+// An `f32`'s are its own (ADR 0122), not its `f64`'s; a
 // 64-bit integer, a BigInt, has every digit; a negative zero keeps its sign.
 // Given a precision, `{:.2e}`, that many digits after the first, of `x`'s
 // exact value rounded half to even, as Rust rounds a float's and an
@@ -16,12 +17,9 @@ function $lowerExp(x, f32, precision) {
   if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
   const sign = x < 0 || Object.is(x, -0) ? "-" : "";
   if (x === 0) return sign + "0e0";
-  if (f32) {
-    const [digits, point] = $f32Digits(Math.abs(x));
-    const rest = digits.length > 1 ? "." + digits.slice(1) : "";
-    return sign + digits[0] + rest + "e" + (point - 1);
-  }
-  return sign + Math.abs(x).toExponential().replace("e+", "e");
+  const [digits, point] = f32 ? $f32Digits(Math.abs(x)) : $f64Digits(Math.abs(x));
+  const rest = digits.length > 1 ? "." + digits.slice(1) : "";
+  return sign + digits[0] + rest + "e" + (point - 1);
 }
 function $lowerExpRounded(x, precision) {
   if (typeof x === "number" && Number.isNaN(x)) return "NaN";

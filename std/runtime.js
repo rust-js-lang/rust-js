@@ -42,19 +42,14 @@ export function $at(items, index, failure) {
   return index;
 }
 
-// Shortest round-trip decimal, using exact rational arithmetic.
-// Rust Display uses decimal notation, including for very small/large values.
-// Not JS's `String(x)`, though its digits are also the shortest: when two are
-// equally close, JS takes the even one (1888570120608320.2), and Rust the
-// larger (1888570120608320.3).
-export function $displayF64(value) {
-  if (Number.isNaN(value)) return 'NaN';
-  if (value === Infinity) return 'inf';
-  if (value === -Infinity) return '-inf';
-  const sign = value < 0 || Object.is(value, -0) ? '-' : '';
-  const x = Math.abs(value);
-  if (x === 0) return sign + '0';
-
+// The shortest digits of the positive `f64` `x` that read back as `x`, the
+// nearest to it of those, as Rust's: `[digits, point]`, `x` being `0.digits`
+// times 10 to `point`, as `$f32Digits` gives an `f32`'s (ADR 0122). Exact
+// rational arithmetic, not JS's `toString()` or `toExponential()`, whose
+// digits are also the shortest: when two are equally close, JS takes the
+// even one (1888570120608320.2), and Rust the larger (1888570120608320.3)
+// (#1682).
+export function $f64Digits(x) {
   const bitsView = new DataView(new ArrayBuffer(8));
   bitsView.setFloat64(0, x);
   const bits = bitsView.getBigUint64(0);
@@ -67,9 +62,8 @@ export function $displayF64(value) {
 
   // The floating-point logarithm is only an estimate; correct it exactly.
   let exponent = Math.floor(Math.log10(x));
-  const atLeastPowerOfTen = e => e >= 0
-    ? numerator >= denominator * 10n ** BigInt(e)
-    : numerator * 10n ** BigInt(-e) >= denominator;
+  const atLeastPowerOfTen = (e) =>
+    e >= 0 ? numerator >= denominator * 10n ** BigInt(e) : numerator * 10n ** BigInt(-e) >= denominator;
   while (!atLeastPowerOfTen(exponent)) exponent--;
   while (atLeastPowerOfTen(exponent + 1)) exponent++;
 
@@ -95,18 +89,33 @@ export function $displayF64(value) {
     if (best !== undefined) {
       let digits = best.toString();
       let decimalPower = power;
-      while (digits.endsWith('0')) {
+      while (digits.endsWith("0")) {
         digits = digits.slice(0, -1);
         decimalPower++;
       }
-      const point = digits.length + decimalPower;
-      const body = point <= 0 ? '0.' + '0'.repeat(-point) + digits
-        : point >= digits.length ? digits + '0'.repeat(point - digits.length)
-        : digits.slice(0, point) + '.' + digits.slice(point);
-      return sign + body;
+      return [digits, digits.length + decimalPower];
     }
   }
-  throw new Error('No f64 round-trip decimal found');
+  throw new Error("No f64 round-trip decimal found");
+}
+
+// Rust's `Display` of an `f64`: its shortest digits, in decimal notation,
+// for very small and large values too.
+export function $displayF64(value) {
+  if (Number.isNaN(value)) return "NaN";
+  if (value === Infinity) return "inf";
+  if (value === -Infinity) return "-inf";
+  const sign = value < 0 || Object.is(value, -0) ? "-" : "";
+  const x = Math.abs(value);
+  if (x === 0) return sign + "0";
+  const [digits, point] = $f64Digits(x);
+  const body =
+    point <= 0
+      ? "0." + "0".repeat(-point) + digits
+      : point >= digits.length
+        ? digits + "0".repeat(point - digits.length)
+        : digits.slice(0, point) + "." + digits.slice(point);
+  return sign + body;
 }
 
 // The shortest digits of the positive `f32` `x` that read back as `x`, the
@@ -17605,7 +17614,8 @@ export function $dropReceiver(channel, drop) {
 }
 
 // `{:e}` of a number, as Rust writes it: the shortest digits that read back
-// as `x`, `1.2345e3`. An `f32`'s are its own (ADR 0122), not its `f64`'s; a
+// as `x`, `1.2345e3`, the larger of two equally near (`$f64Digits`, #1682).
+// An `f32`'s are its own (ADR 0122), not its `f64`'s; a
 // 64-bit integer, a BigInt, has every digit; a negative zero keeps its sign.
 // Given a precision, `{:.2e}`, that many digits after the first, of `x`'s
 // exact value rounded half to even, as Rust rounds a float's and an
@@ -17622,12 +17632,9 @@ export function $lowerExp(x, f32, precision) {
   if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
   const sign = x < 0 || Object.is(x, -0) ? "-" : "";
   if (x === 0) return sign + "0e0";
-  if (f32) {
-    const [digits, point] = $f32Digits(Math.abs(x));
-    const rest = digits.length > 1 ? "." + digits.slice(1) : "";
-    return sign + digits[0] + rest + "e" + (point - 1);
-  }
-  return sign + Math.abs(x).toExponential().replace("e+", "e");
+  const [digits, point] = f32 ? $f32Digits(Math.abs(x)) : $f64Digits(Math.abs(x));
+  const rest = digits.length > 1 ? "." + digits.slice(1) : "";
+  return sign + digits[0] + rest + "e" + (point - 1);
 }
 export function $lowerExpRounded(x, precision) {
   if (typeof x === "number" && Number.isNaN(x)) return "NaN";
@@ -21310,7 +21317,7 @@ export function $toFixed(value, digits) {
 export function $debugF64(value) {
   const size = Math.abs(value);
   if (Number.isFinite(value) && size !== 0 && (size < 1e-4 || size >= 1e16)) {
-    return value.toExponential().replace("e+", "e");
+    return $lowerExp(value, false);
   }
   const text = $displayF64(value);
   return Number.isFinite(value) && !text.includes(".") ? text + ".0" : text;
