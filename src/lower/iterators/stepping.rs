@@ -399,6 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if let Some(inner) = input.boxed_ty() => (inner, given),
                 _ => (input, given),
             };
+            let made_knowing = self.made_knowing_into_iter(callee, input, given);
             // One that asks its length, a JS iterator that knows it, its back
             // too where it steps it from there (ADR 0456).
             if self.exact_size_param(callee, input) {
@@ -412,13 +413,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 *value = self.as_double_ended(held, given, span)?;
             } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
                 let held = std::mem::replace(value, Expr::undefined());
-                *value = self.as_js_iterator(held, given, span)?;
+                *value = match made_knowing {
+                    Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
+                    None => self.as_js_iterator(held, given, span)?,
+                };
             // One an `IntoIterator` bound takes, given the JS iterator of
             // its items (ADR 0061): a `&mut` collection's handles, an
             // `Option`'s, a B-tree's in order, `iterable_items`'.
             } else if matches!(input.kind(), ty::Param(_)) && self.given_iterable(callee, input) {
                 let held = std::mem::replace(value, Expr::undefined());
-                *value = self.iterable_items(held, given, span, out)?;
+                *value = match made_knowing {
+                    Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
+                    None => self.iterable_items(held, given, span, out)?,
+                };
             }
             // A `Vec`'s, given its steps that drop what they pass as one
             // slice, where generic code can't tell it from a `Drain`'s
@@ -433,6 +440,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(())
+    }
+
+    /// Of the crate's iterator `given` for `callee`'s input `input`, a type
+    /// parameter `T: IntoIterator` whose `T::IntoIter` a bound says is
+    /// stepped from its back or asked its length, as generic code's JS
+    /// iterator of it is (ADR 0480): whether it's made knowing its back and
+    /// its length, as an `I` so bound is (#1604). Another's items know them
+    /// as they're made. What `given_iterators` makes of the value, and what
+    /// the call's dictionaries of it are (`made_into_iter_of`).
+    fn made_knowing_into_iter(&self, callee: DefId, input: ty::Ty<'tcx>, given: ty::Ty<'tcx>) -> Option<(bool, bool)> {
+        // A type parameter's alone: what `callee` declares of a concrete
+        // type's `IntoIter` is none (`extension_param`).
+        if !self.is_user_iterator(given) {
+            return None;
+        }
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        let into_iter = crate::lower::recognition::trait_method(self.tcx, into_iterator, "IntoIter");
+        let made = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter, [input]);
+        let (back, len) = (
+            self.double_ended_param(callee, made),
+            self.exact_size_param(callee, made),
+        );
+        (back || len).then_some((back, len))
+    }
+
+    /// Of a call of `callee` given `args`, the crate's iterator a bound of
+    /// `T::IntoIter`, `bounded`, is of, where `given_iterators` made it the
+    /// JS iterator generic code holds: `T` an input of `callee`'s, as that
+    /// steps them, given the crate's iterator made knowing.
+    pub(in crate::lower) fn made_into_iter_of(
+        &self,
+        callee: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        bounded: ty::Ty<'tcx>,
+    ) -> Option<ty::Ty<'tcx>> {
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        let into_iter = crate::lower::recognition::trait_method(self.tcx, into_iterator, "IntoIter");
+        let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { def_id },
+                args: of,
+                ..
+            },
+        ) = *bounded.kind()
+        else {
+            return None;
+        };
+        let input = (def_id == into_iter).then(|| of.type_at(0))?;
+        let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        let taken = |declared: &ty::Ty<'tcx>| match *declared.kind() {
+            ty::Ref(_, inner, _) => inner == input,
+            _ => declared.boxed_ty().unwrap_or(*declared) == input,
+        };
+        if !inputs.iter().any(taken) {
+            return None;
+        }
+        let given = ty::EarlyBinder::bind(self.tcx, input)
+            .instantiate(self.tcx, args)
+            .skip_normalization();
+        let given = self
+            .tcx
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(given))
+            .unwrap_or(given);
+        self.made_knowing_into_iter(callee, input, given).map(|_| given)
+    }
+
+    /// `held`, an iterator of type `given`, made a JS iterator that knows its
+    /// back, `back`, and its length, `len`, where it's asked them.
+    fn as_knowing(&mut self, held: Expr, given: ty::Ty<'tcx>, (back, len): (bool, bool), span: Span) -> R<Expr> {
+        match len {
+            true => self.as_exact_size(held, given, back, span),
+            false => self.as_double_ended(held, given, span),
+        }
     }
 
     /// Whether what `callee` holds for its drop `index`, of the type `ty`

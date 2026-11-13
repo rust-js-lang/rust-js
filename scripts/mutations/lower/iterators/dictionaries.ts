@@ -148,9 +148,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `DoubleEndedIterator` dictionary is made `{ len }`, and an `ExactSizeIterator`'s `{ next_back }`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
+    find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let returned = |value: Expr| {\n",
     replace:
-      "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
+      "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let returned = |value: Expr| {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
@@ -348,5 +348,13 @@ export const mutations: Mutation[] = [
     find: "        let passed: Vec<String> = (crate::lower::recognition::BOX_PASSES_ON.iter())\n",
     replace: "        let passed: Vec<String> = ([\"next\", \"size_hint\", \"nth\", \"last\", \"count\", \"fold\"].iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+  },
+  {
+    name: "into-iter-bound-dictionary-foldless",
+    breaks: "generic code's dictionary of `T::IntoIter`'s `DoubleEndedIterator`, of the crate's iterator made a JS iterator, has no `rfold`, so std's compiled `Rev` whose `fold` reaches the iterator's own `rfold`, which drops it, drops it again, `drop folded` twice (#1604)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if double_ended {\n            let rfold = crate::lower::bindings::trait_method_name(self.tcx, trait_id, \"rfold\");\n",
+    replace: "        if false && double_ended {\n            let rfold = crate::lower::bindings::trait_method_name(self.tcx, trait_id, \"rfold\");\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
   },
 ];

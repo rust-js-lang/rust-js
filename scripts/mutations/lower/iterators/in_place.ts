@@ -87,4 +87,12 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "into-iter-reversed-made-js-iterator",
+    breaks: "generic code's `t.into_iter().rev().count()` of a `Vec` steps `$rev(Iterator.from(t))`, JS's iterator of the array, which has no back, and throws `it.back is not a function` (#1604)",
+    file: "src/lower/iterators/in_place.rs",
+    find: "    if (reversed || knowing) && !given.is_empty() && !back_of_into_iter {\n",
+    replace: "    if (reversed || knowing) && !given.is_empty() {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
+  },
 ];

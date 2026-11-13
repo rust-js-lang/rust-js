@@ -613,4 +613,12 @@ export const mutations: Mutation[] = [
     replace: "                    let value = match None::<Expr> {\n",
     tests: ["test/crates.test.ts", "-t", "library_blanket_impl_its_consumer_compiles_gives_its_facts"],
   },
+  {
+    name: "into-iter-bound-dictionary-the-impls",
+    breaks: "generic code's dictionary of `T::IntoIter`'s `DoubleEndedIterator`, the crate's iterator given made a JS iterator, is its impl's, which steps the JS iterator as the struct it isn't (#1604)",
+    file: "src/lower/traits/calls.rs",
+    find: "                        None if let Some(made) = made => {\n",
+    replace: "                        None if let Some(made) = made.filter(|_| false) => {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
+  },
 ];

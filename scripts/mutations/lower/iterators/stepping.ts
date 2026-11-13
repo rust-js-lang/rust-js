@@ -487,4 +487,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
+  {
+    name: "into-iter-bound-made-unknowing",
+    breaks: "the crate's iterator given for a `T: IntoIterator` whose `T::IntoIter` a bound says is double-ended or exact-sized is made a JS iterator that knows neither, so generic code's `t.into_iter().rev()` throws `it.back is not a function` (#1604)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        (back || len).then_some((back, len))\n",
+    replace: "        (false && (back || len)).then_some((back, len))\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
+  },
+  {
+    name: "into-iter-bound-length-unknown",
+    breaks: "the crate's iterator given for a `T` whose `T::IntoIter` is bound `ExactSizeIterator` is made knowing its back alone, so generic code's `t.into_iter().len()` throws `it.len is not a function` (#1604)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            true => self.as_exact_size(held, given, back, span),\n",
+    replace: "            true => self.as_double_ended(held, given, span),\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
+  },
+  {
+    name: "made-into-iter-of-what-it-doesnt-take",
+    breaks: "the crate's iterator a `U::IntoIter` bound is of, where `U` is no input of the callee, std's compiled `flatten`'s, is taken for one the call made a JS iterator, and given its dictionary, so the flatten's back steps throw `it.back is not a function` (#1604)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if !inputs.iter().any(taken) {\n",
+    replace: "        if false && !inputs.iter().any(taken) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+  },
 ];

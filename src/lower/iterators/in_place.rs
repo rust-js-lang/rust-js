@@ -57,7 +57,14 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let js::ExprKind::Call(callee, given) = &mut e.kind else {
         return;
     };
-    if (reversed || knowing) && !given.is_empty() {
+    // Not an `$intoIter(xs)` `$rev` steps from its back, which JS's
+    // iterator of `xs` has none of: generic code's `t.into_iter().rev()`
+    // of a `T` its caller gives a `Vec` (#1604).
+    let back_of_into_iter = reversed
+        && given.first().is_some_and(
+            |source| matches!(&source.kind, js::ExprKind::Call(of, _) if of.helper_name() == Some("$intoIter")),
+        );
+    if (reversed || knowing) && !given.is_empty() && !back_of_into_iter {
         stepped_in_place(&mut given[0], false, fuse);
     }
     // An iterator of the crate's stepped till it ends, which nothing asks

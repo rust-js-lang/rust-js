@@ -52,6 +52,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )
     }
 
+    /// The dictionary of an iterator's extension trait, `trait_id`, of the
+    /// crate's iterator `ty` made a JS iterator that knows its back and its
+    /// length, as a call gives it for a `T::IntoIter` generic code holds so
+    /// (ADR 0480, #1604): the JS iterator's own, `{ next_back: $nextBack }`
+    /// and `$foldBack`, which reaches the iterator's own `rfold` through the
+    /// value and says whether it took it (`$took`, #649), so std's compiled
+    /// `Rev` that folds it doesn't drop it again; or `{ len }`, its `len()`.
+    /// Not its impl's, which steps it as it is (`iterator_extension_dictionary`).
+    pub(in crate::lower) fn made_iterator_extension_dictionary(&self, trait_id: DefId, ty: ty::Ty<'tcx>) -> Expr {
+        let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
+        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
+        let mut props = vec![js::Prop::Field(name.into(), self.knowing_entry(double_ended, ty))];
+        if double_ended {
+            let rfold = crate::lower::bindings::trait_method_name(self.tcx, trait_id, "rfold");
+            props.push(js::Prop::Field(rfold, Expr::helper("$foldBack")));
+        }
+        Expr::object(props)
+    }
+
+    /// The entry of a JS iterator of items of `ty` that knows its back,
+    /// `double_ended`, or its length: its `next_back`, `$nextBack`, or
+    /// `$nextBackSome` where its items are boxed, or its `len()`.
+    fn knowing_entry(&self, double_ended: bool, ty: ty::Ty<'tcx>) -> Expr {
+        if double_ended {
+            let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+            return Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" });
+        }
+        let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
+        Expr::arrow(
+            vec!["iterator".into()],
+            vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
+        )
+    }
+
     /// `ty`'s dictionary of an iterator's extension trait, `trait_id`, given
     /// generic code that steps it as it is (ADR 0487): `DoubleEndedIterator`'s,
     /// `{ next_back }`, a range's `$rangeNextBack`, the crate's own its
@@ -106,18 +140,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.knows_its_back(ty)
                     || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>
             {
-                let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-                Some(Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }))
+                Some(self.knowing_entry(true, ty))
             }
             (false, None)
                 if self.steps_an_array(ty)
                     || self.knows_its_length(ty)
                     || crate::lower::recognition::steps_back_as_front(self.tcx, ty) =>
             {
-                Some(returned(Expr::call(
-                    Expr::member(Expr::var("iterator"), "len"),
-                    Vec::new(),
-                )))
+                Some(self.knowing_entry(false, ty))
             }
             (_, None) => None,
         };

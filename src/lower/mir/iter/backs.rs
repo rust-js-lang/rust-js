@@ -525,6 +525,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // compiled back where it's asked, as `rev()`'s is (ADR 0920,
         // `as_double_ended`'s `knowing_held`); another made one, a range's
         // of its bounds, stepped in place.
+        // Of a type parameter's given as it is, its caller's own value, a
+        // `T::IntoIter` of an `impl Is<T>`'s `T`: the JS iterator its
+        // dictionaries step, its back theirs, as `rev()`'s is (#1604).
+        let it = match self.iterator_given_as_it_is(iter_ty) && !crate::lower::iterators::is_js_iterator(&it) {
+            true => self.given_js_iterator(it.clone(), iter_ty, true, false).unwrap_or(it),
+            false => it,
+        };
         let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {
             true => it,
             false => self.as_double_ended(it, iter_ty, span)?,

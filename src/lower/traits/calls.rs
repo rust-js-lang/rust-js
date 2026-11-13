@@ -215,11 +215,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let as_it_is = matches!(*declared.self_ty().kind(), ty::Param(p)
                         if !crate::lower::iterators::named_by_another_bound(self.tcx, id, p))
                         && self.ref_into_iter_of_collection(bound);
+                    // An extension's of a `T::IntoIter` generic code holds as a
+                    // JS iterator (ADR 0480), of the crate's iterator this call
+                    // gives made one (`made_into_iter_of`, #1604): the JS
+                    // iterator's.
+                    let made = crate::lower::recognition::is_iterator_extension(self.tcx, declared.def_id)
+                        .then(|| self.made_into_iter_of(id, args, declared.self_ty()))
+                        .flatten();
                     match given
                         .iter()
                         .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)
                     {
                         Some((_, dictionary)) => values.push(dictionary.clone()),
+                        None if let Some(made) = made => {
+                            values.push(self.made_iterator_extension_dictionary(bound.def_id, made))
+                        }
                         None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),
                         None => values.push(self.dictionary(bound, span)?),
                     }

@@ -50,3 +50,14 @@ function show(items) {
   and gives back. Its `size_hint()` in generic code is exact, as std's is.
 - **A generic iterator kept in a variable is `$intoIter(items)`**, where
   `Iterator.from(items)` was.
+
+## Amendment: not stepped from its back (2026-11-13, #1604)
+
+An `$intoIter(i)` that `$rev` steps from its back stays `$intoIter(i)`.
+JS's iterator of an array has no back. Generic code's
+`t.into_iter().rev().count()` of a `T` its caller gives a `Vec` was
+`$rev(Iterator.from(t))`, which threw `it.back is not a function`, where
+native Rust counts the items. It's now `$rev($intoIter(t))`. Stepped from
+its front, `Iterator.from(i)` is as before. `in_place.rs`'s
+`stepped_in_place` looks through a `$rev`, but not to the `$intoIter` the
+`$rev` steps.

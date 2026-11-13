@@ -224,6 +224,10 @@ const few = [
   // `repeat_n` and a `take` of a `repeat` stepped from their backs, std's
   // compiled `Rev` asking their `next_back` and `len` (#1139).
   "repeats_stepped_from_their_backs.rs",
+  // Generic code's `T::IntoIter` bound double-ended or exact-sized, of the
+  // crate's iterator its caller makes knowing them, its dictionaries those
+  // of the JS iterator it's made (#1604).
+  "into_iter_bound_stepped_from_its_back.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")
