@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2491
-lines	324198
+files	2493
+lines	324692
 temporaries	0	0
 labeled blocks	0	0
 while (true)	222	6.8
-$iter	2792	86.1
+$iter	2797	86.1
 Iterator.from	281	8.7
 return;	327	10.1
-renamed x$1	15465	477
-role fallbacks	8625	266
+renamed x$1	15479	476.7
+role fallbacks	8626	265.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -488,7 +488,7 @@ test/corpus/copy_written_whole_through_a_dyn_is_its_own.js	42	0	0	0	0	0	0	0	1
 test/corpus/copy_written_whole_through_a_pin_is_its_own.js	21	0	0	0	0	0	0	0	0
 test/corpus/counted_adapter_given_back_from_its_back.js	405	0	0	0	5	0	0	11	11
 test/corpus/counted_adapters_given.js	268	0	0	0	7	0	0	15	11
-test/corpus/counted_adapters_where_capacity_is_read.js	96	0	0	0	5	0	0	6	6
+test/corpus/counted_adapters_where_capacity_is_read.js	99	0	0	0	5	0	0	7	7
 test/corpus/counted_guard_value_named.js	64	0	0	0	0	0	0	0	0
 test/corpus/counted_iterators_held_ask_room.js	191	0	0	0	0	0	1	9	5
 test/corpus/counted_rc_borrow.js	40	0	0	0	0	0	0	0	0
@@ -1066,6 +1066,7 @@ test/corpus/held_keys.js	100	0	0	0	0	0	0	13	8
 test/corpus/held_lazy_adapters_hint.js	292	0	0	0	9	0	0	26	22
 test/corpus/held_peekable.js	218	0	0	0	3	0	1	4	4
 test/corpus/held_revs_of_lazy_sources.js	104	0	0	0	1	0	0	8	6
+test/corpus/held_skip_stepped_from_its_back_knows_its_length.js	52	0	0	0	1	0	0	0	0
 test/corpus/held_skip_take.js	147	0	0	0	0	0	0	0	1
 test/corpus/held_step_by_of_a_reversed_range_grows_as_std.js	28	0	0	0	0	0	0	2	0
 test/corpus/held_zips.js	68	0	0	0	4	0	0	7	5
@@ -1325,6 +1326,7 @@ test/corpus/map_into_iter_drops.js	173	0	0	0	3	0	0	9	7
 test/corpus/map_key_drops.js	404	0	0	0	0	0	0	26	13
 test/corpus/map_keyed_by_a_params_ref.js	217	0	0	0	1	0	0	4	2
 test/corpus/map_keyed_by_a_tuple_of_a_type_parameter.js	314	0	0	0	4	0	0	0	0
+test/corpus/map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.js	439	0	0	0	4	0	0	13	0
 test/corpus/map_keyed_by_an_array_of_a_type_parameter.js	260	0	0	0	0	0	0	3	5
 test/corpus/map_none_held_as_null.js	118	0	0	0	0	0	0	0	5
 test/corpus/map_of_a_field_of_a_field.js	52	0	0	0	0	0	0	0	1
