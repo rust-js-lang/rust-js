@@ -295,9 +295,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "layout-debug-never-pretty",
-    breaks: "`{:#?}` of a `Layout` is one line, not nested as Rust's is (#1721)",
+    breaks: "`{:#?}` of a `Layout` is one line, not nested as Rust's is, and its `size` ignores a width (#1721, #1728)",
     file: "src/lower/display/debug.rs",
-    find: "                _ => vec![value, pretty.alternate()],\n",
+    find: "                _ => vec![value, pretty.options()],\n",
     replace: "                _ => vec![value],\n",
     tests: ["test/corpus.test.ts", "-t", "^layout_debug_pretty.rs$"],
   },

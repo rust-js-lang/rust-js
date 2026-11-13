@@ -48,7 +48,7 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
 | `Layout::new::<T>()` | `{ size, align }` of `T`'s, a type parameter's given by its caller (ADR 0145) |
 | `Layout::from_size_align_unchecked(s, a)` | `{ size: s, align: a }` |
 | `layout.size()`, `layout.align()` | `layout.size`, `layout.align` |
-| `{:?}` of a `Layout`, a `LayoutError` | Rust's: `Layout { size: 24, align: 8 (1 << 3) }`, nested by `{:#?}` as its derived `Debug` is (#1721), `LayoutError` |
+| `{:?}` of a `Layout`, a `LayoutError` | Rust's: `Layout { size: 24, align: 8 (1 << 3) }`, nested by `{:#?}` as its derived `Debug` is (#1721), its `size` by the options it's given, `{:5?}`, `{:x?}`, its `align` not (#1728); `LayoutError` |
 
 - **A view of bytes isn't read, written or stepped through**: JS has no
   bytes, and a slot's value isn't them. Doing so is rust-js's error where

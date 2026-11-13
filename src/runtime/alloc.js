@@ -24,11 +24,15 @@ function $layout(size, align) {
   return ok ? { TAG: "Ok", _0: { size, align } } : { TAG: "Err", _0: undefined };
 }
 
-// `{:?}` of a `Layout`, its derived `Debug`'s, its `align` an `Alignment`'s
-// `{:?} (1 << {:?})`: nested where it's `alternate`, `{:#?}`.
-function $debugLayout(layout, alternate) {
-  const fields = [`size: ${layout.size}`, `align: ${layout.align} (1 << ${Math.log2(layout.align)})`];
-  return alternate ? $pretty("Layout {", fields, "}") : `Layout { ${fields.join(", ")} }`;
+// `{:?}` of a `Layout`, its derived `Debug`'s: its `size` a `usize`'s by
+// the `Formatter`'s `options`, `{:5?}`, `{:x?}`; its `align` an
+// `Alignment`'s, `{:?} (1 << {:?})` of a `write!` of its own, which no
+// options reach; nested where it's `alternate`, `{:#?}`.
+function $debugLayout(layout, options) {
+  const { size, align } = layout;
+  const shown = $formatted($debugInt(String(size), size.toString(16), options), options, true);
+  const fields = [`size: ${shown}`, `align: ${align} (1 << ${Math.log2(align)})`];
+  return options?.alternate ? $pretty("Layout {", fields, "}") : `Layout { ${fields.join(", ")} }`;
 }
 
 // `Vec::from_raw_parts(p, len, cap)`: the array `p` points to the first of,

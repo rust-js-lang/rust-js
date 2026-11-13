@@ -205,16 +205,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value]));
         }
-        // A `Layout`'s, `Layout { size: 8, align: 4 (1 << 2) }`, nested
-        // where it's pretty, `{:#?}` (#1721), and a `LayoutError`'s, its name
-        // (ADR 0417).
+        // A `Layout`'s, `Layout { size: 8, align: 4 (1 << 2) }`, by the
+        // options as its derived `Debug` gives them its `size`, and nested
+        // where it's pretty, `{:#?}` (#1721, #1728); a `LayoutError`'s, its
+        // name (ADR 0417).
         if let Some(layout) = self.recognition().layout(ty) {
-            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
-                return Err(self.unsupported(span, "options for a `Layout`'s `{:?}`"));
-            }
-            let given = match pretty.known() {
-                Some(false) => vec![value],
-                _ => vec![value, pretty.alternate()],
+            let given = match pretty {
+                Pretty::Plain => vec![value],
+                _ => vec![value, pretty.options()],
             };
             return Ok(match layout {
                 true => Expr::call(Expr::helper("$debugLayout"), given),

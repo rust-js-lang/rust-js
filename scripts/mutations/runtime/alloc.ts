@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  const ok = size <= 2 ** 31 - align;\n",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
+  {
+    name: "layout-size-unformatted",
+    breaks: "a `Layout`'s `size` ignores the options its derived `Debug` gives it, `{:5?}`, `{:x?}` (#1728)",
+    file: "src/runtime/alloc.js",
+    find: "  const shown = $formatted($debugInt(String(size), size.toString(16), options), options, true);\n",
+    replace: "  const shown = String(size);\n",
+    tests: ["test/corpus.test.ts", "-t", "^layout_debug_pretty.rs$"],
+  },
 ];
