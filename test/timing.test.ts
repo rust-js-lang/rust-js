@@ -1,13 +1,13 @@
 // The loop's timings (scripts/timing.ts): how a step's time is said
 // against its usual, and when it's slower.
 import { expect, test } from "bun:test";
-import { mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { keepFailedLogs } from "../scripts/checkLogs";
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
-import { compared, median, shown, slower, type Timing } from "../scripts/timing";
+import { compared, median, shown, slower, type Timing, underLoad } from "../scripts/timing";
 import { floorBytes, mainCheckoutOf } from "./bounded";
 import { fixture, root } from "./support";
 
@@ -168,3 +168,40 @@ test("check:fast keeps each failing job's whole output, a file each, in its run'
   expect(readdirSync(run!).sort()).toEqual(["corpus-6-14.log", "test-child.test.ts.log"]);
   expect(readFileSync(join(run!, "corpus-6-14.log"), "utf8")).toBe(log);
 });
+
+// A check an outer limit stops mid-pool keeps each failure it had: its
+// whole output written as its job fails, not as the pool ends (#1706).
+// The pool runs a job that fails at once beside one that would run on; the
+// check is killed as the failure is said, and its log is there.
+test("check:fast keeps a failing job's whole output as it fails, though the check is killed before its pool ends", async () => {
+  const dir = fixture("check-logs-killed");
+  const store = join(dir, "store");
+  const child = join(dir, "pool.ts");
+  writeFileSync(
+    child,
+    `import { run } from ${JSON.stringify(join(root, "scripts/checkFast.ts"))};
+import { checkLogRun } from ${JSON.stringify(join(root, "scripts/checkLogs.ts"))};
+const job = (name: string, cmd: string[]) => ({ name, cmd, env: {}, timeout: 120, weight: 1, memory: 0 });
+await run([job("fails", ["sh", "-c", "echo the whole output of a failure; exit 1"]), job("runs on", ["sleep", "60"])], "unused", 4, { began: Date.now(), samples: [] }, checkLogRun({ store: ${JSON.stringify(store)} }));
+`,
+  );
+  const p = Bun.spawn(["bun", child], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const reader = p.stdout.getReader();
+  let out = "";
+  const deadline = Date.now() + 60_000;
+  while (!out.includes("FAIL fails") && Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    out += new TextDecoder().decode(value);
+  }
+  // The job still running, then the check: killed before its pool ends.
+  const running = Bun.spawnSync(["pgrep", "-P", String(p.pid), "sleep"]).stdout.toString().trim();
+  for (const pid of running.split("\n").filter(Boolean)) process.kill(Number(pid), "SIGKILL");
+  p.kill("SIGKILL");
+  await p.exited;
+  expect(out).toContain("FAIL fails");
+  const runs = existsSync(store) ? readdirSync(store) : [];
+  expect(runs.length).toBe(1);
+  expect(out).toContain(`its whole output: ${join(store, runs[0])}`);
+  expect(readFileSync(join(store, runs[0], "fails.log"), "utf8")).toContain("the whole output of a failure");
+}, underLoad(90_000));

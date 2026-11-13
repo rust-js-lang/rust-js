@@ -27,7 +27,7 @@ import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touches
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
-import { keepFailedLogs } from "./checkLogs";
+import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, readJobTimes, recordJobTimes } from "./jobTimes";
 import { elapsed, loadScale, median, timed } from "./timing";
 
@@ -435,7 +435,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
 
 /** When the jobs began, and the machine's busy share every two seconds
  * since. */
-type Clock = { began: number; samples: { at: number; busy: number }[] };
+export type Clock = { began: number; samples: { at: number; busy: number }[] };
 
 /** A job's run: how it ended, its log, when it started and ended, in
  * seconds from the pool's start, and the CPU seconds it and the children
@@ -474,7 +474,13 @@ function busySince(): () => number {
  * shares them. Each is said as it ends, against its usual; a `group`'s
  * jobs, each test file, once the last of them ends, as one, from the first's
  * start, `clock.samples` the machine's busy share every two seconds. */
-function run(list: Job[], compiler: string, cores: number, { began, samples }: Clock): Promise<Ran[]> {
+export function run(
+  list: Job[],
+  compiler: string,
+  cores: number,
+  { began, samples }: Clock,
+  logs: CheckLogRun = checkLogRun(),
+): Promise<Ran[]> {
   const busy = busySince();
   const sampling = setInterval(() => samples.push({ at: (Date.now() - began) / 1000, busy: busy() }), 2000);
   // The highest the load has been since the phase began, and the load
@@ -571,7 +577,9 @@ function run(list: Job[], compiler: string, cores: number, { began, samples }: C
           const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
           const cpu = Number(p.resourceUsage()?.cpuTime.total ?? 0) / 1e6;
           const result: Ran = { job, code, log: out + err, start: (start - began) / 1000, end: (Date.now() - began) / 1000, cpu };
-          if (code !== 0) console.log(`FAIL ${name} (${seconds.toFixed(0)}s${stopped})`);
+          // Its whole output kept as it fails: a check an outer limit
+          // stops keeps it (#1706).
+          if (code !== 0) console.log(`FAIL ${name} (${seconds.toFixed(0)}s${stopped}), its whole output: ${logs.keep(name, result.log)}`);
           else if (group === undefined) console.log(`ok   ${timed(`check:fast ${name}`, seconds, undefined, kept(cpu, start, Date.now()))}`);
           if (group !== undefined) {
             const done = groups.get(group)!;
@@ -803,15 +811,17 @@ if (import.meta.main) {
   const check = jobs({ all, changed, branch, added, extra, cores: machine().cores, picked, forms, rows });
   const cores = machine().cores;
   const clock: Clock = { began: Date.now(), samples: [] };
-  const results = await run(check.jobs, compiler, cores, clock);
+  const logs = checkLogRun();
+  const results = await run(check.jobs, compiler, cores, clock, logs);
   const failed = results.filter((r) => r.code !== 0);
   profiled(results, clock.samples, args.includes("--profile"));
   // Still left running as it ends: its numbers aren't a measurement.
   const leftAtEnd = said(strays(root));
   if (leftAtEnd) console.warn(`warning: ${leftAtEnd}`);
   for (const { job: { name }, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
-  // Each failing job's whole output, kept past the next run (#1622).
-  const keptLogs = keepFailedLogs(failed.map(({ job: { name }, log }) => ({ name, log })));
+  // Each failing job's whole output, kept past the next run as it failed
+  // (#1622, #1706).
+  const keptLogs = logs.kept();
   if (keptLogs !== undefined) console.log(`\neach failing job's whole output: ${keptLogs}`);
   // From its start, its build too.
   const total = elapsed();
