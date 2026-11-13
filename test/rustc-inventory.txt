@@ -1,6 +1,6 @@
 # rustc's run-pass UI tests, every one, at the commit below (ADR 0089).
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
-# commit: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+# commit: 0ef1bc386059596dada8fb65b50425aab2ea637a
 abi/abi-sysv64-arg-passing.rs
 abi/abi-sysv64-register-usage.rs
 abi/anon-extern-mod.rs
@@ -523,7 +523,6 @@ borrowck/two-phase-bin-ops.rs
 borrowck/two-phase-control-flow-split-before-activation.rs
 borrowck/two-phase-method-receivers.rs
 borrowck/two-phase-multiple-activations.rs
-box/alloc-unstable.rs
 box/box-array-match-temporary-drop.rs
 box/box-deref-in-match-arm-no-invalid-ir.rs
 box/box-deref-match-arm.rs
@@ -548,7 +547,6 @@ box/unit/unique-in-vec-copy.rs
 box/unit/unique-kinds.rs
 box/unit/unique-object-move.rs
 box/unit/unique-pat-3.rs
-box/unit/unique-pat.rs
 box/unit/unique-send-2.rs
 box/unit/unique-send.rs
 box/unit/unique-swap.rs
@@ -632,6 +630,7 @@ closures/2229_closure_analysis/run_pass/disjoint-capture-in-same-closure.rs
 closures/2229_closure_analysis/run_pass/edition.rs
 closures/2229_closure_analysis/run_pass/filter-on-struct-member.rs
 closures/2229_closure_analysis/run_pass/fru_syntax.rs
+closures/2229_closure_analysis/run_pass/if-let-capture.rs
 closures/2229_closure_analysis/run_pass/issue-88372.rs
 closures/2229_closure_analysis/run_pass/move_closure.rs
 closures/2229_closure_analysis/run_pass/multilevel-path-1.rs
@@ -861,6 +860,7 @@ const-generics/generic_const_exprs/nested-abstract-consts-1.rs
 const-generics/generic_const_exprs/nested-abstract-consts-2.rs
 const-generics/generic_const_exprs/nested_uneval_unification-1.rs
 const-generics/generic_const_exprs/nested_uneval_unification-2.rs
+const-generics/generic_const_exprs/next-solver-gce-incompatible-issue-158428.rs
 const-generics/generic_const_exprs/subexprs_are_const_evalutable.rs
 const-generics/generic_const_exprs/unop.rs
 const-generics/impl-const-generic-struct.rs
@@ -1066,7 +1066,6 @@ consts/issue-23833.rs
 consts/issue-23968-const-not-overflow.rs
 consts/issue-27890.rs
 consts/issue-29914-2.rs
-consts/issue-29914-3.rs
 consts/issue-29914.rs
 consts/issue-29927-1.rs
 consts/issue-29927.rs
@@ -1239,7 +1238,6 @@ cross-crate/static-with-cross-crate-regions-8259.rs
 cross-crate/trait-lifetime-param.rs
 cross-crate/trait-object-projection-bounds-with-interning-order.rs
 cross-crate/transitive-crate-dependency-with-trait-impl.rs
-cross-crate/tuple-like-structs-cross-crate-7899.rs
 cross-crate/tuple-struct-cross-crate-7899.rs
 cross-crate/unit-struct-2.rs
 custom_test_frameworks/dynamic.rs
@@ -1255,6 +1253,7 @@ debuginfo/msvc-strip-symbols.rs
 definition-reachable/field-method.rs
 definition-reachable/nested-fn.rs
 definition-reachable/private-use.rs
+delegation/default-functions.rs
 delegation/explicit-paths-in-traits-pass.rs
 delegation/explicit-paths-pass.rs
 delegation/explicit-paths-signature-pass.rs
@@ -1519,10 +1518,9 @@ enum/simple-enum-usage-8506.rs
 enum/struct-like-variant-construct.rs
 enum/struct-like-variant-match.rs
 enum/zero-variant-enum-pattern-matching-3037.rs
-env-macro/env-env-overload.rs
-env-macro/env-env.rs
 env-macro/env-not-env.rs
 env-macro/option_env-not-defined.rs
+env-macro/simple.rs
 ergonomic-clones/closure/dotuse-no-extra-capture-clone.rs
 ergonomic-clones/closure/nested.rs
 ergonomic-clones/closure/once-move-out-on-heap.rs
@@ -1593,6 +1591,7 @@ field_representing_types/offset.rs
 field_representing_types/traits.rs
 float/classify-runtime-const.rs
 float/conv-bits-runtime-const.rs
+float/f16b.rs
 float/f32-into-f32.rs
 float/int-to-float-miscompile-issue-105626.rs
 float/minmax.rs
@@ -1610,6 +1609,7 @@ fmt/println-debug-different-types.rs
 fmt/println-float.rs
 fn/dyn-fn-alignment.rs
 fn/expr-fn.rs
+fn/fn-ptr-trait-run.rs
 fn/fun-call-variants.rs
 fn/issue-1451.rs
 fn/issue-3904.rs
@@ -2159,6 +2159,8 @@ macros/macro_with_super_2.rs
 macros/macros-in-extern.rs
 macros/meta-variable-misuse.rs
 macros/metavar-expressions/concat-allowed-operations.rs
+macros/metavar-expressions/concat-str-escape.rs
+macros/metavar-expressions/concat-str-horror.rs
 macros/metavar-expressions/concat-unicode-expansion.rs
 macros/metavar-expressions/count-and-length-are-distinct.rs
 macros/metavar-expressions/dollar-dollar-has-correct-behavior.rs
@@ -2365,6 +2367,13 @@ modules/primitive-type-module-deprecated-paths.rs
 modules/special_module_name_ignore.rs
 modules/use-keyword-reexport-type-alias.rs
 modules/use-statement-duplicate-check-7663.rs
+move-expr/async-blocks.rs
+move-expr/async-closures.rs
+move-expr/async-gen-blocks.rs
+move-expr/gen-blocks.rs
+move-expr/gen-closures.rs
+move-expr/nested-move-expr.rs
+move-expr/plain-closure.rs
 moves/bycopy_untupled.rs
 moves/issue-22536-copy-mustnt-zero.rs
 moves/match-move-same-binding-15571.rs
@@ -2465,6 +2474,7 @@ numbers-arithmetic/u8-incr-decr.rs
 numbers-arithmetic/u8-incr.rs
 numbers-arithmetic/unary-minus-suffix-inference.rs
 numbers-arithmetic/usize-base.rs
+numbers-arithmetic/wrapping-ops-under-mir-opts.rs
 numeric/ref-int.rs
 numeric/type-limit-comparisons-6130.rs
 object-lifetime/object-lifetime-default-default-to-static.rs
@@ -2480,7 +2490,7 @@ or-patterns/basic-switch.rs
 or-patterns/basic-switchint.rs
 or-patterns/bindings-runpass-1.rs
 or-patterns/bindings-runpass-2.rs
-or-patterns/box-patterns.rs
+or-patterns/deref-patterns.rs
 or-patterns/for-loop.rs
 or-patterns/if-let-while-let.rs
 or-patterns/issue-70413-no-unreachable-pat-and-guard.rs
@@ -2546,6 +2556,7 @@ panic-runtime/lto-unwind.rs
 panics/abort-on-panic.rs
 panics/alloc_error_hook-unwind.rs
 panics/catch-unwind-bang.rs
+panics/lsda-multiple-action.rs
 panics/nested_panic_caught.rs
 panics/panic-abort-backtrace-without-debuginfo.rs
 panics/panic-during-display-formatting.rs
@@ -2592,15 +2603,15 @@ parser/unicode-multibyte-chars-no-ice.rs
 parser/utf8_idents-rpass.rs
 pattern/bindings-after-at/bind-by-copy-or-pat.rs
 pattern/bindings-after-at/bind-by-copy.rs
-pattern/bindings-after-at/box-patterns.rs
+pattern/bindings-after-at/deref-patterns.rs
 pattern/bindings-after-at/nested-patterns.rs
-pattern/bindings-after-at/or-patterns-box-patterns.rs
+pattern/bindings-after-at/or-patterns-deref-patterns.rs
 pattern/bindings-after-at/or-patterns-slice-patterns.rs
 pattern/bindings-after-at/or-patterns.rs
 pattern/bindings-after-at/slice-patterns.rs
-pattern/box-pattern-nested.rs
 pattern/const-pattern-str-match-lifetime.rs
 pattern/cross-crate-enum-pattern.rs
+pattern/deref-pattern-nested.rs
 pattern/deref-patterns/basic.rs
 pattern/deref-patterns/bindings.rs
 pattern/deref-patterns/branch.rs
@@ -2744,6 +2755,7 @@ process/try-wait.rs
 process/win-command-child-path.rs
 process/win-command-curdir-no-verbatim.rs
 process/win-creation-flags.rs
+process/win-desktop.rs
 process/win-inherit-handles.rs
 process/win-proc-thread-attributes.rs
 process/windows-exit-code-still-active.rs
@@ -2773,6 +2785,7 @@ reborrow/custom_marker_coerce_shared_copy.rs
 reborrow/custom_marker_deref.rs
 reborrow/custom_mut.rs
 reborrow/custom_mut_coerce_shared.rs
+reborrow/custom_mut_identity.rs
 reborrow/derive_coerce_shared.rs
 reborrow/derive_manual_equivalence.rs
 reborrow/derive_reborrow.rs
@@ -2906,7 +2919,6 @@ rfcs/rfc-1937-termination-trait/termination-trait-for-result-box-error_ok.rs
 rfcs/rfc-1937-termination-trait/termination-trait-for-result.rs
 rfcs/rfc-1937-termination-trait/termination-trait-for-str-ok.rs
 rfcs/rfc-1937-termination-trait/termination-trait-in-test.rs
-rfcs/rfc-2005-default-binding-mode/box.rs
 rfcs/rfc-2005-default-binding-mode/constref.rs
 rfcs/rfc-2005-default-binding-mode/enum-ok.rs
 rfcs/rfc-2005-default-binding-mode/for-ok.rs
@@ -3004,7 +3016,6 @@ sanitizer/kcfi-c-variadic.rs
 sanitizer/kcfi/const-generics.rs
 sanitizer/kcfi/fn-trait-objects.rs
 sanitizer/memory-passing.rs
-self/arbitrary-self-types-dyn-receiver.rs
 self/arbitrary_self_types_by_value_reborrow.rs
 self/arbitrary_self_types_lifetime_elision.rs
 self/arbitrary_self_types_nested.rs
@@ -3172,6 +3183,7 @@ std/channel-stack-overflow-issue-102246.rs
 std/fs-nul-byte-paths.rs
 std/issue-3563-3.rs
 std/linux-getrandom-fallback.rs
+std/overflow-check-ops.rs
 std/park-timeout-wakeup-59020.rs
 std/stdio-from.rs
 std/thread-sleep-ms.rs
@@ -3382,7 +3394,6 @@ threads-sendsync/yield.rs
 threads-sendsync/yield1.rs
 threads-sendsync/yield2.rs
 tool-attributes/tool_lints-rpass.rs
-tool-attributes/tool_lints_2018_preview.rs
 traits/alias/basic.rs
 traits/alias/bounds.rs
 traits/alias/import-cross-crate.rs
@@ -3534,6 +3545,7 @@ traits/object/generics.rs
 traits/object/iterator-methods-on-boxed-trait-object.rs
 traits/object/lifetime-first.rs
 traits/object/nested-trait-method-call.rs
+traits/object/rerun-impossible-predicates-post-analysis.rs
 traits/object/trait-object-lifetime-conversion.rs
 traits/object/with-lifetime-bound.rs
 traits/objects-owned-object-borrowed-method-headerless.rs
@@ -3542,7 +3554,6 @@ traits/parameterized-with-bounds.rs
 traits/pointee-deduction.rs
 traits/principal-less-objects.rs
 traits/region-pointer-simple.rs
-traits/reservation-impl/ok.rs
 traits/safety-ok-cc.rs
 traits/safety-ok.rs
 traits/static-method-overwriting.rs
