@@ -195,6 +195,9 @@ Before pushing, run `bun run check:fast --all`, which runs what a push's
 check runs that can run here: typecheck, `fmt:check`, clippy, `cargo test`,
 the Vite example's build and every file of the suite, the browsers' too
 (`test/ci.test.ts` holds it to `check.yml`); and the change's mutations.
+When `main` moves while it runs, rebase and re-check only what the
+incoming commits touch, as [DEVELOPMENT.md](DEVELOPMENT.md#landing-a-branch-on-a-moving-main)
+says; never loop on full re-runs.
 A push to `main` starts its own check, which runs to its end: read it
 with `bun run ci:status`, and don't start another after pushing, which
 only waits behind it. `bun run ci:check` is for another branch, or a

@@ -663,16 +663,20 @@ checked:
   With several agents pushing, `main` moves about as often as a
   `check:fast --all` takes (about 10 minutes under load), so a full re-run
   for every commit that landed meanwhile is a loop that never ends. Once
-  your change's whole check has passed:
-  - If an incoming commit touches the code your change works with, run the
-    whole check again. For an iterator change that means any of
-    `src/lower/mir/iter`, `src/lower/iterators`,
+  your change's whole check has passed, on a base at most 60 minutes old:
+  - If an incoming commit touches a file your change touches, or the code
+    your change works with, or the rebase stopped on a conflict, run the
+    whole check again. For an iterator change, "the code it works with"
+    means any of `src/lower/mir/iter`, `src/lower/iterators`,
     `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
     `test/corpus` or `test/iterator-matrix-known.txt`.
-  - Otherwise, and when the rebase applied with no conflict: rebuild and
-    regenerate (`cargo build`, `bun run std`), then run
-    both iterator slices (`bun scripts/iteratorSlice.ts run matrix` and
-    `run conformance`) and the corpus cases your change touches, and push.
+  - Otherwise, rebuild and regenerate (`cargo build`, `bun run std`),
+    then run your change's own cases, its changed mutations, and the test
+    files that cover the modules it touches; for an iterator change, both
+    iterator slices too (`bun scripts/iteratorSlice.ts run matrix` and
+    `run conformance`). If those pass, push.
+  - The push's own check runs everything. If it goes red on your commit,
+    fixing that comes before any other work.
   - Never build or regenerate while a rebase is stopped on a conflict: a
     binary or bundle built from a half-applied tree fails, or passes, for
     no reason of its own. That once sent several agents after a red `main`
