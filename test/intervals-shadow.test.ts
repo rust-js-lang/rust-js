@@ -5,7 +5,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, compiler, fixture } from "./support";
+import { buildCompiler, buildSerde, compiler, fixture, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -240,3 +241,14 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-wrap both"]);
 });
+
+// Serde's derived bodies, thousands of blocks each: the callers' walk kept
+// what's known at every block of every body, `examples/inbox.rs` taking
+// 6.8 GB and a mutation's tests past CI's 5 GB (#1672). It keeps those at
+// calls of a function only calls reach alone: under 1 GB.
+test("the MIR intervals of serde's derived bodies take what a compile does, not gigabytes", () => {
+  const out = join(fixture("inbox-memory"), "inbox.js");
+  const p = Bun.spawnSync([compiler, "examples/inbox.rs", "-o", out, "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
+  expect(p.exitCode, p.stderr.toString()).toBe(0);
+  expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
+}, underLoad(120_000));

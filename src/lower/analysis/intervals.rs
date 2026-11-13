@@ -136,9 +136,13 @@ impl<'tcx> Walk<'_, 'tcx> {
     }
 
     /// What's known at each block's terminator, its statements run.
-    fn ends(&self) -> IndexMap<BasicBlock, State> {
+    /// What's known at each of `blocks`' terminators, its statements run:
+    /// those alone kept, a body of thousands of blocks the end of each
+    /// otherwise (#1672).
+    fn ends(&self, blocks: &IndexSet<BasicBlock>) -> IndexMap<BasicBlock, State> {
         let entry = self.entries();
         (self.body.basic_blocks.iter_enumerated())
+            .filter(|(block, _)| blocks.contains(block))
             .filter_map(|(block, data)| {
                 let mut state = entry[block].clone()?;
                 for statement in &data.statements {

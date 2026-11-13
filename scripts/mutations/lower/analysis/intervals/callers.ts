@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     breaks: "a function is given what its calls seen so far pass, before its own call of itself is, so a recursive function is taken to be given only its outer calls' values",
     file: "src/lower/analysis/intervals/callers.rs",
     find: "        true => given.get(&function).cloned().unwrap_or_default(),\n",
-    replace: "        true | false if given.contains_key(&function) => given.get(&function).cloned().unwrap_or_default(),\n        true => Vec::new(),\n",
+    replace: "        true | false if given.contains_key(&function) => given.get(&function).cloned().unwrap_or_default(),\n        true => Given::default(),\n",
     tests,
   },
   {
@@ -19,5 +19,13 @@ export const mutations: Mutation[] = [
     find: "                        below.push((index, of, strict));\n",
     replace: "                        let _ = (index, of, strict);\n",
     tests: ["test/lowering-functions.test.ts","-t","a function only calls reach is what its calls give it"],
+  },
+  {
+    name: "intervals-callers-walk-every-body",
+    breaks: "the callers' walk walks every body, though it calls no function only calls reach, so serde's derived bodies, thousands of blocks each, take gigabytes",
+    file: "src/lower/analysis/intervals/callers.rs",
+    find: "            if reaching.is_empty() {\n",
+    replace: "            if reaching.is_empty() && false {\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "gigabytes"],
   },
 ];

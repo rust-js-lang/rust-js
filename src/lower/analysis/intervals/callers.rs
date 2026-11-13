@@ -21,10 +21,21 @@ pub(super) fn parameter_intervals<'tcx>(
     for component in graph.sccs.iter().rev() {
         for &function in component {
             let Some(&body) = bodies.get(&function) else { continue };
+            // Its calls of a function only calls reach, by their blocks: a
+            // body with none isn't walked, and of one that has, what's known
+            // is kept at those blocks alone, serde's derived bodies of
+            // thousands of blocks walked and kept whole taking 6 GB (#1672).
+            let reaching: IndexSet<BasicBlock> = (graph.calls.get(&function).into_iter().flatten())
+                .filter(|call| matches!(call.callee, Callee::Resolved(callee) if only_called.contains_key(&callee)))
+                .map(|call| call.block)
+                .collect();
+            if reaching.is_empty() {
+                continue;
+            }
             let own = given_of(function, only_called, &given, &calls_seen);
             let typing_env = ty::TypingEnv::post_analysis(tcx, function);
             let walk = walk(tcx, typing_env, body, own);
-            let ends = walk.ends();
+            let ends = walk.ends(&reaching);
             for call in graph.calls.get(&function).into_iter().flatten() {
                 let Callee::Resolved(callee) = call.callee else {
                     continue;
