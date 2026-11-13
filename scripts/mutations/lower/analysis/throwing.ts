@@ -14,15 +14,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "throwing-fn-exported",
-    breaks:
-      "a `pub` function JS calls, `coerced`, throws where its JS callers read a `Result`",
-    file: "src/lower/analysis/throwing.rs",
-    find: "        && !tcx.visibility(local).is_public()\n",
-    replace: "",
-    tests,
-  },
-  {
     name: "throwing-fn-of-its-own-ok",
     breaks:
       "a function that makes its own `Ok` too, `or_none`, is taken as throwing, its `Ok(None)` thrown on",

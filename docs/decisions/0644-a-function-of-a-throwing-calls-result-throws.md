@@ -123,3 +123,19 @@ value, exported, or a module's default export. The throwing-function test
 in `test/js-builtins.test.ts` holds the case: the function keeps its
 `$try`, and both calls answer as Rust does. Mutation
 `throwing-fn-named-as-a-value`.
+
+## Amendment: whether JS may call it is `only_called`'s alone (2026-11-13)
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)): what's printed is
+Rust's either way. A throwing function also had to be private,
+`!is_public()`, beside `only_called`'s answer, which already leaves out
+an exported function; two owners of one question. The survivor
+`throwing-fn-exported` (main's check 43394281064), which dropped the
+visibility test, showed it: nothing but `only_called` decides. So a `pub`
+function no JS reaches, one of a private module or a bin, is a throwing
+function too, as a private one is, and an exported one keeps its
+`Result`, `only_called`'s exclusion. Its mutation goes with the test it
+mutated. The test now finds `or_none`'s `$try` in `or_none`'s own body:
+`read`, added for #1670, has the same last line, so the survivor
+`throwing-fn-of-its-own-ok` passed on `read`'s; it's caught again. The
+tests live in `test/throwing-calls.test.ts`.

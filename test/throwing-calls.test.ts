@@ -245,7 +245,7 @@ pub fn as_value(text: &str) -> bool {
   expect([lib.coerced(1), lib.coerced(Symbol("s")).TAG]).toEqual([{ TAG: "Ok", _0: "1" }, "Err"]);
   expect([lib.deep(1), lib.deep(Symbol("s"))]).toEqual([false, true]);
   // One that makes its own \`Ok\` too keeps its \`Result\`.
-  expect(js).toContain("  return $try(() => JSON.parse(text));\n}");
+  expect(js).toMatch(/function orNone\(text\) \{\n(?:(?!\n\}\n)[\s\S])*\n  return \$try\(\(\) => JSON\.parse\(text\)\);\n\}/);
   expect([lib.parses(""), lib.parses("1"), lib.parses("{")]).toEqual([true, true, false]);
   // One of a Rust \`Result\`, no JS call's, is no throwing function.
   expect([lib.numeric("12"), lib.numeric("x")]).toEqual([true, false]);

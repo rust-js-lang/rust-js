@@ -63,16 +63,14 @@ pub(super) fn throwing_fns<'tcx>(
 }
 
 /// Whether `id` may be a throwing function: the crate's own, of no type
-/// parameters, no trait's, none JS may call, giving a `Result`.
+/// parameters, no trait's, giving a `Result`. Whether JS may call it, a
+/// `pub` one exported, is `only_called`'s to say, asked beside this.
 fn candidate<'tcx>(tcx: TyCtxt<'tcx>, recognition: &Recognition<'_, 'tcx>, id: DefId) -> bool {
-    let Some(local) = id.as_local() else {
-        return false;
-    };
-    matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+    id.is_local()
+        && matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
         && !is_binding(tcx, id)
         && tcx.trait_of_assoc(id).is_none()
         && tcx.trait_impl_of_assoc(id).is_none()
-        && !tcx.visibility(local).is_public()
         && !tcx.generics_of(id).requires_monomorphization(tcx)
         && recognition.is_std_type(
             tcx.fn_sig(id)
