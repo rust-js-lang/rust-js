@@ -9,6 +9,7 @@
 
 use super::*;
 use crate::lower::format_spec::{Radix, Spec, options_object};
+use crate::lower::representation::Num;
 
 /// One write into a writer's sink, `f` (`$writerSink`), as std makes it.
 #[derive(Clone)]
@@ -41,8 +42,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What one placeholder writes into a writer's sink: `value`, shown as
     /// `kind` says, with `spec`'s options and its `width` and `precision`,
     /// each piece as std's `fmt` of it writes it. `None` of a value whose
-    /// split isn't followed yet (#1652): a float's, a `Debug` of text, a
-    /// composite's or a `fmt` of the crate's own.
+    /// split isn't followed yet (#1652): a `Debug` of text, a composite's,
+    /// a generic or `dyn` value's.
     pub(in crate::lower) fn sink_writes(
         &mut self,
         value: Expr,
@@ -57,11 +58,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let ty = ty.peel_refs();
         let int = shown_num(ty).filter(|num| !num.float());
-        // `{:x?}` of an integer is its `{:x}` (ADR 0559).
+        let float = shown_num(ty).filter(|num| num.float());
+        // `{:x?}` of an integer is its `{:x}` (ADR 0559); of a float,
+        // nothing, as its `Debug` reads no hex flag.
         let kind = match (kind, spec.debug_hex) {
             (Std::FmtDebug, Some(radix)) if int.is_some() => Std::FmtRadix(radix),
             // A writer of the crate's own is given it among its options.
-            (_, Some(_)) if !self.writes_into_a_writer(kind, ty) => return Ok(None),
+            (_, Some(_)) if float.is_none() && !self.writes_into_a_writer(kind, ty) => return Ok(None),
             _ => kind,
         };
         let options = width.is_some()
@@ -99,6 +102,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options_given()],
                     ),
                 }
+            }
+            // A float's, `flt2dec`'s parts as `pad_formatted_parts` writes
+            // them.
+            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) if let Some(num) = float => {
+                let mut args = vec![value, Expr::str(float_trait(kind)), Expr::bool(num == Num::F32)];
+                args.extend(options.then(options_given));
+                SinkWrite::Helper("$writeFloat", args)
             }
             // A `char`'s `Display`, given no width nor precision, is its
             // `write_char`; else `pad` of its text.
@@ -151,6 +161,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = |value: Expr| vec![value, options.clone()];
         Ok(Some(vec![match kind {
             Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),
+            Std::FmtDisplay | Std::FmtDebug if let Some(num) = shown_num(ty).filter(|num| num.float()) => {
+                SinkWrite::Helper(
+                    "$writeFloat",
+                    vec![
+                        value,
+                        Expr::str(float_trait(kind)),
+                        Expr::bool(num == Num::F32),
+                        options.clone(),
+                    ],
+                )
+            }
             Std::FmtDebug if int.is_some() && !debug_hex => SinkWrite::Helper("$writeInteger", given(value)),
             // Where a placeholder may ask it, `{:x?}`, its hex digits, by
             // `LowerHex` or `UpperHex` as its options say (ADR 0559).
@@ -230,5 +251,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut given = vec![self.crate_callee(writer)?];
         given.extend(values);
         Some(SinkWrite::Helper("$writingInto", given))
+    }
+}
+
+/// The trait `$writeFloat` writes a float by, `kind`'s: `"D"` `Display`,
+/// `"G"` `Debug`, `"e"` `LowerExp`, `"E"` `UpperExp`.
+fn float_trait(kind: Std) -> &'static str {
+    match kind {
+        Std::FmtDisplay => "D",
+        Std::FmtExp(true) => "E",
+        Std::FmtExp(false) => "e",
+        _ => "G",
     }
 }

@@ -48,7 +48,7 @@ const refusedWriters: [string, string, string][] = [
   ["a builder", "builder", 'f.debug_struct("S").field("a", &1).finish()'],
   ["a write through a held Formatter", "held where it isn't", 'let held = Held(f);\n        let n = [-1, 2];\n        write!(held.0, "{}", n[0])'],
   ["a closure given the Formatter", "Formatter", "let w = |f: &mut fmt::Formatter<'_>| f.write_str(\"x\");\n        w(f)"],
-  ["a float", "f64", 'write!(f, "{}", 1.5_f64)'],
+  ["a str's Debug", "by its `Debug`", 'let s = ["a\\"b"];\n        write!(f, "{:?}", s[0])'],
   ["a write_fmt of Arguments made elsewhere", "made elsewhere", 'f.write_fmt(given(format_args!("{}", 1)))'],
 ];
 
@@ -144,6 +144,27 @@ test("an integer's Debug by a writer's options is its hex where {:x?} asks", asy
   expect(await debug()).toEqual(["c-", "s2"]);
   expect(await debug({ debugHex: "x", width: 4 })).toEqual(["c ", "c ", "sfe"]);
   expect(await debug({ debugHex: "X", alternate: true })).toEqual(["s0x", "sFE"]);
+});
+
+test("a float is written by flt2dec's parts, as pad_formatted_parts writes them", async () => {
+  const cases: [number, string, boolean, object | undefined, string[]][] = [
+    [-1.5, "D", false, undefined, ["s-", "s1", "s.", "s5"]],
+    [100, "D", false, undefined, ["s1", "s00"]],
+    [100, "G", false, undefined, ["s1", "s00", "s.", "s0"]],
+    [0.25, "D", false, { width: 7, zero: true }, ["s", "c0", "c0", "c0", "s0.", "s25"]],
+    [-0.25, "D", false, { width: 7, align: "Center" }, ["c ", "s-", "s0.", "s25", "c "]],
+    [Number.NaN, "D", false, { plus: true }, ["sNaN"]],
+    [1e100, "D", false, undefined, ["s1", `s${"0".repeat(64)}`, `s${"0".repeat(36)}`]],
+    [1e16, "D", false, { precision: 30 }, ["s10000000000000000", "s.", "s0000", `s${"0".repeat(26)}`]],
+    [100, "e", false, undefined, ["s1", "se", "s2"]],
+    [0.25, "E", false, { precision: 0 }, ["s2", "sE-", "s1"]],
+    [0, "e", false, { precision: 3 }, ["s0.", "s000", "se0"]],
+    [1e-7, "G", false, undefined, ["s1", "se-", "s7"]],
+    [Math.fround(0.1), "D", true, { precision: 60 }, ["s0.", "s100000001490116119384765625000000000000000", `s${"0".repeat(18)}`]],
+  ];
+  for (const [x, by, f32, options, want] of cases) {
+    expect(await recorded((f, std) => std.$writeFloat(f, x, by, f32, options))).toEqual(want);
+  }
 });
 
 test("a char's Display by a writer's options is its write_char, or pad given a width", async () => {

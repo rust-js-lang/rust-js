@@ -76,7 +76,7 @@ $writeInteger(f, n);
   text written whole. `writes_into_a_writer` arms only a writer of the
   crate's own that writes through a sink; another crate's, made whole in
   its library, is refused.
-- **What isn't followed yet is refused, naming #1652**: a float, a
+- **What isn't followed yet is refused, naming #1652**: a
   `Debug` of text or of a composite, a builder or derived `Debug` in a
   framed writer, a write through a `Formatter` a struct holds, a closure
   or `fn` pointer given the `Formatter`, a `dyn` or generic value, and an
@@ -102,7 +102,17 @@ go.
 2. A crate's own `Display` and `Debug` framed on the caller's sink, one
    model with `analysis::prints`' `through_sink` (landed: the framed cases
    of `test/writer-sink.rs`, the grid's own `Display` in its `Log` column).
-3. Floats by `flt2dec`'s parts.
+3. Floats by `flt2dec`'s parts (landed): `$writeFloat` makes core's
+   parts, `digits_to_dec_str`'s and `digits_to_exp_str`'s, of the shortest
+   digits (`$f64Digits`, `$f32Digits`) or the exact ones, at most
+   `estimate_max_buf_len` of them of the value's decoded exponent, the rest
+   zeros, rounded half to even; and writes them as
+   `pad_formatted_parts` does: the sign a `write_str`, an empty one where
+   `{:0}` writes it before the zeros, each part one, a run of zeros 64 at a
+   time, each fill char a `write_char`. Its proof: the floats of
+   `test/writer-sink.rs`, `f32`s too, and the grid's floats in its `Log`
+   column, against native Rust in both builds, and the runtime's unit test
+   of each form.
 4. `Debug` escapes of `str` and `char`, and std's builders, pretty ones by
    std's `PadAdapter`.
 5. A generic or `dyn` value's `fmt` through its dictionary into the sink.

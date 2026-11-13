@@ -215,10 +215,12 @@ type Sink = (typeof sinks)[number];
  * `value`, so `write!` into a writer of the crate's own writes it a piece
  * at a time (#1652): an integer's, by any trait but an exponent's, and a
  * `char`'s, a string's or a `bool`'s `Display`, and a `bool`'s `Debug`; and
+ * a float's by each of its traits, by `flt2dec`'s parts (step 3); and
  * the crate's own `Display` that writes those, framed on the writer's sink
  * (step 2). As each value's split lands, more do; the rest are written to
  * a `String`. */
 const pieced = (spec: Spec, value: Value) =>
+  value.kind === "float" ||
   value.kind === "integer"
     ? !["e", "E"].includes(spec.trait)
     : value.kind === "own Display"

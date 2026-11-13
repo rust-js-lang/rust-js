@@ -292,6 +292,7 @@ helpers! {
     NonZeroOk,
     StringWriter,
     WriterSink,
+    WriteFloat,
     Powf,
     Trim,
     FmtError,
@@ -1100,6 +1101,7 @@ impl Helper {
             Helper::StringWriter => include_str!("runtime/string_writer.js"),
             // A `write!` into a writer of the crate's, a call at a time (#1652).
             Helper::WriterSink => include_str!("runtime/writer_sink.js"),
+            Helper::WriteFloat => include_str!("runtime/write_float.js"),
             Helper::Powf => include_str!("runtime/powf.js"),
             Helper::Trim => include_str!("runtime/trim.js"),
             Helper::FmtError => include_str!("runtime/fmt_error.js"),

@@ -172,6 +172,17 @@ impl fmt::Display for Wrap {
     }
 }
 
+// Gives its `Formatter`, and its options, to std's floats.
+struct Celsius(f64, f32);
+
+impl fmt::Display for Celsius {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)?;
+        f.write_str("C/")?;
+        fmt::Debug::fmt(&self.1, f)
+    }
+}
+
 // Shown only by `Branch`'s writer, which is shown into a writer.
 struct Leaf(i8);
 
@@ -355,6 +366,56 @@ fn main() {
     let mut refused = Log(Vec::new());
     let r = write!(refused, "a{}b", Refuses);
     println!("{:?} {:?}", refused.0, r);
+
+    // Floats, by `flt2dec`'s parts: the sign a `write_str`, an empty one
+    // where `{:0}` writes it first, zeros by at most 64, each fill char a
+    // `write_char`, and exact digits only as many as std makes.
+    let floats: Vec<f64> = vec![
+        0.0,
+        -0.0,
+        1.0,
+        -1.5,
+        0.25,
+        100.0,
+        120.5,
+        1e16,
+        1e100,
+        1e-7,
+        0.0001,
+        f64::NAN,
+        f64::NEG_INFINITY,
+        0.096,
+        f64::MAX,
+        5e-324,
+        2.5,
+    ];
+    for x in &floats {
+        let mut l = Log(Vec::new());
+        write!(
+            l,
+            "{}|{:?}|{:.2}|{:.0}|{:e}|{:E}|{:.3e}|{:+}|{:8.1}|{:08.2}|{:<7}|{:.30}|{:.0e}|{:^9?}|{:+010.1e}",
+            x, x, x, x, x, x, x, x, x, x, x, x, x, x, x
+        )
+        .unwrap();
+        println!("{} {:?}", x, l.0);
+    }
+    let singles: Vec<f32> = vec![0.1, 0.125, 1.0, -2.5e-8, 3.4e38, f32::MIN_POSITIVE, 1e-45, 16777217.0];
+    for y in &singles {
+        let mut l = Chars(Vec::new());
+        write!(l, "{}|{:?}|{:.3}|{:e}|{:.60}|{:>12.2e}", y, y, y, y, y, y).unwrap();
+        println!("{} {:?}", y, l.0);
+    }
+    let mut celsius = Chars(Vec::new());
+    write!(
+        celsius,
+        "{}|{:>9.2}|{:+}|{:07.1}",
+        Celsius(-3.25, 1e-5),
+        Celsius(21.0, 0.5),
+        Celsius(0.0, -0.0),
+        Celsius(1.05, 2.0)
+    )
+    .unwrap();
+    println!("{:?}", celsius.0);
 
     println!(
         "{} {:?} {:>5} {} {}",
