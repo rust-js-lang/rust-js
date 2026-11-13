@@ -68,8 +68,8 @@ function downIterator_next(down) {
 }
 
 export const bagExtendU32 = {
-  extend: (arg0, arg1, TIntoIterInPlace, dropT, dropTIntoIter) =>
-    bagExtendU32_extend(arg0.value, arg1, dropT, dropTIntoIter),
+  extend: (arg0, arg1, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    bagExtendU32_extend(arg0.value, arg1, dropI, dropIIntoIter),
 };
 function bagExtendU32_extend(bag, iter, dropT, dropTIntoIter) {
   iter = $intoIter(iter);

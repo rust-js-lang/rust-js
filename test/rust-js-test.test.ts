@@ -6,8 +6,8 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { buildCompiler, outsideFixture } from "./support";
+import { basename, join } from "node:path";
+import { buildCompiler, outsideFixture, rustJsUnits } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
 
 beforeAll(buildCompiler, 600_000);
@@ -76,7 +76,7 @@ test("two crates of one name at two paths, one target, each run their own tests"
   expect([first.code, second.code]).toEqual([0, 1]);
   expect(counts("node", second.said).fail).toBe(1);
   // Both in one unit's directory, which the second replaced.
-  expect(readdirSync(join(shared, "wasm32-unknown-unknown/debug/deps/rust-js")).filter((unit) => unit.startsWith("app-"))).toHaveLength(1);
+  expect(rustJsUnits(join(shared, "wasm32-unknown-unknown/debug")).filter((unit) => basename(unit).startsWith("app-"))).toHaveLength(1);
 });
 
 // ADR 1076: each module's tests in its own `.test.js` beside its JS, the
@@ -124,11 +124,9 @@ fn sixteen_sides() {
   });
   const { code, said } = rustJsTest(dir);
   expect([counts("node", said), code], said).toEqual([{ pass: 4, fail: 0, skip: 0 }, 0]);
-  const units = join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug/deps/rust-js");
-  const unit = (crate: string) => {
-    const dirs = [...new Bun.Glob(`${crate}-*/`).scanSync({ cwd: units, onlyFiles: false })];
-    return join(units, dirs.find((d) => existsSync(join(units, d, `${crate === "app" ? "lib" : crate}.test.js`))) ?? "");
-  };
+  const units = rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"));
+  const unit = (crate: string) =>
+    units.find((d) => basename(d).startsWith(`${crate}-`) && existsSync(join(d, `${crate === "app" ? "lib" : crate}.test.js`))) ?? "";
   const app = unit("app");
   // shapes.js, and its module of tests is shapes.test.js: no shapes/tests.js.
   expect(["shapes.js", "shapes.test.js", "shapes/tests.js", "shapes/tests/nested.js", "lib.test.js"].map((f) => existsSync(join(app, f)))).toEqual([

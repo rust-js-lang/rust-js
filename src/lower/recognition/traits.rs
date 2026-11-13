@@ -216,7 +216,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .is_some_and(|tr| tr.def_id() == iterator && tr.skip_binder().self_ty() == of)
         };
         match ty.kind() {
-            ty::Param(_) => (self.typing_env.param_env.caller_bounds().iter()).any(|clause| bound(clause, ty)),
+            ty::Param(_) => (self.typing_env.param_env.caller_bounds()).any(|clause| bound(clause, ty)),
             ty::Alias(
                 _,
                 ty::AliasTy {
@@ -226,7 +226,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ) => {
                 (self.tcx.item_bounds(*def_id).skip_binder().iter())
                     .any(|clause| clause.as_trait_clause().is_some_and(|tr| tr.def_id() == iterator))
-                    || (self.typing_env.param_env.caller_bounds().iter()).any(|clause| bound(clause, ty))
+                    || (self.typing_env.param_env.caller_bounds()).any(|clause| bound(clause, ty))
             }
             _ => false,
         }
@@ -632,12 +632,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => None,
         };
         let unknown = declared.is_some() || matches!(ty.kind(), ty::Param(_));
-        let clauses = param_env.caller_bounds().iter().filter(|clause| {
+        let clauses = param_env.caller_bounds().filter(|clause| {
             clause
                 .as_trait_clause()
                 .is_some_and(|bound| bound.self_ty().skip_binder() == ty)
         });
-        let equated = (param_env.caller_bounds().iter())
+        let equated = (param_env.caller_bounds())
             .filter_map(|clause| clause.as_projection_clause())
             .filter(|equal| matches!(ty.kind(), ty::Param(_)) && equal.term().skip_binder().as_type() == Some(ty))
             .flat_map(|equal| self.tcx.item_bounds(equal.item_def_id()).skip_binder());
@@ -869,7 +869,7 @@ pub(crate) fn function_kind<'tcx>(tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>)
         ty::Adt(adt, args) if super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {
             function_kind(tcx, owner, args.type_at(0))
         }
-        ty::Param(_) | ty::Alias(..) => (tcx.param_env(owner).caller_bounds().iter())
+        ty::Param(_) | ty::Alias(..) => (tcx.param_env(owner).caller_bounds())
             .filter_map(|clause| clause.as_trait_clause())
             .filter(|bound| bound.self_ty().skip_binder() == ty)
             .filter_map(|bound| {
@@ -893,7 +893,7 @@ fn member_function_kind(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<ty::ClosureK
         if !matches!(member.kind(), ty::Param(_)) {
             return None;
         }
-        (tcx.param_env(imp).caller_bounds().iter())
+        (tcx.param_env(imp).caller_bounds())
             .filter_map(|clause| clause.as_trait_clause())
             .filter(|bound| bound.self_ty().skip_binder() == member)
             .find_map(|bound| tcx.fn_trait_kind_from_def_id(bound.def_id()))

@@ -8,6 +8,7 @@
 
 use crate::lower::temporary_names::Role;
 use rustc_abi::VariantIdx;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 

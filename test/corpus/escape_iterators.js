@@ -15,14 +15,14 @@ export function entry() {
 
 function main() {
   const shown = $escapeDefault("é");
-  const parts = Array.from($escapeDebug("\n", false));
+  const parts = Array.from($escapeDebug("\n"));
   const length = Array.from($escapeUnicode("é")).length;
   $print(`${shown} [${parts.map((item) => $debugStr(item, "'")).join(", ")}] ${length}\n`);
   for (const c of Array.from($escapeUnicode("x"))) {
     $print(c);
   }
   $print("\n");
-  const quoted = $escapeDebug('a\n"é', true);
+  const quoted = $escapeDebug('a\n"é');
   const tabs = Array.from($escapeDefault("tab\t")).length;
   const marks = Array.from(
     "x́"[Symbol.iterator]().flatMap((c) => $iter(Array.from($escapeUnicode(c)))),

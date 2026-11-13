@@ -30,7 +30,7 @@ pub(super) fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> Index
     // `Self::B` would ask the program's of a default it never reads, which
     // may not evaluate, `B = Self::A` (rustc's defaults-cyclic-pass).
     for body in all_bodies.iter().filter(|body| {
-        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())
+        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst) && tcx.trait_of_assoc(body.def_id).is_some())
     }) {
         consts.extend(body.thir.exprs.iter().filter_map(|expr| match expr.kind {
             ExprKind::NamedConst { def_id, args, .. } => generic(def_id, args),

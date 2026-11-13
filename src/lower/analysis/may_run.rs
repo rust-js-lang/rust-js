@@ -174,7 +174,7 @@ fn may_run<'tcx>(
             // by its name.
             if id == start
                 && !made_of.contains_key(&read)
-                && matches!(tcx.def_kind(read), DefKind::Const { .. } | DefKind::AssocConst { .. })
+                && matches!(tcx.def_kind(read), DefKind::Const | DefKind::AssocConst)
             {
                 continue;
             }

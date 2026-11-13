@@ -721,4 +721,12 @@ export const mutations: Mutation[] = [
     replace: "    while let Some(inner) = ty.boxed_ty().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
+  {
+    name: "infallible-an-enum",
+    breaks: "`Infallible`, `!` since 1.100, is taken for the enum it was: rustc panics asking its ADT (ADR 0109, amended)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        let infallible = tcx.types.never;\n",
+    replace: "        let infallible = Ty::new_adt(tcx, tcx.adt_def(super::registry::by_path(tcx, StdCrate::Core, &[\"convert\", \"Infallible\"])?), ty::List::empty());\n",
+    tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
+  },
 ];

@@ -164,8 +164,8 @@ export const mutations: Mutation[] = [
     name: "type-constant-initializer-dropped",
     breaks: "a pub type's constant no value tree says, semver's `VersionReq::STAR` of a `Vec`, keeps no initializer, so it's refused (#513)",
     file: "src/lower/analysis/collected.rs",
-    find: "                impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id())\n",
-    replace: "                impl_const(tcx, def_id.to_def_id())\n",
+    find: "            DefKind::AssocConst => impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id()),\n",
+    replace: "            DefKind::AssocConst => impl_const(tcx, def_id.to_def_id()),\n",
     tests: ["test/impl-constants.test.ts", "-t", "no value tree"],
   },
 ];

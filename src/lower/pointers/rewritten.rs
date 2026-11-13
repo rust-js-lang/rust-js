@@ -11,6 +11,7 @@ use rustc_data_structures::either::Either;
 use rustc_middle::mir::visit::Visitor;
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_mir_dataflow::Analysis;
 use rustc_mir_dataflow::impls::{MaybeInitializedPlaces, MaybeUninitializedPlaces};
 use rustc_mir_dataflow::move_paths::{LookupResult, MoveData};

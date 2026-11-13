@@ -175,6 +175,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // So is one called as itself, custom MIR's and `core_intrinsics`':
         // `bswap(x)`, `x.swap_bytes()`; `fmaf64(a, b, c)`, `a.mul_add(b, c)`,
         // rounded once (ADR 0430); and the bit counts and turns (#1384).
+        // 1.100's `Ord::min` and `max` of an integer, which std's bodies
+        // call, as `a.min(b)` is.
+        if tcx.intrinsic(def_id).is_some()
+            && let Some(max) = match tcx.item_name(def_id).as_str() {
+                "integer_max" => Some(true),
+                "integer_min" => Some(false),
+                _ => None,
+            }
+        {
+            return Some(Some(Std::MaxOf(max)));
+        }
         if tcx.intrinsic(def_id).is_some()
             && let Some((method, num)) = number_intrinsic(tcx.item_name(def_id).as_str(), args)
             && let Some(op) = super::methods::number(method, num)

@@ -50,6 +50,7 @@ rustc_mir_transform = { path = "rustc/compiler/rustc_mir_transform" }
 rustc_parse = { path = "rustc/compiler/rustc_parse" }
 rustc_session = { path = "rustc/compiler/rustc_session" }
 rustc_span = { path = "rustc/compiler/rustc_span" }
+rustc_structures = { path = "rustc/compiler/rustc_structures" }
 rustc_target = { path = "rustc/compiler/rustc_target" }
 rustc_trait_selection = { path = "rustc/compiler/rustc_trait_selection" }
 # The same oxc release as ../Cargo.toml, from its tag (see there).

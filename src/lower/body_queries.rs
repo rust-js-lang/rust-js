@@ -7,6 +7,7 @@ use super::recognition::{SliceLength, slice_length};
 use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
+use rustc_middle::ty::consts::ConstExt as _;
 
 use rustc_middle::mir::{BinOp, BorrowKind, UnOp};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir};
@@ -433,7 +434,7 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
     loop {
         match thir[e].kind {
             ExprKind::Scope { value: inner, .. }
-            | ExprKind::Use { source: inner }
+            | ExprKind::ValueExpr { source: inner }
             | ExprKind::NeverToAny { source: inner }
             | ExprKind::ValueTypeAscription { source: inner, .. }
             | ExprKind::PlaceTypeAscription { source: inner, .. } => e = inner,
@@ -767,7 +768,11 @@ pub(super) fn consts_named(thir: &Thir<'_>) -> IndexSet<DefId> {
         })
         .collect();
     let mut of = |pattern: &Pat<'_>| {
-        pattern.walk_always(|pat| named.extend(pat.extra.as_ref().and_then(|extra| extra.expanded_const)));
+        pattern.walk_always(|pat| {
+            named.extend(
+                (pat.extra.as_ref().and_then(|extra| extra.expanded_const)).map(crate::lower::alias_const_def_id),
+            )
+        });
     };
     thir.arms.iter().for_each(|arm| of(&arm.pattern));
     thir.params
@@ -793,7 +798,7 @@ pub(super) fn consts_named(thir: &Thir<'_>) -> IndexSet<DefId> {
 /// variant's test leaves those out (ADR 0676).
 pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
     let through = |mut e: ExprId| {
-        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
             e = inner;
         }
         e
@@ -1013,7 +1018,7 @@ fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(Span, Vec
 /// The `fn_span` of `e`, a call of `js::SymbolFor::from_value`, in what
 /// holds no more than its value.
 fn registered_read<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
-    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
         e = inner;
     }
     match thir[e].kind {
@@ -1072,7 +1077,7 @@ fn borrowed(thir: &Thir<'_>, mut e: ExprId) -> Option<ExprId> {
 
 /// Whether `e` makes a `Some(..)`.
 fn is_some(tcx: TyCtxt<'_>, thir: &Thir<'_>, mut e: ExprId) -> bool {
-    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
         e = inner;
     }
     matches!(&thir[e].kind, ExprKind::Adt(adt)

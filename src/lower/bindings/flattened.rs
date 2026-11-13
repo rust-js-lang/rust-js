@@ -213,11 +213,7 @@ pub(in crate::lower) fn flattened<'tcx>(
                 let sig = tcx.fn_sig(id).instantiate_identity().skip_normalization().skip_binder();
                 types.extend(sig.inputs_and_output.iter());
             }
-            DefKind::TyAlias
-            | DefKind::Const { .. }
-            | DefKind::Static { .. }
-            | DefKind::AssocConst { .. }
-            | DefKind::Field => {
+            DefKind::TyAlias | DefKind::Const | DefKind::Static { .. } | DefKind::AssocConst | DefKind::Field => {
                 types.push(tcx.type_of(id).instantiate_identity().skip_normalization());
             }
             _ => {}

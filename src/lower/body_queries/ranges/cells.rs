@@ -132,7 +132,7 @@ pub(super) fn scope_drops<'tcx>(
 pub(super) fn reads_a_cell<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
     match thir[e].kind {
         ExprKind::Scope { value: inner, .. }
-        | ExprKind::Use { source: inner }
+        | ExprKind::ValueExpr { source: inner }
         | ExprKind::Deref { arg: inner }
         | ExprKind::Field { lhs: inner, .. }
         | ExprKind::Unary { arg: inner, .. }

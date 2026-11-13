@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local, a `static` or a `const` read through its module path, `plugin::CALLS.get()`, is its named import beside the module's namespace, `import { calls }` and `import * as Plugin`, two import forms of one module (rd114a, ADR 1018)",
     file: "src/lower/analysis/namespaces.rs",
-    find: "    let Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function) = path.res else {\n",
+    find: "    let Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function) = path.res else {\n",
     replace: "    let Res::Def(DefKind::Fn, function) = path.res else {\n",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
     snapshots: true,

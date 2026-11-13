@@ -778,6 +778,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
     }
 
+    /// Whether `Iterator::max` of `ty`s, or `min`, is by their own `Ord::max`
+    /// (`extreme_fn`): where it's seen, or not a total order, or any part's
+    /// order is written by hand, whose `<` may not be its `cmp`'s, or an
+    /// impl's own `max` decides; else their `cmp` gives the same one.
+    pub(super) fn extreme_by_its_own(&self, ty: Ty<'tcx>, max: bool) -> bool {
+        let ord = super::recognition::std_item(self.tcx, super::recognition::StdItem::Ord);
+        let method = trait_method(self.tcx, ord, if max { "max" } else { "min" });
+        let own = (self.recognition().user_impl(ty::TraitRef::new(self.tcx, ord, [ty])))
+            .is_some_and(|imp| self.tcx.impl_item_implementor_ids(imp).contains_key(&method));
+        let recognition = self.recognition();
+        let by_hand = ty.walk().filter_map(|part| part.as_type()).any(|part| {
+            [ord, self.partial_ord_trait()].into_iter().any(|tr| {
+                (recognition.user_impl(ty::TraitRef::new_from_args(self.tcx, tr, recognition.args_of(tr, part))))
+                    .is_some_and(|imp| !self.tcx.is_automatically_derived(imp))
+            })
+        });
+        own || by_hand || self.order_seen(ty) || !self.order_total(ty)
+    }
+
+    /// `(a, b) => a.max(b)` of `ty`s, or `min`: its `Ord`'s, an impl's own
+    /// where it writes one, else std's `other < self` (`ordering_call`),
+    /// which `Iterator::max` reduces by since 1.100 (ADR 0109, amended).
+    pub(super) fn extreme_fn(&mut self, ty: Ty<'tcx>, max: bool, span: Span) -> R<Expr> {
+        let ord = super::recognition::std_item(self.tcx, super::recognition::StdItem::Ord);
+        let name = if max { "max" } else { "min" };
+        let method = trait_method(self.tcx, ord, name);
+        let tr = ty::TraitRef::new(self.tcx, ord, [ty]);
+        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let mut body = Vec::new();
+        let order = match self.recognition().user_impl(tr) {
+            Some(imp) if self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {
+                self.impl_call(method, tr.args, vec![a, b], span)?
+            }
+            _ => (self.ordering_call(method, tr, vec![a, b], span, &mut body)?)
+                .ok_or_else(|| self.unsupported(span, &format!("`{name}()` of `{ty}`")))?,
+        };
+        if body.is_empty()
+            && let js::ExprKind::Call(callee, args) = &order.kind
+            && callee.reads_same()
+            && matches!(args.as_slice(), [x, y] if is_var(x, "a") && is_var(y, "b"))
+        {
+            return Ok((**callee).clone());
+        }
+        body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
+        Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
+    }
+
     /// `a < b` and the rest, `a.cmp(&b)`, `a.partial_cmp(&b)`, `a.max(b)`
     /// and `a.min(b)`. `None` for numbers, which std's operators already are.
     pub(super) fn ordering_call(

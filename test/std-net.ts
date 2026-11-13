@@ -300,6 +300,8 @@ export const excluded: Record<string, string> = Object.fromEntries([
     "HashSet::reserve", "HashSet::try_reserve", "HashSet::shrink_to_fit", "HashSet::shrink_to",
     "[T]::as_mut_ptr", "[T]::as_mut_ptr_range", "[T]::as_mut_array", "[T]::as_flattened_mut", "UnsafeCell::get_mut",
   ].map((id) => [id, untouched]),
+  // Stable since 1.100, not yet lowered: each is the tracker's, #1656.
+  ...["Vec::from_fn", "Rc::map"].map((id) => [id, "new in Rust 1.100, which rust-js doesn't lower yet: #1656's"]),
 ]);
 
 /** Each case rust-js refuses, by its id, in both builds: what the refusal

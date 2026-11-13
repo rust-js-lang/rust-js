@@ -100,8 +100,8 @@ pub(in crate::lower) fn foreign_bodies(
 /// const` has none.
 fn foreign_mir(tcx: TyCtxt<'_>, def_id: DefId) -> Option<&rustc_middle::mir::Body<'_>> {
     match tcx.def_kind(def_id) {
-        DefKind::AssocConst { is_type_const } => {
-            (!is_type_const && tcx.defaultness(def_id).has_value()).then(|| tcx.mir_for_ctfe(def_id))
+        DefKind::AssocConst => {
+            (!tcx.is_direct_const(def_id) && tcx.defaultness(def_id).has_value()).then(|| tcx.mir_for_ctfe(def_id))
         }
         _ => tcx.is_mir_available(def_id).then(|| tcx.optimized_mir(def_id)),
     }

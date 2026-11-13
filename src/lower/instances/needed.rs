@@ -601,7 +601,7 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
     mir::visit::Visitor::visit_body(&mut read, body);
     for &def in &read.read {
         let state = matches!(tcx.def_kind(def), DefKind::Static { .. })
-            || (matches!(tcx.def_kind(def), DefKind::Const { .. })
+            || (matches!(tcx.def_kind(def), DefKind::Const)
                 && matches!(tcx.type_of(def).instantiate_identity().skip_normalization().kind(),
                     ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), crate::lower::recognition::StdItem::LocalKey)));
         // A binding's, an `extern` block's static, is JS's, which the

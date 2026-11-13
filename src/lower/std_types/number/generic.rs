@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::temporary_names::Role;
+use rustc_middle::ty::consts::ConstExt as _;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A number's conversion, comparison, operator or size (ADRs 0011, 0057): `None` if `known` is another.

@@ -132,7 +132,7 @@ pub(crate) fn refuse_through(tcx: TyCtxt<'_>, id: DefId, span: rustc_span::Span,
 /// `#[rust_js::namespace]`: the value it holds, made as its module loads,
 /// whose fields are the module's exports (rd293, ADR 1061)?
 pub(crate) fn is_value_namespace(tcx: TyCtxt<'_>, key: DefId) -> bool {
-    matches!(tcx.def_kind(key), DefKind::Const { .. }) && marked_namespace(tcx, key)
+    matches!(tcx.def_kind(key), DefKind::Const) && marked_namespace(tcx, key)
 }
 
 /// The exports of `key`'s module, a namespace thread-local's: its struct's
@@ -425,7 +425,7 @@ fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// What `def_id`, an item of a class's inherent impl, is of the class;
 /// `None` of any other item.
 pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
-    if !matches!(tcx.def_kind(def_id), DefKind::AssocFn | DefKind::AssocConst { .. }) {
+    if !matches!(tcx.def_kind(def_id), DefKind::AssocFn | DefKind::AssocConst) {
         return None;
     }
     // Its `Display`'s `fmt`, the prototype's `toString` (#358).
@@ -1162,7 +1162,7 @@ fn reject_namespace_misuse(tcx: TyCtxt<'_>) -> bool {
                 }
             }
             // A thread-local, its module's namespace as a value (rd293).
-            DefKind::Const { .. } if marked_namespace(tcx, id) => {
+            DefKind::Const if marked_namespace(tcx, id) => {
                 let thread_local = crate::lower::analysis::is_thread_local(tcx, def_id);
                 if !thread_local || value_namespace_exports(tcx, id).is_none() || !tcx.visibility(id).is_public() {
                     refuse(

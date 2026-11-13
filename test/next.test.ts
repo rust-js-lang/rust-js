@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
-import { buildCompiler, compiler, fixture, KeptApp, root, seeded } from "./support";
+import { buildCompiler, cargoBuiltPackages, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 import { browserDeadline, clicked, hydrated, seen } from "./browser-waits";
 
@@ -882,8 +882,8 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(indexHtml).toMatch(/<p class="[\w-]+ [\w-]+" style="font-family:[^"]*Abel[^"]*">Fonted<\/p>/);
   // What Cargo writes isn't the app's, which Turbopack watches: node_modules'.
   // The app's crate's build, not the seed's crates it was given.
-  const fingerprints = join(dir, "node_modules/.cache/rust-js/target/wasm32-unknown-unknown/debug/.fingerprint");
-  expect([existsSync(join(dir, "target")), readdirSync(fingerprints).some((name) => name.startsWith("app-"))]).toEqual([false, true]);
+  const profile = join(dir, "node_modules/.cache/rust-js/target/wasm32-unknown-unknown/debug");
+  expect([existsSync(join(dir, "target")), cargoBuiltPackages(profile).includes("app")]).toEqual([false, true]);
   const statements = (file: string) => readFileSync(join(dir, file), "utf8").split("\n").filter((line) => line && !line.startsWith("//"));
   // A client component's module is one, and a route's default is its page.
   expect(statements("app/counter.jsx")[0]).toBe('"use client";');

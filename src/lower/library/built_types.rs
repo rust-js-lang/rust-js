@@ -4,6 +4,7 @@
 
 use crate::library::TypeTemplate;
 use crate::lower::traits::{BuiltSlots, drop_items, drop_slot};
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 

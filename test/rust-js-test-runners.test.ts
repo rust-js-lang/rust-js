@@ -5,9 +5,9 @@
 // message, a `TypeError` never a panic, a `Result`'s `Err` a failure.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { buildCompiler } from "./support";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
+import { buildCompiler, rustJsUnits } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
 import { underLoad } from "../scripts/timing";
 
@@ -83,8 +83,8 @@ for (const runner of ["node", "bun", "vitest", "jest"]) {
     expect(said).toContain('panic message: "\\"something\\" happened"');
     expect(said).toContain("TypeError");
     expect(said).toContain('Error: "no stock"');
-    const units = join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug/deps/rust-js");
-    const written = [...new Bun.Glob("app-*/lib.test.js").scanSync({ cwd: units })].map((file) => readFileSync(join(units, file), "utf8"));
+    const units = rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"));
+    const written = units.filter((unit) => basename(unit).startsWith("app-") && existsSync(join(unit, "lib.test.js"))).map((unit) => readFileSync(join(unit, "lib.test.js"), "utf8"));
     expect(written.map((js) => js.includes(`import { test } from "${modules[runner]}";`))).toEqual([true]);
   }, underLoad(180_000));
 }

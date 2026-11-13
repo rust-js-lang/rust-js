@@ -183,6 +183,7 @@ fn tested_constants<'tcx>(
 ) {
     if let Some(value) = pattern_value(tcx, pattern) {
         let named = (pattern.extra.as_ref().and_then(|extra| extra.expanded_const))
+            .map(crate::lower::alias_const_def_id)
             .filter(|&d| tcx.generics_of(d).count() == 0);
         // Of a `#[repr(transparent)]` struct, its field's, where MIR tests it.
         let mut path = at.clone();

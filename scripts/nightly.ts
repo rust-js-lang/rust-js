@@ -285,7 +285,7 @@ export const jobs: Record<string, Part[]> = {
       cmd: [
         "sh",
         "-c",
-        `rustup target add wasm32-wasip1 wasm32-unknown-unknown >/dev/null && if [ ! -d wasm/rustc/compiler ]; then rm -rf wasm/rustc && git init -q wasm/rustc && git -C wasm/rustc remote add origin https://github.com/rust-lang/rust.git && git -C wasm/rustc sparse-checkout set --cone compiler library/proc_macro && git -C wasm/rustc fetch -q --depth=1 --filter=blob:none origin "$(bun scripts/toolchain.ts commit)" && git -C wasm/rustc checkout -q FETCH_HEAD; fi`,
+        `rustup target add wasm32-wasip1 wasm32-unknown-unknown >/dev/null && if [ ! -d wasm/rustc/compiler ]; then rm -rf wasm/rustc && git init -q wasm/rustc && git -C wasm/rustc remote add origin https://github.com/rust-lang/rust.git && git -C wasm/rustc sparse-checkout set --cone $(bun scripts/toolchain.ts sources) && git -C wasm/rustc fetch -q --depth=1 --filter=blob:none origin "$(bun scripts/toolchain.ts commit)" && git -C wasm/rustc checkout -q FETCH_HEAD; fi`,
       ],
       cores: 1,
       timeout: 15 * minutes,

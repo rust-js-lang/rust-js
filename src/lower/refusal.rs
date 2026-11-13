@@ -2,7 +2,7 @@
 //! "rust-js does not support .. yet", of a feature, a call or a type; and
 //! of addressable memory, which JavaScript has none of, that, with why.
 
-use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call, open_evidence};
+use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call, open_evidence, open_item};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{ErrorGuaranteed, Span};
@@ -37,7 +37,7 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
             "its crate is its types alone: rust-js couldn't compile it (ADR 0415): {why}"
         ));
     }
-    error.emit()
+    error.emit_err()
 }
 
 /// Why rust-js didn't compile the crate of `id`, a crate of crates.io's it
@@ -90,6 +90,17 @@ pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
     format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
 }
 
+/// What a refused impl is called: "user implementations of
+/// `std::alloc::Allocator`", and where an open issue covers it, that issue.
+pub(crate) fn implementing(tcx: TyCtxt<'_>, trait_id: DefId) -> String {
+    let issue = open_item(tcx, trait_id).map(issue_of);
+    format!(
+        "user implementations of `{}`{}",
+        tcx.def_path_str(trait_id),
+        issue.unwrap_or_default()
+    )
+}
+
 /// What a missing dictionary is called: "implementation evidence for
 /// `<T as Trait>`", and where an open issue covers it, that issue.
 pub(crate) fn evidence<'tcx>(tcx: TyCtxt<'tcx>, tr: rustc_middle::ty::TraitRef<'tcx>) -> String {
@@ -104,5 +115,6 @@ pub(crate) fn issue_of(open: OpenCall) -> &'static str {
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::BuildHasher => " (#1482)",
         OpenCall::CowBorrow => " (#1481)",
+        OpenCall::NewIn1_100 => " (#1656)",
     }
 }

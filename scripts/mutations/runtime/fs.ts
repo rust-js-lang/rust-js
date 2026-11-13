@@ -56,8 +56,8 @@ export const mutations: Mutation[] = [
     name: "open-truncating-reader-allowed",
     breaks: "`read(true).truncate(true)` opens the file, where std refuses it before it opens anything",
     file: "src/runtime/fs.js",
-    find: "  if ((!o.write && !o.append && creating) || (o.append && o.truncate && !o.createNew)) return $openInvalid(asked);",
-    replace: "  if (o.append && o.truncate && !o.createNew) return $openInvalid(asked);",
+    find: "  if (!o.write && !o.append && creating) return $openInvalid(asked);",
+    replace: "  if (false) return $openInvalid(asked);",
     tests: file,
   },
   {
@@ -179,5 +179,13 @@ export const mutations: Mutation[] = [
     find: "  return $fsTry(() => fs.realpathSync.native(path));\n",
     replace: "  return $fsTry(() => $process(\"\").getBuiltinModule(\"node:path\").resolve(path));\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
+  },
+  {
+    name: "append-truncate-in-old-words",
+    breaks: "options that append and truncate fail with 1.99's words, \"creating or truncating a file requires write or append access\", where 1.100 says \"append and truncate cannot both be enabled\" (ADR 0109, amended)",
+    file: "src/runtime/fs.js",
+    find: "  if (o.append && o.truncate && !o.createNew) return $openInvalid(\"append and truncate cannot both be enabled\");\n",
+    replace: "  if (o.append && o.truncate && !o.createNew) return $openInvalid(asked);\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
   },
 ];

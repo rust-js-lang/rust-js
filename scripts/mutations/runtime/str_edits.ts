@@ -47,8 +47,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a `String`'s `retain` whose closure panics leaves the text it had, where std leaves what it kept of the characters before, `\"h\u00e9\"` (#1171)",
     file: "src/runtime/str_edits.js",
-    find: "    if ($unwinds(() => keep(c), () => set(kept))) kept += c;\n",
+    find: "    if ($unwinds(() => keep(c), () => removed && set(kept))) kept += c;\n",
     replace: "    if (keep(c)) kept += c;\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
+  {
+    name: "retain-panic-before-a-removal-truncates",
+    breaks: "a `String`'s `retain` whose closure panics before it removed any leaves what it kept so far, 1.99's, where 1.100's leaves the text whole (ADR 0109, amended)",
+    file: "src/runtime/str_edits.js",
+    find: "    if ($unwinds(() => keep(c), () => removed && set(kept))) kept += c;\n",
+    replace: "    if ($unwinds(() => keep(c), () => set(kept))) kept += c;\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
 ];

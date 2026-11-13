@@ -78,7 +78,7 @@ pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(De
             DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
                 .filter(|&item| match tcx.def_kind(item) {
                     DefKind::AssocFn => tcx.is_mir_available(item),
-                    DefKind::AssocConst { .. } => true,
+                    DefKind::AssocConst => true,
                     _ => false,
                 })
                 .collect(),

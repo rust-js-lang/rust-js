@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
+use rustc_middle::ty::consts::ConstExt as _;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_operand(
@@ -412,7 +413,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the one there is, uncopied, as it's only lent shared.
             if let Const::Unevaluated(named, _) = referred.const_
                 && named.promoted.is_none()
-                && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
+                && matches!(tcx.def_kind(named.def), DefKind::Const)
                 && self.is_rust_fn(named.def)
                 && referred.ty().is_freeze(tcx, self.typing_env)
             {
@@ -428,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(inside) = promoted_some(tcx, &state.facts.promoted()[promoted])
             && let Const::Unevaluated(named, _) = inside.const_
             && named.promoted.is_none()
-            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
+            && matches!(tcx.def_kind(named.def), DefKind::Const)
             && self.is_rust_fn(named.def)
         {
             return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
@@ -440,7 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A named one is read by its name, its item the same form.
         if crate::lower::representation::is_byte_ref(tcx, ty)
             && !matches!(c.const_, Const::Unevaluated(uv, _) if uv.promoted.is_none()
-                && matches!(tcx.def_kind(uv.def), DefKind::Const { .. } | DefKind::AssocConst { .. }))
+                && matches!(tcx.def_kind(uv.def), DefKind::Const | DefKind::AssocConst))
             && let Some(value) = match c.const_ {
                 Const::Val(value, _) => Some(value),
                 // A `const { .. }` block's or a promoted one's, evaluated to
@@ -458,7 +459,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && uv.promoted.is_none()
         {
             match tcx.def_kind(uv.def) {
-                DefKind::Const { .. } | DefKind::AssocConst { .. } => {
+                DefKind::Const | DefKind::AssocConst => {
                     return self.named_const(uv.def, uv.args, ty, c.span);
                 }
                 DefKind::AnonConst => {
@@ -478,11 +479,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Const::Ty(_, ct) = c.const_ {
             match ct.kind() {
                 ty::ConstKind::Param(_) => return self.const_arg(ct, c.span),
+                // An inherent one in "Self form", its args the `Self` type's
+                // and not its impl's, which only unstable const generics
+                // write: refused, as `named_const` takes an impl's args.
+                ty::ConstKind::Alias(_, alias) if matches!(alias.kind, ty::AliasConstKind::InherentSelf { .. }) => {
+                    return Err(self.unsupported(c.span, "an inherent constant named in its `Self` form"));
+                }
                 ty::ConstKind::Alias(_, alias) => {
-                    let (ty::AliasConstKind::Projection { def_id }
-                    | ty::AliasConstKind::Inherent { def_id }
-                    | ty::AliasConstKind::Free { def_id }
-                    | ty::AliasConstKind::Anon { def_id }) = alias.kind;
+                    let def_id = crate::lower::alias_const_def_id(alias.kind);
                     return self.named_const(def_id, alias.args, ty, c.span);
                 }
                 _ => {}

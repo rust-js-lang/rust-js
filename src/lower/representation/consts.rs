@@ -13,6 +13,7 @@ use rustc_hir::def::CtorKind;
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_span::def_id::DefId;
 
 /// A constant value as a JS literal, in the shapes of ADRs 0011, 0013, 0020

@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a copied default is lowered where only its own bounds hold, not its impl's, so a call of the impl's terms resolves to no impl: `Index<Id> for [T]` of its `[B]`, `Holder<I>`'s `Iterator`, `Map<T, F>: Counting`",
     file: "src/lower/traits/given.rs",
-    find: "    let bounds = (impl_env.param_env.caller_bounds().iter())\n",
+    find: "    let bounds = (impl_env.param_env.caller_bounds())\n",
     replace: "    let bounds = (ty::List::<ty::Clause<'tcx>>::empty().iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_crate_index|copied_iterator_defaults|generic_maps|const_param_drops).rs$"],
   },

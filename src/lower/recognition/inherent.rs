@@ -302,7 +302,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                         "escape_debug" => "debug",
                         _ => "unicode",
                     },
-                    str: owner.is_str(),
                 })
             }
             "encode_utf8" if owner.is_char() => Std::Text(TextOp::EncodeUtf8),

@@ -17,5 +17,10 @@ hashbrown = "=0.17.1"
 indexmap = "=2.14.2"
 memchr = "=2.8.3"
 
+# Its library uses none of them: it's here to build them, which Cargo
+# 1.100's lint of an unused dependency would warn of each time.
+[lints.cargo]
+unused_dependencies = "allow"
+
 # Standalone: not part of the rust-js package one directory up.
 [workspace]

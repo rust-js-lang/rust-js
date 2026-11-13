@@ -25,7 +25,7 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
     fn reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId, vars: &mut Vec<LocalVarId>) -> bool {
         match thir[e].kind {
             ExprKind::Scope { value: inner, .. }
-            | ExprKind::Use { source: inner }
+            | ExprKind::ValueExpr { source: inner }
             | ExprKind::Deref { arg: inner }
             | ExprKind::Field { lhs: inner, .. }
             | ExprKind::Unary { arg: inner, .. }

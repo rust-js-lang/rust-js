@@ -80,7 +80,7 @@ pub(crate) fn symbol_name(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<(DefId, S
 
 /// Whether `def` is a use of a field's symbol name the pass wrote.
 fn is_names_field(tcx: TyCtxt<'_>, def: LocalDefId) -> bool {
-    matches!(tcx.def_kind(def), DefKind::Const { .. })
+    matches!(tcx.def_kind(def), DefKind::Const)
         && tcx
             .get_attrs_by_path(
                 def.to_def_id(),
@@ -115,7 +115,7 @@ fn named_in(tcx: TyCtxt<'_>, companion: LocalDefId, field: DefId) -> Option<(Def
                 let base = results.expr_ty_adjusted(base).peel_refs();
                 if let rustc_middle::ty::Adt(adt, _) = base.kind()
                     && adt.non_enum_variant().fields[index].did == self.field
-                    && let Res::Def(DefKind::Static { .. } | DefKind::Const { .. }, item) =
+                    && let Res::Def(DefKind::Static { .. } | DefKind::Const, item) =
                         results.qpath_res(qpath, symbol.hir_id)
                 {
                     self.found = Some((item, symbol.span));

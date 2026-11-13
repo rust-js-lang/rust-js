@@ -635,7 +635,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type that is one is std's or React's, whose default does nothing.
     fn is_node_param(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Param(_))
-            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+            && self.typing_env.param_env.caller_bounds().any(|clause| {
                 clause.as_trait_clause().is_some_and(|tr| {
                     let tr = tr.skip_binder();
                     tr.self_ty() == ty && bindings::is_jsx_node(self.tcx, tr.def_id())

@@ -397,6 +397,12 @@ import { level } from "shared/src/flags";
 - **Each binding crate has its own version**, the same in Cargo and on
   npm: `rust-js-react` 0.0.4 is `@rust-js/react` 0.0.4. Name it `~0.0.4` in
   `Cargo.toml` and `0.0.4` in `package.json`.
-- **The Rust release is rust-js's**, 1.99.0 today, not yours: rust-js runs
+- **The Rust release is rust-js's**, 1.100.0 today, not yours: rust-js runs
   with the rustc it was built with, and Cargo runs that toolchain for your
   build.
+- **Your JS does what that release's std does**, so a rust-js that moves
+  to a new Rust can change your program's output where std's behaviour
+  changed, as a native build would: with 1.100, an iterator's `max()`
+  calls your `Ord::max`, and a `str`'s `escape_debug()` escapes every
+  combining mark, where 1.99 compared by `cmp` and escaped the first
+  ([0109](../../decisions/0109-stable-release.md), amended).

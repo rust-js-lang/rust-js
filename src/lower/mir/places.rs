@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::temporary_names::Role;
+use rustc_middle::ty::consts::ConstExt as _;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A place, for a read or a write.
@@ -304,6 +305,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, out)?;
                 let held = self.spill(Role::Items, base, out);
                 return self.project_mir(state, held, ty, elem, span, out);
+            }
+            // 1.100's, of the unstable `Reborrow` traits alone, which no
+            // stable crate reaches (#1653).
+            PlaceElem::PhantomDeref => {
+                return Err(self.unsupported(span, "a `Reborrow` type's phantom dereference (#1653)"));
             }
             _ => return Err(self.unsupported(span, "this place, from its MIR")),
         })

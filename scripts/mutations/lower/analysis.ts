@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
     file: "src/lower/analysis.rs",
-    find: "DefKind::Fn | DefKind::Const { .. }, _)) => true,",
+    find: "DefKind::Fn | DefKind::Const, _)) => true,",
     replace: "DefKind::Fn, _)) => true,",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
@@ -84,8 +84,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's storage for a `thread_local!` is taken as a static of the crate's, and rejected",
     file: "src/lower/analysis.rs",
-    find: "            DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),",
-    replace: "            DefKind::Static { .. } => !tcx.is_foreign_item(d),",
+    find: "                !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none() && !markers.iter().any(|&(m, _)| m == d)\n",
+    replace: "                !tcx.is_foreign_item(d) && !markers.iter().any(|&(m, _)| m == d)\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_syntax"],
   },
   {
@@ -111,9 +111,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const { .. }` thread-local's value is a `const` of std's name, `__RUST_STD_INTERNAL_INIT`, which nothing reads",
     file: "src/lower/analysis.rs",
-    find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),\n",
+    find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const)),\n",
     replace:
-      "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
+      "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const) && false),\n",
     tests: [
       "test/modules.test.ts",
       "-t",
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
     file: "src/lower/analysis.rs",
-    find: "    tcx.visibility(item.owner_id).is_public()\n        && (match path.res.value_ns {\n",
+    find: "    tcx.visibility(leaf.def_id).is_public()\n        && (match path.res.value_ns {\n",
     replace: "    true\n        && (match path.res.value_ns {\n",
     tests: [
       "test/modules.test.ts",

@@ -7,7 +7,7 @@
 
 use crate::collections::IndexMap;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind, UseKind};
+use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
 use rustc_span::{Span, Symbol, kw};
@@ -28,7 +28,7 @@ pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId) -> bool {
 pub(super) fn held_by_default(tcx: TyCtxt<'_>, def: DefId) -> bool {
     match tcx.def_kind(def) {
         DefKind::Fn => true,
-        DefKind::Const { .. } => tcx.item_name(def) != kw::Underscore,
+        DefKind::Const => tcx.item_name(def) != kw::Underscore,
         _ => false,
     }
 }
@@ -70,21 +70,20 @@ pub(super) struct Alias {
 /// amended). Not one of a binding, which is a JS module's re-export (ADR
 /// 0240).
 pub(super) fn own_aliases(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<Alias> {
-    (tcx.hir_module_free_items(module))
-        .filter_map(|id| {
-            let item = tcx.hir_item(id);
-            let ItemKind::Use(path, UseKind::Single(ident)) = item.kind else {
+    (crate::lower::uses::module_leaves(tcx, module).into_iter())
+        .filter_map(|leaf| {
+            let crate::lower::uses::Leaf::Single(ident) = leaf.kind else {
                 return None;
             };
-            let Some(Res::Def(_, named)) = path.res.value_ns else {
+            let Some(Res::Def(_, named)) = leaf.path.res.value_ns else {
                 return None;
             };
             let own = (named.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module);
-            let aliased = own && super::analysis::is_reexport(tcx, item) && !super::bindings::is_binding(tcx, named);
+            let aliased = own && super::analysis::is_reexport(tcx, &leaf) && !super::bindings::is_binding(tcx, named);
             aliased.then(|| Alias {
                 item: named,
                 name: ident.name,
-                exported: super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+                exported: super::bindings::alias_name(tcx, leaf.def_id.to_def_id(), ident.name),
             })
         })
         .collect()
@@ -162,11 +161,10 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
                         // component's (ADR 0248), or a binding's static (ADR 0633).
                         // Or a JS class, its constructor (ADR 0761), `export
                         // default class` in JS.
-                        ItemKind::Use(path, _) => match (path.res.value_ns, path.res.type_ns) {
-                            (
-                                Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)),
-                                _,
-                            ) => Some(function),
+                        ItemKind::Use(tree) => match (tree.prefix.res.value_ns, tree.prefix.res.type_ns) {
+                            (Some(Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function)), _) => {
+                                Some(function)
+                            }
                             (_, Some(Res::Def(DefKind::Struct, class))) if super::classes::is_class(tcx, class) => {
                                 Some(class)
                             }

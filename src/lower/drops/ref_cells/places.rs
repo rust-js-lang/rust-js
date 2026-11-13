@@ -113,7 +113,7 @@ pub(super) fn borrows_its_cell<'tcx>(
 /// Whether `id` is a thread-local's key, the `const` of a `LocalKey` its
 /// macro makes.
 pub(super) fn thread_local_key(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    matches!(tcx.def_kind(id), DefKind::Const { .. })
+    matches!(tcx.def_kind(id), DefKind::Const)
         && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
             ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), StdItem::LocalKey))
 }
@@ -175,7 +175,7 @@ pub(super) fn made_places<'tcx>(
             places.insert(at);
             at = match thir[at].kind {
                 ExprKind::Scope { value: inner, .. }
-                | ExprKind::Use { source: inner }
+                | ExprKind::ValueExpr { source: inner }
                 | ExprKind::NeverToAny { source: inner }
                 | ExprKind::ValueTypeAscription { source: inner, .. }
                 | ExprKind::PlaceTypeAscription { source: inner, .. } => inner,

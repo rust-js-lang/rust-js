@@ -7,9 +7,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait default's `Self::B` counts as generic code reading `B`, so `()`'s defaults of each other are computed, a cycle",
     file: "src/lower/analysis/generic_consts.rs",
-    find: "        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())\n",
+    find: "        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst) && tcx.trait_of_assoc(body.def_id).is_some())\n",
     replace:
-      "        true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())\n",
+      "        true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst) && tcx.trait_of_assoc(body.def_id).is_some())\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",

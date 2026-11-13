@@ -100,24 +100,22 @@ impl<'tcx> Mir<'tcx> {
             // An `assume` of what an inlined `?` knows of its residual, which
             // runs nothing, goes; and a discriminant read for a switch that
             // went, which the block's terminator no longer tests and nothing
-            // else reads: dropped with it.
+            // else of the block reads: dropped with it. 1.100's derived `Hash`
+            // reads one in its block's call, `write_isize(state, discr)`.
             for data in body.basic_blocks.as_mut() {
                 data.statements.retain(|statement| {
                     !matches!(&statement.kind, StatementKind::Intrinsic(intrinsic)
                         if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)))
                 });
-                let tested = match &data.terminator().kind {
-                    TerminatorKind::SwitchInt { discr, .. } => discr.place().and_then(|place| place.as_local()),
-                    _ => None,
-                };
                 let mut read = ReadLocals(Vec::new());
                 for statement in &data.statements {
                     Visitor::visit_statement(&mut read, statement, mir::Location::START);
                 }
+                Visitor::visit_terminator(&mut read, data.terminator(), mir::Location::START);
                 data.statements.retain(|statement| {
                     !matches!(&statement.kind, StatementKind::Assign(assign)
                         if matches!(assign.1, Rvalue::Discriminant(_))
-                            && assign.0.as_local().is_some_and(|local| tested != Some(local) && !read.0.contains(&local)))
+                            && assign.0.as_local().is_some_and(|local| !read.0.contains(&local)))
                 });
             }
         }

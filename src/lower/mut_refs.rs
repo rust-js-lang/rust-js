@@ -239,7 +239,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let taken_into = |i: usize| {
             inputs.get(i).is_some_and(|&input| {
                 matches!(input.kind(), ty::Param(param) if !super::recognition::is_trait_self(*param))
-                    && bounds.iter().any(|clause| {
+                    && bounds.clone().any(|clause| {
                         clause.as_trait_clause().is_some_and(|bound| {
                             bound.def_id() == into_iterator && bound.self_ty().skip_binder() == input
                         })
@@ -341,7 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// trait, `Iterator` or `IntoIterator`, which is given a function or an
     /// iterator as it is (#992).
     fn read_as_stepped(&self, param_env: ty::ParamEnv<'tcx>, param: Ty<'tcx>) -> bool {
-        (param_env.caller_bounds().iter())
+        (param_env.caller_bounds())
             .filter_map(|clause| clause.as_trait_clause())
             .filter(|bound| bound.self_ty().skip_binder() == param)
             .flat_map(|bound| bound.skip_binder().trait_ref.args.types().skip(1))
@@ -552,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-        bound: ty::PolyTraitPredicate<'tcx>,
+        bound: ty::PolyTraitClause<'tcx>,
     ) -> Vec<Ty<'tcx>> {
         let args = bound.skip_binder().trait_ref.args;
         // Of a trait rust-js compiled, a library's too, whose impls' entries

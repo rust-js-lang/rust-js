@@ -26,6 +26,22 @@ pub(crate) enum OpenCall {
     /// `AsRef` or `Borrow` of a `Cow`, given to generic code: std's impl,
     /// which derefs to what it borrowed or owns, has no dictionary (#1481).
     CowBorrow,
+    /// A std item Rust 1.100 stabilized, the pinned release's, which rust-js
+    /// doesn't lower yet: `Vec::from_fn`, `Rc::map`, an impl of `Allocator`
+    /// (#1656).
+    NewIn1_100,
+}
+
+/// The open issue's family `id`, a std item refused, is of where it's one
+/// the pinned release, 1.100, stabilized: its tracker's (#1656).
+pub(crate) fn open_item(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
+    tcx.lookup_stability(id)
+        .is_some_and(|stability| {
+            matches!(stability.level, rustc_hir::StabilityLevel::Stable {
+                since: rustc_hir::StableSince::Version(version), ..
+            } if (version.major, version.minor) == (1, 100))
+        })
+        .then_some(OpenCall::NewIn1_100)
 }
 
 /// The open issue's family `id`, a refused call, is of, if one is.
@@ -45,6 +61,9 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
         .is_some_and(|trait_id| std_path(tcx, trait_id) == "std::hash::BuildHasher")
     {
         return Some(OpenCall::BuildHasher);
+    }
+    if let Some(open) = open_item(tcx, id) {
+        return Some(open);
     }
     let path = tcx.def_path_str(id);
     let spawns = matches!(

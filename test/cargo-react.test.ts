@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cfgFlags } from "../react/cfg.js";
-import { buildCompiler, buildReact, compiler, fixture, root, run, seeded, target } from "./support";
+import { buildCompiler, buildReact, buildScriptOutputs, compiler, fixture, root, run, seeded, target } from "./support";
 import { cargo, check, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
@@ -82,11 +82,11 @@ test("a Cargo build is for the React release it's asked for, and follows a chang
   const manifest = withReact(dir, usesUseEffectEvent);
   const attempt = (react: string) => check(manifest, { packageNames: ["ui"], react });
   // The build script's `cfg`s are `react/build.sh`'s, from `cfg.js`.
-  const build = join(dir, "target", "wasm32-unknown-unknown", "debug", "build");
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
   const flags = () => {
-    const runs = readdirSync(build).filter((d) => d.startsWith("rust-js-react-") && existsSync(join(build, d, "output")));
+    const runs = buildScriptOutputs(profile, "rust-js-react");
     expect(runs.length).toBe(1);
-    return readFileSync(join(build, runs[0], "output"), "utf8").split("\n").filter((line) => line.startsWith("cargo::rustc-"))
+    return readFileSync(runs[0], "utf8").split("\n").filter((line) => line.startsWith("cargo::rustc-"))
       .map((line) => line.replace("cargo::rustc-cfg=", "--cfg=").replace("cargo::rustc-check-cfg=", "--check-cfg="));
   };
   await expect(attempt("18.2.0")).rejects.toThrow("unresolved import `react::use_effect_event`");

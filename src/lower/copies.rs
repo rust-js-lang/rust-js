@@ -741,7 +741,7 @@ pub(super) fn instance_within_bounds<'tcx>(
         lt_op: |r| r,
         ct_op: |c| c,
     };
-    typing_env.param_env.caller_bounds().iter().all(|bound| {
+    typing_env.param_env.caller_bounds().all(|bound| {
         let bound = bound.fold_with(&mut giving);
         bound.has_param() || {
             let obligation = rustc_trait_selection::traits::Obligation::new(

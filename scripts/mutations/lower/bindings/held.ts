@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use` of a binding through the module that holds it is a `const` of its own, not that module's re-exported",
     file: "src/lower/bindings/held.rs",
-    find: "        let through = named_through(tcx, foreign, module, path.segments, binding, modules);\n",
+    find: "        let through = named_through(tcx, foreign, module, &path.segments, binding, modules);\n",
     replace: "        let through: Option<HeldRead> = None;\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },

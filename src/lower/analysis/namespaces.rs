@@ -153,7 +153,7 @@ fn through(
     };
     // A function, a `const` or a `static`, a thread-local's too, which
     // `thread_local!` makes a `const` (rd114a).
-    let Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function) = path.res else {
+    let Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function) = path.res else {
         return None;
     };
     let [.., module, _] = path.segments else {

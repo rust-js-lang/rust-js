@@ -14302,12 +14302,11 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
 ) {
   $held(a);
   $held(b);
-  let len;
+  let size;
+  let tmp;
   try {
-    len = Math.min(
-      trustedRandomAccessNoCoerce_size(a, AIterator, dropA, dropAItem),
-      trustedRandomAccessNoCoerce_size(b, BIterator, dropB, dropBItem),
-    );
+    size = trustedRandomAccessNoCoerce_size(a, AIterator, dropA, dropAItem);
+    tmp = trustedRandomAccessNoCoerce_size(b, BIterator, dropB, dropBItem);
   } catch (error) {
     $cleanup(() => {
       dropB?.(b);
@@ -14315,6 +14314,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
     }, error);
     throw error;
   }
+  const len = Math.min(size, tmp);
   return $stdIterator(
     { a, b, index: 0, len$: len },
     {

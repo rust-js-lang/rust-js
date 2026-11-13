@@ -28,8 +28,8 @@ function countIterator_next(count) {
 }
 
 export const summedFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
-    summedFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
+  fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    summedFromIteratorU32_fromIter(arg0, dropI, dropIIntoIter),
 };
 function summedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   let sum = 0;
@@ -58,8 +58,8 @@ function summedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
 // What stops early: what's left drops where `from_iter` returns.
 
 export const firstFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
-    firstFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
+  fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    firstFromIteratorU32_fromIter(arg0, dropI, dropIIntoIter),
 };
 function firstFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   const value = $held($intoIter(items));
@@ -80,8 +80,8 @@ function firstFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
 // What panics holding it: it drops as the panic unwinds.
 
 export const refusedFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
-    refusedFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
+  fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    refusedFromIteratorU32_fromIter(arg0, dropI, dropIIntoIter),
 };
 function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   const it = $held($intoIter(items));

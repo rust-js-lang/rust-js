@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use m::{a, b};` is a statement for each name, and its comments are lost (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: "        false => item.vis_span.to(item.span),\n",
-    replace: "        false => item.span,\n",
+    find: "        false => leaf.item.vis_span.to(leaf.span),\n",
+    replace: "        false => leaf.span,\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -169,17 +169,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate's root with an item of its own is taken as re-exporting alone, so it writes no JS where its package's entry re-exports its `pub use`s, its item lost (ADR 1008, amended)",
     file: "src/lower/reexports.rs",
-    find: "            _ => super::analysis::is_reexport(tcx, item),\n",
-    replace: "            _ => true,\n",
-    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
-  },
-  {
-    name: "reexports-alone-list-stem-own",
-    breaks:
-      "a crate's root of `pub use react_client::{CHILDREN, create_element};` is taken as holding an item of its own, the list's stem, so it writes a second entry, React's react.js, beside its package's (rd755, ADR 1008, amended)",
-    file: "src/lower/reexports.rs",
-    find: "            hir::ItemKind::Use(_, hir::UseKind::ListStem) => true,\n",
-    replace: "",
+    find: "                .all(|leaf| !tcx.visibility(leaf.def_id).is_public() || super::analysis::is_reexport(tcx, leaf)),\n            _ => false,\n",
+    replace: "                .all(|leaf| !tcx.visibility(leaf.def_id).is_public() || super::analysis::is_reexport(tcx, leaf)),\n            _ => true,\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
   {
@@ -289,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "through-alias-given-ignored",
     breaks: "a `pub use` through a module that keeps the path's name ignores its own `#[rust_js::name]`, `Frag` (rd338)",
     file: "src/lower/reexports.rs",
-    find: "            true => super::bindings::given_name(tcx, item.owner_id.to_def_id()).unwrap_or_else(|| export.to_string()),\n",
+    find: "            true => super::bindings::given_name(tcx, leaf.def_id.to_def_id()).unwrap_or_else(|| export.to_string()),\n",
     replace: "            true => export.to_string(),\n",
     tests: ["test/reexports-through.test.ts"],
   },
@@ -341,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "type-reexports-left-out",
     breaks: "a `pub use` of a type re-exports nothing in the declarations, so a consumer can't name react-client's `TemporaryReferenceSet` through the Flight client (rd642)",
     file: "src/lower/reexports.rs",
-    find: "        found.push((statement_of(item), from, (export, ident.to_string())));\n",
+    find: "        found.push((statement_of(&leaf), from, (export, ident.to_string())));\n",
     replace: "        let _ = (from, export, ident);\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
@@ -349,8 +340,8 @@ export const mutations: Mutation[] = [
     name: "type-reexport-by-its-own-name",
     breaks: "a `pub use .. as` of a type re-exports it by its own name, `Size`, not the name the `use` gives it, `Measure` (rd642)",
     file: "src/lower/reexports.rs",
-    find: "        found.push((statement_of(item), from, (export, ident.to_string())));\n",
-    replace: "        found.push((statement_of(item), from, (export.clone(), export)));\n",
+    find: "        found.push((statement_of(&leaf), from, (export, ident.to_string())));\n",
+    replace: "        found.push((statement_of(&leaf), from, (export.clone(), export)));\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
   {

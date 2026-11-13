@@ -426,7 +426,7 @@ pub(crate) fn is_check_language_ub(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// The name `id` has in `std::f64::consts`, `LN_2`, if it's one of its
 /// constants, `core`'s by any path (ADR 0887).
 pub(crate) fn f64_const(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
-    if !is_std_crate(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Const { .. }) {
+    if !is_std_crate(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Const) {
         return None;
     }
     std_path(tcx, id).strip_prefix("std::f64::consts::").map(str::to_owned)
@@ -798,6 +798,8 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         // A lang item, which has no diagnostic item.
         StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
         StdItem::UnsafeCell => tcx.is_lang_item(id, LangItem::UnsafeCell),
+        // A lang item since 1.100, which made its diagnostic item one.
+        StdItem::NonNull => tcx.is_lang_item(id, LangItem::NonNull),
         // A crate's whose maps are std's (ADRs 0423, 0424).
         StdItem::HashMap | StdItem::HashSet | StdItem::HashMapEntry if let Some(bound) = bound_map_item(tcx, id) => {
             let name = match item {

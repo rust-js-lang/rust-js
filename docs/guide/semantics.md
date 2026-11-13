@@ -194,8 +194,12 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   one, else std's; `!=` of a reference, a `Box`, an `Rc` or a tuple asks
   its parts' `!=`, std's slice `==` (a `Vec`'s, an array's, a
   `VecDeque`'s, `starts_with`) asks each two `!=` after their lengths, and
-  a B-tree's bulk build asks `!=` of each two in a row, as std's do
-  ([0057](../decisions/0057-ordering.md), amended).
+  a B-tree's bulk build asks `!=` of each two in a row, as std's do; and
+  an iterator's `max()` and `min()` reduce by your `max` and `min`,
+  `$reduceBy(items, pickyOrd_max)`, as Rust 1.100's do, or by std's,
+  `other < self`, where your order is seen
+  ([0057](../decisions/0057-ordering.md), amended;
+  [0109](../decisions/0109-stable-release.md), amended).
 
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
   calling `impl FromStr for Role`'s `from_str`

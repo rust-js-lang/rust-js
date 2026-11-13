@@ -16,7 +16,7 @@ rust-lang/rust clone to take rustc's source from:
 cd wasm
 COMMIT=$(bun ../scripts/toolchain.ts commit)
 git -C <rust clone> worktree add --no-checkout "$PWD/rustc" "$COMMIT"
-git -C rustc sparse-checkout set --cone compiler library/proc_macro
+git -C rustc sparse-checkout set --cone $(bun ../scripts/toolchain.ts sources)
 git -C rustc checkout
 bun run wasm        # runs ./build.sh
 ```

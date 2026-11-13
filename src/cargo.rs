@@ -333,6 +333,21 @@ fn metadata_path(flags: &[String]) -> Option<PathBuf> {
     Some(out_dir.join(format!("lib{name}{extra}.rmeta")))
 }
 
+/// Where rust-js writes each crate's JS of a Cargo build, beside one
+/// another, so one imports another's by a short path, `../shared-1a2b/flags.js`:
+/// the profile directory's `rust-js`, of the crate's `--out-dir`, `out_dir`.
+/// Cargo 1.100 keeps each build step's artifacts in a directory of its own,
+/// `<profile>/build/<package>/<hash>/out`, where 1.99's were `<profile>/deps`
+/// (ADR 0109, amended). The one place rust-js reads Cargo's layout; what
+/// reads the JS reads where it is of the manifest beside the crate's metadata.
+fn js_root(out_dir: &Path) -> PathBuf {
+    let profile = match out_dir.file_name().and_then(|name| name.to_str()) {
+        Some("out") => out_dir.ancestors().nth(4),
+        _ => out_dir.parent(),
+    };
+    profile.unwrap_or(out_dir).join("rust-js")
+}
+
 /// rust-js's arguments for a library Cargo checks for its target.
 fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     let name = flag_values(flags, "--crate-name")
@@ -362,7 +377,7 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     }
     // Each build of the crate Cargo keeps, of a feature set say, has JS of its
     // own, as it has metadata, so a build Cargo has as done is still its JS.
-    let dir = out_dir.join("rust-js").join(format!("{name}{extra}"));
+    let dir = js_root(&out_dir).join(format!("{name}{extra}"));
     // Its `#[test]`s, rust-js's `--test`, which gives rustc its own (ADR 0026):
     // a `.test.js` beside each module's JS that has tests, which `rust-js
     // test` runs (ADRs 0916, 1076). A test build's root is named as its file

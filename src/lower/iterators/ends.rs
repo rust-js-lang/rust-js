@@ -44,9 +44,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `max()` or `min()` of `items`, an iterator of `item`s, or an array:
-    /// of
-    /// what JS's `<` doesn't order, by its `cmp` (ADR 0057), each passed over
-    /// dropped as it's passed, of items with a destructor (ADR 0098).
+    /// of what JS's `<` doesn't order, std's `reduce(Ord::max)` since 1.100,
+    /// by its `Ord::max`, its own or std's (`extreme_fn`), which drops the
+    /// one it doesn't give back; what's left dropped where a step throws, of
+    /// items with a destructor (ADRs 0057, 0098, 0109 amended). Of items
+    /// whose order no one sees and is total, with no `max` of their own,
+    /// by their `cmp`, as each two give the same one either way.
     pub(in crate::lower) fn extreme_of(
         &mut self,
         max: bool,
@@ -55,10 +58,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         Ok(match item {
-            Some(item) if !self.is_primitive_ord(item) => {
+            Some(item) if !self.is_primitive_ord(item) && !self.extreme_by_its_own(item, max) => {
                 let compare = self.cmp_fn(item, false, span)?;
                 let helper = if max { "$maxBy" } else { "$minBy" };
                 self.extreme_by(helper, vec![items, compare], item, (None, None), span)?
+            }
+            Some(item) if !self.is_primitive_ord(item) => {
+                let extreme = self.extreme_fn(item, max, span)?;
+                let boxed = self.boxed_payload(item);
+                let drop = self.std_drop_function(item, span)?;
+                let mut args = vec![items, extreme];
+                if boxed || drop.is_some() {
+                    args.push(Expr::bool(boxed));
+                }
+                args.extend(drop);
+                Expr::call_helper("$reduceBy", args)
             }
             _ => Expr::call(Expr::helper(if max { "$max" } else { "$min" }), vec![items]),
         })

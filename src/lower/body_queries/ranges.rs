@@ -479,7 +479,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 self.scope_ended(e, known);
                 value_range
             }
-            ExprKind::Use { source }
+            ExprKind::ValueExpr { source }
             | ExprKind::NeverToAny { source }
             | ExprKind::ValueTypeAscription { source, .. }
             | ExprKind::PlaceTypeAscription { source, .. } => self.expr(source, known),

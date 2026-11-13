@@ -1,15 +1,13 @@
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
 // (ADR 0327).
 
-// `escape_debug()`: each `char` as `{:?}` shows it, both quotes escaped; a
-// `str`'s Grapheme_Extend ones only first.
-function $escapeDebug(s, str) {
+// `escape_debug()`: each `char` as `{:?}` shows it, both quotes escaped, a
+// `str`'s each as its `char`'s, Grapheme_Extend ones too, as 1.100's are
+// wherever they are, where 1.99 escaped a `str`'s first alone (ADR 0109,
+// amended).
+function $escapeDebug(s) {
   let out = "";
-  let first = true;
-  for (const c of s) {
-    out += $debugChar(c, "'\"", !str || first);
-    first = false;
-  }
+  for (const c of s) out += $debugChar(c, "'\"", true);
   return out;
 }
 

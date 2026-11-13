@@ -58,8 +58,23 @@ fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); 
   expect(existsSync(read.tests.files[0])).toBe(true);
 });
 
+// A library's contract names its crate's hash as it's lowered, before its
+// metadata is encoded: 1.100's rustc hashes the encoded metadata unless
+// told `-Z metadata-crate-hash=no`, which rust-js sets in its session, and
+// panics where it's asked before (ADR 0109, amended). And the hash is the
+// one its metadata keeps, which a consumer reads.
+test("a library's manifest names its crate's hash, rustc's of its HIR", () => {
+  buildCompiler();
+  const dir = fixture("manifest-crate-hash");
+  writeFileSync(join(dir, "lib.rs"), "pub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
+  const out = join(dir, "out");
+  run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js"), "--library", "--manifest", join(out, "manifest.json"), "--", "--crate-name", "doubled"]);
+  const read = JSON.parse(readFileSync(join(out, "manifest.json"), "utf8"));
+  expect(read.library.crate_hash).toMatch(/^[0-9a-f]{16,}$/);
+});
+
 test("compiler identities reject incompatible ABI and missing version fields", () => {
-  const identity = { version: "0.1.0", toolchain: "1.99.0", abi: 1 };
+  const identity = { version: "0.1.0", toolchain: "1.100.0", abi: 1 };
   expect(parseCompilerIdentity(JSON.stringify(identity))).toEqual(identity);
   // ADR 1003: and which build of it, a hash of what it's made of.
   const built = { ...identity, build: "52c100506ffb5402" };

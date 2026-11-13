@@ -11,8 +11,8 @@ function id(_, TAny) {
 }
 
 function main() {
-  const any$1 = { typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f" };
-  const any = { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" };
+  const any$1 = { typeId: () => "lib::main::{{closure}}#a72454db533dc929b23740e25643acf2" };
+  const any = { typeId: () => "lib::main::{{closure}}#ffcd8f8469f8b18fcff1e5834373ec98" };
   const a = (x) => (x + 1) >>> 0;
   const b = (x) => (x + 1) >>> 0;
   console.log(`${id(a, any) === id(b, any$1)}`);

@@ -22,7 +22,7 @@ function main() {
   const first = $next(e);
   const rest = Array.from(e).join("");
   console.log(`${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${rest}`);
-  const u = $iter(Array.from($escapeDebug("ab", true)));
+  const u = $iter(Array.from($escapeDebug("ab")));
   const next = $next(u);
   console.log(`${next == null ? "None" : `Some(${$debugStr(next, "'")})`} ${$restStr(u)}`);
   const w = $iter(Array.from($escapeUnicode("\t")));

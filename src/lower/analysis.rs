@@ -489,17 +489,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .definitions()
         .filter(|&d| match tcx.def_kind(d) {
             // Not a `js::import!`'s, which rust-js reads (ADR 0110).
-            DefKind::Const { .. } => {
+            DefKind::Const => {
                 !markers.iter().any(|&(m, _)| m == d)
                     && !from_serde_derive(tcx, d)
                     && !bindings::is_mark(tcx, d.to_def_id())
             }
-            // Not std's storage for a thread-local, which JS needs none of.
-            DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),
+            // Not std's storage for a thread-local, which JS needs none of;
+            // nor a test's marker, a `static` since 1.100, which the JS
+            // runner takes the place of (ADR 0026).
+            DefKind::Static { .. } => {
+                !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none() && !markers.iter().any(|&(m, _)| m == d)
+            }
             // An impl's own, of a type, not a dictionary's (ADR 0176): a
             // constant of its module too (ADR 0410); a class's, its
             // prototype's property, whoever reads it (ADR 0761).
-            DefKind::AssocConst { .. } => {
+            DefKind::AssocConst => {
                 impl_const(tcx, d.to_def_id())
                     || exported_value_const(tcx, d.to_def_id())
                     || super::classes::member(tcx, d.to_def_id()) == Some(super::classes::Member::Const)
@@ -547,7 +551,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             consts
                 .iter()
                 .copied()
-                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),
+                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const)),
         )
         .filter_map(|d| Some((d, init_of(tcx, d)?)))
         .collect();
@@ -908,9 +912,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         if bindings::marks(tcx, module, "import").next().is_some() && seen_modules.insert(module) {
             modules.push(module);
         }
-        let reexports = tcx
-            .hir_module_free_items(module)
-            .any(|id| is_reexport(tcx, tcx.hir_item(id)))
+        let reexports = (crate::lower::uses::module_leaves(tcx, module).iter()).any(|leaf| is_reexport(tcx, leaf))
             || super::reexports::globs_values(tcx, module);
         // Or a default that's another module's function (ADR 0240).
         let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
@@ -1169,14 +1171,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 /// a function, the crate's, a library's or a binding's, or of a binding's
 /// `static`; and of the crate's module, its namespace, or a class (ADR 0240,
 /// amended).
-pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
-    let rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = item.kind else {
+pub(super) fn is_reexport(tcx: TyCtxt<'_>, leaf: &crate::lower::uses::UseLeaf<'_>) -> bool {
+    let (crate::lower::uses::Leaf::Single(_), path) = (leaf.kind, &leaf.path) else {
         return false;
     };
-    tcx.visibility(item.owner_id).is_public()
+    tcx.visibility(leaf.def_id).is_public()
         && (match path.res.value_ns {
             // A function's, and a constant's, its module's `const` (ADR 0596).
-            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. }, _)) => true,
+            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const, _)) => true,
             Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),
             _ => false,
         } || match path.res.type_ns {

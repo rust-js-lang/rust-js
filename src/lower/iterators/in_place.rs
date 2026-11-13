@@ -20,9 +20,10 @@ pub(super) const LAST_HELPERS: [&str; 2] = ["$last", "$lastSome"];
 /// and `unzip`'s; and of each that may be given its items' drop, which
 /// argument it is. An array given with it is the helper's own, closed as
 /// `$closing($iter(xs), $dropEach(drop))` (#423).
-const HELPERS_STEPPING_ALL: [(&str, Option<usize>); 8] = [
+const HELPERS_STEPPING_ALL: [(&str, Option<usize>); 9] = [
     ("$max", None),
     ("$min", None),
+    ("$reduceBy", Some(3)),
     ("$maxBy", Some(3)),
     ("$minBy", Some(3)),
     ("$maxByKey", Some(4)),

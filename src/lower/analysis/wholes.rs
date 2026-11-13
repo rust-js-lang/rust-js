@@ -121,7 +121,7 @@ impl Wholes {
                 DefKind::Fn => bodies
                     .iter()
                     .any(|body| body.def_id == init.to_def_id() && body.mir.is_some()),
-                DefKind::Const { .. } => (tcx.const_eval_poly(init.to_def_id()).ok())
+                DefKind::Const => (tcx.const_eval_poly(init.to_def_id()).ok())
                     .and_then(|value| value.try_to_scalar_int())
                     .is_some_and(|scalar| whole_number(f64::from_bits(scalar.to_bits_unchecked() as u64))),
                 _ => false,
@@ -141,7 +141,7 @@ impl Wholes {
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(
                 tcx.def_kind(id),
-                DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Static { .. }
+                DefKind::Const | DefKind::AssocConst | DefKind::Static { .. }
             ) {
                 constant.holds(tcx.type_of(id).instantiate_identity().skip_normalization());
             }

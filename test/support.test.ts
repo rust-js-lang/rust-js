@@ -15,7 +15,7 @@ import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
 import { runSync } from "./child";
-import { cargoApp, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
+import { cargoApp, cargoArtifacts, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -361,14 +361,14 @@ test("an app's Cargo target made from the run's seed finds the binding crates ch
   cargoApp(dir, "pub fn answer() -> u32 {\n    42\n}\n", { react: true });
   const made = seeded(join(dir, "target"));
   expect(() => seeded(made)).toThrow("a seed is a new target's");
-  const deps = join(made, "wasm32-unknown-unknown", "debug", "deps");
-  const webapi = readdirSync(deps).filter((name) => /^libwebapi-[0-9a-f]+\.rmeta$/.test(name));
+  const profile = join(made, "wasm32-unknown-unknown", "debug");
+  const webapi = cargoArtifacts(profile).filter((file) => /^libwebapi-[0-9a-f]+\.rmeta$/.test(basename(file)));
   expect(webapi.length).toBe(1);
-  const before = statSync(join(deps, webapi[0])).mtimeMs;
+  const before = statSync(webapi[0]).mtimeMs;
   const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build"], dir, 600_000, { CARGO_TARGET_DIR: made });
   expect([built.code, built.stderr]).toEqual([0, ""]);
-  expect(readdirSync(deps).filter((name) => /^libapp-[0-9a-f]+\.rmeta$/.test(name)).length).toBe(1);
-  expect(statSync(join(deps, webapi[0])).mtimeMs).toBe(before);
+  expect(cargoArtifacts(profile).filter((file) => /^libapp-[0-9a-f]+\.rmeta$/.test(basename(file))).length).toBe(1);
+  expect(statSync(webapi[0]).mtimeMs).toBe(before);
   const incremental = join(made, "wasm32-unknown-unknown", "debug", "incremental");
   expect(readdirSync(incremental).filter((name) => /^(webapi|react|js)-/.test(name))).toEqual([]);
 }, 600_000);
@@ -471,9 +471,9 @@ test("a worktree's stores are the main checkout's", () => {
 // Rust's toolchains development installed and nothing pins now go; a
 // floating channel's are the user's own (#1213).
 test("an old pin's toolchain is one to remove, a floating channel's never", () => {
-  const listed = ["stable-aarch64-apple-darwin (default)", "nightly-aarch64-apple-darwin", "1.98.1-aarch64-apple-darwin", "1.99.0-aarch64-apple-darwin (active)", "nightly-2026-03-25-x86_64-unknown-linux-gnu"];
-  expect(unpinnedToolchains(listed, new Set(["1.99.0"]))).toEqual(["1.98.1-aarch64-apple-darwin", "nightly-2026-03-25-x86_64-unknown-linux-gnu"]);
-  expect(pinnedToolchains().has("1.99.0")).toBe(true);
+  const listed = ["stable-aarch64-apple-darwin (default)", "nightly-aarch64-apple-darwin", "1.98.1-aarch64-apple-darwin", "1.100.0-aarch64-apple-darwin (active)", "nightly-2026-03-25-x86_64-unknown-linux-gnu"];
+  expect(unpinnedToolchains(listed, new Set(["1.100.0"]))).toEqual(["1.98.1-aarch64-apple-darwin", "nightly-2026-03-25-x86_64-unknown-linux-gnu"]);
+  expect(pinnedToolchains().has("1.100.0")).toBe(true);
 });
 
 // A store with no bound of its own, the temp root's, is held by its

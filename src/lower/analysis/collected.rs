@@ -100,7 +100,7 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             // 0176). And a trait's default, which a library's dictionary reads
             // as its initializer, never computed where no consumer reads it.
             // Of one with a body: a `type const` has none.
-            DefKind::AssocConst { .. } => {
+            DefKind::AssocConst => {
                 (tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()
                     || tcx.trait_of_assoc(def_id.to_def_id()).is_some())
                     && tcx.hir_maybe_body_owned_by(def_id).is_some()
@@ -183,7 +183,7 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
     let evaluated = |def_id: LocalDefId| {
         matches!(
             tcx.def_kind(def_id),
-            DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Static { .. } | DefKind::AnonConst
+            DefKind::Const | DefKind::AssocConst | DefKind::Static { .. } | DefKind::AnonConst
         ) || tcx.is_const_fn(def_id.to_def_id())
     };
     let mut order: Vec<usize> = (0..bodies.len()).collect();
@@ -197,8 +197,8 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
             DefKind::Fn
                 | DefKind::AssocFn
                 | DefKind::Closure
-                | DefKind::Const { .. }
-                | DefKind::AssocConst { .. }
+                | DefKind::Const
+                | DefKind::AssocConst
                 | DefKind::Static { .. }
                 | DefKind::AnonConst
         ) {
@@ -268,7 +268,7 @@ pub(in crate::lower) fn impl_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// code is (ADR 0410), each use still its value where it's written, as a
 /// TypeScript `const enum`'s is (#498).
 pub(in crate::lower) fn exported_value_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    matches!(tcx.def_kind(def_id), DefKind::AssocConst { .. })
+    matches!(tcx.def_kind(def_id), DefKind::AssocConst)
         && tcx.inherent_impl_of_assoc(def_id).is_some()
         && tcx.generics_of(def_id).count() == 0
         && crate::lower::classes::member(tcx, def_id).is_none()
@@ -333,10 +333,8 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     tcx.hir_crate_items(())
         .definitions()
         .filter(|&def_id| match tcx.def_kind(def_id) {
-            DefKind::Const { .. } | DefKind::Static { .. } => true,
-            DefKind::AssocConst { .. } => {
-                impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id())
-            }
+            DefKind::Const | DefKind::Static { .. } => true,
+            DefKind::AssocConst => impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id()),
             _ => false,
         })
         .chain(inline_consts(tcx))

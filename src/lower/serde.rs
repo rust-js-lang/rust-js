@@ -63,9 +63,9 @@ pub type SerdeAttributes = IndexMap<DefId, Vec<SerdeItem>>;
 pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
     struct Collector<'r, 'tcx> {
         found: SerdeAttributes,
-        resolver: &'r ty::ResolverAstLowering<'tcx>,
+        resolver: &'r rustc_middle::middle::resolve::ResolverAstLowering<'tcx>,
         /// The item whose variants and fields are visited, its resolver's.
-        owner: Option<&'r ty::PerOwnerResolverData<'tcx>>,
+        owner: Option<&'r rustc_middle::middle::resolve::PerOwnerResolverData<'tcx>>,
     }
     impl Collector<'_, '_> {
         /// The `DefId` of the node `id`: an item's own, or of a variant's or a

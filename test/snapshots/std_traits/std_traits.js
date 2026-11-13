@@ -22,13 +22,13 @@ import {
   $lazyRange,
   $lent,
   $max,
-  $maxBy,
   $minBy,
   $ord,
   $partialCmp,
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
+  $reduceBy,
   $roomForHint,
   $some,
   $thenCmp,
@@ -405,9 +405,9 @@ function wordOrd_cmp(word, other) {
 }
 
 export function largest(xs, TOrd, TCopy) {
-  return $maxBy(
+  return $reduceBy(
     xs.values().map((item) => (TCopy ? TCopy.copy(item) : item)),
-    TOrd.cmp,
+    TOrd.max,
   );
 }
 

@@ -787,7 +787,7 @@ fn owners_made_others<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'t
 /// so a function no other `Rc` holds (rd231)?
 fn made_of_a_new_function(tcx: TyCtxt<'_>, thir: &Thir<'_>, rc: ExprId) -> bool {
     let through = |mut e: ExprId| {
-        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
             e = inner;
         }
         e
@@ -818,7 +818,7 @@ fn made_of_a_new_function(tcx: TyCtxt<'_>, thir: &Thir<'_>, rc: ExprId) -> bool 
 /// Is `owner`, an `Rc` or an `Arc` unsized, made right there,
 /// `Rc::new(f)`'s, so no clone of it is made before (#1053)?
 fn made_where_unsized(tcx: TyCtxt<'_>, thir: &Thir<'_>, mut owner: ExprId) -> bool {
-    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[owner].kind {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[owner].kind {
         owner = inner;
     }
     let ExprKind::Call { fun, .. } = thir[owner].kind else {
@@ -830,7 +830,7 @@ fn made_where_unsized(tcx: TyCtxt<'_>, thir: &Thir<'_>, mut owner: ExprId) -> bo
 /// Is `given`, what `Rc::new` is given, a closure made there, `Rc::new(move
 /// || ..)`, a JS function no other value is (ADR 0959)?
 fn made_where_given(thir: &Thir<'_>, mut given: ExprId) -> bool {
-    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[given].kind {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[given].kind {
         given = inner;
     }
     matches!(thir[given].kind, ExprKind::Closure(_))

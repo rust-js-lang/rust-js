@@ -1,4 +1,5 @@
-# Vec 42 of 48; bodies: 4 safe, 0 spec, 0 opaque, 44 memory, 0 none
+# Vec 42 of 56; bodies: 5 safe, 1 spec, 0 opaque, 50 memory, 0 none
+- Vec::allocator	safe
 + Vec::append	memory
 + Vec::as_mut_ptr	memory
 + Vec::as_mut_slice	memory
@@ -13,18 +14,24 @@
 + Vec::extend_from_slice	memory
 + Vec::extend_from_within	memory
 + Vec::extract_if	safe
+- Vec::from_fn	spec
 - Vec::from_parts	memory
+- Vec::from_parts_in	memory
 + Vec::from_raw_parts	memory
+- Vec::from_raw_parts_in	memory
 + Vec::insert	memory
 + Vec::insert_mut	memory
 + Vec::into_boxed_slice	memory
 + Vec::into_flattened	memory
 - Vec::into_parts	memory
+- Vec::into_parts_with_allocator	memory
 - Vec::into_raw_parts	memory
+- Vec::into_raw_parts_with_allocator	memory
 + Vec::is_empty	safe
 + Vec::leak	memory
 + Vec::len	safe
 + Vec::new	memory
+- Vec::new_in	memory
 + Vec::pop	memory
 + Vec::pop_if	memory
 + Vec::push	memory
@@ -47,6 +54,7 @@
 - Vec::try_reserve	memory
 - Vec::try_reserve_exact	memory
 + Vec::with_capacity	memory
+- Vec::with_capacity_in	memory
 # VecDeque 53 of 55; bodies: 2 safe, 0 spec, 0 opaque, 53 memory, 0 none
 + VecDeque::append	memory
 + VecDeque::as_mut_slices	memory
@@ -357,7 +365,7 @@
 + Result::unwrap_or_default	safe
 + Result::unwrap_or_else	safe
 + Result::unwrap_unchecked	safe
-# Rc 14 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
+# Rc 14 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
 + Rc::as_ptr	memory
 - Rc::assume_init	memory
 - Rc::decrement_strong_count	memory
@@ -369,6 +377,7 @@
 + Rc::into_inner	memory
 - Rc::into_raw	memory
 + Rc::make_mut	memory
+- Rc::map	memory
 + Rc::new	memory
 + Rc::new_cyclic	memory
 - Rc::new_uninit	memory
@@ -381,7 +390,7 @@
 + Rc::try_unwrap	memory
 + Rc::unwrap_or_clone	memory
 + Rc::weak_count	memory
-# Arc 14 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
+# Arc 14 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
 + Arc::as_ptr	memory
 - Arc::assume_init	memory
 - Arc::decrement_strong_count	memory
@@ -393,6 +402,7 @@
 + Arc::into_inner	memory
 - Arc::into_raw	memory
 + Arc::make_mut	memory
+- Arc::map	memory
 + Arc::new	memory
 + Arc::new_cyclic	memory
 - Arc::new_uninit	memory
@@ -559,23 +569,31 @@
 - String::try_reserve	none
 - String::try_reserve_exact	none
 + String::with_capacity	memory
-# Box 13 of 17; bodies: 2 safe, 0 spec, 0 opaque, 15 memory, 0 none
+# Box 13 of 25; bodies: 3 safe, 0 spec, 0 opaque, 22 memory, 0 none
+- Box::allocator	safe
 - Box::as_mut_ptr	memory
 - Box::as_ptr	safe
 + Box::assume_init	memory
 + Box::downcast	memory
 - Box::from_non_null	memory
+- Box::from_non_null_in	memory
 + Box::from_raw	memory
+- Box::from_raw_in	memory
 - Box::into_non_null	memory
+- Box::into_non_null_with_allocator	memory
 + Box::into_pin	safe
 + Box::into_raw	memory
+- Box::into_raw_with_allocator	memory
 + Box::leak	memory
+- Box::map	memory
 + Box::new	memory
+- Box::new_in	memory
 + Box::new_uninit	memory
 + Box::new_uninit_slice	memory
 + Box::new_zeroed	memory
 + Box::new_zeroed_slice	memory
 + Box::pin	memory
+- Box::take	memory
 + Box::write	memory
 # Pin 15 of 16; bodies: 16 safe, 0 spec, 0 opaque, 0 memory, 0 none
 - Pin::as_deref_mut	safe
@@ -594,7 +612,7 @@
 + Pin::set	safe
 + Pin::static_mut	safe
 + Pin::static_ref	safe
-# str 80 of 83; bodies: 3 safe, 12 spec, 0 opaque, 62 memory, 6 none
+# str 80 of 85; bodies: 3 safe, 14 spec, 0 opaque, 63 memory, 5 none
 + str::as_bytes	memory
 - str::as_bytes_mut	memory
 - str::as_mut_ptr	memory
@@ -607,7 +625,7 @@
 + str::encode_utf16	memory
 + str::ends_with	spec
 + str::eq_ignore_ascii_case	memory
-+ str::escape_debug	none
++ str::escape_debug	memory
 + str::escape_default	memory
 + str::escape_unicode	memory
 + str::find	spec
@@ -674,11 +692,13 @@
 + str::trim_left	memory
 + str::trim_left_matches	memory
 + str::trim_matches	memory
+- str::trim_prefix	spec
 + str::trim_right	memory
 + str::trim_right_matches	memory
 + str::trim_start	memory
 + str::trim_start_matches	memory
-# slice 129 of 133; bodies: 35 safe, 8 spec, 0 opaque, 90 memory, 0 none
+- str::trim_suffix	spec
+# slice 129 of 135; bodies: 35 safe, 8 spec, 0 opaque, 92 memory, 0 none
 - slice::align_to	memory
 - slice::align_to_mut	memory
 + slice::array_windows	memory
@@ -808,6 +828,8 @@
 + slice::trim_ascii	safe
 + slice::trim_ascii_end	safe
 + slice::trim_ascii_start	safe
+- slice::trim_prefix	memory
+- slice::trim_suffix	memory
 + slice::utf8_chunks	safe
 + slice::windows	memory
 + slice::write_clone_of_slice	memory
@@ -1020,7 +1042,7 @@
 + Skip::size_hint	memory
 + Skip::try_fold	spec
 + Skip::try_rfold	memory
-# Take 12 of 12; bodies: 5 safe, 4 spec, 0 opaque, 3 memory, 0 none
+# Take 12 of 12; bodies: 4 safe, 4 spec, 0 opaque, 4 memory, 0 none
 + Take::count	memory
 + Take::fold	spec
 + Take::for_each	safe
@@ -1030,7 +1052,7 @@
 + Take::nth	safe
 + Take::nth_back	memory
 + Take::rfold	spec
-+ Take::size_hint	safe
++ Take::size_hint	memory
 + Take::try_fold	spec
 + Take::try_rfold	spec
 # SkipWhile 3 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none

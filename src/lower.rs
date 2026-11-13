@@ -16,6 +16,7 @@
 //! to `Body`.
 
 use crate::collections::{IndexMap, IndexSet};
+use rustc_middle::ty::consts::ConstExt as _;
 use std::cell::{Cell, RefCell};
 
 use std::rc::Rc;
@@ -93,6 +94,7 @@ use temporary_names::{Base, Role};
 mod traits;
 mod unions;
 mod untagged;
+mod uses;
 
 use crate::names::{fresh_in, js_ident};
 pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies};
@@ -253,6 +255,19 @@ pub(crate) fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)
     match *ty.kind() {
         ty::FnDef(def_id, args) => Some((def_id, args.no_bound_vars().expect("a body's function item, unbound"))),
         _ => None,
+    }
+}
+
+/// The constant a constant alias names: an associated const of a trait or
+/// of an impl, a free one or an anonymous one. Each of 1.100's kinds, none
+/// by a wildcard, so a kind a release adds is asked here first.
+pub(crate) fn alias_const_def_id(kind: ty::AliasConstKind<'_>) -> DefId {
+    match kind {
+        ty::AliasConstKind::Projection { def_id }
+        | ty::AliasConstKind::InherentSelf { def_id }
+        | ty::AliasConstKind::InherentImpl { def_id }
+        | ty::AliasConstKind::Free { def_id }
+        | ty::AliasConstKind::Anon { def_id } => def_id,
     }
 }
 

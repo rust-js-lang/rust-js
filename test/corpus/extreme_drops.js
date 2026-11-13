@@ -19,6 +19,7 @@ import {
   $ord,
   $partialEq,
   $partialOrd,
+  $reduceBy,
   $someValue,
   $unwindsOn,
 } from "@rust-js/std";
@@ -89,7 +90,7 @@ function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
   let result;
   try {
-    result = $maxBy(iter, IItemOrd.cmp, true, dropIItem);
+    result = $reduceBy(iter, (a, b) => IItemOrd.max(a, b, dropIItem), true, dropIItem);
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold) {

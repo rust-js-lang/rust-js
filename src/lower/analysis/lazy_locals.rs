@@ -821,7 +821,7 @@ fn held_of(tcx: TyCtxt<'_>, id: DefId) -> Option<(Ty<'_>, bool)> {
     let ty = || tcx.type_of(id).instantiate_identity().skip_normalization();
     match tcx.def_kind(id) {
         DefKind::Static { .. } => Some((ty(), true)),
-        DefKind::Const { .. } => match ty().kind() {
+        DefKind::Const => match ty().kind() {
             ty::Adt(key, args)
                 if crate::lower::recognition::is_std_def(
                     tcx,

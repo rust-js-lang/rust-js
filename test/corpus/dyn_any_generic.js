@@ -84,21 +84,21 @@ function main() {
   const f = {
     value: first,
     impl: {
-      typeId: () => "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe",
+      typeId: () => "fn(&'_ alloc::string::String) -> &'_ str#ed1c8cde466dbccb8d507baa915fd230",
     },
   };
   console.log(
-    `${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe"} ${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &str#1640b6a367c494fbf6715693d04896bb"}`,
+    `${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &'_ str#ed1c8cde466dbccb8d507baa915fd230"} ${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &str#ea2e3c819ce8b8667695f442ee51b16e"}`,
   );
   console.log(`${(made(), "Any { .. }")}`);
   const held = {
     value: { value: "h", impl: stringAsStr },
     impl: {
-      typeId: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d",
+      typeId: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#a4723f2e943346c57cba557cdacb696f",
     },
   };
   console.log(
-    `${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d"} ${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#89c2aaac78c7d3d1d025385a90e83325"}`,
+    `${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#a4723f2e943346c57cba557cdacb696f"} ${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#ed78faf84e3b5380d515f937dca33952"}`,
   );
 }
 //# sourceMappingURL=case.js.map

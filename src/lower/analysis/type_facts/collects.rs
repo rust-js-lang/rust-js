@@ -172,7 +172,7 @@ fn in_place_asked<'tcx>(
 fn collected_through_a_bound<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, output: ty::Ty<'tcx>) -> bool {
     let from_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::FromIterator);
     output.has_param()
-        && (typing_env.param_env.caller_bounds().iter()).any(|clause| {
+        && (typing_env.param_env.caller_bounds()).any(|clause| {
             clause
                 .as_trait_clause()
                 .is_some_and(|bound| bound.def_id() == from_iterator && bound.skip_binder().self_ty() == output)

@@ -16,7 +16,7 @@ export const quotedWrite = {
   writeFmt: $quotedWrite_writeStr,
 };
 function quotedWrite_writeStr(quoted, s) {
-  quoted[0].value += $escapeDebug(s, true);
+  quoted[0].value += $escapeDebug(s);
 }
 
 export const messageDebug = { fmt: messageDebug_fmt };

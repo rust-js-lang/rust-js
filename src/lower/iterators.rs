@@ -532,7 +532,7 @@ fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::Param
 /// `mem::replace`'s `T` and `Vec::push`'s do (#537).
 pub(in crate::lower) fn bound_as_iterator(tcx: ty::TyCtxt<'_>, callee: DefId, param: ty::ParamTy) -> bool {
     let (iterator, into_iterator) = (std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator));
-    (tcx.param_env(callee).caller_bounds().iter())
+    (tcx.param_env(callee).caller_bounds())
         .filter_map(|clause| clause.as_trait_clause())
         .any(|bound| {
             matches!(bound.self_ty().skip_binder().kind(), ty::Param(p) if p.index == param.index)

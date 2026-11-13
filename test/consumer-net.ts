@@ -429,7 +429,7 @@ export const templates: Template[] = [
   ]),
   // Each `FromIterator`.
   t("collect Vec", ["FromIterator<T> for Vec<T>", "Iterator::collect"], "L", collected("Vec<L>")),
-  t("collect Box<[T]>", ["FromIterator<I> for Box<[I]>"], "L", collected("Box<[L]>")),
+  t("collect Box<[T]>", ["FromIterator<T> for Box<[T]>"], "L", collected("Box<[L]>")),
   t("collect Rc<[T]>", ["FromIterator<T> for Rc<[T]>"], "L", collected("std::rc::Rc<[L]>")),
   t("collect Arc<[T]>", ["FromIterator<T> for Arc<[T]>"], "L", collected("std::sync::Arc<[L]>")),
   t("collect Cow<[T]>", ["FromIterator<T> for Cow<'a, [T]>"], "L", collected("std::borrow::Cow<'static, [L]>")),
@@ -461,8 +461,8 @@ export const templates: Template[] = [
       ["String", "String"],
     ] as const
   ).map(([kind, item]) => t(`collect Cow<str> of ${kind}`, [`FromIterator<${item}> for Cow<'a, str>`], kind, collected("std::borrow::Cow<'static, str>"))),
-  t("collect Option", ["FromIterator<Option<A>> for Option<V>"], "Option<L>", collected("Option<Vec<L>>")),
-  t("collect Result", ["FromIterator<Result<A, E>> for Result<V, E>"], "Result<L>", collected("Result<Vec<L>, L>")),
+  t("collect Option", ["FromIterator<Option<T>> for Option<V>"], "Option<L>", collected("Option<Vec<L>>")),
+  t("collect Result", ["FromIterator<Result<T, E>> for Result<V, E>"], "Result<L>", collected("Result<Vec<L>, L>")),
   t("collect ()", ["FromIterator<()> for ()"], "()", collected("()")),
   t("collect (Vec,)", ["FromIterator<(T,)> for (ExtendT,)"], "(L,)", collected("(Vec<L>,)")),
   t("collect (Vec, Vec)", ["impl_extend_tuple: FromIterator<($($ty,)+)> for ($($extend_ty,)+)"], "(L, L)", collected("(Vec<L>, Vec<L>)")),

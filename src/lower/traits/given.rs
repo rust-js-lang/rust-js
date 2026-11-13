@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
+use rustc_middle::ty::consts::ConstExt as _;
 
 /// What a copied default body replaced of the given of the item it's
 /// lowered in, its evidence, arguments, const parameters and caller's
@@ -85,10 +86,10 @@ pub(in crate::lower) fn default_typing_env<'tcx>(
     });
     let in_impl = ty::elaborate::elaborate(tcx, in_impl);
     let mut seen = IndexSet::default();
-    let bounds = (impl_env.param_env.caller_bounds().iter())
+    let bounds = (impl_env.param_env.caller_bounds())
         .chain(in_impl)
         .filter(|&clause| seen.insert(clause));
-    let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds));
+    let param_env = ty::ParamEnv::new(tcx, bounds);
     ty::TypingEnv::new(param_env, own.typing_mode())
 }
 

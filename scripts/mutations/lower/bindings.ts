@@ -78,9 +78,8 @@ export const mutations: Mutation[] = [
     name: "primitive-thread-local-camel",
     breaks: "`REACT_ELEMENT_TYPE` of a symbol is `reactElementType`",
     file: "src/lower/bindings.rs",
-    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {\n",
-    replace:
-      "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => {\n",
+    find: "        DefKind::Const if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => name.to_string(),\n",
+    replace: "        DefKind::Const if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => name.to_string(),\n",
     tests: [
       "test/lowering-names.test.ts",
       "-t",
@@ -345,9 +344,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local keeps its `SCREAMING_SNAKE` name, `let TASK_ID_COUNTER`, where JS names a variable camelCase",
     file: "src/lower/bindings.rs",
-    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
+    find: "        DefKind::Const if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
     replace:
-      "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
+      "        DefKind::Const if false && thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
     tests: [
       "test/lowering-names.test.ts",
       "-t",
@@ -664,8 +663,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::link_name]` on a constant, webapi's `Node.ELEMENT_NODE`, is refused as on no function (rd618)",
     file: "src/lower/bindings.rs",
-    find: "                    DefKind::Fn | DefKind::AssocFn | DefKind::Const { .. }\n",
-    replace: "                    DefKind::Fn | DefKind::AssocFn\n",
+    find: "                || !matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn | DefKind::Const)\n",
+    replace: "                || !matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn)\n",
     tests: ["test/corpus.test.ts", "-t", "^const_read_by_its_js_name.rs$"],
   },
   {

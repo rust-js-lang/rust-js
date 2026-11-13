@@ -11,6 +11,7 @@ use crate::lower::{FnCx, R};
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Operand, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::ty;
+use rustc_middle::ty::consts::ConstExt as _;
 
 /// What's asked of a `MaybeUninit` or a `Box` of one.
 #[derive(Clone, Copy, PartialEq)]

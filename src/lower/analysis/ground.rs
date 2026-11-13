@@ -48,7 +48,7 @@ impl<'a, 'tcx> Ground<'a, 'tcx> {
 
 /// rustc's test harness, which the JS runner takes the place of (ADR 0026).
 pub(super) struct Harness {
-    /// Its test markers, a `const` each.
+    /// Its test markers, a `static` each since 1.100, a `const` before.
     pub(super) markers: Vec<(LocalDefId, Symbol)>,
     main: Option<DefId>,
 }

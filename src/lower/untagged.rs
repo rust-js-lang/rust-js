@@ -13,7 +13,7 @@ use rustc_abi::VariantIdx;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
-use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef};
+use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef, consts::ConstExt as _};
 use rustc_span::def_id::DefId;
 
 mod classes;

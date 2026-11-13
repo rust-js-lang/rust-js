@@ -13,11 +13,13 @@ COMMIT=$(bun ../scripts/toolchain.ts commit)
 if [ ! -d rustc/compiler ]; then
   echo "error: ./rustc is missing. From a rust-lang/rust clone, run:" >&2
   echo "  git worktree add --no-checkout $PWD/rustc $COMMIT" >&2
-  echo "  git -C $PWD/rustc sparse-checkout set --cone compiler library/proc_macro" >&2
+  echo "  git -C $PWD/rustc sparse-checkout set --cone $(bun ../scripts/toolchain.ts sources)" >&2
   echo "  git -C $PWD/rustc checkout" >&2
   exit 1
 fi
 bun ../scripts/toolchain.ts check-source "$PWD/rustc"
+# The paths the build reads, a checkout made for an earlier release's too.
+git -C rustc sparse-checkout set --cone $(bun ../scripts/toolchain.ts sources)
 
 # 2. Our patches to rustc. Skip ones already applied; fail loudly on conflicts.
 for patch in patches/*.patch; do

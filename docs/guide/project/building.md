@@ -83,7 +83,7 @@ time (see [JavaScript environments](environments.md#the-std-package)).
 And once per machine, the Rust release rust-js is built with:
 
 ```bash
-rustup toolchain install 1.99.0 --profile minimal --target wasm32-unknown-unknown
+rustup toolchain install 1.100.0 --profile minimal --target wasm32-unknown-unknown
 ```
 
 ## Run it beside your dev server

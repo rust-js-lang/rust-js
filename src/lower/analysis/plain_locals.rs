@@ -123,7 +123,7 @@ pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
     if tcx.is_mutable_static(key) {
         return !tcx.is_foreign_item(key);
     }
-    if !matches!(tcx.def_kind(key), rustc_hir::def::DefKind::Const { .. }) {
+    if !matches!(tcx.def_kind(key), rustc_hir::def::DefKind::Const) {
         return false;
     }
     let ty = tcx.type_of(key).instantiate_identity().skip_normalization();

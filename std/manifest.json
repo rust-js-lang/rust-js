@@ -2,14 +2,14 @@
   "version": 1,
   "compiler": {
     "version": "0.0.4",
-    "toolchain": "1.99.0",
+    "toolchain": "1.100.0",
     "abi": 1
   },
   "library": {
     "version": 34,
     "name": "rust_js_std",
-    "crate_id": "4241c159ba5c0393",
-    "crate_hash": "93bd55a18dafb7d5",
+    "crate_id": "ca591bd2b3d92476",
+    "crate_hash": "5ca403e745b9e31c",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -15357,29 +15357,29 @@
     "drops_any": false,
     "modules": [
       {
-        "key": "4241c159ba5c03934241c159ba5c0393",
+        "key": "ca591bd2b3d92476ca591bd2b3d92476",
         "module": []
       },
       {
-        "key": "4241c159ba5c0393b79d1a60b1f7e861",
+        "key": "ca591bd2b3d9247628131b8346cb8dce",
         "module": [
           "io"
         ]
       },
       {
-        "key": "4241c159ba5c0393b8f8c6f6166651be",
+        "key": "ca591bd2b3d924768e8ac9c522736675",
         "module": [
           "iter"
         ]
       },
       {
-        "key": "4241c159ba5c03936614f14ba25dfadb",
+        "key": "ca591bd2b3d924767328d481dad5ae5",
         "module": [
           "net"
         ]
       },
       {
-        "key": "4241c159ba5c0393d220006e3ecc59fa",
+        "key": "ca591bd2b3d92476e7a67c277cde2395",
         "module": [
           "ops"
         ]
@@ -15966,7 +15966,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "d6a924f7663e0b34"
+      "hash": "0adabc9169f2647e"
     },
     {
       "file": "iter.js.map",

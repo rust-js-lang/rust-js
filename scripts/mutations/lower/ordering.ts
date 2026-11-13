@@ -592,4 +592,20 @@ export const mutations: Mutation[] = [
     replace: "                    .map(|(v, d)| (v, crate::lower::Discr::Unsigned(d.val)))\n",
     tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
   },
+  {
+    name: "iterator-max-by-cmp",
+    breaks: "`Iterator::max` of a type JS's `<` doesn't order compares by its `cmp`, as 1.99's `max_by(Ord::cmp)` did, where 1.100's reduces by its `Ord::max`, its own where it writes one (ADR 0109, amended)",
+    file: "src/lower/ordering.rs",
+    find: "            Some(imp) if self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {\n",
+    replace: "            Some(imp) if false && self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
+  {
+    name: "iterator-max-by-cmp-of-hand-written-orders",
+    breaks: "`Iterator::max` of items whose hand-written `<` isn't their `cmp`'s compares by `cmp`, where 1.100's `Ord::max` asks `<` (ADR 0109, amended)",
+    file: "src/lower/ordering.rs",
+    find: "        own || by_hand || self.order_seen(ty) || !self.order_total(ty)\n",
+    replace: "        own || self.order_seen(ty) || !self.order_total(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
 ];

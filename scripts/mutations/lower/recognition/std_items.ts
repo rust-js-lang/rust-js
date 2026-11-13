@@ -335,4 +335,12 @@ export const mutations: Mutation[] = [
     replace: "            && (!(lends || self.is_user_iterator(inner)) || self.std_impl_writes(def_id, generic_args)))\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
+  {
+    name: "non-null-by-diagnostic-item",
+    breaks: "`NonNull`, a lang item since 1.100, is asked of its old diagnostic item, so it's no pointer and its pattern-typed field is refused (ADR 0109, amended)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        StdItem::NonNull => tcx.is_lang_item(id, LangItem::NonNull),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+  },
 ];

@@ -15,7 +15,7 @@ Install each of these once:
 | --- | --- | --- |
 | [Bun](https://bun.sh) or [Node.js](https://nodejs.org) | makes the app, installs its packages, runs Vite | Bun: `curl -fsSL https://bun.sh/install \| bash`. Node.js must be `^20.19.0` or `>=22.12.0`, the versions Vite 8 runs on |
 | [rustup](https://rustup.rs) | installs Rust toolchains | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
-| rust-js's Rust | rust-js runs with the rustc it was built with | `rustup toolchain install 1.99.0 --profile minimal --target wasm32-unknown-unknown` |
+| rust-js's Rust | rust-js runs with the rustc it was built with | `rustup toolchain install 1.100.0 --profile minimal --target wasm32-unknown-unknown` |
 
 - **The Rust release is rust-js's, not yours.** rust-js uses rustc's own
   library, so it needs the exact release it was built with. rustup keeps it

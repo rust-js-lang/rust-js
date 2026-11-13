@@ -22,16 +22,16 @@ function dDrop_drop(d) {
 }
 
 export const reqFromIteratorD = {
-  fromIter(arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) {
+  fromIter(arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) {
     return reqFromIteratorD_fromIter(
       arg0,
       $vecCollectWay(
-        $collectsInPlace(TIntoIterInPlace, 4, 4),
-        TIntoIterTrustedLen,
-        TIntoIterInPlace,
+        $collectsInPlace(IIntoIterInPlace, 4, 4),
+        IIntoIterTrustedLen,
+        IIntoIterInPlace,
       ),
-      dropT,
-      dropTIntoIter,
+      dropI,
+      dropIIntoIter,
     );
   },
   $drop(req) {

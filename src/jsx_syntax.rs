@@ -19,13 +19,12 @@ use std::sync::{Arc, Mutex};
 use rustc_ast::ast_traits::{HasAttrs, HasTokens};
 use rustc_ast::attr;
 use rustc_ast::mut_visit::{self, FnKind, MutVisitor};
-use rustc_ast::token::{IdentIsRaw, TokenKind};
+use rustc_ast::token::{IdentKind, TokenKind};
 use rustc_ast::tokenstream::{DelimSpacing, LazyAttrTokenStream, Spacing, TokenStream, TokenTree};
 use rustc_ast::visit;
 use rustc_ast::{self as ast, AttrVec, ExprKind, Inline, ItemKind, ModKind, NodeId};
-use rustc_data_structures::stable_hash::{
-    RawDefId, RawDefPathHash, RawSpan, StableHashControls, StableHashCtxt, StableHasher,
-};
+use rustc_data_structures::fingerprint::Fingerprint;
+use rustc_data_structures::stable_hash::{RawDefId, RawSpan, StableHashControls, StableHashCtxt, StableHasher};
 use rustc_expand::config::StripUnconfigured;
 use rustc_expand::module::{DirOwnership, default_submod_path};
 use rustc_parse::lexer::StripTokens;
@@ -57,7 +56,7 @@ fn rust_expression(sess: &Session, tokens: TokenStream, tags: &TagNames) -> Resu
                         let path = mac.path.segments[0].ident;
                         let spacing = DelimSpacing::new(Spacing::Alone, Spacing::Alone);
                         let mut tokens = TokenStream::new(vec![
-                            TokenTree::token_alone(TokenKind::Ident(path.name, IdentIsRaw::No), path.span),
+                            TokenTree::token_alone(TokenKind::Ident(path.name, IdentKind::Normal), path.span),
                             TokenTree::token_alone(TokenKind::Bang, path.span),
                             TokenTree::Delimited(mac.args.dspan, spacing, mac.args.delim, arm(rust, mac.span())),
                         ]);
@@ -129,8 +128,8 @@ fn rust_expression(sess: &Session, tokens: TokenStream, tags: &TagNames) -> Resu
         }
     }
     let mut p = Parser::new(&sess.psess, tokens.clone(), Some("JSX Rust expression"));
-    let mut expr = p.parse_expr().map_err(|e| e.emit())?;
-    p.expect(exp!(Eof)).map_err(|e| e.emit())?;
+    let mut expr = p.parse_expr().map_err(|e| e.emit_err())?;
+    p.expect(exp!(Eof)).map_err(|e| e.emit_err())?;
     let mut calls = Calls {
         sess,
         tags: tags.clone(),
@@ -737,7 +736,7 @@ pub fn configured_attrs(sess: &Session, attrs: &ast::AttrVec) -> Option<ast::Att
 fn arm(rust: TokenStream, span: Span) -> TokenStream {
     let marker = [
         TokenTree::token_alone(TokenKind::At, span),
-        TokenTree::token_alone(TokenKind::Ident(Symbol::intern("rust_js"), IdentIsRaw::No), span),
+        TokenTree::token_alone(TokenKind::Ident(Symbol::intern("rust_js"), IdentKind::Normal), span),
     ];
     TokenStream::new(marker.into_iter().chain(rust.iter().cloned()).collect())
 }
@@ -810,15 +809,13 @@ impl StableHashCtxt for ExpansionHash {
     }
 
     /// The crate's own, whose crate half alone rustc reads.
-    fn def_path_hash(&self, def_id: RawDefId) -> RawDefPathHash {
+    fn def_path_hash(&self, def_id: RawDefId) -> Fingerprint {
         assert!(
             def_id.0 == 0 && def_id.1 == 0,
             "a JSX expansion names no item but the crate"
         );
         let id = CRATE_ID.lock().expect("the crate's id").expect("set by `expand`");
-        let mut bytes = [0; 16];
-        bytes[..8].copy_from_slice(&id.as_u64().to_le_bytes());
-        RawDefPathHash(bytes)
+        Fingerprint::new(id.as_u64(), 0u64)
     }
 
     fn stable_hash_controls(&self) -> StableHashControls {

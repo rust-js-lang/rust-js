@@ -671,7 +671,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | thir::ExprKind::Borrow { arg: inner, .. }
                 | thir::ExprKind::NeverToAny { source: inner }
                 | thir::ExprKind::PointerCoercion { source: inner, .. }
-                | thir::ExprKind::Use { source: inner } = self.frame.thir[value].kind
+                | thir::ExprKind::ValueExpr { source: inner } = self.frame.thir[value].kind
                 {
                     value = inner;
                 }
@@ -914,7 +914,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Through its borrows, `&*FIXED`'s `FIXED`.
         let peeled = |mut e: thir::ExprId| {
             while let thir::ExprKind::Scope { value: inner, .. }
-            | thir::ExprKind::Use { source: inner }
+            | thir::ExprKind::ValueExpr { source: inner }
             | thir::ExprKind::Deref { arg: inner }
             | thir::ExprKind::Borrow { arg: inner, .. } = thir[e].kind
             {
@@ -1035,7 +1035,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         loop {
             match self.frame.thir[body].kind {
                 thir::ExprKind::Scope { value, .. }
-                | thir::ExprKind::Use { source: value }
+                | thir::ExprKind::ValueExpr { source: value }
                 | thir::ExprKind::NeverToAny { source: value } => body = value,
                 thir::ExprKind::Block { block }
                     if self.frame.thir[block].stmts.is_empty() && self.frame.thir[block].expr.is_some() =>

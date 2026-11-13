@@ -140,7 +140,20 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false, fea
     .map((pkg) => ({ dir: realpathSync(dirname(pkg.manifest_path)), name: pkg.name, version: pkg.version }))
     .sort((a, b) => a.dir.localeCompare(b.dir));
   const names = packages.filter((pkg) => members.includes(pkg.id)).map((pkg) => pkg.name).sort();
-  return { apps, crates, dependencies, members: names, own: ownPackage(packages, manifest) };
+  return { apps, crates, dependencies, members: names, own: ownPackage(packages, manifest), targetDirectory: metadata.target_directory };
+}
+
+/** The file a target keeps of what a build wrote in source (`checkCargo`'s
+ * ledger), the app's, whichever compiler wrote it. */
+export const ledgerName = "rust-js-in-source.json";
+
+/** The ledger of Cargo's builds for rust-js's target in `targetDirectory`,
+ * its profile directory's, where `check` and `--profile test` put what they
+ * make: not beside a crate's metadata, which Cargo 1.100's build directory
+ * keeps in a directory of each build step's (ADR 0109, amended). The one
+ * place the profile directory's path is made. */
+export function ledgerOf(targetDirectory) {
+  return join(targetDirectory, target, "debug", ledgerName);
 }
 
 /**
@@ -367,6 +380,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     throw new Error(`cargo check failed:\n${rendered}${rendered && !error.stderr ? "" : cargoSaid(error)}`);
   });
   const crates = new Map();
+  const ledger = ledgerOf(targetDir ?? build.targetDirectory);
   // Every crate it built, two of one name too, two releases of cfg-if,
   // each a library of its own (#1130): `crates` has the last of a name.
   const everyBuilt = [];
@@ -375,9 +389,6 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   const compiled = new Set();
   // Of a test build, each test target's test files, and their runner.
   const testRuns = [];
-  // What's written in source, and how, beside Cargo's builds: `cargo clean`
-  // forgets it, and then nothing in source is taken as this build's.
-  let ledger;
   for (const line of stdout.split("\n").filter(Boolean)) {
     const message = JSON.parse(line);
     if (message.reason !== "compiler-artifact") continue;
@@ -397,7 +408,6 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     }
     // The crate root's module: `lib.jsx` when it has JSX (ADR 0075); none
     // for a root of `mod`s alone, an app's list of its files (ADR 0382).
-    ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
     const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
     crates.set(message.target.name, entry);
     everyBuilt.push({ crate: message.target.name, manifest: library });

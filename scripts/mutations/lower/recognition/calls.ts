@@ -743,4 +743,12 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/diagnostics.test.ts", "-t", "Deserializer::from_str"],
   },
+  {
+    name: "integer-min-max-intrinsics-unread",
+    breaks: "1.100's `Ord::min` and `max` of an integer, `intrinsics::integer_min` and `integer_max` in std's bodies, aren't read as `a.min(b)`: std's bodies are refused (ADR 0109, amended)",
+    file: "src/lower/recognition/calls.rs",
+    find: "                \"integer_max\" => Some(true),\n                \"integer_min\" => Some(false),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

@@ -1119,7 +1119,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
             }
             // A library's static or constant.
             hir::ExprKind::Path(ref qpath) => {
-                if let Res::Def(DefKind::Static { .. } | DefKind::Const { .. } | DefKind::AssocConst { .. }, id) =
+                if let Res::Def(DefKind::Static { .. } | DefKind::Const | DefKind::AssocConst, id) =
                     results.qpath_res(qpath, expr.hir_id)
                     && !id.is_local()
                 {

@@ -251,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// slots, uninit, are written an item at a time (ADR 0417).
     pub(in crate::lower) fn is_array_param(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Param(_))
-            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+            && self.typing_env.param_env.caller_bounds().any(|clause| {
                 clause.as_trait_clause().is_some_and(|bound| {
                     bound.self_ty().skip_binder() == ty && impls_are_arrays(self.tcx, bound.def_id(), None)
                 })

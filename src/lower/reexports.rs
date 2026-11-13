@@ -103,28 +103,23 @@ pub(super) fn reexports(
             (export, "default".to_string()),
         ));
     }
-    for id in tcx.hir_module_items(module).free_items() {
-        let item = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, kind) = item.kind else {
-            continue;
-        };
-        if !tcx.visibility(item.owner_id).is_public() {
+    for leaf in super::uses::module_leaves(tcx, module) {
+        let path = &leaf.path;
+        if !tcx.visibility(leaf.def_id).is_public() {
             continue;
         }
-        let statement = statement_of(item);
-        let hir::UseKind::Single(ident) = kind else {
+        let statement = statement_of(&leaf);
+        let super::uses::Leaf::Single(ident) = leaf.kind else {
             // `pub use m::*;` of what has JS: each name it gives the module,
             // as rustc resolves it, past what the module's own items and
             // single `use`s shadow, one `export { .. } from` (rd153).
-            if matches!(kind, hir::UseKind::Glob) {
-                globbed(
-                    tcx,
-                    (module, item.owner_id.to_def_id(), statement),
-                    (fns, foreign),
-                    paths,
-                    &mut found,
-                );
-            }
+            globbed(
+                tcx,
+                (module, leaf.def_id.to_def_id(), statement),
+                (fns, foreign),
+                paths,
+                &mut found,
+            );
             continue;
         };
         // Its leaf, whose comments are its own (rd338).
@@ -132,18 +127,18 @@ pub(super) fn reexports(
         let written = (statement, Leaf::Written(name, ident.span));
         let alias = |name: &str| {
             let named = (ident.name, named_of(path));
-            super::bindings::use_name(tcx, item.owner_id.to_def_id(), named, || name.to_string())
+            super::bindings::use_name(tcx, leaf.def_id.to_def_id(), named, || name.to_string())
         };
         // Its name where it's re-exported through a module that re-exports
         // it as `export`: that, where the `use` keeps the name the path
         // gives, but its `#[rust_js::name]` (rd338).
         let through_alias = |export: &str| match Some(ident.name) == last_name(path) {
-            true => super::bindings::given_name(tcx, item.owner_id.to_def_id()).unwrap_or_else(|| export.to_string()),
-            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+            true => super::bindings::given_name(tcx, leaf.def_id.to_def_id()).unwrap_or_else(|| export.to_string()),
+            false => super::bindings::alias_name(tcx, leaf.def_id.to_def_id(), ident.name),
         };
         // Its value: a function, a constant, a thread-local or a binding.
         if let Some(Res::Def(kind, def_id)) = path.res.value_ns
-            && matches!(kind, DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. })
+            && matches!(kind, DefKind::Fn | DefKind::Const | DefKind::Static { .. })
         {
             // A binding of a JS module's export, itself, not a path in it.
             if super::bindings::is_binding(tcx, def_id) {
@@ -151,7 +146,7 @@ pub(super) fn reexports(
                     && let Some(((from, export), "")) = super::bindings::js_import(&path)
                 {
                     // Its namespace too, `export * as ns from` (ADR 0240, amended).
-                    let alias = super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, def_id), || {
+                    let alias = super::bindings::use_name(tcx, leaf.def_id.to_def_id(), (ident.name, def_id), || {
                         ident.to_string()
                     });
                     found.push((written, js::ImportFrom::Specifier(from), (export, alias)));
@@ -231,7 +226,7 @@ pub(super) fn reexports(
                 // manifest says (#1420); one with no JS of its own, of types
                 // alone, a binding crate's or std's, nothing.
                 if let Some(from) = namespace_file(foreign, paths, named) {
-                    let alias = super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name);
+                    let alias = super::bindings::alias_name(tcx, leaf.def_id.to_def_id(), ident.name);
                     found.push((written, from, ("*".to_string(), alias)));
                 }
             }
@@ -270,7 +265,7 @@ pub(super) fn reexports(
                     continue;
                 }
                 let alias =
-                    super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, class), || export.clone());
+                    super::bindings::use_name(tcx, leaf.def_id.to_def_id(), (ident.name, class), || export.clone());
                 found.push((written, from, (export, alias)));
             }
             // A type, a trait or a macro: no JS (ADR 0240).
@@ -299,9 +294,8 @@ pub(super) fn type_reexports(
     paths: &IndexMap<LocalModId, Vec<String>>,
 ) -> Vec<TypeReexport> {
     let mut found = Vec::new();
-    for id in tcx.hir_module_items(module).free_items() {
-        let item = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {
+    for leaf in super::uses::module_leaves(tcx, module) {
+        let (super::uses::Leaf::Single(ident), path) = (leaf.kind, &leaf.path) else {
             continue;
         };
         let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =
@@ -309,7 +303,7 @@ pub(super) fn type_reexports(
         else {
             continue;
         };
-        if !tcx.visibility(item.owner_id).is_public() || super::classes::is_class(tcx, named) {
+        if !tcx.visibility(leaf.def_id).is_public() || super::classes::is_class(tcx, named) {
             continue;
         }
         let (from, export) = match named.as_local() {
@@ -333,7 +327,7 @@ pub(super) fn type_reexports(
                 None => continue,
             },
         };
-        found.push((statement_of(item), from, (export, ident.to_string())));
+        found.push((statement_of(&leaf), from, (export, ident.to_string())));
     }
     found
 }
@@ -357,10 +351,10 @@ fn namespace_file(
 
 /// A `pub use`'s whole statement, from its `pub`, which each of a tree's
 /// leaves shares, its comments before it.
-fn statement_of(item: &hir::Item<'_>) -> rustc_span::Span {
-    match item.vis_span.is_empty() {
-        true => item.span,
-        false => item.vis_span.to(item.span),
+fn statement_of(leaf: &super::uses::UseLeaf<'_>) -> rustc_span::Span {
+    match leaf.item.vis_span.is_empty() {
+        true => leaf.span,
+        false => leaf.item.vis_span.to(leaf.span),
     }
 }
 
@@ -502,7 +496,7 @@ fn globbed(
     paths: &IndexMap<LocalModId, Vec<String>>,
     found: &mut Vec<Named>,
 ) {
-    use rustc_middle::metadata::Reexport as Via;
+    use rustc_middle::middle::resolve::Reexport as Via;
     // A glob writes no name's leaf.
     let written = (statement, Leaf::Glob);
     let refuse = |what: String, why: &str| {
@@ -524,7 +518,7 @@ fn globbed(
         let unsaid = unsaid || std_without_js(tcx, foreign, id);
         match kind {
             _ if unsaid => {}
-            DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. } => {
+            DefKind::Fn | DefKind::Const | DefKind::Static { .. } => {
                 // Its own, through a module that re-exports it: written already.
                 if fns
                     .get(&id)
@@ -588,10 +582,11 @@ fn std_without_js(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id
 
 /// The crate's module the glob `glob`, `pub use m::*;`, names: `m`.
 fn glob_source(tcx: TyCtxt<'_>, glob: DefId) -> Option<LocalModId> {
-    let hir::ItemKind::Use(path, hir::UseKind::Glob) = tcx.hir_expect_item(glob.as_local()?).kind else {
+    let leaf = super::uses::leaf(tcx, glob.as_local()?)?;
+    let super::uses::Leaf::Glob = leaf.kind else {
         return None;
     };
-    match path.res.type_ns {
+    match leaf.path.res.type_ns {
         Some(Res::Def(DefKind::Mod, source)) => Some(LocalModId::new_unchecked(source.as_local()?)),
         _ => None,
     }
@@ -625,7 +620,7 @@ pub(super) fn exported_by(
     mut module: LocalModId,
     (mut name, item): (Symbol, DefId),
 ) -> Option<String> {
-    use rustc_middle::metadata::Reexport as Via;
+    use rustc_middle::middle::resolve::Reexport as Via;
     let mut seen = IndexSet::default();
     let own = |name: Symbol| match fns.get(&item) {
         Some(info) => info.exported().to_string(),
@@ -640,8 +635,8 @@ pub(super) fn exported_by(
             return exported_in(tcx, fns, module, name, item);
         }
         if let Some(used) = reexporting_use(tcx, module, name, item) {
-            let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = tcx.hir_expect_item(used.as_local()?).kind
-            else {
+            let leaf = super::uses::leaf(tcx, used.as_local()?)?;
+            let (super::uses::Leaf::Single(ident), path) = (leaf.kind, &leaf.path) else {
                 return None;
             };
             let through = written_module(path).filter(|_| Some(ident.name) == last_name(path));
@@ -665,7 +660,7 @@ pub(super) fn exported_by(
 }
 
 /// What a `use`'s path names in its value namespace.
-fn named_of(path: &hir::UsePath<'_>) -> DefId {
+fn named_of(path: &super::uses::UsePath<'_>) -> DefId {
     match path.res.value_ns.or(path.res.type_ns) {
         Some(Res::Def(_, named)) => named,
         _ => CRATE_MOD_ID.to_def_id(),
@@ -674,15 +669,17 @@ fn named_of(path: &hir::UsePath<'_>) -> DefId {
 
 /// The last name a `use`'s path writes, what the module it names calls
 /// its item.
-fn last_name(path: &hir::UsePath<'_>) -> Option<Symbol> {
+fn last_name(path: &super::uses::UsePath<'_>) -> Option<Symbol> {
     path.segments.last().map(|segment| segment.ident.name)
 }
 
 /// The crate's module a `use`'s path names its item through, `server` of
 /// `crate::server::cache`: as written, which may re-export it (ADR 0240,
 /// amended).
-fn written_module(path: &hir::UsePath<'_>) -> Option<LocalModId> {
-    let [.., module, _] = path.segments else { return None };
+fn written_module(path: &super::uses::UsePath<'_>) -> Option<LocalModId> {
+    let [.., module, _] = path.segments[..] else {
+        return None;
+    };
     // `crate::`, `self::` and `super::` name a module too.
     match module.res {
         Res::Def(DefKind::Mod, module) => Some(LocalModId::new_unchecked(module.as_local()?)),
@@ -721,15 +718,14 @@ pub(super) fn reexported_items(
     fns: &IndexMap<DefId, FnInfo>,
 ) -> Vec<(LocalModId, Symbol, DefId, String)> {
     let mut found = Vec::new();
-    for id in tcx.hir_crate_items(()).free_items() {
-        let used = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = used.kind else {
+    for used in super::uses::crate_leaves(tcx) {
+        let (super::uses::Leaf::Single(ident), path) = (used.kind, &used.path) else {
             continue;
         };
-        if !super::analysis::is_reexport(tcx, used) {
+        if !super::analysis::is_reexport(tcx, &used) {
             continue;
         }
-        let module = tcx.parent_module_from_def_id(used.owner_id.def_id);
+        let module = tcx.parent_module_from_def_id(used.def_id);
         for res in path.res.present_items() {
             let Res::Def(_, item) = res else { continue };
             let elsewhere = fns
@@ -756,7 +752,7 @@ pub(super) fn reexported_items(
 /// `exported_in`'s, which also names one by its own module's alias.
 fn through_reexport(
     tcx: TyCtxt<'_>,
-    path: &hir::UsePath<'_>,
+    path: &super::uses::UsePath<'_>,
     item: DefId,
     own: impl FnOnce() -> String,
 ) -> Option<(LocalModId, String)> {
@@ -810,15 +806,14 @@ pub(super) fn imported_through<'tcx>(
     // that re-exports it, by what, or not.
     type First = (rustc_span::Span, Option<(LocalModId, String)>);
     let mut first: IndexMap<(LocalModId, DefId), First> = IndexMap::default();
-    for id in tcx.hir_crate_items(()).free_items() {
-        let used = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, hir::UseKind::Single(_)) = used.kind else {
+    for used in super::uses::crate_leaves(tcx) {
+        let (super::uses::Leaf::Single(_), path) = (used.kind, &used.path) else {
             continue;
         };
-        let scope = tcx.parent_module_from_def_id(used.owner_id.def_id);
+        let scope = tcx.parent_module_from_def_id(used.def_id);
         for res in path.res.present_items() {
             let Res::Def(_, item) = res else { continue };
-            let through = match path.segments {
+            let through = match path.segments[..] {
                 [.., parent, last] => match parent.res {
                     Res::Def(DefKind::Mod, module) => (module.as_local().map(LocalModId::new_unchecked))
                         .filter(|&module| module != scope)
@@ -851,15 +846,14 @@ pub(super) fn imported_through<'tcx>(
 /// crate::props::register_simple as register_events;` does: the `use`
 /// item.
 pub(super) fn reexporting_use(tcx: TyCtxt<'_>, module: LocalModId, name: Symbol, item: DefId) -> Option<DefId> {
-    tcx.hir_module_items(module).free_items().find_map(|id| {
-        let used = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = used.kind else {
+    super::uses::module_leaves(tcx, module).into_iter().find_map(|used| {
+        let (super::uses::Leaf::Single(ident), path) = (used.kind, &used.path) else {
             return None;
         };
         // Of a value, or of a class or module, the type namespace's.
         let names = |res: Option<Res>| matches!(res, Some(Res::Def(_, named)) if named == item);
         let names_it = names(path.res.value_ns) || names(path.res.type_ns);
-        (names_it && ident.name == name && super::analysis::is_reexport(tcx, used)).then(|| used.owner_id.to_def_id())
+        (names_it && ident.name == name && super::analysis::is_reexport(tcx, &used)).then(|| used.def_id.to_def_id())
     })
 }
 
@@ -874,12 +868,11 @@ pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
         match item.kind {
             // Its `mod`s, and std's prelude rustc gives every crate.
             hir::ItemKind::Mod(..) | hir::ItemKind::ExternCrate(..) => true,
-            hir::ItemKind::Use(..) if !tcx.visibility(item.owner_id).is_public() => true,
-            // A list's stem, `pub use react_client::{CHILDREN,
-            // create_element};`'s, which re-exports nothing itself: each
-            // of its leaves is an item of its own (rd755).
-            hir::ItemKind::Use(_, hir::UseKind::ListStem) => true,
-            _ => super::analysis::is_reexport(tcx, item),
+            // A `use`, each of its names, a list's `pub use
+            // react_client::{CHILDREN, create_element};`'s each (rd755).
+            hir::ItemKind::Use(_) => (super::uses::leaves(item).iter())
+                .all(|leaf| !tcx.visibility(leaf.def_id).is_public() || super::analysis::is_reexport(tcx, leaf)),
+            _ => false,
         }
     })
 }
@@ -1074,12 +1067,12 @@ pub(super) fn place(
 /// or a thread-local, which its file re-exports (`globbed`),
 /// though it has nothing of its own (#592).
 pub(super) fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> bool {
-    use rustc_middle::metadata::Reexport as Via;
+    use rustc_middle::middle::resolve::Reexport as Via;
     (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
         matches!(child.reexport_chain.first(), Some(Via::Glob(_)))
             && matches!(
                 child.res,
-                rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, _)
+                rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)
             )
     })
 }

@@ -106,7 +106,7 @@ test("the builder asks the compiler what it is, and which @rust-js/std it needs"
   writeFileSync(join(std, "package.json"), JSON.stringify({ name: "@rust-js/std", version: "1.0.0" }));
   const rustJs = join(root, "rust-js");
   const compiler = (version: string) => {
-    writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.99.0","abi":1}'\n`);
+    writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.100.0","abi":1}'\n`);
     chmodSync(rustJs, 0o755);
   };
   compiler("1.0.0");

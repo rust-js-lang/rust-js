@@ -6,8 +6,8 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { buildCompiler, compiler, root } from "./support";
+import { basename, dirname, join, resolve } from "node:path";
+import { buildCompiler, compiler, root, rustJsUnits } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
 
 beforeAll(buildCompiler, 600_000);
@@ -86,7 +86,7 @@ impl Drop for Loud {
 }
 `;
 
-const units = (dir: string) => join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug/deps/rust-js");
+const units = (dir: string) => rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"));
 
 test("a test build compiles the package's library as rust-js build does, and its integration tests run that JS", () => {
   const dir = testCrate("rust-js-test-program", {
@@ -119,14 +119,16 @@ fn a_node_runs_its_function() {
   expect(built.exitCode, built.stderr.toString()).toBe(0);
   // The library its integration test imports: `rust-js build`'s, byte for
   // byte, the `Rc` the value itself, `{ run }`, no count.
-  const imported = /from "\.\.\/(app-[0-9a-f]+)\/lib\.js"/.exec(readFileSync(join(units(dir), [...new Bun.Glob("nodes-*/nodes.js").scanSync({ cwd: units(dir) })][0]), "utf8"))?.[1];
-  const tested = readFileSync(join(units(dir), imported ?? "", "lib.js"), "utf8");
+  const nodes = units(dir).find((unit) => basename(unit).startsWith("nodes-") && existsSync(join(unit, "nodes.js")))!;
+  const from = /from "([^"]*\/app-[0-9a-f]+\/lib\.js)"/.exec(readFileSync(join(nodes, "nodes.js"), "utf8"))?.[1];
+  const imported = dirname(resolve(nodes, from ?? ""));
+  const tested = readFileSync(join(imported, "lib.js"), "utf8");
   expect(tested).toBe(readFileSync(join(dir, "src/lib.js"), "utf8"));
   expect(tested).toContain("return { run };");
   expect(tested).not.toContain("strong");
   // Its contract, which its integration tests read: written by a test
   // build alone.
-  const manifest = JSON.parse(readFileSync(join(units(dir), imported ?? "", "lib.manifest.json"), "utf8"));
+  const manifest = JSON.parse(readFileSync(join(imported, "lib.manifest.json"), "utf8"));
   // The constant its own generic code reads, which its dictionaries carry.
   expect(manifest.library.dictionary_consts).toHaveLength(1);
   expect(manifest.library.dyns_drop_nothing).toHaveLength(1);

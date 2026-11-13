@@ -8,7 +8,7 @@ use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
 use indexmap::map::Entry;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{self as hir, ItemKind, UseKind};
+use rustc_hir::{self as hir, ItemKind};
 use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
@@ -562,47 +562,39 @@ impl UsesWritten {
         (foreign, held): (&crate::lower::library::Foreign<'_, '_>, &bindings::Held),
         through: &dyn Fn(DefId) -> Option<LocalModId>,
     ) -> Self {
-        let items = || tcx.hir_module_items(module).free_items().map(|id| tcx.hir_item(id));
-        // A tree's, `use crate::{a::x, b::y};`: its leaves' spans are their
-        // paths', the statement its list's, the outermost.
-        let lists: Vec<rustc_span::Span> = (items())
-            .filter(|item| matches!(item.kind, ItemKind::Use(_, UseKind::ListStem)))
-            .map(|item| item.span)
-            .collect();
-        let statement = |span: rustc_span::Span| {
-            (lists.iter().filter(|list| list.contains(span))).fold(span, |outer, &list| outer.to(list))
-        };
-        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)> = (items())
-            .filter_map(|item| {
-                let ItemKind::Use(path, UseKind::Single(_)) = item.kind else {
-                    return None;
-                };
-                // A binding named through a module that holds it is that
-                // module's import, not its own JS module's.
-                let (mut named, mut holders) = (Vec::new(), Vec::new());
-                for res in path.res.present_items() {
-                    let Res::Def(_, id) = res else { continue };
-                    match held.use_read(foreign, path.segments, id) {
-                        Some(read) => holders.push(NamedThrough {
-                            holder: read.holder,
-                            id,
-                            import: Some(read.import),
-                        }),
-                        // And one imported from a module that re-exports
-                        // it, that module's (rd650).
-                        None => match through(id) {
-                            Some(module) => holders.push(NamedThrough {
-                                holder: bindings::Holder::Module(module),
+        // Each name's statement, a list's whole, `use crate::{a::x, b::y};`.
+        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)> =
+            (crate::lower::uses::module_leaves(tcx, module).into_iter())
+                .filter_map(|leaf| {
+                    let (crate::lower::uses::Leaf::Single(_), path) = (leaf.kind, &leaf.path) else {
+                        return None;
+                    };
+                    // A binding named through a module that holds it is that
+                    // module's import, not its own JS module's.
+                    let (mut named, mut holders) = (Vec::new(), Vec::new());
+                    for res in path.res.present_items() {
+                        let Res::Def(_, id) = res else { continue };
+                        match held.use_read(foreign, &path.segments, id) {
+                            Some(read) => holders.push(NamedThrough {
+                                holder: read.holder,
                                 id,
-                                import: None,
+                                import: Some(read.import),
                             }),
-                            None => named.push(id),
-                        },
+                            // And one imported from a module that re-exports
+                            // it, that module's (rd650).
+                            None => match through(id) {
+                                Some(module) => holders.push(NamedThrough {
+                                    holder: bindings::Holder::Module(module),
+                                    id,
+                                    import: None,
+                                }),
+                                None => named.push(id),
+                            },
+                        }
                     }
-                }
-                Some((statement(item.span), named, holders, super::is_reexport(tcx, item)))
-            })
-            .collect();
+                    Some((leaf.item.span, named, holders, super::is_reexport(tcx, &leaf)))
+                })
+                .collect();
         uses.sort_by_key(|(span, ..)| span.lo());
         // Each statement after one with nothing but attributes between, no
         // comment or blank line, as a run of `pub use`s is (ADR 0874).
@@ -825,18 +817,16 @@ fn held_in(from: &str) -> impl Fn(&NamedThrough) -> bool + '_ {
 /// Each `use` of the module that renames an item, in the order written:
 /// what it names, the import's name, and where it's written.
 fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc_span::Span)> {
-    tcx.hir_module_items(module)
-        .free_items()
-        .filter_map(|id| {
-            let item = tcx.hir_item(id);
-            match item.kind {
-                ItemKind::Use(path, UseKind::Single(ident)) if !super::is_reexport(tcx, item) => {
-                    let Some(Res::Def(_, def_id)) = path.res.value_ns else {
+    (crate::lower::uses::module_leaves(tcx, module).into_iter())
+        .filter_map(|leaf| {
+            match leaf.kind {
+                crate::lower::uses::Leaf::Single(ident) if !super::is_reexport(tcx, &leaf) => {
+                    let Some(Res::Def(_, def_id)) = leaf.path.res.value_ns else {
                         return None;
                     };
                     // Its `#[rust_js::name]`, the import's local name as
                     // written, `_jsxDEV` (ADR 0596, amended).
-                    let given = bindings::given_name(tcx, item.owner_id.to_def_id());
+                    let given = bindings::given_name(tcx, leaf.def_id.to_def_id());
                     // Nor one that names it for nothing, `use page as _;`,
                     // `js::export_default!(page)`'s.
                     if given.is_none()
@@ -848,7 +838,7 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
                     Some((
                         def_id,
                         alias.unwrap_or_else(|| bindings::alias_cased(tcx, def_id, ident.name.as_str())),
-                        item.span,
+                        leaf.span,
                     ))
                 }
                 _ => None,
@@ -872,21 +862,26 @@ pub(super) fn required_uses(
     let mut required = IndexSet::default();
     let mut failed = false;
     for &module in modules {
-        for id in tcx.hir_module_items(module).free_items() {
-            let item = tcx.hir_item(id);
-            let ItemKind::Use(path, kind) = item.kind else { continue };
-            if !bindings::requires(tcx, item.owner_id.to_def_id()) {
+        // A list's refused once, for all its names.
+        let mut said = IndexSet::default();
+        for leaf in crate::lower::uses::module_leaves(tcx, module) {
+            let (item, path) = (leaf.item, &leaf.path);
+            if !bindings::requires(tcx, leaf.def_id.to_def_id()) {
                 continue;
             }
             let function = match path.res.value_ns {
                 Some(Res::Def(DefKind::Fn, def_id)) => Some(def_id),
                 _ => None,
             };
-            let why = match (kind, function) {
-                (UseKind::ListStem | UseKind::Glob, _) => Some(
+            let list = crate::lower::uses::is_list(item);
+            let why = match (leaf.kind, function) {
+                (crate::lower::uses::Leaf::Glob, _) => Some(
                     "names the `use` of one function, `use react::create_element;`: write a `use` of its own for each",
                 ),
-                _ if tcx.visibility(item.owner_id).is_public() => Some(
+                _ if list => Some(
+                    "names the `use` of one function, `use react::create_element;`: write a `use` of its own for each",
+                ),
+                _ if tcx.visibility(leaf.def_id).is_public() => Some(
                     "is of a `use` the module reads alone: a `pub use` is the module's `export .. from`, which JS \
                      loads where the module loads",
                 ),
@@ -904,7 +899,9 @@ pub(super) fn required_uses(
                 ),
                 _ => Some("is of a `use` of another crate's function, which its library exports"),
             };
-            if let Some(why) = why {
+            if let Some(why) = why
+                && said.insert(item.owner_id)
+            {
                 tcx.dcx().span_err(
                     item.span,
                     format!("rust-js: `#[rust_js::require]` on a `use` {why} (ADR 0305, amended)"),
@@ -931,10 +928,12 @@ pub(super) fn refuse_two_names(
     for &module in modules {
         // A `#[rust_js::name]` names the import of a `use` of one name; of
         // a group or a glob it would name each the same.
-        for id in tcx.hir_module_items(module).free_items() {
-            let item = tcx.hir_item(id);
-            if let ItemKind::Use(_, UseKind::ListStem | UseKind::Glob) = item.kind
-                && bindings::given_name(tcx, item.owner_id.to_def_id()).is_some()
+        let mut said = IndexSet::default(); // Each statement once, a list's.
+        for leaf in crate::lower::uses::module_leaves(tcx, module) {
+            let item = leaf.item;
+            if (crate::lower::uses::is_list(item) || matches!(leaf.kind, crate::lower::uses::Leaf::Glob))
+                && bindings::given_name(tcx, leaf.def_id.to_def_id()).is_some()
+                && said.insert(item.owner_id)
             {
                 let message = "rust-js: `#[rust_js::name]` names the import of a `use` of one name, \
                     `use priorities::IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY;`: \
@@ -1312,7 +1311,7 @@ pub(super) fn local_consts<'a, 'tcx: 'a>(
     };
     (consts.iter())
         .filter(|&&local| {
-            matches!(tcx.def_kind(local), DefKind::Const { .. })
+            matches!(tcx.def_kind(local), DefKind::Const)
                 && tcx.item_name(local) != rustc_span::kw::Underscore
                 && !super::is_thread_local(tcx, local)
                 && super::in_thread_local(tcx, local).is_none()

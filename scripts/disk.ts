@@ -71,7 +71,7 @@ export function boundEntries(dir: string, cap: number, free: () => number) {
   return evict(kept, { cap, free, floor: floorBytes });
 }
 
-/** The repo's exact Rust toolchains, `1.99.0` (ADR 0109): what its
+/** The repo's exact Rust toolchains, `1.100.0` (ADR 0109): what its
  * `rust-toolchain.toml` and the scripts that pin one name. */
 export function pinnedToolchains(root = checkout): Set<string> {
   const files = [

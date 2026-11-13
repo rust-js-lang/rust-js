@@ -159,24 +159,26 @@ fn named_through<'tcx>(
 ) -> Option<HeldRead> {
     let [.., module, last] = segments else {
         let [only] = segments else { return None };
-        let used = tcx.hir_module_items(scope).free_items().find_map(|id| {
-            let item = tcx.hir_item(id);
-            match item.kind {
-                ItemKind::Use(path, rustc_hir::UseKind::Single(ident))
-                    if ident.name == only.ident.name
-                        && matches!(path.res.value_ns, Some(Res::Def(_, named)) if named == binding) =>
-                {
-                    named_through(tcx, foreign, scope, path.segments, binding, modules)
-                }
-                ItemKind::Use(path, rustc_hir::UseKind::Glob) => match path.res.type_ns {
-                    Some(Res::Def(DefKind::Mod, module)) => {
-                        held_by(tcx, foreign, module, only.ident.name, binding, modules)
+        let used = crate::lower::uses::module_leaves(tcx, scope)
+            .into_iter()
+            .find_map(|leaf| {
+                let path = &leaf.path;
+                match leaf.kind {
+                    crate::lower::uses::Leaf::Single(ident)
+                        if ident.name == only.ident.name
+                            && matches!(path.res.value_ns, Some(Res::Def(_, named)) if named == binding) =>
+                    {
+                        named_through(tcx, foreign, scope, &path.segments, binding, modules)
                     }
+                    crate::lower::uses::Leaf::Glob => match path.res.type_ns {
+                        Some(Res::Def(DefKind::Mod, module)) => {
+                            held_by(tcx, foreign, module, only.ident.name, binding, modules)
+                        }
+                        _ => None,
+                    },
                     _ => None,
-                },
-                _ => None,
-            }
-        });
+                }
+            });
         // Else one the module holds itself, its `const`, read by its name
         // there as upstream's module reads its own: a static it declares
         // and makes its default, `if (!ReactSharedInternalsServer)`, not
@@ -245,15 +247,17 @@ pub(in crate::lower) fn library_uses(
     foreign: &crate::lower::library::Foreign<'_, '_>,
     module: LocalModId,
 ) -> IndexMap<DefId, (String, String)> {
-    (tcx.hir_module_items(module).free_items())
-        .filter_map(|id| {
-            let ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = tcx.hir_item(id).kind else {
+    (crate::lower::uses::module_leaves(tcx, module).into_iter())
+        .filter_map(|leaf| {
+            let (crate::lower::uses::Leaf::Single(_), path) = (leaf.kind, &leaf.path) else {
                 return None;
             };
             let Some(Res::Def(_, binding)) = path.res.value_ns else {
                 return None;
             };
-            let [.., holder, last] = path.segments else { return None };
+            let [.., holder, last] = path.segments[..] else {
+                return None;
+            };
             let Res::Def(DefKind::Mod, holder) = holder.res else {
                 return None;
             };
@@ -342,9 +346,8 @@ fn held_of<'tcx>(
         None => held.push(made),
     };
     // Where its `use` is, that names it; the default by its own name.
-    for id in tcx.hir_module_items(module).free_items() {
-        let item = tcx.hir_item(id);
-        let ItemKind::Use(path, rustc_hir::UseKind::Single(ident)) = item.kind else {
+    for leaf in crate::lower::uses::module_leaves(tcx, module) {
+        let (crate::lower::uses::Leaf::Single(ident), path) = (leaf.kind, &leaf.path) else {
             continue;
         };
         let Some(Res::Def(_, binding)) = path.res.value_ns else {
@@ -353,8 +356,8 @@ fn held_of<'tcx>(
         let Some(read) = held_path(tcx, binding) else {
             continue;
         };
-        let export = crate::lower::analysis::is_reexport(tcx, item);
-        let name = use_name(tcx, item.owner_id.to_def_id(), (ident.name, binding), || {
+        let export = crate::lower::analysis::is_reexport(tcx, &leaf);
+        let name = use_name(tcx, leaf.def_id.to_def_id(), (ident.name, binding), || {
             fn_name(tcx, binding)
         });
         let named_default = default == Some(binding) && name == fn_name(tcx, binding);
@@ -367,7 +370,7 @@ fn held_of<'tcx>(
         if !export && !named_default && !renamed_global {
             continue;
         }
-        let through = named_through(tcx, foreign, module, path.segments, binding, modules);
+        let through = named_through(tcx, foreign, module, &path.segments, binding, modules);
         // A library's, which a private `use` reads through it; a `pub use`
         // re-exports it from the library's file (ADR 0240, amended). Another
         // module's of the crate a private `use` renames, `use
@@ -387,7 +390,7 @@ fn held_of<'tcx>(
             path: read,
             export,
             default: named_default,
-            span: Some(item.span),
+            span: Some(leaf.span),
             through,
         });
     }

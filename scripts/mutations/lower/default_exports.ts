@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::export_default!(Memoized)` of a `thread_local!` memo'd component is an error, not `export default Memoized;`",
     file: "src/lower/default_exports.rs",
-    find: "Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)),",
+    find: "Some(Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function)),",
     replace: "Some(Res::Def(DefKind::Fn | DefKind::Static { .. }, function)),",
     tests: ["test/declarations.test.ts", "-t", "thread-local default"],
   },
@@ -90,8 +90,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` the macro holds isn't the default itself, so it's refused as no function of its module",
     file: "src/lower/default_exports.rs",
-    find: "        DefKind::Const { .. } => tcx.item_name(def) != kw::Underscore,\n",
-    replace: "        DefKind::Const { .. } => false,\n",
+    find: "        DefKind::Const => tcx.item_name(def) != kw::Underscore,\n",
+    replace: "        DefKind::Const => false,\n",
     tests: [
       "test/modules.test.ts",
       "-t",

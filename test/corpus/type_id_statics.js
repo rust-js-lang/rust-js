@@ -13,8 +13,8 @@ function main() {
   console.log(`${ID_ISIZE === "usize"}`);
   console.log(`${IDS[0] !== IDS[1]} ${IDS[0] === "usize"} ${IDS[2] === "lib::A"}`);
   const F = [
-    "fn(fn(lib::A) -> lib::A) -> lib::A#94b8f5a056c3877827856acd1a988b9c",
-    "fn(fn() -> lib::A, lib::A) -> lib::A#365cee037b9f4b9cc077149917650fc2",
+    "fn(fn(lib::A) -> lib::A) -> lib::A#ed5db002f2d616eddbdaebca2bb6c110",
+    "fn(fn() -> lib::A, lib::A) -> lib::A#ddfde33b8ddaef7c6536ad961f698a04",
   ];
   console.log(`${F[0] !== F[1]}`);
 }

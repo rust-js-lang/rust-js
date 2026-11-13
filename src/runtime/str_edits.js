@@ -41,13 +41,17 @@ function $strExtendWithin(s, start, end) {
 }
 
 // `s.retain(keep)`, of a `keep` that may panic: each character it keeps, in
-// order. Where it throws, a panic, `set` is given those it kept of the
-// characters before, as std's `String::retain` leaves only them as it
-// unwinds, what it hadn't asked of gone too (#1171).
+// order. Where it throws, a panic, past the first it didn't keep, `set` is
+// given those it kept of the characters before, as std's `String::retain`
+// leaves only them as it unwinds, what it hadn't asked of gone too (#1171);
+// before that, `s` is left as it was, as 1.100's asks each in place till
+// one goes (ADR 0109, amended).
 function $retainText(s, keep, set) {
   let kept = "";
+  let removed = false;
   for (const c of s) {
-    if ($unwinds(() => keep(c), () => set(kept))) kept += c;
+    if ($unwinds(() => keep(c), () => removed && set(kept))) kept += c;
+    else removed = true;
   }
   return kept;
 }

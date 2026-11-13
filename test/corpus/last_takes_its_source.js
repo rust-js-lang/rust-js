@@ -10,8 +10,8 @@ import {
   $lastDropping,
   $lazyChain,
   $live,
-  $maxBy,
   $peek,
+  $reduceBy,
   $skipping,
   $unwindsOn,
   iterator_fuse,
@@ -165,7 +165,12 @@ function top(it, IItemOrd, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $maxBy(Iterator.from(iter), IItemOrd.cmp, true, dropIItem);
+    result = $reduceBy(
+      Iterator.from(iter),
+      (a, b) => IItemOrd.max(a, b, dropIItem),
+      true,
+      dropIItem,
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold) {

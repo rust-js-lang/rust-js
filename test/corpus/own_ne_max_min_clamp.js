@@ -8,7 +8,6 @@ import {
   $intsOrdered,
   $iter,
   $live,
-  $maxBy,
   $ord,
   $ordTreeMap,
   $ordTreeSet,
@@ -16,6 +15,7 @@ import {
   $partialEq,
   $partialOrd,
   $range,
+  $reduceBy,
   $sliceStartsWith,
   $sliceStrip,
   $sortedEntries,
@@ -384,12 +384,12 @@ function main() {
   console.log("generic clamp");
   console.log(`${pickyDebug_fmt(clamped([5, "x"], [1, "l"], [3, "h"], pickyOrd))}`);
   console.log("iter max");
-  const value$6 = $maxBy(
+  const value$6 = $reduceBy(
     [
       [1, "a"],
       [1, "b"],
     ],
-    pickyOrd_cmp,
+    pickyOrd_max,
   );
   console.log(`${value$6 == null ? "None" : `Some(${pickyDebug_fmt(value$6)})`}`);
   console.log("generic max of a destructor");

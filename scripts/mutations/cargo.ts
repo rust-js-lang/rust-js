@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "cargo-shared-output",
     breaks: "each build of a crate, of a feature set say, writes one place, so a build Cargo has as done has another's JS",
     file: "src/cargo.rs",
-    find: '    let dir = out_dir.join("rust-js").join(format!("{name}{extra}"));\n',
-    replace: '    let dir = out_dir.join("rust-js").join(&name);\n',
+    find: '    let dir = js_root(&out_dir).join(format!("{name}{extra}"));\n',
+    replace: '    let dir = js_root(&out_dir).join(&name);\n',
     tests: ["test/cargo-workspace.test.ts", "-t", "another feature set"],
   },
   {
@@ -242,5 +242,13 @@ export const mutations: Mutation[] = [
     find: "    json.or_else(written)\n        .or_else(crashed)\n",
     replace: "    json\n",
     unitTests: "cargo::tests::a_refusal_keeps_why_however_it_was_said",
+  },
+  {
+    name: "crate-js-in-each-out-dir",
+    breaks: "each crate's JS is written in its own build step's directory, Cargo 1.100's, so another crate imports it by a long path the formatter wraps, `import {\\n  ENABLE_SCOPE_API,` (ADR 0109, amended)",
+    file: "src/cargo.rs",
+    find: "        Some(\"out\") => out_dir.ancestors().nth(4),\n",
+    replace: "        Some(\"out\") => Some(out_dir),\n",
+    tests: ["test/libraries.test.ts", "-t", "imported by its package's subpath"],
   },
 ];

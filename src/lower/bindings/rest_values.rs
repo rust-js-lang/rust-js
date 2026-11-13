@@ -41,7 +41,7 @@ pub(in crate::lower) fn rest_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opt
         .filter_map(|arg| arg.as_type())
         .filter(|t| matches!(t.kind(), ty::Param(_)))
         .map(|param| -> ty::Clause<'tcx> { ty::TraitRef::new(tcx, sized, [param]).upcast(tcx) });
-    let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(clauses));
+    let param_env = ty::ParamEnv::new(tcx, clauses);
     let read: Ty<'tcx> = tcx
         .try_normalize_erasing_regions(
             ty::TypingEnv::new(param_env, ty::TypingMode::PostAnalysis),

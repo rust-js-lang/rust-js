@@ -420,4 +420,12 @@ export const mutations: Mutation[] = [
     replace: "            true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^(write_result_given_to_generic_code|write_result_through_a_dictionary).rs$"],
   },
+  {
+    name: "never-shown-of-enums-alone",
+    breaks: "`!`, which 1.100's `Infallible` is, isn't taken as never shown, so a `Debug` of a `Result<_, Infallible>` writes what can't run (ADR 0161, ADR 0109 amended)",
+    file: "src/lower/display.rs",
+    find: "            ty::Never => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^infallible_shown_through_a_bound.rs$"],
+  },
 ];

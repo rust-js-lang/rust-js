@@ -461,7 +461,9 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
                     ty = next;
                     continue;
                 }
-                PlaceElem::OpaqueCast(_) | PlaceElem::UnwrapUnsafeBinder(_) => node,
+                // A `Reborrow` type's phantom dereference is the same place;
+                // lowering refuses it (#1653).
+                PlaceElem::OpaqueCast(_) | PlaceElem::UnwrapUnsafeBinder(_) | PlaceElem::PhantomDeref => node,
             };
             variant = 0;
             ty = next;
@@ -1051,7 +1053,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
 /// Whether `id` is a thread-local's key, the `const` of a `LocalKey` its
 /// macro makes.
 fn thread_local_key(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Const { .. })
+    matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Const)
         && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
             ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), StdItem::LocalKey))
 }

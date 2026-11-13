@@ -338,9 +338,8 @@ fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>
         );
     }
     for clauses in methods.into_iter().filter(|clauses| !clauses.is_empty()) {
-        let held =
-            (typing_env.param_env.caller_bounds().iter()).chain(ty::elaborate::elaborate(tcx, clauses.iter().copied()));
-        let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(held));
+        let held = (typing_env.param_env.caller_bounds()).chain(ty::elaborate::elaborate(tcx, clauses.iter().copied()));
+        let param_env = ty::ParamEnv::new(tcx, held);
         bounds.push((clauses, ty::TypingEnv::new(param_env, typing_env.typing_mode())));
     }
     bounds

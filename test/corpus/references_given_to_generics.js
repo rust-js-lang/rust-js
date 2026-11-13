@@ -9,7 +9,6 @@ import {
   $eq,
   $hashSlice,
   $iterator,
-  $maxBy,
   $mutWriter,
   $ord,
   $ordered,
@@ -17,6 +16,7 @@ import {
   $partialOrd,
   $rangeInclusiveNext,
   $rangeNext,
+  $reduceBy,
   $roomForHint,
   $sipHasher,
   $stringWriter,
@@ -61,7 +61,7 @@ function same(a, b, TPartialEq) {
   return TPartialEq.eq(a, b);
 }
 function biggest(v, TOrd) {
-  return $maxBy(v, TOrd.cmp);
+  return $reduceBy(v, TOrd.max);
 }
 function hashed(t, THash) {
   const h = new $SipHasher(1, 3);

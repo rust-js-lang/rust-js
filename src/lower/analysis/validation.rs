@@ -65,12 +65,12 @@ pub(super) fn reject_unsupported(
             // `#[derive(Clone)]` write impls that are never called.
             DefKind::AssocFn => continue,
             // A `type const`, of `min_generic_const_args`, has no body to type-check.
-            DefKind::AssocConst { is_type_const: true } => "type constants",
+            DefKind::AssocConst if tcx.is_direct_const(def_id.to_def_id()) => "type constants",
             // A type's own `const`, as `Vec2::ZERO`: its value where it's used,
             // as rustc computed it (ADR 0031). A trait's too, and in generic code
             // its impl's dictionary's (ADR 0106). Not one with parameters of its own.
-            DefKind::AssocConst { .. } if tcx.generics_of(def_id).own_params.is_empty() => continue,
-            DefKind::AssocConst { .. } => "generic constants",
+            DefKind::AssocConst if tcx.generics_of(def_id).own_params.is_empty() => continue,
+            DefKind::AssocConst => "generic constants",
             // An `Iterator`'s `Item` (ADR 0055), an operator's `Output` (ADR
             // 0064) and a `TryFrom`'s `Error`: rustc works out what they are.
             DefKind::AssocTy
@@ -107,7 +107,7 @@ pub(super) fn reject_unsupported(
                 {
                     continue;
                 }
-                let what = format!("user implementations of `{}`", tcx.def_path_str(trait_id));
+                let what = crate::lower::refusal::implementing(tcx, trait_id);
                 refuse(tcx, tcx.def_span(def_id), Refused::Feature(&what));
                 valid = false;
                 continue;
@@ -194,7 +194,7 @@ pub(super) fn reject_namespace_value_reads(tcx: TyCtxt<'_>, all_bodies: &[&Body<
 /// `fn __rust_std_internal_init_fn() -> T { init }`, then std's storage for
 /// it. In JS, it's a variable of its module, made from `init`.
 pub(in crate::lower) fn is_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> bool {
-    matches!(tcx.def_kind(d), DefKind::Const { .. })
+    matches!(tcx.def_kind(d), DefKind::Const)
         && matches!(tcx.type_of(d).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
 }
 

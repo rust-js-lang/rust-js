@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Rvalue::Use(Operand::Constant(c), _) = rvalue
             && let Const::Unevaluated(uv, _) = c.const_
             && uv.promoted.is_none()
-            && matches!(self.tcx.def_kind(uv.def), DefKind::Const { .. })
+            && matches!(self.tcx.def_kind(uv.def), DefKind::Const)
             && self.krate.fns.contains_key(&uv.def)
             && c.ty().is_freeze(self.tcx, self.typing_env)
             && only_read(state.body, place.local)

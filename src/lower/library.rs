@@ -1219,19 +1219,15 @@ fn library_paths(tcx: TyCtxt<'_>) -> LibraryPaths {
         tcx: TyCtxt<'tcx>,
         found: LibraryPaths,
     }
-    impl<'tcx> Visitor<'tcx> for Paths<'tcx> {
-        type NestedFilter = rustc_middle::hir::nested_filter::All;
-        fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
-            self.tcx
-        }
-        fn visit_path(&mut self, path: &rustc_hir::Path<'tcx>, id: rustc_hir::HirId) {
-            if let Res::Def(_, item) = path.res
+    impl<'tcx> Paths<'tcx> {
+        fn named(&mut self, scope: LocalModId, res: Res, segments: &[rustc_hir::PathSegment<'_>]) {
+            if let Res::Def(_, item) = res
                 && !item.is_local()
-                && let [.., parent, last] = path.segments
+                && let [.., parent, last] = segments
                 && let Res::Def(DefKind::Mod, module) = parent.res
                 && module.krate == item.krate
             {
-                let at = (self.tcx.parent_module(id), item);
+                let at = (scope, item);
                 if module == item.krate.as_def_id() {
                     self.found.rooted.insert(at);
                 } else {
@@ -1240,6 +1236,28 @@ fn library_paths(tcx: TyCtxt<'_>) -> LibraryPaths {
                     self.found.through.entry(at).or_insert((module, last.ident.name));
                 }
             }
+        }
+    }
+    impl<'tcx> Visitor<'tcx> for Paths<'tcx> {
+        type NestedFilter = rustc_middle::hir::nested_filter::All;
+        fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        // A `use`, each name of it by its path whole, as a list nests each's
+        // relative to its list's since 1.100 (`uses::leaves`).
+        fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
+            if !matches!(item.kind, rustc_hir::ItemKind::Use(_)) {
+                return intravisit::walk_item(self, item);
+            }
+            for leaf in super::uses::leaves(item) {
+                let scope = self.tcx.parent_module_from_def_id(leaf.def_id);
+                for res in leaf.path.res.present_items() {
+                    self.named(scope, res, &leaf.path.segments);
+                }
+            }
+        }
+        fn visit_path(&mut self, path: &rustc_hir::Path<'tcx>, id: rustc_hir::HirId) {
+            self.named(self.tcx.parent_module(id), path.res, path.segments);
             intravisit::walk_path(self, path);
         }
     }

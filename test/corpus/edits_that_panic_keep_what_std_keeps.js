@@ -41,6 +41,22 @@ function main() {
         );
       });
       console.log(`${r.TAG === "Err"} ${$debugStr(s)}`);
+      let whole = "héllo";
+      r = $catchUnwind(() => {
+        whole = $retainText(
+          whole,
+          (c) => {
+            if (c === "l") {
+              throw new Error("call");
+            }
+            return true;
+          },
+          (kept) => {
+            whole = kept;
+          },
+        );
+      });
+      console.log(`${r.TAG === "Err"} ${$debugStr(whole)}`);
       let t = "a b c";
       t = Array.from(t)
         .filter((c) => c !== " ")

@@ -1,8 +1,8 @@
 # 0109. Pin a stable release: rust-js checks code as the Rust most people run does
 
 Status: Accepted. Amends [0003](0003-pin-nightly-toolchain.md): the pin is a
-stable release, `1.99.0`, where it was `nightly-2026-03-25`. Amended by
-[0110](0110-stable-syntax.md): rust-js's syntax is stable Rust's, so its
+stable release, `1.100.0` (amended below, from `1.99.0`), where it was
+`nightly-2026-03-25`. Amended by [0110](0110-stable-syntax.md): rust-js's syntax is stable Rust's, so its
 session allows no unstable feature, and rustc refuses a crate's own itself.
 
 Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
@@ -23,7 +23,7 @@ nightly's. A stable release ships them too, in its `rustc-dev` component, and
 
 ## Decision
 
-**The pin is a stable release, `1.99.0`, and moves with each one.**
+**The pin is a stable release, `1.100.0`, and moves with each one.**
 
 - **rust-js's own crate uses rustc's internals**, by `RUSTC_BOOTSTRAP=rust_js`
   in `.cargo/config.toml`: that crate's name alone, so no other crate is
@@ -31,7 +31,7 @@ nightly's. A stable release ships them too, in its `rustc-dev` component, and
 - **Its syntax is rustc's unstable features** (ADR 0039): `register_tool` and
   the rest, which a stable release allows no crate. rust-js's session allows
   them, and refuses a crate's own `#![feature]`, as that release does, with
-  its error, E0554: a program is stable 1.99.0's Rust. `RUSTC_BOOTSTRAP=1`
+  its error, E0554: a program is stable 1.100.0's Rust. `RUSTC_BOOTSTRAP=1`
   allows it, as for rustc. A crate may name rust-js's own features, which
   it turns on anyway.
 - **The binding crates are built so too**, each by its build script:
@@ -42,7 +42,7 @@ nightly's. A stable release ships them too, in its `rustc-dev` component, and
   loads for every process it starts, and the rustc suite, as rustc's own CI
   runs its tests.
 - **The playground's rustc is the release's source**, its version stamps the
-  release's, `1.99.0 (b940084d7 2026-09-28)` on the `stable` channel, or it
+  release's, `1.100.0 (0ef1bc386 2026-11-09)` on the `stable` channel, or it
   refuses the shipped `core`'s metadata. Its lockfile is rustc's own, with
   rust-js's crates' where they need a newer version.
 
@@ -117,3 +117,153 @@ nightly's. A stable release ships them too, in its `rustc-dev` component, and
   array.
 - **Still unstable**: rust-js's syntax, which a plain rustc refuses without
   `RUSTC_BOOTSTRAP`. Moving it to stable Rust is to come.
+
+## Amendment: the upgrade to 1.100.0 (2026-11-13)
+
+The pin moved from 1.99.0 to 1.100.0, released 2026-11-12. Clippy's commit
+moved with it to rust-clippy `e80eea1b01`, whose tree is 1.100's
+`src/tools/clippy` where it branched, rust-lang/rust@fd986958, byte for
+byte (ADR 0888). The playground's stamps are 1.100's, and it builds
+`rustc_structures`, a crate 1.100 split out of `rustc_session`. Its patch
+for dynamic libraries is re-cut for 1.100's `rustc_metadata`, the same
+change, and its lockfile starts from 1.100's rustc's. `rustc_attr_ir`
+includes the attribute docs' examples, `tests/ui/attributes/doc_examples`,
+so the sparse checkout reads them too: its paths are one list,
+`scripts/toolchain.ts sources`, which `wasm/build.sh` (each run, a
+checkout made for 1.99 too), CI's and the nightly's checkouts and the
+README read, where each wrote its own.
+
+**rustc's API**: `Const`'s methods are `ConstExt`'s; `caller_bounds()` is
+an iterator, and `ParamEnv::new` takes the `TyCtxt`; THIR's `Use` is
+`ValueExpr`; a trait's and a projection's predicates are `TraitClause` and
+`ProjectionClause`; the resolver's data is `middle::resolve`'s; `CrateType`
+is `rustc_structures`'; `Diag::emit` gives nothing, `emit_err` the
+`ErrorGuaranteed`; `IdentIsRaw` is `IdentKind`; a stable hash's def path
+hash is a `Fingerprint`; `DefKind::AssocConst` has no fields, its type
+const asked of `is_direct_const`; an alias const's `Inherent` is
+`InherentImpl`, an impl's args, or `InherentSelf`, of a `Self` type, which
+only unstable const generics write, refused.
+
+**A `use` list is one item.** `use a::{b, c::*};` was an item for each
+name, its path whole, and a list's stem; it's one item now, its tree
+nesting the names, each with a `DefId` of its own and a path relative to
+its list's. `src/lower/uses.rs` is the one owner of reading them: each
+leaf with its path whole, a list's `self` its list's path, as rustc names
+it. Naming, re-exports, held bindings, default exports and the paths a
+library's item is named through (`library_paths`) read leaves; a list's
+prefix's last segment, where it has no resolution of its own, takes the
+list's, and a leaf's span is its tree's, as 1.99's item of it was, so what
+re-exports a list writes is as before.
+
+**Each new variant is named, none by a wildcard.** Every public enum of
+rustc's MIR, THIR, HIR and type crates was diffed from 1.99 to 1.100.
+`ProjectionElem::PhantomDeref`, a `Reborrow` type's phantom dereference,
+which only the unstable `Reborrow` traits make, is refused where MIR is
+lowered, naming #1653, and the cell analysis takes it as the same place.
+The rest are unstable syntax's alone.
+
+**The crate's hash is its HIR's.** 1.100's rustc hashes a crate from its
+encoded metadata, and panics where `crate_hash(LOCAL_CRATE)` is asked
+before it's encoded, as a library's contract asks it, as it's lowered.
+rust-js's session sets `-Z metadata-crate-hash=no`, rustc's own fallback,
+the HIR hash 1.99 made. It's sound: the hash the contract names is the one
+the library's metadata keeps, which a consumer reads and compares (ADR
+0100). A stable toolchain takes `-Z` options from rust-js because its
+driver sets them in the session's options itself, as it sets `ub_checks`;
+no command line is parsed. The manifest test "a library's manifest names
+its crate's hash" fails, a panic, if the option stops being honoured, and
+the mutation `crate-hash-from-metadata` holds it.
+
+**std's bodies changed, and so did what rust-js reads of them.**
+
+- `Ord::min` and `max` of an integer call `intrinsics::integer_min` and
+  `integer_max`, read as `a.min(b)` is (`Std::MaxOf`).
+- `NonNull` is a lang item, no longer a diagnostic item, its field a
+  pattern type, `pattern_type!(*const T is !null)`.
+- `Infallible` is `!`: `GenericShunt`'s residual of a `collect()` into a
+  `Result` is `Result<!, E>`, and `!` is never shown, as an enum with no
+  variants isn't (ADR 0161).
+- A derived `Hash` binds no `__self_discr`: the discriminant is read by its
+  block's call, `write_isize(state, discr)`. An optimized body's
+  discriminant read that nothing of its block reads was dropped as the
+  read of a switch that went; its block's terminator counts as a read now.
+  Without it, std's compiled `IpAddr` and `SocketAddr` hashes read a name
+  nothing declares, a `ReferenceError`: a wrong answer the upgrade would
+  have caused, which the std package's regeneration, compared with the
+  committed one, caught before it shipped.
+
+**std's behaviour changed, so rust-js's did** (results change, Rust's kept,
+ADR 0262):
+
+- **`Iterator::max` and `min` are `reduce(Ord::max)`**, the item's own
+  `max` where it writes one, else std's `other < self`, by `PartialOrd`,
+  where 1.99's were `max_by(Ord::cmp)`. Of items whose order is seen,
+  isn't total or is written by hand anywhere in them, whose `<` may not
+  be their `cmp`'s, or that write their own `max`, `$reduceBy(items, max)`;
+  of the rest, whose `cmp` gives the same one, `$maxBy(items, cmp)` as
+  before. `$reduceBy` drops the one kept only where a stage panics inside
+  its fold: once folded it's given back, so a panic as what it stepped is
+  closed leaks it, #1655's rule for `max_by`
+  (`reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs`). The
+  hand-written case is a wrong answer the first cut of this upgrade gave:
+  `partial_ord_apart_from_ord.rs` kept the wrong item.
+- **A `str`'s `escape_debug()` escapes every Grapheme_Extend `char`**, as
+  a `char`'s does; 1.99 escaped the first alone. `$escapeDebug` takes no
+  flag.
+- **`OpenOptions` that append and truncate** fail with "append and
+  truncate cannot both be enabled", where 1.99 said "creating or truncating
+  a file requires write or append access".
+- **A `String`'s `retain` whose closure panics before it removed any
+  `char`** leaves the text whole: 1.100's asks each in place till one goes,
+  and only then holds the guard that leaves what it kept. The iterator
+  matrix's `string retain | panics` found it, a wrong answer the upgrade
+  would otherwise have shipped.
+
+**std's new items are refused, naming their tracker.** A call of an item
+1.100 stabilized that rust-js doesn't lower yet, `Vec::from_fn` or
+`Rc::map`, is refused at compile time as any unrecognised call is, and its
+refusal names #1656, by the item's own `#[stable(since = "1.100.0")]`
+(`open_item`, `OpenCall::NewIn1_100`); the std net leaves them out on
+that issue. So does an impl of a trait 1.100 stabilized, `Allocator`,
+refused as any std trait rust-js doesn't implement is: rustc's
+`drop/box-conditional-drop-allocator.rs`, out of scope at 1.99 as its
+`allocator_api` was unstable, is a known failure at 1.100 for it.
+
+**Found by the corpus at 1.100.0**, besides those: a `TypeId`'s hash is
+1.100's, and std's `FromIterator::from_iter` names its parameter `I`, so a
+dictionary's entry's given facts are `IIntoIterTrustedLen` and `dropI`.
+The never-type fallback, `()` to `!` in editions 2015 to 2021, changed no
+case's answer: the corpus runs against native Rust at 1.100.0.
+
+**What `--test` and Cargo do.** A test's `#[rustc_test_marker]` item is a
+`static` since 1.100, a `const` before: it's left out as the `const` was,
+as the JS runner takes its place (ADR 0026). Cargo 1.100 keeps each build
+step's artifacts in a directory of its own, `<profile>/build/<package>/
+<hash>/out`, where 1.99's were all in `<profile>/deps`. rust-js still
+writes each crate's JS beside the others', `<profile>/rust-js/<crate>`, so
+one imports another's by a short path, `../shared-1a2b/flags.js`, whose
+import the formatter lays out on one line: `js_root` in `src/cargo.rs` is
+the one place the profile directory is found of a crate's `--out-dir`.
+What reads the JS reads where it is of the manifest beside each crate's
+metadata, which Cargo's JSON messages name; the in-source ledger is
+`ledgerOf`'s, of `cargo metadata`'s target directory; `serde/build.sh`
+reads each crate's file of Cargo's messages, where its `ls -t` of `deps`
+picked a 1.99 build's rlib; and the tests read the layout through
+`cargoOutDirs`, `cargoArtifacts`, `buildScriptOutputs` (a build script's
+`run/stdout`, its `output` before) and `rustJsUnits`. Cargo's
+unused-dependency lint, on by default, is allowed in `serde/`'s crate,
+which is its dependencies alone, and a clippy fixture depends on React
+only where it uses it.
+
+Each fix has a mutation: `crate-hash-from-metadata`,
+`integer-min-max-intrinsics-unread`, `discriminant-read-by-a-call-dropped`,
+`non-null-by-diagnostic-item`, `infallible-an-enum`,
+`never-shown-of-enums-alone`, `str-escape-debug-extenders-first-only`,
+`append-truncate-in-old-words`, `iterator-max-by-cmp`, `list-names-unread`,
+`list-self-named-self`, `crate-js-in-each-out-dir`,
+`iterator-max-by-cmp-of-hand-written-orders`,
+`retain-panic-before-a-removal-truncates`,
+`reduce-by-drops-what-it-gave-back` and `new-in-1-100-unnamed`. Twenty
+mutations of the code those changes moved were retargeted at its new form;
+`reexports-alone-list-stem-own` is gone, as a list has no stem item of its
+own to count since 1.100, its leaves read through `uses`.

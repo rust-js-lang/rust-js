@@ -29,6 +29,7 @@ use crate::lower::temporary_names::{Base, Role};
 use crate::lower::{FnCx, R, Shape};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;

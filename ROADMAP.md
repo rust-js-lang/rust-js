@@ -89,7 +89,7 @@ pilot. No delivery dates are assigned yet.
   connect supported claims to tests.
   Started: the [first npm release](docs/decisions/0120-first-npm-release.md)
   names one host, macOS on Apple silicon; the Rust release is the pinned
-  stable 1.99.0 ([ADR 0109](docs/decisions/0109-stable-release.md));
+  stable 1.100.0 ([ADR 0109](docs/decisions/0109-stable-release.md));
   `@rust-js/react` supports React 18.0 on; the dependency model is
   [crates as npm packages](docs/decisions/0118-bindings-on-npm-only.md).
   A matrix in one place, with browsers and JS targets, remains.

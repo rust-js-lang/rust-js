@@ -209,7 +209,9 @@ function $openWith(o, path) {
     return $openInvalid(creating ? asked : "must specify at least one of read, write, or append access");
   }
   const access = o.append ? (o.read ? O_RDWR : O_WRONLY) | O_APPEND : o.read && o.write ? O_RDWR : o.write ? O_WRONLY : O_RDONLY;
-  if ((!o.write && !o.append && creating) || (o.append && o.truncate && !o.createNew)) return $openInvalid(asked);
+  if (!o.write && !o.append && creating) return $openInvalid(asked);
+  // 1.100's words, where 1.99 said `asked`'s (ADR 0109, amended).
+  if (o.append && o.truncate && !o.createNew) return $openInvalid("append and truncate cannot both be enabled");
   const creation = o.createNew ? O_CREAT | O_EXCL : (o.create ? O_CREAT : 0) | (o.truncate ? O_TRUNC : 0);
   // Its modes, `O_ACCMODE`'s: read where asked, written where it's written
   // or appended to.

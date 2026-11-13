@@ -224,7 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A constant, the impl's or the trait's default, as rustc computed
             // it: read on each use where it's of a type changed in place, so
             // each is a value of its own, as ADR 0031's are.
-            if matches!(self.tcx.def_kind(item.def_id), DefKind::AssocConst { .. }) {
+            if matches!(self.tcx.def_kind(item.def_id), DefKind::AssocConst) {
                 // Only one generic code reads, here or where a library's consumers
                 // may (ADR 0100).
                 if !self.krate.library && !self.krate.generic_consts.contains(&item.def_id) {
@@ -614,29 +614,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // dictionary's, so it knows its items (#1239), its impl's evidence
             // never taken for a bound's.
             let tcx = self.tcx;
-            let bounds = (tcx.param_env(method).caller_bounds().iter()).map(|bound| {
+            let bounds = (tcx.param_env(method).caller_bounds()).map(|bound| {
                 ty::EarlyBinder::bind(tcx, bound)
                     .instantiate(tcx, instance.args)
                     .skip_normalization()
             });
-            let method_env = ty::TypingEnv::new(
-                ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds)),
-                self.typing_env.typing_mode(),
-            );
+            let method_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, bounds), self.typing_env.typing_mode());
             let own_params: Vec<Ty<'tcx>> = (instance.args.iter().skip(tcx.generics_of(method).parent_count))
                 .filter_map(|arg| arg.as_type())
                 .collect();
             let own = |ty: Ty<'tcx>| own_params.contains(&ty);
             let own_bounds =
-                (method_env.param_env.caller_bounds().iter()).filter(|clause| match clause.kind().skip_binder() {
+                (method_env.param_env.caller_bounds()).filter(|clause| match clause.kind().skip_binder() {
                     ty::ClauseKind::Trait(bound) => own(bound.self_ty()),
                     ty::ClauseKind::Projection(projection) => own(projection.projection_term.self_ty()),
                     _ => false,
                 });
             let own_env = ty::TypingEnv::new(
-                ty::ParamEnv::new(
-                    tcx.mk_clauses_from_iter(self.typing_env.param_env.caller_bounds().iter().chain(own_bounds)),
-                ),
+                ty::ParamEnv::new(tcx, self.typing_env.param_env.caller_bounds().chain(own_bounds)),
                 self.typing_env.typing_mode(),
             );
             let outer_env = std::mem::replace(&mut self.typing_env, own_env);

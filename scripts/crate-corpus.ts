@@ -28,6 +28,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpat
 import { dirname, join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
+import { channel } from "./toolchain";
 import { floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
@@ -208,7 +209,7 @@ function difference(native: string, js: string): string {
 async function main() {
   const root = resolve(import.meta.dir, "..");
   const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
-  const toolchain = "1.99.0";
+  const toolchain = channel;
   const corpus = corpusRows(readFileSync(join(root, "docs/crate-corpus.md"), "utf8"));
   if (!Array.isArray(corpus)) {
     console.error(corpus.problem);

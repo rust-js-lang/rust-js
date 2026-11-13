@@ -166,7 +166,7 @@ pub(super) fn module<'tcx>(
             DefKind::Union => Some(out.union_type(def_id)),
             DefKind::TyAlias => Some(out.alias(def_id)),
             DefKind::Trait => out.trait_interface(def_id),
-            DefKind::Const { .. } | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
+            DefKind::Const | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
                 Some(out.constant(def_id))
             }
             _ => None,

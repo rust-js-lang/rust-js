@@ -673,7 +673,7 @@ fn mir_fn_dyn_sources<'tcx>(
 /// no drop: Rust never drops it again.
 fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> IndexSet<ExprId> {
     let through = |mut e: ExprId| {
-        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
             e = inner;
         }
         e
@@ -745,7 +745,7 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
         }
         for (i, &arg) in args.iter().enumerate() {
             let mut e = arg;
-            while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+            while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
                 e = inner;
             }
             if let ExprKind::Closure(_) = thir[e].kind
@@ -790,7 +790,7 @@ fn gives_back_a_function(tcx: TyCtxt<'_>, id: DefId) -> bool {
 fn cannot_unwind(thir: &Thir<'_>, e: ExprId) -> bool {
     match &thir[e].kind {
         ExprKind::Scope { value: inner, .. }
-        | ExprKind::Use { source: inner }
+        | ExprKind::ValueExpr { source: inner }
         | ExprKind::Field { lhs: inner, .. }
         | ExprKind::Borrow { arg: inner, .. }
         | ExprKind::PointerCoercion { source: inner, .. } => cannot_unwind(thir, *inner),

@@ -227,4 +227,12 @@ export const mutations: Mutation[] = [
     replace: ".chain(coverage).collect(); let _ = reports;",
     tests: ["test/compiles.test.ts", "-t", "names what it reports"],
   },
+  {
+    name: "crate-hash-from-metadata",
+    breaks: "rustc 1.100 hashes the crate from its encoded metadata, which a library's contract asks before it's encoded: rustc panics (ADR 0109, amended)",
+    file: "src/main.rs",
+    find: "        config.opts.unstable_opts.metadata_crate_hash = false;\n",
+    replace: "",
+    tests: ["test/manifest.test.ts", "-t", "crate's hash"],
+  },
 ];

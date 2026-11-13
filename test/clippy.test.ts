@@ -14,7 +14,9 @@ beforeAll(buildCompiler, 600_000);
 /** An app of `files`, by their paths in `src/`, `App.rs` its crate's root,
  * using the react and js crates, its clippy's Cargo target made from the
  * run's seed, those crates checked. */
-function app(name: string, files: Record<string, string>): string {
+/** An app of `files`, its crate depending on `js` and, where it uses it,
+ * `react`: Cargo 1.100 warns of a dependency a crate doesn't use. */
+function app(name: string, files: Record<string, string>, { react = true } = {}): string {
   const dir = fixture(name);
   mkdirSync(join(dir, "src"), { recursive: true });
   seeded(join(cacheDirOf(dir), "clippy"));
@@ -28,8 +30,7 @@ path = "src/App.rs"
 
 [dependencies]
 js = { package = "rust-js-builtins", path = ${JSON.stringify(join(root, "builtins"))} }
-react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }
-
+${react ? `react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n` : ""}
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
 `);
@@ -241,7 +242,7 @@ pub fn response(reason: &Reason) -> f64 {
     pub static RESPONSE_SYMBOL: &'static js::Symbol = js::symbol::new(None);
 }
 `,
-  });
+  }, { react: false });
   const { code, said, stderr } = clippy(dir, "-D", "warnings");
   expect([code, said], stderr).toEqual([0, []]);
 }, 600_000);

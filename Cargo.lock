@@ -105,8 +105,8 @@ checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
 name = "clippy_config"
-version = "0.1.99"
-source = "git+https://github.com/rust-lang/rust-clippy?rev=2bc35de067e2a538568a675c8cf26e60884cc7e1#2bc35de067e2a538568a675c8cf26e60884cc7e1"
+version = "0.1.100"
+source = "git+https://github.com/rust-lang/rust-clippy?rev=e80eea1b01431d9a1ff957b2f5b0ebba47b0963f#e80eea1b01431d9a1ff957b2f5b0ebba47b0963f"
 dependencies = [
  "arrayvec",
  "clippy_utils",
@@ -116,8 +116,8 @@ dependencies = [
 
 [[package]]
 name = "clippy_lints"
-version = "0.1.99"
-source = "git+https://github.com/rust-lang/rust-clippy?rev=2bc35de067e2a538568a675c8cf26e60884cc7e1#2bc35de067e2a538568a675c8cf26e60884cc7e1"
+version = "0.1.100"
+source = "git+https://github.com/rust-lang/rust-clippy?rev=e80eea1b01431d9a1ff957b2f5b0ebba47b0963f#e80eea1b01431d9a1ff957b2f5b0ebba47b0963f"
 dependencies = [
  "arrayvec",
  "cargo_metadata",
@@ -138,8 +138,8 @@ dependencies = [
 
 [[package]]
 name = "clippy_utils"
-version = "0.1.99"
-source = "git+https://github.com/rust-lang/rust-clippy?rev=2bc35de067e2a538568a675c8cf26e60884cc7e1#2bc35de067e2a538568a675c8cf26e60884cc7e1"
+version = "0.1.100"
+source = "git+https://github.com/rust-lang/rust-clippy?rev=e80eea1b01431d9a1ff957b2f5b0ebba47b0963f#e80eea1b01431d9a1ff957b2f5b0ebba47b0963f"
 dependencies = [
  "arrayvec",
  "itertools 0.15.0",
@@ -220,8 +220,8 @@ checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
 name = "declare_clippy_lint"
-version = "0.1.99"
-source = "git+https://github.com/rust-lang/rust-clippy?rev=2bc35de067e2a538568a675c8cf26e60884cc7e1#2bc35de067e2a538568a675c8cf26e60884cc7e1"
+version = "0.1.100"
+source = "git+https://github.com/rust-lang/rust-clippy?rev=e80eea1b01431d9a1ff957b2f5b0ebba47b0963f#e80eea1b01431d9a1ff957b2f5b0ebba47b0963f"
 
 [[package]]
 name = "displaydoc"

@@ -1,8 +1,10 @@
 // What std leaves where an edit panics (#1171, found by the std net): an
 // `insert` past the end drops what it took as it unwinds, a `Vec`'s and a
 // `VecDeque`'s; a `String`'s `retain` whose closure panics leaves what it
-// kept of the characters before, what it hadn't asked of gone too. One
-// whose closure can't panic keeps its JS's own form.
+// kept of the characters before, what it hadn't asked of gone too, though
+// one that panics before it removed any leaves the text whole, 1.100's
+// (ADR 0109, amended). One whose closure can't panic keeps its JS's own
+// form.
 use std::collections::VecDeque;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -33,6 +35,16 @@ fn main() {
         })
     }));
     println!("{} {s:?}", r.is_err());
+    let mut whole = String::from("héllo");
+    let r = catch_unwind(AssertUnwindSafe(|| {
+        whole.retain(|c| {
+            if c == 'l' {
+                panic!("call");
+            }
+            true
+        })
+    }));
+    println!("{} {whole:?}", r.is_err());
     let mut t = String::from("a b c");
     t.retain(|c| c != ' ');
     println!("{t}");

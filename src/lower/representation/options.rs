@@ -154,7 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn read_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Param(_))
-            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+            && self.typing_env.param_env.caller_bounds().any(|clause| {
                 clause.as_trait_clause().is_some_and(|bound| {
                     bound.self_ty().skip_binder() == ty
                         && (self.tcx.associated_items(bound.def_id()).in_definition_order())

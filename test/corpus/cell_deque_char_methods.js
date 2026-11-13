@@ -90,10 +90,10 @@ function main() {
 
   for (const c of ["a", "\n", "'", "é", "😀", "\x7f"]) {
     const escapeDefault = $iter(Array.from($escapeDefault(c)));
-    const escapeDebug = $iter(Array.from($escapeDebug(c, false)));
+    const escapeDebug = $iter(Array.from($escapeDebug(c)));
     console.log(`${$restStr(escapeDefault)} ${$restStr(escapeDebug)} ${$escapeUnicode(c)}`);
   }
-  console.log(`${$escapeDefault("a\tb\"'é")} ${$escapeDebug("a\tb\"'é́", true)}`);
+  console.log(`${$escapeDefault("a\tb\"'é")} ${$escapeDebug("a\tb\"'é́")}`);
   console.log(`${$escapeUnicode("hé")}`);
   const buffer = [0, 0, 0, 0];
   const text = $encodeUtf8("é", buffer);

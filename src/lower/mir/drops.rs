@@ -10,6 +10,7 @@ use rustc_index::IndexVec;
 use rustc_middle::mir::{
     self, BasicBlock, Location, Place, ProjectionElem, StatementKind, TerminatorKind, UnwindAction,
 };
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty};
 use rustc_mir_dataflow::impls::{MaybeInitializedPlaces, MaybeUninitializedPlaces};
 use rustc_mir_dataflow::move_paths::{LookupResult, MoveData, MovePathIndex};

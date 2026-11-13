@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use` by another name is taken for the module's own name of what it re-exports, so `use priorities::IMMEDIATE` beside `pub use priorities::IMMEDIATE as UNSTABLE_IMMEDIATE` imports it as `IMMEDIATE as unstable_ImmediatePriority`",
     file: "src/lower/analysis/naming.rs",
-    find: "UseKind::Single(ident)) if !super::is_reexport(tcx, item) =>",
-    replace: "UseKind::Single(ident)) =>",
+    find: "crate::lower::uses::Leaf::Single(ident) if !super::is_reexport(tcx, &leaf) =>",
+    replace: "crate::lower::uses::Leaf::Single(ident) =>",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a private `use .. as`'s `#[rust_js::name]` is ignored, `_areaDev` where it says `_areaDEV` (ADR 0596, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "                    let given = bindings::given_name(tcx, item.owner_id.to_def_id());\n",
+    find: "                    let given = bindings::given_name(tcx, leaf.def_id.to_def_id());\n",
     replace: "                    let given: Option<String> = None;\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
@@ -509,7 +509,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::name]` on a group `use` names each of its imports the same, `ImmediatePriority as SchedulerPriority, NormalPriority as SchedulerPriority$1`, not an error",
     file: "src/lower/analysis/naming.rs",
-    find: "                && bindings::given_name(tcx, item.owner_id.to_def_id()).is_some()\n",
+    find: "                && bindings::given_name(tcx, leaf.def_id.to_def_id()).is_some()\n",
     replace: "                && false\n",
     tests: [
       "test/modules.test.ts",
@@ -638,8 +638,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a `use` tree, `use crate::{a::x, b::y};`, is lost: each import it makes is where its leaf's path is (rd92)",
     file: "src/lower/analysis/naming.rs",
-    find: "                Some((statement(item.span), named, holders, super::is_reexport(tcx, item)))\n",
-    replace: "                Some((item.span, named, holders, super::is_reexport(tcx, item)))\n",
+    find: "                    Some((leaf.item.span, named, holders, super::is_reexport(tcx, &leaf)))\n",
+    replace: "                    Some((leaf.span, named, holders, super::is_reexport(tcx, &leaf)))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
@@ -779,8 +779,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a `use` names through a module that holds it is taken for its own JS module's too, so a `use shared::internals::REACT_SHARED_INTERNALS;` places `react`'s import, which the module doesn't make there (rd609, ADR 1063, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "                            import: Some(read.import),\n                        }),\n",
-    replace: "                            import: Some(read.import),\n                        })\n                        .max(named.push(id)),\n",
+    find: "                                import: Some(read.import),\n                            }),\n",
+    replace: "                                import: Some(read.import),\n                            })\n                            .max(named.push(id)),\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
@@ -860,8 +860,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` through a module that re-exports what it names places that module's import nowhere, so `./config_markup.js` is after `../dep/config.js`, whose `use` is after it (rd650)",
     file: "src/lower/analysis/naming.rs",
-    find: "                            Some(module) => holders.push(NamedThrough {\n                                holder: bindings::Holder::Module(module),\n                                id,\n                                import: None,\n                            }),\n",
-    replace: "                            Some(_) => named.push(id),\n",
+    find: "                                Some(module) => holders.push(NamedThrough {\n                                    holder: bindings::Holder::Module(module),\n                                    id,\n                                    import: None,\n                                }),\n",
+    replace: "                                Some(_) => named.push(id),\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
   },
   {
@@ -928,15 +928,15 @@ export const mutations: Mutation[] = [
     name: "required-use-group-kept",
     breaks: "`#[rust_js::require]` on a group of `use`s is compiled, each of them required, where it names one function (rd684)",
     file: "src/lower/analysis/naming.rs",
-    find: "                (UseKind::ListStem | UseKind::Glob, _) => Some(\n",
-    replace: "                (UseKind::ListStem | UseKind::Glob, _) if false => Some(\n",
+    find: "                (crate::lower::uses::Leaf::Glob, _) => Some(\n                    \"names the `use` of one function, `use react::create_element;`: write a `use` of its own for each\",\n                ),\n                _ if list => Some(\n",
+    replace: "                (crate::lower::uses::Leaf::Glob, _) if false => Some(\n                    \"names the `use` of one function, `use react::create_element;`: write a `use` of its own for each\",\n                ),\n                _ if list && false => Some(\n",
     tests: ["test/require.test.ts"],
   },
   {
     name: "required-pub-use-kept",
     breaks: "`#[rust_js::require]` on a `pub use`, the module's `export .. from` that loads with it, is compiled (rd684)",
     file: "src/lower/analysis/naming.rs",
-    find: "                _ if tcx.visibility(item.owner_id).is_public() => Some(\n",
+    find: "                _ if tcx.visibility(leaf.def_id).is_public() => Some(\n",
     replace: "                _ if false => Some(\n",
     tests: ["test/require.test.ts"],
   },

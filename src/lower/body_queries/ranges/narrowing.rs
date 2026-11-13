@@ -27,7 +27,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 self.scope_ended(cond, &mut no);
                 (yes, no)
             }
-            ExprKind::Use { source } if compound(source) => self.branches(source, known),
+            ExprKind::ValueExpr { source } if compound(source) => self.branches(source, known),
             ExprKind::Unary { op: UnOp::Not, arg } => {
                 let (yes, no) = self.branches(arg, known);
                 (no, yes)

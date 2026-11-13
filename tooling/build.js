@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bytesOf, evict, freeBytes } from "./bounded.js";
-import { cargoWorkspace, checkCargo, lintCheck, packageOf } from "./cargo.js";
+import { cargoWorkspace, checkCargo, ledgerName, lintCheck, packageOf } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** The rust-js checkout this `@rust-js/build` is of, where one runs it from
@@ -29,10 +29,6 @@ export const appCacheFloor = 5 * 2 ** 30;
  * target's crates are of one build of the compiler, as Cargo keys each by
  * it and never finds another's again (ADR 1003). */
 const compilerStamp = "rust-js-compiler";
-
-/** The file a target keeps of what a build wrote in source (`checkCargo`'s
- * ledger), the app's, whichever compiler wrote it. */
-const ledgerName = "rust-js-in-source.json";
 
 /** Where Cargo builds an app's Rust for `purpose`, `target`, `editor`,
  * `clippy` or `test`: `CARGO_TARGET_DIR` where it's set, the user's own;

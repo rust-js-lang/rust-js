@@ -9,10 +9,10 @@ import {
   $heapPop,
   $heapPush,
   $heapSorted,
-  $maxBy,
   $ord,
   $partialEq,
   $partialOrd,
+  $reduceBy,
   $sortStable,
   $sortUnstable,
 } from "@rust-js/std";
@@ -141,7 +141,7 @@ function main() {
   $sortUnstable(downs, (a, b) => ($cmp(a.a, b.a) || $cmp(a.b, b.b)) < 0, "network");
   console.log(`unstably [${downs.map((item) => downDebug_fmt(item)).join(", ")}]`);
   const max = ($cmp(y.a, x.a) || $cmp(y.b, x.b)) < 0 ? x : y;
-  const value$1 = $maxBy(downs, downOrd_cmp);
+  const value$1 = $reduceBy(downs, (a, b) => (($cmp(b.a, a.a) || $cmp(b.b, a.b)) < 0 ? a : b));
   console.log(
     `max ${downDebug_fmt(max)}, by cmp ${value$1 == null ? "None" : `Some(${downDebug_fmt(value$1)})`}`,
   );
@@ -164,7 +164,7 @@ function main() {
   );
   const ups = [q, p, [0]];
   ups.sort(upPartialOrd_partialCmp);
-  const arg = $maxBy(ups, (a, b) => $cmp(a[0], b[0]));
+  const arg = $reduceBy(ups, (a, b) => (upPartialOrd_partialCmp(b, a) < 0 ? a : b));
   console.log(
     `sorted [${ups.map((item) => upDebug_fmt(item)).join(", ")}], by cmp ${arg == null ? "None" : `Some(${upDebug_fmt(arg)})`}`,
   );
@@ -199,7 +199,7 @@ function main() {
     `${seenDebug_fmt(seenPartialOrd_partialCmp(right$1, left$1) < 0 ? right$1 : left$1)}`,
   );
   console.log("Iterator::max");
-  const value$6 = $maxBy(seen, seenOrd_cmp);
+  const value$6 = $reduceBy(seen, (a, b) => (seenPartialOrd_partialCmp(b, a) < 0 ? a : b));
   console.log(`${value$6 == null ? "None" : `Some(${seenDebug_fmt(value$6)})`}`);
   console.log("clamp");
   console.log(`${seenDebug_fmt($clampBy([5], [1], [3], seenPartialOrd))}`);

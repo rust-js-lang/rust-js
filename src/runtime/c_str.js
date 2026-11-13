@@ -73,7 +73,7 @@ function $debugCStr(c) {
   for (const { valid, invalid } of $utf8Chunks($cstrBytes(c))) {
     for (const ch of valid) {
       const code = ch.codePointAt(0);
-      out += code === 0 ? "\\0" : code < 0x80 ? ascii([code]) : $escapeDebug(ch, false);
+      out += code === 0 ? "\\0" : code < 0x80 ? ascii([code]) : $escapeDebug(ch);
     }
     out += ascii(invalid);
   }

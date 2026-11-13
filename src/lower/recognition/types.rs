@@ -538,7 +538,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     fn consts_typed(&self, ty: Ty<'tcx>) -> bool {
         let bounds = self.typing_env.param_env.caller_bounds();
         ty.walk().all(|part| match part.as_const().map(|c| c.kind()) {
-            Some(ty::ConstKind::Param(param)) => bounds.iter().any(|clause| {
+            Some(ty::ConstKind::Param(param)) => bounds.clone().any(|clause| {
                 matches!(clause.kind().skip_binder(), ty::ClauseKind::ConstArgHasType(c, _)
                     if matches!(c.kind(), ty::ConstKind::Param(p) if p == param))
             }),

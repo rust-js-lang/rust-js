@@ -221,7 +221,6 @@ pub(in crate::lower) enum TextOp {
     /// `char::decode_utf16(units)` (ADR 0327).
     Escape {
         kind: &'static str,
-        str: bool,
     },
     EncodeUtf8,
     /// `c.encode_utf16(&mut buf)`: its UTF-16 units at the start of `buf`,
@@ -558,7 +557,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its `char`s, as a case mapping's (ADR 0971).
             TextOp::Escape { kind: "default", .. } => chars(call("$escapeDefault", vec![arg()])),
             TextOp::Escape { kind: "unicode", .. } => chars(call("$escapeUnicode", vec![arg()])),
-            TextOp::Escape { str, .. } => chars(call("$escapeDebug", vec![arg(), Expr::bool(str)])),
+            TextOp::Escape { .. } => chars(call("$escapeDebug", vec![arg()])),
             // Its `&mut str`, read and written through `buf`'s bytes, as
             // `from_utf8_mut`'s (ADR 0334).
             TextOp::EncodeUtf8 => call("$encodeUtf8", vec![arg(), arg()]),

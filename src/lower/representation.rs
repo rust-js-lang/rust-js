@@ -19,6 +19,7 @@ use rustc_middle::mir::interpret::{AllocId, ConstAllocation, GlobalAlloc, Global
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
@@ -910,7 +911,7 @@ fn unchanging<'tcx>(tcx: TyCtxt<'tcx>, memory: ConstAllocation<'tcx>) -> AllocId
 /// is its value (ADR 0023), and no program tells a number's copy from it.
 /// Any other is `None`.
 fn pointee(tcx: TyCtxt<'_>, pointer: Scalar, primitive: bool) -> Option<Pointer> {
-    let pointer = pointer.to_pointer(&tcx).discard_err()?.into_pointer_or_addr().ok()?;
+    let pointer = pointer.to_pointer(&tcx).into_pointer_or_addr().ok()?;
     let (prov, offset) = pointer.prov_and_relative_offset();
     let memory = match tcx.try_get_global_alloc(prov.alloc_id())? {
         GlobalAlloc::Memory(memory) if memory.inner().mutability == Mutability::Not => return Some(pointer),
@@ -1235,7 +1236,7 @@ pub(super) fn unit_given<'tcx>(tcx: TyCtxt<'tcx>, to: UnitTo<'tcx>) -> Option<Ex
             let declared = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
             let declared = declared.skip_binder().inputs();
             let bounded = |ty: Ty<'tcx>| {
-                tcx.param_env(def_id).caller_bounds().iter().any(|clause| {
+                tcx.param_env(def_id).caller_bounds().any(|clause| {
                     clause
                         .as_trait_clause()
                         .is_some_and(|bound| bound.self_ty().skip_binder() == ty && lists(bound.def_id()))

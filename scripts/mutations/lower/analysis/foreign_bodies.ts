@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's impl's constant has no MIR, as its metadata keeps one only for evaluation, so a library that compiles arrayvec's `ArrayVecImpl` impl is refused at its `CAPACITY = CAP` (#468, ADR 0176, amended)",
     file: "src/lower/analysis/foreign_bodies.rs",
-    find: "            (!is_type_const && tcx.defaultness(def_id).has_value()).then(|| tcx.mir_for_ctfe(def_id))\n",
-    replace: "            (!is_type_const && tcx.defaultness(def_id).has_value() && false).then(|| tcx.mir_for_ctfe(def_id))\n",
+    find: "            (!tcx.is_direct_const(def_id) && tcx.defaultness(def_id).has_value()).then(|| tcx.mir_for_ctfe(def_id))\n",
+    replace: "            (!tcx.is_direct_const(def_id) && tcx.defaultness(def_id).has_value() && false).then(|| tcx.mir_for_ctfe(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
   },
   {

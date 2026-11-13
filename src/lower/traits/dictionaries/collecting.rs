@@ -29,7 +29,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bounds: [ty::Clause<'tcx>; 3] = [
             ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),
             ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),
-            ty::ProjectionPredicate {
+            ty::ProjectionClause {
                 projection_term: match *Ty::new_projection(tcx, ty::IsRigid::No, item_def, [param]).kind() {
                     ty::Alias(_, alias) => alias.into(),
                     _ => unreachable!("a projection is an alias"),
@@ -38,11 +38,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             .upcast(tcx),
         ];
-        let clauses = self.typing_env.param_env.caller_bounds().iter().chain(bounds);
-        let typing_env = ty::TypingEnv::new(
-            ty::ParamEnv::new(tcx.mk_clauses_from_iter(clauses)),
-            self.typing_env.typing_mode(),
-        );
+        let clauses = self.typing_env.param_env.caller_bounds().chain(bounds);
+        let typing_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, clauses), self.typing_env.typing_mode());
         let facts = crate::lower::traits::std_method_facts(tcx, self.krate.foreign, from_iter);
         let mut params: Vec<String> = vec!["items".into()];
         let given: Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact, Expr)> = (facts.iter())

@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the discriminant a std body read for a switch that went is kept, read as a value",
     file: "src/lower/mir/prepared.rs",
-    find: "tested != Some(local) && !read.0.contains(&local)))\n",
+    find: "!read.0.contains(&local)))\n",
     replace: "false))\n",
     tests: ["test/std-package.test.ts"],
   },
@@ -142,5 +142,13 @@ export const mutations: Mutation[] = [
     find: "                [copy_at] if copy_at.statement_index < at => {\n",
     replace: "                [copy_at] if copy_at.statement_index + 1 == at => {\n",
     tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
+  },
+  {
+    name: "discriminant-read-by-a-call-dropped",
+    breaks: "a discriminant read by its block's call alone, 1.100's derived `Hash`'s `write_isize(state, discr)`, is dropped as unread: std's `IpAddr` hash reads a name nothing declares (ADR 0109, amended)",
+    file: "src/lower/mir/prepared.rs",
+    find: "                Visitor::visit_terminator(&mut read, data.terminator(), mir::Location::START);\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
   },
 ];

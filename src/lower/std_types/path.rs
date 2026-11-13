@@ -108,7 +108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         let declared = self.signature_of(callee).0.get(at)?.peel_refs();
         let as_ref = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::AsRef);
-        tcx.param_env(callee).caller_bounds().iter().find_map(|clause| {
+        tcx.param_env(callee).caller_bounds().find_map(|clause| {
             let tr = clause.as_trait_clause()?.skip_binder().trait_ref;
             (tr.def_id == as_ref && tr.self_ty() == declared).then(|| tr.args.type_at(1))
         })

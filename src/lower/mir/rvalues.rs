@@ -471,10 +471,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow
                         if matches!(
                             tcx.def_kind(state.body.source.def_id()),
-                            DefKind::Const { .. }
-                                | DefKind::AssocConst { .. }
-                                | DefKind::AnonConst
-                                | DefKind::Static { .. }
+                            DefKind::Const | DefKind::AssocConst | DefKind::AnonConst | DefKind::Static { .. }
                         ) || !state.body.source.def_id().is_local() =>
                     {
                         let wrapping = op.overflowing_to_wrapping().expect("an overflowing operation");

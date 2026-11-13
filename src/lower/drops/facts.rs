@@ -128,7 +128,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             let expr = self.stack[parent];
             match self.thir[expr].kind {
                 ExprKind::Scope { .. }
-                | ExprKind::Use { .. }
+                | ExprKind::ValueExpr { .. }
                 | ExprKind::ValueTypeAscription { .. }
                 | ExprKind::PlaceTypeAscription { .. } => child = expr,
                 // A type that's the value it holds, `AssertUnwindSafe(f)`, is
@@ -822,7 +822,7 @@ pub(in crate::lower) fn is_place(kind: &ExprKind<'_>) -> bool {
             | ExprKind::Deref { .. }
             | ExprKind::StaticRef { .. }
             | ExprKind::Scope { .. }
-            | ExprKind::Use { .. }
+            | ExprKind::ValueExpr { .. }
             | ExprKind::ValueTypeAscription { .. }
             | ExprKind::PlaceTypeAscription { .. }
             | ExprKind::NeverToAny { .. }

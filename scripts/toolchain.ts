@@ -8,6 +8,12 @@ const pinned = config.toolchain?.channel;
 if (typeof pinned !== "string" || !pinned) throw new Error("rust-toolchain.toml must declare a channel");
 /** The pinned toolchain, `rust-toolchain.toml`'s channel: what each script reads it as. */
 export const channel: string = pinned;
+/**
+ * The paths of rustc's source the playground's build reads, its sparse
+ * checkout's: the compiler, `proc_macro`, and the attribute docs' examples
+ * `rustc_attr_ir` includes since 1.100 (ADR 0109, amended).
+ */
+export const sources = ["compiler", "library/proc_macro", "tests/ui/attributes/doc_examples"];
 
 function run(args: string[]): string {
   const result = Bun.spawnSync(args, { cwd: root, stdout: "pipe", stderr: "pipe" });
@@ -20,6 +26,8 @@ if (import.meta.main) try {
   if (extra.length || (command !== "check-source" && path)) throw new Error("Unexpected toolchain arguments");
   if (command === "channel") {
     console.log(channel);
+  } else if (command === "sources") {
+    console.log(sources.join(" "));
   } else if (command === "commit" || command === "check-source") {
     const version = run(["rustc", `+${channel}`, "-vV"]);
     const commit = version.match(/^commit-hash: ([0-9a-f]{40})$/m)?.[1];
@@ -30,7 +38,7 @@ if (import.meta.main) try {
       const actual = run(["git", "-C", resolve(path), "rev-parse", "HEAD"]);
       if (actual !== commit) throw new Error(`rustc source mismatch: ${channel} requires ${commit}, checkout is ${actual}. Use a checkout at the pinned commit before building WASM.`);
     }
-  } else throw new Error("Usage: bun scripts/toolchain.ts channel | commit | check-source <path>");
+  } else throw new Error("Usage: bun scripts/toolchain.ts channel | commit | sources | check-source <path>");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

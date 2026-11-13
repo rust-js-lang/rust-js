@@ -389,7 +389,15 @@ for (const [name, source, message, crate] of [
   ["a held rev of the crate's iterator stepped from its back past a skip", "pub struct C(i32, i32);\nimpl Iterator for C { type Item = i32; fn next(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.0 += 1; self.0 }) } fn size_hint(&self) -> (usize, Option<usize>) { let n = (self.1 - self.0).max(0) as usize; (n, Some(n)) } }\nimpl DoubleEndedIterator for C { fn next_back(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.1 -= 1; self.1 + 1 }) } }\nimpl ExactSizeIterator for C {}\npub fn f() -> Option<i32> { let r = C(0, 9).rev(); r.skip(3).rev().last() }", "a variable holds, stepped from its back past what's made of it"],
   ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "not in an `extern` block"],
   ["a generic constant", "#![feature(generic_const_items)]\n#![allow(incomplete_features)]\npub trait Sizes { const SIZE<T>: usize; }", "generic constants"],
-  ["a type constant, refused not crashed", "#![feature(min_generic_const_args)]\n#![allow(incomplete_features)]\npub trait Foo { type const N: usize; }\npub struct Bar;\nimpl Foo for Bar { type const N: usize = 3; }", "type constants"],
+  // A std item Rust 1.100 stabilized, which rust-js doesn't lower yet: its tracker (ADR 0109, amended).
+  ["a std function new in 1.100", "pub fn f() -> Vec<u32> { Vec::from_fn(3, |i| i as u32) }", "(#1656)"],
+  [
+    "an impl of a std trait new in 1.100",
+    "use std::alloc::{AllocError, Allocator, Global, Layout};\nuse std::ptr::NonNull;\npub struct A;\nunsafe impl Allocator for A {\n    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {\n        Global.allocate(layout)\n    }\n    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {\n        unsafe { Global.deallocate(ptr, layout) }\n    }\n}",
+    "user implementations of `std::alloc::Allocator` (#1656)",
+  ],
+  // 1.100's, of `gca_min_const_items`, which `min_generic_const_args`' `type const` became.
+  ["a type constant, refused not crashed", "#![feature(gca_min_const_items)]\n#![allow(incomplete_features)]\nuse std::gca;\npub trait Foo { #[rustc_always_gca] const N: usize; }\npub struct Bar;\nimpl Foo for Bar { const N: usize = gca!(3); }", "type constants"],
   ["a generic const expression", "#![feature(generic_const_exprs)]\n#![allow(incomplete_features)]\nfn count<const N: usize>() -> usize { N }\nfn one_more<const N: usize>() -> usize where [(); N + 1]: { count::<{ N + 1 }>() }\npub fn f() -> usize { one_more::<2>() }", "this const argument"],
   ["an externally implementable item", "#![feature(extern_item_impls)]\n#[eii(hello)]\nstatic HELLO: u64;\n#[hello]\nstatic HELLO_IMPL: u64 = 5;\npub fn f() -> u64 { HELLO }", "externally implementable items"],
   ["malformed import", '#[rust_js::import("./style.css")]\nconst _: () = ();\npub fn f() {}', "write it"],
@@ -534,7 +542,7 @@ test("a crate's own #![feature] is refused, as on a stable release", () => {
 });
 
 // rust-js's syntax is stable Rust's (ADR 0110): what it turns on for itself
-// isn't a program's to use. Each of these is refused as stable 1.99.0
+// isn't a program's to use. Each of these is refused as stable 1.100.0
 // refuses it, which its rustc confirms; `rust_js`'s attributes are rust-js's.
 test("a program can use no unstable feature rust-js's syntax once used", () => {
   const dir = fixture("stable-syntax");

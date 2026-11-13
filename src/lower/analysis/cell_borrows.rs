@@ -1382,7 +1382,7 @@ fn closed_keys<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefI
 
 /// Whether `def_id` is a thread-local's key, a `LocalKey`.
 fn is_thread_local_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    matches!(tcx.def_kind(def_id), DefKind::Const { .. })
+    matches!(tcx.def_kind(def_id), DefKind::Const)
         && matches!(tcx.type_of(def_id).instantiate_identity().skip_normalization().kind(),
             ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey))
 }

@@ -589,7 +589,7 @@ export function $debugCStr(c) {
   for (const { valid, invalid } of $utf8Chunks($cstrBytes(c))) {
     for (const ch of valid) {
       const code = ch.codePointAt(0);
-      out += code === 0 ? "\\0" : code < 0x80 ? ascii([code]) : $escapeDebug(ch, false);
+      out += code === 0 ? "\\0" : code < 0x80 ? ascii([code]) : $escapeDebug(ch);
     }
     out += ascii(invalid);
   }
@@ -1916,6 +1916,21 @@ export function $reduce(it, f, boxed = false, unwind = undefined) {
   }
   const value = $foldDropping(it, first.value, f, unwind);
   return boxed ? $some(value) : value;
+}
+
+// `max()` and `min()` of `items`, an array or an iterator, of a type JS's
+// `<` doesn't order: std's `reduce(Ord::max)` since 1.100, `extreme` of
+// each two, the one kept and the next, the type's own `max` or std's, which
+// drops the one it doesn't give back (ADR 0109, amended). Of items with a
+// destructor, `drop`: what's left of an array dropped where a step throws,
+// and the one kept (#423).
+export function $reduceBy(items, extreme, boxed = false, drop = undefined) {
+  const it = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : Iterator.from(items);
+  // Two arguments alone: a JS `reduce` gives its function the index too.
+  // The one kept dropped only where a stage throws, inside the fold: once
+  // it's folded it's given back, so a panic as what it stepped is closed
+  // leaks it, as #1655's `max_by` does.
+  return $reduce(it, (kept, item) => extreme(kept, item), boxed, drop);
 }
 
 // `items.into_iter()` of a generic `IntoIterator`, as its caller gives it:
@@ -9338,13 +9353,17 @@ export function $strExtendWithin(s, start, end) {
 }
 
 // `s.retain(keep)`, of a `keep` that may panic: each character it keeps, in
-// order. Where it throws, a panic, `set` is given those it kept of the
-// characters before, as std's `String::retain` leaves only them as it
-// unwinds, what it hadn't asked of gone too (#1171).
+// order. Where it throws, a panic, past the first it didn't keep, `set` is
+// given those it kept of the characters before, as std's `String::retain`
+// leaves only them as it unwinds, what it hadn't asked of gone too (#1171);
+// before that, `s` is left as it was, as 1.100's asks each in place till
+// one goes (ADR 0109, amended).
 export function $retainText(s, keep, set) {
   let kept = "";
+  let removed = false;
   for (const c of s) {
-    if ($unwinds(() => keep(c), () => set(kept))) kept += c;
+    if ($unwinds(() => keep(c), () => removed && set(kept))) kept += c;
+    else removed = true;
   }
   return kept;
 }
@@ -10735,15 +10754,13 @@ export function $mapGetDisjointMut(m, keys, handle) {
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
 // (ADR 0327).
 
-// `escape_debug()`: each `char` as `{:?}` shows it, both quotes escaped; a
-// `str`'s Grapheme_Extend ones only first.
-export function $escapeDebug(s, str) {
+// `escape_debug()`: each `char` as `{:?}` shows it, both quotes escaped, a
+// `str`'s each as its `char`'s, Grapheme_Extend ones too, as 1.100's are
+// wherever they are, where 1.99 escaped a `str`'s first alone (ADR 0109,
+// amended).
+export function $escapeDebug(s) {
   let out = "";
-  let first = true;
-  for (const c of s) {
-    out += $debugChar(c, "'\"", !str || first);
-    first = false;
-  }
+  for (const c of s) out += $debugChar(c, "'\"", true);
   return out;
 }
 
@@ -13883,7 +13900,9 @@ export function $openWith(o, path) {
     return $openInvalid(creating ? asked : "must specify at least one of read, write, or append access");
   }
   const access = o.append ? (o.read ? O_RDWR : O_WRONLY) | O_APPEND : o.read && o.write ? O_RDWR : o.write ? O_WRONLY : O_RDONLY;
-  if ((!o.write && !o.append && creating) || (o.append && o.truncate && !o.createNew)) return $openInvalid(asked);
+  if (!o.write && !o.append && creating) return $openInvalid(asked);
+  // 1.100's words, where 1.99 said `asked`'s (ADR 0109, amended).
+  if (o.append && o.truncate && !o.createNew) return $openInvalid("append and truncate cannot both be enabled");
   const creation = o.createNew ? O_CREAT | O_EXCL : (o.create ? O_CREAT : 0) | (o.truncate ? O_TRUNC : 0);
   // Its modes, `O_ACCMODE`'s: read where asked, written where it's written
   // or appended to.

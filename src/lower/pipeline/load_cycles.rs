@@ -34,7 +34,7 @@ pub(super) fn load_cycles(
     let made_where_loaded = |id: DefId| {
         matches!(
             tcx.def_kind(id),
-            DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Variant | DefKind::Ctor(..)
+            DefKind::Const | DefKind::AssocConst | DefKind::Variant | DefKind::Ctor(..)
         )
     };
     (lowered.iter())

@@ -7,7 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { node } from "./programs";
-import { buildCompiler, buildSerde, compiler, fixture, outsideFixture, root, run } from "./support";
+import { buildCompiler, buildSerde, cargoArtifacts, compiler, fixture, outsideFixture, root, run, rustJsUnits } from "./support";
 import { cargo, check, printed, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
@@ -53,8 +53,8 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   // serde's crates, which rust-js reads as rustc builds them (ADR 0077),
   // aren't tried, as another crate of crates.io's is (ADR 0415): none says
   // why it isn't compiled.
-  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  expect(readdirSync(deps).filter((file) => file.startsWith("libserde") && file.endsWith(".rust-js-refused"))).toEqual([]);
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  expect(cargoArtifacts(profile).map((file) => basename(file)).filter((file) => file.startsWith("libserde") && file.endsWith(".rust-js-refused"))).toEqual([]);
   const before = printed(js!);
   expect(before).toBe(native());
   const validation = join(dir, "validation", "src", "lib.rs");
@@ -116,7 +116,9 @@ test("Cargo is told which declarations printer rust-js runs, so another one's cr
     const built = messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
       .find((message) => message.reason === "compiler-artifact" && message.target.name === "app");
     const metadata: string = built.filenames.find((file: string) => file.endsWith(".rmeta"));
-    return readFileSync(join(dirname(metadata), "rust-js", basename(metadata).slice("lib".length, -".rmeta".length), "lib.d.ts"), "utf8");
+    // Its JS's manifest, as the marker beside its metadata names it, which tooling reads.
+    const library = readFileSync(metadata.replace(/\.rmeta$/, ".rust-js"), "utf8").split("\n")[0];
+    return readFileSync(join(dirname(library), "lib.d.ts"), "utf8");
   };
   const before = await declared();
   expect(before).toContain("export function answer(n: number): number;");
@@ -137,9 +139,9 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
   const written = statSync(js!).mtimeMs;
   expect((await check(manifest)).js).toBe(js);
   expect(statSync(js!).mtimeMs).toBe(written);
-  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  expect(dirname(dirname(js!))).toBe(join(deps, "rust-js"));
-  const recorded = readdirSync(deps).filter((f) => f.startsWith("validation-") && f.endsWith(".d")).map((f) => readFileSync(join(deps, f), "utf8"));
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  expect(rustJsUnits(profile)).toContain(dirname(js!));
+  const recorded = cargoArtifacts(profile).filter((f) => basename(f).startsWith("validation-") && f.endsWith(".d")).map((f) => readFileSync(f, "utf8"));
   expect(recorded.length).toBe(1);
   // The compiler that ran, which a change to makes Cargo build again: an
   // installed launcher's is the binary beside it, which it runs.
@@ -283,8 +285,8 @@ test("a Cargo build that can't record what it made leaves the previous build's J
   const manifest = featured(dir);
   const { js } = await check(manifest, { packageNames: ["app"] });
   const before = readFileSync(js!, "utf8");
-  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  const marker = join(deps, readdirSync(deps).find((f) => f.endsWith(".rust-js"))!);
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  const marker = cargoArtifacts(profile).find((f) => f.endsWith(".rust-js"))!;
   rmSync(marker);
   mkdirSync(join(marker, "in the way"), { recursive: true });
   const lib = join(dir, "app", "src", "lib.rs");
@@ -347,8 +349,8 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const counted = (js: string) => readFileSync(js, "utf8").includes("strong: 1");
   writeFileSync(manifest, '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
   run(cargo(manifest, "generate-lockfile"));
-  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  const checked = () => statSync(join(deps, readdirSync(deps).find((f) => f.startsWith("libapp-") && f.endsWith(".rmeta"))!)).mtimeMs;
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  const checked = () => statSync(cargoArtifacts(profile).find((f) => basename(f).startsWith("libapp-") && f.endsWith(".rmeta"))!).mtimeMs;
   const app = await check(manifest, { packageNames: ["app"] });
   const alone = readFileSync(app.js!, "utf8");
   const first = checked();

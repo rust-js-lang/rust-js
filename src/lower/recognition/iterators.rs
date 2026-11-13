@@ -653,11 +653,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn generic_shunt(&self, iter: Ty<'tcx>, target: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let tcx = self.tcx;
         let shunt = super::registry::by_path(tcx, StdCrate::Core, &["iter", "adapters", "GenericShunt"])?;
-        let infallible = super::registry::by_path(tcx, StdCrate::Core, &["convert", "Infallible"])?;
         let ty::Adt(target_adt, target_args) = target.kind() else {
             return None;
         };
-        let infallible = Ty::new_adt(tcx, tcx.adt_def(infallible), ty::List::empty());
+        // `Infallible`, which 1.100 makes `!`.
+        let infallible = tcx.types.never;
         let mut residual_args: Vec<ty::GenericArg<'tcx>> = target_args.iter().collect();
         *residual_args.first_mut()? = infallible.into();
         let residual = Ty::new_adt(tcx, *target_adt, tcx.mk_args(&residual_args));

@@ -327,7 +327,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let bounds = self.tcx.param_env(imp.impl_def_id).caller_bounds();
                 bounds
-                    .iter()
                     .filter_map(|clause| clause.as_trait_clause())
                     .filter(|bound| bound.def_id() == hash)
                     .map(|bound| {

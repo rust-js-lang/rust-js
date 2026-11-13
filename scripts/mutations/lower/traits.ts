@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     breaks: "a trait's constant, which only one generic code reads is in its dictionaries (ADR 0100), is left out of what it's declared to hold, so a TypeScript caller's dictionary has none and `sides` reads `undefined` (#550)",
     file: "src/lower/traits.rs",
     find: "        if tcx.def_kind(method) != DefKind::AssocFn\n",
-    replace: "        if matches!(tcx.def_kind(method), DefKind::AssocConst { .. }) { continue; }\n        if tcx.def_kind(method) != DefKind::AssocFn\n",
+    replace: "        if matches!(tcx.def_kind(method), DefKind::AssocConst) { continue; }\n        if tcx.def_kind(method) != DefKind::AssocFn\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
   },
   {

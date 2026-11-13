@@ -40,6 +40,7 @@ extern crate rustc_mir_transform;
 extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
+extern crate rustc_structures;
 extern crate rustc_target;
 extern crate rustc_trait_selection;
 
@@ -86,9 +87,9 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface::Compiler;
 use rustc_middle::ty::RegisteredTools;
 use rustc_middle::ty::TyCtxt;
-use rustc_session::config::CrateType;
 use rustc_span::def_id::{LOCAL_CRATE, StableCrateId};
 use rustc_span::{Ident, Symbol};
+use rustc_structures::CrateType;
 
 /// The crate's `StableCrateId`, as rustc computes it once it has the crate's
 /// context, which is after JSX's expansions need it (ADR 0110). rustc's own
@@ -270,6 +271,10 @@ impl Callbacks for RustJs {
         if self.export_library {
             config.opts.unstable_opts.always_encode_mir = true;
         }
+        // The crate's hash from its HIR, as before 1.100, which hashes its
+        // encoded metadata: a library's contract names its hash as it's
+        // lowered, before metadata is encoded (ADR 0109, amended).
+        config.opts.unstable_opts.metadata_crate_hash = false;
         // A type's name too long for its error's line is printed in the
         // error whole: rustc writes it to a file beside what it compiles
         // to, and a file compiled alone has no such place, so it was

@@ -123,7 +123,7 @@ impl Jsx<'_> {
                     value.clone(),
                 )]);
                 let mut parser = Parser::new(&self.sess.psess, block.clone(), Some("JSX expression"));
-                let parsed = parser.parse_block().map_err(|e| e.emit())?;
+                let parsed = parser.parse_block().map_err(|e| e.emit_err())?;
                 let expression =
                     matches!(parsed.stmts.as_slice(), [stmt] if matches!(stmt.kind, ast::StmtKind::Expr(_)));
                 rust_expression(self.sess, if expression { value } else { block }, self.tags)

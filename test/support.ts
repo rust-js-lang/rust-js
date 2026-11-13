@@ -723,6 +723,52 @@ export function seeded(targetDir: string): string {
   return targetDir;
 }
 
+/**
+ * Each directory a Cargo build put a crate's artifacts in, its `--out-dir`,
+ * of `profile`, a target's `wasm32-unknown-unknown/debug`: its metadata, its
+ * `.d` and rust-js's `.rust-js` marker.
+ * Cargo 1.100 keeps each build step's in a directory of its own,
+ * `build/<package>/<hash>/out`, where 1.99's were all in `deps` (ADR 0109,
+ * amended). The one place a test reads Cargo's layout; tooling reads where
+ * Cargo put each crate of its JSON messages.
+ */
+export function cargoOutDirs(profile: string): string[] {
+  const build = join(profile, "build");
+  if (!existsSync(build)) return [];
+  return readdirSync(build)
+    .flatMap((pkg) => readdirSync(join(build, pkg)).map((hash) => join(build, pkg, hash, "out")))
+    .filter((out) => existsSync(out));
+}
+
+/** Each package Cargo built of `profile`, by its name (`cargoOutDirs`). */
+export function cargoBuiltPackages(profile: string): string[] {
+  const build = join(profile, "build");
+  return existsSync(build) ? readdirSync(build) : [];
+}
+
+/** What each run of `pkg`'s build script printed, of `profile`'s builds:
+ * Cargo 1.100's `build/<package>/<hash>/run/stdout` (`cargoOutDirs`). */
+export function buildScriptOutputs(profile: string, pkg: string): string[] {
+  const dir = join(profile, "build", pkg);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .map((hash) => join(dir, hash, "run", "stdout"))
+    .filter((stdout) => existsSync(stdout));
+}
+
+/** Each file Cargo's builds of `profile` put beside their crates (`cargoOutDirs`). */
+export function cargoArtifacts(profile: string): string[] {
+  return cargoOutDirs(profile).flatMap((out) => readdirSync(out).map((name) => join(out, name)));
+}
+
+/** Each crate's JS directory rust-js wrote of `profile`'s builds, beside
+ * one another in its `rust-js`, `rust-js/<crate><extra>` (`js_root` in
+ * src/cargo.rs). */
+export function rustJsUnits(profile: string): string[] {
+  const dir = join(profile, "rust-js");
+  return existsSync(dir) ? readdirSync(dir).map((unit) => join(dir, unit)) : [];
+}
+
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,
  * as metadata for rust-js, as libraries for a native build, for one on
  * wasm32-wasip1, whose 32-bit `usize` is the JS's, or built optimized, for

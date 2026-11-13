@@ -3,6 +3,7 @@
 
 use crate::lower::temporary_names::Role;
 use rustc_middle::ty;
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_span::Span;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};

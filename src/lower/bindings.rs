@@ -4,10 +4,10 @@ use super::declarations::{Written, written_types};
 use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use rustc_ast::LitKind;
+use rustc_hir::ExprKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{CoroutineKind, CoroutineSource};
-use rustc_hir::{ExprKind, ItemKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
@@ -115,10 +115,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         for attr in &attrs {
             if attrs.len() != 1
                 || attr.value_str().is_none()
-                || !matches!(
-                    tcx.def_kind(def),
-                    DefKind::Fn | DefKind::AssocFn | DefKind::Const { .. }
-                )
+                || !matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn | DefKind::Const)
             {
                 tcx.dcx().span_err(
                     attr.span(),
@@ -181,7 +178,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         }
         // A `#[rust_js::nullable]` thread-local or `const` is of an `Option`
         // its `None` is `null` of (ADR 0586, amended).
-        if matches!(tcx.def_kind(def), DefKind::Const { .. })
+        if matches!(tcx.def_kind(def), DefKind::Const)
             && let Some(message) = nullable_const_refused(tcx, def.to_def_id())
         {
             tcx.dcx().span_err(tcx.def_span(def), message);
@@ -415,7 +412,7 @@ pub(in crate::lower) fn is_locale_compare(tcx: TyCtxt<'_>, def_id: DefId) -> boo
 /// value is Rust's, which a `match` of it compares (ADR 0031, amended,
 /// rd618).
 pub(super) fn const_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
-    if !matches!(tcx.def_kind(def_id), DefKind::Const { .. }) {
+    if !matches!(tcx.def_kind(def_id), DefKind::Const) {
         return None;
     }
     tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::link_name])
@@ -1089,10 +1086,8 @@ fn default_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 pub(in crate::lower) fn cased_as(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
     match tcx.def_kind(def_id) {
         DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
-        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {
-            name.to_string()
-        }
-        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),
+        DefKind::Const if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => name.to_string(),
+        DefKind::Const if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),
         _ => super::camel_case(name),
     }
 }
@@ -1116,7 +1111,7 @@ pub(in crate::lower) fn exported_by_name(tcx: TyCtxt<'_>, def_id: DefId) -> bool
     def_id.is_local()
         && matches!(
             tcx.def_kind(def_id),
-            DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }
+            DefKind::Fn | DefKind::Const | DefKind::Static { .. }
         )
         && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod
         && tcx.visibility(def_id).is_public()
@@ -1161,7 +1156,7 @@ fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
             && tcx.parent(other) == tcx.parent(def_id)
             && matches!(
                 tcx.def_kind(other),
-                DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }
+                DefKind::Fn | DefKind::Const | DefKind::Static { .. }
             )
             && (!exported || exported_by_name(tcx, other))
             && given_name(tcx, other).unwrap_or_else(|| match thread_local_value(tcx, other) {
@@ -1232,8 +1227,8 @@ pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
                 kind,
                 DefKind::Fn
                     | DefKind::AssocFn
-                    | DefKind::Const { .. }
-                    | DefKind::AssocConst { .. }
+                    | DefKind::Const
+                    | DefKind::AssocConst
                     | DefKind::Static { .. }
                     | DefKind::Field
                     | DefKind::Variant

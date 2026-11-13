@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "escape-debug-str-marks",
     breaks: "a `str`'s `escape_debug` escapes a combining mark after the first",
     file: "src/runtime/char_escape.js",
-    find: "    out += $debugChar(c, \"'\\\"\", !str || first);\n",
-    replace: "    out += $debugChar(c, \"'\\\"\");\n",
+    find: "  for (const c of s) out += $debugChar(c, \"'\\\"\", true);\n",
+    replace: "  for (const c of s) out += $debugChar(c, \"'\\\"\", false);\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "  const it = Array.isArray(units) ? $iter(units) : typeof units.next === \"function\" ? units : units[Symbol.iterator]();\n",
     replace: "  const it = typeof units.next === \"function\" ? units : units[Symbol.iterator]();\n",
     tests: ["test/corpus.test.ts", "-t", "^decode_utf16_steps_as_asked.rs$"],
+  },
+  {
+    name: "str-escape-debug-extenders-first-only",
+    breaks: "a `str`'s `escape_debug()` escapes a Grapheme_Extend `char` first alone, as 1.99 did, where 1.100 escapes each (ADR 0109, amended)",
+    file: "src/runtime/char_escape.js",
+    find: "  for (const c of s) out += $debugChar(c, \"'\\\"\", true);\n",
+    replace: "  let first = true;\n  for (const c of s) {\n    out += $debugChar(c, \"'\\\"\", first);\n    first = false;\n  }\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
   },
 ];

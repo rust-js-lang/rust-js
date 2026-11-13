@@ -15,28 +15,20 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 target=../target/serde
+# Each crate's file where Cargo's messages say it put it (`flags.ts`).
+flags() {
+  local profile=$1 extension=$2
+  shift 2
+  cargo build --quiet --locked --message-format=json --target-dir "$target" "$@" | bun flags.ts "$target/$profile" "$extension"
+}
 if [ "${1:-}" = "--rlib" ]; then
-  cargo build --quiet --locked --target-dir "$target"
-  deps=$(cd "$target/debug/deps" && pwd)
-  latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
-  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps"
+  flags debug rlib
 elif [ "${1:-}" = "--rlib-release" ]; then
-  cargo build --quiet --locked --release --target-dir "$target"
-  deps=$(cd "$target/release/deps" && pwd)
-  latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
-  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps"
+  flags release rlib --release
 elif [ "${1:-}" = "--rlib-wasm32" ]; then
   # Natively on wasm32; serde_derive, a procedural macro, runs on the host.
-  cargo build --quiet --locked --target-dir "$target" --target wasm32-wasip1
-  deps=$(cd "$target/wasm32-wasip1/debug/deps" && pwd)
-  host=$(cd "$target/debug/deps" && pwd)
-  latest() { ls -t "$deps"/lib"$1"-*.rlib | head -1; }
-  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps -L dependency=$host"
+  flags wasm32-wasip1/debug rlib --target wasm32-wasip1
 else
   # For the target; serde_derive, a procedural macro, runs on the host.
-  cargo build --quiet --locked --target-dir "$target" --target wasm32-unknown-unknown
-  deps=$(cd "$target/wasm32-unknown-unknown/debug/deps" && pwd)
-  host=$(cd "$target/debug/deps" && pwd)
-  latest() { ls -t "$deps"/lib"$1"-*.rmeta | head -1; }
-  echo "--extern serde=$(latest serde) --extern serde_json=$(latest serde_json) --extern hashbrown=$(latest hashbrown) --extern indexmap=$(latest indexmap) --extern memchr=$(latest memchr) -L dependency=$deps -L dependency=$host"
+  flags wasm32-unknown-unknown/debug rmeta --target wasm32-unknown-unknown
 fi
