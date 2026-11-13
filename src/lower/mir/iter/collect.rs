@@ -659,9 +659,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             method("reduce", items, vec![Expr::helper("$pathJoin"), Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
             // What's left of what it steps, dropped where it stops: closed.
+            // Not the crate's own iterator, closed already where its consumer
+            // closes it (`consumer_closes`, `mir_iter_method`), else dropped
+            // after the call, as what's dropped after asks the same: closed
+            // here too, of items that drop nothing, it was dropped twice
+            // (#1647).
             let it = match iter_ty {
-                Some(iter_ty) => self.closing(it, iter_ty, span)?,
-                None => it,
+                Some(iter_ty) if !self.is_user_iterator(iter_ty) => self.closing(it, iter_ty, span)?,
+                _ => it,
             };
             // What's left first, where std collects it otherwise than in
             // place, of values with a destructor (#423).

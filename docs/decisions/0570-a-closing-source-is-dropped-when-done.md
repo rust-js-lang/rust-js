@@ -404,3 +404,26 @@ flatten's own close after drops nothing more, and a source a `by_ref()`
 lends, whose close drops nothing of its owner, keeps it. Corpus case
 `flatten_drops_its_source_at_its_end` against native Rust in both builds;
 mutations `flatten-keeps-ended-source` and `flatten-try-fold-keeps-source`.
+
+## Amendment (2026-11-13, #1647): a fallible collect of the crate's iterator drops it once
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+A `collect()` into an `Option` or a `Result` of a collection, std's
+`GenericShunt`, closed what it steps, so what was left of it dropped where
+a `None` or an `Err` stopped it. The crate's own iterator with a `Drop`,
+of items that drop nothing, was closed there, which ran its drop. It was
+dropped after the call too, as its consumer doesn't close it
+(`consumer_closes`, which what's dropped after asks), so `drop Source`
+printed twice where native Rust's prints it once.
+
+Whether the crate's own iterator is closed is `consumer_closes`' answer
+alone. Where its consumer closes it, the iterator is closed before the
+collect (`mir_iter_method`); else it's dropped after the call, once. The
+fallible collect closes only what isn't the crate's own.
+
+`test/corpus/fallible_collect_drops_its_iterator_once.rs` holds it
+against native Rust in both builds, of items that drop nothing and of
+items that drop, stopped by a `None` and not. Mutation
+`fallible-collect-closes-own-iterator-twice` (`lower/mir/iter/collect.ts`).
