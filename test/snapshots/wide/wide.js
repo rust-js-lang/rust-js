@@ -167,15 +167,14 @@ export function report() {
   const checkedDiv = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
   const checkedPow = $checkedPow(10n, 19, 0n, 18446744073709551615n);
   out += `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${checkedPow == null ? "None" : `Some(${checkedPow})`}\n`;
-  out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(BigInt.asUintN(64, 1n << 40n))} ${$bigCountOnes(max)}\n`;
+  out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(1099511627776n)} ${$bigCountOnes(max)}\n`;
   const remEuclid = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
   const divEuclid = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
   const parse = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
   out += `${remEuclid} ${divEuclid} ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
   const value = $tryFromInt(max, 0, 4294967295);
   const isErr =
-    $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG ===
-    "Err";
+    $tryFromInt(9223372036854775808n, -9223372036854775808n, 9223372036854775807n).TAG === "Err";
   out += `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugParseError(value._0, "TryFromIntError")})`} ${isErr} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   // Of too small a value, and its message, which is one for both.
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
