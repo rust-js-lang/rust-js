@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    && (*receiver == e || self.stack.contains(receiver))\n",
     replace: "                    && false\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "receiver-guard-ignores-arguments",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        for &arg in rest {\n            quiet.visit_expr(&self.thir[arg]);\n        }\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "argument-guard-held-through-binding",
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    && self.given_of_guard(args[at], e) =>\n",
     replace: "                    && self.given_of_guard(args[at], e) && false =>\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "read only for a binding"],
   },
   {
     name: "argument-guard-of-any-call",
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "            _ => lent(arg),\n",
     replace: "            _ => false,\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "read only for a binding"],
   },
   {
     name: "argument-guard-later-arguments-unasked",
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                args[at..].to_vec()\n",
     replace: "                args[at..=at].to_vec()\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "read only for a binding"],
   },
   {
     name: "receiver-guard-ignores-call",
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        quiet.visit_call(call, method);\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "receiver-guard-arguments-unseen",
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        quiet.seen_only = true;\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "let-held-through-unseen",

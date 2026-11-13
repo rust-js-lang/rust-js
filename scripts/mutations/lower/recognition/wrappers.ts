@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/wrappers.rs",
     find: "    tcx.item_name(id).as_str() == \"as_deref\"\n",
     replace: "    tcx.item_name(id).as_str() == \"as_deref!\"\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "read only for a binding"],
   },
   {
     name: "ptr-eq-of-library-struct-counts",

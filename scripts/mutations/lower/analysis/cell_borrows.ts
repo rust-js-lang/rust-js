@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                next.extend(theirs.iter().map(|&borrow| of_args(tcx, borrow, args)));\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "seen-asks-nothing",
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            Called::Body(body, args) => self.seen_asks(tcx, body, Some(args), held),\n",
     replace: "            Called::Body(..) => false,\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "only a call's receiver"],
   },
   {
     name: "classes-always-meet",
@@ -465,6 +465,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Unseen,\n",
     replace: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Any,\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a guard that's only a call's receiver is held while the call runs"],
+    tests: ["test/lowering-guard-extents.test.ts", "-t", "a guard that's only a call's receiver is held while the call runs"],
   },
 ];
