@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "            && the_one_at(self.frame.thir, span, |e| {\n                matches!(e.kind, thir::ExprKind::Index { .. })\n            })\n            .is_some_and(|id| self.frame.facts.in_bounds.contains(&id))\n",
     replace: "            && (self.frame.thir.exprs.iter_enumerated()).any(|(id, e)| matches!(e.kind, thir::ExprKind::Index { .. }) && e.span == span && self.frame.facts.in_bounds.contains(&id))\n",
-    tests: ["test/corpus.test.ts", "-t", "^macro_repeated_index_keeps_each_check.rs$"],
+    tests: ["test/intervals-shadow.test.ts", "-t", "macro"],
   },
   {
     name: "assigned-operator-span-off",

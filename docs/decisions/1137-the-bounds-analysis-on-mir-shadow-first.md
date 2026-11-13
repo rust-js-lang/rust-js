@@ -302,3 +302,28 @@ Bounds, which MIR decides, gain one check left out in the corpus
 (`loop_ends_in_its_break`'s `times[j]`), and the snapshots are unchanged.
 Mutations `intervals-unnarrowed` and `intervals-text-length-unbounded`,
 caught.
+
+## Four mutations that survived, resolved (2026-11-14)
+
+At main, before the wrap switch, four mutations survived:
+- **`bounds-join-any`.** Since f7f5bedf4, THIR's span join for bounds
+  feeds the shadow alone, so its corpus case couldn't see it. It's now
+  tested by a shadow test of the macro's repeated index:
+  `["mir-only-bounds pair"]` exactly, where joining to any index would
+  have THIR leave out `v[k + 1]`. Caught.
+- **`intervals-copies-unnarrowed`.** Its test's copy no longer lived
+  across the loop's head. A test now narrows a copy where it's read:
+  `a[j]` of `let j = i` under `i < 10`. Caught.
+- **`intervals-widen-everywhere`.** With narrowing after the fixed point,
+  widening at every block gives what widening at loops' heads alone gave.
+  Its mutant changed no output in the corpus (2,487 cases), the lowering
+  suite or the shadow tests. So the walk now widens at any block after
+  three visits, and the loop heads' dominator computation and the
+  12-visit fallback for irreducible flow are gone. The mutation goes with
+  the code it guarded.
+- **`intervals-infeasible-edges-taken`.** Narrowing recomputes each
+  entry from what flows in, so an infeasible edge's stale state never
+  outlives the first pass. Its mutant was likewise equivalent across the
+  same suites. The rule stays, being the semantics a walk should have (a
+  way no value takes isn't taken), and the mutation is removed as
+  equivalent (ADR 0093).

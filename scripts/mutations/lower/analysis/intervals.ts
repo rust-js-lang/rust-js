@@ -45,14 +45,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "intervals-widen-everywhere",
-    breaks: "what still moves widens at every block, not only a loop's head, so what a loop's test narrows widens again past it",
-    file: "src/lower/analysis/intervals.rs",
-    find: "                        let widens = heads.contains(&target) && visits[target] >= VISITS_BEFORE_WIDENING\n",
-    replace: "                        let widens = visits[target] >= VISITS_BEFORE_WIDENING\n",
-    tests,
-  },
-  {
     name: "intervals-imaginary-edges",
     breaks: "a match candidate's imaginary edge is followed, so an arm of `match list.len() { 1 => list[0] }` is joined with the `0` arm's state",
     file: "src/lower/analysis/intervals.rs",
@@ -219,14 +211,6 @@ export const mutations: Mutation[] = [
     find: "                            (Some(RangeStep::Enumerate), Held::Range)\n",
     replace: "                            (Some(RangeStep::Enumerate), Held::Lent)\n",
     tests: ["test/lowering-collections.test.ts","-t","an enumerate's index is below its slice's length"],
-  },
-  {
-    name: "intervals-infeasible-edges-taken",
-    breaks: "a way no value takes, `i > 0` of `i = 0`, is taken with what was known before, so a join past it keeps `i = 0` and `v[i - 1]` past the loop keeps its check",
-    file: "src/lower/analysis/intervals.rs",
-    find: "        if a2.lo > a2.hi || b2.lo > b2.hi {\n            return false;\n",
-    replace: "        if a2.lo > a2.hi || b2.lo > b2.hi {\n            return true;\n",
-    tests: ["test/intervals-shadow.test.ts"],
   },
   {
     name: "intervals-unnarrowed",

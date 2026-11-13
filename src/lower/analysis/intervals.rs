@@ -57,13 +57,11 @@ const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
 /// How many passes narrow the fixed point widening reached.
 const NARROWING_PASSES: u32 = 2;
 
-/// How many times a block is visited before what still moves widens.
+/// How many times a block is visited before what still moves widens, at
+/// any block: narrowing after gives back what a loop's test bounds, as
+/// widening at loops' heads alone had kept, so one rule, which ends of an
+/// irreducible flow too.
 const VISITS_BEFORE_WIDENING: u32 = 3;
-
-/// How many times any block is visited before what still moves widens: a
-/// loop no head dominates, of an irreducible flow a transformed body may
-/// have, still ends.
-const VISITS_BEFORE_WIDENING_ANYWHERE: u32 = 12;
 
 /// What MIR proves of a body: each bounds check that never fails, by the
 /// block its `assert` ends, and each `+`, `-` and `*` that never leaves its
@@ -181,16 +179,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
         });
-        // A loop's heads, each the target of an edge back from a block it
-        // dominates: where what still moves widens, and nowhere else, so
-        // what a switch narrows past the head stays narrowed. Of a block
-        // the start reaches, which a transformed body's may not.
-        let dominators = self.body.basic_blocks.dominators();
-        let heads: IndexSet<BasicBlock> = (self.body.basic_blocks.iter_enumerated())
-            .flat_map(|(from, data)| data.terminator().successors().map(move |to| (from, to)))
-            .filter(|&(from, to)| dominators.is_reachable(from) && dominators.dominates(to, from))
-            .map(|(_, to)| to)
-            .collect();
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
         // fewer times than a stack would.
@@ -212,9 +200,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 let joined = match &entry[target] {
                     Some(old) => {
                         let mut joined = old.join(&out);
-                        let widens = heads.contains(&target) && visits[target] >= VISITS_BEFORE_WIDENING
-                            || visits[target] >= VISITS_BEFORE_WIDENING_ANYWHERE;
-                        if widens {
+                        if visits[target] >= VISITS_BEFORE_WIDENING {
                             self.widen(old, &mut joined);
                         }
                         joined

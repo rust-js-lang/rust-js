@@ -252,3 +252,31 @@ test("the MIR intervals of serde's derived bodies take what a compile does, not 
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
 }, underLoad(120_000));
+
+test("a macro's repeated index is joined to THIR's one index there or none: of `[$($v[$i]),*]`, MIR proves `v[k]` alone", () => {
+  expect(shadowOf(`macro_rules! pick {
+    ($v:expr; $($i:expr),*) => {
+        [$($v[$i]),*]
+    };
+}
+fn pair(v: &[i32], k: usize) -> [i32; 2] {
+    if k < v.len() { pick!(v; k, k + 1) } else { [0, 0] }
+}
+pub fn main() {
+    println!("{:?}", pair(&[1, 2, 3], 1));
+}
+`)).toEqual(["mir-only-bounds pair"]);
+});
+
+test("a comparison narrows each copy of what it compares: `a[j]` of `let j = i` under `i < 10`", () => {
+  const dir = fixture("copies-narrowed");
+  writeFileSync(join(dir, "case.rs"), `pub fn at(a: [u32; 10], i: usize) -> u32 {
+    let j = i;
+    if i < 10 { a[j] } else { 0 }
+}
+`);
+  const out = runSync([compiler, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
+  expect(out.code, out.stderr).toBe(0);
+  expect(readFileSync(join(dir, "case.js"), "utf8")).toContain("a[j]");
+  expect(readFileSync(join(dir, "case.js"), "utf8")).not.toContain("$index");
+});
