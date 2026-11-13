@@ -198,19 +198,22 @@ pub(super) fn split<'c>(
     map: &oxc_sourcemap::SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-    splits: &mut IndexMap<u32, Vec<(u32, &'c [String])>>,
+    splits: &mut IndexMap<u32, Vec<(usize, &'c [String])>>,
 ) {
     for (end, texts) in closing {
         let found = (map.get_tokens())
             .filter(|t| offset(t.get_src_line(), t.get_src_col()) == Some(*end))
-            .map(|t| (t.get_dst_line(), t.get_dst_col()))
-            .find(|&(line, column)| {
+            .filter_map(|t| {
+                let text = generated_lines.get(t.get_dst_line() as usize)?;
+                Some((t.get_dst_line(), MapCol(t.get_dst_col()).byte_in(text)))
+            })
+            .find(|&(line, at)| {
                 (generated_lines.get(line as usize))
-                    .and_then(|text| text.get(column as usize..))
+                    .and_then(|text| text.get(at..))
                     .is_some_and(|rest| rest.starts_with('}'))
             });
-        if let Some((line, column)) = found {
-            splits.entry(line).or_default().push((column, texts.as_slice()));
+        if let Some((line, at)) = found {
+            splits.entry(line).or_default().push((at, texts.as_slice()));
         }
     }
 }
@@ -290,21 +293,24 @@ pub(super) fn split_exports<'c>(
     map: &oxc_sourcemap::SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-    splits: &mut IndexMap<u32, Vec<(u32, &'c [String])>>,
+    splits: &mut IndexMap<u32, Vec<(usize, &'c [String])>>,
 ) {
     for (at, texts, after) in exports {
         let found = (map.get_tokens())
             .filter(|t| offset(t.get_src_line(), t.get_src_col()) == Some(*at))
-            .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            .map(|t| (t.get_dst_line(), MapCol(t.get_dst_col())))
             .min();
         let Some((line, column)) = found else { continue };
-        let column = match after {
-            false => Some(column),
-            true => (generated_lines.get(line as usize))
-                .and_then(|text| text.get(column as usize..)?.find('}').map(|i| column + i as u32)),
+        let Some(text) = generated_lines.get(line as usize) else {
+            continue;
         };
-        if let Some(column) = column {
-            splits.entry(line).or_default().push((column, texts.as_slice()));
+        let at = column.byte_in(text);
+        let at = match after {
+            false => Some(at),
+            true => text.get(at..).and_then(|rest| rest.find('}')).map(|i| at + i),
+        };
+        if let Some(at) = at {
+            splits.entry(line).or_default().push((at, texts.as_slice()));
         }
     }
 }

@@ -14,7 +14,7 @@ pub(super) fn arm_splits<'a>(
     map: &SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-    splits: &mut IndexMap<u32, Vec<(u32, &'a [String])>>,
+    splits: &mut IndexMap<u32, Vec<(usize, &'a [String])>>,
 ) {
     for (lo, hi, operator, texts) in arms {
         // The branch's first JS the map places, and back from it, on its
@@ -22,27 +22,22 @@ pub(super) fn arm_splits<'a>(
         // arrow's `(` isn't placed.
         let first = (map.get_tokens())
             .filter(|t| offset(t.get_src_line(), t.get_src_col()).is_some_and(|at| *lo <= at && at < *hi))
-            .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            .map(|t| (t.get_dst_line(), MapCol(t.get_dst_col())))
             .min();
         let Some((line, column)) = first else { continue };
         // On its line, or one before it, an arrow's body's first JS
         // being the first placed.
         let found = (0..=line).rev().take(3).find_map(|at| {
             let written = generated_lines.get(at as usize)?;
+            let column = column.byte_in(written);
             // An `if`'s test's: its `if (` too, where the `if` is placed
             // with its test.
             let opening = match *operator {
-                "if ("
-                    if written
-                        .get(column as usize..)
-                        .is_some_and(|rest| rest.starts_with(*operator)) =>
-                {
-                    operator.len()
-                }
+                "if (" if written.get(column..).is_some_and(|rest| rest.starts_with(*operator)) => operator.len(),
                 _ => 0,
             };
             let before = if at == line {
-                written.get(..column as usize + opening)?
+                written.get(..column + opening)?
             } else {
                 written
             };
@@ -52,32 +47,36 @@ pub(super) fn arm_splits<'a>(
         });
         if let Some((line, written, after)) = found {
             let start = after + written[after..].len() - written[after..].trim_start().len();
-            splits.entry(line).or_default().push((start as u32, texts.as_slice()));
+            splits.entry(line).or_default().push((start, texts.as_slice()));
         }
     }
 }
 
 /// The JS's lines and what's placed in them: where each line is in `code`,
 /// which the lines are written to, after the header's `header_lines`; where
-/// each split line's pieces are, each from its column, on its line; and
-/// where each line has a comment inside it, the piece it's in, where, and
-/// how wide, what the JS after it there is moved by (ADR 0630, amended).
-pub(super) struct Laid {
+/// each split line's pieces are, each from its byte, on its line; and where
+/// each line has a comment inside it, the piece it's in, where, and how
+/// wide, what the JS after it there is moved by (ADR 0630, amended). Each
+/// place in a line is its byte, each width the map's units: the map's
+/// columns are read and written only by `Laid::to`, through the line's
+/// text (#1668).
+pub(super) struct Laid<'a> {
+    generated_lines: &'a [&'a str],
     lines: Vec<u32>,
-    pieces: IndexMap<u32, Vec<(u32, u32)>>,
-    widened: IndexMap<u32, Vec<(u32, u32, u32)>>,
+    pieces: IndexMap<u32, Vec<(usize, u32)>>,
+    widened: IndexMap<u32, Vec<(usize, usize, MapCol)>>,
 }
 
 /// `generated`'s lines written to `code`, each comment of `trailing` and
 /// each split of `splits` placed in them.
-pub(super) fn laid(
+pub(super) fn laid<'a>(
     generated: &oxc_codegen::CodegenReturn,
     trailing: &[Trailing],
-    generated_lines: &[&str],
-    splits: &IndexMap<u32, Vec<(u32, &[String])>>,
+    generated_lines: &'a [&'a str],
+    splits: &IndexMap<u32, Vec<(usize, &[String])>>,
     header_lines: u32,
     code: &mut String,
-) -> Laid {
+) -> Laid<'a> {
     let mut lines: Vec<u32> = Vec::new();
     // Where each comment after code on its line goes in the JS's lines.
     let trailing::Placed { after, inside, ends } = match &generated.map {
@@ -85,18 +84,18 @@ pub(super) fn laid(
         None => trailing::Placed::default(),
     };
     // Where each split line's pieces are: each from its column, on its line.
-    let mut pieces: IndexMap<u32, Vec<(u32, u32)>> = IndexMap::default();
+    let mut pieces: IndexMap<u32, Vec<(usize, u32)>> = IndexMap::default();
     // Where each line has a comment inside it: the piece it's in, where, and
     // how wide, what the JS after it there is moved by (ADR 0630, amended).
-    let mut widened: IndexMap<u32, Vec<(u32, u32, u32)>> = IndexMap::default();
+    let mut widened: IndexMap<u32, Vec<(usize, usize, MapCol)>> = IndexMap::default();
     let mut added = 0;
     for (i, line) in generated.code.lines().enumerate() {
         let i = i as u32;
         let out_line = header_lines + i + added;
         let mut at = 0;
         let mut placed = vec![(0, out_line)];
-        let inside_of = |from: u32, to: u32| {
-            let comments: Vec<(u32, Inside, &str)> = (inside.get(&i).into_iter().flatten())
+        let inside_of = |from: usize, to: usize| {
+            let comments: Vec<(usize, Inside, &str)> = (inside.get(&i).into_iter().flatten())
                 .filter(|&&(column, ..)| column >= from && column < to)
                 .map(|&(column, inside, text)| (column - from, inside, text))
                 .collect();
@@ -104,13 +103,13 @@ pub(super) fn laid(
         };
         // Where it's split: before a branch's comments, on lines of their
         // own, or after a line comment, which ends its line.
-        let mut cuts: Vec<(u32, &[String], Option<&str>)> = (splits.get(&i).into_iter().flatten())
+        let mut cuts: Vec<(usize, &[String], Option<&str>)> = (splits.get(&i).into_iter().flatten())
             .map(|&(column, texts)| (column, texts, None))
             .chain((ends.get(&i).into_iter().flatten()).map(|&(column, text)| (column, &[][..], Some(text))))
             .collect();
         cuts.sort_by_key(|&(column, ..)| column);
         for (column, texts, end) in cuts {
-            let Some(head) = line.get(at as usize..column as usize).filter(|_| column > at) else {
+            let Some(head) = line.get(at..column).filter(|_| column > at) else {
                 continue;
             };
             // What's first on its line, an object's `}`: its comments the
@@ -137,7 +136,7 @@ pub(super) fn laid(
             }
             // At its line's end, an array's item's `,` on the line before
             // it: the comments its last lines, no line of nothing after.
-            let ends_line = line[column as usize..].trim().is_empty();
+            let ends_line = line[column..].trim().is_empty();
             if !ends_line {
                 code.push('\n');
             }
@@ -145,7 +144,7 @@ pub(super) fn laid(
             at = column;
             placed.push((column, header_lines + i + added));
         }
-        let (rest, moved) = with_inside_comments(&line[at as usize..], &inside_of(at, u32::MAX));
+        let (rest, moved) = with_inside_comments(&line[at..], &inside_of(at, usize::MAX));
         code.push_str(&rest);
         widened
             .entry(i)
@@ -161,35 +160,44 @@ pub(super) fn laid(
             pieces.insert(i, placed);
         }
     }
-    Laid { lines, pieces, widened }
+    Laid {
+        generated_lines,
+        lines,
+        pieces,
+        widened,
+    }
 }
 
-impl Laid {
-    /// Where the map's `column` of the JS's `line` is in the module's code.
-    pub(super) fn to(&self, line: u32, column: u32) -> (u32, u32) {
-        let Laid { lines, pieces, widened } = self;
-        let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
-        // Moved by the comments inside its piece of its line before it.
-        let wider = |line: u32, from: u32, column: u32| -> u32 {
-            (widened.get(&line).into_iter().flatten())
-                .filter(|&&(piece, at, _)| piece == from && at <= column)
-                .map(|&(.., width)| width)
-                .sum()
-        };
-        let to = |line: u32, column: u32| match pieces.get(&line) {
-            Some(placed) => {
-                let &(from, to) = placed
-                    .iter()
-                    .rev()
-                    .find(|&&(from, _)| column >= from)
-                    .expect("the first is at 0");
-                (to, column - from + wider(line, from, column))
+impl Laid<'_> {
+    /// Where the map's `column` of the JS's `line` is in the module's code:
+    /// its byte in the line, the piece of it that's there, and the map's
+    /// units before it in that piece, the comments inside it before it
+    /// added.
+    pub(super) fn to(&self, line: u32, column: MapCol) -> (u32, MapCol) {
+        let Laid {
+            generated_lines,
+            lines,
+            pieces,
+            widened,
+        } = self;
+        let text = generated_lines.get(line as usize).copied().unwrap_or_default();
+        let at = column.byte_in(text);
+        let (from, to) = match pieces.get(&line) {
+            Some(placed) => *placed
+                .iter()
+                .rev()
+                .find(|&&(from, _)| at >= from)
+                .expect("the first is at 0"),
+            None => {
+                let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
+                (0, lines.get(line as usize).copied().unwrap_or(line + last_shift))
             }
-            None => (
-                lines.get(line as usize).copied().unwrap_or(line + last_shift),
-                column + wider(line, 0, column),
-            ),
         };
-        to(line, column)
+        // Moved by the comments inside its piece of its line before it.
+        let wider: u32 = (widened.get(&line).into_iter().flatten())
+            .filter(|&&(piece, inside, _)| piece == from && inside <= at)
+            .map(|&(.., width)| width.0)
+            .sum();
+        (to, MapCol(column.0 - MapCol::of_byte(text, from).0 + wider))
     }
 }

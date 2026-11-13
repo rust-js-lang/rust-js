@@ -116,8 +116,8 @@ export const mutations: Mutation[] = [
     name: "export-list-end-at-its-field",
     breaks: "a comment after a namespace struct's last field is split before the last export, not past it at the list's `}` (rd610)",
     file: "src/to_oxc/closing.rs",
-    find: "                .and_then(|text| text.get(column as usize..)?.find('}').map(|i| column + i as u32)),\n",
-    replace: "                .map(|_| column),\n",
+    find: "            true => text.get(at..).and_then(|rest| rest.find('}')).map(|i| at + i),\n",
+    replace: "            true => Some(at),\n",
     tests: ["test/namespace-values.test.ts", "-t", "of an entry.s own fields of one value"],
   },
   {

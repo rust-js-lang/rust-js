@@ -5,7 +5,9 @@ whose rule 2 was of a comment at its line's end. Amended below: one after
 an `=` is before the value; amended again: and one on a line of its own
 between an `=` and its value; and a block comment after an argument's `,` is
 after the argument; and one before a setter's link is before its `=`;
-and one on a line of its own before an `if`'s `{` is after its condition.
+and one on a line of its own before an `if`'s `{` is after its condition;
+and a place in a line is its byte, a map's column its UTF-16 units, one
+type each (#1668).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -300,3 +302,43 @@ against native Rust; the unit tests `a_literal_is_one_token_a_comment_goes_after
 and `a_refusal_keeps_why_however_it_was_said`; the mutations
 `comment-splits-an-exponent`, `comment-splits-an-escaped-string` and
 `refusal-reason-of-json-alone`.
+
+## Amendment: a place in a line is its byte, a map's column its UTF-16 units (#1668)
+
+A source map's column counts UTF-16 units, as JS counts a string; a
+line's text is indexed by its bytes. Placing comments in the JS's lines
+(`to_oxc/trailing.rs`, `closing.rs`, `lines.rs`) mixed the two wherever a
+column the map gave was taken as a byte, or a byte as a column, so past
+non-ASCII text on the line a comment went elsewhere or nowhere:
+
+- after an argument (rule 2 here): `f("日é", x /* c */, "abc")` was
+  `f("日é" /* c */, x, ..)`, and in a template the comment was written
+  inside the string;
+- a conditional's branch's comments ([0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)):
+  the operator was looked for before the map's column taken as a byte,
+  short of it, and the comments were left out;
+- after a re-exported name (rd338): its end was looked for from the
+  column as a byte, so the comment was after the whole statement;
+- the map: where a comment inside a line is, a byte, was compared with
+  the map's columns, and a split line's piece's start too.
+
+Now each place in a line is a `usize` byte, everywhere comments are
+placed, and a map's column is `MapCol`, a type of its own: read from the
+map as `MapCol(t.get_dst_col())`, made a byte only through its line's
+text (`MapCol::byte_in`), and given back to the map only by `Laid::to`,
+which counts the units of its piece before it (`MapCol::of_byte`) and
+each comment inside it before it, whose width is in units. The two
+can't be taken for each other again without a conversion that names its
+line. An object's `}` and an export list's, `closing.rs`'s, read the
+column the same way; oxc writes an object whose `}` has comments over
+lines of its own, so no case has non-ASCII before one.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments, which
+nothing runs; and the map, which nothing runs either.
+
+Held by `test/comments-utf16.test.ts`, a case of each place, each
+compared with its JS and its map, and mutations that mix the units again
+at each: the column a byte (`utf16-map-column-a-byte`), the branch's
+operator, an argument's and a name's end, a piece's start, a comment's
+place and its width in the map.
+

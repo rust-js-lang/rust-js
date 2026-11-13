@@ -35,7 +35,7 @@ mod statements;
 mod trailing;
 
 use self::trailing::{
-    Inside, Trailing, own_line_after_value, own_line_before_block, own_line_before_value, with_inside_comments,
+    Inside, MapCol, Trailing, own_line_after_value, own_line_before_block, own_line_before_value, with_inside_comments,
 };
 use crate::collections::{IndexMap, IndexSet};
 
@@ -238,7 +238,7 @@ pub fn emit(
     // A conditional's branch's comments, before its value on lines of their
     // own, `? // In modern browsers ..`, as oxc writes none before the
     // first (ADR 0658): its line split where its value's JS starts.
-    let mut splits: IndexMap<u32, Vec<(u32, &[String])>> = IndexMap::default();
+    let mut splits: IndexMap<u32, Vec<(usize, &[String])>> = IndexMap::default();
     if let Some(map) = &generated.map {
         // Where each line of the Rust starts, to read a token's place in it:
         // the crate's text's, found once a crate (`Sources::line_starts`),
@@ -309,7 +309,10 @@ pub fn emit(
         .collect();
     let paths: IndexMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
-    let to = |line: u32, column: u32| laid.to(line, column);
+    let to = |line: u32, column: u32| {
+        let (line, column) = laid.to(line, MapCol(column));
+        (line, column.0)
+    };
     let map = crate::format::moved_positions(&map, to, js_file_name);
     // Laid out as oxfmt lays it out, rust-js's own layout.
     let (code, map) = crate::format::laid_out(code, map, js_file_name, &written);

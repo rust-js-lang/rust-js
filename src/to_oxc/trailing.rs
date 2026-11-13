@@ -220,8 +220,8 @@ pub(super) enum Inside {
 #[derive(Default)]
 pub(super) struct Placed<'a> {
     pub(super) after: IndexMap<u32, Vec<&'a str>>,
-    pub(super) inside: IndexMap<u32, Vec<(u32, Inside, &'a str)>>,
-    pub(super) ends: IndexMap<u32, Vec<(u32, &'a str)>>,
+    pub(super) inside: IndexMap<u32, Vec<(usize, Inside, &'a str)>>,
+    pub(super) ends: IndexMap<u32, Vec<(usize, &'a str)>>,
 }
 
 /// Where each of `trailing` goes in `generated_lines`, by the map of them.
@@ -231,12 +231,12 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
     let mut after: IndexMap<u32, Vec<&str>> = IndexMap::default();
     // One inside an expression, after the JS of the code right before it,
     // or of an `=` it's after, its line's and column's (ADR 0630).
-    let mut inside: IndexMap<u32, Vec<(u32, Inside, &str)>> = IndexMap::default();
+    let mut inside: IndexMap<u32, Vec<(usize, Inside, &str)>> = IndexMap::default();
     // A line comment after code of its line that JS has before the code of
     // a line after it, `? "…" // ellipsis` of a conditional on one line:
     // after the code right before it, the rest of the JS's line on the next
     // (ADR 0733), so it's that code's, not all of it after the line's end.
-    let mut ends: IndexMap<u32, Vec<(u32, &str)>> = IndexMap::default();
+    let mut ends: IndexMap<u32, Vec<(usize, &str)>> = IndexMap::default();
     for comment in trailing {
         // One right after an `=`, before the value it gives: after the
         // `=` of the JS of its line, `NoMode = /* .. */ 0b0000000`,
@@ -256,9 +256,9 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             after.into_iter().chain(before).find_map(|t| {
                 let line = t.get_dst_line();
                 let text = generated_lines.get(line as usize)?;
-                let at = in_bytes(text, t.get_dst_col());
+                let at = MapCol(t.get_dst_col()).byte_in(text);
                 let found = (text[..at].rfind(" = ")).or_else(|| text[at..].find(" = ").map(|i| at + i))?;
-                Some((line, found as u32 + 1))
+                Some((line, found + 1))
             })
         };
         // One after a parameter: after its name, `start // DEV-only`, the
@@ -270,11 +270,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .filter(|t| t.get_src_line() == line && t.get_src_col() == column)
                 .find_map(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
-                    let end = word_end(text, t.get_dst_col())?;
+                    let end = word_end(text, MapCol(t.get_dst_col()).byte_in(text))?;
                     text[end..]
                         .trim_start()
                         .starts_with([')', '}'])
-                        .then_some((t.get_dst_line(), end as u32))
+                        .then_some((t.get_dst_line(), end))
                 })
         {
             ends.entry(found.0).or_default().push((found.1, &comment.text));
@@ -290,12 +290,12 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                     (first..generated_lines.len().min(first + 8)).find_map(|at| {
                         let text = generated_lines[at];
                         let from = if at == first {
-                            in_bytes(text, t.get_dst_col())
+                            MapCol(t.get_dst_col()).byte_in(text)
                         } else {
                             0
                         };
                         let open = text.get(from..)?.find(") {")? + from + 2;
-                        Some((at as u32, open as u32))
+                        Some((at as u32, open))
                     })
                 })
         {
@@ -320,9 +320,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .filter(|t| t.get_src_line() == next && t.get_src_col() == first)
                 .find_map(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
-                    let place = text[..in_bytes(text, t.get_dst_col())].trim_end().strip_suffix('=')?;
+                    let place = text[..MapCol(t.get_dst_col()).byte_in(text)]
+                        .trim_end()
+                        .strip_suffix('=')?;
                     let assigned = !place.ends_with(|c: char| "=!<>+-*/%&|^?".contains(c));
-                    assigned.then(|| (t.get_dst_line(), place.trim_end().len() as u32 + 1))
+                    assigned.then(|| (t.get_dst_line(), place.trim_end().len() + 1))
                 })
         {
             inside
@@ -342,11 +344,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .min_by_key(|t| (t.get_src_line(), t.get_src_col()))
                 .and_then(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
-                    let head = text[..in_bytes(text, t.get_dst_col())].trim_end();
+                    let head = text[..MapCol(t.get_dst_col()).byte_in(text)].trim_end();
                     let head = head.strip_suffix('(')?;
                     let head = head.trim_end_matches(|c: char| c.is_alphanumeric() || c == '_' || c == '$');
                     let dot = head.strip_suffix('.')?;
-                    Some((t.get_dst_line(), dot.strip_suffix('?').unwrap_or(dot).len() as u32))
+                    Some((t.get_dst_line(), dot.strip_suffix('?').unwrap_or(dot).len()))
                 })
         {
             inside
@@ -380,13 +382,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 // the next, `default: /* .. */\n log.push(row);` (d1).
                 let rest = text[colon..].trim_start();
                 match (rest.starts_with('{'), rest.is_empty()) {
-                    (true, _) => {
-                        inside
-                            .entry(line)
-                            .or_default()
-                            .push(((colon + 1) as u32, Inside::BeforeCode, &comment.text))
-                    }
-                    (false, false) => ends.entry(line).or_default().push((colon as u32, &comment.text)),
+                    (true, _) => inside
+                        .entry(line)
+                        .or_default()
+                        .push((colon + 1, Inside::BeforeCode, &comment.text)),
+                    (false, false) => ends.entry(line).or_default().push((colon, &comment.text)),
                     (false, true) => after.entry(line).or_default().push(&comment.text),
                 }
             }
@@ -406,22 +406,22 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         // and, of a line comment's end, or a bracket that closes, an
         // array's `]` the map places at its end, `&[""], // path`'s, an
         // argument promoted to a constant (rd525).
-        let nearest = |of: &dyn Fn(&str, u32) -> bool| {
+        let nearest = |of: &dyn Fn(&str, MapCol) -> bool| {
             let mut tokens: Vec<_> = (map.get_tokens())
                 .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < comment.column)
                 .collect();
             tokens.sort_by_key(|t| std::cmp::Reverse(t.get_src_col()));
             tokens
                 .into_iter()
-                .map(|t| (t.get_dst_line(), t.get_dst_col()))
+                .map(|t| (t.get_dst_line(), MapCol(t.get_dst_col())))
                 .find(|&(line, column)| (generated_lines.get(line as usize)).is_some_and(|text| of(text, column)))
         };
-        let before = nearest(&|text, column| word_end(text, column).is_some());
+        let before = nearest(&|text, column| word_end(text, column.byte_in(text)).is_some());
         let closed = || {
             nearest(&|text, column| {
-                word_end(text, column).is_some()
+                word_end(text, column.byte_in(text)).is_some()
                     || text
-                        .get(in_bytes(text, column)..)
+                        .get(column.byte_in(text)..)
                         .is_some_and(|rest| rest.starts_with([']', ')', '}']))
             })
         };
@@ -436,7 +436,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         let argument = || {
             argument
                 .as_ref()
-                .and(of_lines().map(|t| (t.get_dst_line(), t.get_dst_col())).max())
+                .and(of_lines().map(|t| (t.get_dst_line(), MapCol(t.get_dst_col()))).max())
         };
         // Where its JS ends, of a line comment, when a later line's JS
         // follows it on its line: before that, and the `(`, `?`, `:` or
@@ -446,14 +446,16 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             .and_then(|(line, column)| {
                 let text = generated_lines.get(line as usize)?;
                 let later = (map.get_tokens())
-                    .filter(|t| t.get_dst_line() == line && t.get_dst_col() > column && t.get_src_line() > comment.line)
-                    .map(|t| t.get_dst_col())
+                    .filter(|t| {
+                        t.get_dst_line() == line && MapCol(t.get_dst_col()) > column && t.get_src_line() > comment.line
+                    })
+                    .map(|t| MapCol(t.get_dst_col()))
                     .min()?;
-                let head = &text[..in_bytes(text, later)];
+                let head = &text[..later.byte_in(text)];
                 let cut = head
                     .trim_end_matches(|c: char| c.is_whitespace() || "([{?:,".contains(c))
                     .len();
-                (cut > in_bytes(text, column)).then_some((line, cut as u32))
+                (cut > column.byte_in(text)).then_some((line, cut))
             });
         // Of one inside with no such code before it on its line, the code
         // nearest after it there, which it's before.
@@ -463,15 +465,18 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .min_by_key(|t| t.get_src_col())
                 .and_then(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
-                    Some((t.get_dst_line(), in_bytes(text, t.get_dst_col()) as u32))
+                    Some((t.get_dst_line(), MapCol(t.get_dst_col()).byte_in(text)))
                 })
         };
         match (before, end) {
             (Some((line, column)), _) if comment.inside => {
+                let at = generated_lines
+                    .get(line as usize)
+                    .map_or(0, |text| column.byte_in(text));
                 inside
                     .entry(line)
                     .or_default()
-                    .push((column, Inside::AfterCode, &comment.text))
+                    .push((at, Inside::AfterCode, &comment.text))
             }
             (None, _)
                 if comment.inside
@@ -484,7 +489,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             }
             (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
             _ => {
-                let first = of_lines().map(|t| (t.get_dst_line(), t.get_dst_col())).min();
+                let first = of_lines().map(|t| (t.get_dst_line(), MapCol(t.get_dst_col()))).min();
                 let last = (of_lines().map(|t| t.get_dst_line()).max())
                     .zip(first)
                     .map(|(last, first)| closed_after(first, last, &comment.closes, generated_lines));
@@ -504,13 +509,13 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
 /// the JS writes an item a line (rd605). Not one of what's around it, the
 /// `};` of an object after `o: Cell::new(None), // object cache`, whose
 /// `)` no JS has; nor a block's `}` the code's `)` doesn't close (#501).
-fn closed_after(first: (u32, u32), last: u32, closes: &str, generated_lines: &[&str]) -> u32 {
+fn closed_after(first: (u32, MapCol), last: u32, closes: &str, generated_lines: &[&str]) -> u32 {
     let (lines, column) = (generated_lines.get(first.0 as usize..=last as usize), first.1);
     let Some(lines) = lines.filter(|_| !closes.is_empty()) else {
         return last;
     };
     let text = (lines.iter().enumerate())
-        .map(|(k, line)| if k == 0 { &line[in_bytes(line, column)..] } else { line })
+        .map(|(k, line)| if k == 0 { &line[column.byte_in(line)..] } else { line })
         .collect::<Vec<_>>()
         .join("\n");
     let mut open = opened(&text).min(closes.chars().count() as u32);
@@ -567,16 +572,31 @@ fn is_comment_or_default(text: &str) -> bool {
     text.starts_with("//") || text.starts_with("/*") || text.starts_with('*') || text.starts_with("default:")
 }
 
-/// Where a map's `column` of `line`, in UTF-16 units, is in its bytes.
-fn in_bytes(line: &str, column: u32) -> usize {
-    let mut units = 0;
-    for (at, c) in line.char_indices() {
-        if units >= column {
-            return at;
+/// A source map's column, in UTF-16 units, as JS counts a line's length:
+/// never a place in a line's text, which is its bytes, but through
+/// `byte_in`, so the two can't be taken for each other (#1668).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub(super) struct MapCol(pub(super) u32);
+
+impl MapCol {
+    /// Where this column of `line` is in its bytes.
+    pub(super) fn byte_in(self, line: &str) -> usize {
+        let mut units = 0;
+        for (at, c) in line.char_indices() {
+            if units >= self.0 {
+                return at;
+            }
+            units += c.len_utf16() as u32;
         }
-        units += c.len_utf16() as u32;
+        line.len()
     }
-    line.len()
+
+    /// The column of `line`'s byte `at`; past its end, by as many as it is.
+    pub(super) fn of_byte(line: &str, at: usize) -> MapCol {
+        let within = at.min(line.len());
+        let units = line.get(..within).map_or(within, |head| head.encode_utf16().count());
+        MapCol((units + (at - within)) as u32)
+    }
 }
 
 /// Where the name, number or string at `column` of `line` ends: none of
@@ -584,8 +604,7 @@ fn in_bytes(line: &str, column: u32) -> usize {
 /// exponent's sign, `3.3e-1`, and its `0x` or `n`; a string's escaped quote,
 /// `"a\"b"`; a template's `${..}` and escapes. A comment after it goes after
 /// all of it, never inside, where `3.3e /* c */-01` is no JS (#1117).
-fn word_end(line: &str, column: u32) -> Option<usize> {
-    let start = column as usize;
+fn word_end(line: &str, start: usize) -> Option<usize> {
     let rest = line.get(start..)?;
     let first = rest.chars().next()?;
     let end = match first {
@@ -640,19 +659,17 @@ fn literal_end(text: &str, quote: char) -> Option<usize> {
 /// `line` of the JS with each comment after the code that starts at its
 /// column: a name, a number or a string, `case 79 /* "O" */:` (ADR 0630);
 /// or after the `=` there, `NoMode = /* .. */ 0b0000000` (ADR 0630, amended).
-/// And where each is, in `line`, and how wide, in the map's units: what the
-/// map's columns from there are moved by.
-pub(super) fn with_inside_comments(line: &str, comments: &[(u32, Inside, &str)]) -> (String, Vec<(u32, u32)>) {
+/// And where each is, in `line`'s bytes, and how wide, in the map's units:
+/// what the map's columns from there are moved by (`Laid::to`, #1668).
+pub(super) fn with_inside_comments(line: &str, comments: &[(usize, Inside, &str)]) -> (String, Vec<(usize, MapCol)>) {
     let mut out = line.to_string();
     let mut at: Vec<(usize, &str, bool)> = (comments.iter())
         .filter_map(|&(column, inside, text)| match inside {
             Inside::AfterCode => Some((word_end(line, column)?, text, false)),
-            Inside::AfterEquals => {
-                (line.get(column as usize..)?.starts_with('=')).then_some((column as usize + 1, text, false))
-            }
+            Inside::AfterEquals => (line.get(column..)?.starts_with('=')).then_some((column + 1, text, false)),
             // Before what's there: the comment, then a space, `(/* c */
             // form`, `/* c */ .r(`, which the formatter writes `/* c */.r(`.
-            Inside::BeforeCode => line.get(column as usize..).map(|_| (column as usize, text, true)),
+            Inside::BeforeCode => line.get(column..).map(|_| (column, text, true)),
         })
         .collect();
     // From the last, so each column is still where it was.
@@ -663,7 +680,7 @@ pub(super) fn with_inside_comments(line: &str, comments: &[(u32, Inside, &str)])
             true => format!("{text} "),
             false => format!(" {text}"),
         };
-        moved.push((end as u32, inserted.encode_utf16().count() as u32));
+        moved.push((end, MapCol(inserted.encode_utf16().count() as u32)));
         out.insert_str(end, &inserted);
     }
     (out, moved)
