@@ -146,6 +146,9 @@ struct RustJs {
     /// write which each took (ADR 1128).
     without_recognizers: Vec<String>,
     recognizers_found: Option<PathBuf>,
+    /// `--without-mutated <type>`, the types forgotten from what's changed
+    /// in place in this compile (#1665).
+    without_mutated: Vec<String>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -318,6 +321,7 @@ impl Callbacks for RustJs {
                 meaning: self.std_bodies || self.std_iterators,
                 every_outside_struct: self.js_made_all,
                 without_recognizers: std::mem::take(&mut self.without_recognizers),
+                without_mutated: std::mem::take(&mut self.without_mutated),
                 records_recognized: self.recognizers_found.is_some(),
             },
         );
@@ -696,6 +700,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         knowns_found,
         without_recognizers: build_without_recognizers,
         recognizers_found: build_recognizers_found,
+        without_mutated,
         std_iterators,
         js_made_all,
         ..
@@ -746,6 +751,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         js_made_all,
         without_recognizers,
         recognizers_found,
+        without_mutated,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),

@@ -559,10 +559,16 @@ pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
 }
 
 /// Whether a function's `declared` input is a `&mut` of a type parameter,
-/// `Self` too: what its caller gives a `&mut` to there, generic code may
-/// write whole through its box, an in-place cell (ADR 0454, #1665).
+/// `Self` too, or a type parameter itself: what its caller gives a `&mut`
+/// to there, generic code may write whole, through its box, an in-place cell
+/// (ADR 0454), or through the `&mut` it holds, `Pin::new(&mut b)`'s `Ptr`
+/// that `set` writes through (#1665).
 pub(in crate::lower) fn writes_through_its_box(declared: Ty<'_>) -> bool {
-    matches!(*declared.kind(), ty::Ref(_, to, Mutability::Mut) if matches!(to.kind(), ty::Param(_)))
+    match *declared.kind() {
+        ty::Ref(_, to, Mutability::Mut) => matches!(to.kind(), ty::Param(_)),
+        ty::Param(_) => true,
+        _ => false,
+    }
 }
 
 /// Whether `ty` holds the type parameter of index `index`, itself or in

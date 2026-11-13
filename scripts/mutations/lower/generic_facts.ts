@@ -216,4 +216,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
     snapshots: true,
   },
+  {
+    name: "bare-parameter-writes-unseen",
+    breaks: "a `&mut` given where a function declares a bare type parameter, `Pin::new(&mut b)`, isn't taken to be written whole, so `let mut b = a` shares `a` and `set` refuses (#1665)",
+    file: "src/lower/generic_facts.rs",
+    find: "        ty::Param(_) => true,\n        _ => false,\n",
+    replace: "        _ => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_written_whole_through_a_pin_is_its_own.rs$"],
+  },
 ];

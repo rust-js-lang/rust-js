@@ -339,7 +339,20 @@ ref_cell_contents_written_in_place_are_copied and
 copy_written_whole_through_a_dyn_is_its_own run against native Rust.
 Mutations `generic-writes-unseen`, `generic-writes-unresolved` (by its
 snapshot) `ref-cell-contents-unseen` and `unsized-writes-unseen`
-(`analysis/mutation.ts`). The
-guard itself has no mutation: no program the corpus has reaches it once the
-set is filled, which is the point, so a mutation of it is equivalent there.
-The architecture test holds every writer to it.
+(`analysis/mutation.ts`).
+
+The guard is held by a test of its own, never by a gap: a compile forgets a
+type of the set, `--without-mutated <type>`, as ADRs 1127 and 1128 forget a
+fact or a recogniser, and `test/diagnostics.test.ts` compiles
+copy_written_whole_by_generic_code_is_its_own forgetting `Pair`, its write
+refused naming #1665; mutation `in-place-unguarded`
+(`copies/in_place.ts`), caught. The architecture test holds every writer to
+it.
+
+A writer the first measurement missed, found writing that test:
+`Pin::new(&mut b)` gives the `&mut` to `Pin<Ptr>`, a bare type parameter,
+whose `set` writes the struct whole in place. A silent wrong answer before
+the guard, then a refusal. `writes_through_its_box` now holds of a bare type
+parameter too. Case copy_written_whole_through_a_pin_is_its_own against
+native Rust, mutation `bare-parameter-writes-unseen`, caught; no snapshot
+moves.

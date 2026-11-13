@@ -753,3 +753,18 @@ test("a long type's name is printed in its error, and no file of it is written w
   expect(stderr).not.toContain("has been written to");
   expect(readdirSync(dir).sort()).toEqual(["lib.rs"]);
 });
+
+// A write in place of a `Copy` type whose copies are left out is refused as
+// rust-js's own error, never a wrong answer (#1665): with no program
+// reaching it once the mutation set is filled, a compile forgets `Pair` of
+// that set, `--without-mutated`, as ADRs 1127 and 1128 forget a fact or a
+// recogniser, so the guard is held by itself, not by a gap.
+test("a write in place of a type whose copies are left out is refused, naming #1665", () => {
+  const dir = fixture("copies-left-out");
+  const input = join(root, "test/corpus/copy_written_whole_by_generic_code_is_its_own.rs");
+  const out = runSync([compiler, "--without-mutated", "Pair", input, "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
+  const errors = out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
+  expect(errors, out.stderr).toEqual([
+    "error: rust-js does not support writing a `Pair` in place, `$cellOf` yet: rust-js leaves out its copies, as it doesn't know the type is changed in place: an internal error (#1665)",
+  ]);
+});

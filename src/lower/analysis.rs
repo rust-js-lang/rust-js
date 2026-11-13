@@ -991,6 +991,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let paths: IndexMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
     let mutated = mutated_types(tcx, all_bodies);
+    // Less what the session forgets of it, to see that a write in place
+    // refuses where its copies are left out (#1665).
+    let forgotten = &crate::lower::session::caches(tcx).without_mutated;
+    let mutated: IndexSet<Ty<'tcx>> = mutated
+        .into_iter()
+        .filter(|ty| !forgotten.contains(&ty.to_string()))
+        .collect();
     let changed_vecs = vec_uses::changed_vecs(tcx, all_bodies);
     let stored_places = stored_places::stored_places(tcx, all_bodies);
     // What a caller gives generic code whose drop runs something, a value

@@ -49,6 +49,9 @@ pub(crate) struct Caches {
     /// The std functions whose recognisers this session leaves out, by
     /// their std paths, `--without-recognizer`'s (ADR 1128).
     pub without_recognizers: IndexSet<String>,
+    /// The types this session forgets of what's changed in place, as
+    /// `{ty}` prints them, `--without-mutated`'s (#1665).
+    pub without_mutated: IndexSet<String>,
     /// The std functions a recogniser took, each once, in the order it
     /// first did, where the session records them (`--recognizers-found`).
     pub recognized: Option<RefCell<IndexSet<&'static str>>>,
@@ -108,6 +111,8 @@ pub(crate) struct Flags {
     pub every_outside_struct: bool,
     /// The std paths of the functions whose recognisers are left out.
     pub without_recognizers: Vec<String>,
+    /// The types forgotten of what's changed in place.
+    pub without_mutated: Vec<String>,
     /// Whether the functions a recogniser takes are recorded.
     pub records_recognized: bool,
 }
@@ -150,6 +155,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             every_outside_struct: Cell::new(flags.every_outside_struct),
             debug_shown: OnceCell::new(),
             without_recognizers: flags.without_recognizers.into_iter().collect(),
+            without_mutated: flags.without_mutated.into_iter().collect(),
             recognized: flags.records_recognized.then(RefCell::default),
         }));
     });

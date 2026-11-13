@@ -104,6 +104,11 @@ pub(crate) struct Build {
     /// with no recogniser taking these std functions, to see that what's
     /// left of each is refused or right (ADR 1128).
     pub without_recognizers: Vec<String>,
+    /// `--without-mutated <type>`, any number: the crate compiled with these
+    /// types, as `{ty}` prints them, forgotten from the set of what's
+    /// changed in place, to see that a write in place refuses where its
+    /// copies are left out (#1665).
+    pub without_mutated: Vec<String>,
     /// `--recognizers-found <file>`: where to write which std functions a
     /// recogniser took, a line each (ADR 1128).
     pub recognizers_found: Option<PathBuf>,
@@ -213,6 +218,10 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_recognizers.push(path);
     }
     let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
+    let mut without_mutated = Vec::new();
+    while let Some(ty) = valued(&mut ours, "--without-mutated", "a type, as rustc prints it")? {
+        without_mutated.push(ty);
+    }
     let test = ours.first().is_some_and(|a| a == "--test");
     let (input, output) = match &ours[usize::from(test)..] {
         [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
@@ -248,6 +257,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_known,
         knowns_found,
         without_recognizers,
+        without_mutated,
         recognizers_found,
         std_iterators,
         js_made_all,
