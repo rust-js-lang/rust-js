@@ -3,3 +3,4 @@
 export * from "./runtime.js";
 export * from "./iter.js";
 export * from "./io.js";
+export * from "./net.js";

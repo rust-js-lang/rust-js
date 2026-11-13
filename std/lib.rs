@@ -18,3 +18,7 @@ pub mod ops {}
 /// `alloc::io`'s and `core::io`'s: `io::Read`'s, `BufRead`'s and `Seek`'s
 /// provided methods (#1156).
 pub mod io {}
+
+/// `core::net`'s: its addresses, plain data (#1420).
+pub mod net {}
+

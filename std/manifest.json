@@ -9,7 +9,7 @@
     "version": 34,
     "name": "rust_js_std",
     "crate_id": "4241c159ba5c0393",
-    "crate_hash": "1a9c275e0e982057",
+    "crate_hash": "93bd55a18dafb7d5",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -12137,6 +12137,700 @@
         ]
       },
       {
+        "key": "core::net::ip_addr::{impl#41}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrClone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#41}::clone",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrClone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#10}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq<core::net::Ipv4Addr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEqIpv4Addr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#10}::eq",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq<core::net::Ipv4Addr>>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEqIpv4Addr_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#24}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq<core::net::Ipv6Addr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEqIpv6Addr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#24}::eq",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq<core::net::Ipv6Addr>>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEqIpv6Addr_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#44}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#44}::eq",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrPartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#34}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u16; 8]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u16__8_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#34}::from",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u16; 8]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u16__8__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#33}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u8; 16]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u8__16_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#33}::from",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u8; 16]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u8__16__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#19}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u8; 4]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u8__4_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#19}::from",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<[u8; 4]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFrom_u8__4__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#6}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<core::net::Ipv4Addr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFromIpv4Addr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#6}::from",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<core::net::Ipv4Addr>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFromIpv4Addr_from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#7}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<core::net::Ipv6Addr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFromIpv6Addr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#7}::from",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::convert::From<core::net::Ipv6Addr>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrFromIpv6Addr_from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#45}",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrHash",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#45}::hash",
+        "rust_path": "rust_js_std::<core::net::IpAddr as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "ipAddrHash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::ip_addr::{impl#50}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrClone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#50}::clone",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrClone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#11}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::cmp::PartialEq<core::net::IpAddr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrPartialEqIpAddr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#11}::eq",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::cmp::PartialEq<core::net::IpAddr>>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrPartialEqIpAddr_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#52}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrPartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#52}::eq",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrPartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#18}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::convert::From<[u8; 4]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrFrom_u8__4_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#18}::from",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::convert::From<[u8; 4]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrFrom_u8__4__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#17}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::convert::From<u32>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrFromU32",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#17}::from",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::convert::From<u32>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrFromU32_from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#0}",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrHash",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#0}::hash",
+        "rust_path": "rust_js_std::<core::net::Ipv4Addr as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "ipv4AddrHash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::ip_addr::{impl#56}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrClone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#56}::clone",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrClone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#23}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::cmp::PartialEq<core::net::IpAddr>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrPartialEqIpAddr",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#23}::eq",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::cmp::PartialEq<core::net::IpAddr>>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrPartialEqIpAddr_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#58}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrPartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#58}::eq",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrPartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#32}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<[u16; 8]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFrom_u16__8_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#32}::from",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<[u16; 8]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFrom_u16__8__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#31}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<[u8; 16]>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFrom_u8__16_",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#31}::from",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<[u8; 16]>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFrom_u8__16__from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#30}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<u128>>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFromU128",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#30}::from",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::convert::From<u128>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrFromU128_from",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#1}",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrHash",
+        "member": null
+      },
+      {
+        "key": "core::net::ip_addr::{impl#1}::hash",
+        "rust_path": "rust_js_std::<core::net::Ipv6Addr as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "ipv6AddrHash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::socket_addr::{impl#14}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrClone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#14}::clone",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrClone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#16}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrPartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#16}::eq",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrPartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#5}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<(I, u16)>>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFrom_I__u16_",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::socket_addr::{impl#5}::from",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<(I, u16)>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFrom_I__u16__from",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::socket_addr::{impl#3}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<core::net::SocketAddrV4>>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFromSocketAddrV4",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#3}::from",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<core::net::SocketAddrV4>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFromSocketAddrV4_from",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#4}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<core::net::SocketAddrV6>>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFromSocketAddrV6",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#4}::from",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::convert::From<core::net::SocketAddrV6>>::from",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrFromSocketAddrV6_from",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#18}",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrHash",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#18}::hash",
+        "rust_path": "rust_js_std::<core::net::SocketAddr as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrHash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::socket_addr::{impl#23}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4Clone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#23}::clone",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4Clone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#26}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4PartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#26}::eq",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4PartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#29}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4Hash",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#29}::hash",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV4 as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV4Hash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::net::socket_addr::{impl#32}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::clone::Clone>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6Clone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#32}::clone",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::clone::Clone>::clone",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6Clone_clone",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#35}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::cmp::PartialEq>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6PartialEq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#35}::eq",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::cmp::PartialEq>::eq",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6PartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#38}",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::hash::Hash>",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6Hash",
+        "member": null
+      },
+      {
+        "key": "core::net::socket_addr::{impl#38}::hash",
+        "rust_path": "rust_js_std::<core::net::SocketAddrV6 as core::hash::Hash>::hash",
+        "module": [
+          "net"
+        ],
+        "export": "socketAddrV6Hash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "alloc::io::buf_read::BufRead::lines",
         "rust_path": "rust_js_std::alloc::io::BufRead::lines",
         "module": [
@@ -14052,6 +14746,438 @@
             ]
           }
         ]
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::is_ipv4",
+        "rust_path": "rust_js_std::core::net::IpAddr::is_ipv4",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "isIpv4"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::is_ipv6",
+        "rust_path": "rust_js_std::core::net::IpAddr::is_ipv6",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "isIpv6"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::is_loopback",
+        "rust_path": "rust_js_std::core::net::IpAddr::is_loopback",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "isLoopback"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::is_multicast",
+        "rust_path": "rust_js_std::core::net::IpAddr::is_multicast",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "isMulticast"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::is_unspecified",
+        "rust_path": "rust_js_std::core::net::IpAddr::is_unspecified",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "isUnspecified"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#2}::to_canonical",
+        "rust_path": "rust_js_std::core::net::IpAddr::to_canonical",
+        "module": [
+          "net"
+        ],
+        "export": "IpAddr",
+        "member": "toCanonical"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::from_bits",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::from_bits",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "fromBits"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_broadcast",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_broadcast",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isBroadcast"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_documentation",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_documentation",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isDocumentation"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_link_local",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_link_local",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isLinkLocal"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_loopback",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_loopback",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isLoopback"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_multicast",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_multicast",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isMulticast"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_private",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_private",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isPrivate"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::is_unspecified",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::is_unspecified",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "isUnspecified"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::new",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::new",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "new"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::octets",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::octets",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "octets"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::to_bits",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::to_bits",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "toBits"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::to_ipv6_compatible",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::to_ipv6_compatible",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "toIpv6Compatible"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#3}::to_ipv6_mapped",
+        "rust_path": "rust_js_std::core::net::Ipv4Addr::to_ipv6_mapped",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv4Addr",
+        "member": "toIpv6Mapped"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::from_bits",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::from_bits",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "fromBits"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::is_loopback",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::is_loopback",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "isLoopback"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::is_multicast",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::is_multicast",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "isMulticast"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::is_unspecified",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::is_unspecified",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "isUnspecified"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::new",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::new",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "new"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::octets",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::octets",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "octets"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::segments",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::segments",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "segments"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::to_bits",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::to_bits",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "toBits"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::to_ipv4",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::to_ipv4",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "toIpv4"
+      },
+      {
+        "key": "core::net::ip_addr::{impl#20}::to_ipv4_mapped",
+        "rust_path": "rust_js_std::core::net::Ipv6Addr::to_ipv4_mapped",
+        "module": [
+          "net"
+        ],
+        "export": "Ipv6Addr",
+        "member": "toIpv4Mapped"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::ip",
+        "rust_path": "rust_js_std::core::net::SocketAddr::ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "ip"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::is_ipv4",
+        "rust_path": "rust_js_std::core::net::SocketAddr::is_ipv4",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "isIpv4"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::is_ipv6",
+        "rust_path": "rust_js_std::core::net::SocketAddr::is_ipv6",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "isIpv6"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::new",
+        "rust_path": "rust_js_std::core::net::SocketAddr::new",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "new"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::port",
+        "rust_path": "rust_js_std::core::net::SocketAddr::port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "port"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::set_ip",
+        "rust_path": "rust_js_std::core::net::SocketAddr::set_ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "setIp"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#0}::set_port",
+        "rust_path": "rust_js_std::core::net::SocketAddr::set_port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddr",
+        "member": "setPort"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#1}::ip",
+        "rust_path": "rust_js_std::core::net::SocketAddrV4::ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV4",
+        "member": "ip"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#1}::new",
+        "rust_path": "rust_js_std::core::net::SocketAddrV4::new",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV4",
+        "member": "new"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#1}::port",
+        "rust_path": "rust_js_std::core::net::SocketAddrV4::port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV4",
+        "member": "port"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#1}::set_ip",
+        "rust_path": "rust_js_std::core::net::SocketAddrV4::set_ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV4",
+        "member": "setIp"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#1}::set_port",
+        "rust_path": "rust_js_std::core::net::SocketAddrV4::set_port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV4",
+        "member": "setPort"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::flowinfo",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::flowinfo",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "flowinfo"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::ip",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "ip"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::new",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::new",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "new"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::port",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "port"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::scope_id",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::scope_id",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "scopeId"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::set_ip",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::set_ip",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "setIp"
+      },
+      {
+        "key": "core::net::socket_addr::{impl#2}::set_port",
+        "rust_path": "rust_js_std::core::net::SocketAddrV6::set_port",
+        "module": [
+          "net"
+        ],
+        "export": "SocketAddrV6",
+        "member": "setPort"
       }
     ],
     "impls": [
@@ -14175,13 +15301,48 @@
       "core::iter::sources::repeat_n::{impl#2}",
       "core::iter::sources::repeat_n::{impl#4}",
       "core::iter::sources::repeat_n::{impl#5}",
-      "core::iter::sources::repeat_n::{impl#6}"
+      "core::iter::sources::repeat_n::{impl#6}",
+      "core::net::ip_addr::{impl#0}",
+      "core::net::ip_addr::{impl#10}",
+      "core::net::ip_addr::{impl#11}",
+      "core::net::ip_addr::{impl#17}",
+      "core::net::ip_addr::{impl#18}",
+      "core::net::ip_addr::{impl#19}",
+      "core::net::ip_addr::{impl#1}",
+      "core::net::ip_addr::{impl#23}",
+      "core::net::ip_addr::{impl#24}",
+      "core::net::ip_addr::{impl#30}",
+      "core::net::ip_addr::{impl#31}",
+      "core::net::ip_addr::{impl#32}",
+      "core::net::ip_addr::{impl#33}",
+      "core::net::ip_addr::{impl#34}",
+      "core::net::ip_addr::{impl#41}",
+      "core::net::ip_addr::{impl#44}",
+      "core::net::ip_addr::{impl#45}",
+      "core::net::ip_addr::{impl#50}",
+      "core::net::ip_addr::{impl#52}",
+      "core::net::ip_addr::{impl#56}",
+      "core::net::ip_addr::{impl#58}",
+      "core::net::ip_addr::{impl#6}",
+      "core::net::ip_addr::{impl#7}",
+      "core::net::socket_addr::{impl#14}",
+      "core::net::socket_addr::{impl#16}",
+      "core::net::socket_addr::{impl#18}",
+      "core::net::socket_addr::{impl#23}",
+      "core::net::socket_addr::{impl#26}",
+      "core::net::socket_addr::{impl#29}",
+      "core::net::socket_addr::{impl#32}",
+      "core::net::socket_addr::{impl#35}",
+      "core::net::socket_addr::{impl#38}",
+      "core::net::socket_addr::{impl#3}",
+      "core::net::socket_addr::{impl#4}",
+      "core::net::socket_addr::{impl#5}"
     ],
     "libraries": [],
     "inputs": [
       {
         "file": "lib.rs",
-        "hash": "45db80831bd0cc06"
+        "hash": "6285f8c2982747f8"
       }
     ],
     "keeps_capacity": true,
@@ -14209,6 +15370,12 @@
         "key": "4241c159ba5c0393b8f8c6f6166651be",
         "module": [
           "iter"
+        ]
+      },
+      {
+        "key": "4241c159ba5c03936614f14ba25dfadb",
+        "module": [
+          "net"
         ]
       },
       {
@@ -14698,6 +15865,102 @@
         }
       ],
       "type_links": []
+    },
+    {
+      "module": [
+        "net"
+      ],
+      "file": "net.js",
+      "map": "net.js.map",
+      "source": "lib.rs",
+      "in_source": "net.js",
+      "imports": [],
+      "exports": [
+        "Ipv4Addr",
+        "Ipv6Addr",
+        "SocketAddrV4",
+        "SocketAddrV6",
+        "IpAddr",
+        "SocketAddr",
+        "ipv4AddrClone",
+        "ipv4AddrPartialEq",
+        "ipv4AddrPartialEqIpAddr",
+        "ipv4AddrHash",
+        "ipv6AddrClone",
+        "ipv6AddrPartialEq",
+        "ipv6AddrPartialEqIpAddr",
+        "ipv6AddrHash",
+        "ipAddrClone",
+        "ipAddrPartialEq",
+        "ipAddrPartialEqIpv4Addr",
+        "ipAddrPartialEqIpv6Addr",
+        "ipAddrHash",
+        "socketAddrV4Clone",
+        "socketAddrV4PartialEq",
+        "socketAddrV4Hash",
+        "socketAddrV6Clone",
+        "socketAddrV6PartialEq",
+        "socketAddrV6Hash",
+        "socketAddrClone",
+        "socketAddrPartialEq",
+        "socketAddrHash",
+        "ipAddrFromIpv4Addr",
+        "ipAddrFromIpv6Addr",
+        "ipAddrFrom_u8__4_",
+        "ipAddrFrom_u8__16_",
+        "ipAddrFrom_u16__8_",
+        "ipv4AddrFromU32",
+        "ipv4AddrFrom_u8__4_",
+        "ipv6AddrFromU128",
+        "ipv6AddrFrom_u8__16_",
+        "ipv6AddrFrom_u16__8_",
+        "socketAddrFromSocketAddrV4",
+        "socketAddrFromSocketAddrV6",
+        "ipv4AddrClone_clone",
+        "ipv4AddrPartialEq_eq",
+        "ipv4AddrPartialEqIpAddr_eq",
+        "ipv4AddrHash_hash",
+        "ipv6AddrClone_clone",
+        "ipv6AddrPartialEq_eq",
+        "ipv6AddrPartialEqIpAddr_eq",
+        "ipv6AddrHash_hash",
+        "ipAddrClone_clone",
+        "ipAddrPartialEq_eq",
+        "ipAddrPartialEqIpv4Addr_eq",
+        "ipAddrPartialEqIpv6Addr_eq",
+        "ipAddrHash_hash",
+        "socketAddrV4Clone_clone",
+        "socketAddrV4PartialEq_eq",
+        "socketAddrV4Hash_hash",
+        "socketAddrV6Clone_clone",
+        "socketAddrV6PartialEq_eq",
+        "socketAddrV6Hash_hash",
+        "socketAddrClone_clone",
+        "socketAddrPartialEq_eq",
+        "socketAddrHash_hash",
+        "ipAddrFromIpv4Addr_from",
+        "ipAddrFromIpv6Addr_from",
+        "ipAddrFrom_u8__4__from",
+        "ipAddrFrom_u8__16__from",
+        "ipAddrFrom_u16__8__from",
+        "ipv4AddrFromU32_from",
+        "ipv4AddrFrom_u8__4__from",
+        "ipv6AddrFromU128_from",
+        "ipv6AddrFrom_u8__16__from",
+        "ipv6AddrFrom_u16__8__from",
+        "socketAddrFromSocketAddrV4_from",
+        "socketAddrFromSocketAddrV6_from",
+        "socketAddrFrom_I__u16__from",
+        "socketAddrFrom_I__u16_"
+      ],
+      "links": [
+        {
+          "start": 165,
+          "end": 177,
+          "file": "runtime.js"
+        }
+      ],
+      "type_links": []
     }
   ],
   "artifacts": [
@@ -14707,7 +15970,7 @@
     },
     {
       "file": "iter.js.map",
-      "hash": "fdf156a6a1c2d862"
+      "hash": "26e6128361f0a386"
     },
     {
       "file": "io.js",
@@ -14715,7 +15978,15 @@
     },
     {
       "file": "io.js.map",
-      "hash": "add409fd39f93d90"
+      "hash": "4ae452a119858544"
+    },
+    {
+      "file": "net.js",
+      "hash": "ed592beb72e6c1b4"
+    },
+    {
+      "file": "net.js.map",
+      "hash": "f39d89239ab36025"
     }
   ]
 }

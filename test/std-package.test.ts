@@ -44,9 +44,9 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
     expect(body(join(dir, "std", file)), file).toBe(body(join(stdDir, file)));
   }
   // Each item is std's: keyed as rustc keys it, in a module of the package,
-  // `iter`'s or `io`'s, `core`'s or `alloc`'s (#1156).
+  // `iter`'s, `io`'s or `net`'s, `core`'s or `alloc`'s (#1156, #1420).
   expect(committed.library.items.length).toBeGreaterThan(4);
-  const stds = ["core::iter", "core::io", "alloc::io"];
+  const stds = ["core::iter", "core::io", "alloc::io", "core::net"];
   expect(committed.library.items.filter((item: { rust_path: string }) => !stds.some((std) => item.rust_path.includes(std)))).toEqual([]);
   const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
   // Each module the package's entry re-exports is a file it ships, and its

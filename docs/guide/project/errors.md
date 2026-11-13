@@ -113,7 +113,7 @@ See [Dependencies](dependencies.md#crates-from-cratesio).
 | Refused | What to write |
 | --- | --- |
 | `std::thread::spawn`, `std::thread::current` | JS has one thread: run work later with `js::spawn` of a boxed `async` block, or `js::set_timeout` |
-| `std::fs`, `std::net` | Node's modules, from the `node` crate: `node::fs::read_file_sync`; in a browser, `webapi`'s `fetch` |
+| `std::fs`, `std::net`'s sockets (its addresses, `Ipv4Addr` and the rest, compile) | Node's modules, from the `node` crate: `node::fs::read_file_sync`; in a browser, `webapi`'s `fetch` |
 | a raw pointer, `transmute`, `std::ptr` reading by address | references, `Box`, `Rc` and indices: JS objects are values, not addresses |
 | `#![feature(..)]` | rust-js runs a stable release: rustc refuses it, ``error[E0554]: `#![feature]` may not be used on the stable release channel`` |
 

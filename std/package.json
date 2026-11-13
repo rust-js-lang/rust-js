@@ -20,6 +20,8 @@
     "iter.js.map",
     "io.js",
     "io.js.map",
+    "net.js",
+    "net.js.map",
     "manifest.json"
   ],
   "sideEffects": false

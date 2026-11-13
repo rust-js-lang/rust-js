@@ -260,4 +260,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
     snapshots: true,
   },
+  {
+    name: "net-addresses-uncompiled",
+    breaks: "`core::net`'s addresses aren't compiled into `@rust-js/std`, so `Ipv4Addr::new` is refused again (#1420)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io).chain(net) {\n",
+    replace: "    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io) {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

@@ -326,6 +326,84 @@ const COMPILED_STD_IO: &[(&str, Option<&str>, &str)] = &[
     ("Cursor", Some("Default"), "default"),
 ];
 
+/// `core::net`'s value types compiled, as `COMPILED_STD_IO`'s are (#1420,
+/// the lead's option A): `Ipv4Addr`, `Ipv6Addr`, `IpAddr` and the
+/// `SocketAddr`s, plain data, their constructors, accessors, comparisons,
+/// `Hash`, `Debug`, `Display` and `FromStr` std's own bodies. Sockets stay
+/// refused.
+const COMPILED_STD_NET: &[(&str, Option<&str>, &str)] = &[
+    ("Ipv4Addr", None, "new"),
+    ("Ipv6Addr", None, "new"),
+    ("SocketAddrV4", None, "new"),
+    ("SocketAddrV6", None, "new"),
+    ("Ipv4Addr", None, "octets"),
+    ("Ipv4Addr", None, "to_bits"),
+    ("Ipv4Addr", None, "from_bits"),
+    ("Ipv4Addr", None, "is_unspecified"),
+    ("Ipv4Addr", None, "is_loopback"),
+    ("Ipv4Addr", None, "is_private"),
+    ("Ipv4Addr", None, "is_link_local"),
+    ("Ipv4Addr", None, "is_multicast"),
+    ("Ipv4Addr", None, "is_broadcast"),
+    ("Ipv4Addr", None, "is_documentation"),
+    ("Ipv4Addr", None, "to_ipv6_compatible"),
+    ("Ipv4Addr", None, "to_ipv6_mapped"),
+    ("Ipv6Addr", None, "segments"),
+    ("Ipv6Addr", None, "octets"),
+    ("Ipv6Addr", None, "to_bits"),
+    ("Ipv6Addr", None, "from_bits"),
+    ("Ipv6Addr", None, "is_unspecified"),
+    ("Ipv6Addr", None, "is_loopback"),
+    ("Ipv6Addr", None, "is_multicast"),
+    ("Ipv6Addr", None, "to_ipv4"),
+    ("Ipv6Addr", None, "to_ipv4_mapped"),
+    ("IpAddr", None, "is_unspecified"),
+    ("IpAddr", None, "is_loopback"),
+    ("IpAddr", None, "is_multicast"),
+    ("IpAddr", None, "is_ipv4"),
+    ("IpAddr", None, "is_ipv6"),
+    ("IpAddr", None, "to_canonical"),
+    ("SocketAddrV4", None, "ip"),
+    ("SocketAddrV4", None, "port"),
+    ("SocketAddrV4", None, "set_ip"),
+    ("SocketAddrV4", None, "set_port"),
+    ("SocketAddrV6", None, "ip"),
+    ("SocketAddrV6", None, "port"),
+    ("SocketAddrV6", None, "flowinfo"),
+    ("SocketAddrV6", None, "scope_id"),
+    ("SocketAddrV6", None, "set_ip"),
+    ("SocketAddrV6", None, "set_port"),
+    ("SocketAddr", None, "new"),
+    ("SocketAddr", None, "ip"),
+    ("SocketAddr", None, "port"),
+    ("SocketAddr", None, "set_ip"),
+    ("SocketAddr", None, "set_port"),
+    ("SocketAddr", None, "is_ipv4"),
+    ("SocketAddr", None, "is_ipv6"),
+    ("Ipv4Addr", Some("Clone"), "clone"),
+    ("Ipv4Addr", Some("PartialEq"), "eq"),
+    ("Ipv4Addr", Some("Hash"), "hash"),
+    ("Ipv6Addr", Some("Clone"), "clone"),
+    ("Ipv6Addr", Some("PartialEq"), "eq"),
+    ("Ipv6Addr", Some("Hash"), "hash"),
+    ("IpAddr", Some("Clone"), "clone"),
+    ("IpAddr", Some("PartialEq"), "eq"),
+    ("IpAddr", Some("Hash"), "hash"),
+    ("SocketAddrV4", Some("Clone"), "clone"),
+    ("SocketAddrV4", Some("PartialEq"), "eq"),
+    ("SocketAddrV4", Some("Hash"), "hash"),
+    ("SocketAddrV6", Some("Clone"), "clone"),
+    ("SocketAddrV6", Some("PartialEq"), "eq"),
+    ("SocketAddrV6", Some("Hash"), "hash"),
+    ("SocketAddr", Some("Clone"), "clone"),
+    ("SocketAddr", Some("PartialEq"), "eq"),
+    ("SocketAddr", Some("Hash"), "hash"),
+    ("IpAddr", Some("From"), "from"),
+    ("Ipv4Addr", Some("From"), "from"),
+    ("Ipv6Addr", Some("From"), "from"),
+    ("SocketAddr", Some("From"), "from"),
+];
+
 /// `io`'s traits' provided methods compiled, each by its trait and its
 /// name (#1156): std's own bodies over the source's dictionary.
 const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
@@ -640,7 +718,8 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         .filter(|&&(type_name, ..)| called_for_build(tcx, type_name))
         .map(|entry| (StdCrate::Core, "iter", entry));
     let io = COMPILED_STD_IO.iter().map(|entry| (StdCrate::Alloc, "io", entry));
-    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io) {
+    let net = COMPILED_STD_NET.iter().map(|entry| (StdCrate::Core, "net", entry));
+    for (krate, module, &(type_name, trait_name, method)) in iter.chain(io).chain(net) {
         // `io`'s of `alloc`'s or `core`'s, `Cursor`.
         let Some(adt) = registry::by_path(tcx, krate, &[module, type_name])
             .or_else(|| registry::by_path(tcx, StdCrate::Core, &[module, type_name]))

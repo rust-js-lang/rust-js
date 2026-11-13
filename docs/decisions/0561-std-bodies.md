@@ -584,3 +584,26 @@ mutation are `RepeatN`'s, in the commit that compiles it: with
 build of std's bodies (`repeat_n(L(1), 0)` never drops `L(1)`) and the
 twin net's consumers table fails 14 of its 80 batches, std's bodies
 leaving `L(7)` undropped where the runtime's helpers drop it.
+
+## Amendment (2026-11-13, #1420): `core::net`'s addresses
+
+`Ipv4Addr`, `Ipv6Addr`, `IpAddr`, `SocketAddrV4`, `SocketAddrV6` and
+`SocketAddr` are plain data in `core::net`. Calling any of their functions
+was refused. quickcheck 0.9's `Arbitrary` for them calls `Ipv4Addr::new`,
+so quickcheck was refused whole, and so were itertools' 285 quickcheck tests
+(#1420). They're now compiled into `@rust-js/std`'s `net` module, as `io`'s
+`Cursor` is (#1156): `COMPILED_STD_NET`, the one catalog of them. That
+covers their constructors, accessors and tests (`octets`, `segments`,
+`to_bits`, `is_loopback`, `is_private` and the rest), `From` (of an
+address, an array or a number), `==`, `Hash` and `Clone`. Each address is
+its struct, `{ octets: [127, 0, 0, 1] }`, wherever a value of it is made
+or read; an `IpAddr` is std's enum, `{ TAG: "V4", _0 }`. This was the
+lead's option A on #1420, over a hand-written model (#1458's direction).
+
+Still refused, #1644: `{}`, `{:?}`, `parse()` and `<` of them. Their bodies
+reach core's internals, `compare_bytes`, `SpecWriteFmt` and the address
+parser, which rust-js doesn't lower yet. So do sockets, `TcpStream` and the
+rest, which JS can't give as Rust's are.
+
+No observable difference (ADR 0262): std's own bodies run. Corpus case
+`net_addresses_compiled` runs against native Rust in both builds.
