@@ -27,7 +27,18 @@ export function mainCheckoutOf(dir: string): string {
   if (!named) return dir;
   const own = resolve(dir, named);
   const common = join(own, "commondir");
-  return existsSync(common) ? dirname(resolve(own, readFileSync(common, "utf8").trim())) : dir;
+  return existsSync(common) ? checkoutOfGitDir(resolve(own, readFileSync(common, "utf8").trim())) : dir;
+}
+
+/** The checkout a repository's git dir is the metadata of: the one its
+ * `core.worktree` names, resolved from it, a submodule's
+ * `<parent>/.git/modules/<name>`'s, which `git worktree list` gives as
+ * its main worktree itself; else the directory that holds it, `.git`'s
+ * (#1686). */
+export function checkoutOfGitDir(gitDir: string): string {
+  const config = join(gitDir, "config");
+  const named = existsSync(config) ? /^\s*worktree\s*=\s*(.+?)\s*$/m.exec(readFileSync(config, "utf8"))?.[1] : undefined;
+  return named ? resolve(gitDir, named) : dirname(gitDir);
 }
 
 /** Where what the loop keeps for every checkout of the machine goes: the

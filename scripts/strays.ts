@@ -7,7 +7,9 @@
 // numbers are taken only where there's none (docs/dev-loop.md).
 //
 //   bun scripts/strays.ts     each, by its PID, or nothing
-import { readlinkSync } from "node:fs";
+import { existsSync, readlinkSync } from "node:fs";
+import { join } from "node:path";
+import { checkoutOfGitDir } from "../test/bounded";
 
 export type Stray = { pid: number; seconds: number; cwd: string; command: string };
 
@@ -22,13 +24,16 @@ export function elapsedSeconds(etime: string): number {
 
 /** Every worktree of the repository `cwd` is in, as git lists them: the
  * main checkout, and each other wherever it is, inside the checkout or
- * beside it (`git worktree add ../x`, #1449). */
+ * beside it (`git worktree add ../x`, #1449). Of a submodule, git lists its
+ * git dir as its main worktree, `<parent>/.git/modules/rust-js`: the
+ * checkout it's the metadata of (#1686). */
 export function worktreeRoots(cwd: string): string[] {
   const listed = Bun.spawnSync(["git", "worktree", "list", "--porcelain"], { cwd }).stdout.toString();
   return listed
     .split("\n")
     .filter((line) => line.startsWith("worktree "))
-    .map((line) => line.slice("worktree ".length));
+    .map((line) => line.slice("worktree ".length))
+    .map((root) => (existsSync(join(root, "HEAD")) && existsSync(join(root, "config")) ? checkoutOfGitDir(root) : root));
 }
 
 /** Each process's working directory, of the user's processes: `lsof`'s on

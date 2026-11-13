@@ -23,6 +23,7 @@ import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
+import { worktreeRoots } from "./strays";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
 import { keptAppsCap, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
@@ -122,10 +123,7 @@ export const mutantsCap = 4 * GiB;
  * tools' own, each with its cap and how it's held to it. */
 export function stores(): Store[] {
   const main = mainCheckoutOf(checkout);
-  const worktrees = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd: checkout, encoding: "utf8" })
-    .stdout.split("\n")
-    .filter((line) => line.startsWith("worktree "))
-    .map((line) => line.slice("worktree ".length));
+  const worktrees = worktreeRoots(checkout);
   const inChecks: Store[] = [
     ...keptStores
       .filter(({ dir }) => dir.startsWith(machineStore))

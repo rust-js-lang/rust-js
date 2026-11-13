@@ -8,7 +8,7 @@ import { keepFailedLogs } from "../scripts/checkLogs";
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
 import { compared, median, shown, slower, type Timing } from "../scripts/timing";
-import { floorBytes } from "./bounded";
+import { floorBytes, mainCheckoutOf } from "./bounded";
 import { fixture, root } from "./support";
 
 const runs = (step: string, seconds: number[]): Timing[] =>
@@ -86,6 +86,31 @@ test("a stray in a worktree outside the main checkout is named", async () => {
   } finally {
     process.kill(pid);
   }
+});
+
+// Of rust-js checked out as another repository's submodule, git lists its
+// git dir, `<parent>/.git/modules/rust-js`, as its main worktree: each
+// worktree's root is the checkout, from the submodule and from a worktree
+// linked to it, and so is what `mainCheckoutOf` finds (#1686).
+test("a submodule's worktrees are its checkouts, not its git dir", () => {
+  const dir = realpathSync(fixture("submodule-repo"));
+  const [source, parent] = [join(dir, "source"), join(dir, "parent")];
+  const git = (cwd: string, ...args: string[]) =>
+    Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "protocol.file.allow=always", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+  for (const repo of [source, parent]) {
+    mkdirSync(repo);
+    git(repo, "init", "-q");
+    git(repo, "commit", "-q", "--allow-empty", "-m", "start");
+  }
+  expect(git(parent, "submodule", "add", "-q", source, "rust-js").exitCode).toBe(0);
+  const sub = join(parent, "rust-js");
+  const linked = join(dir, "linked");
+  expect(git(sub, "worktree", "add", "-q", "--detach", linked).exitCode).toBe(0);
+  expect([worktreeRoots(sub), worktreeRoots(linked)]).toEqual([
+    [sub, linked],
+    [sub, linked],
+  ]);
+  expect([mainCheckoutOf(sub), mainCheckoutOf(linked)]).toEqual([sub, sub]);
 });
 
 // check:fast's pool starts the longest job first by each job's last runs on
