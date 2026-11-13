@@ -114,6 +114,18 @@ say.
    panics. Only `--std-bodies` reads a std built to unwind (`std_sysroot`,
    #424). An audit of every reader of a compiled body's unwind edges
    (2026-11-13) found none else trusting them.
+10. **"In range" doesn't mean "JS's own operator is right".** An interval
+    analysis that proves `a * b` stays inside the integer's range hasn't
+    proved that JS's plain `*` gives the integer's product. `-2 * 0` is
+    `-0` in JS, which no Rust integer is, and its sign shows once the value
+    becomes an `f64` (`1.0 / x` is `-inf`, ADR 0064). The MIR intervals'
+    shadow found this in `product_sign`'s `area(-2, 0)` (#1672, ADR 1137):
+    MIR proved the product in range where THIR kept its normalization. Had
+    M3 switched first, the case would have printed `-0.0`. A proof that
+    licenses JS's own operator must also prove every property the dropped
+    normalization gave, not only the one the analysis tracks. Shadow mode
+    found it because it records both directions: checks THIR drops that
+    MIR can't prove, and checks MIR proves that THIR keeps.
 
 ## Nets still to build
 
