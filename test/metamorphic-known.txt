@@ -108,6 +108,3 @@ plain std loud-drop thread_local_with_nested.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
-
-#1713 P1: a library's generic function past the relay's nesting bound crashes its consumer: a slot past the associated types is a built one (drop_params.rs:178)
-plain std library map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.rs

@@ -481,6 +481,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The type `id`'s drop `index` drops, of the arguments it's called with
     /// here: the one given for its type parameter, or that type's associated
     /// type, as it's known here (ADR 0421).
+    /// Whether `id`'s slot `index` is one its type can be said of
+    /// (`drop_slot`): a type parameter's, an associated type's, or a type
+    /// built of them that the crate lists or a library's manifest can make.
+    /// Not one a library relays past how deep a type may nest, where its
+    /// manifest can't say it (#1713).
+    pub(in crate::lower) fn slot_said(&self, id: DefId, index: u32) -> bool {
+        let Some(at) = slot_item(self.tcx, id, index) else {
+            return true;
+        };
+        let (foreign, _) = self.slots();
+        at < drop_items(self.tcx, foreign, id).len() || built_slot(self.tcx, self.slots(), id, index).is_some()
+    }
+
     pub(in crate::lower) fn drop_slot_of(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
         let ty = ty::EarlyBinder::bind(self.tcx, drop_slot(self.tcx, self.slots(), id, index))
             .instantiate(self.tcx, args)

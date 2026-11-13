@@ -707,3 +707,20 @@ compiled still does). Corpus case
 `map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy`, the
 rewrite itself; mutation `relayed-tuples-uncounted`, caught (its compile
 times out).
+
+## Amendment: a slot past what a library's contract can say (2026-11-14, #1713)
+
+A library's generic function may relay a type fact for a type built a level
+deeper each round, a tuple key of a type parameter, past how deep a type may
+nest (#1708). Its manifest can't say such a slot's type, and a consumer that
+called the function crashed rust-js asking for it, "a slot past the
+associated types is a built one" (`drop_slot`). Now a call whose callee asks
+for a fact or a drop of a slot the consumer can't say (`slot_said`: a type
+parameter's, an associated type's, or a built type the crate lists or the
+manifest makes) is refused, "a call of a library's generic function that
+asks of a type nested past what its contract can say", as a caller that
+would have to give it is. A refusal, not a crash. Held by
+`test/crates.test.ts`' "a call of a library's generic function asking of a
+type nested past its contract is refused" (the metamorphic `library`
+rewrite of `map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy`);
+mutation `unsayable-slot-given`, caught.

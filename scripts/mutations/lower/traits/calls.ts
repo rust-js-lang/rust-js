@@ -278,9 +278,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a call through a dictionary of a method whose entries take its caller's location gives none",
     file: "src/lower/traits/calls.rs",
-    find: "        for slot in self.own_slots_through(id, generic_args) {\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
+    find: "                ));\n            }\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
     replace:
-      "        for slot in self.own_slots_through(id, generic_args) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
+      "                ));\n            }\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
@@ -620,5 +620,13 @@ export const mutations: Mutation[] = [
     find: "                        None if let Some(made) = made => {\n",
     replace: "                        None if let Some(made) = made.filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
+  },
+  {
+    name: "unsayable-slot-given",
+    breaks: "a call of a library's generic function that asks of a type nested past what its contract can say is given evidence anyway, and rust-js crashes, a slot past the associated types is a built one (#1713)",
+    file: "src/lower/traits/calls.rs",
+    find: "                && !self.slot_said(id, index)\n",
+    replace: "                && false\n",
+    tests: ["test/crates.test.ts", "-t", "nested past its contract is refused"],
   },
 ];

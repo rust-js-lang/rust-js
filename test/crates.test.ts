@@ -151,6 +151,15 @@ test("a zero-sized constant of a struct with fields, std's `Args` in a library's
   }
 }, 300_000);
 
+// A library's generic function whose relay nests a tuple key past how deep
+// a type may nest, which its contract can't say: its consumer's call is
+// refused, as one that would have to give it is, not a crash (#1713).
+test("a call of a library's generic function asking of a type nested past its contract is refused", () => {
+  chain(join(pairs, "..", "nested_past_bound"), "tuple_key_of_a_librarys_generic_function", ["dep", "app"], [
+    "a call of a library's generic function that asks of a type nested past what its contract can say",
+  ]);
+}, 300_000);
+
 for (const name of readdirSync(triples).sort()) {
   test(`three crates: ${name}`, () => {
     chain(triples, name, ["dep", "mid", "app"]);

@@ -772,6 +772,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (mut values, mut drops) = (Vec::new(), Vec::new());
         let mut location = location;
         for slot in self.own_slots_through(id, generic_args) {
+            // One a library relayed past how deep a type may nest, which its
+            // manifest can't say: refused, as a caller that would have to
+            // give it is (ADR 0145, amended, #1713).
+            if let Slot::Fact(index, _) | Slot::Drop(index) = slot
+                && !self.slot_said(id, index)
+            {
+                return Err(self.unsupported(
+                    span,
+                    "a call of a library's generic function that asks of a type nested past what its contract can say",
+                ));
+            }
             match slot {
                 Slot::Location => values.extend(location.take()),
                 Slot::Const(index) => values.push(self.const_arg(generic_args.const_at(index as usize), span)?),
