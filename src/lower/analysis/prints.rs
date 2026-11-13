@@ -407,6 +407,9 @@ pub(super) fn shown_by<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'t
             } => Some(body.thir[source].ty),
             _ => None,
         }))
+        // Each `impl Display` the type it hides, anstyle's `render()`'s
+        // `EffectsDisplay`, as its MIR is lowered.
+        .map(|ty| crate::lower::mir::revealed(tcx, ty))
         .collect()
 }
 

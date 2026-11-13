@@ -380,6 +380,10 @@ go.
      carries `fmtInto`, as the library's would (`listed_writers_compiled_here`).
      A published type of a lifetime alone, `Prefixed<'a>`, is published as
      one of none. Proof: the published piecewise pair; 2 mutations.
+   - An `impl Display` a writer gives its `Formatter`, anstyle's
+     `self.effects.render().fmt(f)`, is the type it hides where framing
+     reads what a writer shows, as its MIR is lowered, so that type's
+     writer is framed. Proof: test/writer-sink-impl-display.rs; 1 mutation.
 
 ## Alternatives
 

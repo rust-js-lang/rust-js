@@ -316,4 +316,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
   },
+  {
+    name: "shown-impl-display-unrevealed",
+    breaks: "an `impl Display` a writer gives its `Formatter`, anstyle's `render()`, isn't the type it hides, so its writer isn't framed and is refused",
+    file: "src/lower/analysis/prints.rs",
+    find: "        .map(|ty| crate::lower::mir::revealed(tcx, ty))\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "each of an impl Display's writes is native Rust's, in the plain build"],
+  },
 ];

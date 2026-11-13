@@ -40,6 +40,7 @@ const cases: [string, string][] = [
   ["callables' ", "test/writer-sink-callables.rs"],
   ["a writer generic over a constant's ", "test/writer-sink-const-generic.rs"],
   ["a writer function's pointer's ", "test/writer-sink-fn-pointer.rs"],
+  ["an impl Display's ", "test/writer-sink-impl-display.rs"],
   ["Arguments kept's ", "test/writer-sink-arguments-kept.rs"],
 ];
 
