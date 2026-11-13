@@ -1506,3 +1506,48 @@ native Rust in both builds, has eight shapes, each with a cell type and a
 trait of its own: a borrow counted of one type counts every cell of it, a
 generic one's too, so shapes sharing one masked each other. Mutation
 `walked-params-drop-nothing` (`lower/drops/ref_cells.ts`).
+
+## Amendment: code rust-js can't see is a binding's or a library's, not a type parameter's (2026-11-13, #1669)
+
+The rd360 amendment exempts, while a receiver's guard is held after its
+call's other arguments, code rust-js can't see: a binding's or a
+library's, which may call back. `called` gave the exemption one variant,
+`Called::Any`, for that code and for what may be any code, the crate's
+too: a type parameter's or a `dyn`'s method, a shim, an intrinsic given a
+function. So `log.borrow_mut().push(f())`, where `f: impl Fn() -> i32` is
+a closure of the crate's that borrows `log`, was taken to borrow nothing:
+the JS pushed where native panics `RefCell already mutably borrowed`.
+Likewise a crate function that runs such a callback, given as the
+argument (the body summaries `seen` read named no call of one), and a fn
+pointer that may be any function.
+
+Case (ADR 0262): results change, so Rust's checks are kept, and the
+exemption is what it said: a binding's, a library's or a library
+closure's code is `Called::Unseen`, still exempt; what may be the crate's
+is `Called::Any`, which asks what anything may (`anything_asks`), as
+`call_asks` always did. A body that runs it, itself or by a body of the
+crate's it runs, is `seen_anything`'s, and asks the same; a fn pointer
+that may be any function asks the same; and std's code given what may
+be anything (`std_given`'s `any`).
+
+`std_given` had a second gap, outside this exemption too: a type
+parameter bound by a trait whose every impl is std's runs nothing of the
+crate's, `H: Hasher`'s. An `Fn` trait has none of the program's, as the
+crate's closures have it with no impl, so `Some(1).map(&f)` of an
+`F: Fn` was taken to run nothing, and a guard held in a `let` across it
+went unchecked. An `Fn` trait's bound now runs what it may be.
+
+`owner_handle_quiet` keeps `request.log`'s checks, where a guard's
+argument calls a `dyn Matcher`'s `matches`, one of the crate's impls;
+output native's either way. Corpus cases
+`ref_cell_borrowed_by_a_generic_callback`,
+`ref_cell_borrowed_by_a_callback_a_function_runs`,
+`ref_cell_borrowed_by_a_dyn_callback_argument`,
+`ref_cell_borrowed_by_a_fn_pointer_argument`,
+`ref_cell_borrowed_by_a_generic_callback_std_runs` and
+`ref_cell_borrowed_while_std_runs_a_generic_callback`, each failing
+before; mutations `any-call-asks-nothing-seen`,
+`seen-anything-asks-nothing`, `any-call-runs-nothing-named`,
+`pointer-of-any-asks-nothing-seen`, `seen-std-given-any-unasked`,
+`library-call-may-be-the-crates` and `fn-bound-parameter-runs-nothing`;
+`unseen-never` now holds the library half.

@@ -247,11 +247,14 @@ pub(super) fn bound_runs<'tcx>(
             | ty::FnDef(..) => {}
             // A type parameter's, or a projection's, by a trait no impl of
             // which is the program's, each std's: what std's code runs,
-            // `H: Hasher`'s, which runs nothing of the crate's.
+            // `H: Hasher`'s, which runs nothing of the crate's. Not an `Fn`
+            // trait's, which the crate's closures have with no impl, so
+            // `Some(1).map(f)` of an `F: Fn` may run any of them (#1669).
             ty::Param(_) | ty::Alias(..)
                 if traits.iter().all(|&t| {
-                    tcx.all_impls(t)
-                        .all(|imp| !imp.is_local() && recognition.in_sysroot(imp))
+                    tcx.fn_trait_kind_from_def_id(t).is_none()
+                        && tcx.async_fn_trait_kind_from_def_id(t).is_none()
+                        && (tcx.all_impls(t)).all(|imp| !imp.is_local() && recognition.in_sysroot(imp))
                 }) => {}
             // A type parameter's, a `dyn`'s, a function pointer's.
             _ => given.any = true,

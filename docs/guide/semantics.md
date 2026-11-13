@@ -519,8 +519,8 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   only once `f(v)`, which Rust evaluates first, has run (0863, amended);
   and one that's only a call's receiver, `c.borrow_mut().push(f(v));`,
   once the call's other arguments have, as JS evaluates them, where only
-  code rust-js sees in them asks of it (0863, amended, the user's
-  decision, rd360); and one read only for a binding's argument,
+  code rust-js sees in them asks of it, a generic `f()`'s as any code may
+  (0863, amended, the user's decision, rd360, #1669); and one read only for a binding's argument,
   `prepare(c.borrow().as_deref())`, what it guards lent, `as_deref()`'s,
   or a copy or clone of it, only while that and the arguments after it
   are read, not while the binding runs (0863, amended, the user's
@@ -2199,8 +2199,10 @@ React and JSX are [their own pages](README.md#react).
 39. A guard that's only a call's receiver, `target.borrow_mut().push(
     show(value));`, is taken after the call's arguments run, as JS's
     `target.push(show(value))` runs them, where Rust takes it first. Only
-    an argument whose code rust-js can't see, which calls back and
-    borrows the receiver's cell, sees the difference: it passes, as
+    an argument that runs a binding's or a library's code, which calls
+    back and borrows the receiver's cell, sees the difference (a type
+    parameter's, a `dyn`'s or a fn pointer's call may be the crate's own
+    closure, and is checked as Rust's, #1669): it passes, as
     upstream's does, where Rust panics `already borrowed` (ADR 0863,
     amended, the user's decision, rd360).
 40. A closure given as a property descriptor's `get`, `PropertyDescriptor

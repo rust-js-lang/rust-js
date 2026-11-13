@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter bound by `Hasher` runs anything, so a `HashSet` of a type whose `Hash` is `ptr::hash` is counted, `$borrowMut(t._updatedFibers, true)`",
     file: "src/lower/analysis/cell_borrows/std_given.rs",
-    find: "                        .all(|imp| !imp.is_local() && recognition.in_sysroot(imp))\n",
-    replace: "                        .all(|_| false)\n",
+    find: "(tcx.all_impls(t)).all(|imp| !imp.is_local() && recognition.in_sysroot(imp))\n",
+    replace: "(tcx.all_impls(t)).all(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_identity_set.rs$"],
     snapshots: true,
   },
@@ -166,5 +166,14 @@ export const mutations: Mutation[] = [
     find: "    if ours || recognition.is_borrowed_cell(ty) || ty.has_aliases() {\n",
     replace: "    if ours || recognition.is_borrowed_cell(ty) || ty.has_param() || ty.has_aliases() {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "type of a type parameter"],
+  },
+  {
+    name: "fn-bound-parameter-runs-nothing",
+    breaks:
+      "a type parameter bound by an `Fn` trait, which the crate's closures have with no impl, is taken as std's code running nothing of the crate's, so `Some(1).map(&f)` of an `F: Fn` that borrows a held cell never panics (#1669)",
+    file: "src/lower/analysis/cell_borrows/std_given.rs",
+    find: "                    tcx.fn_trait_kind_from_def_id(t).is_none()\n                        && tcx.async_fn_trait_kind_from_def_id(t).is_none()\n                        && (tcx.all_impls(t))",
+    replace: "                    (tcx.all_impls(t))",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_while_std_runs_a_generic_callback.rs$"],
   },
 ];

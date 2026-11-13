@@ -14,6 +14,7 @@ plain std generic maybe_uninit_array_written_through_its_pointer.rs
 plain std generic pointer_relayout.rs
 
 #difference 39 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, gap rd360): a library's `total(&held)` doesn't
+plain std library ref_cell_borrowed_by_a_callback_a_function_runs.rs
 plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs

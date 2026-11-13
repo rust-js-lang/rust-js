@@ -91,6 +91,10 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// crate's bodies it runs, whatever else it may run: what a guard asks
     /// of a call's arguments it's held after (ADR 0863, amended).
     seen: IndexMap<DefId, IndexSet<Borrow<'tcx>>>,
+    /// The bodies that may run, themselves or by a body of the crate's they
+    /// run, code of the crate's they can't name (`Direct::anything`): what
+    /// anything may borrow, `seen`'s with theirs (#1669).
+    seen_anything: IndexSet<DefId>,
     /// Which cells each borrow can be of (ADR 0863, amended).
     flow: super::cell_flow::CellFlow,
     /// What code rust-js can't see may borrow, by the crate's bodies it may
@@ -103,13 +107,40 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
 type Impls = IndexMap<DefId, Vec<(DefId, DefId)>>;
 
 /// What a body does itself: what it borrows and drops, the bodies of the
-/// crate's it runs, of their generic arguments, and whether it may run what
-/// rust-js can't see.
+/// crate's it runs, of their generic arguments, and what it may run that
+/// it can't name (`Reach`).
 #[derive(Default)]
 struct Direct<'tcx> {
     own: Summary<'tcx>,
     runs: Vec<(DefId, Option<ty::GenericArgsRef<'tcx>>)>,
-    any: bool,
+    reach: Reach,
+}
+
+/// What a body may run that it can't name, each a step past the one
+/// before: nothing; code rust-js can't see, a binding's or a library's,
+/// which may call back; or what may be the crate's own code too, a type
+/// parameter's or a `dyn`'s method, a fn pointer of any function, std's
+/// code given one, a value whose destructor may borrow (#1669).
+#[derive(Clone, Copy, Default, PartialEq, PartialOrd)]
+enum Reach {
+    #[default]
+    Named,
+    Unseen,
+    Anything,
+}
+
+impl Reach {
+    /// Of what it may run, more: the further of the two.
+    fn and(&mut self, more: Reach) {
+        if more > *self {
+            *self = more;
+        }
+    }
+
+    /// Whether it may run what it can't name.
+    fn any(self) -> bool {
+        self != Reach::Named
+    }
 }
 
 impl<'tcx> CellBorrows<'tcx> {
@@ -158,7 +189,7 @@ impl<'tcx> CellBorrows<'tcx> {
             })
             .collect();
         let mut of: IndexMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
-            .map(|(&id, d)| (id, (!d.any).then(|| d.own.clone())))
+            .map(|(&id, d)| (id, (!d.reach.any()).then(|| d.own.clone())))
             .collect();
         loop {
             let mut changed = false;
@@ -196,6 +227,7 @@ impl<'tcx> CellBorrows<'tcx> {
             .collect();
         found.closed = closed_keys(tcx, bodies);
         found.seen = seen_borrows(tcx, &direct);
+        found.seen_anything = seen_anything(&direct);
         // What code rust-js can't see may run of the crate's: the bodies it
         // may call, each what it runs that rust-js sees; the rest of what
         // they run is what that code runs again.
@@ -275,14 +307,19 @@ impl<'tcx> CellBorrows<'tcx> {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         match called(recognition, def_id, args, receiver, &itself) {
-            Called::Nothing | Called::Any => false,
+            // Of code rust-js can't see, a binding's or a library's, what
+            // it calls back isn't asked (ADR 0863, amended); of what may be
+            // the crate's own, an `F: Fn`'s call, what anything may (#1669).
+            Called::Nothing | Called::Unseen => false,
+            Called::Any => self.anything_asks(tcx, held),
             // A cell's own call, and what it runs by its bounds,
             // `replace_with`'s function while it holds its borrow, a
             // `take`'s `Default` before (#687, #699).
             Called::Cell(theirs) => {
                 asks(tcx, &self.closed, theirs, held) || {
                     let given = std_given(recognition, &self.impls, def_id, args);
-                    given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
+                    (given.any && self.anything_asks(tcx, held))
+                        || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
                         || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))
                 }
             }
@@ -292,7 +329,8 @@ impl<'tcx> CellBorrows<'tcx> {
             }
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
-                given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
+                (given.any && self.anything_asks(tcx, held))
+                    || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
                     || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))
             }
         }
@@ -300,7 +338,8 @@ impl<'tcx> CellBorrows<'tcx> {
 
     /// Whether calling a fn pointer of type `ptr` may ask of `held` by code
     /// rust-js sees (`call_asks_seen`): what any function or closure it may
-    /// be may; of one it may be any of, nothing seen.
+    /// be may; of one it may be any of, the crate's too, what anything may
+    /// (#1669).
     pub(in crate::lower) fn pointer_call_asks_seen(
         &self,
         recognition: &Recognition<'_, 'tcx>,
@@ -309,7 +348,7 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         let tcx = recognition.tcx;
         let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
-            return false;
+            return self.anything_asks(tcx, held);
         };
         may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
             true => self.seen_asks(tcx, f, Some(args), held),
@@ -329,9 +368,10 @@ impl<'tcx> CellBorrows<'tcx> {
         let Some(cells) = self.seen.get(&body) else {
             return false;
         };
-        cells
-            .iter()
-            .any(|&theirs| asks(tcx, &self.closed, of_args(tcx, theirs, args), held))
+        (self.seen_anything.contains(&body) && self.anything_asks(tcx, held))
+            || cells
+                .iter()
+                .any(|&theirs| asks(tcx, &self.closed, of_args(tcx, theirs, args), held))
     }
 
     /// Whether `key`'s thread-local is one only its key reaches (`closed`):
@@ -386,7 +426,7 @@ impl<'tcx> CellBorrows<'tcx> {
                     || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
                     || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
             }
-            Called::Any => self.anything_asks(tcx, held),
+            Called::Any | Called::Unseen => self.anything_asks(tcx, held),
         }
     }
 
@@ -524,7 +564,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 let given = std_given(recognition, &self.impls, id, args);
                 given.any || !given.bodies.iter().all(|(body, _)| summarized(body))
             }
-            Called::Any => true,
+            Called::Any | Called::Unseen => true,
         }
     }
 
@@ -636,6 +676,27 @@ fn seen_borrows<'tcx>(
         }
         if !changed {
             return seen;
+        }
+    }
+}
+
+/// The bodies that may run code of the crate's they can't name
+/// (`Direct::anything`), themselves or by each of the crate's bodies they
+/// run, until what each runs holds (#1669).
+fn seen_anything(direct: &IndexMap<DefId, Direct<'_>>) -> IndexSet<DefId> {
+    let mut anything: IndexSet<DefId> = (direct.iter())
+        .filter(|(_, d)| d.reach == Reach::Anything)
+        .map(|(&id, _)| id)
+        .collect();
+    loop {
+        let before = anything.len();
+        for (&id, d) in direct {
+            if d.runs.iter().any(|(run, _)| anything.contains(run)) {
+                anything.insert(id);
+            }
+        }
+        if anything.len() == before {
+            return anything;
         }
     }
 }
@@ -755,8 +816,12 @@ enum Called<'tcx> {
     /// A function of std's, of these generic arguments, which runs what its
     /// bounds say of them (`std_given`).
     Std(DefId, ty::GenericArgsRef<'tcx>),
-    /// What rust-js can't see.
+    /// What may be any code, the crate's too: a type parameter's or a
+    /// `dyn`'s method, a shim, an intrinsic given a function.
     Any,
+    /// A binding's, a library's or a library closure's code, which rust-js
+    /// can't see: what it calls back is its own (ADR 0863, amended).
+    Unseen,
 }
 
 /// What calling `def_id`, of `args`, runs; `receiver` its first argument,
@@ -809,7 +874,7 @@ fn called<'tcx>(
     if tcx.is_closure_like(id) {
         return match id.is_local() {
             true => Called::Body(id, instance.args),
-            false => Called::Any,
+            false => Called::Unseen,
         };
     }
     // A borrow, of the cell its receiver is: a thread-local's by its key.
@@ -864,7 +929,7 @@ fn called<'tcx>(
     match id.is_local() && !is_binding(tcx, id) {
         true => Called::Body(id, instance.args),
         false if recognition.is_std(id) => Called::Std(id, instance.args),
-        false => Called::Any,
+        false => Called::Unseen,
     }
 }
 
@@ -892,7 +957,7 @@ fn direct<'tcx>(
         }
         match ty.has_param() {
             true => _ = found.own.drops.insert(ty),
-            false if drops(ty) => found.any = true,
+            false if drops(ty) => found.reach.and(Reach::Anything),
             false => {}
         }
     };
@@ -907,14 +972,17 @@ fn direct<'tcx>(
         // too, `g.borrow_mut().clear()`'s items (`std_call_drops`, #1661).
         Called::Std(id, args) => {
             let given = std_given(recognition, impls, id, args);
-            found.any |= given.any;
+            if given.any {
+                found.reach.and(Reach::Anything);
+            }
             found.own.cells.extend(given.cells);
             found.runs.extend(given.bodies);
             for ty in super::may_run::std_call_drops(tcx, id, args) {
                 dropped(found, ty);
             }
         }
-        Called::Any => found.any = true,
+        Called::Any => found.reach.and(Reach::Anything),
+        Called::Unseen => found.reach.and(Reach::Unseen),
     };
     for (at, e) in thir.exprs.iter_enumerated() {
         match e.kind {
@@ -954,7 +1022,7 @@ fn direct<'tcx>(
                             runs(&mut found, called);
                         }
                     }
-                    None => found.any = true,
+                    None => found.reach.and(Reach::Anything),
                 },
             },
             // Of the body's own parameters, as it is.
@@ -962,7 +1030,7 @@ fn direct<'tcx>(
                 let id = closure.closure_id.to_def_id();
                 found.runs.push((id, Some(ty::GenericArgs::identity_for_item(tcx, id))));
             }
-            ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => found.any = true,
+            ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => found.reach.and(Reach::Unseen),
             _ => {}
         }
         // Each value the body's own expressions have, not what's behind a

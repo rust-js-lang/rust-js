@@ -152,8 +152,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Called::Any => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
-    replace: "            Called::Any => false,\n        }\n    }\n\n    /// Whether a cell's own call",
+    find: "            Called::Any | Called::Unseen => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
+    replace: "            Called::Any => self.anything_asks(tcx, held),\n            Called::Unseen => false,\n        }\n    }\n\n    /// Whether a cell's own call",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
@@ -412,5 +412,59 @@ export const mutations: Mutation[] = [
     find: "            for ty in super::may_run::std_call_drops(tcx, id, args) {\n",
     replace: "            for ty in super::may_run::std_call_drops(tcx, id, args).into_iter().take(0) {\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_(by_a_clear_through_a_reference|by_a_truncate_retain_or_map_clear|by_a_thread_locals_clear|mutably_by_a_clear_through_a_reference).rs$"],
+  },
+  {
+    name: "any-call-asks-nothing-seen",
+    breaks:
+      "a call of what may be the crate's own code, an `F: Fn` argument's, is taken as code rust-js can't see while a guard is held after the call's arguments, so `log.borrow_mut().push(f())` where `f` borrows `log` never panics (#1669)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            Called::Any => self.anything_asks(tcx, held),\n            // A cell's own call, and what it runs by its bounds,\n",
+    replace: "            Called::Any => false,\n            // A cell's own call, and what it runs by its bounds,\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_generic_callback.rs$"],
+  },
+  {
+    name: "seen-anything-asks-nothing",
+    breaks:
+      "a body of the crate's that runs a generic callback is taken to borrow only what it names, so `log.borrow_mut().push(length_by(|| log.borrow().len()))` never panics (#1669)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        (self.seen_anything.contains(&body) && self.anything_asks(tcx, held))\n            || cells",
+    replace: "        cells",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_callback_a_function_runs.rs$"],
+  },
+  {
+    name: "any-call-runs-nothing-named",
+    breaks:
+      "a body's call of what may be the crate's own code is taken as only code rust-js can't see, so a body that runs a generic callback isn't `seen_anything`'s (#1669)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        Called::Any => found.reach.and(Reach::Anything),\n",
+    replace: "        Called::Any => found.reach.and(Reach::Unseen),\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_callback_a_function_runs.rs$"],
+  },
+  {
+    name: "pointer-of-any-asks-nothing-seen",
+    breaks:
+      "a fn pointer that may be any function, the crate's too, is taken to borrow nothing while a guard is held after the call's arguments, so a pointer popped from a `Vec` that borrows the cell never panics (#1669)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {\n            return self.anything_asks(tcx, held);\n        };\n        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {\n            true => self.seen_asks(",
+    replace: "        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {\n            return false;\n        };\n        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {\n            true => self.seen_asks(",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_fn_pointer_argument.rs$"],
+  },
+  {
+    name: "seen-std-given-any-unasked",
+    breaks:
+      "std's code given what may be any, a type parameter's impl, is taken to run only what it names while a guard is held after the call's arguments (#1669)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                (given.any && self.anything_asks(tcx, held))\n                    || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))\n                    || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))",
+    replace: "                given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))\n                    || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_generic_callback_std_runs.rs$"],
+  },
+  {
+    name: "library-call-may-be-the-crates",
+    breaks:
+      "a binding's or a library's call is taken as what may be the crate's own code, so a guard held after a call's arguments is counted where a binding's `toString` may call back, React DOM's every chunk array's borrow (ADR 0863, amended, rd360)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Unseen,\n",
+    replace: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Any,\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a guard that's only a call's receiver is held while the call runs"],
   },
 ];
