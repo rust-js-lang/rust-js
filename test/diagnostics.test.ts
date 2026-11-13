@@ -396,6 +396,9 @@ for (const [name, source, message, crate] of [
     "use std::alloc::{AllocError, Allocator, Global, Layout};\nuse std::ptr::NonNull;\npub struct A;\nunsafe impl Allocator for A {\n    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {\n        Global.allocate(layout)\n    }\n    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {\n        unsafe { Global.deallocate(ptr, layout) }\n    }\n}",
     "user implementations of `std::alloc::Allocator` (#1656)",
   ],
+  // A value of a `dyn` of such a trait is that trait's tracker too, as rustc's
+  // allocator/dyn-compatible.rs has one.
+  ["a dyn of a std trait new in 1.100", "use std::alloc::{Allocator, Global, Layout};\npub fn f() -> bool { let a: &dyn Allocator = &Global; a.allocate(Layout::new::<u8>()).is_ok() }", "of type `dyn std::alloc::Allocator` (#1656)"],
   // 1.100's, of `gca_min_const_items`, which `min_generic_const_args`' `type const` became.
   ["a type constant, refused not crashed", "#![feature(gca_min_const_items)]\n#![allow(incomplete_features)]\nuse std::gca;\npub trait Foo { #[rustc_always_gca] const N: usize; }\npub struct Bar;\nimpl Foo for Bar { const N: usize = gca!(3); }", "type constants"],
   ["a generic const expression", "#![feature(generic_const_exprs)]\n#![allow(incomplete_features)]\nfn count<const N: usize>() -> usize { N }\nfn one_more<const N: usize>() -> usize where [(); N + 1]: { count::<{ N + 1 }>() }\npub fn f() -> usize { one_more::<2>() }", "this const argument"],

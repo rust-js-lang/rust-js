@@ -73,6 +73,17 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
     (spawns && path.starts_with("std::thread::")).then_some(OpenCall::Thread)
 }
 
+/// The open issue's family values of `ty`, a refused type, are of, if one
+/// is: a `dyn Allocator` is of the trait 1.100 stabilized (#1656).
+pub(crate) fn open_type<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> Option<OpenCall> {
+    let id = match ty.kind() {
+        ty::Adt(adt, _) => adt.did(),
+        ty::Dynamic(predicates, ..) => predicates.principal_def_id()?,
+        _ => return None,
+    };
+    open_item(tcx, id)
+}
+
 /// The open issue's family a dictionary of `tr` rust-js doesn't make is of,
 /// if one is.
 pub(crate) fn open_evidence<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> Option<OpenCall> {

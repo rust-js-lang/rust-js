@@ -227,7 +227,12 @@ refusal names #1656, by the item's own `#[stable(since = "1.100.0")]`
 that issue. So does an impl of a trait 1.100 stabilized, `Allocator`,
 refused as any std trait rust-js doesn't implement is: rustc's
 `drop/box-conditional-drop-allocator.rs`, out of scope at 1.99 as its
-`allocator_api` was unstable, is a known failure at 1.100 for it.
+`allocator_api` was unstable, is a known failure at 1.100 for it, and
+`regions/regions-mock-codegen.rs` for calling `Allocator::allocate`. A
+value of a `dyn` of such a trait, `dyn Allocator`, refused as a value of a
+type rust-js doesn't hold, names it too (`open_type`), as rustc's
+`allocator/dyn-compatible.rs` has one; it named no issue when the lists
+were blessed at 1.100 (rustc tests run 43391474675).
 
 **Found by the corpus at 1.100.0**, besides those: a `TypeId`'s hash is
 1.100's, and std's `FromIterator::from_iter` names its parameter `I`, so a

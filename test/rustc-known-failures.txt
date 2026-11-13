@@ -2,7 +2,7 @@
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
 abi/c-stack-returning-int64.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "atol")] fn atol(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
 abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support addressable memory yet: a `transmute` of `for<'a> extern "C" fn(&'a isize) -> std::option::Option<&'a isize>` as `for<'a> extern "C" fn(&'a isize) -> &'a isize`, which 
-allocator/dyn-compatible.rs	error: rust-js does not support values of type `dyn std::alloc::Allocator` yet
+allocator/dyn-compatible.rs	error: rust-js does not support values of type `dyn std::alloc::Allocator` (#1656) yet
 associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<<def_et3::A as Tr1>::As1 as std::iter::Iterator>::Item` yet
 associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "issue_28983")] fn issue_28983(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
 async-await/async-fn-size-moved-locals.rs	error: rust-js: this future runs as it's made, as a JS promise does, but it's given where rust-js can't follow when it's awaited (ADR 0029)
