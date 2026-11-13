@@ -33,13 +33,7 @@ function main() {
   const cursorRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
   const debug = {
     fmt: (value, options) =>
-      options?.alternate
-        ? $pretty(
-            "[",
-            value.map((item) => String(item)),
-            "]",
-          )
-        : `[${value.map((item) => String(item)).join(", ")}]`,
+      options?.alternate ? $pretty("[", value, "]") : `[${value.join(", ")}]`,
   };
   const c = { inner: [10, 20, 30, 40], pos: 0n };
   const three = [0, 0, 0];

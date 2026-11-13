@@ -25,6 +25,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/debug.js",
     find: "    shown.push(drop === undefined ? show(entry) : $unwinds(() => show(entry), () => drop(entry)));\n",
     replace: "    shown.push(show(entry));\n",
-    tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^debug_entries_(drop_as_std|closed_where_nothing_prints).rs$"],
   },
 ];

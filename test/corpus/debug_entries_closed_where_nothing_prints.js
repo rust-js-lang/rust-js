@@ -40,6 +40,28 @@ function listedDebug_fmt(listed) {
   return `[${$entriesShown($lazyChain($iterator([listed[0]], stepsIterator_next), $closing($iter(held), $dropEach(countedDrop_drop))), (entry) => countedDebug_fmt(entry), countedDrop_drop).join(", ")}]`;
 }
 
+function touchyDrop_drop(touchy) {
+  const previous = DROPPED;
+  DROPPED = (previous + 100) >>> 0;
+}
+
+export const touchyDebug = { fmt: touchyDebug_fmt, $drop: touchyDrop_drop };
+function touchyDebug_fmt(touchy) {
+  if (touchy[0] === 2) {
+    throw new Error(`touchy ${touchy[0]}`);
+  }
+  return `T${touchy[0]}`;
+}
+
+export const touchedDebug = { fmt: touchedDebug_fmt };
+function touchedDebug_fmt(touched) {
+  return `[${$entriesShown(
+    $closing(Iterator.from([[1], [2], [3]]), $dropEach(touchyDrop_drop)),
+    (entry) => touchyDebug_fmt(entry),
+    touchyDrop_drop,
+  ).join(", ")}]`;
+}
+
 export const quietDebug = { fmt: quietDebug_fmt };
 function quietDebug_fmt(quiet) {
   let f = "Q";
@@ -55,6 +77,8 @@ function main() {
   console.log(`${r.TAG === "Err"} ${DROPPED}`);
   const shown = $catchUnwind(() => listedDebug_fmt([5]));
   console.log(`${shown.TAG === "Err"} ${DROPPED}`);
+  const touched = $catchUnwind(() => touchedDebug_fmt(undefined));
+  console.log(`${touched.TAG === "Err"} ${DROPPED}`);
   const quiet = $catchUnwind(() => quietDebug_fmt([9]));
   const text = quietDebug_fmt([1]);
   console.log(`${quiet.TAG === "Err"} ${text}`);

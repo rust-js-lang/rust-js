@@ -398,26 +398,12 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
     file: "src/lower/display/debug.rs",
-    find: '        let each_its_own = is_var(&shown, "item")\n            || (pretty.known() == Some(false)\n',
-    replace:
-      '        let each_its_own = is_var(&shown, "item")\n            || (false\n',
+    find: 'is_var(&shown, "item") || matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item"));\n',
+    replace: 'is_var(&shown, "item") || false && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item"));\n',
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
       "no item is mapped to itself",
-    ],
-  },
-  {
-    name: "debug-numbers-pretty-unmapped",
-    breaks:
-      "`{:#?}` of a list of numbers gives `$pretty` numbers, which it can't indent",
-    file: "src/lower/display/debug.rs",
-    find: "            || (pretty.known() == Some(false)\n",
-    replace: "            || (true\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(pretty_debug|pretty_debug_derived|std_enum_debug|int_error_kind).rs$",
     ],
   },
   {

@@ -881,11 +881,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
     ) -> R<Expr> {
         let shown = self.debug_string_with(Expr::var("item"), item, span, pretty)?;
-        // Each its own text, a unit enum's name; or, `join`'s own, a
-        // number's, where it isn't pretty, whose lines are strings.
-        let each_its_own = is_var(&shown, "item")
-            || (pretty.known() == Some(false)
-                && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item")));
+        // Each its own text, a unit enum's name; or, `join`'s own, and
+        // `$pretty`'s, `item + ",\n"`, an integer's, `String(item)`.
+        let each_its_own =
+            is_var(&shown, "item") || matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item"));
         let f = Expr::arrow(
             vec!["item".into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],

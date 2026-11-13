@@ -69,19 +69,7 @@ function main() {
   $force(list).push(1);
   $force(list).push(2);
   console.log(
-    `LazyCell(${list.init === undefined ? `[${list.value.join(", ")}]` : "<uninit>"}) ${$pretty(
-      "LazyCell(",
-      [
-        list.init === undefined
-          ? $pretty(
-              "[",
-              list.value.map((item) => String(item)),
-              "]",
-            )
-          : "<uninit>",
-      ],
-      ")",
-    )}`,
+    `LazyCell(${list.init === undefined ? `[${list.value.join(", ")}]` : "<uninit>"}) ${$pretty("LazyCell(", [list.init === undefined ? $pretty("[", list.value, "]") : "<uninit>"], ")")}`,
   );
 
   // `()` looks like `None` in JS: what's made is still there.

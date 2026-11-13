@@ -8,13 +8,7 @@ export function entry() {
 
 function slotDebug_fmt(slot, options) {
   if (Array.isArray(slot)) {
-    const shown = options?.alternate
-      ? $pretty(
-          "[",
-          slot.map((item) => String(item)),
-          "]",
-        )
-      : `[${slot.map((item) => String(item)).join(", ")}]`;
+    const shown = options?.alternate ? $pretty("[", slot, "]") : `[${slot.join(", ")}]`;
     return options?.alternate ? $pretty("Items(", [shown], ")") : `Items(${shown})`;
   }
   if (slot === undefined) {

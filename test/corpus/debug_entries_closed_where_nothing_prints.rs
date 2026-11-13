@@ -3,7 +3,9 @@
 // `catch_unwind` catches: its text is made whole, as it was, and what's left
 // of the iterator, the `Vec` chained after the step that panics, is dropped
 // as the panic unwinds, as std's `for entry in entries` drops it (#1141);
-// and a writer that panics part-way, shown only in a `format!`.
+// an entry whose own `Debug` panics, dropped as the panic unwinds, as
+// std's loop's `entry` drops it (#1148); and a writer that panics
+// part-way, shown only in a `format!`.
 // Nothing it wrote reaches a line, so it doesn't write through a sink
 // (#1496, #1533).
 use std::fmt;
@@ -47,6 +49,29 @@ impl fmt::Debug for Listed {
     }
 }
 
+struct Touchy(u32);
+
+impl Drop for Touchy {
+    fn drop(&mut self) {
+        DROPPED.fetch_add(100, Ordering::SeqCst);
+    }
+}
+
+impl fmt::Debug for Touchy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        assert!(self.0 != 2, "touchy {}", self.0);
+        write!(f, "T{}", self.0)
+    }
+}
+
+struct Touched;
+
+impl fmt::Debug for Touched {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(vec![Touchy(1), Touchy(2), Touchy(3)]).finish()
+    }
+}
+
 struct Quiet(u32);
 
 impl fmt::Debug for Quiet {
@@ -64,6 +89,8 @@ fn main() {
     println!("{} {}", r.is_err(), DROPPED.load(Ordering::SeqCst));
     let shown = catch_unwind(|| format!("{:?}", Listed(5)));
     println!("{} {}", shown.is_err(), DROPPED.load(Ordering::SeqCst));
+    let touched = catch_unwind(|| format!("{:?}", Touched));
+    println!("{} {}", touched.is_err(), DROPPED.load(Ordering::SeqCst));
     let quiet = catch_unwind(|| format!("{:?}", Quiet(9)));
     let text = format!("{:?}", Quiet(1));
     println!("{} {text}", quiet.is_err());

@@ -78,11 +78,12 @@ export const mutations: Mutation[] = [
 
   {
     name: "made-dyn-taken-as-unknown",
-    breaks: "a derived `Debug`'s `&dyn Debug` of its field is taken for a `dyn` that may hold anything, so a `Vec` of a derived `Debug` of numbers is refused where a panic may be caught (#1496)",
+    breaks: "a derived `Debug`'s `&dyn Debug` of its field is taken for a `dyn` that may hold anything, so where a panic may be caught a derived `Debug` of numbers, and a `Vec` of it, are written piece by piece through sinks, where each is one expression (#1496)",
     file: "src/lower/analysis/prints.rs",
     find: ".any(|part| unknown_part(part, read))",
     replace: ".any(|part| unknown_part(part, true))",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
+    snapshots: true,
   },
   {
     name: "what-a-writer-runs-unstopped",

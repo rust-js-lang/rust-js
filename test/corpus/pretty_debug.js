@@ -103,28 +103,12 @@ function builtDebug_fmt(built, options) {
         "Built {",
         [
           `x: ${built.x}`,
-          `tags: ${
-            options?.alternate
-              ? $pretty(
-                  "[",
-                  built.tags.map((item) => String(item)),
-                  "]",
-                )
-              : `[${built.tags.map((item) => String(item)).join(", ")}]`
-          }`,
+          `tags: ${options?.alternate ? $pretty("[", built.tags, "]") : `[${built.tags.join(", ")}]`}`,
         ],
         "}",
         true,
       )
-    : `Built { x: ${built.x}, tags: ${
-        options?.alternate
-          ? $pretty(
-              "[",
-              built.tags.map((item) => String(item)),
-              "]",
-            )
-          : `[${built.tags.map((item) => String(item)).join(", ")}]`
-      }, .. }`;
+    : `Built { x: ${built.x}, tags: ${options?.alternate ? $pretty("[", built.tags, "]") : `[${built.tags.join(", ")}]`}, .. }`;
 }
 
 export const listyDebug = { fmt: listyDebug_fmt };
@@ -161,13 +145,7 @@ function shownDisplay_fmt(shown, options) {
 
 export const delegateDebug = { fmt: delegateDebug_fmt };
 function delegateDebug_fmt(delegate, options) {
-  return options?.alternate
-    ? $pretty(
-        "[",
-        delegate[0].map((item) => String(item)),
-        "]",
-      )
-    : `[${delegate[0].map((item) => String(item)).join(", ")}]`;
+  return options?.alternate ? $pretty("[", delegate[0], "]") : `[${delegate[0].join(", ")}]`;
 }
 
 function pretty(value, TDebug) {
@@ -175,17 +153,7 @@ function pretty(value, TDebug) {
 }
 
 function main() {
-  console.log(
-    `${$pretty(
-      "[",
-      [1, 2].map((item) => String(item)),
-      "]",
-    )} ${$pretty(
-      "[",
-      [].map((item) => String(item)),
-      "]",
-    )}`,
-  );
+  console.log(`${$pretty("[", [1, 2], "]")} ${$pretty("[", [], "]")}`);
   const value = [["a", 1.5]];
   console.log(
     `${
@@ -231,19 +199,7 @@ function main() {
           )}`,
       ),
       "}",
-    )} ${$pretty(
-      "RefCell {",
-      [
-        `value: ${$showBorrowed({ value: [1] }, (value) =>
-          $pretty(
-            "[",
-            value.map((item) => String(item)),
-            "]",
-          ),
-        )}`,
-      ],
-      "}",
-    )} ${failed.TAG === "Ok" ? $pretty("Ok(", [String(failed._0)], ")") : $pretty("Err(", [$debugStr(failed._0)], ")")}`,
+    )} ${$pretty("RefCell {", [`value: ${$showBorrowed({ value: [1] }, (value) => $pretty("[", value, "]"))}`], "}")} ${failed.TAG === "Ok" ? $pretty("Ok(", [String(failed._0)], ")") : $pretty("Err(", [$debugStr(failed._0)], ")")}`,
   );
   console.log(`1..4 ${$debugStr("text")} [${[1].join(", ")}]`);
 

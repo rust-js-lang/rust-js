@@ -106,19 +106,7 @@ function main() {
   $print(`${greeting()} ${greeting()}\n`);
   const shown = {};
   $print(
-    `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
-      "OnceCell(",
-      [
-        shown.value == null
-          ? "<uninit>"
-          : $pretty(
-              "[",
-              shown.value.map((item) => String(item)),
-              "]",
-            ),
-      ],
-      ")",
-    )}\n`,
+    `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty("OnceCell(", [shown.value == null ? "<uninit>" : $pretty("[", shown.value, "]")], ")")}\n`,
   );
   const value$7 = [1];
   const unset$3 = shown.value === undefined;
@@ -131,19 +119,7 @@ function main() {
     (e) => `[${e.join(", ")}]`,
   );
   $print(
-    `OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
-      "OnceCell(",
-      [
-        shown.value == null
-          ? "<uninit>"
-          : $pretty(
-              "[",
-              shown.value.map((item) => String(item)),
-              "]",
-            ),
-      ],
-      ")",
-    )}\n`,
+    `OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty("OnceCell(", [shown.value == null ? "<uninit>" : $pretty("[", shown.value, "]")], ")")}\n`,
   );
   const copy = { value: shown.value };
   $getOrInit(copy, () => []);

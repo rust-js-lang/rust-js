@@ -48,3 +48,17 @@ answer to whether a clone is more than the value.**
 pretty: `$pretty` indents each item's lines, which needs strings. 209
 corpus cases and 14 snapshots lose the map. Mutations map each again, and
 give `$pretty` numbers.
+
+## Amendment (2026-11-13): a pretty list of integers, as it is
+
+A list of integers each shown as `String(item)` was given as it is to
+`join` where its `{:?}` wasn't pretty, and mapped to that text where it
+was, `$pretty("[", tags.map((item) => String(item)), "]")`, or might be.
+`$pretty` makes each line `item + ",\n"`, an integer's text as `String`
+makes it, a BigInt's too, so the map changed nothing: a list of integers
+is given as it is either way, the condition and eight snapshots' maps
+gone, 121 lines. Floats aren't: their text is `$debugF64`'s, `-0.0`.
+Corpus case `pretty_debug_of_numbers_as_they_are`, `i64::MIN`,
+`u128::MAX`, a list of lists and `-0.0`, against native; the mutation
+that survived as equivalent, `debug-numbers-pretty-unmapped`, removed with
+the condition.

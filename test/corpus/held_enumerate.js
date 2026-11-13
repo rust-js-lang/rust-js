@@ -169,30 +169,12 @@ function main() {
             "IntoIter(",
             [
               options?.alternate
-                ? $pretty(
-                    "[",
-                    value.items.slice(value.at, value.end).map((item) => String(item)),
-                    "]",
-                  )
-                : `[${value.items
-                    .slice(value.at, value.end)
-                    .map((item) => String(item))
-                    .join(", ")}]`,
+                ? $pretty("[", value.items.slice(value.at, value.end), "]")
+                : `[${value.items.slice(value.at, value.end).join(", ")}]`,
             ],
             ")",
           )
-        : `IntoIter(${
-            options?.alternate
-              ? $pretty(
-                  "[",
-                  value.items.slice(value.at, value.end).map((item) => String(item)),
-                  "]",
-                )
-              : `[${value.items
-                  .slice(value.at, value.end)
-                  .map((item) => String(item))
-                  .join(", ")}]`
-          })`,
+        : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`,
   };
   const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
   const sizeHint = positionsIterator_sizeHint(even);

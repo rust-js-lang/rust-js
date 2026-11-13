@@ -208,30 +208,12 @@ function main() {
             "IntoIter(",
             [
               options?.alternate
-                ? $pretty(
-                    "[",
-                    value.items.slice(value.at, value.end).map((item) => String(item)),
-                    "]",
-                  )
-                : `[${value.items
-                    .slice(value.at, value.end)
-                    .map((item) => String(item))
-                    .join(", ")}]`,
+                ? $pretty("[", value.items.slice(value.at, value.end), "]")
+                : `[${value.items.slice(value.at, value.end).join(", ")}]`,
             ],
             ")",
           )
-        : `IntoIter(${
-            options?.alternate
-              ? $pretty(
-                  "[",
-                  value.items.slice(value.at, value.end).map((item) => String(item)),
-                  "]",
-                )
-              : `[${value.items
-                  .slice(value.at, value.end)
-                  .map((item) => String(item))
-                  .join(", ")}]`
-          })`,
+        : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`,
   };
   const round = circular($iter([1, 2]), 3, { next: $next }, clone);
   console.log(`${circularDebug_fmt(round, undefined, intoIterDebug, clone)}`);

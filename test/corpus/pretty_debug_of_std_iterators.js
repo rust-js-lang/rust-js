@@ -21,32 +21,12 @@ function windowDebug_fmt(window, options) {
         "Iter(",
         [
           options?.alternate
-            ? $pretty(
-                "[",
-                window.rest.items
-                  .slice(window.rest.at, window.rest.end)
-                  .map((item) => String(item)),
-                "]",
-              )
-            : `[${window.rest.items
-                .slice(window.rest.at, window.rest.end)
-                .map((item) => String(item))
-                .join(", ")}]`,
+            ? $pretty("[", window.rest.items.slice(window.rest.at, window.rest.end), "]")
+            : `[${window.rest.items.slice(window.rest.at, window.rest.end).join(", ")}]`,
         ],
         ")",
       )
-    : `Iter(${
-        options?.alternate
-          ? $pretty(
-              "[",
-              window.rest.items.slice(window.rest.at, window.rest.end).map((item) => String(item)),
-              "]",
-            )
-          : `[${window.rest.items
-              .slice(window.rest.at, window.rest.end)
-              .map((item) => String(item))
-              .join(", ")}]`
-      })`;
+    : `Iter(${options?.alternate ? $pretty("[", window.rest.items.slice(window.rest.at, window.rest.end), "]") : `[${window.rest.items.slice(window.rest.at, window.rest.end).join(", ")}]`})`;
   const shown$1 = $debugStr(window.name);
   return options?.alternate
     ? $pretty("Window {", [`rest: ${shown}`, `name: ${shown$1}`], "}")
@@ -57,19 +37,7 @@ function main() {
   const v = [1, 2, 3];
   const it = $iter(v);
   $next(it);
-  console.log(
-    `${$pretty(
-      "Iter(",
-      [
-        $pretty(
-          "[",
-          it.items.slice(it.at, it.end).map((item) => String(item)),
-          "]",
-        ),
-      ],
-      ")",
-    )}`,
-  );
+  console.log(`${$pretty("Iter(", [$pretty("[", it.items.slice(it.at, it.end), "]")], ")")}`);
   console.log(`Iter([${it.items.slice(it.at, it.end).join(", ")}])`);
   const c = $chars("héllo");
   $next(c);
@@ -86,19 +54,7 @@ function main() {
   const d = $iter(drained[1]);
   console.log(`${$pretty("Drain(", [$debugStr($restStr(d))], ")")}`);
   const empty = [];
-  console.log(
-    `${$pretty(
-      "Iter(",
-      [
-        $pretty(
-          "[",
-          empty.map((item) => String(item)),
-          "]",
-        ),
-      ],
-      ")",
-    )}`,
-  );
+  console.log(`${$pretty("Iter(", [$pretty("[", empty, "]")], ")")}`);
   const window = { rest: $iter($slice(v, 1)), name: "w" };
   console.log(`${windowDebug_fmt(window)}`);
   console.log(`${windowDebug_fmt(window, { alternate: true })}`);
