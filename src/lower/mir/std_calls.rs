@@ -379,24 +379,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // gets a new one.
             Std::PushStr => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
+                    let target = values.next();
                     let place = this
-                        .text_place(values.next(), arg_tys[0])
+                        .text_place(target.clone(), arg_tys[0])
                         .ok_or_else(|| this.unsupported(span, "`push_str` on this, from its MIR"))?;
                     let given = values.next().expect("what's pushed");
                     // Through a `Formatter` held where it isn't its writer's, of
                     // a writer that writes through a sink a `write!` into a writer
-                    // may arm: one `write_str` of a string, the rest refused
-                    // till each piece is followed (#1652).
+                    // may arm: each piece written into that sink, the handle it
+                    // holds (#1652).
                     if this.writes_into_writers(state)
                         && this.recognition().is_formatter_type(arg_tys[0].peel_refs())
-                        && (this.recognition().is_write_char(def_id)
-                            || (this.recognition().formatter_write_fmt(def_id, generic_args)
-                                && !matches!(&given, Value::Expr(e) if matches!(e.kind, js::ExprKind::Str(_)))))
+                        && let Some(target) = target
                     {
-                        return Err(this.refused_in_a_writer(
-                            "a write through a `Formatter` held where it isn't its writer's",
-                            span,
-                        ));
+                        let handle = this.value_expr(target, span)?;
+                        return this
+                            .written_into_held_formatter(state, (def_id, generic_args), handle, given, span, out)
+                            .map(Value::Expr);
                     }
                     // A `write!` of what may fail: piece by piece, what came before
                     // written, its `fmt::Result` the error, if any (ADR 0187); to a

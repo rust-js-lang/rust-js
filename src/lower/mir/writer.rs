@@ -252,14 +252,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(at) =
                 (self.recognition()).callable_formatter(def_id, generic_args, destination.ty(decls, self.tcx).ty)
         {
-            if self.writes_into_writers(state) {
-                return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
-            }
             let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
             let values = self.take_operands(state, &[&args[0].node, &args[1].node], out)?;
             let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
+            if self.writes_into_writers(state) {
+                return self
+                    .called_with_the_sink_armed(state, written, destination, span, out)
+                    .map(Some);
+            }
             self.append_to_writer(state, &name, written, false, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
@@ -272,9 +274,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (args.get(at).and_then(|a| a.node.place()))
                 .is_some_and(|p| p.projection.is_empty() && aliases.contains(&p.local))
         {
-            if self.writes_into_writers(state) {
-                return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
-            }
             let given: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
             let arg_tys = [callee, Ty::new_tup(self.tcx, &given)];
             let mut operands = vec![func];
@@ -290,6 +289,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
+            if self.writes_into_writers(state) {
+                return self
+                    .called_with_the_sink_armed(state, written, destination, span, out)
+                    .map(Some);
+            }
             self.append_to_writer(state, &name, written, false, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
@@ -818,21 +822,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its maker, shown into a writer by `write!`, so each piece it writes
     /// is std's, a call of that writer's (#1652, ADR 1135)?
     pub(super) fn writes_into_writers(&self, state: &State<'_, 'tcx>) -> bool {
-        let owner = match state.writes_captured {
-            true => self.tcx.typeck_root_def_id(self.item),
-            false => self.item,
-        };
-        state.writer.is_some() && self.krate.prints.writes_into_writers(owner)
+        state.writer.is_some() && self.krate.prints.writes_into_writers(self.writer_owner(state))
+    }
+
+    /// The writer whose text the body writes: the body's own, a closure's
+    /// lowered where its maker is too; or, of a closure that writes its
+    /// maker's, its maker.
+    fn writer_owner(&self, state: &State<'_, 'tcx>) -> rustc_span::def_id::DefId {
+        let body = state.body.source.def_id();
+        match state.writes_captured {
+            true => self.tcx.typeck_root_def_id(body),
+            false => body,
+        }
     }
 
     /// Does the writer whose text the body writes, its own or, of a closure
     /// that writes its maker's, its maker's, write it through a sink?
     pub(super) fn writer_owner_writes_through_a_sink(&self, state: &State<'_, 'tcx>) -> bool {
-        let owner = match state.writes_captured {
-            true => self.tcx.typeck_root_def_id(self.item),
-            false => self.item,
-        };
-        self.writes_through_sink(owner)
+        self.writes_through_sink(self.writer_owner(state))
     }
 
     /// `written` written to the writer's own text, `name`: through its sink,

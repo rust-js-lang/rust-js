@@ -36,6 +36,8 @@ const cases: [string, string][] = [
   ["generic code's and dyns' ", "test/writer-sink-generic.rs"],
   ["Arguments given on's ", "test/writer-sink-arguments.rs"],
   ["own write_fmt's through generic code's ", "test/writer-sink-own-write-fmt.rs"],
+  ["the rest's ", "test/writer-sink-rest.rs"],
+  ["callables' ", "test/writer-sink-callables.rs"],
 ];
 
 for (const [build, flags] of builds) for (const [which, path] of cases) {
@@ -53,13 +55,9 @@ for (const [build, flags] of builds) for (const [which, path] of cases) {
   }, underLoad(120_000));
 }
 
-/** A writer shown into a writer whose split isn't followed yet: each `fmt`
- * of `Shown`, written into `Log`, is refused, naming #1652. */
+/** A writer shown into a writer whose split isn't followed: each `fmt` of
+ * `Shown`, written into `Log`, is refused, naming #1652. */
 const refusedWriters: [string, string, string][] = [
-  ["a builder's dyn Debug", "dyn", 'let d: &dyn fmt::Debug = &1;\n        f.debug_list().entry(d).finish()'],
-  ["a write through a held Formatter", "held where it isn't", 'let held = Held(f);\n        let n = [-1, 2];\n        write!(held.0, "{}", n[0])'],
-  ["a closure given the Formatter", "Formatter", "let w = |f: &mut fmt::Formatter<'_>| f.write_str(\"x\");\n        w(f)"],
-  ["a HashMap's Debug", "by its `Debug`", 'let m = std::collections::HashMap::from([(1, 2)]);\n        write!(f, "{:?}", m)'],
   ["a write_fmt of Arguments made elsewhere", "made elsewhere", 'f.write_fmt(given(format_args!("{}", 1)))'],
 ];
 
@@ -294,6 +292,23 @@ test("a float is written by flt2dec's parts, as pad_formatted_parts writes them"
   }
 });
 
+test("an integer's {:e} is exp_u64's text by pad_integral, or its parts where a precision adds zeros", async () => {
+  const cases: [number | bigint, boolean, object | undefined, string[]][] = [
+    [-1500, false, undefined, ["c-", "s1.5e3"]],
+    [120, true, undefined, ["s1.2E2"]],
+    [0, false, undefined, ["s0e0"]],
+    [2500, false, { precision: 0 }, ["s2e3"]],
+    [3500, false, { precision: 0 }, ["s4e3"]],
+    [9_995_000_000n, false, { precision: 2 }, ["s1.00e10"]],
+    [120, false, { precision: 4 }, ["s1.20", "s00", "se2"]],
+    [-15, false, { width: 8, zero: true, precision: 2 }, ["s-", "c0", "s1.5", "s0", "se1"]],
+    [7, false, { width: 5 }, ["c ", "c ", "s7e0"]],
+  ];
+  for (const [n, upper, options, want] of cases) {
+    expect(await recorded((f, std) => std.$writeIntExp(f, n, upper, options))).toEqual(want);
+  }
+});
+
 test("std's PadAdapter writes each line apart, its indent a write of its own, nothing of an empty one", async () => {
   expect(
     await recorded((f, std) => {
@@ -423,6 +438,17 @@ test("a library's function given an Arguments, and a library's own write_fmt, wr
   const written = (name: string) => library.items.find((item: { export: string }) => item.export === name)?.written_arguments;
   expect(written("logInto")).toEqual([1]);
   expect(written("relay")).toEqual([1]);
+}, underLoad(300_000));
+
+// A library's `dyn Debug`, whose pair's dictionary its contract doesn't say
+// writes a piece at a time (`makes_fmt_dyns`), written into a writer:
+// refused, naming #1688.
+test("a library's dyn Debug written into a writer is refused", () => {
+  const native = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys", [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1688",
+  ]);
+  expect(native).toBe('["Some", "(", "7", ")"]\n');
 }, underLoad(300_000));
 
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {

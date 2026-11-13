@@ -134,6 +134,20 @@ impl fmt::Display for Marked {
     }
 }
 
+// A closure given the `Formatter`, called twice: a writer of its own,
+// framed as the writer that calls it is.
+struct Closed(i32);
+
+impl fmt::Display for Closed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let n = self.0;
+        let w = |f: &mut fmt::Formatter<'_>| write!(f, "<{}>", n);
+        w(f)?;
+        f.write_str("|")?;
+        w(f)
+    }
+}
+
 fn main() {
     let mut counting = Counting {
         calls: 0,
@@ -183,4 +197,8 @@ fn main() {
     put(&mut counted, 5).unwrap();
     fmt::write(&mut counted, format_args!("<{}>", n)).unwrap();
     println!("{:?} {}", counted.0, counted.1);
+
+    let mut closed = Chars(Vec::new());
+    write!(closed, "{}", Closed(-5)).unwrap();
+    println!("{:?} {}", closed.0, Closed(6));
 }

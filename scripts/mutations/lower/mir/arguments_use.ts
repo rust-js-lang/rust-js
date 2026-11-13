@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "formatter-arguments-whole",
     breaks: "a framed writer's own `write!` is its text whole, one `write_str` of the writer's, where std writes each piece (#1652)",
     file: "src/lower/mir/arguments_use.rs",
-    find: "    arguments_use(recognition, body, local) == ArgumentsUse::InPlace\n",
-    replace: "    arguments_use(recognition, body, local) == ArgumentsUse::InPlace && false\n",
+    find: "    let in_place = arguments_use(recognition, body, local) == ArgumentsUse::InPlace;\n",
+    replace: "    let in_place = false;\n",
     tests: ["test/writer-sink.test.ts"],
   },
   {

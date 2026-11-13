@@ -187,8 +187,9 @@ pub(super) fn prints<'tcx>(
 /// `T`, is what the types it's shown as give, `Pair<u8>`'s `u8`, each shown
 /// too, and a writer function's, what its callers give it. Each
 /// writes through a sink, which a `write!` into a writer arms with its
-/// writer's (`$writingInto`). Never `types` or `while_formatting`, which
-/// route what's printed.
+/// writer's (`$writingInto`): a writer function, a closure it calls, or
+/// one it names as a `fn` pointer, each given its `Formatter`. Never
+/// `types` or `while_formatting`, which route what's printed.
 fn written_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
@@ -228,6 +229,45 @@ fn written_into_writers<'tcx>(
             }
         }
     }
+    // The writers a callable only a value says may be: each closure of the
+    // crate's given a `Formatter`, and each writer function named as a `fn`
+    // pointer.
+    let held_writers: Vec<DefId> = (writers.iter())
+        .filter(|writer| tcx.is_closure_like(writer.def_id))
+        .map(|writer| writer.def_id)
+        .chain(all_bodies.iter().flat_map(|body| {
+            (body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
+                ExprKind::PointerCoercion {
+                    cast: ty::adjustment::PointerCoercion::ReifyFnPointer(_),
+                    source,
+                    ..
+                } => crate::lower::fn_def(body.thir[source].ty).map(|(id, _)| id),
+                _ => None,
+            })
+        }))
+        .filter(|id| writers.iter().any(|writer| writer.def_id == *id))
+        .collect();
+    // Whether `writer` calls a callable only a value says, a `fn` pointer, a
+    // `dyn Fn` or a generic `F`, given what may be its `Formatter`.
+    let calls_held = |writer: &Body<'tcx>| {
+        (writer.thir.exprs.iter()).any(|expr| match expr.kind {
+            ExprKind::Call { fun, ref args, .. } => {
+                let callee = writer.thir[fun].ty;
+                let by_value = callee.is_fn_ptr()
+                    || crate::lower::fn_def(callee).is_some_and(|(id, generic_args)| {
+                        tcx.trait_of_assoc(id)
+                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some())
+                            && !matches!(generic_args.types().next().map(|ty| *ty.kind()), Some(ty::Closure(..)))
+                    });
+                by_value
+                    && args.iter().any(|&arg| {
+                        (writer.thir[arg].ty.walk().filter_map(|part| part.as_type()))
+                            .any(|part| recognition.is_std_type(part, crate::lower::recognition::StdItem::Formatter))
+                    })
+            }
+            _ => false,
+        })
+    };
     let mut found: IndexSet<DefId> = IndexSet::default();
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
@@ -253,10 +293,33 @@ fn written_into_writers<'tcx>(
         // `Formatter`, `helper(f, n)`, written through its sink too.
         while let Some(by) = found.get_index(called_up_to).copied() {
             called_up_to += 1;
-            let calls = (writers.iter().find(|writer| writer.def_id == by))
+            let by_body = writers.iter().find(|writer| writer.def_id == by);
+            // A callable only a value says may be any of them.
+            if by_body.is_some_and(|by| calls_held(by)) {
+                for &held in &held_writers {
+                    if found.insert(held)
+                        && let Some(writer) = writers.iter().find(|writer| writer.def_id == held)
+                    {
+                        shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
+                    }
+                }
+            }
+            let calls = by_body
                 .map(|by| crate::lower::instances::calls_of(by))
                 .unwrap_or_default();
             for (callee, args, _) in calls {
+                // A closure of the crate's it calls, given its `Formatter`,
+                // `w(f)`, its `Fn` trait's call of the closure's type.
+                let callee = match args.types().next().map(|ty| *ty.kind()) {
+                    Some(ty::Closure(closure, _))
+                        if tcx
+                            .trait_of_assoc(callee)
+                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>
+                    {
+                        closure
+                    }
+                    _ => callee,
+                };
                 if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee) {
                     shown.extend(args.types().map(|ty| (ty, true)));
                     if found.insert(callee) {

@@ -4,7 +4,8 @@
 // `fmtInto`, which writes the pieces std's `fmt` of it writes. A `T`'s, a
 // generic type's own parameters', `Duo<T>`'s `T`, each radix trait's, one
 // given on through another generic writer, a `dyn Display`'s and a `dyn
-// Error`'s, std's message errors' too; and a writer that fails at its nth
+// Error`'s, std's message errors' too, a `dyn Debug`'s by its pair's
+// dictionary, a builder's step's too; and a writer that fails at its nth
 // call, where what was written before stays. A case of its own, apart from
 // test/writer-sink.rs, whose writers are framed only where a type is shown,
 // which a `dyn` written here would make every writer.
@@ -143,6 +144,21 @@ fn failing(n: u8) -> Result<(), Box<dyn std::error::Error>> {
     Err(Failure(n))?
 }
 
+#[derive(Debug)]
+struct Dot {
+    x: i32,
+}
+
+// A builder's step of a `&dyn Debug`.
+struct Listed;
+
+impl fmt::Display for Listed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let d: &dyn fmt::Debug = &-1;
+        f.debug_list().entry(d).entry(&"s").finish()
+    }
+}
+
 fn main() {
     let p = Point { x: -1, y: 2 };
     let mut l = Chars(Vec::new());
@@ -212,4 +228,12 @@ fn main() {
         let d = write!(dyn_nth, "{:>4}", shown[3]);
         println!("{} {:?} {:?} | {:?} {:?}", n, nth.2, r, dyn_nth.2, d);
     }
+
+    let items: Vec<Box<dyn fmt::Debug>> = vec![Box::new(Dot { x: 3 }), Box::new("q"), Box::new(Some(2))];
+    let mut log = Log(Vec::new());
+    for item in &items {
+        write!(log, "{:?}|{:#?}|", item, item).unwrap();
+    }
+    write!(log, "{}", Listed).unwrap();
+    println!("{:?}", log.0);
 }

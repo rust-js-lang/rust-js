@@ -153,8 +153,8 @@ pub(super) fn written_params<'tcx>(
             .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(..))))
     };
     // A pair `dyn`, a value and its dictionary, of a trait with a principal:
-    // `Display`, `Error`, or one of a crate's, which may have `Display` as a
-    // supertrait.
+    // `Display`, `Debug`, `Error`, or one of a crate's, which may have
+    // `Display` as a supertrait.
     let fmt_dyn = |ty: Ty<'tcx>| {
         ty.walk().any(|part| {
             matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(traits, ..))

@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     name: "fmt-into-dyn-unwritten",
     breaks: "a `dyn Display` written into a writer is refused, as its pair's dictionary isn't asked",
     file: "src/lower/display/fmt_into.rs",
-    find: "            if self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay {\n",
+    find: "            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {\n",
     replace: "            if true {\n",
     tests: sink,
   },
@@ -53,5 +53,13 @@ export const mutations: Mutation[] = [
     find: "                let pretty = Pretty::When(given.clone()).alternate();\n",
     replace: "                let pretty = Pretty::Plain.alternate();\n",
     tests: sink,
+  },
+  {
+    name: "dyn-debug-unwritten",
+    breaks: "a `dyn Debug`'s `Debug` written into a writer is refused, where its pair's dictionary writes it",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());\n",
+    replace: "            let debug = false;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of generic code's and dyns' writes is native Rust's, in the plain build"],
   },
 ];

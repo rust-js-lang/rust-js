@@ -1,6 +1,7 @@
 //! A std value's `Debug` written into a writer's sink a piece at a time,
 //! as core's builders write it (#1652, step 4 of ADR 1135): a leaf by
-//! `sink_writes_given`, a sequence by `debug_list`'s `entries`, an `Option`
+//! `sink_writes_given`, a sequence by `debug_list`'s `entries`, a set by
+//! `debug_set`'s, a map by `debug_map`'s, each entry's key and value, an `Option`
 //! and a `Result` by their derived tuples, a tuple by `debug_tuple("")`,
 //! each part written by a writing function into the builder's sink, std's
 //! `PadAdapter` for `{:#?}` (`$padAdapter`). The builders are the runtime's
@@ -13,8 +14,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `value`'s `Debug`, of `ty`, writes into a writer's sink, given
     /// the `Formatter`'s `options` and whether it's `{:#?}`, `pretty`, each
     /// known as it runs: a leaf's writes, or a builder's of each part.
-    /// `None` of a value whose split isn't followed yet (#1652): a map's, a
-    /// set's, a generic or `dyn` value's, and another std type's.
+    /// `None` of a value whose split isn't followed yet (#1652): a generic
+    /// or `dyn` value's, and another std type's.
     pub(in crate::lower) fn debug_sink_writes(
         &mut self,
         value: Expr,
@@ -86,6 +87,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "$writeDebugFields",
                 vec![value, Expr::str(""), Expr::array(fields), pretty.clone()],
             );
+        }
+        // A set's, `debug_set().entries(..)`, and a map's,
+        // `debug_map().entries(..)`, each in the order its `Debug` shows them.
+        if let ty::Adt(_, args) = ty.kind()
+            && (self.is_set(ty) || self.is_map(ty))
+        {
+            let items = self.in_order_of(value, ty, span)?;
+            let item = args.type_at(0);
+            let Some(write) =
+                self.writing_fn(|cx, entry| cx.debug_sink_writes(entry, item, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            if self.is_set(ty) {
+                return helper("$writeDebugSet", vec![items, write, pretty.clone()]);
+            }
+            let held = args.type_at(1);
+            let Some(write_value) =
+                self.writing_fn(|cx, entry| cx.debug_sink_writes(entry, held, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            return helper("$writeDebugMap", vec![items, write, write_value, pretty.clone()]);
         }
         // A sequence's, `debug_list().entries(..)`.
         let item = match ty.kind() {

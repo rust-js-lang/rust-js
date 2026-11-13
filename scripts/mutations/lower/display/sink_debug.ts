@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: '            return helper("$writeDebugList", vec![value, write, Expr::bool(false)]);\n',
     tests: ["test/writer-sink.test.ts"],
   },
+  {
+    name: "sink-map-set-debug-unfollowed",
+    breaks: "a map's or a set's `Debug` written into a writer is refused, where std writes it by `debug_map` or `debug_set`",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            && (self.is_set(ty) || self.is_map(ty))\n",
+    replace: "            && false\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

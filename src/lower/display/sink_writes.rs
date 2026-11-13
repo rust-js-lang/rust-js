@@ -119,6 +119,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ),
                 }
             }
+            // An integer's `{:e}`, core's `exp_u64`'s text or parts.
+            Std::FmtExp(upper) if int.is_some() => {
+                let mut args = vec![value, Expr::bool(upper)];
+                args.extend(options.then(options_given));
+                SinkWrite::Helper("$writeIntExp", args)
+            }
             // A float's, `flt2dec`'s parts as `pad_formatted_parts` writes
             // them.
             Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) if let Some(num) = float => {

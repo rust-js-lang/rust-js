@@ -100,4 +100,20 @@ export const mutations: Mutation[] = [
     replace: "            && !self.recognition().writes_through_a_dictionary(def_id, generic_args)\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "derived-debug-fields-refused",
+    breaks: "a derived `Debug` of more than five fields, `debug_struct_fields_finish`, in a writer shown into a writer is refused",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "            WriteCall::Struct | WriteCall::Tuple | WriteCall::StructFields | WriteCall::TupleFields => {\n",
+    replace: "            WriteCall::Struct | WriteCall::Tuple => {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "held-formatter-char-as-str",
+    breaks: "a `write_char` through a `Formatter` a struct holds gives the writer's `write_str` the `char`, not its own `write_char`",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
+    replace: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Str(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

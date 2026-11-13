@@ -82,12 +82,10 @@ $writeInteger(f, n);
   text written whole. `writes_into_a_writer` arms only a writer of the
   crate's own that writes through a sink; another crate's, made whole in
   its library, is refused.
-- **What isn't followed yet is refused, naming #1652**: a map's or a
-  set's `Debug`, a derived `Debug` of more than five fields, a write
-  through a `Formatter` a struct holds, a closure or `fn` pointer given the
-  `Formatter`, a `dyn`'s `Debug`, and an `Arguments` made elsewhere. A
-  library's type or `dyn` whose contract doesn't say its dictionary
-  carries `fmtInto` is refused naming #1688 (step 5).
+- **What isn't followed is refused, naming #1652**: an `Arguments` made
+  elsewhere, one a function returned or a field held, written into a
+  writer. A library's type or `dyn` whose contract doesn't say its
+  dictionary carries `fmtInto` is refused naming #1688 (step 5).
 
 ## Landing
 
@@ -252,6 +250,50 @@ go.
      it into a `Log`, 1,370 cases, both the same as native Rust's.
 
    Also the metamorphic rewrites of each case, and 26 mutations.
+7. The rest (landed):
+   - A map's and a set's `Debug`, by `debug_map`'s and `debug_set`'s
+     `entries`, each in the order its `Debug` shows them: `$writeDebugMap`
+     and `$writeDebugSet` of the runtime's one builder model.
+   - A derived `Debug` of more than five fields,
+     `debug_struct_fields_finish` and `debug_tuple_fields_finish`, written
+     as one of fewer is.
+   - An integer's `{:e}` and `{:E}`, as core's `exp_u64` writes it,
+     `$writeIntExp`: its coefficient's trailing zeros dropped, or rounded
+     half to even to the precision asked. With no zeros to add, it is
+     `pad_integral` of its text; else `pad_formatted_parts` of the
+     coefficient, the zeros and the exponent (`$writeFormattedParts`,
+     a float's too).
+   - A writer reached through a value given its `Formatter`, a closure, a
+     `fn` pointer or a `dyn Fn`, is framed as the writer that calls it is.
+     It is called with that writer's sink armed, `$writingInto(f, w, n)`:
+     - a closure the writer calls, by its type;
+     - and, where it calls one only a value says, every closure of the
+       crate's given a `Formatter` and every writer function named as a
+       `fn` pointer.
+
+     A closure lowered where its maker is, a boxed one's, is the writer
+     its own body is, `writer_owner`.
+   - A `Formatter` a struct holds, `held.0`, which a writer that writes
+     through a sink holds its sink as. A `write!` into it is written into
+     that sink a piece at a time, as one into the writer's own is
+     (`written_into_a_formatter`, one rule for both). A `write_char` is
+     the sink's, and an `Arguments` parameter is `$writingInto(held,
+     args)`.
+   - A `dyn Debug`'s `Debug`, by its pair's dictionary, its type's `Debug`,
+     `d.impl.fmtInto(f, d.value, options)`, a builder's step's too. A
+     library that makes one says so, `makes_fmt_dyns`, and a consumer
+     writing it is refused naming #1688.
+
+   Proof, against native Rust in both builds:
+   - test/writer-sink-rest.rs;
+   - test/writer-sink-callables.rs, a case of its own, as a `dyn` written
+     frames every writer;
+   - the `dyn Debug` rows of test/writer-sink-generic.rs and the closure of
+     test/writer-sink-own-write-fmt.rs;
+   - the formatting grid, whose `Log` column now pieces every value but
+     `Asked`'s, a map's, a set's and an integer's `{:e}` among them;
+   - a library pair refused;
+   - 15 mutations.
 
 ## Alternatives
 

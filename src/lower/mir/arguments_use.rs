@@ -65,24 +65,26 @@ fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Bo
 }
 
 /// Whether `local`, an `Arguments` std formats where it's made
-/// (`ArgumentsUse::InPlace`), is given by value to a `write!` into a
-/// writer's own `Formatter`, one of `aliases`: of a writer shown into a
-/// writer, each piece a call of that writer's (#1652, ADR 1135).
-pub(in crate::lower) fn written_into_formatter<'tcx>(
+/// (`ArgumentsUse::InPlace`), is given by value to a `Formatter`'s
+/// `write_fmt`, the writer's own or one a struct holds, `held.0`: of a
+/// writer shown into a writer, which writes through its sink, each piece a
+/// call of that writer's (#1652, ADR 1135).
+pub(in crate::lower) fn written_into_a_formatter<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &mir::Body<'tcx>,
     local: Local,
-    aliases: &[Local],
 ) -> bool {
     let tcx = recognition.tcx;
-    let given = |arg: &Operand<'tcx>| arg.place().is_some_and(|p| p.local == local && p.projection.is_empty());
-    arguments_use(recognition, body, local) == ArgumentsUse::InPlace
+    let in_place = arguments_use(recognition, body, local) == ArgumentsUse::InPlace;
+    in_place
         && body.basic_blocks.iter().any(|data| match &data.terminator().kind {
             TerminatorKind::Call { func, args, .. } => {
-                args.iter().any(|arg| given(&arg.node))
-                    && (args.first().and_then(|arg| arg.node.place())).is_some_and(|p| aliases.contains(&p.local))
-                    && crate::lower::fn_def(func.ty(&body.local_decls, tcx))
-                        .is_some_and(|(id, generic_args)| recognition.formatter_write_fmt(id, generic_args))
+                args.iter().any(|arg| {
+                    arg.node
+                        .place()
+                        .is_some_and(|p| p.local == local && p.projection.is_empty())
+                }) && crate::lower::fn_def(func.ty(&body.local_decls, tcx))
+                    .is_some_and(|(id, generic_args)| recognition.formatter_write_fmt(id, generic_args))
             }
             _ => false,
         })

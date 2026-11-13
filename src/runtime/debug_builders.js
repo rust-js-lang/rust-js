@@ -362,6 +362,16 @@ function $writeDebugList(f, items, write, pretty) {
   list.entriesWith(items, write);
   list.finish();
 }
+function $writeDebugSet(f, items, write, pretty) {
+  const set = $debugSet(f, pretty);
+  set.entriesWith(items, write);
+  set.finish();
+}
+function $writeDebugMap(f, entries, writeKey, writeValue, pretty) {
+  const map = $debugMap(f, pretty);
+  map.entriesWith(entries, writeKey, writeValue);
+  map.finish();
+}
 function $writeDebugFields(f, value, name, fields, pretty) {
   const tuple = $debugTuple(f, name, pretty);
   for (const write of fields) tuple.fieldWith(value, write);

@@ -129,4 +129,12 @@ export const mutations: Mutation[] = [
     replace: 'function $debugTuple(f, name, pretty) {\n  if (name !== "") f.write(name);\n',
     tests: ["test/writer-sink.test.ts"],
   },
+  {
+    name: "write-debug-map-key-as-value",
+    breaks: "a map's `Debug` into a writer writes each key by its value's writing function, and each value by its key's",
+    file: "src/runtime/debug_builders.js",
+    find: "  map.entriesWith(entries, writeKey, writeValue);\n",
+    replace: "  map.entriesWith(entries, writeValue, writeKey);\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

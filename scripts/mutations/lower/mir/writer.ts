@@ -98,9 +98,9 @@ export const mutations: Mutation[] = [
     name: "writer-callable-not-appended",
     breaks: "a writer callable's call isn't what's written: its text is lost",
     file: "src/lower/mir/writer.rs",
-    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            self.append_to_writer(state, &name, written, false, self.js_span(span), out);\n",
+    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            if self.writes_into_writers(state) {\n                return self\n                    .called_with_the_sink_armed(state, written, destination, span, out)\n                    .map(Some);\n            }\n            self.append_to_writer(state, &name, written, false, self.js_span(span), out);\n",
     replace:
-      "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            out.push(js::StmtKind::Expr(written).at(self.js_span(span)));\n",
+      "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            if self.writes_into_writers(state) {\n                return self\n                    .called_with_the_sink_armed(state, written, destination, span, out)\n                    .map(Some);\n            }\n            out.push(js::StmtKind::Expr(written).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {
@@ -318,8 +318,8 @@ export const mutations: Mutation[] = [
     name: "writer-text-not-through-the-line",
     breaks: "a writer that prints gives back its text whole, so a print it makes after writing comes before that text (#1490)",
     file: "src/lower/mir/writer.rs",
-    find: "        self.writes_through_sink(owner)\n    }\n",
-    replace: "        self.writes_through_sink(owner) && false\n    }\n",
+    find: "        self.writes_through_sink(self.writer_owner(state))\n    }\n",
+    replace: "        self.writes_through_sink(self.writer_owner(state)) && false\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
   {
@@ -378,8 +378,16 @@ export const mutations: Mutation[] = [
     name: "framed-is-every-sink-writer",
     breaks: "a writer that writes through a sink for printing writes as one shown into a writer, so its generic part is refused though it's never shown into one (#1652)",
     file: "src/lower/mir/writer.rs",
-    find: "        state.writer.is_some() && self.krate.prints.writes_into_writers(owner)\n",
-    replace: "        state.writer.is_some() && self.krate.prints.writes_through_sink(owner)\n",
+    find: "        state.writer.is_some() && self.krate.prints.writes_into_writers(self.writer_owner(state))\n",
+    replace: "        state.writer.is_some() && self.krate.prints.writes_through_sink(self.writer_owner(state))\n",
     tests: ["test/writer-sink.test.ts", "-t", "a writer that prints, never shown into a writer"],
+  },
+  {
+    name: "writer-owner-is-the-item",
+    breaks: "a closure lowered where its maker is, a boxed one's, is taken for its maker's writer, so it doesn't write through the sink it's framed for",
+    file: "src/lower/mir/writer.rs",
+    find: "        let body = state.body.source.def_id();\n",
+    replace: "        let body = self.item;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
   },
 ];

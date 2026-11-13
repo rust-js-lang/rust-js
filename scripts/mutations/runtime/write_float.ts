@@ -52,4 +52,20 @@ export const mutations: Mutation[] = [
     replace: '  if (trait === "G" && size !== 0 && (size > 1e16 || size < tiny)) {\n',
     tests,
   },
+  {
+    name: "int-exp-trailing-zeros-kept",
+    breaks: "an integer's `{:e}` into a writer keeps its coefficient's trailing zeros, `1.500e3` where std writes `1.5e3`",
+    file: "src/runtime/write_float.js",
+    find: "    while (coefPrec !== 0 && coef % 10n === 0n) {\n",
+    replace: "    while (false) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "int-exp-half-rounds-up",
+    breaks: "an integer's `{:.0e}` of a half rounds up, `3e3` of 2500 where std rounds half to even, `2e3`",
+    file: "src/runtime/write_float.js",
+    find: "    const roundUp = over < half ? 0n : over > half ? 1n : floor & 1n;\n",
+    replace: "    const roundUp = over < half ? 0n : 1n;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of the rest's writes is native Rust's, in the plain build"],
+  },
 ];

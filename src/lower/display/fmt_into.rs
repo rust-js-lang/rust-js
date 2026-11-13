@@ -52,16 +52,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let ty = ty.peel_refs();
-        let (dictionary, value) = if matches!(ty.kind(), ty::Dynamic(..)) {
-            // A pair's `Display`, a `dyn Display`'s or a `dyn Error`'s; its
-            // `Debug` isn't followed yet (#1652), as std's errors' aren't.
-            if self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay {
+        let (dictionary, value) = if let ty::Dynamic(traits, ..) = ty.kind() {
+            // A `dyn Debug`'s, its pair's own dictionary, its type's `Debug`
+            // (ADR 0060, amended).
+            let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());
+            // A pair's `Display`, a `dyn Display`'s or a `dyn Error`'s; the
+            // `Debug` of another isn't followed yet (#1652), as std's
+            // errors' aren't.
+            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {
                 return Ok(None);
             }
-            let from = self.dyn_trait_ref(ty, ty).expect("a principal");
-            let to = ty::TraitRef::new(self.tcx, trait_id, [ty]);
-            let Some(dictionary) = self.super_evidence(from, to, Expr::member(value.clone(), js::DICTIONARY)) else {
-                return Ok(None);
+            let held = Expr::member(value.clone(), js::DICTIONARY);
+            let dictionary = match debug {
+                true => held,
+                false => {
+                    let from = self.dyn_trait_ref(ty, ty).expect("a principal");
+                    let to = ty::TraitRef::new(self.tcx, trait_id, [ty]);
+                    let Some(dictionary) = self.super_evidence(from, to, held) else {
+                        return Ok(None);
+                    };
+                    dictionary
+                }
             };
             if !value.parts_read_same() {
                 return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));

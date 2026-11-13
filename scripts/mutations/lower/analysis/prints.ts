@@ -276,4 +276,20 @@ export const mutations: Mutation[] = [
     replace: "            if at != 1 || !recognition.writes_arguments_piecewise(id, generic_args) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
   },
+  {
+    name: "closure-given-formatter-unframed",
+    breaks: "a closure a framed writer calls with its `Formatter` isn't framed, so it makes its text and never claims the sink armed for it",
+    file: "src/lower/analysis/prints.rs",
+    find: "                        if tcx\n                            .trait_of_assoc(callee)\n                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
+    replace: "                        if false =>\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of own write_fmt's through generic code's writes is native Rust's, in the plain build"],
+  },
+  {
+    name: "held-callables-unframed",
+    breaks: "a closure or a writer function a framed writer calls through a value, a `fn` pointer or a `dyn Fn`, isn't framed, so it never claims the sink armed for it",
+    file: "src/lower/analysis/prints.rs",
+    find: "            if by_body.is_some_and(|by| calls_held(by)) {\n",
+    replace: "            if false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "each of callables' writes is native Rust's, in the plain build"],
+  },
 ];

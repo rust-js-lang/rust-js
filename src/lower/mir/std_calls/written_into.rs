@@ -11,19 +11,18 @@ use rustc_span::def_id::DefId;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether the `format_args!` being lowered, which stores to
     /// `destination`, is written into such a writer (`ArgumentsUse::Written`).
-    /// And one a writer that writes through a sink gives its own
-    /// `Formatter`, which a `write!` into a writer may arm with its
-    /// writer's (`$writingInto`), so each piece is a call of that writer's.
+    /// And one a writer that writes through a sink gives a `Formatter`, its
+    /// own or one a struct holds, which a `write!` into a writer may arm
+    /// with its writer's (`$writingInto`), so each piece is a call of that
+    /// writer's.
     pub(super) fn arguments_written(&self, state: &State<'_, 'tcx>) -> bool {
-        use super::super::arguments_use::{ArgumentsUse, arguments_use, written_into_formatter};
+        use super::super::arguments_use::{ArgumentsUse, arguments_use, written_into_a_formatter};
         (state.called_into.and_then(|place| place.as_local())).is_some_and(|local| {
             let recognition = self.recognition();
             arguments_use(&recognition, state.body, local) == ArgumentsUse::Written
+                || (self.writes_into_writers(state) && written_into_a_formatter(&recognition, state.body, local))
                 || (arguments_use(&recognition, state.body, local) == ArgumentsUse::GivenOn
                     && self.given_to_a_writer(state.body, local))
-                || (self.writes_into_writers(state)
-                    && (state.writer.as_ref())
-                        .is_some_and(|(aliases, _)| written_into_formatter(&recognition, state.body, local, aliases)))
         })
     }
 
@@ -427,14 +426,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A derived `Debug`'s, `debug_struct_field2_finish(f, "P", "x",
             // &self.x, ..)`: core's builder, each field a step, its value
             // written by its `Debug` into the step's sink.
-            WriteCall::Struct | WriteCall::Tuple => {
-                let named = operation == WriteCall::Struct;
+            // Of more than five fields, `debug_struct_fields_finish(f, "P",
+            // &["a", ..], &[&self.a, ..])`: the same, of its arrays.
+            WriteCall::Struct | WriteCall::Tuple | WriteCall::StructFields | WriteCall::TupleFields => {
+                let named = matches!(operation, WriteCall::Struct | WriteCall::StructFields);
                 let Some(type_name) = values.next() else {
                     return Err(self.unsupported(span, "this derived `Debug`, from its MIR"));
                 };
                 let type_name = self.shown_in_place(type_name, span)?;
                 let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
                 let pretty = self.writer_pretty().alternate();
+                let mut values: Vec<Value<'tcx>> = match operation {
+                    WriteCall::StructFields | WriteCall::TupleFields => {
+                        let lists: Vec<Value<'tcx>> = values.collect();
+                        // The names, an array of strings; the values, each
+                        // a `&dyn Debug` made here.
+                        let mut lists = lists.into_iter().map(|list| match list {
+                            Value::List(items, _) => Some(items),
+                            Value::Expr(Expr {
+                                kind: js::ExprKind::Array(names),
+                                ..
+                            }) => Some(names.into_iter().map(Value::Expr).collect()),
+                            _ => None,
+                        });
+                        let (names, items) = match named {
+                            true => (lists.next().flatten(), lists.next().flatten()),
+                            false => (Some(Vec::new()), lists.next().flatten()),
+                        };
+                        let (Some(names), Some(items)) = (names, items) else {
+                            return Err(self.unsupported(span, "this derived `Debug`'s fields, from its MIR"));
+                        };
+                        match named {
+                            true => names
+                                .into_iter()
+                                .zip(items)
+                                .flat_map(|(name, item)| [name, item])
+                                .collect(),
+                            false => items,
+                        }
+                    }
+                    _ => values.collect(),
+                };
+                let mut values = values.drain(..);
                 let mut fields = Vec::new();
                 while let Some(first) = values.next() {
                     let (name, value) = match named {
@@ -458,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let helper = if named { "$writeDebugStruct" } else { "$writeDebugTuple" };
                 vec![SinkWrite::Helper(helper, vec![type_name, Expr::array(fields), pretty])]
             }
-            _ => return Err(self.refused_in_a_writer("a derived `Debug` of more than five fields", span)),
+            _ => return Err(self.refused_in_a_writer("this `Formatter`'s call", span)),
         };
         self.flush(state, out)?;
         let js_span = self.js_span(span);
@@ -492,5 +525,87 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "std writes it a piece at a time, each a call of the writer's, which isn't followed for it (#1652)",
             ),
         )
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A closure, or a writer through a `fn` pointer, given the `Formatter`
+    /// of a writer shown into a writer, `call`, what it's called with but
+    /// the `Formatter`, `w(n)`: called with this writer's sink armed for it,
+    /// `$writingInto(f, w, n)`, as a writer function's is, which writes
+    /// through a sink as its maker is framed (#1652). Its result, kept as a
+    /// value, is what `$writeTry` caught.
+    pub(in crate::lower::mir) fn called_with_the_sink_armed(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        call: Expr,
+        destination: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let js::ExprKind::Call(callee, args) = call.kind else {
+            return Err(self.refused_in_a_writer("a writer function given the `Formatter`", span));
+        };
+        let mut given = vec![*callee];
+        given.extend(args);
+        let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
+        let written = vec![SinkWrite::Helper("$writingInto", given).written_into(&sink, self.js_span(span))];
+        use super::super::result_use::{ResultUse, result_use};
+        let inspected = result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected;
+        if inspected {
+            return Ok(Value::Expr(self.fmt_try(written)));
+        }
+        out.extend(written);
+        Ok(Value::Expr(Expr::undefined()))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A write, `def_id` of `generic_args`, through a `Formatter` held where
+    /// it isn't its writer's, `handle`, of a writer that writes through a
+    /// sink, which the handle is (#1652): `given`, a `write!`'s writes,
+    /// each into it; the function of an `Arguments` that writes into the
+    /// sink it claims, `$writingInto(handle, args)`; a `char`, a
+    /// `write_char`; a string, a `write_str`. Its result, kept as a value,
+    /// is what `$writeTry` caught.
+    pub(super) fn written_into_held_formatter(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        handle: Expr,
+        given: Value<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let writes = match given {
+            Value::Writes(writes, _) => writes,
+            given => {
+                let value = self.value_expr(given, span)?;
+                let literal = matches!(value.kind, js::ExprKind::Str(_));
+                match () {
+                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],
+                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {
+                        vec![SinkWrite::Str(value)]
+                    }
+                    _ if self.arguments_given_as_sink(state) => vec![SinkWrite::Helper("$writingInto", vec![value])],
+                    _ => {
+                        return Err(self.refused_in_a_writer(
+                            "a `write_fmt` of a `fmt::Arguments` made elsewhere through a held `Formatter`",
+                            span,
+                        ));
+                    }
+                }
+            }
+        };
+        self.flush(state, out)?;
+        let handle = match handle.kind {
+            js::ExprKind::Var(_) => handle,
+            _ => self.spill(Base::Temporary, handle, out),
+        };
+        let js_span = self.js_span(span);
+        let written: Vec<Stmt> = (writes.into_iter())
+            .map(|write| write.written_into(&handle, js_span))
+            .collect();
+        Ok(self.fmt_try(written))
     }
 }

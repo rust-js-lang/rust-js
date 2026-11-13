@@ -13837,6 +13837,16 @@ export function $writeDebugList(f, items, write, pretty) {
   list.entriesWith(items, write);
   list.finish();
 }
+export function $writeDebugSet(f, items, write, pretty) {
+  const set = $debugSet(f, pretty);
+  set.entriesWith(items, write);
+  set.finish();
+}
+export function $writeDebugMap(f, entries, writeKey, writeValue, pretty) {
+  const map = $debugMap(f, pretty);
+  map.entriesWith(entries, writeKey, writeValue);
+  map.finish();
+}
 export function $writeDebugFields(f, value, name, fields, pretty) {
   const tuple = $debugTuple(f, name, pretty);
   for (const write of fields) tuple.fieldWith(value, write);
@@ -18991,6 +19001,12 @@ export function $writeDebugChar(f, c) {
 // `f32` whether it's an `f32`, whose digits are its own.
 export function $writeFloat(f, x, trait, f32, options = {}) {
   const [sign, parts] = $floatParts(x, trait, f32, options);
+  $writeFormattedParts(f, sign, parts, options);
+}
+// `pad_formatted_parts`: `sign` and `parts` padded to the options' width,
+// each fill char a `write_char`; `{:0}`'s zeros after the sign, which is
+// written even where it's none, `""`.
+export function $writeFormattedParts(f, sign, parts, options) {
   const partsLength = parts.reduce((n, part) => n + (typeof part === "number" ? part : part.length), 0);
   if (options.width === undefined) return $writeFloatParts(f, sign, parts);
   let width = options.width;
@@ -19010,6 +19026,47 @@ export function $writeFloat(f, x, trait, f32, options = {}) {
   const after = $writePadding(f, width - length, align, fill);
   $writeFloatParts(f, shownSign, parts);
   for (let i = 0; i < after; i++) f.writeChar(fill);
+}
+// An integer's `LowerExp` or `UpperExp` into a writer, as core's
+// `exp_u64` writes it (#1652): its coefficient's digits, its trailing zeros
+// dropped, or rounded half to even to the precision asked; with no zeros
+// to add, `pad_integral` of its text, its sign a `write_char`; else
+// `pad_formatted_parts` of the coefficient, the zeros the precision adds
+// and the exponent. `n` a number or a `BigInt`.
+export function $writeIntExp(f, n, upper, options = {}) {
+  const nonNegative = n >= 0;
+  const digits = String(n < 0 ? -n : n);
+  let exp = digits.length - 1;
+  let coefPrec = exp;
+  let coef = BigInt(digits);
+  let morePrec = 0;
+  const precision = options.precision;
+  if (precision === undefined) {
+    while (coefPrec !== 0 && coef % 10n === 0n) {
+      coef /= 10n;
+      coefPrec -= 1;
+    }
+  } else if (precision >= coefPrec) {
+    morePrec = precision - coefPrec;
+  } else {
+    const scale = 10n ** BigInt(coefPrec - precision);
+    const floor = coef / scale;
+    const over = coef % scale;
+    const half = scale / 2n;
+    const roundUp = over < half ? 0n : over > half ? 1n : floor & 1n;
+    coef = floor + roundUp;
+    coefPrec = precision;
+    if (roundUp !== 0n && String(coef).length - 1 > coefPrec) {
+      coef /= 10n;
+      exp += 1;
+    }
+  }
+  const shown = String(coef).padStart(coefPrec + 1, "0");
+  const coefText = coefPrec === 0 && morePrec === 0 ? shown : `${shown[0]}.${shown.slice(1)}`;
+  const expText = `${upper ? "E" : "e"}${exp}`;
+  if (morePrec === 0) return $writeIntegral(f, nonNegative, "", coefText + expText, options);
+  const sign = !nonNegative ? "-" : options.plus ? "+" : "";
+  $writeFormattedParts(f, sign, [coefText, morePrec, expText], options);
 }
 // `write_formatted_parts`: the sign where there's one, then each part, a
 // run of zeros, a number, written as a number of zeros, by at most 64.
