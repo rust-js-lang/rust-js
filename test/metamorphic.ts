@@ -252,20 +252,22 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
   return known;
 }
 
-/** A loud rewrite's line of a drop, `~loud 20 drop Circle(3)`: its count,
- * and what it dropped. */
-const loudDrop = /^(~loud \d+ )(drop .*)$/;
+/** A loud rewrite's line, `~loud 20 drop Circle(3)`: its count, and what it
+ * says. */
+const loudLine = /^(~loud \d+ )(.*)$/;
 
 /** Whether the JS's run, `ran`, agrees with native Rust's, `runs`, its
  * first and its runs again, up to the order of a hash table's drops, which
  * std leaves to `RandomState`'s seed and rust-js gives in insertion order
- * (difference 5): where some of native's runs put another line than its
- * first, each block of such lines in a row is a hash table's iteration only
- * where every line of it, the JS's too, is a loud drop, and the JS's are
- * then the same drops, in any order, each count where native's is. Every
- * other line, standard error and the outcome, as `agree` asks: so a drop
- * native's runs all put in one place, one no hash table orders, is wrong
- * anywhere else. Of a hash table of four, 24 orders, which `nativeTries`
+ * (difference 5). Each drop is a group, its loud line and the lines its
+ * `Drop` prints up to the next loud line; where some of native's runs put
+ * other lines than its first does, each run of such groups in a row is a
+ * hash table's iteration only where every group of it, the JS's too, is a
+ * loud drop's, and the JS's are then the same groups, in any order, each
+ * loud count in its place. Every other line, standard error and the
+ * outcome, as `agree` asks: so a drop native's runs all put in one place,
+ * one no hash table orders, is wrong anywhere else, and so is a drop given
+ * another's lines. Of a hash table of four, 24 orders, which `nativeTries`
  * runs again seldom hit (#1453). */
 export function agreesUpToHashOrder(runs: Run[], ran: Run): boolean {
   const [first] = runs;
@@ -273,26 +275,46 @@ export function agreesUpToHashOrder(runs: Run[], ran: Run): boolean {
   const sameRun = (run: Run) =>
     typeof run.outcome !== "string" && same(run.outcome, ran.outcome as never) && run.bytes.stderr.equals(ran.bytes.stderr);
   if (!runs.every(sameRun)) return false;
-  const lines = runs.map((run) => run.stdout.split("\n"));
-  const js = ran.stdout.split("\n");
-  if (lines.some((l) => l.length !== js.length)) return false;
-  const varies = js.map((_, i) => lines.some((l) => l[i] !== lines[0][i]));
-  for (let i = 0; i < js.length; ) {
-    if (!varies[i]) {
-      if (js[i] !== lines[0][i]) return false;
-      i++;
+  const all = [ran, ...runs].map((run) => run.stdout.split("\n"));
+  const [js, native] = [all[0], all[1]];
+  if (all.some((l) => l.length !== js.length)) return false;
+  // Where each group starts, a loud line, in every run alike.
+  const starts = js.flatMap((line, i) => (loudLine.test(line) ? [i] : []));
+  if (all.some((l) => l.flatMap((line, i) => (loudLine.test(line) ? [i] : [])).join() !== starts.join())) return false;
+  const bounds = [0, ...starts.filter((s) => s > 0), js.length];
+  const groups = bounds.slice(0, -1).map((from, k) => [from, bounds[k + 1]] as const);
+  const varies = ([from, to]: readonly [number, number]) =>
+    all.slice(1).some((l) => l.slice(from, to).join("\n") !== native.slice(from, to).join("\n"));
+  for (let g = 0; g < groups.length; ) {
+    if (!varies(groups[g])) {
+      const [from, to] = groups[g];
+      if (js.slice(from, to).join("\n") !== native.slice(from, to).join("\n")) return false;
+      g++;
       continue;
     }
-    let end = i;
-    while (end < js.length && varies[end]) end++;
-    const drops = (l: string[]) => l.slice(i, end).map((line) => line.match(loudDrop));
-    const block = [js, ...lines].map(drops);
-    if (block.some((b) => b.some((m) => m === null))) return false;
-    const [ours, theirs] = [block[0], block[1]] as RegExpMatchArray[][];
-    if (ours.some((m, k) => m[1] !== theirs[k][1])) return false;
-    const sorted = (b: RegExpMatchArray[]) => b.map((m) => m[2]).sort().join("\n");
-    if (block.some((b) => sorted(b as RegExpMatchArray[]) !== sorted(theirs))) return false;
-    i = end;
+    let end = g;
+    while (end < groups.length && varies(groups[end])) end++;
+    // Past the block's last drop, what every run prints in place, after the
+    // table's iteration, not the drop's: compared where it is.
+    const block = groups.slice(g, end).map(([from, to]) => [from, to] as [number, number]);
+    const last = block[block.length - 1];
+    const constant = (i: number) => all.every((l) => l[i] === native[i]);
+    let tail = last[1];
+    while (tail - 1 > last[0] && constant(tail - 1)) tail--;
+    if (js.slice(tail, last[1]).join("\n") !== native.slice(tail, last[1]).join("\n")) return false;
+    last[1] = tail;
+    for (const lines of all) {
+      if (!block.every(([from]) => /^~loud \d+ drop /.test(lines[from]))) return false;
+    }
+    const count = (line: string) => line.match(loudLine)![1];
+    if (block.some(([from]) => count(js[from]) !== count(native[from]))) return false;
+    const contents = (lines: string[]) =>
+      block
+        .map(([from, to]) => [lines[from].match(loudLine)![2], ...lines.slice(from + 1, to)].join("\n"))
+        .sort()
+        .join("\n\u0000");
+    if (all.some((lines) => contents(lines) !== contents(native))) return false;
+    g = end;
   }
   return true;
 }

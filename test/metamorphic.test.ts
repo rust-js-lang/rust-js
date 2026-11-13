@@ -224,6 +224,25 @@ test("a hash table's iteration that prints, not drops, doesn't agree reordered",
   expect(agreesUpToHashOrder(printed, run(["Dot", "Circle(3)", "end"]))).toBe(false);
 });
 
+const printing = [
+  ["~loud 1 drop K", "drop key 1", "~loud 2 drop K", "drop key 2", "end"],
+  ["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"],
+].map((lines) => run(lines));
+
+test("a hash table's drops agree reordered with what each drop prints", () => {
+  expect(agreesUpToHashOrder([printing[0]], run(["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"]))).toBe(false);
+  expect(agreesUpToHashOrder(printing, run(["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"]))).toBe(true);
+});
+
+test("a drop given another drop's lines doesn't agree", () => {
+  const two = [
+    ["~loud 1 drop A", "drop a", "~loud 2 drop B", "drop b", "end"],
+    ["~loud 1 drop B", "drop b", "~loud 2 drop A", "drop a", "end"],
+  ].map((lines) => run(lines));
+  expect(agreesUpToHashOrder(two, run(["~loud 1 drop A", "drop b", "~loud 2 drop B", "drop a", "end"]))).toBe(false);
+  expect(agreesUpToHashOrder(two, run(["~loud 1 drop B", "drop b", "~loud 2 drop A", "drop a", "end"]))).toBe(true);
+});
+
 test("a hash table's drops in another order with another outcome don't agree", () => {
   const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"], { panic: "x" });
   expect(agreesUpToHashOrder(natives, js)).toBe(false);

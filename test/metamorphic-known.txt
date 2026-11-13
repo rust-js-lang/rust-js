@@ -18,6 +18,8 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
+plain std fact-addresses mut_kept_by_what_a_call_gives_back.rs
+plain std fact-stored mut_kept_by_what_a_call_gives_back.rs
 
 #difference 11 a panic's message downcasts as a `&str` and a `String` both, so a loud rewrite's call in the branch of a downcast that native Rust takes runs in the other, or not at all: a formatted `panic!`'s payload, a `String` natively, is a `&str` too (a loud drop's `thread::panicking()`, answered since #1285, reaches it), and a literal's, a `&str`, a `String` too (lock_poisoning's `message`, #1438)
 plain std loud-call extend_by_a_dyn_iterator_asks_its_hint.rs
@@ -31,6 +33,9 @@ plain std loud-drop unwrap_dropping.rs
 
 #1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
 plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
+
+#difference 57 a `Display` or `Debug` that panics part-way through a `println!`'s line, in a program that catches no panic, loses what that line had written, which Rust's stdout writes as the program ends (ADR 1130)
+plain std loud-drop fmt_trait_fmt_called_by_path.rs
 
 #difference 58 a value a thread-local of the main thread holds is never dropped as the program ends, as on wasm32, where natively it may be (ADR 0262's first row, #1453)
 plain std loud as_deref_rc_in_place.rs
@@ -48,21 +53,47 @@ plain std loud-drop drop_guard_restores_nullable_fields.rs
 plain std loud drop_guard_restores_taken_fields.rs
 plain std loud-call drop_guard_restores_taken_fields.rs
 plain std loud-drop drop_guard_restores_taken_fields.rs
+plain std loud held_borrow_of_own_cell.rs
+plain std loud-call held_borrow_of_own_cell.rs
+plain std loud-drop held_borrow_of_own_cell.rs
 plain std loud-drop let_chain_else_inside_if.rs
+plain std loud let_chain_else_of_reads.rs
+plain std loud-drop let_chain_else_of_reads.rs
+plain std loud loop_over_a_thread_local.rs
+plain std loud-call loop_over_a_thread_local.rs
+plain std loud-drop loop_over_a_thread_local.rs
+plain std loud nullable_generic_fields.rs
+plain std loud-call nullable_generic_fields.rs
+plain std loud-drop nullable_generic_fields.rs
+plain std loud-call rc_clone_sees_owners.rs
+plain std loud refcell_const_object.rs
+plain std loud-call refcell_const_object.rs
+plain std loud-drop refcell_const_object.rs
 plain std loud refcell_field_derive_meets.rs
 plain std loud-drop refcell_field_derive_meets.rs
 plain std loud refcell_variant_derive_meets.rs
 plain std loud-drop refcell_variant_derive_meets.rs
+plain std loud thread_local_field_forwarders.rs
+plain std loud-call thread_local_field_forwarders.rs
+plain std loud-drop thread_local_field_forwarders.rs
+plain std loud thread_local_lazy_by_field.rs
+plain std loud-call thread_local_lazy_by_field.rs
+plain std loud-drop thread_local_lazy_by_field.rs
 plain std loud thread_local_lazy_where_observable.rs
 plain std loud-call thread_local_lazy_where_observable.rs
 plain std loud-drop thread_local_lazy_where_observable.rs
 plain std loud thread_local_made_by_constructor.rs
 plain std loud-call thread_local_made_by_constructor.rs
 plain std loud-drop thread_local_made_by_constructor.rs
+plain std loud thread_local_set_in_const_closure.rs
+plain std loud-drop thread_local_set_in_const_closure.rs
 plain std loud-call thread_local_set_of_a_field_borrow.rs
 plain std loud thread_local_with_in_place.rs
 plain std loud-call thread_local_with_in_place.rs
 plain std loud-drop thread_local_with_in_place.rs
+plain std loud thread_local_with_nested.rs
+plain std loud-call thread_local_with_nested.rs
+plain std loud-drop thread_local_with_nested.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
