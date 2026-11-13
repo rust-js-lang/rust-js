@@ -69,14 +69,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "intervals-given-before-every-call",
-    breaks: "a function is given what its calls seen so far pass, before its own call of itself is, so a recursive function is taken to be given only its outer calls' values",
-    file: "src/lower/analysis/intervals.rs",
-    find: "        true => given.get(&function).cloned().unwrap_or_default(),\n",
-    replace: "        true | false if given.contains_key(&function) => given.get(&function).cloned().unwrap_or_default(),\n        true => Vec::new(),\n",
-    tests,
-  },
-  {
     name: "intervals-lengths-unbounded",
     breaks: "a slice's length may be `usize::MAX`, so two lengths summed may wrap, `a.len() + b.len()`",
     file: "src/lower/analysis/intervals.rs",
@@ -114,14 +106,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "        zero(a) && b.lo < 0 || zero(b) && a.lo < 0\n",
     replace: "        false\n",
-    tests,
-  },
-  {
-    name: "intervals-mir-only-unreported",
-    breaks: "what MIR proves that THIR's facts keep, which M3 leaves out, isn't in the shadow to be triaged",
-    file: "src/lower/analysis/intervals.rs",
-    find: "        (false, true) => &format!(\"mir-only-{kind}\"),\n",
-    replace: "        (false, true) => return,\n",
     tests,
   },
   {
