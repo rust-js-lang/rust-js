@@ -68,3 +68,29 @@ pub fn main() {
 }
 `)).toEqual([]);
 });
+
+test("a parameter only its callers bound, and two slices' lengths summed, are proved", () => {
+  expect(shadowOf(`fn plus(n: u32) -> u32 {
+    n + 100
+}
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+fn total(a: &[u8], b: &[u8]) -> usize {
+    a.len() + b.len()
+}
+pub fn main() {
+    println!("{} {} {}", plus(5), twice(7), total(b"ab", b"c"));
+}
+`)).toEqual([]);
+});
+
+test("a function that calls itself is given nothing of its outer calls: its parameters may be anything", () => {
+  expect(shadowOf(`fn down(n: u32) -> u32 {
+    if n == 0 { 0 } else { down(n - 1) + n }
+}
+pub fn main() {
+    println!("{}", down(5));
+}
+`)).toEqual(["wrap down"]);
+});

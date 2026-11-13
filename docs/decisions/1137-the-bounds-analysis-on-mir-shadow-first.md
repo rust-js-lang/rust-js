@@ -96,3 +96,28 @@ over a call graph built from MIR (change 4 M3's).
 `intervals-bounds-unproved`, `intervals-relation-unrecorded`,
 `intervals-empty-unknown`, `intervals-widen-everywhere` and
 `intervals-imaginary-edges`, caught.
+
+## M2b-2 (2026-11-13): caller-given parameters, over one call graph from MIR
+
+- **`call_graph.rs` is the crate's one call graph,** of the MIR the emitter
+  reads, never the optimized one, where an inlined call is no call though
+  the JS makes it. Each body's calls are resolved where rustc can; one
+  through a `dyn` or a function pointer is `Unknown`. It carries its
+  strongly connected components, callees first. Change 4 M3 moves the
+  crate's other call-edge scans onto it.
+- **Caller-given parameters.** A function only calls reach (`only_called`,
+  ADR 0577) is given, as each parameter's interval, the join of what every
+  call of it passes, as each caller's walk knows it. Callers are walked
+  before callees. A function is walked knowing nothing of its parameters
+  while some of its calls aren't walked yet, its own of itself among them,
+  or are calls this MIR lacks: fewer calls seen than `only_called`
+  counts. So one that calls itself knows nothing of its parameters as it's
+  walked, and what it passes itself joins what it's given.
+- **A length's bound.** A slice's or text's length, from `PtrMetadata` or a
+  `len()` call, is at most `isize::MAX` bytes over its item's size, as every
+  allocation is. So two lengths of `u8`s summed never wrap.
+
+Measured: 180 lines across 2,453 cases, 18 bounds and 162 wraps, where
+M2b-1 left 305. Mutations `intervals-given-unused`,
+`intervals-given-before-every-call` and `intervals-lengths-unbounded`,
+caught.

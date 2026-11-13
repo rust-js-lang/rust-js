@@ -60,4 +60,28 @@ export const mutations: Mutation[] = [
     replace: "                terminator.successors().map(|t| (t, state.clone())).collect()\n",
     tests,
   },
+  {
+    name: "intervals-given-unused",
+    breaks: "what a function only calls reach is given at them isn't its parameters' interval, so `n + 100` of `plus(5)` isn't known in range (M2b-2)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                intervals[param] = interval;\n",
+    replace: "                let _ = interval;\n",
+    tests,
+  },
+  {
+    name: "intervals-given-before-every-call",
+    breaks: "a function is given what its calls seen so far pass, before its own call of itself is, so a recursive function is taken to be given only its outer calls' values",
+    file: "src/lower/analysis/intervals.rs",
+    find: "        true => given.get(&function).cloned().unwrap_or_default(),\n",
+    replace: "        true | false if given.contains_key(&function) => given.get(&function).cloned().unwrap_or_default(),\n        true => Vec::new(),\n",
+    tests,
+  },
+  {
+    name: "intervals-lengths-unbounded",
+    breaks: "a slice's length may be `usize::MAX`, so two lengths summed may wrap, `a.len() + b.len()`",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                hi: most_bytes / size,\n",
+    replace: "                hi: range.hi,\n",
+    tests,
+  },
 ];

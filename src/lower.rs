@@ -38,6 +38,7 @@ mod binding_calls;
 mod bindings;
 mod bodies;
 mod body_queries;
+mod call_graph;
 mod calls;
 mod casing;
 mod classes;

@@ -159,10 +159,27 @@ struct Walk<'a, 'tcx> {
     body: &'a Body<'tcx>,
     /// The locals whose place is lent `&mut` or as a raw pointer.
     lent: IndexSet<Local>,
+    /// What its callers give each of its parameters, of a function only
+    /// calls reach (`parameter_intervals`); none where it's anything.
+    from_callers: Vec<Option<Interval>>,
 }
 
 /// What MIR proves of `body`, the one the emitter reads.
-pub(in crate::lower) fn proofs<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, body: &Body<'tcx>) -> Proofs {
+fn proofs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    body: &Body<'tcx>,
+    given: Vec<Option<Interval>>,
+) -> Proofs {
+    walk(tcx, typing_env, body, given).run()
+}
+
+fn walk<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    body: &'a Body<'tcx>,
+    given: Vec<Option<Interval>>,
+) -> Walk<'a, 'tcx> {
     let lent = (body.basic_blocks.iter())
         .flat_map(|data| &data.statements)
         .filter_map(|statement| match &statement.kind {
@@ -173,22 +190,124 @@ pub(in crate::lower) fn proofs<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEn
             _ => None,
         })
         .collect();
-    let walk = Walk {
+    Walk {
         tcx,
         typing_env,
         body,
         lent,
-    };
-    walk.run()
+        from_callers: given,
+    }
+}
+
+/// What each function only calls reach is given at its calls, each of its
+/// parameters' interval joined over every call (#1672 M2b-2, ADR 1137):
+/// callers walked before callees, by the call graph's components, so each
+/// call's arguments are known as its caller's own walk knows them. None
+/// where a parameter may be anything: a function that may call itself, or
+/// one whose calls aren't each a call this MIR has, `only_called`'s count.
+fn parameter_intervals<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    graph: &crate::lower::call_graph::CallGraph,
+    bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
+    only_called: &IndexMap<rustc_span::def_id::DefId, Vec<rustc_hir::HirId>>,
+) -> IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>> {
+    use crate::lower::call_graph::Callee;
+    let mut given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>> = IndexMap::default();
+    let mut calls_seen: IndexMap<rustc_span::def_id::DefId, usize> = IndexMap::default();
+    for component in graph.sccs.iter().rev() {
+        for &function in component {
+            let Some(&body) = bodies.get(&function) else { continue };
+            let own = given_of(function, only_called, &given, &calls_seen);
+            let typing_env = ty::TypingEnv::post_analysis(tcx, function);
+            let walk = walk(tcx, typing_env, body, own);
+            let ends = walk.ends();
+            for call in graph.calls.get(&function).into_iter().flatten() {
+                let Callee::Resolved(callee) = call.callee else {
+                    continue;
+                };
+                if !only_called.contains_key(&callee) {
+                    continue;
+                }
+                let (Some(state), TerminatorKind::Call { args, .. }) =
+                    (ends.get(&call.block), &body.basic_blocks[call.block].terminator().kind)
+                else {
+                    continue;
+                };
+                *calls_seen.entry(callee).or_insert(0) += 1;
+                let passed: Vec<Option<Interval>> = args.iter().map(|arg| walk.operand(&arg.node, state)).collect();
+                match given.get_mut(&callee) {
+                    Some(known) => {
+                        for (known, passed) in known.iter_mut().zip(passed) {
+                            *known = known.zip(passed).map(|(a, b)| a.join(b));
+                        }
+                    }
+                    None => {
+                        given.insert(callee, passed);
+                    }
+                }
+            }
+        }
+    }
+    (only_called.keys())
+        .map(|&function| (function, given_of(function, only_called, &given, &calls_seen)))
+        .filter(|(_, intervals)| intervals.iter().any(Option::is_some))
+        .collect()
+}
+
+/// What `function`'s parameters are given, as far as its calls are seen:
+/// nothing known of one some of whose calls aren't walked yet, its own of
+/// itself as it's walked, or are calls this MIR doesn't have. So one that
+/// calls itself is walked knowing nothing of its parameters, and what it
+/// passes itself joins what it's given.
+fn given_of(
+    function: rustc_span::def_id::DefId,
+    only_called: &IndexMap<rustc_span::def_id::DefId, Vec<rustc_hir::HirId>>,
+    given: &IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
+    calls_seen: &IndexMap<rustc_span::def_id::DefId, usize>,
+) -> Vec<Option<Interval>> {
+    let every_call_seen = only_called
+        .get(&function)
+        .is_some_and(|calls| calls_seen.get(&function).copied().unwrap_or(0) >= calls.len());
+    match every_call_seen {
+        true => given.get(&function).cloned().unwrap_or_default(),
+        false => Vec::new(),
+    }
 }
 
 impl<'tcx> Walk<'_, 'tcx> {
     fn run(&self) -> Proofs {
+        let entry = self.entries();
+        self.proved(&entry)
+    }
+
+    /// What's known at each block's terminator, its statements run.
+    fn ends(&self) -> IndexMap<BasicBlock, State> {
+        let entry = self.entries();
+        (self.body.basic_blocks.iter_enumerated())
+            .filter_map(|(block, data)| {
+                let mut state = entry[block].clone()?;
+                for statement in &data.statements {
+                    self.statement(statement, &mut state);
+                }
+                Some((block, state))
+            })
+            .collect()
+    }
+
+    /// What's known as each block begins, at its fixed point.
+    fn entries(&self) -> IndexVec<BasicBlock, Option<State>> {
         let blocks = self.body.basic_blocks.len();
         let mut entry: IndexVec<BasicBlock, Option<State>> = IndexVec::from_elem_n(None, blocks);
         let mut visits: IndexVec<BasicBlock, u32> = IndexVec::from_elem_n(0, blocks);
+        let mut intervals: IndexVec<Local, Option<Interval>> = IndexVec::from_elem_n(None, self.body.local_decls.len());
+        for (at, &interval) in self.from_callers.iter().enumerate() {
+            let param = Local::from_usize(at + 1);
+            if at < self.body.arg_count && !self.lent.contains(&param) {
+                intervals[param] = interval;
+            }
+        }
         entry[mir::START_BLOCK] = Some(State {
-            intervals: IndexVec::from_elem_n(None, self.body.local_decls.len()),
+            intervals,
             comparisons: IndexMap::default(),
             copies: IndexMap::default(),
             lens: IndexMap::default(),
@@ -232,7 +351,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 }
             }
         }
-        self.proved(&entry)
+        entry
     }
 
     /// Each bound of `joined` that moved from `old`, its type's.
@@ -523,16 +642,48 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// An array's length, of a pointer or reference to one, as its type
     /// says; of another, a slice's, at least none.
+    /// An array's length, of a pointer or reference to one, as its type
+    /// says; of a slice's or text's, at most what an allocation holds of
+    /// its items, `isize::MAX` bytes over each one's size, as Rust's every
+    /// allocation is, so a sum of two lengths of `u8`s never wraps.
     fn length(&self, of: Ty<'tcx>) -> Option<Interval> {
         let pointee = of.builtin_deref(true).unwrap_or(of);
         let range = self.range(self.tcx.types.usize)?;
-        Some(match *pointee.kind() {
+        let most_bytes = self.range(self.tcx.types.isize)?.hi;
+        let item = match *pointee.kind() {
             ty::Array(_, n) => {
                 let n = i128::from(n.try_to_target_usize(self.tcx)?);
-                Interval { lo: n, hi: n }
+                return Some(Interval { lo: n, hi: n });
             }
+            ty::Slice(item) => Some(item),
+            ty::Str => Some(self.tcx.types.u8),
+            _ => None,
+        };
+        let size = item
+            .and_then(|item| self.tcx.layout_of(self.typing_env.as_query_input(item)).ok())
+            .map(|layout| layout.size.bytes() as i128);
+        Some(match size {
+            Some(size) if size > 0 => Interval {
+                lo: 0,
+                hi: most_bytes / size,
+            },
             _ => range,
         })
+    }
+
+    /// A collection's length, a slice's, text's, or a `Vec`'s or a
+    /// `VecDeque`'s of its first type argument, at most what an allocation
+    /// holds of its items (`length`).
+    fn length_of_collection(&self, of: Ty<'tcx>) -> Option<Interval> {
+        let held = of.peel_refs();
+        match *held.kind() {
+            ty::Slice(_) | ty::Str | ty::Array(..) => self.length(held),
+            ty::Adt(_, args) => {
+                let item = args.types().next()?;
+                self.length(Ty::new_slice(self.tcx, item))
+            }
+            _ => None,
+        }
     }
 
     /// Each edge out of `block`, and what's known along it: a switch of a
@@ -637,6 +788,11 @@ impl<'tcx> Walk<'_, 'tcx> {
                         match slice_length(self.tcx, callee, callee_args) {
                             Some(SliceLength::Len) => {
                                 after.lens.insert(local, of);
+                                // At most what an allocation holds of its items.
+                                let receiver = args.first().map(|arg| arg.node.ty(self.body, self.tcx));
+                                if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
+                                    after.intervals[local] = Some(most);
+                                }
                             }
                             Some(SliceLength::IsEmpty) => {
                                 after.empties.insert(local, of);
@@ -764,6 +920,25 @@ impl<'tcx> Walk<'_, 'tcx> {
 pub(crate) struct Shadow {
     lines: IndexSet<String>,
     bodies: Vec<(Proofs, IndexMap<Span, bool>)>,
+    /// What each function only calls reach is given (`parameter_intervals`).
+    given: IndexMap<rustc_span::def_id::DefId, Vec<Option<Interval>>>,
+}
+
+/// The crate's caller-given parameters, worked out where the session
+/// records the shadow, of `bodies`, each a function's MIR the emitter
+/// reads, by the call graph of them (#1672 M2b-2).
+pub(in crate::lower) fn shadow_parameters<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
+) {
+    let caches = crate::lower::session::caches(tcx);
+    let Some(shadow) = &caches.intervals_shadow else {
+        return;
+    };
+    let listed: Vec<(rustc_span::def_id::DefId, &Body<'tcx>)> = bodies.iter().map(|(&id, &body)| (id, body)).collect();
+    let graph = crate::lower::call_graph::call_graph(tcx, &listed);
+    let only_called = super::only_called::only_called(tcx);
+    shadow.borrow_mut().given = parameter_intervals(tcx, &graph, bodies, &only_called);
 }
 
 /// A body's lowering begun, of a session that records the shadow: its
@@ -776,7 +951,13 @@ pub(in crate::lower) fn shadow_body<'tcx>(
 ) -> Option<ShadowScope<'tcx>> {
     let caches = crate::lower::session::caches(tcx);
     let shadow = caches.intervals_shadow.as_ref()?;
-    let proofs = proofs(tcx, typing_env, body);
+    let given = shadow
+        .borrow()
+        .given
+        .get(&body.source.def_id())
+        .cloned()
+        .unwrap_or_default();
+    let proofs = proofs(tcx, typing_env, body, given);
     let mut exact: IndexMap<Span, bool> = IndexMap::default();
     for (block, data) in body.basic_blocks.iter_enumerated() {
         for (statement_index, statement) in data.statements.iter().enumerate() {
