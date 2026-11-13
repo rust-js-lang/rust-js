@@ -13,6 +13,7 @@ pub(super) enum Forms {
 }
 
 mod known_calls;
+mod passed_on;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of a function pointer, which may be JS's (ADR 0330): called
@@ -69,58 +70,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it, is called with no `this`, which a host's own may refuse (#427).
         let call = Value::Expr(Expr::call(callee, exprs));
         self.called_unbound(state, (call, Called::Pointer(fn_ptr)))
-    }
-
-    /// A method std's impl for a `&mut W` passes on to `W`'s
-    /// (`passed_through_mut_ref`): `W`'s, given the `&mut W` its receiver
-    /// is of, `*self` (#1309). Another call as it is.
-    fn passed_through<'b>(
-        &self,
-        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        args: &'b [rustc_span::Spanned<Operand<'tcx>>],
-    ) -> (
-        ty::GenericArgsRef<'tcx>,
-        std::borrow::Cow<'b, [rustc_span::Spanned<Operand<'tcx>>]>,
-    ) {
-        let passed = (self.recognition())
-            .passed_through_mut_ref(def_id, generic_args)
-            .zip(args.first().and_then(|receiver| receiver.node.place()));
-        let Some((inner, receiver)) = passed else {
-            return (generic_args, std::borrow::Cow::Borrowed(args));
-        };
-        let deref = rustc_span::Spanned {
-            node: Operand::Copy(self.tcx.mk_place_deref(receiver)),
-            span: args[0].span,
-        };
-        (inner, std::iter::once(deref).chain(args[1..].iter().cloned()).collect())
-    }
-
-    /// A method std's impl for a `Box<I>` passes on to `I`'s
-    /// (`passed_through_box`): `I`'s arguments, its receiver's type made
-    /// `I`'s of the box's (#1278). A `Box<I>` or a `&Box<I>` is `I`'s value;
-    /// a `&mut Box<I>` of an iterator is what a `&mut I` is (#1314), given as
-    /// it is, where that's the iterator itself; `None` where it's a cell, and
-    /// of another call.
-    fn passed_through_box(
-        &mut self,
-        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        arg_tys: &mut [Ty<'tcx>],
-    ) -> Option<ty::GenericArgsRef<'tcx>> {
-        let args = self.recognition().passed_through_box(def_id, generic_args)?;
-        let receiver_ty = arg_tys.first_mut()?;
-        let (boxed, mutability) = match *receiver_ty.kind() {
-            ty::Ref(_, boxed, mutability) => (boxed, Some(mutability)),
-            _ => (*receiver_ty, None),
-        };
-        let inner = boxed.boxed_ty()?;
-        if mutability == Some(ty::Mutability::Mut) && !self.mut_ref_form(inner).read_is_itself() {
-            return None;
-        }
-        *receiver_ty = match mutability {
-            Some(mutability) => Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, inner, mutability),
-            None => inner,
-        };
-        Some(args)
     }
 
     pub(super) fn mir_call(

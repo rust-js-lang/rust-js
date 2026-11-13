@@ -459,7 +459,10 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
-arguments to `mir_call_values`. Calls then go to iterator, trait, binding or
+arguments to `mir_call_values`. A method std's impl for a `&mut W` or a
+`Box<I>` passes on to `W`'s or `I`'s is that method's call, of what the
+receiver is to (`mir/dispatch/passed_on.rs`, asking recognition's
+`passed_through_mut_ref` and `passed_through_box`). Calls then go to iterator, trait, binding or
 crate-function lowering. Recognized std calls go through `mir_std_call`
 in `mir/dispatch/known_calls.rs`, which asks each kind in `mir/std_calls.rs`
 of what it reads alone and runs the lowering of the one that takes the call
