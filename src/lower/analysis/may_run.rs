@@ -11,6 +11,7 @@
 //! callback, what it runs before it returns (`owned_by_return`).
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::generic_facts::type_parameter_of;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, CastKind, Local, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::thir::ExprKind;
@@ -338,7 +339,9 @@ fn may_run<'tcx>(
                         runs.into_iter()
                             .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f)))),
                     );
-                    return std_call_drops(callee_args).all(|ty| dropped(ty, work));
+                    return std_call_drops(tcx, callee, callee_args)
+                        .into_iter()
+                        .all(|ty| dropped(ty, work));
                 }
                 // Of what `std_runs` can't see, a `dyn`'s, a library's type's
                 // impl: what it's given, and the crate's impls of its bounds'
@@ -379,7 +382,11 @@ fn may_run<'tcx>(
                 .flat_map(values_in)
                 .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
                 .collect();
-            std_call_drops(callee_args).all(|ty| dropped(ty, work)) && given(&named, work) && given(sig.inputs(), work)
+            std_call_drops(tcx, callee, callee_args)
+                .into_iter()
+                .all(|ty| dropped(ty, work))
+                && given(&named, work)
+                && given(sig.inputs(), work)
         };
         for data in mir.basic_blocks.iter() {
             match &data.terminator().kind {
@@ -618,11 +625,94 @@ fn named_reads(body: &Body<'_>) -> Vec<DefId> {
         .collect()
 }
 
-/// The types a std call, given `args`, may drop a value of: each of its
-/// type arguments, as std's code owns, takes and replaces values of them
-/// through whatever reference it's given, `Vec::clear` of a `&mut
-/// Vec<Guard>` its `Guard`s. The one rule of it, what may run's and what a
-/// body may borrow's (`cell_borrows`, #1661).
-pub(in crate::lower) fn std_call_drops<'tcx>(args: ty::GenericArgsRef<'tcx>) -> impl Iterator<Item = ty::Ty<'tcx>> {
-    args.types()
+/// The types a std call of `callee`, given `args`, may drop a value of,
+/// by what its signature hands it (#1661): of each type parameter, values
+/// it owns, held in what a `&mut` or by-value input holds, `Vec::clear` of
+/// a `&mut Vec<Guard>` its `Guard`s, `HashSet::insert`'s `T`, a closure it
+/// takes, and what it makes of those by their bounds, `entries`' `D` of
+/// its `I: IntoIterator<Item = D>`; and one it's lent `&mut` itself only
+/// where it can make another to put in its place, given one by value or bound by `Default` or
+/// `Clone`, `clone_from`'s. What it's lent shared, or only `&mut` with no
+/// way to make one, `ptr::hash`'s `state: &mut H`, it can't drop; nor a
+/// type argument no input holds. The one rule of it, what may run's and
+/// what a body may borrow's (`cell_borrows`).
+pub(in crate::lower) fn std_call_drops<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<ty::Ty<'tcx>> {
+    let sig = tcx
+        .fn_sig(callee)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder();
+    let (mut owned, mut lent) = (IndexSet::<u32>::default(), IndexSet::<u32>::default());
+    let mut inputs: Vec<ty::Ty<'tcx>> = sig.inputs().to_vec();
+    while let Some(input) = inputs.pop() {
+        let mut walk = input.walk();
+        while let Some(part) = walk.next() {
+            let Some(part) = part.as_type() else { continue };
+            let pointee = match *part.kind() {
+                ty::Ref(_, inner, mutability) => Some((inner, mutability)),
+                _ => crate::lower::pointers::raw_pointee(tcx, part),
+            };
+            if let Some((inner, mutability)) = pointee {
+                walk.skip_current_subtree();
+                match (mutability.is_mut(), type_parameter_of(inner)) {
+                    (false, _) => {}
+                    (true, Some(index)) => _ = lent.insert(index),
+                    (true, None) => inputs.push(inner),
+                }
+            } else if let Some(index) = type_parameter_of(part) {
+                owned.insert(index);
+            }
+        }
+    }
+    // What it makes of what it holds or is lent, by their bounds, it may
+    // drop too: `entries`' `D` of its `I: IntoIterator<Item = D>`, an
+    // `F: FnOnce() -> T`'s `T`.
+    let param_indices = |ty: ty::Ty<'tcx>| ty.walk().filter_map(|part| type_parameter_of(part.as_type()?));
+    loop {
+        let before = owned.len();
+        for clause in tcx.param_env(callee).caller_bounds() {
+            let (this, made): (ty::Ty<'tcx>, Vec<ty::Ty<'tcx>>) = match clause.kind().skip_binder() {
+                ty::ClauseKind::Trait(bound) => (bound.self_ty(), bound.trait_ref.args.types().skip(1).collect()),
+                ty::ClauseKind::Projection(bound) => (
+                    bound.projection_term.self_ty(),
+                    (bound.projection_term.args.types().skip(1))
+                        .chain(bound.term.as_type())
+                        .collect(),
+                ),
+                _ => continue,
+            };
+            if param_indices(this).any(|index| owned.contains(&index) || lent.contains(&index)) {
+                owned.extend(made.into_iter().flat_map(param_indices));
+            }
+        }
+        if owned.len() == before {
+            break;
+        }
+    }
+    // What it may make of a parameter it's lent `&mut`: by its bounds,
+    // elaborated, a `Copy` bound's `Clone` too.
+    let makes = |index: u32| {
+        tcx.param_env(callee).caller_bounds().any(|clause| {
+            clause.as_trait_clause().is_some_and(|bound| {
+                type_parameter_of(bound.self_ty().skip_binder()) == Some(index)
+                    && (tcx.is_lang_item(bound.def_id(), rustc_hir::attrs::lang_items::LangItem::Clone)
+                        || crate::lower::recognition::is_std_def(
+                            tcx,
+                            bound.def_id(),
+                            crate::lower::recognition::StdItem::Default,
+                        ))
+            })
+        })
+    };
+    let lent: Vec<u32> = lent
+        .into_iter()
+        .filter(|&index| !owned.contains(&index) && makes(index))
+        .collect();
+    (owned.into_iter().chain(lent))
+        .filter_map(|index| args.get(index as usize).and_then(|arg| arg.as_type()))
+        .collect()
 }

@@ -558,6 +558,15 @@ pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
 }
 
+/// The index of the type parameter `ty` is, `Self` too, where it's one:
+/// which of a function's generic arguments it's given there (#1661).
+pub(in crate::lower) fn type_parameter_of(ty: Ty<'_>) -> Option<u32> {
+    match ty.kind() {
+        ty::Param(param) => Some(param.index),
+        _ => None,
+    }
+}
+
 /// Whether a function's `declared` input is a `&mut` of a type parameter,
 /// `Self` too, or a type parameter itself: what its caller gives a `&mut`
 /// to there, generic code may write whole, through its box, an in-place cell

@@ -226,3 +226,40 @@ broadest. Corpus cases `ref_cell_borrowed_by_a_clear_through_a_reference`,
 `ref_cell_borrowed_by_a_thread_locals_clear` and
 `ref_cell_borrowed_mutably_by_a_clear_through_a_reference`, against native
 in both builds; a mutation, caught.
+
+### Amended: what a std call drops is read from its signature (2026-11-13, #1661)
+
+The rule above, every type argument, was std's broadest, and it cost a
+whole port: the crate's `Hash` impl calls `ptr::hash(self, state: &mut
+H)`, whose `H` became a type parameter's drop in its summary. Std's
+`HashSet` code runs that impl with no type arguments given (#240), and a
+summary with a parameter's drop left asks of every held cell, so every
+guard held while a `HashSet<Rc<Fiber>>` was asked was counted:
+react-in-rust's six files, 114 `$fieldCell`s and 60 `$cellReplace`s more
+(ADR 0262: no observable difference, so JavaScript's form). `ptr::hash`
+can't drop an `H`: it's lent one `&mut`, with no way to make another.
+
+`may_run::std_call_drops(tcx, callee, args)` now reads the callee's
+signature, parameter by parameter. Std's code may drop a value of a
+parameter it holds, inside what a `&mut` or by-value input holds:
+`Vec::clear`'s `T` of a `&mut Vec<T>`, `HashSet::insert`'s, a closure it
+takes. It may also drop what it makes of those by their bounds, `entries`'
+`D` of its `I: IntoIterator<Item = D>`, and a value it's lent `&mut`
+itself where it can make another, given one by value or bound by `Default`
+or `Clone`, `clone_from`'s. Not what it's lent shared, nor a type argument
+no input holds. Still the one rule, what may run's and what a body may
+borrow's. The port's JS is its committed JS again, and the five snapshots
+above are theirs before #1661.
+
+The lent half no program tells apart today, as every way a body reaches a
+`&mut P` already counts `P`'s drop by a coarser path: a guard's
+`deref_mut`, whose `T` the walk takes as held (a `RefMut` refers to its
+`T`, #1680), an `FnOnce(&mut T)` bound's argument, or the `&mut` argument
+at the call. It stays, as the rule is sound only with it, and its mutation
+waits for #1680. Corpus cases `ref_cell_borrowed_by_a_clone_froms_drop` and
+`printing_builder_written_step_by_step` (as a library), against native;
+mutations `std-call-drops-every-argument` (the broad rule, caught by
+`refcell_identity_set`'s snapshot), `std-call-drops-nothing-owned` and
+`std-call-drops-nothing-made-by-bounds`, caught; `param-bound-never-std`
+and `place-behind-ref-dropped`, which the broad rule let survive, caught
+again.

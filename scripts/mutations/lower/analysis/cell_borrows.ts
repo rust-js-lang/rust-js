@@ -409,8 +409,8 @@ export const mutations: Mutation[] = [
     name: "std-call-drops-unasked",
     breaks: "what a std call drops through a reference, `g.borrow_mut().clear()`'s items, is taken to drop nothing, so a cell their destructors borrow is quiet: `try_borrow_mut` folded to `true`, `already borrowed` never panics (#1661)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            for ty in super::may_run::std_call_drops(args) {\n",
-    replace: "            for ty in super::may_run::std_call_drops(args).take(0) {\n",
+    find: "            for ty in super::may_run::std_call_drops(tcx, id, args) {\n",
+    replace: "            for ty in super::may_run::std_call_drops(tcx, id, args).into_iter().take(0) {\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_(by_a_clear_through_a_reference|by_a_truncate_retain_or_map_clear|by_a_thread_locals_clear|mutably_by_a_clear_through_a_reference).rs$"],
   },
 ];

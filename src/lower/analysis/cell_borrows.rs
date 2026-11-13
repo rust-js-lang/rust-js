@@ -910,7 +910,7 @@ fn direct<'tcx>(
             found.any |= given.any;
             found.own.cells.extend(given.cells);
             found.runs.extend(given.bodies);
-            for ty in super::may_run::std_call_drops(args) {
+            for ty in super::may_run::std_call_drops(tcx, id, args) {
                 dropped(found, ty);
             }
         }

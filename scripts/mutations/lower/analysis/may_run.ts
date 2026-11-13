@@ -209,4 +209,32 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
   },
+  {
+    name: "std-call-drops-every-argument",
+    breaks:
+      "a std call is taken to drop a value of each of its type arguments, `ptr::hash`'s `H` of a `state: &mut H` it can't drop, so every guard held while a `HashSet` of the crate's `Hash` is asked is counted, React's 6 port files (#1661)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "    (owned.into_iter().chain(lent))\n        .filter_map(|index| args.get(index as usize).and_then(|arg| arg.as_type()))\n        .collect()\n",
+    replace: "    _ = (owned, lent);\n    args.types().collect()\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_identity_set.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "std-call-drops-nothing-owned",
+    breaks:
+      "a std call is taken to drop nothing it holds through a `&mut` or takes by value, so `g.borrow_mut().clear()` of a `Vec<Guard>` whose destructor borrows the cell drops nothing and its checks are removed (#1661)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "                owned.insert(index);\n",
+    replace: "                _ = index;\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_clear_through_a_reference.rs$"],
+  },
+  {
+    name: "std-call-drops-nothing-made-by-bounds",
+    breaks:
+      "what a std call makes of what it holds by their bounds is taken as never dropped, `DebugSet::entries`' `D` of its `I: IntoIterator<Item = D>`, so an item that prints as it drops is printed outside its line (#1661)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "                owned.extend(made.into_iter().flat_map(param_indices));\n",
+    replace: "                _ = made;\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step.rs$"],
+  },
 ];
