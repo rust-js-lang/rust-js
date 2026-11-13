@@ -62,3 +62,31 @@ serde's `start()` and `end()` give them); `Bound<T>`, an enum form.
   and from text and from a `Value`, its errors among them.
 - Later families extend the catalog: time, cells and locks, numbers,
   paths and strings (#1623).
+
+## Amendment: time (2026-11-13, #1623)
+
+`Duration` and `SystemTime` are struct forms whose value doesn't hold
+their fields by name: a `Duration` is its nanoseconds, a BigInt (ADR
+0188), and a `SystemTime` its nanoseconds since the epoch (ADR 0447). The
+struct form says how its value holds its fields (`Held`): by their names,
+or as a `Duration`'s nanoseconds, whose `secs` and `nanos` are what
+`as_secs()` and `subsec_nanos()` give, the one lowering of those
+(`std_types::number::{duration_as, duration_subsec}`, which `DurationOp`'s
+arms call too). Three runtime helpers of serde's checks, in
+`json_std_forms.js`, each in serde's words:
+
+- written, a `SystemTime` first gives its time since the epoch, or
+  `SystemTime must be later than UNIX_EPOCH` before it
+  (`$systemTimeSinceEpochForJson`);
+- read, a `Duration` is made of its parts by `$durationOfJson`, `overflow
+  deserializing Duration` where its nanoseconds carry past `u64::MAX`
+  seconds, else `$durationNew`, which carries them, so `{"secs":1,
+  "nanos":2000000000}` is 3s; a `SystemTime`'s offset so, `overflow
+  deserializing SystemTime epoch offset`, then, of the struct read whole,
+  `overflow deserializing SystemTime` past unix's `i64` seconds
+  (`$systemTimeOfJson`), which serde checks past its reader, so its error
+  has no position, as serde_json's hasn't.
+
+The catalog is asked before any other kind of type, as a `Duration` is held
+as a number, which the numbers' rules would take. Probes `std_03`,
+`std_15` and `std_22` give native's answer in all three modes.

@@ -448,6 +448,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(call).at(js::Span::NONE));
             return Ok(());
         }
+        // A std type whose impl is serde's own, as its catalog row says,
+        // a `Duration` too, which rust-js holds as a number (#1623).
+        if let Some(form) = self.std_form(ty) {
+            return self.write_std_form(form, value, json, span, out);
+        }
         // Each kind by its own method, which a flattened field tells apart.
         if ty.is_unit() {
             self.emit(json, "null", Vec::new(), out);
@@ -499,10 +504,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let test = Expr::presence(value, false);
             out.push(StmtKind::If(test, none, Some(some)).at(js::Span::NONE));
             return Ok(());
-        }
-        // A std type whose impl is serde's own, as its catalog row says (#1623).
-        if let Some(form) = self.std_form(ty) {
-            return self.write_std_form(form, value, json, span, out);
         }
         match ty.kind() {
             // A counted `Rc` writes what it points at (ADR 0320).

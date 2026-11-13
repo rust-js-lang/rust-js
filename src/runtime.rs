@@ -253,6 +253,7 @@ helpers! {
     FromJson,
     JsonValue,
     JsonError,
+    JsonStdForms,
     StringError,
     Channel,
     LowerExp,
@@ -1024,6 +1025,7 @@ impl Helper {
             // A `serde_json::Error`, `{ message, line, column }`, shown as serde_json
             // shows one: a place only when it has one (line 0 is none).
             Helper::JsonError => include_str!("runtime/json_error.js"),
+            Helper::JsonStdForms => include_str!("runtime/json_std_forms.js"),
             Helper::StringError => include_str!("runtime/string_error.js"),
             Helper::Channel => include_str!("runtime/channel.js"),
             // A `serde_json::Error` on its way out: a message, and where in the

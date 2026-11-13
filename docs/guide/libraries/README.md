@@ -737,7 +737,10 @@ and else is serde_json's `number out of range`, and a flattened one is
 serde's `u128 is not supported`.
 std's types serde implements itself are written and read as serde does:
 a `Range` or a `RangeInclusive` as `{"start":1,"end":5}`, from an object
-or a two-item array, and a `Bound` as `"Unbounded"` or `{"Included":3}`
+or a two-item array, a `Bound` as `"Unbounded"` or `{"Included":3}`, a
+`Duration` as `{"secs":1,"nanos":500000000}` and a `SystemTime` as
+`{"secs_since_epoch":..,"nanos_since_epoch":..}`, with serde's errors, one
+before the epoch or past what a `Duration` holds
 ([ADR 1134](../../decisions/1134-std-types-serde-forms-are-one-catalog.md)).
 The others are refused for now (#1623).
 

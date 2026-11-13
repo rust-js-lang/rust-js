@@ -84,8 +84,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));",
-    replace: "                        let part = arg();",
+    find: "    let part = Expr::bin(Op::Rem, duration, Expr::bigint(1_000_000_000));",
+    replace: "    let part = duration;",
     tests: ["test/corpus.test.ts", "-t", "duration"],
   },
   {

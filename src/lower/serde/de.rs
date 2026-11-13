@@ -155,6 +155,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(read) = self.serde_evidence(ty, false) {
             return Ok(read);
         }
+        // A std type whose impl is serde's own, as its catalog row says,
+        // a `Duration` too, which rust-js holds as a number (#1623).
+        if let Some(form) = self.std_form(ty) {
+            return self.read_std_form(form, span);
+        }
         if ty.is_unit() {
             return Ok(reader("unit"));
         }
@@ -207,10 +212,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 read
             };
             return Ok(Expr::call(reader("option"), vec![read]));
-        }
-        // A std type whose impl is serde's own, as its catalog row says (#1623).
-        if let Some(form) = self.std_form(ty) {
-            return self.read_std_form(form, span);
         }
         match ty.kind() {
             ty::Adt(..) if self.counted_rc(ty).is_some() => {

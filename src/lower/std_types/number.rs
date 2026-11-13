@@ -5,6 +5,7 @@
 //! a helper gives Rust's.
 
 mod generic;
+pub(in crate::lower) use generic::{duration_as, duration_subsec};
 pub(in crate::lower) mod math;
 mod operators;
 

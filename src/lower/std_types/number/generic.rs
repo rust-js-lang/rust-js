@@ -31,17 +31,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let (secs, subsec) = (arg(), arg());
                         helper("$durationNew", vec![secs, subsec])
                     }
-                    DurationOp::From(1) | DurationOp::As(1) => arg(),
+                    DurationOp::From(1) => arg(),
                     DurationOp::From(unit) => Expr::bin(Op::Mul, arg(), nanos(unit)),
-                    DurationOp::As(unit) => Expr::bin(Op::Div, arg(), nanos(unit)),
-                    DurationOp::Subsec(unit) => {
-                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));
-                        let part = match unit {
-                            1 => part,
-                            _ => Expr::bin(Op::Div, part, nanos(unit)),
-                        };
-                        Expr::call(Expr::var("Number"), vec![part])
-                    }
+                    DurationOp::As(unit) => duration_as(arg(), unit),
+                    DurationOp::Subsec(unit) => duration_subsec(arg(), unit),
                     DurationOp::IsZero => Expr::bin(Op::Eq, arg(), nanos(0)),
                     DurationOp::Add => {
                         let (a, b) = (arg(), arg());
@@ -655,4 +648,24 @@ impl<'tcx> ty::TypeFolder<ty::TyCtxt<'tcx>> for UnknownMarker<'_, '_, 'tcx> {
         let tcx = self.cx.tcx;
         Ty::new_array(tcx, tcx.types.never, 4_000_000_000 + at as u64)
     }
+}
+
+/// A `Duration`'s whole `unit`s, of its nanoseconds (ADR 0188): `as_secs()`
+/// of a second's, a BigInt; and serde's `secs` (#1623).
+pub(in crate::lower) fn duration_as(duration: Expr, unit: i64) -> Expr {
+    match unit {
+        1 => duration,
+        _ => Expr::bin(Op::Div, duration, Expr::bigint(i128::from(unit))),
+    }
+}
+
+/// What a `Duration` has under a second, in `unit`s, a number:
+/// `subsec_nanos()` of 1's; and serde's `nanos` (#1623).
+pub(in crate::lower) fn duration_subsec(duration: Expr, unit: i64) -> Expr {
+    let part = Expr::bin(Op::Rem, duration, Expr::bigint(1_000_000_000));
+    let part = match unit {
+        1 => part,
+        _ => Expr::bin(Op::Div, part, Expr::bigint(i128::from(unit))),
+    };
+    Expr::call(Expr::var("Number"), vec![part])
 }
