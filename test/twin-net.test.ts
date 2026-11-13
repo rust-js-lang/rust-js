@@ -22,15 +22,8 @@ test("a run's helpers are pitted where only the plain build imports them, and `s
   writeFileSync(join(dir, "matrix-0.json"), JSON.stringify({ judged: 2, of: 3, plain: ["$lazyZip", "$foldDropping", "$new"], std: ["$foldDropping", "$new", "$advanceSlice"] }));
   writeFileSync(join(dir, "matrix-1.json"), JSON.stringify({ judged: 1, of: 1, plain: ["$new", "iterator_map"], std: [] }));
   const helpers = helpersOf(dir);
-  // Sets, whose order is the runs' as they're read, which may be either:
-  // compared sorted.
-  const sorted = (names: Set<string>) => [...names].sort();
-  expect([sorted(helpers.pitted), sorted(helpers.unpitted), helpers.judged, helpers.of]).toEqual([
-    ["$lazyZip", "$new"],
-    ["$foldDropping"],
-    3,
-    4,
-  ]);
+  // In the order the batches' names give, `helpersOf`'s, on every system.
+  expect([[...helpers.pitted], [...helpers.unpitted], helpers.judged, helpers.of]).toEqual([["$lazyZip", "$new"], ["$foldDropping"], 3, 4]);
   // Of a slice: `$foldDropping` is `shared`'s, `$lazyZip` `pitted`'s, and
   // what neither lists is said.
   expect(sharedProblems(helpers, false)).toEqual([]);
