@@ -187,13 +187,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Value::Ref(place) | Value::Place(place) => (place, true),
                 // A `&mut` to a variable of the maker's own, an object: the
                 // variable, which the closure reads and assigns as JS's
-                // closures do theirs.
+                // closures do theirs. And the sink a writer writes through,
+                // which it lends as it is (#1637).
                 Value::Expr(e)
                     if matches!(
                         upvars.get(i).map(|t| t.kind()),
                         Some(ty::Ref(_, _, ty::Mutability::Mut))
                     ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
-                            .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref())) =>
+                            .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref())
+                            || self.is_writers_sink(state, name)) =>
                 {
                     (e, true)
                 }

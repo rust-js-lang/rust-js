@@ -533,6 +533,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some((aliases, name)))
     }
 
+    /// Is `name` the sink the writer being lowered writes its text
+    /// through, which it lends as it is (#1637)?
+    pub(super) fn is_writers_sink(&self, state: &State<'_, 'tcx>, name: &str) -> bool {
+        self.writes_through_a_sink(state) && state.writer.as_ref().is_some_and(|(_, sink)| sink == name)
+    }
+
     /// A writer's `Formatter`'s options, `options` its parameter of them,
     /// where the crate gives any (ADRs 0058, 0137); a closure's that writes
     /// its maker's, its maker's (ADR 0539).
@@ -788,11 +794,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// formats into (#1490): its own, or, of a closure that writes its
     /// maker's, its maker's?
     pub(super) fn writes_through_a_sink(&self, state: &State<'_, 'tcx>) -> bool {
+        state.writer.is_some() && self.writer_owner_writes_through_a_sink(state)
+    }
+
+    /// Does the writer whose text the body writes, its own or, of a closure
+    /// that writes its maker's, its maker's, write it through a sink?
+    pub(super) fn writer_owner_writes_through_a_sink(&self, state: &State<'_, 'tcx>) -> bool {
         let owner = match state.writes_captured {
             true => self.tcx.typeck_root_def_id(self.item),
             false => self.item,
         };
-        state.writer.is_some() && self.writes_through_sink(owner)
+        self.writes_through_sink(owner)
     }
 
     /// `written` written to the writer's own text, `name`: through its sink,

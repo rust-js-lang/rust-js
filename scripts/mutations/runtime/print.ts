@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "stopped-writers-text-folded-late",
     breaks: "what a writer whose panic its own writer caught had written comes after what that writer writes next, not before (#1521)",
     file: "src/runtime/print.js",
-    find: "    write: (more) => {\n      $closeAbove(depth);\n",
-    replace: "    write: (more) => {\n",
+    find: "    (more) => {\n      $closeAbove(depth);\n      capture.text += more;\n",
+    replace: "    (more) => {\n      capture.text += more;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
   },
   {
@@ -153,5 +153,21 @@ export const mutations: Mutation[] = [
       "-t",
       "written ahead"
     ]
+  },
+  {
+    name: "sink-handle-reads-its-text",
+    breaks: "a sink's handle reads the text written so far, so an append through it, `h.value += s`, writes that text again (#1637)",
+    file: "src/runtime/print.js",
+    find: "    get value() {\n      return \"\";\n",
+    replace: "    get value() {\n      return done();\n",
+    tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
+  },
+  {
+    name: "sink-handle-unwritten",
+    breaks: "what's appended through a sink's handle, a held `Formatter`'s write, is lost (#1637)",
+    file: "src/runtime/print.js",
+    find: "    set value(more) {\n      write(more);\n",
+    replace: "    set value(more) {\n",
+    tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
   },
 ];

@@ -318,8 +318,8 @@ export const mutations: Mutation[] = [
     name: "writer-text-not-through-the-line",
     breaks: "a writer that prints gives back its text whole, so a print it makes after writing comes before that text (#1490)",
     file: "src/lower/mir/writer.rs",
-    find: "        state.writer.is_some() && self.writes_through_sink(owner)\n",
-    replace: "        state.writer.is_some() && self.writes_through_sink(owner) && false\n",
+    find: "        self.writes_through_sink(owner)\n    }\n",
+    replace: "        self.writes_through_sink(owner) && false\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
   {

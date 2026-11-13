@@ -322,7 +322,10 @@ what's held before it, as a browser's console takes whole lines
   whole: show it in a
   `format!` first, or where no `catch_unwind` catches (#1608)
   ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md),
-  amended).
+  amended). Such a writer's `Formatter`, held in a struct, `Quoted(f)`, or
+  given to generic `fmt::Write` code, is its sink, `const quoted = [f]`,
+  which takes an append, `quoted[0].value += s`, as a write
+  ([0461](../decisions/0461-a-formatter-held.md), amended, #1637).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](../decisions/0034-strings-and-chars.md)).

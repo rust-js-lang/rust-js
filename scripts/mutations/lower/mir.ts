@@ -503,4 +503,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
     snapshots: true,
   },
+  {
+    name: "sink-writer-lends-a-cell",
+    breaks: "a writer that writes through a sink lends a cell over its variable to a struct or generic code, whose append makes the sink a string: `f.write is not a function` (#1637)",
+    file: "src/lower/mir.rs",
+    find: "                true => state.in_place.insert(alias, Expr::var(&name)),\n",
+    replace: "                true => state.refs.insert(alias, Expr::var(&name)),\n",
+    tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
+  },
 ];

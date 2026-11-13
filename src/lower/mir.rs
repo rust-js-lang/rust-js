@@ -224,6 +224,33 @@ pub(super) struct Found {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A writer's state, of `aliases`, the locals that are its `Formatter`,
+    /// and `name`, its text: its builders, and what its `Formatter` is
+    /// where it goes, the crate's generic `fmt::Write` code or a struct
+    /// that holds it, a `&mut` to the string, boxed and taken back as a
+    /// `String`'s is (ADR 0180). Of one that writes through a sink, the
+    /// sink itself, a handle on its text as a `String`'s `&mut` is, which
+    /// a struct holds and generic code writes through, `h.value += s`
+    /// (#1637).
+    fn writer_set_up(&self, state: &mut State<'_, 'tcx>, body: &mir::Body<'tcx>, aliases: Vec<Local>, name: String) {
+        state.builders = self.writer_builders(body, &aliases);
+        let sink = self.writer_owner_writes_through_a_sink(state);
+        for &alias in &aliases {
+            match sink {
+                true => state.in_place.insert(alias, Expr::var(&name)),
+                false => state.refs.insert(alias, Expr::var(&name)),
+            };
+        }
+        for &alias in aliases.iter().chain(state.builders.keys()) {
+            state.locals.names[alias] = String::new();
+            state.locals.declared[alias] = true;
+        }
+        state.locals.names[mir::RETURN_PLACE] = String::new();
+        state.writer = Some((aliases, name));
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `name`, a local of the body lowered from its MIR, reads the
     /// same wherever it's read: assigned once and never borrowed.
     pub(super) fn alike_local(&self, name: &str) -> bool {
@@ -1022,19 +1049,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = formatter.map(|param| (param, state.locals.names[param].clone()));
         let named = named.as_ref().map(|(param, name)| (*param, name.as_str()));
         if let Some((aliases, name)) = self.body_writer(&mut state, mir_body, named, captures.as_deref())? {
-            state.builders = self.writer_builders(mir_body, &aliases);
-            // Given where a writer goes, the crate's generic `fmt::Write`
-            // code: a `&mut` to the string, boxed and taken back as a
-            // `String`'s is (ADR 0180).
-            for &alias in &aliases {
-                state.refs.insert(alias, Expr::var(&name));
-            }
-            for &alias in aliases.iter().chain(state.builders.keys()) {
-                state.locals.names[alias] = String::new();
-                state.locals.declared[alias] = true;
-            }
-            state.locals.names[mir::RETURN_PLACE] = String::new();
-            state.writer = Some((aliases, name));
+            self.writer_set_up(&mut state, mir_body, aliases, name);
         }
         // Its `Formatter`'s options, where the crate gives any (ADRs 0058,
         // 0137): a parameter after the others.

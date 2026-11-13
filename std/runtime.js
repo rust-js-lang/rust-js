@@ -13239,28 +13239,44 @@ export function $printing(write) {
 }
 // What a writer that may print writes its text to: in a line, a capture of
 // its own, its text given back by `done()`, with what it printed marked in
-// its place; else a string of its own, which it gives back.
+// its place; else a string of its own, which it gives back. And a handle on
+// its text as a `String`'s `&mut` is, which a struct that holds the
+// writer's `Formatter` and generic `fmt::Write` code append to,
+// `h.value += s`: each `value` set is written, and what's read is nothing,
+// so an append writes what it adds (#1637).
 export function $sink() {
   if ($printFrames.at(-1) !== $out) {
     let text = "";
-    return {
-      write: (more) => {
+    return $sinkOf(
+      (more) => {
         text += more;
       },
-      done: () => text,
-    };
+      () => text,
+    );
   }
   const capture = { text: "" };
   const depth = $captures.push(capture);
-  return {
-    write: (more) => {
+  return $sinkOf(
+    (more) => {
       $closeAbove(depth);
       capture.text += more;
     },
-    done: () => {
+    () => {
       $closeAbove(depth);
       if ($captures.at(-1) === capture) $captures.pop();
       return capture.text;
+    },
+  );
+}
+export function $sinkOf(write, done) {
+  return {
+    write,
+    done,
+    get value() {
+      return "";
+    },
+    set value(more) {
+      write(more);
     },
   };
 }

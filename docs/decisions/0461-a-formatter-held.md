@@ -171,3 +171,55 @@ Results change, so Rust's behavior is kept (ADR 0262). Found by the
 metamorphic net's `impl-owned` rewrite of `printing_std_wrappers_stopped_part_way`.
 Corpus case `write_result_through_a_dictionary` against native Rust in
 both builds.
+
+## Amendment: a writer that writes through a sink lends the sink (2026-11-13, #1637)
+
+A writer that may print as it formats writes its text through a sink,
+`const f = $sink()` (ADR 1130). It lent its `Formatter` as any writer
+did: a cell over the variable, `[{ get value() { return f; }, set
+value(value) { f = value; } }]`, or to generic `fmt::Write` code a box
+taken back, `const w = { value: f }; ..; f = w.value`. A held write,
+`quoted[0].value += s`, then made `f` a string, and the writer's next
+`f.write(..)` threw `TypeError: f.write is not a function`. So anyhow's
+`Quoted` whose drop prints, and base64's `FormatterSink` whose drop
+prints, crashed.
+
+**The sink is itself a handle on its text, as a `String`'s `&mut` is,
+and a writer that writes through one lends it as it is:**
+
+```js
+function messageDebug_fmt(message) {
+  const f = $sink();
+  f.write('"');
+  const quoted = [f];
+  quotedWrite_writeStr(quoted, message[0]); // quoted[0].value += ..
+  ..
+}
+```
+
+A sink's `value` set writes what it's given, and a read of it gives `""`,
+so an append, `h.value += s`, writes `s` and nothing else. That read is
+safe only because Rust can't read a `Formatter`'s text: neither a held
+`&mut Formatter` nor generic `W: fmt::Write` code has an API that reads
+what was written, so the one read JS makes of the handle is an append's.
+A `String`'s `&mut` is a different handle, a cell over the string, which
+reads its text: `held_formatter_prints` holds a `&mut String` in the same
+writer and reads its length, so the two never merge. A held write
+keeps its one form, `h.value += s`, whichever writer lent the handle, and
+generic code's `$stringWriter` takes the sink as it takes a `String`'s
+cell. A writer's own writes stay `f.write(..)`. `writer_set_up` lends the
+sink where `writer_owner_writes_through_a_sink` says the writer's text is
+one, the same fact that makes it (`writer_text_made`), and a closure that
+captures the sink takes it as it is, as a `&mut` to a variable is taken.
+
+The alternative was a crate-wide fact, that held `Formatter`s are sinks,
+with `.write(..)` at each held write. It was rejected: every writer that
+lends its `Formatter` would have had to become a sink, and generic code a
+second dictionary.
+
+The result changes, so Rust's behavior is kept (ADR 0262). Corpus case
+`held_formatter_prints` runs against native Rust in both builds:
+`Quoted` whose drop prints, a `FormatterSink` that generic code writes
+whose drop prints, and a writer that prints and gives its `Formatter` to
+generic code and to a struct. Found by the metamorphic net's `loud`
+rewrite of `fmt_to_held_formatter` and `formatter_sink`.
