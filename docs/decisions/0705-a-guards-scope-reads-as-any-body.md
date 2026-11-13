@@ -394,3 +394,19 @@ in both builds; each transition has a mutation, `again-found-unrecorded`,
 `again-running-unasked`, `again-done-still-running` and
 `again-taken-of-nothing`, the last three held by the unit test
 `found_is_kept_until_taken_and_done_ends_the_run`.
+
+## Amendment: a value used whole keeps its fields' writes (2026-11-14, #1704)
+
+Taking an inlined drop's value apart removes a write of one of its fields
+that nothing reads after (`unread_writes`). That holds only where each
+mention of the value is of a field. A value used whole too, given to
+`$ptrTo` or stored or passed, may have a field read through that alias
+where its name isn't: `third.value = 30` before a `sum(&first)` that reads
+`third` through `second.next`'s pointer was removed, and the sum stayed 6
+where native's is 33. `fields_of`, which makes each field a variable,
+already asked this ("every read of it a field's"); now `unread_writes`
+does too (`fields_alone`). Case (ADR 0262): results change, so Rust's are
+kept. Corpus case `raw_pointer_to_a_local_with_a_destructor_sees_its_writes`,
+failing before; mutation `guard-used-whole-writes-dropped`, caught. Found
+by the metamorphic net's `loud` rewrite of `raw_pointers.rs`, which gives
+`Node` a `Drop`.

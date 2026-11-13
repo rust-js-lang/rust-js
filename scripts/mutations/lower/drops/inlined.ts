@@ -115,8 +115,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard whose `Drop` takes its field, `set_current_fiber(self.0.take())`, stays `const _restore = [previousFiber]`, its `finally` `const old = _restore[0]; _restore[0] = undefined;` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "    unread_writes(body, guard, GuardReads::default());\n    let mut fields",
-    replace: "    let mut fields",
+    find: "        unread_writes(body, guard, GuardReads::default());\n    }\n    let mut fields",
+    replace: "    }\n    let mut fields",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
   {
@@ -500,5 +500,13 @@ export const mutations: Mutation[] = [
     find: "                js::each_block_mut(body, &mut crate::lower::drops::emptied_scopes);\n",
     replace: "",
     tests: ["test/lowering-drop-guards-empty.test.ts"],
+  },
+  {
+    name: "guard-used-whole-writes-dropped",
+    breaks: "a field's write of a local whose `Drop` is inlined, used whole too, given to a raw pointer, is removed as unread, so what the pointer reads is the value before it (#1704)",
+    file: "src/lower/drops/inlined.rs",
+    find: "    if fields_alone(body, guard) {\n",
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointer_to_a_local_with_a_destructor_sees_its_writes.rs$"],
   },
 ];

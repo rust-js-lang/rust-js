@@ -27,6 +27,7 @@ plain std loud-call blanket_default_beside_an_unmet_clause.rs
 
 #difference 5 a HashMap or a HashSet iterates in insertion order, where Rust's order is its seed's: of a program whose own output differs across seeds in what it prints, not only in its order, which no comparison of native's runs can judge (the lead's decision, #1453)
 plain std loud stock_orders.rs
+plain loud-drop hash_map_get_disjoint_mut.rs
 plain loud-call stock_orders.rs
 
 #difference 11 a panic's message downcasts as a `&str` and a `String` both, so a loud rewrite's call in the branch of a downcast that native Rust takes runs in the other, or not at all: a formatted `panic!`'s payload, a `String` natively, is a `&str` too (a loud drop's `thread::panicking()`, answered since #1285, reaches it), and a literal's, a `&str`, a `String` too (lock_poisoning's `message`, #1438)
@@ -39,9 +40,6 @@ plain std loud unwrap_dropping.rs
 plain std loud-call unwrap_dropping.rs
 plain std loud-drop unwrap_dropping.rs
 plain std loud-call value_cell_read_in_its_executor.rs
-
-#1517 P0: std's compiled Chain::clone (a derived Clone of type-parameter fields) never drops the clone of a when b's clone panics
-plain std loud-clone cloned_apart_adapter_drops_its_sources.rs
 
 #difference 57 a `Display` or `Debug` that panics part-way through a `println!`'s line, in a program that catches no panic, loses what that line had written, which Rust's stdout writes as the program ends (ADR 1130)
 plain std loud-drop fmt_trait_fmt_called_by_path.rs
@@ -110,3 +108,6 @@ plain std loud-drop thread_local_with_nested.rs
 
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
+
+#1707 P1: a struct literal of a library's type with a raw pointer to itself crashes rust-js: each field once (aggregates.rs:478)
+plain std library raw_pointer_to_a_local_with_a_destructor_sees_its_writes.rs

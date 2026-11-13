@@ -150,7 +150,12 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
 /// field a variable, and each field of a closure it calls once its body
 /// there (#501).
 fn taken_apart(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
-    unread_writes(body, guard, GuardReads::default());
+    // Of one used whole besides its fields, given to `$ptrTo` or stored,
+    // what reaches it that way may read a field after: its writes stay
+    // (#1704).
+    if fields_alone(body, guard) {
+        unread_writes(body, guard, GuardReads::default());
+    }
     let mut fields = fields_of(body, params, guard);
     fields.extend(one_field_of(body, params, guard));
     for field in fields {
@@ -337,6 +342,23 @@ fn field_key(e: &Expr, guard: &str) -> Option<String> {
         },
         _ => None,
     }
+}
+
+/// Whether each mention of `guard` in `body` is of one of its fields,
+/// `guard.a` or `guard[0]`: none of it whole, a pointer to it, `$ptrTo
+/// (guard)`, or a value of it given or stored, through which a field may
+/// be read where its name isn't.
+fn fields_alone(body: &[Stmt], guard: &str) -> bool {
+    let mut fields = 0;
+    let mut stmts = body.to_vec();
+    js::each_expr_mut(&mut stmts, &mut |e| {
+        if let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &e.kind
+            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+        {
+            fields += 1;
+        }
+    });
+    fields == js::mentions_in(body, guard)
 }
 
 /// Of `stmts`, in which `guard` is made and dropped, each write of one of
