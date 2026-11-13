@@ -146,13 +146,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
-            let called = Expr::call(given, Vec::new());
-            let fails = self.krate.failing.any;
-            *value = match self.krate.prints.any_writer_prints() {
-                true => Value::Printing(called, fails),
-                false if fails => Value::Fmt(Std::FmtNew, ty, called),
-                false => Value::Expr(called),
-            };
+            *value = self.arguments_called(given, ty);
+        }
+        Ok(())
+    }
+
+    /// `given`, an `Arguments` of `ty` held as the function that makes its
+    /// text, called where it's formatted: as one that may print or fail
+    /// where any writer of the crate's may, as a `dyn`'s value is.
+    pub(super) fn arguments_called(&self, given: Expr, ty: Ty<'tcx>) -> Value<'tcx> {
+        let called = Expr::call(given, Vec::new());
+        let fails = self.krate.failing.any;
+        match self.krate.prints.any_writer_prints() {
+            true => Value::Printing(called, fails),
+            false if fails => Value::Fmt(Std::FmtNew, ty, called),
+            false => Value::Expr(called),
+        }
+    }
+
+    /// Each `Arguments` a writer's `write_fmt` is given, its `operands`'
+    /// `values`, held as a function, a parameter's, a constant's or one
+    /// given on (`holds_text`): called, its text what's written (#1722).
+    pub(super) fn arguments_written_as_text(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        operands: &[&Operand<'tcx>],
+        values: &mut [Value<'tcx>],
+        span: Span,
+    ) -> R<()> {
+        for (operand, value) in operands.iter().zip(values.iter_mut()) {
+            let ty = operand.ty(&state.body.local_decls, self.tcx);
+            if !self.is_lang_adt(ty, LangItem::FormatArguments) || !matches!(value, Value::Expr(_)) {
+                continue;
+            }
+            let text = (operand.place())
+                .and_then(|place| place.as_local())
+                .is_some_and(|local| holds_text(&self.recognition(), state.body, local));
+            if !text {
+                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
+                *value = self.arguments_called(given, ty);
+            }
         }
         Ok(())
     }

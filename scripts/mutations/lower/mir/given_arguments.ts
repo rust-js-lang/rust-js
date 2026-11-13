@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     name: "given-on-arguments-uncalled",
     breaks: "std's formatting given an `Arguments` that's a function writes the function, not its text",
     file: "src/lower/mir/given_arguments.rs",
-    find: "            let called = Expr::call(given, Vec::new());\n",
-    replace: "            let called = given;\n",
+    find: "        let called = Expr::call(given, Vec::new());\n",
+    replace: "        let called = given;\n",
     tests: grid,
   },
   {

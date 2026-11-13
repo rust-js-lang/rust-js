@@ -366,13 +366,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(_, a)| &a.node)
                 .collect();
             let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));
-            let values = self.take_operands(state, &others, out)?;
+            let mut values = self.take_operands(state, &others, out)?;
             // Of a writer that writes through a sink a `write!` into a
             // writer may arm: each piece as std makes it (#1652).
             if self.writes_into_writers(state) {
                 let callee = (def_id, generic_args);
                 return (self.written_through_the_sink(state, callee, operation, values, destination, span, out))
                     .map(Some);
+            }
+            // Else an `Arguments` held that a `write_fmt` writes, its text;
+            // a function of the crate's given one takes it as it's held
+            // (#1722).
+            if operation == crate::lower::recognition::WriteCall::Text {
+                self.arguments_written_as_text(state, &others, &mut values, span)?;
             }
             // A `write!` of what may fail: piece by piece, what came before
             // written (ADR 0187).

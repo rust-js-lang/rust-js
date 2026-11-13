@@ -195,7 +195,10 @@ a holder std alone is given, `assert_eq!`'s `Some(args)`. Otherwise it's
 form per place: a parameter, a field, or any place the body didn't make its
 text in holds the function (`holds_text`). std's formatting, given one by
 value, calls it where it formats (`arguments_formatted`), and so does
-`{}` of one (`display_shown`). The call is taken to print or fail where any
+`{}` of one (`display_shown`), and a writer's `write_fmt` of one, a
+`Formatter`'s, `f.write_fmt(args)` (`arguments_written_as_text`, #1722:
+it wrote the function's source, `() => "hello"`); a function of the
+crate's given one takes it as it's held. The call is taken to print or fail where any
 of the crate's writers may, as a `dyn`'s value is.
 
 **Only the formatting is deferred, not the operands.** `format_args!`

@@ -383,6 +383,14 @@ export const mutations: Mutation[] = [
     tests: ["test/writer-sink.test.ts", "-t", "a writer that prints, never shown into a writer"],
   },
   {
+    name: "held-arguments-written-as-written",
+    breaks: "a `Formatter`'s `write_fmt` of an `Arguments` held as its function writes the function, not its text (#1722)",
+    file: "src/lower/mir/writer.rs",
+    find: "            if operation == crate::lower::recognition::WriteCall::Text {\n",
+    replace: "            if operation == crate::lower::recognition::WriteCall::Text && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_write_fmt_of_held_arguments.rs$"],
+  },
+  {
     name: "writer-owner-is-the-item",
     breaks: "a closure lowered where its maker is, a boxed one's, is taken for its maker's writer, so it doesn't write through the sink it's framed for",
     file: "src/lower/mir/writer.rs",
