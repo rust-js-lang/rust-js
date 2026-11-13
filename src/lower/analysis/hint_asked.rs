@@ -42,6 +42,9 @@ pub(in crate::lower) struct Hinted<'tcx> {
     /// keyed by its makers into `counted_in` once the crate is read: empty
     /// after `of_crate` (#1333).
     pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
+    /// And those made knowing their back, which knows their hint, keyed
+    /// into `knowing_in` the same way: empty after `of_crate` (#1427).
+    pub(in crate::lower) knowing_types: IndexSet<Ty<'tcx>>,
     pub(in crate::lower) counted_in: IndexSet<(DefId, Ty<'tcx>)>,
     pub(in crate::lower) knowing_in: IndexSet<(DefId, Ty<'tcx>)>,
     /// What generic code grows a `Vec` by, `extend`'s iterator, by its
@@ -93,6 +96,18 @@ pub(super) fn of_crate<'tcx>(
             if callee == size_hint && args.types().next().is_some_and(|of| recognition.is_dyn_iter(of)) {
                 asked.hinted.dyn_asked = true;
             }
+            // A held iterator's own hint asked, of a type the crate knows
+            // whole: each adapter made in place inside it over an array's
+            // items, a filter's `skip(1)`, made knowing its hint where it's
+            // asked, `$skipping`, as JS's own `drop(1)` keeps none (#1427).
+            if callee == size_hint
+                && let Some(of) = args.types().next()
+                && !rustc_middle::ty::TypeVisitableExt::has_param(&of)
+                && !recognition.is_dyn_iter(of)
+            {
+                let of = tcx.erase_and_anonymize_regions(of.peel_refs());
+                mark_in_place(tcx, recognition, tcx.typeck_root_def_id(body.def_id), of, &mut asked);
+            }
             if (recognition.foreign.is_library(callee.krate) || crate::lower::bindings::is_binding(tcx, callee))
                 && (tcx.fn_sig(callee).instantiate(tcx, args).skip_binder().output().walk())
                     .filter_map(|part| part.as_type())
@@ -125,9 +140,22 @@ pub(super) fn of_crate<'tcx>(
             if let Some(iter_ty) = grown_by.map(|ty| tcx.erase_and_anonymize_regions(ty.peel_refs()))
                 && !rustc_middle::ty::TypeVisitableExt::has_param(&iter_ty)
                 && !recognition.lower_bound_is_stds(iter_ty)
-                && recognition.lower_bound_kept_by_parts(iter_ty)
             {
-                mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);
+                // Of a chain or a zip, its parts (#1216); and of one holding an
+                // adapter made in place inside another, each adapter in it,
+                // as std asks its hint as `size_hint()` does: a `take(5)` of a
+                // `cycle()` of a `map`'s or a `zip`'s source (#1572).
+                if recognition.lower_bound_kept_by_parts(iter_ty) {
+                    mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);
+                } else if !recognition.grows_by_exact_len(iter_ty) {
+                    mark_in_place(
+                        tcx,
+                        recognition,
+                        tcx.typeck_root_def_id(body.def_id),
+                        iter_ty,
+                        &mut asked,
+                    );
+                }
             }
             // What asks the hint of a type of its type parameters, asked of
             // what its callers give, each instance below (`AsksHint`).
@@ -227,7 +255,11 @@ pub(super) fn of_crate<'tcx>(
     // which the one that asks may be given, as values of one type move
     // between functions (#721); one made and stepped where it's made is
     // JS's own adapter there (#1333).
-    for ty in std::mem::take(&mut asked.hinted.types) {
+    let counted = std::mem::take(&mut asked.hinted.types).into_iter().map(|ty| (ty, true));
+    let knowing = std::mem::take(&mut asked.hinted.knowing_types)
+        .into_iter()
+        .map(|ty| (ty, false));
+    for (ty, counts) in counted.chain(knowing).collect::<Vec<_>>() {
         for body in all_bodies {
             let makes = body
                 .thir
@@ -235,10 +267,11 @@ pub(super) fn of_crate<'tcx>(
                 .iter()
                 .any(|expr| tcx.erase_and_anonymize_regions(expr.ty) == ty);
             if makes && may_leave(tcx, body, ty) {
-                asked
-                    .hinted
-                    .counted_in
-                    .insert((tcx.typeck_root_def_id(body.def_id), ty));
+                let maker = tcx.typeck_root_def_id(body.def_id);
+                match counts {
+                    true => _ = asked.hinted.counted_in.insert((maker, ty)),
+                    false => _ = asked.hinted.knowing_in.insert((maker, ty)),
+                }
             }
         }
     }
@@ -438,10 +471,7 @@ fn mark_hint_knowing<'tcx>(
     instance: Ty<'tcx>,
     marked: (&mut IndexSet<Ty<'tcx>>, &mut IndexSet<Ty<'tcx>>),
 ) -> bool {
-    let of_items = (instance.walk().filter_map(|part| part.as_type())).any(|held| {
-        !adapter(tcx, held) && (recognition.array_source(held).is_some() || recognition.iterates_items(held))
-    });
-    if of_items {
+    if steps_items(tcx, recognition, instance) {
         mark_each(tcx, instance, marked);
         return true;
     }
@@ -464,6 +494,67 @@ fn mark_hint_knowing<'tcx>(
         }
     }
     takes
+}
+
+/// Each adapter an iterator of type `ty` holds made in place inside another,
+/// of a kind std's struct is where it's held, of an array's items or a
+/// collection's, JS's own iterator, `values()`, or of an array made of it,
+/// so JS's own adapter there, which keeps no hint: a `filter`'s `skip(1)`
+/// of a `Vec`'s, a `cycle()`'s `map` of an array's, a `take(2)` of a map's
+/// values (#1427, #1572). Each made knowing its hint, a `skip(1)`'s
+/// `$skipping`, a `map`'s `$mapEnds`, and its source, `$iter`: in `maker`,
+/// where the hint is asked, and in each function whose value of it may
+/// leave it, which `maker` may be given (`may_leave`, #1333): never by
+/// type across the crate, whose other values of it, another case's
+/// `iter().cloned()` beside it, are JS's own. Nothing else, as what holds
+/// a `$Steps`, a range's, keeps std's hint through its own adapters (ADR
+/// 0542). Not of one stepped from its back, a `rev()` in it, whose
+/// `skip(1)` made knowing its hint would know no back.
+fn mark_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    maker: DefId,
+    ty: Ty<'tcx>,
+    asked: &mut HintAsked<'tcx>,
+) {
+    let ty = ty.peel_refs();
+    let parts = || ty.walk().filter_map(|part| part.as_type());
+    if parts().any(|part| reversed_source(tcx, part.peel_refs()).is_some()) {
+        return;
+    }
+    for part in parts() {
+        let part = tcx.erase_and_anonymize_regions(part.peel_refs());
+        let ty::Adt(_, args) = part.kind() else { continue };
+        let Some(source) = args.types().next() else { continue };
+        if part == ty
+            || !crate::lower::recognition::is_held_compiled(tcx, part)
+            || adapter(tcx, source)
+            || recognition.array_source(source).is_none()
+        {
+            continue;
+        }
+        if counted_source(tcx, part).is_some() || stepped_by_source(tcx, part).is_some() {
+            asked.hinted.counted_in.insert((maker, part));
+            asked.hinted.types.insert(part);
+        } else if made_knowing_by_its_maker(tcx, part) {
+            asked.hinted.knowing_in.insert((maker, part));
+            asked.hinted.knowing_types.insert(part);
+        } else {
+            continue;
+        }
+        let source = tcx.erase_and_anonymize_regions(source.peel_refs());
+        asked.hinted.knowing_in.insert((maker, source));
+        asked.hinted.knowing_types.insert(source);
+    }
+}
+
+/// Whether an iterator of type `instance` steps an array's items, or a
+/// string's, which JS's own iterator, `values()`, and its own adapters
+/// know no hint of (#1236).
+fn steps_items<'tcx>(tcx: TyCtxt<'tcx>, recognition: Recognition<'_, 'tcx>, instance: Ty<'tcx>) -> bool {
+    (instance.walk().filter_map(|part| part.as_type())).any(|held| {
+        !adapter(tcx, held) && (recognition.array_source(held).is_some() || recognition.iterates_items(held))
+    })
 }
 
 fn adapter<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) -> bool {

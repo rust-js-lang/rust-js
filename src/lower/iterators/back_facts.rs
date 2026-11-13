@@ -154,6 +154,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.hinted.counted_in.contains(&(owner, ty))
     }
 
+    /// Whether every value of type `ty` this function has is made knowing
+    /// its hint, `$skipping`, or its back, which knows its hint too,
+    /// `$mapEnds` of an array's `$iter`, as `hint_asked.rs` marks it: in
+    /// this function and each whose value of it may leave it (#1427).
+    pub(in crate::lower) fn made_knowing_here(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        self.made_knowing_its_hint(ty) || self.krate.hinted.knowing_in.contains(&(owner, ty))
+    }
+
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {
         self.made_into
             .and_then(|(local, _)| self.local_stepped_from_its_back(local))

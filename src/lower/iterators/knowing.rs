@@ -150,12 +150,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a source of type `ty` that an adapter the recognizers make
     /// holds is made in place there, its hint its sources' by its JS form:
-    /// one of a kind std's struct is where it's held, but a `rev()`, whose
-    /// form in place, `$rev(..)` or `$iter(xs.toReversed())`, has its
-    /// source's hint whatever that source is (#1427).
+    /// one of a kind std's struct is where it's held (#1427). A `rev()`'s,
+    /// `$rev(..)`, has its source's hint, which its source's judgement says.
     fn made_in_place_of(&self, ty: ty::Ty<'tcx>) -> bool {
         crate::lower::recognition::is_held_compiled(self.tcx, ty)
-            && crate::lower::recognition::reversed_source(self.tcx, ty).is_none()
     }
 
     /// Why `size_hint()` of a `ty` is refused, said after it: where an
@@ -181,7 +179,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// None)` where Rust gives `(0, Some(2))` (#1427).
     fn adapted_hint_known_of(&self, ty: ty::Ty<'tcx>, outermost: bool) -> bool {
         let ty = ty.peel_refs();
-        if self.array_source(ty).is_some() {
+        // An array's iterator, JS's own `values()`, knows no hint; but one
+        // made `$iter`, as an iterator whose hint is asked marks the source
+        // of each adapter in it made in place over an array's items, `$skipping`
+        // of a `filter`, `$mapEnds` of a `cycle()`, does (`hint_asked.rs`,
+        // #1427, #1572).
+        if self.array_source(ty).is_some() && !self.made_knowing_here(ty) {
             return false;
         }
         let in_place = !outermost && self.made_in_place_of(ty);
@@ -202,13 +205,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty) || dropping_filter();
         crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
+            // Of one that asks its source's hint, `cycle()`'s, a source std's
+            // struct knows the hint of; one made in place there over an
+            // array's items is made knowing it where it's asked (#1427).
             (held.into_iter()).all(|held| {
-                // Of one that asks its source's hint, a source of a kind
-                // std's struct is where it's held is made in place too,
-                // judged as one is.
-                let in_place = self.made_in_place_of(held.peel_refs());
                 !self.is_unknown(held.peel_refs())
-                    && (self.adapted_hint_known_of(held, false) || decodes && !in_place && self.held_hint_known(held))
+                    && (self.adapted_hint_known_of(held, false) || decodes && self.held_hint_known(held))
             })
         })
     }

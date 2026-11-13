@@ -319,3 +319,39 @@ kept. Corpus case `take_of_an_iterator_with_no_upper_bound_hints_its_count`,
 failing before, against native in both builds; #1691's two table rows off
 `test/iterator-matrix-known.txt`; mutations `dyn-take-hint-unknown` and
 `dyn-take-source-unseen`, caught.
+
+## Amendment: an adapter made in place over items is made knowing its hint where it's asked (2026-11-14, #1427, #1572, #1573)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's hint is kept, or the program refused.
+
+Amended above (#1169), a held `filter` of a `skip(1)` made in place,
+JS's own `xs.values().drop(1)`, which knows no hint, was refused where
+its hint was asked, and a `Vec` grown by a `take(5)` of a `cycle()` of a
+`map` of an array's items was refused in a crate that reads a capacity
+(#1572), and so were neighbours of either (#1573). Now each adapter an
+iterator holds made in place inside another, of a kind std's struct is
+where it's held, whose own source is an array's or a collection's items,
+JS's own `values()` or an array made of them, is made knowing its hint,
+where its hint is asked, `size_hint()` of it, or std asks it, a `Vec` grown
+by it in a crate that reads a capacity: a `skip(1)`'s `$skipping`, a
+`map`'s `$mapEnds`, and its source, `$iter`. In the function that asks,
+and in each whose value of its type may leave it (`may_leave`, #1333), so
+one made in another function and asked in this is made knowing there too;
+a `map`, by each maker of its type. Not of a `$Steps`, a range's, whose own
+adapters keep std's hint (ADR 0542), nor of an exact-sized iterator, which
+a `Vec` grows by its length; and not of one with a `rev()` in it, whose
+`skip(1)` made `$skipping` would know no back, which stays refused (#1427),
+nor of a `zip`'s parts under a `cycle()` (#1572). `hint_asked.rs`'s
+`mark_in_place` marks them; `knowing.rs` takes an array's iterator so made
+as knowing its hint.
+
+Held by `test/corpus/held_adapter_hints_of_adapters_made_inside.rs`,
+`held_hint_of_adapters_made_in_another_function.rs` (which a first draft,
+marking only the function that asks, got wrong: `(0, None)` where Rust's
+is `(0, Some(2))`) and `vec_grown_by_a_take_of_a_cycle_of_a_map.rs`,
+each against native Rust; the diagnostics' refusals of what's left; and
+the mutations of `mark_in_place` and `knowing.rs`'s exception, each caught.
+The neighbour pairs of #1572 and #1573 run as Rust does, off
+`test/neighbours-known.txt`.
+

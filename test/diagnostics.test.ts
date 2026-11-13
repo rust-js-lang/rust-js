@@ -301,11 +301,14 @@ for (const [name, source, message, crate] of [
   // std's `eq` of two `TrustedLen` iterators asks their lengths first; of maps held in MIR's
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
-  // A held filter of a `skip(1)` made in place, JS's own `drop`, which
-  // knows no hint, nor a `cycle()` of a `map()` of an array's items: each
-  // gave a wrong hint, now refused where it's asked (#1427).
-  ["size_hint of a held filter of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter(|x| *x > 1); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
-  ["size_hint of a held take of a cycle of a map", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().map(|x| x + 1).cycle().take(2); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
+  // A `take(n)` of a `cycle()` of a `zip` of an array's items: the zip's
+  // parts, made in place, JS's own `values()`, know no hint, which std
+  // grows a `Vec` by where its capacity is read (#1572).
+  ["a Vec grown by a take of a cycle of a zip", "pub fn f() -> usize { let a = [1u8, 2, 3]; let v: Vec<(u8, u8)> = a.iter().copied().zip(a.iter().copied()).cycle().take(4).collect(); v.capacity() }", "whose lower bound JS's doesn't have"],
+  // A held `rev()` of a filter of a `skip(1)` made in place, JS's own
+  // `drop`, which knows no hint: what's stepped from its back isn't made
+  // knowing its hint, `$skipping`, which would know no back (#1427).
+  ["size_hint of a held rev of a filter of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter(|x| *x > 1).rev(); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
   ["eq of two maps of unequal lengths", 'pub fn f(v: &[u32], w: &[u32]) -> bool { v.iter().map(|x| { println!("a"); *x }).eq(w.iter().map(|x| { println!("b"); *x })) }', "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them"],
   // Generic code's `eq` asks its caller whether it compares lengths first, `LengthFirst`; std of two
   // `TrustedLen` iterators does, so a caller's maps, which JS can't count, are refused, through a
@@ -381,10 +384,6 @@ for (const [name, source, message, crate] of [
   ["a generic associated type of a type with a bound", "pub trait Wrap { type Of<T>: Clone; fn wrap<T: Clone>(t: T) -> Self::Of<T>; }", "generic associated types with bounds"],
   // A `rev()` of the crate's iterator made in place, which a variable holds, has no form to be
   // made again knowing its back past what's made of it (#257).
-  // A map of an array's iterator, JS's own `values().map(f)`, knows no
-  // hint, so a `take(n)` of a `cycle()` of it can't grow a `Vec` as std's
-  // does where its capacity is read (#1572).
-  ["a Vec grown by a take of a cycle of an array's map", "pub fn f() -> usize { let a = [1, 2, 3]; let v: Vec<i32> = a.iter().map(|x| x + 1).cycle().take(5).collect(); v.capacity() }", "whose lower bound JS's doesn't have"],
   ["a held rev of the crate's iterator stepped from its back past a skip", "pub struct C(i32, i32);\nimpl Iterator for C { type Item = i32; fn next(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.0 += 1; self.0 }) } fn size_hint(&self) -> (usize, Option<usize>) { let n = (self.1 - self.0).max(0) as usize; (n, Some(n)) } }\nimpl DoubleEndedIterator for C { fn next_back(&mut self) -> Option<i32> { (self.0 < self.1).then(|| { self.1 -= 1; self.1 + 1 }) } }\nimpl ExactSizeIterator for C {}\npub fn f() -> Option<i32> { let r = C(0, 9).rev(); r.skip(3).rev().last() }", "a variable holds, stepped from its back past what's made of it"],
   ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "not in an `extern` block"],
   ["a generic constant", "#![feature(generic_const_items)]\n#![allow(incomplete_features)]\npub trait Sizes { const SIZE<T>: usize; }", "generic constants"],
