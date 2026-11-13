@@ -743,4 +743,28 @@ export const mutations: Mutation[] = [
     replace: "                Some(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_its_iterator_once.rs$"],
   },
+  {
+    name: "rc-slice-collect-uncounted",
+    breaks: "an `Rc<[T]>` collected whose counts are read isn't made counted, so `Rc::strong_count` reads nothing (#1678)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                true => self.new_counted_rc(items, pointee, span)?,\n",
+    replace: "                true => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice.rs$"],
+  },
+  {
+    name: "rc-slice-collect-refused",
+    breaks: "a `collect()` into an `Rc<[T]>` is refused (#1678)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            && pointee.is_slice()\n",
+    replace: "            && pointee.is_slice()\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice.rs$"],
+  },
+  {
+    name: "rc-slice-trusted-panic-unrefused",
+    breaks: "a `collect()` into an `Rc<[T]>` of a `TrustedLen` that may panic, of items that drop, compiles as a `Vec`'s, dropping what it wrote before what's left, where std's `from_iter_exact` drops them the other way round (#1678)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                && self.unwinding_collect(boxed, item, Some(iter_ty), span)?.is_some()\n",
+    replace: "                && self.unwinding_collect(boxed, item, Some(iter_ty), span)?.is_some()\n                && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "collecting into an Rc slice of a TrustedLen that may panic"],
+  },
 ];

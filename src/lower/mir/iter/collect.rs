@@ -620,6 +620,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             self.collected_as_vec((it, &given, walk.as_ref()), output, item, iter_ty, false, span)?
+        // An `Rc<[T]>` or an `Arc<[T]>`: std's `collect::<Vec<T>>().into()`,
+        // its items collected as a `Box<[T]>`'s are, then made the `Rc`,
+        // counted where its counts are read (#1678).
+        } else if self.is_rc(output)
+            && let ty::Adt(_, args) = output.kind()
+            && let pointee = args.type_at(0)
+            && pointee.is_slice()
+        {
+            let Some(iter_ty) = iter_ty else { return Ok(it) };
+            let boxed = Ty::new_box(self.tcx, pointee);
+            // Of a `TrustedLen`, std's `from_iter_exact` writes each item in
+            // place, so a panic as it steps drops what's left of the
+            // iterator before what it wrote, where a `Vec` drops them the
+            // other way round: refused where that's seen, items that drop
+            // and steps that may panic (#1678).
+            if crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+                && self.unwinding_collect(boxed, item, Some(iter_ty), span)?.is_some()
+            {
+                return Err(self.unsupported(
+                    span,
+                    &format!(
+                        "`collect` into a `{output}` of a `TrustedLen` whose steps may panic, of items that drop: std's `from_iter_exact` drops what's left before what it wrote, which isn't followed yet (#1678)"
+                    ),
+                ));
+            }
+            let items = self.collected_as_vec((it, &given, walk.as_ref()), boxed, item, iter_ty, false, span)?;
+            match self.krate.counted.counts(self.tcx, pointee) {
+                true => self.new_counted_rc(items, pointee, span)?,
+                false => items,
+            }
         } else if self.is_lang_adt(output, LangItem::String) {
             // Of `char`s, its hint asked first, as std's `Extend<char>`
             // reserves by it (string.rs:2507); of strings, none.

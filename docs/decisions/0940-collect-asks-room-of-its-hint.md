@@ -409,3 +409,16 @@ asks `ITrustedLen`. Mutations `flatten-trusted-asked-whole`,
 `trusted-part-decided-here-asked` (`generic_facts.ts`), `built-collect-trusted-unasked`
 (`analysis/type_facts/collects.ts`) and
 `built-collect-callers-trusted-unread` (`mir/iter/collect.ts`).
+
+## Amendment (2026-11-13, #1678)
+
+A `collect()` into an `Rc<[T]>` or an `Arc<[T]>`, directly or through
+generic code's `FromIterator` dictionary, is std's `collect::<Vec<T>>()
+.into()`: its items are collected as a `Box<[T]>`'s are, its room asked
+the same way, and then made into the `Rc`, counted where its counts are read
+(`new_counted_rc`). It was refused, and the refusal named no issue. The
+corpus case `collect_into_an_rc_slice` compares it with native Rust. One
+case stays refused, naming #1678: a `TrustedLen` whose steps may panic, of
+items that drop. There std's `from_iter_exact` writes each item in place,
+and a panic drops what's left of the iterator before what it wrote, where
+a `Vec` drops what it wrote first.
