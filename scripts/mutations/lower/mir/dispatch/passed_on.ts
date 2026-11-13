@@ -11,4 +11,12 @@ export const mutations: Mutation[] = [
     replace: "            node: Operand::Copy(receiver),",
     tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
   },
+  {
+    name: "shared-receiver-passed-through-a-cell",
+    breaks: "a `&self` method of a `&mut W` whose `&mut W` is a cell, not `W` itself, is called as `W`'s, given the cell",
+    file: "src/lower/mir/dispatch/passed_on.rs",
+    find: "!shared || self.mut_ref_form(inner.type_at(0)).read_is_itself()",
+    replace: "!shared || true",
+    tests: ["test/corpus.test.ts"],
+  },
 ];

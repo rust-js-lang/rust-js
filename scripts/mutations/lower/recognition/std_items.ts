@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method of `self` std's impl for a `&mut I` makes of another is taken as `I`'s, so a `&mut` to an iterator of the crate's own folds by its own `fold`, where std's impl folds by `I`'s `try_fold`, its `next` (#1309)",
     file: "src/lower/recognition/std_items.rs",
-    find: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {",
-    replace: "        if false {",
+    find: "                true\n            }\n            _ => return None,\n        };\n",
+    replace: "                true\n            }\n            _ => false,\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
   },
   {
@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method of `&self` std's impl for a `&mut I` passes on is `I`'s, given `*self` of a `&&mut I`, so `by_ref().len()` of a `Vec`'s iterator reads `NaN` (#1309)",
     file: "src/lower/recognition/std_items.rs",
-    find: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {",
-    replace: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, _) if of == tcx.types.self_param) {",
+    find: "                        .any(|id| super::sorts::is_iterator_trait(tcx, id))\n",
+    replace: "                        .any(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
   },
   {
@@ -333,5 +333,13 @@ export const mutations: Mutation[] = [
     find: "        StdItem::NonNull => tcx.is_lang_item(id, LangItem::NonNull),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+  },
+  {
+    name: "shared-receiver-not-passed-through",
+    breaks: "`finish()` of a `&mut` to the crate's own hasher goes through std's `impl Hasher for &mut H`'s dictionary, which reads the hasher through a box it isn't, a TypeError (#1709)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            ty::Ref(_, of, Mutability::Not)\n                if of == this\n",
+    replace: "            ty::Ref(_, of, Mutability::Not)\n                if false && of == this\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_hasher_finished_through_its_mut.rs$"],
   },
 ];

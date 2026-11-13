@@ -66,20 +66,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `fmt::Write`'s, `Hasher`'s and `Iterator`'s `next` and `nth`
     /// (#1309), so the call is `W`'s, given the `&mut W` its receiver, a
     /// `&mut &mut W`, is of: a `&mut &mut String`'s `write_str` writes the
-    /// `String`. Not a method the impl leaves its trait's default, which
-    /// runs of the `&mut W` itself, `by_ref()`'s; nor one of `self`, an
-    /// iterator's `fold`, which std's impl makes of `I`'s `try_fold`; nor
-    /// one of `&self`, `len()`'s or `cmp`'s, whose receiver, a `&&mut I`,
-    /// the lowering reads as it is. (`impl Write for &mut [u8]`, of a type
+    /// `String`. And of `&self`, `Hasher::finish`'s, where no other input
+    /// nor the output names `Self`, the `bool`, `true`: `W`'s where its
+    /// caller reads the `&mut W` as `W` itself, which it asks (#1709). Not a
+    /// method the impl leaves its trait's default, which runs of the `&mut
+    /// W` itself, `by_ref()`'s; nor one of `self`, an iterator's `fold`,
+    /// which std's impl makes of `I`'s `try_fold`; nor `cmp`, whose `other`
+    /// is a `&&mut I` too; nor an iterator trait's of `&self`, `len()`'s,
+    /// whose receiver, a `&&mut I`, the lowering reads as it is. (`impl Write for &mut [u8]`, of a type
     /// of std's own, writes the slice, which has no `Write` to call, so its
     /// call stays refused.)
     pub(in crate::lower) fn passed_through_mut_ref(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<ty::GenericArgsRef<'tcx>> {
+    ) -> Option<(ty::GenericArgsRef<'tcx>, bool)> {
         let tcx = self.tcx;
-        if !self.is_std(tcx.trait_of_assoc(def_id)?) {
+        let trait_id = tcx.trait_of_assoc(def_id)?;
+        if !self.is_std(trait_id) {
             return None;
         }
         let &ty::Ref(_, inner, Mutability::Mut) = generic_args.types().next()?.kind() else {
@@ -90,11 +94,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {
-            return None;
-        }
-        self.std_impl_writes(def_id, generic_args)
-            .then(|| tcx.mk_args_from_iter(std::iter::once(inner.into()).chain(generic_args.iter().skip(1))))
+        let this = tcx.types.self_param;
+        let shared = match *sig.inputs().first()?.kind() {
+            ty::Ref(_, of, Mutability::Mut) if of == this => false,
+            // `&self`, `Hasher::finish`'s, where nothing else names `Self`
+            // (not `cmp`'s `other`): `W`'s too, where its caller reads the
+            // `&mut W` as `W` itself (#1709). Not an iterator's, `len()`'s,
+            // whose `&&mut I` the lowering reads as it is (ADR 0061).
+            ty::Ref(_, of, Mutability::Not)
+                if of == this
+                    && !rustc_middle::ty::elaborate::supertrait_def_ids(tcx, trait_id)
+                        .any(|id| super::sorts::is_iterator_trait(tcx, id))
+                    && !(sig.inputs()[1..].iter().chain([&sig.output()]))
+                        .any(|ty| ty.walk().any(|part| part.as_type() == Some(this))) =>
+            {
+                true
+            }
+            _ => return None,
+        };
+        self.std_impl_writes(def_id, generic_args).then(|| {
+            let args = tcx.mk_args_from_iter(std::iter::once(inner.into()).chain(generic_args.iter().skip(1)));
+            (args, shared)
+        })
     }
 
     /// Of a call of a std iterator trait's method `def_id` whose `Self`, in

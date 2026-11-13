@@ -793,3 +793,23 @@ metamorphic net's `impl-owned` rewrite of it, off
 `box-param-evidence-unmade`, `box-param-not-held-as-it-is`,
 `box-step-of-its-param-unrecorded` and `box-dictionary-passes-folds`; 2
 re-anchored.
+
+## Amendment: a `&self` method std's `&mut W` impl passes on (2026-11-14, #1709)
+
+`finish()` of a `&mut` to a hasher, which Rust finds in std's `impl Hasher
+for &mut H` as it takes `&self`, went through that impl's dictionary,
+`$throughBox`, generic code's reading of a `&mut` as its box: where the
+caller knows the type, the `&mut` is the hasher itself, and the call threw
+a `TypeError`, for the crate's own hasher in any build and for std's where
+its recognizer is off. `passed_through_mut_ref` now passes on a method of
+`&self` too, where no other input nor the output names `Self` (not `cmp`'s
+`other`) and the trait is no iterator's (`len()`'s `&&mut I` the lowering
+reads as it is, ADR 0061), and the dispatch takes it only where the `&mut
+W` reads as `W` itself, an object's, not a number's cell. The call is `W`'s
+own, `fnvHasher_finish(r)`. Held by corpus
+`own_hasher_finished_through_its_mut`, native-compared; mutations
+`shared-receiver-not-passed-through` and
+`shared-receiver-passed-through-a-cell`, caught, and `passed-on-of-any-self`
+and `passed-on-of-shared-self` retargeted, caught. A `&mut &mut` to the
+crate's own hasher, whose `&mut` is a cell, is still refused, as before
+(#1724).
