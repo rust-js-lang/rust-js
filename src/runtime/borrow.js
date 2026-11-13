@@ -332,11 +332,33 @@ function $tryLock(cell, mutable) {
 // where it could be locked to read it, a `Mutex`'s by anything holding it,
 // an `RwLock`'s by a writer, else that it's locked, as std's `try_lock` and
 // `try_read` say, a `Mutex`'s as a string, `"<locked>"`, as std's shows it;
-// and whether it's poisoned.
-function $showLocked(cell, show, name, exclusive) {
+// and whether it's poisoned; `{:#?}`'s (`alternate`) a field a line, as
+// std's `debug_struct` writes them (#1629).
+function $showLocked(cell, show, name, exclusive, alternate) {
+  const fields = [`data: ${$lockedData(cell, show, exclusive)}`, `poisoned: ${$lockPoisoned(cell)}`];
+  return alternate ? $pretty(`${name} {`, fields, "}", true) : `${name} { ${fields.join(", ")}, .. }`;
+}
+
+// A `Mutex`'s or an `RwLock`'s `data` field, as `$showLocked` shows it, and
+// as std's builder takes it where a part may stop part-way (#1530): what it
+// holds, shown by `show` while it's locked to read it, else that it's locked.
+// A `Mutex`'s guard, `try_lock`'s, held as a panic unwinds out of `show`,
+// poisons it, as std's does; an `RwLock`'s reading one doesn't (#1631).
+function $lockedData(cell, show, exclusive) {
   const locked = exclusive ? cell.borrows : cell.borrows < 0;
-  const data = !locked ? $withBorrow(cell, show) : exclusive ? '"<locked>"' : "<locked>";
-  return `${name} { data: ${data}, poisoned: ${$poisonedLocks.has(cell)}, .. }`;
+  if (locked) return exclusive ? '"<locked>"' : "<locked>";
+  try {
+    return $withBorrow(cell, show);
+  } catch (error) {
+    // A panic, as a cleanup it runs, not a write's `Err`, which returns.
+    if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);
+    throw error;
+  }
+}
+
+// Whether a panic poisoned a `Mutex` or an `RwLock`, its `poisoned` field.
+function $lockPoisoned(cell) {
+  return $poisonedLocks.has(cell);
 }
 
 function $deadlock() {

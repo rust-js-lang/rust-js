@@ -36,7 +36,7 @@ for (const [name, source, message, crate] of [
   // `Debug` may print and stop part-way, where a `catch_unwind` may catch
   // the panic: the line keeps what the parts before it wrote, which the JS,
   // making the parts' texts whole, can't rebuild (#1521, #1495, #1530).
-  ["a RefCell's Debug of what may print and panic where it may be caught", "use std::cell::RefCell;\nuse std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: RefCell<Loud>) -> bool { std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || println!(\"{:?}\", v))).is_err() }", "`{:?}` of a `std::cell::RefCell<Loud>` whose part `Loud`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"],
+  ["a Reverse's Debug of what may print and panic where it may be caught", "use std::cmp::Reverse;\nuse std::fmt;\npub struct Loud(pub u8);\nimpl fmt::Debug for Loud { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { print!(\"!\"); assert!(self.0 < 3); write!(f, \"L\") } }\npub fn f(v: Reverse<Loud>) -> bool { std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || println!(\"{:?}\", v))).is_err() }", "`{:?}` of a `std::cmp::Reverse<Loud>` whose part `Loud`'s `Debug` may stop part-way where a `catch_unwind` may catch it, as Rust's stdout keeps what the parts before it wrote (#1530)"],
   // Which writers may stop part-way, past what never unwinds but through
   // what it shows (#1496): a builder's `entries`, which steps an iterator;
   // an `fmt::Write` of the crate's; a `dyn Debug` read from a field; and a

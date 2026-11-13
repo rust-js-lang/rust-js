@@ -593,3 +593,33 @@ whose `SIZE` that body's env hasn't, and rustc crashed; its parts are
 asked then, as a type parameter's drop is. Held by corpus case
 `const_generic_impl_reached_by_a_trait_default_where_caught` since
 #1618 fixed the same shape's crash in lowering (ADR 0106, amended).
+
+## Amendment (2026-11-13, #1530): std's cells and locks, through std's `debug_struct`
+
+`RefCell`, `Cell`, `Mutex` and `RwLock` of a part that may stop part-way
+were refused, naming #1530. Their `Debug` is std's `debug_struct`, so
+they're written through #1561's model, `$composed`, as `Option` and `Vec`
+are (`display/composed.rs`). A `RefCell`'s one field, `value`, is shown
+while it's borrowed, or as `<borrowed>`, by `$showBorrowed`. A `Cell`'s
+field is its `get()`. A lock's `data` field comes from `$lockedData`, its
+`poisoned` field from `$lockPoisoned`, and it ends with
+`finishNonExhaustive`'s `..`. `$showLocked`, the one-expression form a
+lock takes where no part stops, builds on the same two helpers. The lead
+approved this on #1530 as within #1561's path. Two wrong answers found by
+probing the lift, both fixed here:
+
+- `{:#?}` of a `Mutex` or an `RwLock` printed its fields on one line, as
+  `$showLocked` took no `alternate` (#1629, P0). Now it does, through
+  `$pretty`'s rest form.
+- A panic out of a `Mutex`'s data's `Debug` left it unpoisoned. std's
+  `Debug` holds `try_lock`'s guard, whose drop poisons it as the panic
+  unwinds (#1631, P0). `$lockedData` poisons it as a cleanup the panic
+  runs, `$cleanup`, and a write's `Err`, which returns, poisons nothing.
+  An `RwLock`'s reading guard poisons nothing, in Rust too.
+
+Each case's result changes, so Rust's behavior is kept (ADR 0262).
+Corpus case `printing_std_cells_stopped_part_way`, against native Rust in
+both builds. Five mutations, each caught. test/diagnostics.test.ts now
+holds the refusal of a `Reverse`'s `Debug`. #1530 stays open for std's
+other values of such a part: `Reverse`, `OnceCell` and `OnceLock`, the
+ranges, `Bound`, `Poll` and the like.

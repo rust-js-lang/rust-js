@@ -104,6 +104,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     pretty,
                 )?
             }
+            // `RefCell { value: .. }`, its value shown while it's borrowed,
+            // or `<borrowed>`, as `$showBorrowed` shows it; a `Cell`'s
+            // `get()`; each std's `debug_struct` (#1530).
+            ty::Adt(_, args) if std(StdItem::RefCell) || std(StdItem::Cell) => {
+                let inner = args.type_at(0);
+                let held = std(StdItem::Cell) || matches!(value.kind, js::ExprKind::Handle(..));
+                let shown = match held {
+                    true => self.debug_string_with(Expr::held(subject("cell")), inner, span, pretty)?,
+                    false => {
+                        let shown = self.debug_string_with(Expr::var("value"), inner, span, pretty)?;
+                        let mut given = vec![subject("cell"), arrow_of("value", shown)];
+                        if self.is_value_cell(ty) {
+                            given.push(Expr::bool(true));
+                        }
+                        Expr::call_helper("$showBorrowed", given)
+                    }
+                };
+                let name = if self.is_std_type(ty, StdItem::Cell) {
+                    "Cell"
+                } else {
+                    "RefCell"
+                };
+                let steps = vec![("field", vec![Expr::str("value"), made_when_taken(shown)])];
+                let made = self.composed(DebugBuilder::Struct, Some(Expr::str(name)), pretty, steps);
+                apply(made, "cell")
+            }
+            // `Mutex { data: .., poisoned: false, .. }`, as `$showLocked`
+            // shows it, through std's `debug_struct` (#1530).
+            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {
+                let mutex = std(StdItem::Mutex);
+                let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                let data = Expr::call_helper(
+                    "$lockedData",
+                    vec![subject("lock"), arrow_of("value", shown), Expr::bool(mutex)],
+                );
+                let poisoned = join(vec![
+                    Expr::str(""),
+                    Expr::call_helper("$lockPoisoned", vec![subject("lock")]),
+                ]);
+                let steps = vec![
+                    ("field", vec![Expr::str("data"), made_when_taken(data)]),
+                    ("field", vec![Expr::str("poisoned"), made_when_taken(poisoned)]),
+                ];
+                let name = Expr::str(if mutex { "Mutex" } else { "RwLock" });
+                let made = self.composed_to(DebugBuilder::Struct, Some(name), pretty, steps, "finishNonExhaustive");
+                apply(made, "lock")
+            }
             _ => return Ok(None),
         }))
     }
@@ -138,10 +185,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
         steps: Vec<(&str, Vec<Expr>)>,
     ) -> Expr {
+        self.composed_to(kind, type_name, pretty, steps, "finish")
+    }
+
+    /// `composed`, finished by `finish`, `finishNonExhaustive` of a lock's
+    /// `..`.
+    fn composed_to(
+        &mut self,
+        kind: DebugBuilder,
+        type_name: Option<Expr>,
+        pretty: &Pretty,
+        steps: Vec<(&str, Vec<Expr>)>,
+        finish: &str,
+    ) -> Expr {
         let (made, role) = self.builder_of(kind, Expr::var("f"), type_name, pretty);
         let builder = self.fresh(role);
         let mut body = vec![StmtKind::Const(builder.clone(), made).at(js::Span::NONE)];
-        for (method, args) in steps.into_iter().chain([("finish", Vec::new())]) {
+        for (method, args) in steps.into_iter().chain([(finish, Vec::new())]) {
             let step = Expr::call(Expr::member(Expr::var(&builder), method), args);
             body.push(StmtKind::Expr(step).at(js::Span::NONE));
         }

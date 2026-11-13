@@ -19,4 +19,20 @@ export const mutations: Mutation[] = [
     replace: "                _ => Expr::index(Expr::var(\"entry\"), Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^(failing_std_value_debug_keeps_what_was_written|printing_std_value_stopped_part_way).rs$"],
   },
+  {
+    name: "composed-cells-refused",
+    breaks: "`{:?}` of a `RefCell` of a part that prints and panics where it's caught is refused, naming #1530, where std's `debug_struct` writes it (#1530)",
+    file: "src/lower/display/composed.rs",
+    find: "            ty::Adt(_, args) if std(StdItem::RefCell) || std(StdItem::Cell) => {\n",
+    replace: "            ty::Adt(_, args) if false && (std(StdItem::RefCell) || std(StdItem::Cell)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
+  },
+  {
+    name: "composed-locks-refused",
+    breaks: "`{:?}` of a `Mutex` of a part that prints and panics where it's caught is refused, naming #1530, where std's `debug_struct` writes it (#1530)",
+    file: "src/lower/display/composed.rs",
+    find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
+    replace: "            ty::Adt(_, args) if false && (std(StdItem::Mutex) || std(StdItem::RwLock)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
+  },
 ];

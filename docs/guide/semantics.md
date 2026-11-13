@@ -304,8 +304,10 @@ what's held before it, as a browser's console takes whole lines
   `Result`'s, a tuple's, a set's or a map's `Debug` of a part that may stop
   part-way, by an `Err` or by a panic a `catch_unwind` may catch: it's
   written through std's builders, `$composed(..)`, so what came before the
-  part is kept, in the line or the `String` it's written to (#1561).
-  Another std value's of such a part, a `RefCell`'s say, is refused,
+  part is kept, in the line or the `String` it's written to (#1561). So
+  does a `RefCell`'s, a `Cell`'s, a `Mutex`'s or an `RwLock`'s, a panic
+  out of a `Mutex`'s part poisoning it, as std's does. Another std
+  value's of such a part, a `Reverse`'s or a range's say, is refused,
   #1530. A library's writers are shown so too, as its contract says
   which print. A library's writer that may stop part-way by a panic,
   shown in stdout's line by a program with a `catch_unwind`, is refused,

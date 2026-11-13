@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "time-debug-options-dropped",
     breaks: "`{:12?}` of a time gives its fields none of the placeholder's options, which are padded in std's",
     file: "src/lower/display/debug.rs",
-    find: "                if !matches!(pretty, Pretty::Plain) {",
-    replace: "                if pretty.known() != Some(false) {",
+    find: "                if !matches!(pretty, Pretty::Plain) {\n                    args.push(pretty.options());",
+    replace: "                if pretty.known() != Some(false) {\n                    args.push(pretty.options());",
     tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
   },
   {
@@ -599,5 +599,13 @@ export const mutations: Mutation[] = [
     find: "        if crate::lower::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
     replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
+  },
+  {
+    name: "locked-shown-plain-when-pretty",
+    breaks: "`{:#?}` of a `Mutex` or an `RwLock` prints its fields on one line (#1629)",
+    file: "src/lower/display/debug.rs",
+    find: "                    args.push(pretty.alternate());\n                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
+    replace: "                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
   },
 ];

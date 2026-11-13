@@ -582,10 +582,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 let name = Expr::str(if mutex { "Mutex" } else { "RwLock" });
-                Ok(Expr::call(
-                    Expr::helper("$showLocked"),
-                    vec![value, show, name, Expr::bool(mutex)],
-                ))
+                let mut args = vec![value, show, name, Expr::bool(mutex)];
+                // `{:#?}`'s, a field a line (#1629).
+                if !matches!(pretty, Pretty::Plain) {
+                    args.push(pretty.alternate());
+                }
+                Ok(Expr::call(Expr::helper("$showLocked"), args))
             }
             // An `UnsafeCell`'s, which shows nothing of what it holds, as
             // std's `Debug` of one doesn't (#1420).

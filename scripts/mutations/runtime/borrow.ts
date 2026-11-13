@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "show-locked-unquoted",
     breaks: "`{:?}` of a locked `Mutex` shows `<locked>` bare, where std's quotes it",
     file: "src/runtime/borrow.js",
-    find: "!locked ? $withBorrow(cell, show) : exclusive ? '\"<locked>\"' : \"<locked>\";",
-    replace: "!locked ? $withBorrow(cell, show) : \"<locked>\";",
+    find: "  if (locked) return exclusive ? '\"<locked>\"' : \"<locked>\";",
+    replace: "  if (locked) return \"<locked>\";",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
   },
   {
@@ -319,8 +319,8 @@ export const mutations: Mutation[] = [
     name: "show-locked-unpoisoned",
     breaks: "a poisoned lock's `{:?}` says `poisoned: false` (#1438)",
     file: "src/runtime/borrow.js",
-    find: "poisoned: ${$poisonedLocks.has(cell)}",
-    replace: "poisoned: false",
+    find: "function $lockPoisoned(cell) {\n  return $poisonedLocks.has(cell);",
+    replace: "function $lockPoisoned(cell) {\n  return false;",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
   },
   {
@@ -354,5 +354,21 @@ export const mutations: Mutation[] = [
     find: "    if (dropGiven !== undefined) $cleanup(dropGiven, error);\n",
     replace: "    if (dropGiven !== undefined) dropGiven();\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
+  },
+  {
+    name: "locked-data-panic-unpoisoned",
+    breaks: "a panic out of a `Mutex`'s data's `Debug` leaves it unpoisoned, where the guard std's `Debug` holds poisons it as it drops (#1631)",
+    file: "src/runtime/borrow.js",
+    find: "    if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
+  },
+  {
+    name: "locked-data-err-poisons",
+    breaks: "a `Mutex`'s data's `Debug` that returns `Err` poisons it, where only a panic does (#1631)",
+    file: "src/runtime/borrow.js",
+    find: "    if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);\n",
+    replace: "    if (exclusive) $cleanup(() => $poison(cell), undefined);\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
   },
 ];
