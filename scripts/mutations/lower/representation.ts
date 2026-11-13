@@ -641,4 +641,21 @@ export const mutations: Mutation[] = [
     replace: "        read\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a cell in a field is the property it holds"],
   },
+  {
+    name: "wide-constant-shift-unfolded",
+    breaks: "a 64-bit constant made of a shift is `BigInt.asIntN(64, 1n << 40n)`, not its value, `1099511627776n` (#1729)",
+    file: "src/lower/representation.rs",
+    find: "                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^wide_constant_shifts_folded.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "number-shifts-folded-exactly",
+    breaks: "32-bit shifts of constants are folded as if exact, `((1 << 31) >> 1) + 1` of an `i32` positive, where JS's and Rust's are of 32 bits, negative (#1729)",
+    file: "src/lower/representation.rs",
+    find: "                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n                Op::Shr if exact && (0..127).contains(&b) => a >> b,\n",
+    replace: "                Op::Shl if (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n                Op::Shr if (0..127).contains(&b) => a >> b,\n",
+    tests: ["test/corpus.test.ts", "-t", "^wide_constant_shifts_folded.rs$"],
+  },
 ];

@@ -103,7 +103,7 @@ export function main() {
   for (const key of ["chunk", 18446744073709551615n, false]) {
     console.log(`${key} ${$byteLen(`${key}`)}`);
   }
-  for (const mark of ["é", BigInt.asIntN(128, -BigInt.asIntN(128, 1n << 100n))]) {
+  for (const mark of ["é", -1267650600228229401496703205376n]) {
     console.log(`<${mark}>`);
   }
   for (const boxed of ["owned", 65536]) {

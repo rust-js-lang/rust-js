@@ -755,23 +755,41 @@ impl Num {
     }
 }
 
-/// An integer the JS computes from constants alone: `404 + 0`.
+/// An integer the JS computes from constants alone: `404 + 0`, and of
+/// BigInts, whose bitwise operators are exact, `1n << 40n` (#1729), where
+/// a number's are of 32 bits, `1 << 40` being `256`.
 fn const_int(e: &Expr) -> Option<i128> {
     Some(match &e.kind {
         js::ExprKind::Num(n) if n.fract() == 0.0 && n.abs() < 9_007_199_254_740_992.0 => *n as i128,
         js::ExprKind::BigInt(n) => *n,
         js::ExprKind::Unary(js::UnaryOp::Neg, x) => -const_int(x)?,
         js::ExprKind::Binary(op, a, b) => {
+            let exact = const_bigint(a) && const_bigint(b);
             let (a, b) = (const_int(a)?, const_int(b)?);
             match op {
                 Op::Add => a.checked_add(b)?,
                 Op::Sub => a.checked_sub(b)?,
                 Op::Mul => a.checked_mul(b)?,
+                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,
+                Op::Shr if exact && (0..127).contains(&b) => a >> b,
+                Op::BitAnd if exact => a & b,
+                Op::BitOr if exact => a | b,
+                Op::BitXor if exact => a ^ b,
                 _ => return None,
             }
         }
         _ => return None,
     })
+}
+
+/// Whether `e` is a BigInt the JS computes from BigInt constants alone.
+fn const_bigint(e: &Expr) -> bool {
+    match &e.kind {
+        js::ExprKind::BigInt(_) => true,
+        js::ExprKind::Unary(js::UnaryOp::Neg, x) => const_bigint(x),
+        js::ExprKind::Binary(_, a, b) => const_bigint(a) && const_bigint(b),
+        _ => false,
+    }
 }
 
 /// Whether `adt` is a tuple struct, `struct P(u8, u8)`, laid out as an

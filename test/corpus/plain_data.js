@@ -148,7 +148,7 @@ function main() {
   );
   const value$8 = [0, 0, 0x80, 0x3f];
   console.log(`${$displayF32($floatFromBits($fromBytes(value$8, 4, true, false), 4))}`);
-  const value$9 = BigInt.asUintN(128, 1n << 64n) | 3n;
+  const value$9 = 18446744073709551616n | 3n;
   const bytes$8 = $toBytes(value$9, 16, true);
   console.log(
     `[${[$fromBytes(bytes$8.slice(0, 8), 8, true, false), $fromBytes(bytes$8.slice(8, 16), 8, true, false)].join(", ")}]`,

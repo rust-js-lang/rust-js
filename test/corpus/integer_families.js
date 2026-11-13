@@ -94,9 +94,7 @@ function main() {
     `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${1 << by} ${255 >>> (9 & 7)}`,
   );
   const value$10 = -16 >> 2;
-  console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} None ${BigInt.asUintN(64, 1n << 1n)}`,
-  );
+  console.log(`${value$10 == null ? "None" : `Some(${value$10})`} None ${2n}`);
 
   // Powers.
   console.log(

@@ -68,7 +68,7 @@ function main() {
     `${$displayF32(16777216)} ${$displayF32(Math.fround(4294967300))} ${$displayF32(Math.fround(0.1))}`,
   );
   // Through an f64 this would round twice, to 2^60.
-  const big = BigInt.asUintN(64, (1n << 60n) + (1n << 36n) + 1n);
+  const big = 1152921573326323713n;
   console.log(`${$displayF32($bigToF32(big))} ${$displayF64($bigToF32(big))}`);
   console.log(`${$displayF64(0.10000000149011612)} ${$displayF64(3.4028234663852886e38)}`);
 

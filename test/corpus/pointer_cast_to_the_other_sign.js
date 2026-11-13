@@ -110,7 +110,7 @@ function main() {
       2,
     ).join(", ")}]`,
   );
-  const longs = [18446744073709551615n, BigInt.asUintN(64, 1n << 63n)];
+  const longs = [18446744073709551615n, 9223372036854775808n];
   console.log(
     `[${$ptrSlice(
       $ptrRetyped(

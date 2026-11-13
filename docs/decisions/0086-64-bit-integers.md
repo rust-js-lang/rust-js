@@ -134,3 +134,27 @@ fix reverted, 168 of them fail; with it, all pass. Rustlantis's net no
 longer holds #1380's wrong answers: with the fix reverted, seeds 28, 54
 and 5534 print otherwise, and with it, all 200 of seeds 1–200 and 5534
 pass. Mutation `wide-constant-cast-through-a-number`.
+
+## Amendment: a constant made of a shift is its value (#1729)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, the same value;
+which reads best, and React Compiler.
+
+A constant is wrapped where it's lowered, not in the JS, `23n` of `3 + 4
+* 5`; but one made of a shift wasn't: `let big: i64 = 1 << 40;` was
+`BigInt.asIntN(64, 1n << 40n)`, and a `u128`'s `1 << 100`
+`BigInt.asUintN(128, 1n << 100n)`. React Compiler 1.0.0 refuses a
+component of the call no less than of its BigInt literal (#1729's other
+part), and a reader works out what a literal says. Now BigInt constants'
+shifts and bitwise operators, `<<`, `>>`, `&`, `|` and `^`, are folded,
+exact as a BigInt's are, and wrapped as Rust wraps them: `1099511627776n`,
+and `1 << 63` of an `i64` its minimum, `-9223372036854775808n`. A
+number's, of 32 bits, aren't, as its `>>` of an out-of-range operand
+isn't Rust's: `(1 << 31) >> 1` of an `i32` is written as it is. What
+needs no wrap stays as written, `(0xff00 | 0x0f) & 0xfff0`.
+
+Held by `test/corpus/wide_constant_shifts_folded.rs`, against native
+Rust, and the mutations `wide-constant-shift-unfolded` and
+`number-shifts-folded-exactly`; twelve corpus snapshots, each simpler, the
+same values.
+

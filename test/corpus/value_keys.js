@@ -83,12 +83,12 @@ function main() {
   );
 
   // A key with a string, a BigInt and a struct in it.
-  const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
+  const ann = { owner: "ann", id: 1099511627776n, at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
   const value$8 = $unwrap($mutGet(balances, ann));
   value$8.value = (value$8.value + 5) | 0;
   const value$9 = { ...ann, at: { ...ann.at } };
-  const other = { id: BigInt.asUintN(64, 1n << 41n), owner: value$9.owner, at: { ...value$9.at } };
+  const other = { id: 2199023255552n, owner: value$9.owner, at: { ...value$9.at } };
   const value$10 = balances.get(ann);
   const value$11 = balances.get(other);
   console.log(

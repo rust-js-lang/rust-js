@@ -49,7 +49,7 @@ function main() {
   console.log(`${fnv([114, 117, 115, 116, 45, 106, 115])}`);
 
   // Arithmetic, wrapped as release Rust wraps it.
-  const big = BigInt.asUintN(128, 1n << 100n);
+  const big = 1267650600228229401496703205376n;
   console.log(
     `${BigInt.asUintN(128, big + 1n)} ${BigInt.asUintN(128, big * big)} ${BigInt.asUintN(128, max + 2n)}`,
   );
@@ -88,9 +88,8 @@ function main() {
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value = BigInt.asUintN(128, 1n << 100n);
   console.log(
-    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) None ${value == null ? "None" : `Some(${value})`}`,
+    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) None Some(${1267650600228229401496703205376n})`,
   );
   console.log(
     `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
@@ -121,17 +120,17 @@ function main() {
   );
   console.log(`${small} ${wide}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const value$1 = result.TAG === "Ok" ? result._0 : undefined;
+  const value = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$2 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const value$1 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
-  const value$3 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+  const value$2 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 
   // Parsing.
@@ -146,17 +145,17 @@ function main() {
   console.log(
     `${$parseBig("340282366920938463463374607431768211456", 0n, 340282366920938463463374607431768211455n).TAG === "Err"}`,
   );
-  const value$4 = $parseBig(
+  const value$3 = $parseBig(
     "-170141183460469231731687303715884105728",
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
   console.log(
-    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`}`,
+    `${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugParseError(value$3._0, "ParseIntError")})`}`,
   );
-  const value$5 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
+  const value$4 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`}`,
+    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`}`,
   );
 
   // Matching and ordering.

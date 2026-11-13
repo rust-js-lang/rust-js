@@ -14,7 +14,7 @@ function main() {
       `${$nextPowerOfTwo(x, 32) ?? 0} ${((value) => (value == null ? "None" : `Some(${value})`))($nextPowerOfTwo(x, 32))}`,
     );
   }
-  const big = BigInt.asUintN(64, 1n << 40n);
+  const big = 1099511627776n;
   const nextPowerOfTwo = $nextPowerOfTwo(BigInt.asUintN(64, big + 1n), 64) ?? 0n;
   const checkedNextPowerOfTwo = $nextPowerOfTwo(18446744073709551615n, 64);
   const value = $nextPowerOfTwo(5, 8);

@@ -96,17 +96,7 @@ function describe(value) {
 }
 
 function main() {
-  const values = [
-    { x: 1, y: 2 },
-    "hi",
-    "there",
-    7,
-    -3,
-    BigInt.asIntN(64, 1n << 40n),
-    true,
-    false,
-    [1, 2],
-  ];
+  const values = [{ x: 1, y: 2 }, "hi", "there", 7, -3, 1099511627776n, true, false, [1, 2]];
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     console.log(`${describe(value)} | ${valueDebug_fmt(value)}`);

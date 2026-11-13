@@ -29,8 +29,8 @@ function fibonacci(n) {
 function main() {
   const small = [0, 1, 7, 128, 255];
   const words = [0, 1, 0b1110, 4294967295];
-  const wide = [0n, BigInt.asUintN(64, 1n << 40n), 18446744073709551615n];
-  const huge = [0n, BigInt.asUintN(128, 1n << 100n), 340282366920938463463374607431768211455n];
+  const wide = [0n, 1099511627776n, 18446744073709551615n];
+  const huge = [0n, 1267650600228229401496703205376n, 340282366920938463463374607431768211455n];
   const sizes = [0, 1000];
   const map = small.map((n) => 32 - Math.clz32(n));
   const value = words.map((n) => 32 - Math.clz32(n));
