@@ -85,6 +85,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some(Expr::var(name));
         }
         self.given_evidence(|tr| tr.self_ty() == ty && serde_trait(self.tcx, tr.def_id) == Some(serialize))
+            .or_else(|| self.item_serde_evidence(ty, serialize))
+    }
+
+    /// Of an associated type whose trait declares it `Serialize` or
+    /// `Deserialize`, `type Request: Serialize;`: the codec its trait's
+    /// dictionary has, `EEndpoint.RequestSerialize()` (#1522), as any bound
+    /// a trait declares on one is (ADR 0106).
+    fn item_serde_evidence(&self, ty: Ty<'tcx>, serialize: bool) -> Option<Expr> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { .. },
+                ..
+            },
+        ) = *ty.kind()
+        else {
+            return None;
+        };
+        let owner = alias.trait_ref(self.tcx);
+        let (_, bound) = (crate::lower::traits::item_bounds(self.tcx, owner.def_id, owner.args).into_iter())
+            .find(|(_, bound)| bound.self_ty() == ty && serde_trait(self.tcx, bound.def_id) == Some(serialize))?;
+        self.evidence_for(bound)
     }
 
     /// A generic type's codec takes a function for each of its type

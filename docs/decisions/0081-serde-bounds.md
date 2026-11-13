@@ -55,3 +55,26 @@ decode(text, $json.with(pageDeserialize_deserialize, userDeserialize_deserialize
   matches native Rust.
 - **It's the JS a person writes** for a typed fetch: the decoder is an
   argument.
+
+## Amendment: a serde bound a trait declares on an associated type (2026-11-13, #1522)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, what was refused
+compiles.
+
+`serde_json::to_string(request)` of a `request: &E::Request`, whose trait
+declares `type Request: Serialize;`, was refused: generic code's codec of a
+type was only a bound its own signature names. An impl's dictionary
+already has an entry of each bound its trait declares on an associated
+type (ADR 0106), and a serde bound's is the type's codec, its writer or
+reader: `{ RequestSerialize: () => sendSerialize_serialize,
+ResponseDeserializeOwned: () => messageDeserialize_deserialize }`. Generic
+code's codec of an associated type, given none, is now that entry's,
+`EEndpoint.RequestSerialize()` (`item_serde_evidence`, by the route every
+other bound's entry is found by). No signature changes.
+
+The serde-evidence test `a codec a trait declares on its associated type
+is its dictionary's` holds an endpoint trait, as cross-agent-message's is,
+written and read generically, beside the bound repeated on the function,
+items a `Vec` and `()`, a supertrait's item, an error and a `Value`,
+against native serde_json. Mutation `item-serde-evidence-unasked`, caught.
+

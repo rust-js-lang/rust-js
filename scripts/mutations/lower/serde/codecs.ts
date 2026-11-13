@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
       "impl rustc selects"
     ]
   },
+  {
+    name: "item-serde-evidence-unasked",
+    breaks: "generic code's codec of an associated type whose trait declares it `Serialize` isn't asked of its trait's dictionary, so it's refused (#1522)",
+    file: "src/lower/serde/codecs.rs",
+    find: "            .or_else(|| self.item_serde_evidence(ty, serialize))\n",
+    replace: "",
+    tests: ["test/serde-evidence.test.ts"],
+  },
 ];
