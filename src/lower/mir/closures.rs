@@ -328,26 +328,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.splice(0..0, directives);
             return Ok(Expr::async_arrow(params, body));
         }
-        // A closure of `()` that only spawns an async block is that block's
-        // async arrow: it starts the same, and gives back a promise where
-        // nothing reads its `()` (ADR 0257).
-        if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
-            && written.is_empty()
-            && directives.is_empty()
-            && args.as_closure().sig().output().skip_binder().is_unit()
-            && let [
-                Stmt {
-                    kind: StmtKind::Expr(call),
-                    ..
-                },
-            ] = stmts.as_slice()
-            && let js::ExprKind::Call(callee, given) = &call.kind
-            && given.is_empty()
-            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind
-            && inner.is_empty()
-        {
-            return Ok(Expr::async_arrow(params, spawned.clone()));
-        }
         self.place_written(written, &mut stmts);
         stmts.splice(0..0, directives);
         let made_at = span;

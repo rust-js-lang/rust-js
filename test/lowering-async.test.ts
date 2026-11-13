@@ -34,12 +34,11 @@ pub async fn passed(text: &str) -> String {
   expect(await (await import(join(dir, "lib.js"))).passed("text")).toBe("text");
 });
 
-// A closure that only spawns an async block is an async arrow, as
-// react.dev's BrandMenu writes `onSelect={async () => { await
-// navigator.clipboard.writeText(..) }}`: it starts the same, and gives
-// back a promise where nothing reads its `()` (ADR 0257). From MIR too
-// (ADR 0364).
-test("a closure that only spawns an async block is an async arrow", async () => {
+// A closure that only spawns an async block gives back what Rust's does,
+// `()`, `undefined`, and starts the block as it's called: never an async
+// arrow, whose promise React reads as an effect's cleanup and calls on
+// unmount (#1685, superseding ADR 0257).
+test("a closure that only spawns an async block gives back undefined", async () => {
   const dir = fixture("spawning-closure");
   writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./copy.js#copy")] fn copy(text: &str) -> js::Promise<()> { unreachable!() }
@@ -55,10 +54,12 @@ pub fn handler() -> Box<dyn Fn()> {
   const { copied } = await import(join(dir, "copy.js"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
+  expect(js).not.toContain("return async () =>");
   const lib = await import(join(dir, "mir.js"));
   copied.length = 0;
-  await lib.handler()();
+  // `undefined` as it's called, the block started, its copy made after.
+  expect(lib.handler()()).toBeUndefined();
+  await new Promise((done) => setTimeout(done, 0));
   expect(copied).toEqual(["#58C4DC"]);
 });
 

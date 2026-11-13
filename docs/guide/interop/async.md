@@ -99,7 +99,10 @@ export function start() {
 ```
 
 The promise is left unawaited: a panic inside it is an unhandled
-rejection, which the host reports.
+rejection, which the host reports. A closure of `()` that only spawns,
+an event handler's or an effect's, stays a function that gives back
+`undefined`, `() => { (async () => { .. })(); }`, never an async arrow,
+whose promise React reads as an effect's cleanup (#1685).
 
 ## `js::Promise`
 

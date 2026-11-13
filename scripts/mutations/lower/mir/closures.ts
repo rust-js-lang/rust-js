@@ -61,20 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
-    name: "mir-spawning-closure-arrow",
-    breaks:
-      "a closure that only spawns an async block is `() => { (async () => …)(); }`, not `async () => …`",
-    file: "src/lower/mir/closures.rs",
-    find: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
-    replace:
-      "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
-    tests: [
-      "test/lowering-async.test.ts",
-      "-t",
-      "only spawns an async block",
-    ],
-  },
-  {
     name: "mir-capture-copied-always",
     breaks:
       "a closure copies a variable written only before it, `const captured = index`",
@@ -193,14 +179,6 @@ export const mutations: Mutation[] = [
     breaks: "MIR's closure loses its `js::directive!`",
     file: "src/lower/mir/closures.rs",
     find: "        stmts.splice(0..0, directives);\n",
-    replace: "",
-    tests: ["test/modules.test.ts", "-t", "js::directive! in a body"],
-  },
-  {
-    name: "mir-spawning-closure-directive-lost",
-    breaks: "MIR's closure that only spawns loses its `js::directive!`",
-    file: "src/lower/mir/closures.rs",
-    find: "            && directives.is_empty()\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "js::directive! in a body"],
   },
@@ -356,5 +334,13 @@ export const mutations: Mutation[] = [
     replace: ") =>\n",
     tests: ["test/corpus.test.ts","-t","^closure_writes_captured_formatter.rs$"],
     snapshots: true,
+  },
+  {
+    name: "mir-spawning-closure-an-async-arrow",
+    breaks: "a closure of `()` that only spawns an async block is that block's async arrow again, which gives back a promise where Rust's gives `()`: React reads an effect's promise as its cleanup and calls it on unmount (#1685)",
+    file: "src/lower/mir/closures.rs",
+    find: "        self.place_written(written, &mut stmts);\n        stmts.splice(0..0, directives);\n        let made_at = span;\n",
+    replace: "        if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()\n            && written.is_empty()\n            && directives.is_empty()\n            && args.as_closure().sig().output().skip_binder().is_unit()\n            && let [\n                Stmt {\n                    kind: StmtKind::Expr(call),\n                    ..\n                },\n            ] = stmts.as_slice()\n            && let js::ExprKind::Call(callee, given) = &call.kind\n            && given.is_empty()\n            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n        }\n        self.place_written(written, &mut stmts);\n        stmts.splice(0..0, directives);\n        let made_at = span;\n",
+    tests: ["test/lowering-async.test.ts", "-t", "only spawns an async block gives back undefined"],
   },
 ];

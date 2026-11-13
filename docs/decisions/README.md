@@ -127,6 +127,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1136 Transparent iterator chains, measured](1136-transparent-chains-measured.md) *(#1673: `transparent-chain`, `iterators/transparent.rs`; a measurement for #1681's change 2)*
 - [1137 The bounds analysis on MIR, run in shadow first](1137-the-bounds-analysis-on-mir-shadow-first.md) *(#1672: a forward interval dataflow over the MIR the emitter reads; `--intervals-shadow` logs each check THIR's ranges leave out that it doesn't prove)*
 - [1138 Effects are opt-in: JS's own calls are marked where lowering makes them, and what a value's text runs is called](1138-effects-are-opt-in.md) *(#1674, #1663, #1664, #1676: `Known::BuiltIn`, `Expr::is_js_own_call`; a class's text `p.toString()`, a binding's JS value's `$shown(v)`; no name list decides what runs nothing)*
+- [1139 A closure gives back what Rust's does: a spawning one `undefined`](1139-a-closure-gives-back-what-rusts-does.md) *(#1685: supersedes 0257; React reads an effect's result as its cleanup)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place; a library's struct of functions is one too)*
@@ -315,7 +316,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0254 A key or ref that does nothing is captured in no order](0254-pure-key-ref.md)
 - [0255 next/router's events](0255-next-router-events.md)
 - [0256 A namespace import is named as the module of its bindings](0256-namespace-import-names.md) *(amended: a namespace named as its path names it, `* as Name` (the user's decision))*
-- [0257 A closure that only spawns an async block is an async arrow](0257-spawning-closure-async-arrow.md)
+- [0257 A closure that only spawns an async block is an async arrow](0257-spawning-closure-async-arrow.md) *(superseded by 1139)*
 - [0258 A promise's then, a module of a component, next/head and the Router](0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`; amended by 0869: one the API calls once is an `FnOnce`)*

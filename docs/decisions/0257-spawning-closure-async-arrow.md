@@ -1,6 +1,6 @@
 # 0257. A closure that only spawns an async block is an async arrow
 
-Status: Accepted.
+Status: Superseded by [1139](1139-a-closure-gives-back-what-rusts-does.md) (#1685): React reads an effect's promise as its cleanup, so a closure of `()` gives back `undefined`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
