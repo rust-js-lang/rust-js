@@ -294,6 +294,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
+    name: "layout-debug-never-pretty",
+    breaks: "`{:#?}` of a `Layout` is one line, not nested as Rust's is (#1721)",
+    file: "src/lower/display/debug.rs",
+    find: "                _ => vec![value, pretty.alternate()],\n",
+    replace: "                _ => vec![value],\n",
+    tests: ["test/corpus.test.ts", "-t", "^layout_debug_pretty.rs$"],
+  },
+  {
     name: "layout-debug-refused",
     breaks: "`{:?}` of a `Layout` is refused",
     file: "src/lower/display/debug.rs",

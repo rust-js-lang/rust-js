@@ -24,9 +24,11 @@ function $layout(size, align) {
   return ok ? { TAG: "Ok", _0: { size, align } } : { TAG: "Err", _0: undefined };
 }
 
-// `{:?}` of a `Layout`.
-function $debugLayout(layout) {
-  return `Layout { size: ${layout.size}, align: ${layout.align} (1 << ${Math.log2(layout.align)}) }`;
+// `{:?}` of a `Layout`, its derived `Debug`'s, its `align` an `Alignment`'s
+// `{:?} (1 << {:?})`: nested where it's `alternate`, `{:#?}`.
+function $debugLayout(layout, alternate) {
+  const fields = [`size: ${layout.size}`, `align: ${layout.align} (1 << ${Math.log2(layout.align)})`];
+  return alternate ? $pretty("Layout {", fields, "}") : `Layout { ${fields.join(", ")} }`;
 }
 
 // `Vec::from_raw_parts(p, len, cap)`: the array `p` points to the first of,
