@@ -1,3 +1,16 @@
 # The index of decisions is a list two changes may each add to at once:
 # merged by keeping both sides' lines (docs/decisions/README.md).
 docs/decisions/README.md merge=union
+
+# A blessed baseline whose lines depend on each other, a total over its
+# rows: never merged line by line, which keeps two blesses' rows and one's
+# totals unseen (c1bc233e4, 66d8e6b2b), but a conflict on rebase, made
+# again by its bless from the rebased tree (DEVELOPMENT.md).
+docs/readability.txt merge=binary
+docs/std-coverage.txt merge=binary
+builtins/coverage.txt merge=binary
+next/coverage.txt merge=binary
+node/coverage.txt merge=binary
+react/coverage.txt merge=binary
+webapi/coverage.txt merge=binary
+

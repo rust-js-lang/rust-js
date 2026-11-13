@@ -659,7 +659,12 @@ checked:
   (its shares are compared over the files it lists, so a case added is no
   reason to bless: it's counted once anything else is blessed),
   corpus snapshots with `bun run bless`; the decision index merges by
-  union, and the architecture test names a line left twice.
+  union, and the architecture test names a line left twice. A blessed
+  baseline of totals, `docs/readability.txt` and the coverage lists, is
+  `merge=binary` (`.gitattributes`): two commits that each bless it
+  conflict on rebase, and it's blessed again from the rebased tree, never
+  merged line by line, which once kept a stale row and turned `main` red
+  (66d8e6b2b).
 - **After a rebase, check again only what the incoming commits touch**.
   With several agents pushing, `main` moves about as often as a
   `check:fast --all` takes (about 10 minutes under load), so a full re-run
