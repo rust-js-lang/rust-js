@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  nonZero: (read) => (json) => read(json),\n",
     tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
   },
+  {
+    name: "json-path-expected-a-string",
+    breaks: "a `PathBuf` read from what isn't a string says `expected a string`, where serde's is `expected path string` (#1623)",
+    file: "src/runtime/from_json.js",
+    find: 'path: (json) => json.deserializeStr("path string", (s) => s),',
+    replace: 'path: (json) => json.deserializeStr("a string", (s) => s),',
+    tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
+  },
 ];

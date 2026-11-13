@@ -423,3 +423,58 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// Paths and strings: a `PathBuf` and a `Path` as their text, a `PathBuf`
+// read as serde's `path string`; a `Cow` as what it borrows or owns, read as
+// `Cow::Owned`; a `Box<str>` and a `Box<[T]>` read as a `String` and a `Vec`.
+test("serde: a path, a Cow and a boxed str or slice are written and read as serde's own impls do", async () => {
+  const dir = fixture("serde-std-paths");
+  writeFileSync(join(dir, "cases.rs"), harness + String.raw`
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Entry<'a> {
+    pub at: PathBuf,
+    pub label: Cow<'a, str>,
+    pub sizes: Cow<'a, [u32]>,
+    pub note: Box<str>,
+    pub parts: Box<[i8]>,
+}
+
+pub fn report() -> String {
+    let mut out = String::new();
+    write(&mut out, &PathBuf::from("a/b c\"d"));
+    write(&mut out, &Path::new("/tmp/x"));
+    write(&mut out, &Cow::Borrowed("cow"));
+    write(&mut out, &Cow::<str>::Owned("owned".to_string()));
+    write(&mut out, &Cow::Borrowed(&[1u8, 2][..]));
+    let entry = Entry { at: PathBuf::from("dir/file.txt"), label: Cow::Borrowed("l"), sizes: Cow::Owned(vec![3, 4]), note: "n".into(), parts: vec![-1, 2].into_boxed_slice() };
+    write(&mut out, &entry);
+    for text in ["\"p/q\"", "\"\"", "\"esc\\naped\"", "1", "null", "[\"a\"]"] {
+        read::<PathBuf>(&mut out, text);
+        read::<Cow<str>>(&mut out, text);
+        read::<Box<str>>(&mut out, text);
+    }
+    for text in ["[1,2]", "[]", "[1,\"x\"]", "\"s\"", "{}"] {
+        read::<Cow<[u32]>>(&mut out, text);
+        read::<Box<[i8]>>(&mut out, text);
+    }
+    match serde_json::from_str::<Entry>(r#"{"at":"x/y","label":"lab","sizes":[5],"note":"nt","parts":[7]}"#) {
+        Ok(mut e) => {
+            e.label.to_mut().push('!');
+            e.at.push("z");
+            out.push_str(&format!("{e:?} {}\n", matches!(e.label, Cow::Owned(_))));
+        }
+        Err(e) => out.push_str(&format!("error: {e}\n")),
+    }
+    read_value::<PathBuf>(&mut out, serde_json::json!("v/w"));
+    read_value::<PathBuf>(&mut out, serde_json::json!(5));
+    read_value::<Cow<str>>(&mut out, serde_json::json!("cv"));
+    read_value::<Box<[i8]>>(&mut out, serde_json::json!([1, 300]));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "            { let _ = (i, field_ty); value }\n",
     tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
   },
+  {
+    name: "boxed-str-read-as-str",
+    breaks: "a `Box<str>` is read as a `str`, which serde can't, refused where serde reads its `String` (#1623)",
+    file: "src/lower/serde/de.rs",
+    find: '            ty::Adt(_, args) if ty.is_box() && args.type_at(0).is_str() => Ok(reader("string")),\n',
+    replace: "",
+    tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
+  },
 ];

@@ -18,6 +18,9 @@
 //!   `lock()` or `read()`, with its errors, `already mutably borrowed` and
 //!   `lock poison error while serializing`; read as `::new` of it, by the
 //!   cell's own rules (`cell_held`, `cell_made`).
+//! - A path, `PathBuf` or `Path`, is its text, a string (ADR 0173), read
+//!   as serde's `path string`; a `Cow` what it borrows or owns, read as
+//!   `Cow::Owned` of its owned type, by the `Cow`'s own lowering.
 //! - An enum form is externally tagged, `"Unbounded"` or `{"Included":3}`,
 //!   each variant written and read as a derive of the enum's own
 //!   definition does, the variants named in serde's order, which its
@@ -27,6 +30,7 @@
 
 use super::*;
 use crate::lower::representation::Num;
+use crate::lower::std_types::cow::CowOp;
 use crate::lower::std_types::range::RangeKind;
 
 /// One row's form.
@@ -43,6 +47,10 @@ pub(super) enum StdForm<'tcx> {
     Newtype(Ty<'tcx>),
     /// A unit struct's, `null`.
     Unit,
+    /// A path's text.
+    Path,
+    /// What a `Cow` of this type borrows or owns.
+    Cow(Ty<'tcx>),
     /// A `Saturating<T>` of an integer type up to 64 bits: written as a
     /// newtype, read by serde's own visitor, which clamps any integer to
     /// `T`'s range, `$json.saturating(min, max)`.
@@ -153,6 +161,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Some(StdForm::Saturating(args.type_at(0), num));
         }
+        if self.recognition().is_path_like(ty) {
+            return Some(StdForm::Path);
+        }
+        if self.recognition().cow_parts(ty).is_some() {
+            return Some(StdForm::Cow(ty));
+        }
         if self.is_lang_adt(ty, rustc_hir::attrs::lang_items::LangItem::PhantomData) {
             return Some(StdForm::Unit);
         }
@@ -209,6 +223,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "null", Vec::new(), out);
                 Ok(())
             }
+            StdForm::Path => {
+                self.emit(json, "string", vec![value], out);
+                Ok(())
+            }
+            StdForm::Cow(cow) => {
+                let (held, held_ty) = self.cow_deref(&value, cow).expect("a `Cow`'s parts");
+                self.write_json(held, json, held_ty, span, out)
+            }
             // A handle on a field that holds its value, where no borrow of it
             // is counted, is read as it's held (ADR 0863, amended).
             StdForm::Cell(_, inner, CellKind::RefCell) if matches!(value.kind, js::ExprKind::Handle(..)) => {
@@ -251,6 +273,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.fresh(Role::Json);
         let inner = match form {
             StdForm::Unit => return Ok(Expr::member(Expr::helper("$json"), "unit")),
+            StdForm::Path => return Ok(Expr::member(Expr::helper("$json"), "path")),
+            // `Cow::Owned` of its owned type, read, as `Cow::from` makes one.
+            StdForm::Cow(cow) => {
+                let (_, owned) = self.recognition().cow_parts(cow).expect("a `Cow`'s parts");
+                let read = self.json_reader(owned, span)?;
+                let mut body = Vec::new();
+                let read = Expr::call(read, vec![Expr::var(&json)]);
+                let made = self.cow_values(CowOp::From { owned: true }, read, cow, span, &mut body)?;
+                body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
+                return Ok(Expr::arrow(vec![json.into()], body));
+            }
             StdForm::Saturating(_, num) => {
                 let (min, max) = num.range();
                 let max = i128::try_from(max).expect("an integer type up to 64 bits");
@@ -319,7 +352,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => read,
                 }
             }
-            StdForm::Newtype(_) | StdForm::Unit | StdForm::Cell(..) | StdForm::Saturating(..) => {
+            StdForm::Newtype(_)
+            | StdForm::Unit
+            | StdForm::Cell(..)
+            | StdForm::Saturating(..)
+            | StdForm::Path
+            | StdForm::Cow(_) => {
                 unreachable!("read above")
             }
             StdForm::Enum(adt, args, order) => {

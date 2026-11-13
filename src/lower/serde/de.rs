@@ -213,6 +213,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.counted_rc(ty).is_some() => {
                 Err(self.unsupported(span, &format!("reading a counted `{ty}` from JSON")))
             }
+            // A `Box<str>` is its `String`'s, and a `Box<[T]>` its `Vec`'s, as
+            // serde reads them, then `into_boxed_*` (#1623).
+            ty::Adt(_, args) if ty.is_box() && args.type_at(0).is_str() => Ok(reader("string")),
+            ty::Adt(_, args)
+                if ty.is_box()
+                    && let ty::Slice(item) = args.type_at(0).kind() =>
+            {
+                let read = self.json_reader(*item, span)?;
+                Ok(Expr::call(reader("vec"), vec![read]))
+            }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.json_reader(args.type_at(0), span),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result) => {
                 let (ok, err) = (

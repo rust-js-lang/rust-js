@@ -14,7 +14,6 @@ refused bytes_05
 refused bytes_06
 refused bytes_07
 refused bytes_and_writers
-refused collections_std
 refused drop_00
 refused drop_03
 refused errapi_02
@@ -41,10 +40,6 @@ refused more_19
 refused more_20
 refused more_27
 refused pos_19
-refused std_02
-refused std_11
-refused std_18
-refused std_19
 refused std_21
 refused stream_00
 refused stream_01
@@ -119,6 +114,7 @@ same chk_05
 same chk_06
 same chk_07
 same chk_08
+same collections_std
 same custom_errors
 same default_fields
 same deny_unknown
@@ -286,6 +282,7 @@ same skip_fields
 same skip_unknown_values
 same std_00
 same std_01
+same std_02
 same std_03
 same std_04
 same std_05
@@ -294,12 +291,15 @@ same std_07
 same std_08
 same std_09
 same std_10
+same std_11
 same std_12
 same std_13
 same std_14
 same std_15
 same std_16
 same std_17
+same std_18
+same std_19
 same std_20
 same std_22
 same std_24

@@ -479,8 +479,6 @@ for (const [name, source, message, crate] of [
   ["a Map's entry or_insert", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.entry("k").or_insert(serde_json::json!(1)); }', "`serde_json::map::Entry::<'a>::or_insert`", "serde"],
   ["Map::clear", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.clear() }', "::clear`", "serde"],
   ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
-  ["reading a Box<str>", 'pub fn f(s: &str) -> Box<str> { serde_json::from_str(s).unwrap() }', "deserializing `str`", "serde"],
-  ["writing a Cow<str>", 'pub fn f(c: &std::borrow::Cow<str>) -> String { serde_json::to_string(c).unwrap() }', "serializing `std::borrow::Cow<'_, str>`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).

@@ -746,7 +746,10 @@ before the epoch or past what a `Duration` holds; a `Wrapping` and a
 as serde's impl reads them, `already mutably borrowed` or `lock poison
 error while serializing` where it can't; an `i128` and a `u128` as their
 digits, read as serde_json reads them, and a `Saturating` clamped to its
-type as serde reads it
+type as serde reads it; a `PathBuf` and a `Path` as their text, read as
+serde's `path string`; a `Cow` as what it borrows or owns, read as
+`Cow::Owned`; and a `Box<str>` and a `Box<[T]>` read as a `String` and a
+`Vec` are
 ([ADR 1134](../../decisions/1134-std-types-serde-forms-are-one-catalog.md)).
 The others are refused for now (#1623).
 

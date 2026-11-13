@@ -17051,6 +17051,8 @@ export const $json = {
   f64: (json) => json.f64(),
   f32: (json) => json.f32(),
   string: (json) => json.string(),
+  // A `PathBuf`, its text, serde's `path string` (#1623).
+  path: (json) => json.deserializeStr("path string", (s) => s),
   str: (json) => json.borrowedStr(),
   // serde_json's `Value` (ADR 0083), from whatever's there, and its `Number`.
   value: (json) => json.deserializeAny("any valid JSON value", $JSON_VALUE),

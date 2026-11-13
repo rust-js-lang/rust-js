@@ -149,3 +149,20 @@ semantics`, which clamps any integer to `T`'s range and refuses a float
 (`$json.saturating(min, max)`, its bounds `Num::range`'s). A 128-bit one
 has no row. Probes `big_00` to `big_03` and `num_i128` give native's
 answer in all three modes.
+
+## Amendment: paths and strings (2026-11-13, #1623)
+
+Rows of a path, `PathBuf` or `Path`, its text, a string (ADR 0173),
+written as one and read as serde's `path string`; and of a `Cow`, what it
+borrows or owns, written as that (`cow_deref`) and read as `Cow::Owned` of
+its owned type, made as `Cow::from` makes one (`cow_values`), so its
+`to_mut()` and a `match` of it read it as any `Cow`. A `Box<str>` and a
+`Box<[T]>` are the box's own dispatch's in the reader: a `String`'s and a
+`Vec`'s, as serde reads them, then `into_boxed_str` and
+`into_boxed_slice`, which change nothing in JS. Probes `std_02`, `std_11`,
+`std_18`, `std_19`, `borrowed_and_generic` and `collections_std` give
+native's answer, the last refused only when split, by `type_name` of a
+type parameter, another gap.
+
+With this, every std type #1623 listed is a row, or, of a primitive, the
+numbers' dispatch's.

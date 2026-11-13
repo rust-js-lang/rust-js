@@ -111,4 +111,28 @@ export const mutations: Mutation[] = [
     replace: "            let _ = num;\n            return Some(StdForm::Newtype(args.type_at(0)));\n",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
   },
+  {
+    name: "std-path-row-missing",
+    breaks: "a `PathBuf` has no row, so writing or reading one is refused where serde writes its text (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "        if self.recognition().is_path_like(ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
+  },
+  {
+    name: "std-cow-row-missing",
+    breaks: "a `Cow` has no row, so writing or reading one is refused where serde writes what it borrows or owns (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "        if self.recognition().cow_parts(ty).is_some() {\n",
+    replace: "        if false {\n",
+    tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
+  },
+  {
+    name: "std-cow-read-unwrapped",
+    breaks: "a `Cow` read is its owned value, not `Cow::Owned` of it, so its `to_mut()` and `matches!` read a string's `TAG` (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "                let made = self.cow_values(CowOp::From { owned: true }, read, cow, span, &mut body)?;\n",
+    replace: "                let made = read;\n",
+    tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
+  },
 ];

@@ -667,7 +667,11 @@ checked:
   your change's whole check has passed, on a base at most 60 minutes old:
   - If an incoming commit touches a file your change touches, or the code
     your change works with, or the rebase stopped on a conflict, run the
-    whole check again. For an iterator change, "the code it works with"
+    whole check again. A generated file isn't such a file: where the only
+    overlap is one (`std/*.js`, made of `src/runtime/*` by `bun run std`),
+    the sources behind it are disjoint and the rebase applied with no
+    conflict, regenerate, then run your change's own cases, its changed
+    mutations and `test/runtime-package.test.ts`, and push. For an iterator change, "the code it works with"
     means any of `src/lower/mir/iter`, `src/lower/iterators`,
     `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
     `test/corpus` or `test/iterator-matrix-known.txt`.
