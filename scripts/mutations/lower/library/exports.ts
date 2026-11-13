@@ -376,4 +376,12 @@ export const mutations: Mutation[] = [
     replace: "        drops_any: { let _ = drops_any; false },\n",
     tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
   },
+  {
+    name: "trait-method-facts-unlisted",
+    breaks: "a library's contract lists none of its traits' methods' facts, so a consumer's call through its exported dictionary gives none of what its JS takes (#1612)",
+    file: "src/lower/library/exports.rs",
+    find: "                    id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())\n",
+    replace: "                    false && id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())\n",
+    tests: ["test/crates.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
+  },
 ];

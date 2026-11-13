@@ -278,9 +278,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a call through a dictionary of a method whose entries take its caller's location gives none",
     file: "src/lower/traits/calls.rs",
-    find: "        for slot in self.evidence_slots(id, Scope::Own) {\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
+    find: "        for slot in self.own_slots_through(id, generic_args) {\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
     replace:
-      "        for slot in self.evidence_slots(id, Scope::Own) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
+      "        for slot in self.own_slots_through(id, generic_args) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
@@ -330,8 +330,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an entry calls an impl's method with none of what it asks of its type parameters",
     file: "src/lower/traits/calls.rs",
-    find: "                    let of = self.drop_slot_of(method, index, args);\n                    values.push(self.type_fact_value(of, fact, span)?);\n",
-    replace: "                    let _ = (index, fact);\n",
+    find: "                    values.push(value);\n",
+    replace: "                    let _ = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_type_facts.rs$"],
   },
   {
@@ -604,5 +604,13 @@ export const mutations: Mutation[] = [
     find: "                            let iterated = self.iterated_slot(id, index, generic_args, ty);\n",
     replace: "                            let iterated = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
+  },
+  {
+    name: "entry-given-facts-unread",
+    breaks: "a dictionary's entry gives its default a fact of a slot its method's own where clause bounds, `<Self::Item as IntoIterator>::IntoIter`'s `OneShot`, as no type here, `undefined`, not the one it's given: a `flat_map` of `Option`s hints `(0, None)` (#1613)",
+    file: "src/lower/traits/calls.rs",
+    find: "                    let value = match self.given_fact_of(of, fact) {\n",
+    replace: "                    let value = match None::<Expr> {\n",
+    tests: ["test/crates.test.ts", "-t", "library_blanket_impl_its_consumer_compiles_gives_its_facts"],
   },
 ];

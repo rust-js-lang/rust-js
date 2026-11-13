@@ -85,8 +85,11 @@ use std::path::Path;
 /// `Counted`, a consumer that counts otherwise compiling its own (#1234).
 /// 32: `drops_any`, whether any of its own values drops,
 /// so a consumer none of whose own does still gives the generic impls'
-/// methods of the library's it compiles their drops (#1591).
-pub const VERSION: u32 = 32;
+/// methods of the library's it compiles their drops (#1591). 33: what each
+/// of its traits' methods asks of its own slots, `trait_methods`, which a
+/// call of it through any impl's dictionary gives, the library's JS's own
+/// list, never one a consumer's analysis of its body makes (#1612).
+pub const VERSION: u32 = 33;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -542,6 +545,12 @@ pub struct Library {
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<Field>,
+    /// Each of its traits' methods that asks facts of its own slots, by key,
+    /// and what it asks of each, in the order its JS takes them (ADR 0145,
+    /// #1612): what a call of it through any impl's dictionary gives after
+    /// its own bounds' dictionaries, as the library's JS of each takes them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub trait_methods: Vec<TraitMethod>,
     /// Each of its traits' associated types whose facts its dictionaries
     /// carry, by key, `Size` of smallvec's `<A as Array>::Item`, its
     /// `ItemSize` (ADR 0145, amended).
@@ -623,6 +632,15 @@ fn carried_super(associated: &[Associated]) -> IndexMap<String, IndexMap<String,
 pub struct ClonedClosure {
     pub key: String,
     pub apart: bool,
+}
+
+/// A method of one of a library's traits, by rustc's key for it, and the
+/// facts it asks of its own slots (#1612).
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TraitMethod {
+    pub key: String,
+    /// Each fact, `[slot, "Size"]`, in the order its JS takes them.
+    pub facts: Vec<(u32, String)>,
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -794,6 +812,9 @@ pub struct Exports {
     /// Whether each closure it clones, or gives to clone, is cloned apart,
     /// by key (ADR 0522, amended; #1202).
     pub cloned_closures: IndexMap<String, bool>,
+    /// What each of its traits' methods asks of its own slots, by key: each
+    /// slot's index and the facts' keys (#1612).
+    pub trait_methods: IndexMap<String, Vec<(u32, String)>>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
     pub fields: IndexMap<String, BTreeSet<FieldFact>>,
     /// The facts its traits' dictionaries carry of each associated type, by
@@ -887,6 +908,7 @@ impl Exports {
             built,
             cloned_closures,
             fields,
+            trait_methods,
             associated,
             types,
             package,
@@ -923,6 +945,9 @@ impl Exports {
             built: built.into_iter().collect(),
             cloned_closures: (cloned_closures.into_iter()).map(|c| (c.key, c.apart)).collect(),
             fields: fields.into_iter().map(|field| (field.key, field.facts)).collect(),
+            trait_methods: (trait_methods.into_iter())
+                .map(|method| (method.key, method.facts))
+                .collect(),
             associated: (associated.iter())
                 .filter(|associated| associated.carrier.is_none())
                 .map(|associated| (associated.key.clone(), associated.facts.clone()))

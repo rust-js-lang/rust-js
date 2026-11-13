@@ -696,6 +696,21 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         })
     }
 
+    /// What `id`, a method of a library's trait, asks of its own slots, as
+    /// that library's contract says, in the order its JS takes them: the one
+    /// list, whichever crate compiles a copy of it, never one this crate's
+    /// analysis of its body makes (#1612). `None` of another's.
+    pub(super) fn trait_method_facts(&self, id: DefId) -> Option<Vec<(u32, super::recognition::TypeFact)>> {
+        let trait_id = self.tcx.trait_of_assoc(id)?;
+        let library = self.library(trait_id.krate).filter(|library| !library.builtin)?;
+        let facts = library.trait_methods.get(&key(self.tcx, id)).into_iter().flatten();
+        Some(
+            facts
+                .filter_map(|(index, word)| super::recognition::TypeFact::of_key(word).map(|fact| (*index, fact)))
+                .collect(),
+        )
+    }
+
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
         (self.item(id).into_iter().flat_map(|item| &item.calling.params))
             .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))

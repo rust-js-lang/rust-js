@@ -64,6 +64,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `evidence_slots`' own of `id`, a trait's method, called with
+    /// `generic_args` through a dictionary: of a library's impl whose
+    /// dictionary its JS exports, the facts its JS of the method takes, as
+    /// the library's contract lists them, never ones this crate's analysis
+    /// makes (#1612); of another's, its own.
+    pub(in crate::lower) fn own_slots_through(
+        &self,
+        id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> Vec<Slot<'tcx>> {
+        let slots = self.evidence_slots(id, Scope::Own);
+        let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(id), generic_args);
+        let Some(facts) = (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) else {
+            return slots;
+        };
+        let parent = self.tcx.generics_of(id).parent_count as u32;
+        let at = (slots.iter())
+            .position(|slot| matches!(slot, Slot::Fact(..) | Slot::Drop(_)))
+            .unwrap_or(slots.len());
+        let mut own: Vec<Slot<'tcx>> = slots
+            .into_iter()
+            .filter(|slot| !matches!(slot, Slot::Fact(..)))
+            .collect();
+        own.splice(
+            at..at,
+            (facts.into_iter())
+                .filter(|&(index, _)| index >= parent)
+                .map(|(index, fact)| Slot::Fact(index, fact)),
+        );
+        own
+    }
+
     /// What `id` takes after its own parameters, of `scope`, in order: its
     /// caller's location, its const parameters, its bounds' dictionaries,
     /// the facts it asks, then its drops. The one order.

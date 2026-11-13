@@ -241,6 +241,24 @@ pub(in crate::lower) fn exports<'tcx>(
         changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),
         ref_cells: contracts.ref_cells.clone(),
         fields: contracts.fields.clone(),
+        // What each of its own traits' methods asks of its own slots, as its
+        // JS of each takes them (#1612).
+        trait_methods: {
+            let mut methods: Vec<crate::library::TraitMethod> = (contracts.type_facts.iter())
+                .filter(|&(&id, facts)| {
+                    id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())
+                })
+                .map(|(&id, facts)| crate::library::TraitMethod {
+                    key: key(tcx, id),
+                    facts: facts
+                        .iter()
+                        .map(|&(index, fact)| (index, fact.key().to_string()))
+                        .collect(),
+                })
+                .collect();
+            methods.sort_by(|a, b| a.key.cmp(&b.key));
+            methods
+        },
         // What its traits' dictionaries carry of their associated types,
         // `type_fact_params`' own entry of each (ADR 0145, amended).
         associated: {

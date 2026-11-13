@@ -101,5 +101,6 @@ m6-react's to see first (#1462).
 | `RefCellFacts.unchecked` | closed-world | those none of whose borrows can meet another | holds no borrow of one while the library's code runs, or is refused (ADR 0863) |
 | `RefCellFacts.handed` | closed-world | those its types hold and its exports take and give | shares each with it as it is (ADR 0863) |
 | `Library.fields` | holds | each struct's field its consumers read a fact of: `FieldFact` | |
+| `Library.trait_methods` | summary | each of its traits' methods that asks facts of its own slots, and what it asks of each, `[slot, "ConstSize"]`, in the order its JS of the method takes them (ADR 0145, #1612) | a call through the library's exported impl's dictionary gives these, never facts its own analysis of the default's body finds |
 | `FieldFact::Quiet` | closed-world | a `RefCell` field none of whose borrows its code checks | lends none, and holds no borrow of one while code that may borrow it runs; lending one is refused (#1054) |
 | `FieldFact::RustFunctions` | closed-world | each fn pointer the field holds is a Rust function | its call of one leaves out a trailing `undefined` (ADR 0330) |

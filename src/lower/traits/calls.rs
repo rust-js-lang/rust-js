@@ -289,6 +289,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
     }
 
+    /// `tr`'s impl, where it's a library's whose dictionary its JS exports.
+    pub(in crate::lower) fn exported_impl(&self, tr: ty::TraitRef<'tcx>) -> Option<DefId> {
+        match crate::lower::traits::select(self.tcx, self.typing_env, self.tcx.erase_and_anonymize_regions(tr)) {
+            Ok(ImplSource::UserDefined(imp)) if self.krate.foreign.item(imp.impl_def_id).is_some() => {
+                Some(imp.impl_def_id)
+            }
+            _ => None,
+        }
+    }
+
     pub(in crate::lower) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
         // A std body compiled with this crate asks as the crate's own do
         // (ADR 0561).
@@ -751,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // for one with nothing to drop (ADR 0163).
         let (mut values, mut drops) = (Vec::new(), Vec::new());
         let mut location = location;
-        for slot in self.evidence_slots(id, Scope::Own) {
+        for slot in self.own_slots_through(id, generic_args) {
             match slot {
                 Slot::Location => values.extend(location.take()),
                 Slot::Const(index) => values.push(self.const_arg(generic_args.const_at(index as usize), span)?),
@@ -835,10 +845,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         values.push(self.dictionary(here, span)?);
                     }
                 }
-                Slot::Fact(index, _) if !self.gives_slot(method, index, args) => values.push(Expr::undefined()),
                 Slot::Fact(index, fact) => {
                     let of = self.drop_slot_of(method, index, args);
-                    values.push(self.type_fact_value(of, fact, span)?);
+                    // What the entry is given of it, its caller's, first: of
+                    // a slot a where clause of the method's own bounds,
+                    // `<Self::Item as IntoIterator>::IntoIter` of `Self::Item:
+                    // IntoIterator`, which the impl's bounds alone don't
+                    // normalize, so it seems no type here (#1613).
+                    let value = match self.given_fact_of(of, fact) {
+                        Some(given) => given,
+                        None if !self.gives_slot(method, index, args) => Expr::undefined(),
+                        None => self.type_fact_value(of, fact, span)?,
+                    };
+                    values.push(value);
                 }
                 Slot::Drop(index) => {
                     let ty = self.drop_slot_of(method, index, args);

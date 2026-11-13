@@ -646,3 +646,47 @@ No other snapshot changes. Mutations `type-name-marks-params-alone`
 (`std_types/number/generic.ts`) and `type-name-of-an-alias-unasked`
 (`analysis/type_facts.ts`), caught.
 
+## Amendment: a library's trait's methods' facts are its contract's (2026-11-13, #1612, #1613)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+A call of a trait's method through a dictionary gives, after its own
+bounds' dictionaries, the facts the method asks of its own slots. Through
+a library's exported impl's dictionary, the consumer took them from its own
+analysis of the default's body. The library's lowering had asked one of
+them of the impl instead, `TItemItemSize`, so the consumer gave one more
+than the library's JS takes. `flat(self, SelfItemIntoIterator,
+SelfItemConstSize, SelfItemIntoIterOneShot)` was given `intoIterator,
+undefined, 4, false`: a size landed on its `OneShot`, and its drops came
+before its line (#1612, P0, both builds; the metamorphic net's `library`
+rewrite of `flat_map_of_a_where_clause_into_iterator.rs`).
+
+The library's contract now lists, for each of its traits' methods that
+asks facts of its own slots, what it asks, in the order its JS takes them:
+`Library.trait_methods` (contract version 33, ADR 1129; a manifest before
+is refused by its version). A call through a library's exported impl's
+dictionary takes its own facts from that list (`own_slots_through`). A
+consumer's own impl's dictionary, and a type parameter's, are as they
+were.
+
+And a dictionary's entry gives its default each fact it's given itself
+first (`method_evidence`): a slot that the method's own where clause
+bounds, `<Self::Item as IntoIterator>::IntoIter` of `Self::Item:
+IntoIterator`, doesn't normalize under the impl's bounds alone. So it
+seemed no type there, and the entry gave `undefined` for the
+`TItemIntoIterOneShot` it was given. A consumer that compiles a library's
+blanket impl itself then hinted a `flat_map` of `Option`s `(0, None)`,
+where native gives `(0, Some(3))` (#1613, P0).
+
+Crate pairs: `library_default_where_clause_through_its_dictionary` (the
+issue's defaults through the library's dictionary, and a hint by an
+array's constant size); `library_blanket_impl_its_consumer_compiles_gives_its_facts`
+(the consumer's own copy of the impl, `Option`s, arrays and `Vec`s). Both
+are run against native. The metamorphic `library` rewrite of the corpus
+case passes. Two crate pairs' calls, which gave an unused trailing fact the
+library's JS doesn't take, now give none; every other pair's JS is
+byte-identical. Mutations `own-facts-through-a-library-dictionary-reanalyzed`,
+`trait-method-facts-unlisted` and `entry-given-facts-unread`, caught.
+A trait default's `flat_map` of arrays collecting at capacity 4 where
+native's is 3 is #1614, apart.
