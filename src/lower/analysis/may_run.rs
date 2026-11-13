@@ -338,7 +338,7 @@ fn may_run<'tcx>(
                         runs.into_iter()
                             .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f)))),
                     );
-                    return callee_args.types().all(|ty| dropped(ty, work));
+                    return std_call_drops(callee_args).all(|ty| dropped(ty, work));
                 }
                 // Of what `std_runs` can't see, a `dyn`'s, a library's type's
                 // impl: what it's given, and the crate's impls of its bounds'
@@ -379,7 +379,7 @@ fn may_run<'tcx>(
                 .flat_map(values_in)
                 .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
                 .collect();
-            callee_args.types().all(|ty| dropped(ty, work)) && given(&named, work) && given(sig.inputs(), work)
+            std_call_drops(callee_args).all(|ty| dropped(ty, work)) && given(&named, work) && given(sig.inputs(), work)
         };
         for data in mir.basic_blocks.iter() {
             match &data.terminator().kind {
@@ -616,4 +616,13 @@ fn named_reads(body: &Body<'_>) -> Vec<DefId> {
             _ => None,
         })
         .collect()
+}
+
+/// The types a std call, given `args`, may drop a value of: each of its
+/// type arguments, as std's code owns, takes and replaces values of them
+/// through whatever reference it's given, `Vec::clear` of a `&mut
+/// Vec<Guard>` its `Guard`s. The one rule of it, what may run's and what a
+/// body may borrow's (`cell_borrows`, #1661).
+pub(in crate::lower) fn std_call_drops<'tcx>(args: ty::GenericArgsRef<'tcx>) -> impl Iterator<Item = ty::Ty<'tcx>> {
+    args.types()
 }

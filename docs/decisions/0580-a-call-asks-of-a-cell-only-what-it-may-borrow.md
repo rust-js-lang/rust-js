@@ -196,3 +196,33 @@ any, as it takes a parameter. Held by the corpus case
 `cell_of_an_iterator_std_runs`, in both builds, and the mutations
 `cell-of-a-run-of-no-args-kept-its-parameters` and
 `cell-of-a-run-of-no-args-kept-its-const-parameters`.
+
+## Amendment: what a std call drops through a reference (2026-11-13, #1661)
+
+What a body may borrow (`cell_borrows`' `direct`) took a body's drops to be
+the values its own expressions have, but what's behind a reference, which
+no body owns, and added nothing of what a std call drops. So
+`g.borrow_mut().clear()` of a `Vec<Guard>`, whose `Guard`s' destructor
+borrows a cell, was taken to drop nothing, the cell judged never to meet
+another borrow, and its checks removed for the whole crate:
+`try_borrow_mut` folded to `true`, and a `borrow_mut` there never panicked
+`already borrowed`. `truncate`, `retain`, a map's `clear` and a
+thread-local's `with_borrow_mut(|v| v.clear())` likewise.
+
+What may run (`may_run`) had the rule, that a std call may drop a value of
+each of its type arguments, as std's code owns, takes and replaces values
+of them through whatever reference it's given. It's now one function,
+`may_run::std_call_drops`, which both ask: `direct` gives each type it
+yields the same check its expressions' types get. Case (ADR 0262): results
+change, so Rust's checks are kept. Five snapshots keep checks they'd shed,
+`owner_handle_quiet`, `rc_identity_set`, `refcell_identity_set`,
+`refcell_transparent` and `set_for_each`, each through a std call given a
+`&mut` of a type parameter, `ptr::hash(self, state: &mut H)` in the crate's
+`Hash` impl, whose `H` is its caller's to say; their output is native's
+either way. A narrower rule, none of a call given only shared references,
+moved no snapshot and no case told it apart, so the one rule stays std's
+broadest. Corpus cases `ref_cell_borrowed_by_a_clear_through_a_reference`,
+`ref_cell_borrowed_by_a_truncate_retain_or_map_clear`,
+`ref_cell_borrowed_by_a_thread_locals_clear` and
+`ref_cell_borrowed_mutably_by_a_clear_through_a_reference`, against native
+in both builds; a mutation, caught.

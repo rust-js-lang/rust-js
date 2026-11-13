@@ -883,6 +883,19 @@ fn direct<'tcx>(
 ) -> Direct<'tcx> {
     let tcx = recognition.tcx;
     let mut found = Direct::default();
+    // A value whose drop runs a destructor, which may run anything; of a
+    // type parameter's, its caller's to say. A guard's releases its borrow.
+    let dropped = |found: &mut Direct<'tcx>, ty: Ty<'tcx>| {
+        let ty = tcx.erase_and_anonymize_regions(ty);
+        if recognition.is_guard(ty) || !ty.needs_drop(tcx, recognition.typing_env) {
+            return;
+        }
+        match ty.has_param() {
+            true => _ = found.own.drops.insert(ty),
+            false if drops(ty) => found.any = true,
+            false => {}
+        }
+    };
     let runs = |found: &mut Direct<'tcx>, called: Called<'tcx>| match called {
         Called::Nothing => {}
         Called::Cell(cell) => _ = found.own.cells.insert(cell),
@@ -890,11 +903,16 @@ fn direct<'tcx>(
         Called::Bodies(bodies) => found
             .runs
             .extend(bodies.into_iter().map(|(body, args)| (body, Some(args)))),
+        // And what it may drop, of its type arguments, through a reference
+        // too, `g.borrow_mut().clear()`'s items (`std_call_drops`, #1661).
         Called::Std(id, args) => {
             let given = std_given(recognition, impls, id, args);
             found.any |= given.any;
             found.own.cells.extend(given.cells);
             found.runs.extend(given.bodies);
+            for ty in super::may_run::std_call_drops(args) {
+                dropped(found, ty);
+            }
         }
         Called::Any => found.any = true,
     };
@@ -947,19 +965,12 @@ fn direct<'tcx>(
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => found.any = true,
             _ => {}
         }
-        // A value whose drop runs a destructor, which may run anything; of a
-        // type parameter's, its caller's to say. A guard's releases its
-        // borrow.
-        let ty = tcx.erase_and_anonymize_regions(e.ty);
-        // Nor what's behind a reference, `*state`, which no body owns.
+        // Each value the body's own expressions have, not what's behind a
+        // reference, `*state`, which no body owns: what a call drops through
+        // one is the call's, above.
         let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());
-        if behind_ref || recognition.is_guard(ty) || !ty.needs_drop(tcx, recognition.typing_env) {
-            continue;
-        }
-        match ty.has_param() {
-            true => _ = found.own.drops.insert(ty),
-            false if drops(ty) => found.any = true,
-            false => {}
+        if !behind_ref {
+            dropped(&mut found, e.ty);
         }
     }
     found
