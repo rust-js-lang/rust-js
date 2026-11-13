@@ -632,7 +632,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Leak => self.leaked(x, sig.output()),
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
-            Std::ToBig => Expr::call(Expr::var("BigInt"), vec![x]),
+            Std::ToBig => Expr::call(Expr::js_global("BigInt"), vec![x]).built_in(),
             // A `Vec` of a slice's or an array's items, and of text's
             // bytes, as their calls make them, `Into<Vec<u8>>`'s (#1284).
             Std::ToVec => self.vec_of_items(x, given, span)?,
@@ -643,7 +643,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `f32`'s rounded to one, as its call is, but for those that are
             // `Math`'s, exact already (ADRs 0122, 0887).
             Std::Number(op @ NumOp::Math(function)) => {
-                let value = Expr::call(Expr::member(Expr::var("Math"), function), vec![x]);
+                let value = Expr::call(Expr::member(Expr::js_global("Math"), function), vec![x]);
                 match Num::of(input) {
                     Some(num) if math::function(op, num).is_none() => num.wrap(value),
                     _ => value,
@@ -651,7 +651,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `i32::abs`, wrapped as its call is: `i32::MIN`'s is itself (ADR 0125).
             Std::Number(NumOp::Abs) if let Some(num) = Num::of(input).filter(|n| !n.big()) => {
-                num.wrap(Expr::call(Expr::member(Expr::var("Math"), "abs"), vec![x]))
+                num.wrap(Expr::builtin(Expr::js_global("Math"), "abs", vec![x]))
             }
             _ => return Ok(None),
         };

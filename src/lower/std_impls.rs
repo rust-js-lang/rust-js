@@ -361,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         if self.eq_is_identity(item) {
-            return Ok(Expr::call(Expr::member(items, "includes"), vec![x]));
+            return Ok(Expr::builtin(items, "includes", vec![x]));
         }
         let x = match x.reads_same() {
             true => x,
@@ -375,12 +375,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 1016), `includes`, which finds what `indexOf` does.
         if body.is_empty() && strict {
             return Ok(match self.js_eq(item) {
-                None => Expr::call(Expr::member(items, "includes"), vec![x]),
-                Some(_) => Expr::bin(
-                    Op::Ge,
-                    Expr::call(Expr::member(items, "indexOf"), vec![x]),
-                    Expr::int(0),
-                ),
+                None => Expr::builtin(items, "includes", vec![x]),
+                Some(_) => Expr::bin(Op::Ge, Expr::builtin(items, "indexOf", vec![x]), Expr::int(0)),
             });
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));

@@ -1234,7 +1234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 };
                 let length = Expr::object(vec![js::Prop::Field("length".into(), length)]);
-                Expr::call(Expr::member(Expr::var("Array"), "from"), vec![length, made])
+                Expr::builtin(Expr::js_global("Array"), "from", vec![length, made])
             }
             SliceOp::PushMut { at } => {
                 let mut given = vec![arg(), arg()];

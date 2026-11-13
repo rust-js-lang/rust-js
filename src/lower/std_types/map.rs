@@ -1153,7 +1153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Part::Keys => method(m, "keys", Vec::new()),
             Part::Values => method(m, "values", Vec::new()),
         };
-        let listed = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
+        let listed = Expr::builtin(Expr::js_global("Array"), "from", vec![items]);
         // A set's own, whose `forEach` steps them as the array's does (ADR
         // 0877).
         Ok(match self.is_set(map_ty) {

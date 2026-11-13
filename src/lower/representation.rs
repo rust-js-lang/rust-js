@@ -285,7 +285,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let counting = (discriminants.iter().enumerate()).all(|(i, &(_, d))| d.as_i128() == Some(i as i128));
         if counting {
             let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());
-            let index = Expr::call(Expr::member(names, "indexOf"), vec![name]);
+            let index = Expr::builtin(names, "indexOf", vec![name]);
             return Ok(if big {
                 super::std_types::number::to_bigint(index)
             } else {
@@ -622,7 +622,7 @@ pub(super) fn f32_literal(v: f32) -> Expr {
     if !v.is_finite() || shortest == f64::from(v) {
         return Expr::num(f64::from(v));
     }
-    Expr::call(Expr::member(Expr::var("Math"), "fround"), vec![Expr::num(shortest)])
+    Expr::builtin(Expr::js_global("Math"), "fround", vec![Expr::num(shortest)])
 }
 
 impl Num {
@@ -732,7 +732,12 @@ impl Num {
             });
         }
         let bits = Expr::int(i128::from(self.bits()));
-        let as_n = |name: &str| Expr::call(Expr::member(Expr::var("BigInt"), name), vec![bits.clone(), e.clone()]);
+        let as_n = |name: &str| {
+            Expr::call(
+                Expr::member(Expr::js_global("BigInt"), name),
+                vec![bits.clone(), e.clone()],
+            )
+        };
         match self {
             Num::I64 | Num::I128 => as_n("asIntN"),
             Num::U64 | Num::U128 => as_n("asUintN"),
@@ -744,7 +749,7 @@ impl Num {
             }
             Num::U8 | Num::U16 => Expr::bin(Op::BitAnd, e, Expr::int(self.range().1 as i128)),
             // The nearest `f32`: of an exact result, Rust's (ADR 0122).
-            Num::F32 => Expr::call(Expr::member(Expr::var("Math"), "fround"), vec![e]),
+            Num::F32 => Expr::builtin(Expr::js_global("Math"), "fround", vec![e]),
             Num::F64 => e,
         }
     }

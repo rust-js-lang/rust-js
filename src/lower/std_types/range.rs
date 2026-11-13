@@ -695,7 +695,7 @@ pub(in crate::lower) fn range_count(start: Expr, end: Expr, kind: RangeKind) -> 
         RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),
         _ => gap,
     };
-    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![gap, Expr::int(0)])
+    Expr::builtin(Expr::js_global("Math"), "max", vec![gap, Expr::int(0)])
 }
 
 /// A range made where it's stepped, `$iterator({ start: 0, end: n },

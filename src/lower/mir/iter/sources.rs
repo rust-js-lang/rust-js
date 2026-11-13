@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .ok_or(Unknown)?;
             return Ok(match (a.as_int(), b.as_int()) {
                 (Some(a), Some(b)) => Expr::int(a.min(b)),
-                _ => Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]),
+                _ => Expr::builtin(Expr::js_global("Math"), "min", vec![a, b]),
             });
         }
         // A chain made here, the sum of its halves', as std's `Chain`'s is
@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if step.as_int() == Some(1) {
                 return Ok(count);
             }
-            let ceil = Expr::member(Expr::var("Math"), "ceil");
+            let ceil = Expr::member(Expr::js_global("Math"), "ceil");
             return Ok(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step)]));
         }
         // A copy of its source's items, which is its source in JS (ADR 0547).
@@ -322,7 +322,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let len = self.counted_in_place(&source_value.clone(), source, &mut counting, discards)?;
             let n = n.clone();
             made.append(&mut counting);
-            let math = |name: &str, args| Expr::call(Expr::member(Expr::var("Math"), name), args);
+            let math = |name: &str, args| Expr::call(Expr::member(Expr::js_global("Math"), name), args);
             return Ok(match skip {
                 true => math("max", vec![Expr::bin(Op::Sub, len, n), Expr::int(0)]),
                 false => math("min", vec![len, n]),
@@ -460,7 +460,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => given,
         };
         let length = Expr::object(vec![js::Prop::Field("length".to_string(), count)]);
-        let array_from = Expr::member(Expr::var("Array"), "from");
+        let array_from = Expr::member(Expr::js_global("Array"), "from");
         Some(Expr::call(array_from, vec![length, Expr::arrow(given, body.clone())]))
     }
 
@@ -638,8 +638,8 @@ pub(in crate::lower::mir) fn sliced(e: &Expr) -> Expr {
         {
             let items = sliced(source);
             match name.as_str() {
-                "drop" => Expr::call(Expr::member(items, "slice"), vec![n.clone()]),
-                _ => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), n.clone()]),
+                "drop" => Expr::builtin(items, "slice", vec![n.clone()]),
+                _ => Expr::builtin(items, "slice", vec![Expr::int(0), n.clone()]),
             }
         }
         _ => crate::lower::iterators::iterated(e.clone()),

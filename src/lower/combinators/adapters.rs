@@ -563,7 +563,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let times = match num {
                     Num::F64 => Expr::bin(Op::Mul, Expr::var("a"), Expr::var("b")),
                     Num::I32 | Num::U32 => num.wrap(Expr::call(
-                        Expr::member(Expr::var("Math"), "imul"),
+                        Expr::member(Expr::js_global("Math"), "imul"),
                         vec![Expr::var("a"), Expr::var("b")],
                     )),
                     _ => num.wrap(Expr::bin(Op::Mul, Expr::var("a"), Expr::var("b"))),

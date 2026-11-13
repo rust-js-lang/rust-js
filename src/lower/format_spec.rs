@@ -107,9 +107,9 @@ impl Radix {
             Radix::Binary => 2,
             Radix::Octal => 8,
         };
-        let digits = Expr::call(Expr::member(bits, "toString"), vec![Expr::int(base)]);
+        let digits = Expr::builtin(bits, "toString", vec![Expr::int(base)]);
         match self {
-            Radix::UpperHex => Expr::call(Expr::member(digits, "toUpperCase"), Vec::new()),
+            Radix::UpperHex => Expr::builtin(digits, "toUpperCase", Vec::new()),
             _ => digits,
         }
     }
@@ -279,12 +279,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `{:.3}` of a string: its first three `char`s.
             Std::FmtDisplay if precision.is_some() && self.is_string_like(ty) => {
-                let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![value]);
+                let chars = Expr::builtin(Expr::js_global("Array"), "from", vec![value]);
                 let kept = Expr::call(
                     Expr::member(chars, "slice"),
                     vec![Expr::int(0), precision.clone().unwrap_or_else(|| Expr::int(0))],
                 );
-                Expr::call(Expr::member(kept, "join"), vec![Expr::str("")])
+                Expr::builtin(kept, "join", vec![Expr::str("")])
             }
             // `{:.2}` of a `bool`, and `{:.1?}` of one or of `()`: what std's
             // `f.pad` writes, its first so many `char`s, ASCII's (#941).
@@ -295,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Std::FmtDisplay => self.display_string(value, ty, span)?,
                     _ => self.debug_string(value, ty, span)?,
                 };
-                Expr::call(Expr::member(text, "slice"), vec![Expr::int(0), digits])
+                Expr::builtin(text, "slice", vec![Expr::int(0), digits])
             }
             // `{:.1?}` of text, a `str`'s or a `char`'s, which std's `Debug`
             // writes whole, as it writes it of no width either: its `Debug`.
@@ -334,7 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // After the sign and any `0x`: none of an unsigned integer's,
             // a BigInt's too.
             if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {
-                return Ok(Expr::call(Expr::member(text, "padStart"), vec![width, Expr::str("0")]));
+                return Ok(Expr::builtin(text, "padStart", vec![width, Expr::str("0")]));
             }
             return Ok(Expr::call(Expr::helper("$zeroPad"), vec![text, width]));
         }

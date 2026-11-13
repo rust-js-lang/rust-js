@@ -218,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(JsonConversion::Same) => value,
             Some(JsonConversion::Vector(item)) => {
                 let arrow = convert(self, item)?;
-                variant("Array", Expr::call(Expr::member(value, "map"), vec![arrow]))
+                variant("Array", Expr::builtin(value, "map", vec![arrow]))
             }
             Some(JsonConversion::Option(item)) => {
                 let arrow = convert(self, item)?;

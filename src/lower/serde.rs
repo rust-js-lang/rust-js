@@ -629,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(key);
         }
         if ty.is_bool() || Num::of(ty).is_some_and(|n| !n.float()) {
-            return Ok(Expr::call(Expr::var("String"), vec![key]));
+            return Ok(Expr::call(Expr::js_global("String"), vec![key]).built_in());
         }
         Err(self.unsupported(span, &format!("a map key of `{ty}` in JSON")))
     }

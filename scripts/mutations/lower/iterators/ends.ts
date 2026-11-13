@@ -53,9 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`path.split("/").last()` is the first piece, `.at(0)`, not the last',
     file: "src/lower/iterators/ends.rs",
-    find: '            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)]),',
-    replace:
-      '            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(0)]),',
+    find: "            _ => Expr::builtin(items, \"at\", vec![Expr::int(-1)]),",
+    replace: "            _ => Expr::builtin(items, \"at\", vec![Expr::int(0)]),",
     tests: [
       "test/compiler.test.ts",
       "-t",

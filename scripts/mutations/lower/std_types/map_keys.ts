@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
     name: "identity-in-key-items-unmapped",
     breaks: "a `Vec` of fibers as a key is keyed by each fiber's fields (#398)",
     file: "src/lower/std_types/map_keys.rs",
-    find: '        let each = self.key_parts_fn("item", item, span)?;\n        Ok(Expr::call(Expr::member(items, "map"), vec![each]))\n',
+    find: "        let each = self.key_parts_fn(\"item\", item, span)?;\n        Ok(Expr::builtin(items, \"map\", vec![each]))\n",
     replace: "        let _ = (item, span);\n        Ok(items)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },

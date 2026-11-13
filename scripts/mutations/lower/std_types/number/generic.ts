@@ -181,8 +181,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an array made of a slice of `Copy` structs, `try_into()`, holds the slice's objects, so changing one changes the slice",
     file: "src/lower/std_types/number/generic.rs",
-    find: '                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), "map"), vec![copy]),',
-    replace: '                    (false, Some(_)) => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),',
+    find: "                    (false, Some(copy)) => Expr::builtin(slice.clone(), \"map\", vec![copy]),",
+    replace: "                    (false, Some(_)) => Expr::builtin(slice.clone(), \"slice\", vec![]),",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
     file: "src/lower/std_types/number/generic.rs",
-    find: '        (false, true) => Expr::call(Expr::var("BigInt"), vec![n]),\n',
+    find: "        (false, true) => Expr::call(Expr::js_global(\"BigInt\"), vec![n]).built_in(),\n",
     replace: "        (false, true) => n,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     name: "array-of-a-slice-cloned",
     breaks: "an array made of a slice of a `Copy` type with a hand-written `Clone` calls that `clone`, where std's copies its bits",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), \"map\"), vec![copy]),\n                    (false, None) if fresh => slice.clone(),\n                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),\n",
+    find: "                    (false, Some(copy)) => Expr::builtin(slice.clone(), \"map\", vec![copy]),\n                    (false, None) if fresh => slice.clone(),\n                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),\n",
     replace: "                    (false, _) => self.clone_items(slice.clone(), item, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },

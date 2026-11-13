@@ -31,3 +31,10 @@ Only a method of a JS value of any shape was marked, `Known::Getter`.
 
 - Held by a unit test, `a_bindings_method_runs_what_it_may`: no program's
   JS changes, so no mutation's corpus test could catch it.
+
+## Superseded in part (2026-11-13, #1674)
+
+`Known::Binding` is gone: a call is JS's own only where lowering built it
+so (`Known::BuiltIn`), so a binding's method, whatever its name, is a
+call that may do anything with no flag of its own. See
+[1138](1138-effects-are-opt-in.md).

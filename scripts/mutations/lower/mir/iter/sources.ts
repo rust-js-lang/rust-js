@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "zip-len-the-longer",
     breaks: "`len()` of a zip made here is the longer of its sides' (#740)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "                (Some(a), Some(b)) => Expr::int(a.min(b)),\n                _ => Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]),\n",
-    replace: "                (Some(a), Some(b)) => Expr::int(a.max(b)),\n                _ => Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]),\n",
+    find: "                (Some(a), Some(b)) => Expr::int(a.min(b)),\n                _ => Expr::builtin(Expr::js_global(\"Math\"), \"min\", vec![a, b]),\n",
+    replace: "                (Some(a), Some(b)) => Expr::int(a.max(b)),\n                _ => Expr::builtin(Expr::js_global(\"Math\"), \"max\", vec![a, b]),\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {

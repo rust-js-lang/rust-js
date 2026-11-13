@@ -68,7 +68,7 @@ pub(super) fn array_values(e: &mut Expr) {
     {
         *e = Expr {
             span: e.span,
-            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])
+            ..Expr::builtin(items.clone(), "join", vec![Expr::str("")])
         };
     }
     // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
@@ -100,7 +100,7 @@ pub(super) fn array_values(e: &mut Expr) {
     {
         *e = Expr {
             span: e.span,
-            ..Expr::call(Expr::member(items.clone(), "entries"), Vec::new())
+            ..Expr::builtin(items.clone(), "entries", Vec::new())
         };
         return;
     }
@@ -115,7 +115,7 @@ pub(super) fn array_values(e: &mut Expr) {
         && args.len() == 1
     {
         let items = args.pop().expect("one");
-        **it = Expr::call(Expr::member(items, "values"), Vec::new());
+        **it = Expr::builtin(items, "values", Vec::new());
     }
 }
 

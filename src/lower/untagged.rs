@@ -1012,7 +1012,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The test that `value` is of `kind`.
     fn kind_test(&self, kind: &Kind, value: &Expr, class: &dyn Fn(&str) -> Expr) -> Expr {
         match kind {
-            Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
+            Kind::Array => Expr::builtin(Expr::js_global("Array"), "isArray", vec![value.clone()]),
             // Of a member, an array: another struct's of that member tells
             // nothing apart (rd291).
             Kind::Tuple(_) => self.kind_test(&Kind::Array, value, class),

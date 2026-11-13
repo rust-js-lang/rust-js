@@ -875,7 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let f = self.unary_callback(f, own);
         match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {
             true => crate::lower::iterators::mapped_as_it_is(it),
-            false => crate::lower::iterators::lazily_made(Expr::call(Expr::member(it, "map"), vec![f])),
+            false => crate::lower::iterators::lazily_made(Expr::builtin(it, "map", vec![f])),
         }
     }
 
@@ -1223,7 +1223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let copy = Expr::arrow(vec![x.into()], body);
         Ok(match ends {
             true => Expr::call_helper("$mapEnds", vec![it, copy]),
-            false => Expr::call(Expr::member(it, "map"), vec![copy]),
+            false => Expr::builtin(it, "map", vec![copy]),
         })
     }
 

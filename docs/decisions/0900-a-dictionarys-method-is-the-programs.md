@@ -37,3 +37,10 @@ taken as JS's own, which only reads. Tidy may then move a value past it
 - What's left of `calls_only`'s names is JS's own methods of what Rust's
   types say is text or an array, and of what a binding or a dictionary
   isn't.
+
+## Superseded in part (2026-11-13, #1674)
+
+`calls_only` no longer reads `Known::Evidence`: a dictionary's method is
+a call no lowering marked JS's own (`Known::BuiltIn`), so it may do
+anything as any such call does. `Evidence` stays for what declares a
+dictionary's entries. See [1138](1138-effects-are-opt-in.md).

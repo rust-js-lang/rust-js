@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `position` by `===` is `children.findIndex((c) => c === child)`, not `children.indexOf(child)` as a person writes it",
     file: "src/lower/mir/positions.rs",
-    find: "            Some(x) => Expr::call(Expr::member(items, \"indexOf\"), vec![x]),\n",
+    find: "            Some(x) => Expr::builtin(items, \"indexOf\", vec![x]),\n",
     replace: "            Some(_) => Expr::call(Expr::member(items, \"findIndex\"), vec![f]),\n",
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
     snapshots: true,

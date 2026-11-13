@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let key = field_key(self.tcx, def).text().to_owned();
             let held = Expr::call(
-                Expr::member(Expr::var("Object"), "hasOwn"),
+                Expr::member(Expr::js_global("Object"), "hasOwn"),
                 vec![union.clone(), Expr::str(key.clone())],
             );
             let field = self.copy(Expr::member(union.clone(), key.clone()), field_ty);

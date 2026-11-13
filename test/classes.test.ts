@@ -595,8 +595,8 @@ test("what a getter is refused says what to write", () => {
 // javascript-algorithms' `QueenPosition`: `toString() { return
 // \`${this.rowIndex},${this.columnIndex}\`; }` (#358). A class's `impl
 // Display` is its prototype's `toString`: Rust's `{p}` and `p.to_string()`
-// are JS's text of it, `${p}`, as JS's `String(p)` is, and a `T: Display`
-// it's given to shows it by `String`.
+// call it, `p.toString()`, as JS's `String(p)` does, and a `T: Display`
+// it's given to shows it by `(value) => value.toString()` (ADR 1138).
 test("a class's Display is its prototype's toString", async () => {
   const { js, ts, dir } = compiled("class-display", `use std::fmt;
 
@@ -641,9 +641,12 @@ pub fn all(positions: &[QueenPosition]) -> String {
   expect(js).toContain(`QueenPosition.prototype.toString = function () {
   return \`\${this.rowIndex},\${this.columnIndex}\`;
 };`);
-  expect(js).toContain("return `at ${position}`;");
+  // Called, never interpolated, `${position}`, whose `toString` a
+  // minifier takes to run nothing (ADR 1138).
+  expect(js).toContain("return `at ${position.toString()}`;");
+  expect(js).toContain("return position.toString();");
   expect(js).not.toContain("queenPositionDisplay");
-  expect(js).toContain("return joined(positions, { fmt: String });");
+  expect(js).toContain("return joined(positions, { fmt: (value) => value.toString() });");
   expect(ts).toContain("    toString(): string;\n");
   const { QueenPosition, shown, text, all } = await import(join(dir, "lib.js"));
   const position = new QueenPosition(2, 1);

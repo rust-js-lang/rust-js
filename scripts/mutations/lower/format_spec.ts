@@ -150,8 +150,7 @@ export const mutations: Mutation[] = [
     breaks: "`js::shown(msg)` in `format!` calls its `Display`, not `${msg}`",
     file: "src/lower/format_spec.rs",
     find: "        if self.displays_itself(ty) {\n            return (super::display::shown_text(value), text);\n",
-    replace:
-      "        if false {\n            return (super::display::shown_text(value), text);\n",
+    replace: "        if false {\n            return (super::display::shown_text(value), text);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
@@ -294,7 +293,7 @@ export const mutations: Mutation[] = [
     name: "bool-precision-uncut",
     breaks: "`{:.2}` of a `bool` writes it whole, `true`, where std's `f.pad` writes `tr` (#941)",
     file: "src/lower/format_spec.rs",
-    find: "                Expr::call(Expr::member(text, \"slice\"), vec![Expr::int(0), digits])\n",
+    find: "                Expr::builtin(text, \"slice\", vec![Expr::int(0), digits])\n",
     replace: "                {\n                    let _ = digits;\n                    text\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^format_precision_of_bool_and_unit.rs$"],
   },

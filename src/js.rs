@@ -1186,18 +1186,23 @@ mod tests {
         }
     }
 
-    // A binding's method is never JS's own that only reads, whatever its
-    // name, and stays a getter's read beside it (ADR 0890).
+    // A call is JS's own only where lowering built it so (`Known::BuiltIn`):
+    // a binding's method, the crate's `Grid.map`, or a global's name the
+    // crate's `String` has, may do anything, whatever its name (ADR 0890,
+    // #1663, #1674).
     #[test]
-    fn a_bindings_method_runs_what_it_may() {
-        let own = Expr::call(Expr::member(Expr::var("parts"), "join"), vec![Expr::str(", ")]);
+    fn only_a_built_in_call_is_js_own() {
+        let own = Expr::builtin(Expr::var("parts"), "join", vec![Expr::str(", ")]);
         assert!(own.only_reads() && !own.runs_program_code());
-        let bound = Expr::call(Expr::member(Expr::var("store"), "join").binding(), Vec::new());
-        assert!(!bound.only_reads() && bound.runs_program_code());
-        let both = Expr::member(Expr::var("store"), "join")
-            .binding()
-            .answered_by_a_getter();
-        assert!(both.facts.has(Known::Binding) && both.facts.has(Known::Getter));
+        let global = Expr::call(Expr::var("String"), vec![Expr::var("n")]).built_in();
+        assert!(global.only_reads() && !global.runs_program_code());
+        for named in [
+            Expr::call(Expr::member(Expr::var("store"), "join"), Vec::new()),
+            Expr::call(Expr::member(Expr::var("Grid"), "map"), vec![Expr::var("g")]),
+            Expr::call(Expr::var("String"), vec![Expr::var("n")]),
+        ] {
+            assert!(!named.only_reads() && named.runs_program_code());
+        }
     }
 
     // A dictionary's method is the program's, whatever its name: `join` of

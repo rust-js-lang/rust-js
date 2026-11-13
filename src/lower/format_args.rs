@@ -397,7 +397,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match without_newline(text) {
             Ok(line) => Expr::call(
-                Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
+                Expr::member(
+                    Expr {
+                        // A global no call changes (`Known::Lasting`), whose
+                        // methods aren't JS's own that only read (#1674).
+                        facts: js::Facts::of(js::Known::Lasting),
+                        ..Expr::var("console")
+                    },
+                    if error { "error" } else { "log" },
+                ),
                 vec![line],
             )
             .never_throws(),

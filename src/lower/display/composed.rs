@@ -95,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if self.is_map(ty) => {
                 let items = self.in_order_of(value, ty, span)?;
-                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
+                let items = Expr::builtin(Expr::js_global("Array"), "from", vec![items]);
                 self.composed_entries(
                     DebugBuilder::Map,
                     items,

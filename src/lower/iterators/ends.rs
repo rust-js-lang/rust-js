@@ -24,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Ok(match drop {
             Some(drop) => Expr::call_helper("$filterDropping", vec![it, test, drop]),
-            None => Expr::call(Expr::member(it, "filter"), vec![test]),
+            None => Expr::builtin(it, "filter", vec![test]),
         })
     }
 
@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
                 self.some_at(items, last)
             }
-            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)]),
+            _ => Expr::builtin(items, "at", vec![Expr::int(-1)]),
         }
     }
 

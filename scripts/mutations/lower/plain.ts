@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "char-of-bits-number",
     breaks: "a `char` of a `u32` is the number, not its character",
     file: "src/lower/plain.rs",
-    find: '            None => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![bits]),\n',
+    find: "            None => Expr::builtin(Expr::js_global(\"String\"), \"fromCodePoint\", vec![bits]),\n",
     replace: "            None => bits,\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },

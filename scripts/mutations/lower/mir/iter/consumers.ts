@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "is-sorted-by-key-unmapped",
     breaks: "`is_sorted_by_key` compares the items, not their keys (#763)",
     file: "src/lower/mir/iter/consumers.rs",
-    find: "                let keys = Expr::call(Expr::member(it, \"map\"), vec![self.unary_callback(arg(), own)]);\n",
+    find: "                let keys = Expr::builtin(it, \"map\", vec![self.unary_callback(arg(), own)]);\n",
     replace: "                let _ = arg();\n                let keys = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
   },

@@ -24,11 +24,13 @@ function listed(items, TDisplay) {
 }
 
 function main() {
+  const queenPositionDisplay = { fmt: (value) => value.toString() };
   const solution = [new QueenPosition(0, 1), new QueenPosition(1, 3), new QueenPosition(2, 0)];
-  console.log(`${solution[0]} ${solution[1].leftDiagonal()}`);
-  console.log(`${listed(solution, { fmt: String })}`);
-  const shown = { value: solution[2], impl: { fmt: String } };
-  const text = `${solution[2]}`;
+  const leftDiagonal = solution[1].leftDiagonal();
+  console.log(`${solution[0].toString()} ${leftDiagonal}`);
+  console.log(`${listed(solution, queenPositionDisplay)}`);
+  const shown = { value: solution[2], impl: queenPositionDisplay };
+  const text = solution[2].toString();
   console.log(`${shown.impl.fmt(shown.value)} ${text === "2,0"} ${$byteLen(text)}`);
 }
 //# sourceMappingURL=case.js.map

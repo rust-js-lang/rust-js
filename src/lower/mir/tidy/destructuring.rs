@@ -754,7 +754,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
         let StmtKind::Const(_, value) = &stmts[i].kind else {
             unreachable!("matched")
         };
-        let call = Expr::call(Expr::member(value.clone(), "map"), vec![f]);
+        let call = Expr::builtin(value.clone(), "map", vec![f]);
         let Some(values) = projected(&call) else {
             continue;
         };

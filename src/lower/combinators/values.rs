@@ -98,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.room_for_count((n.clone(), known), size.clone(), span, out);
         }
         if fills {
-            let array = Expr::new_(Expr::var("Array"), vec![n]);
+            let array = Expr::new_(Expr::js_global("Array"), vec![n]);
             return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
         }
         // A hand-written Clone (including one in a field) can change values
@@ -121,7 +121,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let copy = self.clone_value(item, item_ty, span, &mut body)?;
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let length = Expr::object(vec![Prop::Field("length".into(), n)]);
-        let from = Expr::member(Expr::var("Array"), "from");
+        let from = Expr::member(Expr::js_global("Array"), "from");
         Ok(Expr::call(from, vec![length, Expr::arrow(Vec::new(), body)]))
     }
 

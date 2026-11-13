@@ -270,19 +270,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-tidy-console-unread-past",
-    breaks:
-      "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
-    file: "src/lower/mir/tidy.rs",
-    find: '"Number" | "String" | "console"))',
-    replace: '"Number" | "String"))',
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "reads twice is held first, not given to a function called in place",
-    ],
-  },
-  {
     name: "mir-tidy-pure-call-unread-past",
     breaks:
       "a call of the runtime's that only reads, `$debugStr(s)`, isn't read past a call",
@@ -480,5 +467,13 @@ export const mutations: Mutation[] = [
     find: "        fired::after(was, body, || pass_name(name, pass));\n",
     replace: "",
     tests: ["test/tidy-stages.test.ts", "-t", "tidy-fired"],
+  },
+  {
+    name: "js-global-unknown-to-tidy",
+    breaks: "a JS global lowering named, `Math` of `Math.max`, is taken to change past a call, so a read of it is held apart (#1674)",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && (of.facts.has(js::Known::BuiltIn) || of.facts.has(js::Known::Lasting))",
+    replace: "                    && of.facts.has(js::Known::Lasting)",
+    tests: ["test/effects.test.ts", "-t", "held past a JS global's read"],
   },
 ];

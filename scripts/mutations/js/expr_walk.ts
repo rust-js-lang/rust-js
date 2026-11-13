@@ -120,15 +120,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-iterators.test.ts", "-t", "a lazy chain from MIR spread once"]
   },
   {
-    name: "js-map-not-only-reading",
-    breaks: "an array's `.map(f)` of a callback that only reads is taken to do something, and a value formatting reads twice after it stays a function called in place",
-    file: "src/js/expr_walk.rs",
-    find: "            \"map\",\n            \"join\",\n",
-    replace: "            \"join\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^(slice_methods|text_edits).rs$"],
-    snapshots: true,
-  },
-  {
     name: "js-substitute-shadowed",
     breaks: "a name a callback binds itself is replaced in its body too, and `{:?}` of an `Option` of an `Option` prints the outer value where the inner is",
     file: "src/js/expr_walk.rs",
@@ -295,6 +286,23 @@ export const mutations: Mutation[] = [
     find: "    \"slice\",\n];\n",
     replace: "];\n",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "any-call-taken-for-js-own",
+    breaks: "any call is taken for one of JS's own, which only reads, the crate's `Grid.map(g)` too, so tidy hoists a read written after it ahead of it (#1663, #1674)",
+    file: "src/js/expr_walk.rs",
+    find: "                    _ => part.is_js_own_call(),\n",
+    replace: "                    _ => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_method_named_as_a_js_one_runs_where_called.rs$"],
+  },
+  {
+    name: "built-in-fact-unread",
+    breaks: "a call lowering built as JS's own (`Known::BuiltIn`), `parts.join(\", \")`, is taken to run the program's code, so what's after it is held apart (#1674)",
+    file: "src/js/expr_walk.rs",
+    find: "        self.facts.has(Known::BuiltIn) || self.facts.has(Known::Read) || global\n",
+    replace: "        self.facts.has(Known::Read) || global\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_variant_field_twice|try_lock|fn_items_as_values|destructuring_assignment|untagged_displayed_in_place|bit_width|btree_compare|byte_constants_large|adapter_of_a_borrowed_iterator_where_addresses_are_asked|runtime_long_writes|range_size_hint|refcell_variant_replaced_held|class_trait_field_borrows|option_map_drops|binary_heap_keeps_its_vecs_capacity|rc_counted_per_type|one_thread_sync|ref_cell_guards_mapped|asked_length_overflow).rs$"],
     snapshots: true,
   },
 ];

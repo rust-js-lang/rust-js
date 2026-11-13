@@ -300,8 +300,7 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                         || compares_never_nan(f)
                 }) =>
             {
-                eager_items(chain, false, None)
-                    .map(|(items, _)| Expr::call(Expr::member(items, "includes"), vec![value]))
+                eager_items(chain, false, None).map(|(items, _)| Expr::builtin(items, "includes", vec![value]))
             }
             ("some" | "every", [f]) => {
                 eager_items(chain, false, None).map(|(items, _)| array_method(items, name, f.clone()))
@@ -480,8 +479,8 @@ fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -
     }
     let count = stages.len();
     let items = (stages.into_iter().rev()).fold(source, |items, (name, f)| match name {
-        "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),
-        "drop" => Expr::call(Expr::member(items, "slice"), vec![f.clone()]),
+        "take" => Expr::builtin(items, "slice", vec![Expr::int(0), f.clone()]),
+        "drop" => Expr::builtin(items, "slice", vec![f.clone()]),
         // Each item an array, as it is: `flat()`, which takes arrays apart.
         "flatMap" => match flattened.next().expect("made") {
             f if f.is_identity() => Expr::call(Expr::member(items, "flat"), Vec::new()),
@@ -513,7 +512,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                 {
                     return None;
                 }
-                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
+                let items = Expr::builtin(Expr::js_global("Array"), "from", vec![list]);
                 Some(array_stepped(items))
             }
             _ => None,

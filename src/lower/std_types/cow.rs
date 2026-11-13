@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let cow = self.fresh(Role::Cow);
         let (read, _) = self.cow_deref(&Expr::var(&cow), item).expect("a Cow's parts");
         let read = vec![StmtKind::Return(Some(read)).at(crate::js::Span::NONE)];
-        Expr::call(Expr::member(items, "map"), vec![Expr::arrow(vec![cow.into()], read)])
+        Expr::builtin(items, "map", vec![Expr::arrow(vec![cow.into()], read)])
     }
 
     /// One side of `==` of a `Cow` and what it borrows: a `Cow`'s, through

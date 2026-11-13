@@ -968,7 +968,7 @@ fn taken_part(iterable: Expr) -> Expr {
         && counted_chain(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]))
     {
         let part = sliced(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]));
-        Expr::call(Expr::member(part, "entries"), Vec::new())
+        Expr::builtin(part, "entries", Vec::new())
     } else {
         return iterable;
     };

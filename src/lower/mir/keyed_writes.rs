@@ -85,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for key in keys {
                     out.push(delete(key).at(js_span));
                 }
-                let assign = Expr::member(Expr::var("Object"), "assign");
+                let assign = Expr::member(Expr::js_global("Object"), "assign");
                 out.push(StmtKind::Expr(Expr::call(assign, vec![parent, value])).at(js_span));
             }
         }

@@ -995,7 +995,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let text = |item: &Ty<'tcx>| self.is_string_like(*item) || self.recognition().is_cow(*item);
         if let Some(item) = self.slice_item(parts_ty).filter(text) {
             let parts = self.cow_texts(parts, item);
-            return Ok(Expr::call(Expr::member(parts, "join"), vec![Expr::str("")]));
+            return Ok(Expr::builtin(parts, "join", vec![Expr::str("")]));
         }
         self.concat_copies(Expr::call(Expr::member(parts, "flat"), Vec::new()), parts_ty, span)
     }

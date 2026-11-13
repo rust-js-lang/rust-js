@@ -25,9 +25,18 @@ macro_rules! knowns {
 
 knowns! {
     /// A call of a method of a `str` or a slice, as Rust's types tell,
-    /// `s.startsWith(t)`: never a crate's or a binding's of the same
-    /// name, `P.at(p)`, which may do anything.
+    /// `s.startsWith(t)`, which only reads it and throws nothing: never a
+    /// crate's or a binding's of the same name, `P.at(p)`.
     Read,
+    /// A call of one of JS's own functions or methods, of text, an array,
+    /// a number or a global, `parts.join(", ")`, `String(n)`, built where
+    /// lowering knows what it calls: it runs nothing of the program's but
+    /// the callbacks it's given, and may throw; or a JS global it names,
+    /// `Math` of `Math.max`, which no call changes, each of whose methods
+    /// is JS's own (#1674). Any other call,
+    /// the crate's whatever its name, a binding's or a dictionary's, may
+    /// do anything.
+    BuiltIn,
     /// A binding's read of a property, `get x`, `get X.y` or `get []`,
     /// `js::get`'s, or of the method a binding calls on a JS value,
     /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
@@ -114,10 +123,6 @@ knowns! {
     /// read, as ES's live binding, never another name's that read it
     /// before.
     Live,
-    /// A binding's method, `obj.send` of `obj.send(a)`: JS the program
-    /// declared, which may do anything, whatever its name, `join` too (the
-    /// review's P2, ADR 0890), never one of JS's own that only read.
-    Binding,
     /// A dictionary the function was given, `TStore` of `TStore.join(t)`:
     /// its methods are the program's, whatever their names, never JS's own
     /// that only read (ADR 0900).
@@ -353,6 +358,7 @@ impl Known {
     pub fn role(self) -> Role {
         match self {
             Known::Read
+            | Known::BuiltIn
             | Known::Lasting
             | Known::Sliced
             | Known::SetItems
@@ -384,9 +390,7 @@ impl Known {
             | Known::RunsInItsCall
             | Known::BindingIterator => Role::Permits,
             Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
-            Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Binding | Known::Evidence => {
-                Role::Warns
-            }
+            Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Evidence => Role::Warns,
             // `Iterator` among them: what isn't known to be one is taken
             // for an array, not for either (by_ref_steps, ADR 1127).
             Known::InPlace

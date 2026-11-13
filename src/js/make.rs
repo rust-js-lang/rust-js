@@ -32,6 +32,26 @@ impl Expr {
         }
     }
 
+    /// `of.method(args)`, a call of one of JS's own methods, of text, an
+    /// array, a number or a global, `parts.join(", ")`, `Math.max(a, b)`,
+    /// where lowering knows `of` is one (`Known::BuiltIn`, #1674).
+    pub fn builtin(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
+        Expr::call(Expr::member(of, method), args).built_in()
+    }
+
+    /// `name`, one of JS's own globals, `Math` or `console`, which no call
+    /// changes (`Known::BuiltIn`, #1674).
+    pub fn js_global(name: &str) -> Expr {
+        Expr::var(name).built_in()
+    }
+
+    /// This, a call of one of JS's own functions or methods
+    /// (`Known::BuiltIn`), `String(n)`, beside what else is known of it.
+    pub fn built_in(mut self) -> Expr {
+        self.facts = self.facts.with(Known::BuiltIn);
+        self
+    }
+
     /// This, which lowering knows is never `undefined`, though maybe
     /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
     /// read say, as it is. What it knows of the `None` it can be, of an
@@ -972,13 +992,6 @@ impl Expr {
     /// (`Known::InPlace`), beside what else is known of it.
     pub fn in_place(mut self) -> Expr {
         self.facts = self.facts.with(Known::InPlace);
-        self
-    }
-
-    /// This, a binding's method, which may do anything (`Known::Binding`),
-    /// beside what else is known of it.
-    pub fn binding(mut self) -> Expr {
-        self.facts = self.facts.with(Known::Binding);
         self
     }
 

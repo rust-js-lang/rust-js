@@ -163,9 +163,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`{}` of `c.to_uppercase()` is `Array.from(c.toUpperCase()).join("")`, not `c.toUpperCase()`',
     file: "src/lower/mir/tidy/values.rs",
-    find: '            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])\n        };\n    }\n',
-    replace:
-      '            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])\n        };\n        return;\n    }\n',
+    find: "            ..Expr::builtin(items.clone(), \"join\", vec![Expr::str(\"\")])\n        };\n    }\n",
+    replace: "            ..Expr::builtin(items.clone(), \"join\", vec![Expr::str(\"\")])\n        };\n        return;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
     snapshots: true,
   },

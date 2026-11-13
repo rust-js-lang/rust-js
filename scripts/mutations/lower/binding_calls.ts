@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method keyed by a global's value, `[Symbol.asyncIterator]`, is read as a property of its name, `iterable.Symbol.asyncIterator()`, not React's `iterable[ASYNC_ITERATOR]()` (rd585)",
     file: "src/lower/binding_calls.rs",
-    find: "                let method = Expr::index(this, self.js_ref(&key)).binding();\n",
-    replace: "                let method = Expr::member(this, key).binding();\n",
+    find: "                let method = Expr::index(this, self.js_ref(&key));\n",
+    replace: "                let method = Expr::member(this, key);\n",
     tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
   },
   {

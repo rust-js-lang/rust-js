@@ -135,9 +135,8 @@ export const mutations: Mutation[] = [
     name: "iter-eager-take-kept",
     breaks: "`take(2)` of an array stays a JS iterator's, not `slice(0, 2)`",
     file: "src/lower/iterators/eager.rs",
-    find: '        "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),\n',
-    replace:
-      '        "take" => Expr::call(Expr::member(items, "take"), vec![f.clone()]),\n',
+    find: "        \"take\" => Expr::builtin(items, \"slice\", vec![Expr::int(0), f.clone()]),\n",
+    replace: "        \"take\" => Expr::call(Expr::member(items, \"take\"), vec![f.clone()]),\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
@@ -310,9 +309,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a runtime helper's iterator collected, `$decodeUtf16(..)`'s, is listed first, `Array.from($decodeUtf16(..)).map(f)`, as a `$closing(..)`'s would be, stepped to its end and never closed (ADR 0510)",
     file: "src/lower/iterators/eager.rs",
-    find: '                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);',
-    replace:
-      '                {}\n                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);',
+    find: "                {\n                    return None;\n                }\n                let items = Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![list]);",
+    replace: "                {}\n                let items = Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![list]);",
     tests: ["test/corpus.test.ts", "-t", "^(cell_deque_char_methods|collected_helper_iterator_stays_lazy).rs$"],
     snapshots: true,
   },

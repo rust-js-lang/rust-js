@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             CStrOp::FromVecWithNul => helper("$cstringWithNul", vec![arg()]),
             CStrOp::IntoBytes => helper("$cstringIntoBytes", vec![arg()]),
             CStrOp::IntoString => helper("$cstringIntoString", vec![arg()]),
-            CStrOp::Owned => Expr::call(Expr::member(arg(), "slice"), Vec::new()),
+            CStrOp::Owned => Expr::builtin(arg(), "slice", Vec::new()),
             CStrOp::Ptr => {
                 let first = helper("$ptr", vec![arg(), Expr::int(0)]);
                 let output = self.signature_of(call.def_id).1;

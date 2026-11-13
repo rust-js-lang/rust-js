@@ -275,7 +275,7 @@ pub(in crate::lower) fn lazily_made(mut e: Expr) -> Expr {
 /// => [i, x])`, in place of which a callback that takes the pair apart is
 /// given each item and its index, of an array (`eager_chains`).
 pub(in crate::lower) fn enumerated(it: Expr) -> Expr {
-    Expr::call(Expr::member(it, "map"), vec![enumerating()])
+    Expr::builtin(it, "map", vec![enumerating()])
 }
 
 /// `(x, i) => [i, x]`, what `enumerated` maps each item by.

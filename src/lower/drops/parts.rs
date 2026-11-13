@@ -140,9 +140,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.is_sorted(ty) && !(keys && values) {
                     let (items, item) = match (set, keys) {
                         (true, _) => (value, key_ty),
-                        (false, true) => (Expr::call(Expr::member(value, "keys"), Vec::new()), key_ty),
+                        (false, true) => (Expr::builtin(value, "keys", Vec::new()), key_ty),
                         (false, false) => (
-                            Expr::call(Expr::member(value, "values"), Vec::new()),
+                            Expr::builtin(value, "values", Vec::new()),
                             value_ty.expect("a map's values"),
                         ),
                     };

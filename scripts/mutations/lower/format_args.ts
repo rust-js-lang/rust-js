@@ -187,4 +187,17 @@ export const mutations: Mutation[] = [
       "line_printed_after_a_part_left_unended"
     ]
   },
+  {
+    name: "console-unread-past",
+    breaks:
+      "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
+    file: "src/lower/format_args.rs",
+    find: "                        facts: js::Facts::of(js::Known::Lasting),\n",
+    replace: "                        facts: js::Facts::NONE,\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "reads twice is held first, not given to a function called in place",
+    ],
+  },
 ];

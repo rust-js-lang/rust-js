@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::undefined);
             return Ok(Expr::call_helper("$madeEach", vec![items, make, drop]));
         }
-        Ok(Expr::call(Expr::member(items, "map"), vec![make]))
+        Ok(Expr::builtin(items, "map", vec![make]))
     }
 
     /// `made_each` of a map that may be std's nodes, `map`'s `args` its key

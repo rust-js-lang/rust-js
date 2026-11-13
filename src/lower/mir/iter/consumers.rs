@@ -372,7 +372,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // replaced dropped, and where two are out of order the later,
                 // then the last, as std's `is_sorted_by` drops them (#776).
                 let key_drop = self.std_drop_function(key, span)?;
-                let keys = Expr::call(Expr::member(it, "map"), vec![self.unary_callback(arg(), own)]);
+                let keys = Expr::builtin(it, "map", vec![self.unary_callback(arg(), own)]);
                 self.is_sorted_call(keys, key, key_drop, span)
             }
             _ => self.is_sorted_call(it, item, None, span),

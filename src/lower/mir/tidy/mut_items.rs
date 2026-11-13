@@ -123,7 +123,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
         // As long as the shorter, asked once, as Rust's zip asks it.
         Some((b, item)) => {
             let bound = fresh("n");
-            let min = Expr::member(Expr::var("Math"), "min");
+            let min = Expr::member(Expr::js_global("Math"), "min");
             let shorter = Expr::call(min, vec![length(&array), length(b)]);
             made.push(StmtKind::Const(bound.clone(), shorter).at(js::Span::NONE));
             let bound_item = match item {

@@ -117,7 +117,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && receiver.reads_same()
             {
                 let receiver = args.remove(1);
-                this = Some(Expr::member(receiver, name).binding());
+                this = Some(Expr::member(receiver, name));
                 first = 1;
             }
             let params = self.tcx.fn_sig(f).skip_binder().skip_binder().inputs().len();
@@ -169,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its method, looked up when it's called: of a JS value of any
             // shape, one a getter may answer (ADR 0750).
             (JsForm::Call(name), Some(this)) if !name.contains('#') => {
-                let method = Expr::member(this, name).binding();
+                let method = Expr::member(this, name);
                 let method = match method_may_be_a_getters(self.tcx, def_id) {
                     true => method.answered_by_a_getter(),
                     false => method,
@@ -188,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `iterable[Symbol.asyncIterator]()`, called of its receiver
             // (rd585).
             (JsForm::CallKeyed(key), Some(this)) => {
-                let method = Expr::index(this, self.js_ref(&key)).binding();
+                let method = Expr::index(this, self.js_ref(&key));
                 Expr::call(method.or_at(fun_span), args)
             }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
@@ -595,7 +595,7 @@ pub(in crate::lower) fn held_read(boxed: Expr) -> Expr {
             if callee.helper_name() == Some("$someGet")
                 && let [map, key] = args.as_slice() =>
         {
-            Expr::call(Expr::member(map.clone(), "get").binding(), vec![key.clone()])
+            Expr::call(Expr::member(map.clone(), "get"), vec![key.clone()])
         }
         _ => boxed,
     }

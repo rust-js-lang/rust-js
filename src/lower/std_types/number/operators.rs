@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if small(known.or_else(|| r.as_int())) || small(l.as_int()) {
                     num.wrap(Expr::bin(Op::Mul, l, r))
                 } else {
-                    let product = Expr::call(Expr::member(Expr::var("Math"), "imul"), vec![l, r]);
+                    let product = Expr::builtin(Expr::js_global("Math"), "imul", vec![l, r]);
                     if num.signed() { product } else { num.wrap(product) }
                 }
             }
@@ -294,7 +294,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `char` is its code point (ADR 0063), and a `u8` as a `char` its
         // character.
         if from.is_char() {
-            let code = Expr::call(Expr::member(v, "codePointAt"), vec![Expr::int(0)]);
+            let code = Expr::builtin(v, "codePointAt", vec![Expr::int(0)]);
             let code = if target.big() { to_bigint(code) } else { code };
             let (lo, hi) = target.range();
             return Ok(if target.float() || (lo <= 0 && hi >= 0x10ffff) {
@@ -346,7 +346,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
             }
             // An `i64` or `u64` is its nearest `f64`, as `as` rounds it.
-            (source, Num::F64) if source.big() => Ok(Expr::call(Expr::var("Number"), vec![v])),
+            (source, Num::F64) if source.big() => Ok(Expr::call(Expr::js_global("Number"), vec![v]).built_in()),
             // Every other integer fits exactly in an f64.
             (_, Num::F64) => Ok(v),
             // Its nearest `f32`, rounded once: through an `f64` it would be
@@ -370,16 +370,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // mask keeps in range: `x & 1023n`.
                     (true, false) if v.as_bigint().is_some() => target.wrap(v),
                     (true, false) if masked(&v).is_some_and(|mask| mask >= 0 && mask as u128 <= thi) => {
-                        Expr::call(Expr::var("Number"), vec![v])
+                        Expr::call(Expr::js_global("Number"), vec![v]).built_in()
                     }
                     // Into range as a BigInt, then a number.
                     (true, false) => {
                         let method = if target.signed() { "asIntN" } else { "asUintN" };
                         let wrapped = Expr::call(
-                            Expr::member(Expr::var("BigInt"), method),
+                            Expr::member(Expr::js_global("BigInt"), method),
                             vec![Expr::int(target.bits().into()), v],
                         );
-                        Expr::call(Expr::var("Number"), vec![wrapped])
+                        Expr::call(Expr::js_global("Number"), vec![wrapped]).built_in()
                     }
                     _ if fits => v,
                     _ => target.wrap(v),
@@ -415,7 +415,11 @@ pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>,
     }
     match r.as_bigint() {
         Some(n) => Expr::int(n & 63),
-        None => Expr::call(Expr::var("Number"), vec![Expr::bin(Op::BitAnd, r, Expr::bigint(63))]),
+        None => Expr::call(
+            Expr::js_global("Number"),
+            vec![Expr::bin(Op::BitAnd, r, Expr::bigint(63))],
+        )
+        .built_in(),
     }
 }
 
@@ -423,7 +427,7 @@ pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>,
 pub(in crate::lower) fn to_bigint(e: Expr) -> Expr {
     match e.as_int() {
         Some(n) => Expr::bigint(n),
-        None => Expr::call(Expr::var("BigInt"), vec![e]),
+        None => Expr::call(Expr::js_global("BigInt"), vec![e]).built_in(),
     }
 }
 

@@ -246,7 +246,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.stored_places.takes_slice_addresses() {
             return Expr::call(Expr::helper("$part"), std::iter::once(items).chain(range).collect());
         }
-        let sliced = Expr::call(Expr::member(items, "slice"), range);
+        let sliced = Expr::builtin(items, "slice", range);
         Expr {
             facts: crate::js::Facts::of(crate::js::Known::Sliced),
             ..sliced

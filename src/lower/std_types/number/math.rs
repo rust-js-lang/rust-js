@@ -52,7 +52,7 @@ pub(in crate::lower) fn function(op: NumOp, num: Num) -> Option<&'static str> {
 pub(in crate::lower) fn constant(tcx: TyCtxt<'_>, id: DefId) -> Option<Expr> {
     let name = f64_const(tcx, id)?;
     let (_, member) = CONSTANTS.iter().find(|(rust, _)| *rust == name)?;
-    Some(Expr::member(Expr::var("Math"), *member))
+    Some(Expr::member(Expr::js_global("Math"), *member))
 }
 
 /// What a constant's initializer is, where it's written as one of `Math`'s
@@ -83,6 +83,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder();
         let num = Num::of(sig.inputs().first()?.peel_refs())?;
-        function(op, num).map(|name| Expr::member(Expr::var("Math"), name))
+        function(op, num).map(|name| Expr::member(Expr::js_global("Math"), name))
     }
 }

@@ -730,7 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // as a `u32x4_generic` (#1420).
                     self.transmute(v, (from, *to), span, out)?
                 } else if to.is_char() {
-                    Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v])
+                    Expr::builtin(Expr::js_global("String"), "fromCharCode", vec![v])
                 } else if self.kept_cast_at(span) {
                     v
                 } else {

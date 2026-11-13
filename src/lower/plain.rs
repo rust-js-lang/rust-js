@@ -438,7 +438,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => pointer,
                 }
             }
-            None => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![bits]),
+            None => Expr::builtin(Expr::js_global("String"), "fromCodePoint", vec![bits]),
         })
     }
 
@@ -513,10 +513,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// each, `Array.from({ length: n })` of none.
 pub(in crate::lower) fn filled(n: Expr, zero: Option<Expr>) -> Expr {
     if let Some(zero) = zero.as_ref().filter(|zero| zero.is_constant()) {
-        let made = Expr::new_(Expr::var("Array"), vec![n]);
+        let made = Expr::new_(Expr::js_global("Array"), vec![n]);
         return Expr::call(Expr::member(made, "fill"), vec![zero.clone()]);
     }
     let mut given = vec![Expr::object(vec![js::Prop::Field("length".into(), n)])];
     given.extend(zero.map(|zero| Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(zero)).at(js::Span::NONE)])));
-    Expr::call(Expr::member(Expr::var("Array"), "from"), given)
+    Expr::builtin(Expr::js_global("Array"), "from", given)
 }

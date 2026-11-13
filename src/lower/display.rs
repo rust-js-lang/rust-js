@@ -567,13 +567,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
     /// `#[link_name = "this"]`, `js::shown`'s: its text is what JS's
-    /// template makes of the value, `shown_text` (ADR 0312).
+    /// template makes of the value, `shown_text` (ADR 0312). Not a
+    /// class's, whose `Display::fmt`, its prototype's `toString`, is called
+    /// as the crate's writer is, `p.toString()` (ADR 1138).
     pub(super) fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
-        // A class's, its prototype's `toString`, given no `Formatter`'s
-        // options, which JS's template gives it none of (#358).
-        if self.is_shown_class(ty) && !self.writers_take_options() && !self.krate.shown.of_type(self.tcx, ty).any() {
-            return true;
-        }
         let Some(fmt) = self.recognition().display_fmt() else {
             return false;
         };
@@ -760,18 +757,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let shown = self.with_shown(shown_so, |cx| {
             cx.display_string_with(Expr::var("value"), ty, span, &pretty)
         })?;
-        // `String(value)` of a number is the function `String`, and so is
-        // JS's text of the value, \`${value}\`, a class's `toString`'s (#358).
+        // `String(value)` of a number is the function `String`. A class's
+        // text is its `toString` called, `(value) => value.toString()`
+        // (ADR 1138).
         let text_of = match &shown.kind {
             js::ExprKind::Stringed(value) => Some(&**value),
-            js::ExprKind::Template(_, values, _) if is_shown_text(&shown) && values.len() == 1 => values.first(),
             _ => None,
         };
         if let Some(value) = text_of
             && params.len() == 1
             && is_var(value, "value")
         {
-            return Ok(Expr::var("String"));
+            return Ok(Expr::js_global("String"));
         }
         let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]);
         // One that calls a function with what it's given, `$displayF64`.
@@ -819,7 +816,7 @@ pub(super) fn shown_text(value: Expr) -> Expr {
 
 /// Whether `e` is a template of values alone, \`${x}\`, which is text only
 /// as a template: `shown_text`'s, or one made of such.
-fn is_shown_text(e: &Expr) -> bool {
+pub(super) fn is_shown_text(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Template(texts, ..) if texts.iter().all(String::is_empty))
 }
 
@@ -893,6 +890,7 @@ fn texts_and_values(pieces: Vec<(Expr, bool)>) -> (Vec<String>, Vec<Expr>, Vec<b
 /// which names a symbol a template throws on (ADR 0066).
 fn unstringed(value: Expr) -> Expr {
     match value.kind {
+        // A number, which a template interpolates running nothing (#1664).
         js::ExprKind::Stringed(value) => *value,
         _ => value,
     }

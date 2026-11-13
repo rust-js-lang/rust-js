@@ -594,7 +594,7 @@ pub(in crate::lower) fn owned_items(items: Expr) -> Expr {
         js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$slice" | "$part")) => {
             Expr::call(Expr::helper("$copyOf"), args.clone())
         }
-        _ => Expr::call(Expr::member(items, "slice"), vec![]),
+        _ => Expr::builtin(items, "slice", vec![]),
     }
 }
 
@@ -1065,7 +1065,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
                 {
                     *e = Expr {
                         span: e.span,
-                        ..Expr::call(Expr::member(items, "values"), Vec::new())
+                        ..Expr::builtin(items, "values", Vec::new())
                     };
                 }
             }

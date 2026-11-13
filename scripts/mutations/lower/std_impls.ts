@@ -565,9 +565,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`contains` of floats is `includes(x)`, which finds `NaN`, where Rust's `==` doesn't (ADR 0966)",
     file: "src/lower/std_impls.rs",
-    find: '                    Expr::call(Expr::member(items, "indexOf"), vec![x]),\n                    Expr::int(0),\n',
-    replace:
-      '                    Expr::call(Expr::member(items, "includes"), vec![x]),\n                    Expr::bool(true),\n',
+    find: "Some(_) => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),",
+    replace: "Some(_) => Expr::builtin(items, \"includes\", vec![x]),",
     tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
   },
   {
@@ -633,9 +632,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`v.contains(&node)` of what `===` compares and is never `NaN`, an object equal only to itself, is `v.indexOf(node) >= 0`, not `v.includes(node)` (ADR 1016)",
     file: "src/lower/std_impls.rs",
-    find: '                None => Expr::call(Expr::member(items, "includes"), vec![x]),\n',
-    replace:
-      '                None => Expr::bin(Op::Ge, Expr::call(Expr::member(items, "indexOf"), vec![x]), Expr::int(0)),\n',
+    find: "                None => Expr::builtin(items, \"includes\", vec![x]),\n",
+    replace: "                None => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
   {

@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// found by themselves: `key_parts` of an array's items.
     fn items_key_parts(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
         let each = self.key_parts_fn("item", item, span)?;
-        Ok(Expr::call(Expr::member(items, "map"), vec![each]))
+        Ok(Expr::builtin(items, "map", vec![each]))
     }
 
     /// `(name) => <name's parts>`, the function of a `ty`'s `key_parts`, or

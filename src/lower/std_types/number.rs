@@ -628,7 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "clz32" => values.into_iter().map(operators::bits_operand).collect(),
                 _ => values,
             };
-            return Ok(Expr::call(Expr::member(Expr::var("Math"), name), values));
+            return Ok(Expr::call(Expr::member(Expr::js_global("Math"), name), values));
         }
         if num.big() {
             return self.big_number_call(op, values, ty, num, span, out);
@@ -638,8 +638,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let hi = hi as i128;
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let math = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::var("Math"), name), list);
-        let number = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::var("Number"), name), list);
+        let math = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::js_global("Math"), name), list);
+        let number = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::js_global("Number"), name), list);
         // A narrow signed integer's bits, for the questions about them: -1i8 is 0xff.
         let bits = |x: Expr| match num {
             Num::I8 => Expr::bin(Op::BitAnd, x, Expr::int(0xff)),
@@ -938,7 +938,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     arg(),
                     arg(),
                     Expr::bool(false),
-                    Expr::member(Expr::var("Math"), "fround"),
+                    Expr::member(Expr::js_global("Math"), "fround"),
                 ],
             )),
             NumOp::FloatEuclid { rem } => rounded(helper("$floatEuclid", vec![arg(), arg(), Expr::bool(rem)])),
@@ -960,8 +960,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let factor = match (num, radians) {
                     (Num::F32, true) => Expr::num(f64::from(std::f32::consts::PI / 180.0)),
                     (Num::F32, false) => Expr::num(f64::from(F32_DEGREES_PER_RADIAN)),
-                    (_, true) => Expr::bin(Op::Div, Expr::member(Expr::var("Math"), "PI"), Expr::num(180.0)),
-                    (_, false) => Expr::bin(Op::Div, Expr::num(180.0), Expr::member(Expr::var("Math"), "PI")),
+                    (_, true) => Expr::bin(Op::Div, Expr::member(Expr::js_global("Math"), "PI"), Expr::num(180.0)),
+                    (_, false) => Expr::bin(Op::Div, Expr::num(180.0), Expr::member(Expr::js_global("Math"), "PI")),
                 };
                 rounded(Expr::bin(Op::Mul, arg(), factor))
             }
@@ -1203,7 +1203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::SaturatingPow => helper("$saturatingPow", vec![arg(), arg(), lo, hi]),
             NumOp::RotateBits { left } => {
                 let bits = Expr::int(num.bits().into());
-                let x = Expr::call(Expr::member(Expr::var("BigInt"), "asUintN"), vec![bits.clone(), arg()]);
+                let x = Expr::builtin(Expr::js_global("BigInt"), "asUintN", vec![bits.clone(), arg()]);
                 let list = vec![x, arg(), bits, Expr::bool(left)];
                 let rotated = helper("$rotateBits", list);
                 if num.signed() { num.wrap(rotated) } else { rotated }

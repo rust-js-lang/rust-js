@@ -180,8 +180,7 @@ export const mutations: Mutation[] = [
       "`String(arg)` the program wrote is `${arg}` in a template, which throws on a symbol",
     file: "src/lower/display.rs",
     find: "        js::ExprKind::Stringed(value) => *value,\n",
-    replace:
-      "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
+    replace: "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
@@ -292,24 +291,6 @@ export const mutations: Mutation[] = [
     find: "        match writer.is_local() || self.krate.foreign.is_instance(writer) {\n",
     replace: "        match writer.is_local() {\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "class-display-called",
-    breaks:
-      "a class's `{p}` is `p.toString()`, not JS's text of it, `${p}` (#358)",
-    file: "src/lower/display.rs",
-    find: "        if self.is_shown_class(ty) && !self.writers_take_options() && !self.krate.shown.of_type(self.tcx, ty).any() {\n",
-    replace: "        if false {\n",
-    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
-  },
-  {
-    name: "class-display-template-arrow",
-    breaks:
-      "a `T: Display` of a class is `{ fmt: (value) => `${value}` }`, not `{ fmt: String }` (#358)",
-    file: "src/lower/display.rs",
-    find: "            js::ExprKind::Template(_, values, _) if is_shown_text(&shown) && values.len() == 1 => values.first(),\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
   {
     name: "class-writer-called-by-name",

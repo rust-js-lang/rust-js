@@ -165,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if crate::lower::recognition::is_decode_utf16_error(self.tcx, ty) {
             return Ok(join(vec![
                 Expr::str("DecodeUtf16Error { code: "),
-                Expr::call(Expr::var("String"), vec![value]),
+                Expr::call(Expr::js_global("String"), vec![value]).built_in(),
                 Expr::str(" }"),
             ]));
         }
@@ -307,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What a JS function threw, as JS shows it: `SyntaxError: ..`.
         if self.recognition().is_js_error(ty) {
-            return Ok(Expr::call(Expr::var("String"), vec![value]));
+            return Ok(Expr::call(Expr::js_global("String"), vec![value]).built_in());
         }
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$debugJsonError"), vec![value]));
@@ -383,7 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // left, as a slice's iterator shows what it has (#118).
         if self.recognition().is_str_chars(ty) {
             let left = Expr::call(
-                Expr::member(Expr::var("Array"), "from"),
+                Expr::member(Expr::js_global("Array"), "from"),
                 vec![Expr::call_helper("$restStr", vec![value])],
             );
             let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, self.tcx.types.char), span, pretty)?;
@@ -685,9 +685,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![js::Pattern::Array(vec![Some("key".into()), Some("value".into())])],
                     vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
                 );
-                let entries = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![value]);
-                let mapped = Expr::call(Expr::member(entries, "map"), vec![f]);
-                let shown = Expr::call(Expr::member(mapped.clone(), "join"), vec![Expr::str(", ")]);
+                let entries = Expr::builtin(Expr::js_global("Array"), "from", vec![value]);
+                let mapped = Expr::builtin(entries, "map", vec![f]);
+                let shown = Expr::builtin(mapped.clone(), "join", vec![Expr::str(", ")]);
                 let plain = join(vec![Expr::str("{"), shown, Expr::str("}")]);
                 Ok(self.pretty_or(pretty, plain, "{", mapped, "}"))
             }
@@ -912,15 +912,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         );
         let items = if self.is_map(item) || open == "{" {
-            Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])
+            Expr::builtin(Expr::js_global("Array"), "from", vec![items])
         } else {
             items
         };
         let mapped = match each_its_own {
             true => items,
-            false => Expr::call(Expr::member(items, "map"), vec![f]),
+            false => Expr::builtin(items, "map", vec![f]),
         };
-        let joined = Expr::call(Expr::member(mapped.clone(), "join"), vec![Expr::str(", ")]);
+        let joined = Expr::builtin(mapped.clone(), "join", vec![Expr::str(", ")]);
         let plain = join(vec![Expr::str(open), joined, Expr::str(close)]);
         Ok(self.pretty_or(pretty, plain, open, mapped, close))
     }

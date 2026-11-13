@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // their bits, as std's `T: Copy` copies them (ADR 0623).
                 let value = match (target.is_ref() || owned, self.bits_copy_fn(item)) {
                     (true, _) => slice.clone(),
-                    (false, Some(copy)) => Expr::call(Expr::member(slice.clone(), "map"), vec![copy]),
+                    (false, Some(copy)) => Expr::builtin(slice.clone(), "map", vec![copy]),
                     (false, None) if fresh => slice.clone(),
                     (false, None) => crate::lower::iterators::owned_items(slice.clone()),
                 };
@@ -99,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::cond(fits, result::ok(value), result::err(refused))
             }
-            Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
+            Std::ToBig => Expr::call(Expr::js_global("BigInt"), vec![arg()]).built_in(),
             Std::Cast { into } => {
                 let (from, to) = match into {
                     true => (generic_args.type_at(0), generic_args.type_at(1)),
@@ -145,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `Math.max` takes numbers only.
                     Expr::helper(if max { "$bigMax" } else { "$bigMin" })
                 } else {
-                    Expr::member(Expr::var("Math"), if max { "max" } else { "min" })
+                    Expr::member(Expr::js_global("Math"), if max { "max" } else { "min" })
                 };
                 // Of one of `Math`'s of another, `a.min(b).min(c)`, one call,
                 // `Math.min(a, b, c)`: the same order, and the same number.
@@ -616,8 +616,8 @@ pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
 /// tested, its `Ok`'s (#366, `mir::std_calls`).
 pub(in crate::lower) fn int_as(n: Expr, from: Num, to: Num) -> Expr {
     match (from.big(), to.big()) {
-        (false, true) => Expr::call(Expr::var("BigInt"), vec![n]),
-        (true, false) => Expr::call(Expr::var("Number"), vec![n]),
+        (false, true) => Expr::call(Expr::js_global("BigInt"), vec![n]).built_in(),
+        (true, false) => Expr::call(Expr::js_global("Number"), vec![n]).built_in(),
         _ => n,
     }
 }
@@ -668,5 +668,5 @@ pub(in crate::lower) fn duration_subsec(duration: Expr, unit: i64) -> Expr {
         1 => part,
         _ => Expr::bin(Op::Div, part, Expr::bigint(i128::from(unit))),
     };
-    Expr::call(Expr::var("Number"), vec![part])
+    Expr::call(Expr::js_global("Number"), vec![part]).built_in()
 }

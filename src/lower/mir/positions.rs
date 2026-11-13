@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this `position` of a slice's items, from its MIR"));
         };
         Ok(match crate::lower::iterators::sought(&f) {
-            Some(x) => Expr::call(Expr::member(items, "indexOf"), vec![x]),
+            Some(x) => Expr::builtin(items, "indexOf", vec![x]),
             None => Expr::call(Expr::member(items, "findIndex"), vec![f]),
         })
     }

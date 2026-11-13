@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip's index loop runs as long as the longer side, reading `chunk[3]` past its end (#320)",
     file: "src/lower/mir/tidy/mut_items.rs",
-    find: '            let min = Expr::member(Expr::var("Math"), "min");\n',
-    replace: '            let min = Expr::member(Expr::var("Math"), "max");\n',
+    find: "            let min = Expr::member(Expr::js_global(\"Math\"), \"min\");\n",
+    replace: "            let min = Expr::member(Expr::js_global(\"Math\"), \"max\");\n",
     tests,
   },
   {

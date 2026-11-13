@@ -1202,9 +1202,12 @@ export function createRequest(tasks) {
   amended).
 - **Its `impl fmt::Display` is the prototype's `toString`**, as JS's
   `toString() { return `${this.rowIndex},${this.columnIndex}`; }`: Rust's
-  `{p}` and `p.to_string()` are JS's text of it, `${p}`, so JS's
+  `{p}` and `p.to_string()` call it, `p.toString()`, never JS's text of
+  it, `${p}`, whose `toString` a minifier takes to run nothing, moving
+  what's after it or dropping a format whose text is discarded
+  ([ADR 1138](../../decisions/1138-effects-are-opt-in.md)). JS's
   `String(p)` gives Rust's text too, and a `T: Display` given it shows it
-  by `String`. It's declared `toString(): string`.
+  by `(value) => value.toString()`. It's declared `toString(): string`.
 - **The crate's trait each impl of which is a class's is each class's
   prototype's**, as React DOM's two roots share `render`: each method,
   the impl's or the trait's default, is a prototype method, a default

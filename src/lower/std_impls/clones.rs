@@ -492,8 +492,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true if shape.is_some() && !set => self.made_each_of_nodes(place, f, entry, args, span)?,
                     true => self.made_each(place, f, (entry, true), span)?,
                     false => {
-                        let all = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![place]);
-                        Expr::call(Expr::member(all, "map"), vec![f])
+                        let all = Expr::builtin(Expr::js_global("Array"), "from", vec![place]);
+                        Expr::builtin(all, "map", vec![f])
                     }
                 };
                 Ok(made_in_order(made))
@@ -556,7 +556,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if self.untagged(ty).is_some() => {
                 let itself = self.untagged_changed_itself(ty);
                 if itself && self.sliced_untagged(ty, &|t| self.needs_clone(t)) {
-                    return Ok(Expr::call(Expr::member(place, "slice"), Vec::new()));
+                    return Ok(Expr::builtin(place, "slice", Vec::new()));
                 }
                 let mut value = place.clone();
                 for variant in adt.variants().iter().rev() {
@@ -638,7 +638,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A C-variadic function's `VaList`, the array of what it hasn't
             // read: a copy, read on its own (ADR 0428).
             ty::Adt(..) if crate::lower::recognition::is_va_list(self.tcx, ty) => {
-                Ok(Expr::call(Expr::member(place, "slice"), Vec::new()))
+                Ok(Expr::builtin(place, "slice", Vec::new()))
             }
             // A `Cycle` a struct holds: the one it carries, of clones of what
             // it started with and what it steps (ADR 0544).
@@ -765,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(items);
         }
         let clone = self.clone_fn("item", ty, span)?;
-        Ok(Expr::call(Expr::member(items, "map"), vec![clone]))
+        Ok(Expr::builtin(items, "map", vec![clone]))
     }
 
     /// `items` of `from`s put in a collection of `into`s, as `Extend<&T>`

@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             WriteCall::TupleFields => {
                 let (type_name, items) = (values.remove(0), values.remove(0));
                 let items = self.once(items, out);
-                let joined = Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str(", ")]);
+                let joined = Expr::builtin(items.clone(), "join", vec![Expr::str(", ")]);
                 let plain = join(vec![type_name.clone(), Expr::str("("), joined, Expr::str(")")]);
                 let open = join(vec![type_name, Expr::str("(")]);
                 self.pretty_or_parts(&pretty, plain, open, items, Expr::str(")"))
@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         args.extend(entries.drop);
                         Expr::call_helper("$entriesShown", args)
                     }
-                    false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![entries.items, each]),
+                    false => Expr::builtin(Expr::js_global("Array"), "from", vec![entries.items, each]),
                 })
             }
             _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
@@ -367,8 +367,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut arrays = arrays.into_iter();
             let first = arrays.next().expect("a part");
-            let all = arrays.fold(first, |all, next| Expr::call(Expr::member(all, "concat"), vec![next]));
-            Expr::call(Expr::member(all, "join"), vec![Expr::str(", ")])
+            let all = arrays.fold(first, |all, next| Expr::builtin(all, "concat", vec![next]));
+            Expr::builtin(all, "join", vec![Expr::str(", ")])
         };
         // Pretty: each part on a line of its own, an array of them, as `entries`
         // may give none (ADR 0137).
@@ -391,7 +391,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut arrays = arrays.into_iter();
             let first = arrays.next().expect("a part");
-            arrays.fold(first, |all, next| Expr::call(Expr::member(all, "concat"), vec![next]))
+            arrays.fold(first, |all, next| Expr::builtin(all, "concat", vec![next]))
         };
         let pretty_open = match kind {
             DebugBuilder::Struct => type_name.clone().map(|name| join(vec![name, Expr::str(" {")])),
@@ -482,7 +482,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `${value}`, a string, which the value itself may not be (ADR 0312);
         // an untagged enum's that writes each variant's value, given no
         // options (#557).
-        if self.displays_itself(ty) || matches!(pretty, Pretty::Plain) && self.displays_its_value(ty) {
+        // A binding's JS value's own, what JS's template makes of it.
+        if self.displays_itself(ty) {
+            return Ok(shown_text(value));
+        }
+        // An untagged enum's value, a string, an integer, a `bool` or a
+        // `char`, which a template shows running nothing (ADR 1138).
+        if matches!(pretty, Pretty::Plain) && self.displays_its_value(ty) {
             return Ok(shown_text(value));
         }
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
@@ -537,7 +543,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::is_text_escape(self.tcx, ty)
         {
             return Ok(match crate::lower::iterators::made_array(&value) {
-                true => Expr::call(Expr::member(value, "join"), vec![Expr::str("")]),
+                true => Expr::builtin(value, "join", vec![Expr::str("")]),
                 false => Expr::call(Expr::helper("$restStr"), vec![value]),
             });
         }
@@ -547,7 +553,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper("$restBytes"), vec![value]));
         }
         if crate::lower::recognition::is_decode_utf16_error(self.tcx, ty) {
-            let hex = Expr::call(Expr::member(value, "toString"), vec![Expr::int(16)]);
+            let hex = Expr::builtin(value, "toString", vec![Expr::int(16)]);
             return Ok(join(vec![Expr::str("unpaired surrogate found: "), hex]));
         }
         // `format_args!`'s text (ADR 0034), which its `Display` writes as it

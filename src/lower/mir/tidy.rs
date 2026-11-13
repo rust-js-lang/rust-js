@@ -500,8 +500,11 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
             // an `&A` with a `Cell` beside it, too (#1045).
             plain_root
                 || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))
-                || matches!(&of.kind, ExprKind::Var(v)
-                    if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String" | "console"))
+                // One of JS's own globals, `Math.max`, as lowering named it
+                // (`Known::BuiltIn`), never a name the crate's may share
+                // (#1674).
+                || matches!(&of.kind, ExprKind::Var(v) if !set.contains(v))
+                    && (of.facts.has(js::Known::BuiltIn) || of.facts.has(js::Known::Lasting))
         }
         ExprKind::Jsx(_) => inert_element(e, set),
         // The items of an array nothing changes, `...first`; not a plain

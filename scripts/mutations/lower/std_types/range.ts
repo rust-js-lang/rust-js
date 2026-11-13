@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "range-count-negative",
     breaks: "a range stepped past its end counts below zero",
     file: "src/lower/std_types/range.rs",
-    find: '    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![gap, Expr::int(0)])\n',
+    find: "    Expr::builtin(Expr::js_global(\"Math\"), \"max\", vec![gap, Expr::int(0)])\n",
     replace: "    gap\n",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
   },

@@ -264,10 +264,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = ty.peel_refs();
         let items = match ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {
             true => items,
-            false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+            false => Expr::builtin(Expr::js_global("Array"), "from", vec![items]),
         };
         let items = self.cow_texts(items, self.iterable_item(ty));
-        Ok(Expr::call(Expr::member(items, "join"), vec![Expr::str("")]))
+        Ok(Expr::builtin(items, "join", vec![Expr::str("")]))
     }
 
     /// `s.extend(items)`, `items` of type `ty`, written to `place`: of an
@@ -349,12 +349,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(
-                        Expr::call(Expr::member(Expr::var("Array"), "from"), vec![current.clone()]),
+                        Expr::builtin(Expr::js_global("Array"), "from", vec![current.clone()]),
                         "filter",
                     ),
                     given,
                 );
-                (Expr::call(Expr::member(kept, "join"), vec![Expr::str("")]), None)
+                (Expr::builtin(kept, "join", vec![Expr::str("")]), None)
             }
             StringEdit::Pop
             | StringEdit::Remove
@@ -427,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && item.is_char()
         {
             let set = values[at].clone();
-            let one_of = Expr::call(Expr::member(set, "includes"), vec![Expr::var("c")]);
+            let one_of = Expr::builtin(set, "includes", vec![Expr::var("c")]);
             values[at] = Expr::arrow(
                 vec!["c".into()],
                 vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)],
@@ -525,7 +525,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![s, matches, n])
             }
             TextOp::ContainsBy => {
-                let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]);
+                let chars = Expr::builtin(Expr::js_global("Array"), "from", vec![arg()]);
                 method(chars, "some", vec![arg()])
             }
             TextOp::Lines => Expr::call(Expr::helper("$lines"), vec![arg()]),
@@ -608,11 +608,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let split = Expr::array(vec![
                     Expr::index(items.clone(), item),
-                    Expr::call(Expr::member(items, "slice"), rest),
+                    Expr::builtin(items, "slice", rest),
                 ]);
                 Expr::cond(empty, Expr::undefined(), split)
             }
-            TextOp::CharFromCode => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![arg()]),
+            TextOp::CharFromCode => Expr::builtin(Expr::js_global("String"), "fromCodePoint", vec![arg()]),
             TextOp::FromUtf8 { owned } => {
                 let mut list = vec![arg()];
                 if owned {
@@ -680,7 +680,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::CharLen { utf16: false } => call("$byteLen", vec![arg()]),
             TextOp::CharLen { utf16: true } => Expr::member(arg(), "length"),
-            TextOp::CharFromByte => Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![arg()]),
+            TextOp::CharFromByte => Expr::builtin(Expr::js_global("String"), "fromCharCode", vec![arg()]),
             TextOp::Find(last) => {
                 let name = if last { "$rfind" } else { "$find" };
                 Expr::call(Expr::helper(name), vec![arg(), arg()])
@@ -783,7 +783,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if op == TextOp::ExtendFromWithin {
             let copied = Expr::call(Expr::helper("$copyRange"), list);
             let copied = match clone {
-                Some(clone) => Expr::call(Expr::member(copied, "map"), vec![clone]),
+                Some(clone) => Expr::builtin(copied, "map", vec![clone]),
                 None => copied,
             };
             return Expr::call_helper("$extend", vec![items, copied]);
@@ -1099,7 +1099,7 @@ pub(in crate::lower) fn cut(s: Expr, p: Expr, units: Option<usize>, prefix: bool
         Expr::member(s.clone(), if prefix { "startsWith" } else { "endsWith" }),
         vec![p.clone()],
     );
-    let slice = |list: Vec<Expr>| Expr::call(Expr::member(s.clone(), "slice"), list);
+    let slice = |list: Vec<Expr>| Expr::builtin(s.clone(), "slice", list);
     let cut = match (units, prefix) {
         (Some(0), _) => s.clone(),
         (Some(n), true) => slice(vec![Expr::int(n as i128)]),
@@ -1138,7 +1138,7 @@ pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
 pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
     let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
     let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
-    Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
+    Expr::builtin(Expr::js_global("Array"), "from", vec![encoded])
 }
 
 /// `s += a; s += b;`, a `String` of the body's own appended to twice, one
@@ -1236,7 +1236,7 @@ fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s str, &'
 fn chars(text: Expr) -> Expr {
     Expr {
         facts: crate::js::Facts::of(crate::js::Known::Chars),
-        ..Expr::call(Expr::member(Expr::var("Array"), "from"), vec![text])
+        ..Expr::builtin(Expr::js_global("Array"), "from", vec![text])
     }
 }
 

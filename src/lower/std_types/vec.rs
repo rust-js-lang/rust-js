@@ -142,7 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .filter(|&item| self.recognition().is_cow(item)) =>
             {
                 let items = self.cow_texts(arg(), item);
-                Expr::call(Expr::member(items, "join"), vec![arg()])
+                Expr::builtin(items, "join", vec![arg()])
             }
             // The separator `&T` between each two, or `&[T]`'s items; each
             // item cloned, as `Join`'s are.

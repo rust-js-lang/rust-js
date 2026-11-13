@@ -145,14 +145,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // each item that is too.
                 if let ty::Array(item, _) = ty.kind() {
                     if !self.contains_mutated(*item) {
-                        return Expr::call(Expr::member(place, "slice"), Vec::new());
+                        return Expr::builtin(place, "slice", Vec::new());
                     }
                     let body = self.copy(Expr::var("item"), *item);
                     let copy = Expr::arrow(
                         vec!["item".into()],
                         vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                     );
-                    return Expr::call(Expr::member(place, "map"), vec![copy]);
+                    return Expr::builtin(place, "map", vec![copy]);
                 }
                 // A union, a union of its own (ADR 0406).
                 if self.is_union(ty) {
@@ -174,7 +174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .filter_map(|v| self.variant_fields(v, args).first().map(|&(_, t)| t))
                         .any(|t| self.contains_mutated(t));
                     if (itself || changed) && self.sliced_untagged(ty, &|t| self.contains_mutated(t)) {
-                        return Expr::call(Expr::member(place, "slice"), Vec::new());
+                        return Expr::builtin(place, "slice", Vec::new());
                     }
                     return once(place, &|e| {
                         let mut value = e.clone();

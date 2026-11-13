@@ -37,7 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let r = self.fresh(Role::R);
         let tagged = self.form_given(crate::lower::generic_facts::Form::Tagged, crossing, Expr::var(&r), span)?;
         let f = Expr::arrow(vec![r.into()], vec![StmtKind::Return(Some(tagged)).at(js::Span::NONE)]);
-        let items = Expr::call(Expr::member(items, "map"), vec![f]);
+        let items = Expr::builtin(items, "map", vec![f]);
         let collected = self.collect_fallible_items(items, target, item, iter_ty, span)?;
         let (std, declared, _) = crossing;
         Ok(self.form_back(
@@ -271,7 +271,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match owns && self.needs_clone(item) {
             true => {
                 let clone = self.clone_fn("item", item, span)?;
-                Expr::call(Expr::member(left, "map"), vec![clone])
+                Expr::builtin(left, "map", vec![clone])
             }
             false => left,
         })

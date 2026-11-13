@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["item".into()],
                     vec![StmtKind::Return(Some(Expr::held(Expr::var("item")))).at(js::Span::NONE)],
                 );
-                Expr::call(Expr::member(value, "map"), vec![each])
+                Expr::builtin(value, "map", vec![each])
             }
             _ => value,
         }

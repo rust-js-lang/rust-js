@@ -580,56 +580,25 @@ impl Expr {
         !self.calls_only(&|_| true)
     }
 
-    /// Whether each call in this is a helper's `helper` allows, a JS
-    /// global's, or a JS method of text or an array that changes nothing,
-    /// with each callback's body the same, and nothing assigned: the one
-    /// list of what JS's own calls are, `only_reads`' and
-    /// `runs_program_code`'s.
+    /// Whether each call in this is a helper's `helper` allows, or one of
+    /// JS's own that lowering built knowing it (`is_js_own_call`), with
+    /// each callback's body the same, and nothing assigned: the one answer
+    /// of what JS's own calls are, `only_reads`' and `runs_program_code`'s.
+    /// A template's interpolation runs nothing: what may run code when
+    /// it's shown, a class's or a binding's JS value's `toString`, is
+    /// called, a class's `p.toString()` (ADR 1138).
+    /// No name says it: a crate's method named `map` or `String` may do
+    /// anything (#1663, #1674).
     fn calls_only(&self, helper: &dyn Fn(&str) -> bool) -> bool {
-        const METHODS: &[&str] = &[
-            "map",
-            "join",
-            "filter",
-            "slice",
-            "concat",
-            "toString",
-            "toFixed",
-            "padStart",
-            "padEnd",
-            "toUpperCase",
-            "toLowerCase",
-            "entries",
-            "keys",
-            "values",
-            "repeat",
-            "trim",
-            "at",
-            "includes",
-            "indexOf",
-            "startsWith",
-            "endsWith",
-            "codePointAt",
-            "charCodeAt",
-        ];
-        const GLOBALS: &[&str] = &["String", "Number", "BigInt", "Math", "JSON", "Array", "Object"];
         let mut only = true;
         let mut each = self.clone();
         each.each_mut(&mut |part| {
             only &= match &part.kind {
                 ExprKind::Call(callee, _) | ExprKind::OptionalCall(callee, _) => match &callee.kind {
                     ExprKind::Var(_) if let Some(name) = callee.helper_name() => helper(name),
-                    ExprKind::Var(name) => GLOBALS.contains(&name.as_str()),
-                    // A binding's method, whatever its name (`Known::Binding`),
-                    // and a dictionary's (`Known::Evidence`).
-                    _ if callee.facts.has(Known::Binding) => false,
-                    ExprKind::Member(of, _) | ExprKind::OptionalMember(of, _) if of.facts.has(Known::Evidence) => false,
-                    ExprKind::Member(of, method) | ExprKind::OptionalMember(of, method) => {
-                        METHODS.contains(&method.as_str())
-                            || matches!(&of.kind, ExprKind::Var(global) if GLOBALS.contains(&global.as_str()))
-                    }
                     // A callback called at once, its body looked at as each part is.
                     ExprKind::Arrow(..) => true,
-                    _ => false,
+                    _ => part.is_js_own_call(),
                 },
                 ExprKind::New(..) | ExprKind::Await(_) | ExprKind::Import(_) | ExprKind::Handle(_, _) => false,
                 ExprKind::Arrow(_, body) => body.iter().all(|stmt| {
@@ -643,6 +612,23 @@ impl Expr {
             };
         });
         only
+    }
+
+    /// Whether this is a call of one of JS's own functions or methods,
+    /// built where lowering knew it (`Known::BuiltIn`), or a `str`'s or a
+    /// slice's method that only reads (`Known::Read`): the one answer, by
+    /// what lowering knew, never by a name (#1674).
+    pub fn is_js_own_call(&self) -> bool {
+        let (ExprKind::Call(callee, _) | ExprKind::OptionalCall(callee, _)) = &self.kind else {
+            return false;
+        };
+        // Or of a JS global lowering named, `String(n)`, or one of its
+        // methods, `Math.max(a, b)` (`Expr::js_global`).
+        let global = match &callee.kind {
+            ExprKind::Member(of, _) | ExprKind::OptionalMember(of, _) => of.facts.has(Known::BuiltIn),
+            _ => callee.facts.has(Known::BuiltIn),
+        };
+        self.facts.has(Known::BuiltIn) || self.facts.has(Known::Read) || global
     }
 
     /// Whether assigning to this, `target = value`, does anything before
