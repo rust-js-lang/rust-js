@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
   },
+  {
+    name: "json-saturating-unclamped",
+    breaks: "a `Saturating` read keeps what's past its type, where serde's visitor clamps it to the type's range (#1623)",
+    file: "src/runtime/json_decoder.js",
+    find: "      const clamped = value < BigInt(min) ? min : value > BigInt(max) ? max : value;\n",
+    replace: "      const clamped = value;\n",
+    tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
+  },
 ];

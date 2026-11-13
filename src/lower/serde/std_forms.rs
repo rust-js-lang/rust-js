@@ -26,6 +26,7 @@
 //!   is that (a variant is read from a string, never by its index).
 
 use super::*;
+use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 
 /// One row's form.
@@ -42,6 +43,10 @@ pub(super) enum StdForm<'tcx> {
     Newtype(Ty<'tcx>),
     /// A unit struct's, `null`.
     Unit,
+    /// A `Saturating<T>` of an integer type up to 64 bits: written as a
+    /// newtype, read by serde's own visitor, which clamps any integer to
+    /// `T`'s range, `$json.saturating(min, max)`.
+    Saturating(Ty<'tcx>, Num),
     /// What a cell of this type holds, of this type, read through it as
     /// its kind says.
     Cell(Ty<'tcx>, Ty<'tcx>, CellKind),
@@ -142,6 +147,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((_, kind)) = cell {
             return Some(StdForm::Cell(ty, args.type_at(0), kind));
         }
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.tcx.def_path_str(adt.did()) == "std::num::Saturating"
+            && let Some(num) = Num::of(args.type_at(0)).filter(|n| !n.float() && n.bits() <= 64)
+        {
+            return Some(StdForm::Saturating(args.type_at(0), num));
+        }
         if self.is_lang_adt(ty, rustc_hir::attrs::lang_items::LangItem::PhantomData) {
             return Some(StdForm::Unit);
         }
@@ -191,7 +202,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.emit(json, "endObject", Vec::new(), out);
                 Ok(())
             }
-            StdForm::Newtype(inner) => self.write_json(Expr::index(value, Expr::int(0)), json, inner, span, out),
+            StdForm::Newtype(inner) | StdForm::Saturating(inner, _) => {
+                self.write_json(Expr::index(value, Expr::int(0)), json, inner, span, out)
+            }
             StdForm::Unit => {
                 self.emit(json, "null", Vec::new(), out);
                 Ok(())
@@ -238,6 +251,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.fresh(Role::Json);
         let inner = match form {
             StdForm::Unit => return Ok(Expr::member(Expr::helper("$json"), "unit")),
+            StdForm::Saturating(_, num) => {
+                let (min, max) = num.range();
+                let max = i128::try_from(max).expect("an integer type up to 64 bits");
+                let saturating = Expr::member(Expr::helper("$json"), "saturating");
+                return Ok(Expr::call(saturating, vec![num.literal(min), num.literal(max)]));
+            }
             StdForm::Newtype(inner) | StdForm::Cell(_, inner, _) => Some(self.json_reader(inner, span)?),
             _ => None,
         };
@@ -300,7 +319,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => read,
                 }
             }
-            StdForm::Newtype(_) | StdForm::Unit | StdForm::Cell(..) => unreachable!("read above"),
+            StdForm::Newtype(_) | StdForm::Unit | StdForm::Cell(..) | StdForm::Saturating(..) => {
+                unreachable!("read above")
+            }
             StdForm::Enum(adt, args, order) => {
                 let variants = (order.iter())
                     .map(|name| {

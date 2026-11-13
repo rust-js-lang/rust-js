@@ -231,8 +231,8 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time), [ADR 1
 
 serde_json's common attributes work ([the semantics](semantics.md#the-javascript-boundary)).
 Refused, each held by `test/diagnostics.test.ts`, which compiles them with
-serde: a `u128` in JSON, but one a hand-written `Serialize` writes; reading a `BinaryHeap` or a `Box<str>`; writing a
-`Cow<str>` or a `Duration`; a map keyed by a struct or an enum; an
+serde: reading a `BinaryHeap` or a `Box<str>`; writing a
+`Cow<str>`; a map keyed by a struct or an enum; an
 internally tagged newtype variant of a type parameter, of a payload whose
 `Serialize` is hand-written or goes through `#[serde(into)]`, or whose field
 has its own writer (`serialize_with`), each #1568; `with`, `serialize_with` or

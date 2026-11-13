@@ -4,10 +4,6 @@ native-invalid stream_06
 refused attr_08
 refused attr_09
 refused attr_10
-refused big_00
-refused big_01
-refused big_02
-refused big_03
 refused borrowed_and_generic
 refused bytes_00
 refused bytes_01
@@ -44,7 +40,6 @@ refused mapkey_13
 refused more_19
 refused more_20
 refused more_27
-refused num_i128
 refused pos_19
 refused std_02
 refused std_11
@@ -99,6 +94,10 @@ same attr_20
 same attr_21
 same attr_22
 same attr_23
+same big_00
+same big_01
+same big_02
+same big_03
 same big_04
 same big_05
 same big_06
@@ -229,6 +228,7 @@ same more_30
 same more_31
 same num_f32_write
 same num_f64_write
+same num_i128
 same num_ints
 same num_nan_inf
 same num_read_bad

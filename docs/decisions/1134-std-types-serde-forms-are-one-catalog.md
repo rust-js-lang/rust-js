@@ -130,3 +130,22 @@ literal does (`holding`, ADR 0288): a struct's `Cell` field is what the
 cell holds, which a `{ value }` read from JSON wasn't, `get()` then reading
 `[object Object]`. Probes `std_07`, `std_08` and `std_20` give native's
 answer in all three modes.
+
+## Amendment: numbers (2026-11-13, #1623)
+
+A 128-bit integer, a primitive, is the numbers' own dispatch's, not a row:
+written as its digits, by its type's name, `int(n, "i128")`, which a
+`Value`'s writer holds only where it fits in 64 bits, serde_json's `number
+out of range` (#1547's writer, a hand-written impl's too); read by
+`int128`, which of a value already read is any integer's `int` (a `Value`'s
+number fits in 64 bits), and of the text serde_json's own scan of its
+digits (`do_deserialize_i128`, `scan_integer128`): an optional `-` of an
+`i128` alone, whole, never a float, `invalid number` and `number out of
+range` where serde_json says them, a map key's too. ADR 0171 amended.
+
+A row, `Saturating<T>` of an integer type up to 64 bits: written as a
+newtype; read by serde's own visitor, `integer with support for saturating
+semantics`, which clamps any integer to `T`'s range and refuses a float
+(`$json.saturating(min, max)`, its bounds `Num::range`'s). A 128-bit one
+has no row. Probes `big_00` to `big_03` and `num_i128` give native's
+answer in all three modes.

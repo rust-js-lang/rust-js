@@ -103,4 +103,12 @@ export const mutations: Mutation[] = [
     replace: "                StdForm::Cell(..) => read,\n",
     tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
   },
+  {
+    name: "std-saturating-read-as-its-type",
+    breaks: "a `Saturating` is read as what it holds, refusing what's past its type, where serde's visitor clamps it (#1623)",
+    file: "src/lower/serde/std_forms.rs",
+    find: "            return Some(StdForm::Saturating(args.type_at(0), num));\n",
+    replace: "            let _ = num;\n            return Some(StdForm::Newtype(args.type_at(0)));\n",
+    tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
+  },
 ];

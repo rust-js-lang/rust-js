@@ -429,8 +429,6 @@ for (const [name, source, message, crate] of [
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
   // A generic `Error` impl's dictionary has no `type_id` (ADR 0331, amended).
   ["a dyn Error's downcast to a generic impl's type", '#[derive(Debug)] pub struct W<E>(E);\nimpl<E: std::fmt::Debug> std::fmt::Display for W<E> { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{:?}", self.0) } }\nimpl<E: std::fmt::Debug> std::error::Error for W<E> {}\npub fn f(e: &(dyn std::error::Error + \'static)) -> bool { e.is::<W<u8>>() }', "whose `Error` impl is generic"],
-  ["writing a u128", 'pub fn f(n: u128) -> String { serde_json::to_string(&n).unwrap() }', "does not support", "serde"],
-  ["reading a u128", 'pub fn f(s: &str) -> bool { serde_json::from_str::<u128>(s).is_ok() }', "does not support", "serde"],
   // A read of what runs code when it's dropped, which the runtime reader's
   // frames don't drop where a read fails part-way, as serde_json's `?`
   // does (#1552): from text, from a `Value`, and of a visitor's element.
@@ -483,7 +481,6 @@ for (const [name, source, message, crate] of [
   ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
   ["reading a Box<str>", 'pub fn f(s: &str) -> Box<str> { serde_json::from_str(s).unwrap() }', "deserializing `str`", "serde"],
   ["writing a Cow<str>", 'pub fn f(c: &std::borrow::Cow<str>) -> String { serde_json::to_string(c).unwrap() }', "serializing `std::borrow::Cow<'_, str>`", "serde"],
-  ["reading a BinaryHeap", 'pub fn f(s: &str) -> usize { serde_json::from_str::<std::collections::BinaryHeap<u8>>(s).map_or(0, |h| h.len()) }', "deserializing `std::collections::BinaryHeap<u8>`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).

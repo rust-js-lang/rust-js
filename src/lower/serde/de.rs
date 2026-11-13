@@ -166,10 +166,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if ty.is_bool() {
             return Ok(reader("bool"));
         }
-        // serde_json reads a 128-bit one by its own rules, not yet here (ADR 0171).
-        if Num::of(ty).is_some_and(|n| n.bits() == 128) {
-            return Err(unsupported(self));
-        }
         // A `NonZero<T>`, `T`'s, then serde's check that it isn't zero, in
         // its words, `a nonzero u32` (#1538).
         if let ty::Adt(adt, args) = ty.kind()

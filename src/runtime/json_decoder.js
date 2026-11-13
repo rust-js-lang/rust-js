@@ -26,6 +26,25 @@ class $JsonDecoder {
     });
   }
 
+  // A 128-bit integer (#1623): of a value already read, a number it holds,
+  // which fits in 64 bits, read as any integer is; the text's scans it whole
+  // (`$JsonReader`'s).
+  int128(type, min, max, nonZero) {
+    return this.int(type, min, max, nonZero);
+  }
+
+  // serde's `Saturating<T>` of an integer type from `min` to `max`: any
+  // integer, clamped to them; a float refused (#1623).
+  saturating(min, max) {
+    const expected = "integer with support for saturating semantics";
+    return this.deserializeNumber(expected, (n) => {
+      if (n.kind === "f") throw $jsonError(`invalid type: floating point \`${$jsonNumber(n.value)}\`, expected ${expected}`);
+      const value = BigInt(n.value);
+      const clamped = value < BigInt(min) ? min : value > BigInt(max) ? max : value;
+      return typeof max === "bigint" ? BigInt(clamped) : Number(clamped);
+    });
+  }
+
   f64() {
     return this.deserializeNumber("f64", (n) => Number(n.value));
   }

@@ -14994,6 +14994,25 @@ export class $JsonDecoder {
     });
   }
 
+  // A 128-bit integer (#1623): of a value already read, a number it holds,
+  // which fits in 64 bits, read as any integer is; the text's scans it whole
+  // (`$JsonReader`'s).
+  int128(type, min, max, nonZero) {
+    return this.int(type, min, max, nonZero);
+  }
+
+  // serde's `Saturating<T>` of an integer type from `min` to `max`: any
+  // integer, clamped to them; a float refused (#1623).
+  saturating(min, max) {
+    const expected = "integer with support for saturating semantics";
+    return this.deserializeNumber(expected, (n) => {
+      if (n.kind === "f") throw $jsonError(`invalid type: floating point \`${$jsonNumber(n.value)}\`, expected ${expected}`);
+      const value = BigInt(n.value);
+      const clamped = value < BigInt(min) ? min : value > BigInt(max) ? max : value;
+      return typeof max === "bigint" ? BigInt(clamped) : Number(clamped);
+    });
+  }
+
   f64() {
     return this.deserializeNumber("f64", (n) => Number(n.value));
   }
@@ -15373,6 +15392,33 @@ export class $JsonReader extends $JsonDecoder {
     } catch (e) {
       throw this.fixPosition(e);
     }
+  }
+
+  // `deserialize_i128` and `deserialize_u128`: an optional `-`, of an
+  // `i128` alone, then its digits, `scan_integer128`, whole, never a float,
+  // which what's past it, `.5`, isn't; `number out of range` past its type
+  // or of a `-` before a `u128` (#1623).
+  int128(type, min, max, nonZero) {
+    const peek = this.parseWhitespace();
+    if (peek === -1) throw this.peekError("EOF while parsing a value");
+    const negative = peek === 45;
+    if (negative && min === 0n) throw this.peekError("number out of range");
+    if (negative) this.index++;
+    const start = this.index;
+    const c = this.next();
+    if (c === 48) {
+      const p = this.peek();
+      if (p >= 48 && p <= 57) throw this.peekError("invalid number");
+    } else if (c >= 49 && c <= 57) {
+      for (let p = this.peek(); p >= 48 && p <= 57; p = this.peek()) this.index++;
+    } else {
+      throw this.error("invalid number");
+    }
+    const digits = BigInt(new TextDecoder().decode(this.bytes.subarray(start, this.index)));
+    const value = negative ? -digits : digits;
+    if (value < min || value > max) throw this.error("number out of range");
+    if (nonZero && value === 0n) throw this.error(`invalid value: integer \`0\`, expected a nonzero ${type}`);
+    return value;
   }
 
   parseInteger(positive) {
@@ -16998,6 +17044,10 @@ export const $json = {
   isize: (json, nonZero) => json.int("isize", -2147483648, 2147483647, nonZero),
   u64: (json, nonZero) => json.int("u64", 0n, 18446744073709551615n, nonZero),
   i64: (json, nonZero) => json.int("i64", -9223372036854775808n, 9223372036854775807n, nonZero),
+  i128: (json, nonZero) => json.int128("i128", -(2n ** 127n), 2n ** 127n - 1n, nonZero),
+  u128: (json, nonZero) => json.int128("u128", 0n, 2n ** 128n - 1n, nonZero),
+  // serde's `Saturating<T>` of an integer type from `min` to `max` (#1623).
+  saturating: (min, max) => (json) => [json.saturating(min, max)],
   f64: (json) => json.f64(),
   f32: (json) => json.f32(),
   string: (json) => json.string(),

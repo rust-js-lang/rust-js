@@ -351,3 +351,75 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// Numbers: an `i128` and a `u128` written as their digits, and to a `Value`
+// only where they fit in 64 bits, else serde_json's `number out of range`;
+// read by serde_json's own scan of their digits, whole, never a float; and
+// a `Saturating` read by serde's visitor, which clamps any integer.
+test("serde: an i128, a u128 and a Saturating are written and read as serde_json does", async () => {
+  const dir = fixture("serde-std-numbers");
+  writeFileSync(join(dir, "cases.rs"), harness + String.raw`
+use std::num::Saturating;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Wide {
+    pub big: i128,
+    pub huge: u128,
+    pub clamped: Saturating<u8>,
+    pub signed: Saturating<i16>,
+}
+
+fn write_result<T: serde::Serialize>(out: &mut String, value: &T) {
+    match serde_json::to_string(value) {
+        Ok(text) => out.push_str(&format!("{text}\n")),
+        Err(e) => out.push_str(&format!("error: {e}\n")),
+    }
+    match serde_json::to_value(value) {
+        Ok(v) => out.push_str(&format!("{v}\n")),
+        Err(e) => out.push_str(&format!("error: {e}\n")),
+    }
+}
+
+pub fn report() -> String {
+    let mut out = String::new();
+    for v in [0i128, -1, i64::MIN as i128, i64::MIN as i128 - 1, u64::MAX as i128, u64::MAX as i128 + 1, i128::MIN, i128::MAX] {
+        write_result(&mut out, &v);
+    }
+    for v in [0u128, u64::MAX as u128, u64::MAX as u128 + 1, u128::MAX] {
+        write_result(&mut out, &v);
+    }
+    write_result(&mut out, &Saturating(250u8));
+    let wide = Wide { big: -170141183460469231731687303715884105728, huge: 340282366920938463463374607431768211455, clamped: Saturating(7), signed: Saturating(-3) };
+    write_result(&mut out, &wide);
+    for text in [
+        "0", "-0", "12", "-12", "170141183460469231731687303715884105727", "170141183460469231731687303715884105728",
+        "-170141183460469231731687303715884105728", "-170141183460469231731687303715884105729",
+        "1.5", "1e3", "00", "01", "-", "\"5\"", "null", "true", " 7 ", "[1]",
+        "340282366920938463463374607431768211455", "340282366920938463463374607431768211456",
+    ] {
+        read::<i128>(&mut out, text);
+        read::<u128>(&mut out, text);
+    }
+    for text in ["300", "-5", "255", "18446744073709551615", "-9223372036854775808", "1.0", "\"3\"", "null"] {
+        read::<Saturating<u8>>(&mut out, text);
+        read::<Saturating<i16>>(&mut out, text);
+        read::<Saturating<i64>>(&mut out, text);
+    }
+    read::<Wide>(&mut out, r#"{"big":-5,"huge":99999999999999999999999,"clamped":999,"signed":-40000}"#);
+    read::<Wide>(&mut out, r#"{"big":1.5,"huge":1,"clamped":1,"signed":1}"#);
+    read::<Vec<u128>>(&mut out, "[1, 2,3]");
+    let keyed: std::collections::BTreeMap<i128, u8> = [(-1i128, 1u8), (i128::MAX, 2)].into_iter().collect();
+    write_result(&mut out, &keyed);
+    read::<std::collections::BTreeMap<i128, u8>>(&mut out, r#"{"-1":1,"170141183460469231731687303715884105727":2}"#);
+    read::<std::collections::BTreeMap<u128, u8>>(&mut out, r#"{"-1":1}"#);
+    read_value::<i128>(&mut out, serde_json::json!(-7));
+    read_value::<u128>(&mut out, serde_json::json!(-7));
+    read_value::<u128>(&mut out, serde_json::json!(18446744073709551615u64));
+    read_value::<i128>(&mut out, serde_json::json!(2.5));
+    read_value::<Saturating<u8>>(&mut out, serde_json::json!(1000));
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

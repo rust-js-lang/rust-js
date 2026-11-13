@@ -113,6 +113,33 @@ class $JsonReader extends $JsonDecoder {
     }
   }
 
+  // `deserialize_i128` and `deserialize_u128`: an optional `-`, of an
+  // `i128` alone, then its digits, `scan_integer128`, whole, never a float,
+  // which what's past it, `.5`, isn't; `number out of range` past its type
+  // or of a `-` before a `u128` (#1623).
+  int128(type, min, max, nonZero) {
+    const peek = this.parseWhitespace();
+    if (peek === -1) throw this.peekError("EOF while parsing a value");
+    const negative = peek === 45;
+    if (negative && min === 0n) throw this.peekError("number out of range");
+    if (negative) this.index++;
+    const start = this.index;
+    const c = this.next();
+    if (c === 48) {
+      const p = this.peek();
+      if (p >= 48 && p <= 57) throw this.peekError("invalid number");
+    } else if (c >= 49 && c <= 57) {
+      for (let p = this.peek(); p >= 48 && p <= 57; p = this.peek()) this.index++;
+    } else {
+      throw this.error("invalid number");
+    }
+    const digits = BigInt(new TextDecoder().decode(this.bytes.subarray(start, this.index)));
+    const value = negative ? -digits : digits;
+    if (value < min || value > max) throw this.error("number out of range");
+    if (nonZero && value === 0n) throw this.error(`invalid value: integer \`0\`, expected a nonzero ${type}`);
+    return value;
+  }
+
   parseInteger(positive) {
     const c = this.next();
     if (c === -1) throw this.error("EOF while parsing a value");

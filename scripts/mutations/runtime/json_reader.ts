@@ -202,4 +202,20 @@ export const mutations: Mutation[] = [
     replace: "    this.parseIdent(\"ull\");\n    return visitor.unit ? visitor.unit() : visitor.none();\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
   },
+  {
+    name: "json-u128-negative-read",
+    breaks: "a `-` before a `u128` is read on, where serde_json's is `number out of range` at the `-` (#1623)",
+    file: "src/runtime/json_reader.js",
+    find: '    if (negative && min === 0n) throw this.peekError("number out of range");\n',
+    replace: "",
+    tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
+  },
+  {
+    name: "json-int128-range-unchecked",
+    breaks: "a 128-bit integer past its type is read, where serde_json's is `number out of range` (#1623)",
+    file: "src/runtime/json_reader.js",
+    find: '    if (value < min || value > max) throw this.error("number out of range");\n',
+    replace: "",
+    tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
+  },
 ];

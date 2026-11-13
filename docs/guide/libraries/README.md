@@ -744,7 +744,9 @@ before the epoch or past what a `Duration` holds; a `Wrapping` and a
 `Reverse` as what they hold, and a `PhantomData` as `null`; a `Cell`, a
 `RefCell`, a `Mutex` and an `RwLock` as what they hold, read through them
 as serde's impl reads them, `already mutably borrowed` or `lock poison
-error while serializing` where it can't
+error while serializing` where it can't; an `i128` and a `u128` as their
+digits, read as serde_json reads them, and a `Saturating` clamped to its
+type as serde reads it
 ([ADR 1134](../../decisions/1134-std-types-serde-forms-are-one-catalog.md)).
 The others are refused for now (#1623).
 

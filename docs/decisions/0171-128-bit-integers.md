@@ -33,7 +33,12 @@ same, with its width where it counts:
 - **A float's `to_int_unchecked::<T>()` is its `as T`,** which is it
   wherever Rust defines it: in range, as num-traits checks first.
 - **Still errors:** a 128-bit integer in JSON, read or written. serde_json
-  reads one by its own rules, which aren't checked here yet.
+  reads one by its own rules, which aren't checked here yet. (Amended
+  2026-11-13, #1623: written as its digits, and to a `Value` only where it
+  fits in 64 bits, serde_json's `number out of range`; read from the text
+  by serde_json's own scan of its digits, `scan_integer128`, whole, never a
+  float, `number out of range` past its type or of a `-` before a `u128`;
+  from a `Value`, the number it holds. ADR 1134, amended.)
 
 ## Why
 

@@ -104,6 +104,10 @@ const $json = {
   isize: (json, nonZero) => json.int("isize", -2147483648, 2147483647, nonZero),
   u64: (json, nonZero) => json.int("u64", 0n, 18446744073709551615n, nonZero),
   i64: (json, nonZero) => json.int("i64", -9223372036854775808n, 9223372036854775807n, nonZero),
+  i128: (json, nonZero) => json.int128("i128", -(2n ** 127n), 2n ** 127n - 1n, nonZero),
+  u128: (json, nonZero) => json.int128("u128", 0n, 2n ** 128n - 1n, nonZero),
+  // serde's `Saturating<T>` of an integer type from `min` to `max` (#1623).
+  saturating: (min, max) => (json) => [json.saturating(min, max)],
   f64: (json) => json.f64(),
   f32: (json) => json.f32(),
   string: (json) => json.string(),

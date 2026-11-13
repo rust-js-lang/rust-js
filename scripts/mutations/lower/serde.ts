@@ -318,4 +318,12 @@ export const mutations: Mutation[] = [
     replace: "    for item in attrs.values().flatten().filter(|_| false) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a remote type"],
   },
+  {
+    name: "wide-int-written-unnamed",
+    breaks: "a 128-bit integer is written without its type's name, so a `Value` holds one past 64 bits where serde_json's is `number out of range` (#1623)",
+    file: "src/lower/serde.rs",
+    find: 'self.emit(json, "int", vec![value, Expr::str(ty.to_string())], out);',
+    replace: 'self.emit(json, "int", vec![value], out);',
+    tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
+  },
 ];

@@ -468,9 +468,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.emit(json, "number", vec![value, Expr::bool(true)], out);
             return Ok(());
         }
-        // As it's read, not yet (ADR 0171).
+        // A 128-bit one by its type's name, which a `Value`'s writer holds
+        // only where it fits in 64 bits, serde_json's `number out of range`
+        // (#1547, #1623).
         if Num::of(ty).is_some_and(|n| n.bits() == 128) {
-            return Err(self.unsupported(span, &format!("serializing `{ty}`")));
+            self.emit(json, "int", vec![value, Expr::str(ty.to_string())], out);
+            return Ok(());
         }
         if Num::of(ty).is_some_and(|n| !n.float()) {
             self.emit(json, "int", vec![value], out);
