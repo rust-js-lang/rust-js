@@ -427,6 +427,17 @@ test("a library's dyn Debug written into a writer is refused", () => {
   expect(native).toBe('["Some", "(", "7", ")"]\n');
 }, underLoad(300_000));
 
+// A library's generic type isn't published yet (#1712): written into a
+// writer through generic code, it's refused, naming #1688, as its
+// dictionary carries no `fmtInto`.
+test("a library's generic type written through generic code is refused, naming #1688", () => {
+  const native = piecewiseChain(piecewisePairs, "generic_librarys_type_through_generic_code", [
+    "writing a `dep::Wrap<i32>` into a writer of the crate's own or a generic one through generic code",
+    "#1688",
+  ]);
+  expect(native).toBe('["[", "<", "3", ">", "]"]\n');
+}, underLoad(300_000));
+
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "expected value", line: 0, column: 0 }))).toEqual(["sexpected value"]);
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "EOF", line: 2, column: 15 }))).toEqual([

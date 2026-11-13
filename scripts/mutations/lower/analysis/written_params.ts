@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "    if let Some(lacked) = lacked {\n",
     replace: "    if let Some(lacked) = lacked.filter(|_| false) {\n",
-    tests: pairs,
+    tests: ["test/writer-sink.test.ts", "-t", "a library's generic type written through generic code is refused"],
   },
   {
     name: "written-arguments-copies-unfollowed",
