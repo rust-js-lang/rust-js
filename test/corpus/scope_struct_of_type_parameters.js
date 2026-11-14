@@ -308,7 +308,7 @@ function main() {
   let seen = 0;
   const system = createReactiveSystem({
     notify(node) {
-      seen = (seen + ($byteLen(node.kind) | 0)) | 0;
+      seen = (seen + $byteLen(node.kind)) | 0;
     },
   });
   const other = createReactiveSystem({

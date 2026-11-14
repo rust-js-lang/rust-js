@@ -3,19 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "utf16-count-impure",
-    breaks:
-      "a test of `s.encode_utf16().count()` narrows nothing, as if it changed what it reads, so a counter below it keeps its wrap",
-    file: "src/lower/body_queries/ranges/reads.rs",
-    find: "                        || makes_utf16_units(tcx, def_id, thir[e].ty)\n",
-    replace: "",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a string's count of UTF-16 units is its length",
-    ],
-  },
-  {
     name: "string-length-impure",
     breaks:
       "a test of a JS string's `length` isn't read, so `i + 1 < length(s)` shows nothing of `i`",
@@ -32,16 +19,6 @@ export const mutations: Mutation[] = [
     find: "                        || matches!(\n",
     replace: "                        || false && matches!(\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
-    snapshots: true,
-  },
-  {
-    name: "string-deref-not-read",
-    breaks:
-      "a `String`'s `deref` isn't a read, so a test of `firstDiff < serverText.length` of a `String` narrows nothing, and `firstDiff++` below it keeps its wrap",
-    file: "src/lower/body_queries/ranges/reads.rs",
-    find: "                        || is_string_deref(tcx, def_id, generic_args)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
     snapshots: true,
   },
   {
@@ -62,14 +39,5 @@ export const mutations: Mutation[] = [
     replace: "            } => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
     snapshots: true,
-  },
-  {
-    name: "rest-value-read-unread",
-    breaks:
-      "rest arguments as a value's `Deref` isn't a read, so `value.len() > 2` tells nothing and `value[1]` is `$index(value, 1)` (#586)",
-    file: "src/lower/body_queries/ranges/reads.rs",
-    find: "                        || super::cells::rest_array(tcx, def_id, generic_args)\n",
-    replace: "",
-    tests: ["test/rest-parameters.test.ts", "-t", "indexed in bounds"],
   },
 ];

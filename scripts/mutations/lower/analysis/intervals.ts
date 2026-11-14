@@ -236,4 +236,20 @@ export const mutations: Mutation[] = [
     replace: "                now.hi = range.hi;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
   },
+  {
+    name: "intervals-casts-unproved",
+    breaks: "no integer cast is proved in its target's range, so `n as u8` under `n < 200` is `n & 255` (#1672 M3)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                    && held_by_a_number(operand.ty(self.body, self.tcx))\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
+  },
+  {
+    name: "intervals-cast-to-a-bigint-kept",
+    breaks: "a cast to a 64-bit integer whose value fits is kept as it is, so `n as u64` is the number `n`, not `BigInt(n)`, and mixing it with a `BigInt` throws",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                    && held_by_a_number(*to)\n",
+    replace: "",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
+  },
 ];

@@ -3,17 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "let-else-present-index-unknown",
-    breaks:
-      "past `let Some(&n) = counts.get(i) else { break };` the index isn't known below a length, so `i += 1` wraps, `i = (i + 1) >>> 0`, where a `while let`'s is `i++` (ADR 0881)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                    if let Some(init) = initializer\n                        && present::some_pattern(self.tcx, pattern)\n",
-    replace:
-      "                    if let Some(init) = initializer\n                        && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^present_index_counts.rs$"],
-    snapshots: true,
-  },
-  {
     name: "insert-index-below-length",
     breaks:
       "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
@@ -162,19 +151,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "cast-kept-out-of-range",
-    breaks:
-      "an `as` of an integer that may be outside its target's range is taken as its operand, so `-1 as usize` reads `items[-1]`, `undefined`, where Rust panics",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                let kept = value.filter(|v| ty_range.is_some_and(|(lo, hi)| lo <= v.lo && v.hi <= hi));\n",
-    replace: "                let kept = value;\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
     name: "sized-length-of-zero-sized",
     breaks:
       "a slice of `()`'s length is taken as at most `isize`'s most, so `len() as isize - 1` of one longer is written without its wraps",
@@ -284,7 +260,7 @@ export const mutations: Mutation[] = [
     find: "                *known = either(known.take(), Some(broken));",
     replace:
       "                *known = {\n                    let _ = broken;\n                    known.take()\n                };",
-    tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "ranges-wrap-unbounded",
@@ -332,19 +308,6 @@ export const mutations: Mutation[] = [
     find: "Some((theirs(slice)?, bound))",
     replace: "Some((theirs(slice).filter(|_| false)?, bound))",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
-    name: "utf16-count-any-usize",
-    breaks:
-      "`s.encode_utf16().count()` is any `usize` to the ranges, so a counter below it keeps its wrap, `(i + 1) >>> 0 < s.length`",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                    reads_string_length(self.tcx, def_id) || reads_utf16_length(self.tcx, def_id, generic_args)\n",
-    replace: "                    reads_string_length(self.tcx, def_id)\n",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a string's count of UTF-16 units is its length",
-    ],
   },
   {
     name: "range-unjudged",
@@ -623,26 +586,6 @@ export const mutations: Mutation[] = [
     find: "        if let Some(found) = self.found_index(e) {\n            return Some(found);\n        }\n",
     replace: "        if let Some(found) = self.found_index(e) {\n            let _ = found;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "ranges-callees-walked-as-a-stack",
-    breaks:
-      "each callee told otherwise is walked before the callers still waiting, a stack's order, so five callers of `small(n)` each tell it once it's walked, its `n` is forgotten past four changes, and its `n + 1` wraps, `(n + 1) >>> 0` (#866)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                    work.push_back(at);\n",
-    replace: "                    work.push_front(at);\n",
-    tests: ["test/corpus.test.ts", "-t", "^ranges_told_by_many_callers.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "ranges-each-tell-counted",
-    breaks:
-      "each change of what a callee is told counts toward what's forgotten, its callers' tells before its walk too, so `small(n)`'s five callers make its `n` forgotten and its `n + 1` wraps, `(n + 1) >>> 0` (#866)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                if at.is_none_or(|at| std::mem::take(&mut walked[at])) {\n",
-    replace: "                if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^ranges_told_by_many_callers.rs$"],
     snapshots: true,
   },
   {

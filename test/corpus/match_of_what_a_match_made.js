@@ -120,7 +120,7 @@ function entered(fresh, n) {
   if (fresh) {
     settled = n === 0 ? { TAG: "Failed", _0: "zero" } : { TAG: "Done", _0: n * 2 };
   }
-  return settled.TAG === "Done" ? settled._0 : $byteLen(settled._0) | 0;
+  return settled.TAG === "Done" ? settled._0 : $byteLen(settled._0);
 }
 
 // The arm's variable is written again after it's bound: the field's own
@@ -215,7 +215,7 @@ function scaled(state, n) {
 function instanceOf(kind) {
   let instance;
   if (kind === "clip") {
-    instance = $byteLen(kind) | 0;
+    instance = $byteLen(kind);
     console.log(`clipping ${instance}`);
   } else if (kind === "group") {
     instance = 2;

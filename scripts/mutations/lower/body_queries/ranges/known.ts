@@ -36,19 +36,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
   },
   {
-    name: "join-unbound-forgets",
-    breaks:
-      "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "            None => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
-    replace: "            None => None,\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
     name: "pop-as-push",
     breaks:
       "a `pop` is taken as one more item, so `v[n - 1]` of the length before it reads `undefined`",
@@ -192,16 +179,6 @@ export const mutations: Mutation[] = [
     find: "        self.lengths.retain(|s, _| !rows(s));\n",
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "join-one-bound",
-    breaks:
-      "where two paths meet an index keeps one of the lengths it's below, so areHookInputsEqual's `prev[i]` past `i < prev.len() && i < next.len()` round its loop is `$index(prev, i)` (rd423)",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "            if below.get(slice).is_none()\n",
-    replace: "            if below.is_empty()\n",
-    tests: ["test/corpus.test.ts", "-t", "^index_bounds_closures\\.rs$"],
-    snapshots: true,
   },
   {
     name: "held-keys-joined-as-either",

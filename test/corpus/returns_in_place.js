@@ -172,7 +172,7 @@ function callArgs(tokens) {
       }
       return { TAG: "Ok", _0: args };
     }
-    return { TAG: "Err", _0: { TAG: "Negative", _0: $byteLen(t) | 0 } };
+    return { TAG: "Err", _0: { TAG: "Negative", _0: $byteLen(t) } };
   }
   return { TAG: "Err", _0: "Empty" };
 }

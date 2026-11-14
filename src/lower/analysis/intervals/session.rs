@@ -47,13 +47,13 @@ pub(in crate::lower) fn body_proofs<'tcx>(
 ) -> ProofsScope<'tcx> {
     let caches = crate::lower::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
-    // Of a body with no bounds check and no `+`, `-` or `*`, nothing to
-    // prove, its walk left out.
+    // Of a body with no bounds check, no `+`, `-` or `*` and no integer
+    // cast, nothing to prove, its walk left out.
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)
-                    if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _)))
+                    if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) | Rvalue::Cast(mir::CastKind::IntToInt, ..)))
             })
     });
     let proofs = match asks {
@@ -98,6 +98,8 @@ impl Drop for ProofsScope<'_> {
 pub(in crate::lower) enum LeftOut {
     Bounds(BasicBlock),
     Wrap,
+    /// An integer cast, by its statement's location.
+    Cast(Location),
 }
 
 /// A check THIR's facts leave out or keep, `left_out`, against MIR's
@@ -126,6 +128,7 @@ pub(in crate::lower) fn shadow_check(
     let (kind, proved) = match check {
         LeftOut::Bounds(block) => ("bounds", proofs.bounds.contains(&block)),
         LeftOut::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
+        LeftOut::Cast(location) => ("cast", proofs.casts.contains(&location)),
     };
     let kind = match (left_out, proved) {
         (true, false) => kind,
@@ -169,6 +172,16 @@ pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: B
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.bounds.contains(&block))
+}
+
+/// Whether MIR proves the integer cast at `location` of `body` is of a
+/// value in its target's range, the same number (#1672 M3): none of a body
+/// not the one being lowered.
+pub(in crate::lower) fn cast_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.casts.contains(&location))
 }
 
 /// Whether MIR proves the `+`, `-` or `*` at `location` of `body` stays in

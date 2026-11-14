@@ -66,8 +66,8 @@ mod tests;
 mod throwing;
 pub(in crate::lower) use intervals::shadow_report as intervals_shadow_report;
 pub(in crate::lower) use intervals::{
-    Intervals, LeftOut, Shadow, body_proofs, bounds_proved, exact_proved, given_parameters, shadow_bridged,
-    shadow_check,
+    Intervals, LeftOut, Shadow, body_proofs, bounds_proved, cast_proved, exact_proved, given_parameters,
+    shadow_bridged, shadow_check,
 };
 mod unwinding;
 pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};

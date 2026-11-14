@@ -40,7 +40,7 @@ pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initia
         body.facts.in_bounds = ranges.in_bounds;
         body.facts.exact = ranges.exact;
         body.facts.set_empty = ranges.set_empty;
-        body.facts.kept_casts.extend(ranges.kept_casts);
+        body.facts.range_casts = ranges.kept_casts;
     }
 }
 

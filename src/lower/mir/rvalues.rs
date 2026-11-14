@@ -759,7 +759,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.transmute(v, (from, *to), span, out)?
                 } else if to.is_char() {
                     Expr::builtin(Expr::js_global("String"), "fromCharCode", vec![v])
-                } else if self.kept_cast_at(span) {
+                } else if self.kept_cast_at(span, &self.frame.facts.kept_casts)
+                    || self.integer_cast_proved(state, *kind, span)
+                {
                     v
                 } else {
                     self.cast(v, from, *to, span)?
@@ -1067,6 +1069,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The place `operand`, a reference made once, borrows: `(*d).field` of
     /// `_4 = &((*d).field)`.
+    /// Whether MIR's intervals prove the integer cast `state` is at, of
+    /// `kind`, is of a value in its target's range, the same number (#1672
+    /// M3); the shadow compares what THIR's ranges knew (`range_casts`).
+    fn integer_cast_proved(&self, state: &State<'_, 'tcx>, kind: mir::CastKind, span: Span) -> bool {
+        if kind != mir::CastKind::IntToInt {
+            return false;
+        }
+        let location = state.location();
+        let thir_kept = self.kept_cast_at(span, &self.frame.facts.range_casts);
+        crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_kept, || {
+            Some(crate::lower::analysis::LeftOut::Cast(location))
+        });
+        crate::lower::analysis::cast_proved(self.tcx, state.body, location)
+    }
+
     pub(super) fn borrowed(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Option<Place<'tcx>> {
         let reference = operand.place()?;
         if !reference.projection.is_empty() || state.locals.writes[reference.local] != 1 {

@@ -779,6 +779,50 @@ pub fn through_raw(mut v: Vec<u32>) -> usize {
   expect(lib.throughRaw([])).toBe(4294967295);
 });
 
+// An integer `as` another whose value MIR's intervals show in its target's
+// range is the same number, written as it is (ADR 0701, #1672 M3): a
+// slice's length as an `i32`, below what an allocation holds, a `u32`
+// below 200 as a `u8`, one tested not negative as a `u32`. Where it may
+// not fit, it's converted; and of a 64-bit target, a `BigInt`, though its
+// value fits.
+test("an integer cast MIR's intervals show in its target's range is the number it casts", async () => {
+  const dir = fixture("integer-casts");
+  writeFileSync(join(dir, "lib.rs"), `pub fn width(s: &[u32]) -> i32 {
+    s.len() as i32
+}
+
+pub fn low(n: u32) -> u8 {
+    if n < 200 { n as u8 } else { 0 }
+}
+
+pub fn any(n: u32) -> u8 {
+    n as u8
+}
+
+pub fn wide(n: u32) -> u64 {
+    if n < 200 { n as u64 } else { 0 }
+}
+
+pub fn signed(n: i32) -> u32 {
+    if n >= 0 { n as u32 } else { 0 }
+}
+
+pub fn negative(n: i32) -> u32 {
+    n as u32
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return s.length;\n");
+  expect(js).toContain("  return n < 200 ? n : 0;\n");
+  expect(js).toContain("  return n & 255;\n");
+  expect(js).toContain("  return n < 200 ? BigInt(n) : 0n;\n");
+  expect(js).toContain("  return n >= 0 ? n : 0;\n");
+  expect(js).toContain("  return n >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.width([1, 2, 3]), lib.low(199), lib.low(200), lib.any(300), lib.wide(5), lib.signed(-1), lib.negative(-1)]).toEqual([3, 199, 0, 44, 5n, 0, 4294967295]);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below

@@ -73,6 +73,9 @@ const VISITS_BEFORE_WIDENING: u32 = 3;
 pub(in crate::lower) struct Proofs {
     pub(in crate::lower) bounds: IndexSet<BasicBlock>,
     pub(in crate::lower) exact: IndexSet<Location>,
+    /// Each integer `as` another whose value is in its target's range, the
+    /// same number, `s as usize` of `s >= 0` (ADR 0701, #1672 M3).
+    pub(in crate::lower) casts: IndexSet<Location>,
 }
 
 struct Walk<'a, 'tcx> {
@@ -89,6 +92,17 @@ struct Walk<'a, 'tcx> {
     /// The locals a raw pointer is made of, which a push's length is never
     /// known of (`pushes`).
     pointed: IndexSet<Local>,
+}
+
+/// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
+/// most, `usize` and `isize` rust-js's 32 (ADR 0090); a 64-bit one is a
+/// `BigInt`.
+fn held_by_a_number(ty: Ty<'_>) -> bool {
+    matches!(
+        ty.kind(),
+        ty::Uint(ty::UintTy::U8 | ty::UintTy::U16 | ty::UintTy::U32 | ty::UintTy::Usize)
+            | ty::Int(ty::IntTy::I8 | ty::IntTy::I16 | ty::IntTy::I32 | ty::IntTy::Isize)
+    )
 }
 
 /// What MIR proves of `body`, the one the emitter reads.
@@ -356,6 +370,22 @@ impl<'tcx> Walk<'_, 'tcx> {
                     && !(*op == BinOp::Mul && self.may_make_negative_zero(&operands.0, &operands.1, &state))
                 {
                     proofs.exact.insert(Location {
+                        block,
+                        statement_index: at,
+                    });
+                }
+                // Of two a JS number holds, 32 bits at most: a 64-bit one is a
+                // `BigInt`, its value the same but not the JS value.
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::Cast(CastKind::IntToInt, operand, to) = &assign.1
+                    && held_by_a_number(operand.ty(self.body, self.tcx))
+                    && held_by_a_number(*to)
+                    && let Some(range) = self.range(*to)
+                    && let Some(value) = self.operand(operand, &state)
+                    && range.lo <= value.lo
+                    && value.hi <= range.hi
+                {
+                    proofs.casts.insert(Location {
                         block,
                         statement_index: at,
                     });

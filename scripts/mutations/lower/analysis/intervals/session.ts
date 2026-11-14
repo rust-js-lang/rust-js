@@ -12,4 +12,12 @@ export const mutations: Mutation[] = [
     replace: "        (false, true) => return,\n",
     tests,
   },
+  {
+    name: "intervals-casts-unwalked",
+    breaks: "a body whose only question is an integer cast isn't walked, so `s.len() as i32` is `s.length | 0` (#1672 M3)",
+    file: "src/lower/analysis/intervals/session.rs",
+    find: " | Rvalue::Cast(mir::CastKind::IntToInt, ..)))\n",
+    replace: "))\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
+  },
 ];

@@ -30,45 +30,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
-    name: "widened-counter-forgets-bound",
-    breaks:
-      "a counter widened round a loop forgets the length it's below, so `s as isize` past the loop keeps its `| 0`",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                            .filter_map(|s, x| r.below.get(s).filter(|&y| x.join(y) == x).map(|_| (s.clone(), x)));\n",
-    replace: "                            .filter_map(|s, x| r.below.get(s).filter(|&y| false && x.join(y) == x).map(|_| (s.clone(), x)));\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
-    name: "widened-counter-past-bound",
-    breaks:
-      "a counter widened round a loop keeps its bound by a length, but not the most that bound is, so a later round finds it past it and forgets it",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                            .map(|(s, x)| type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
-    replace: "                            .map(|_| type_most - 1)\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
-    name: "widened-length-counter-below-type-most",
-    breaks:
-      "a counter bound by a length is widened to one below its type's most, so an `isize` below `len() as isize`, whose `+ 1` reaches `isize`'s most, is forgotten and `lines[s as usize]` keeps `$index(lines, s >>> 0)`",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                            .map(|(s, x)| type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
-    replace: "                            .map(|(s, x)| (type_most - 1).min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed counter below a length",
-    ],
-  },
-  {
     name: "widened-counter-within-forgotten",
     breaks:
       "a widened counter found within what it was taken as is anything, so a counter below a string's length keeps its wrap, `(i + 1) >>> 0 < formatString.length`",
@@ -133,16 +94,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/loops.rs",
     find: "                    && is_slice_items(self.tcx, items_def)\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
-  },
-  {
-    name: "enumerate-slice-rebound-kept",
-    breaks:
-      "an `enumerate()`'s index stays below a slice variable the body points elsewhere, `xs[i]` of a shorter one unchecked (#363)",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                    below: (self.unchanged_in(body, slice))\n",
-    replace: "                    below: (self.unchanged_in(rustc_span::DUMMY_SP, slice))\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "enumerate-index-field-missed",

@@ -147,6 +147,10 @@ pub(super) struct BodyFacts<'tcx> {
     /// integer the body's ranges show in its target's (`ranges`), and of a
     /// signed one that's the count of text's `repeat` (`repeat_counts`).
     pub(super) kept_casts: IndexSet<ExprId>,
+    /// The integer casts the body's ranges show in their target's range
+    /// (`ranges`): the shadow's alone, MIR's intervals deciding them
+    /// (`cast_proved`, #1672 M3).
+    pub(super) range_casts: IndexSet<ExprId>,
     /// The function of each `OnceCell::set` whose cell the body's ranges
     /// show still empty there, every time it's reached (`ranges`, ADR 0847).
     pub(super) set_empty: IndexSet<ExprId>,

@@ -132,8 +132,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a float THIR knows whole and in range, cast, is `$f64ToInt(index, ..)` from MIR, not `index`",
     file: "src/lower/mir/rvalues.rs",
-    find: "                } else if self.kept_cast_at(span) {",
-    replace: "                } else if false {",
+    find: "                } else if self.kept_cast_at(span, &self.frame.facts.kept_casts)\n                    || self.integer_cast_proved(state, *kind, span)\n",
+    replace: "                } else if self.integer_cast_proved(state, *kind, span)\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -864,5 +864,13 @@ export const mutations: Mutation[] = [
     find: "                let proved = crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
     replace: "                let proved = false && crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
     tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+  },
+  {
+    name: "integer-cast-proof-unread",
+    breaks: "an integer cast MIR's intervals prove in its target's range is converted anyway, `n as u8` under `n < 200` as `n & 255` (#1672 M3)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        crate::lower::analysis::cast_proved(self.tcx, state.body, location)\n",
+    replace: "        false && crate::lower::analysis::cast_proved(self.tcx, state.body, location)\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
   },
 ];

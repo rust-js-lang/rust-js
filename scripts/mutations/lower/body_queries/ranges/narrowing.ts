@@ -12,19 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
-    name: "uncast-out-of-range",
-    breaks:
-      "a test sees through an `as` that may change the number, so `s as usize == len` narrows a negative `s` as if it were the length",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            if !(lo <= of.0 && of.1 <= hi) {\n                return e;\n            }\n",
-    replace: "",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
     name: "sum-narrowed-wrapped",
     breaks:
       "`i + 1 < n` narrows `i` where `i + 1` may have wrapped to 0, so `i += 2` below it is written without its wrap",
@@ -116,16 +103,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "length-arm-unknown",
-    breaks:
-      "an arm of a number of a `match list.len()` knows nothing of the slice's length, `case 1: return $index(list, 0);`, not upstream's `list[0]` (rd21)",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            && let Some(least) = value.or(any.then_some(*passed))\n",
-    replace: "            && let Some(least) = any.then_some(*passed)\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
-    snapshots: true,
-  },
-  {
     name: "length-arms-not-passed",
     breaks:
       "a `_` arm after arms of 0, 1 and 2 of a `match list.len()` knows nothing of its length, `$slice(list, 0, (list.length - 1) >>> 0)` (rd21)",
@@ -134,24 +111,6 @@ export const mutations: Mutation[] = [
     replace: "            *passed += 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
     snapshots: true,
-  },
-  {
-    name: "length-arm-guard-passed",
-    breaks:
-      "a guarded arm of a `match list.len()`, `1 if skip`, is taken for one the arms after it passed, so `_ => list[1]` reads past a list of one, `undefined`, where Rust panics (rd21)",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "        if arm.guard.is_none() && value == Some(*passed) {\n",
-    replace: "        if value == Some(*passed) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
-  },
-  {
-    name: "length-arm-not-next-passed",
-    breaks:
-      "an arm of a number not next of a `match list.len()`, `1 =>` first, is taken for 0's, so `_ => list[0]` reads an empty list's `undefined`, where Rust panics (rd21)",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "        if arm.guard.is_none() && value == Some(*passed) {\n",
-    replace: "        if arm.guard.is_none() && value.is_some() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
   },
   {
     name: "filtered-not-empty-unknown",

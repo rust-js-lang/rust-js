@@ -68,7 +68,7 @@ function main() {
   const [left, right] = $splitAtMut(v, 3);
   const value$1 = $index(right, 0);
   left[$at(left, 0)] = value$1;
-  right[$at(right, 2)] = left.length | 0;
+  right[$at(right, 2)] = left.length;
   console.log(`[${v.join(", ")}]`);
   console.log(`${$splitAtMut(v, 7, true) == null}`);
   const [a, b] = $sliceSplitAt(v, 4);
@@ -79,7 +79,7 @@ function main() {
   if (splitAtMutChecked != null) {
     const a = splitAtMutChecked[0];
     const b = splitAtMutChecked[1];
-    a[$at(a, 0)] = b.length | 0;
+    a[$at(a, 0)] = b.length;
   }
   console.log(`[${v.join(", ")}]`);
 
@@ -94,7 +94,7 @@ function main() {
   if (splitLastMut != null) {
     const last = splitLastMut[0];
     const rest = splitLastMut[1];
-    last.value = rest.length | 0;
+    last.value = rest.length;
     rest[$at(rest, 0)] = 20;
   }
   console.log(`[${v.join(", ")}]`);
@@ -165,13 +165,13 @@ function main() {
   if (splitFirstChunkMut != null) {
     const head = splitFirstChunkMut[0];
     const rest = splitFirstChunkMut[1];
-    head[0] = rest.length | 0;
+    head[0] = rest.length;
   }
   const splitLastChunkMut = $splitChunkMut(words, 2, true);
   if (splitLastChunkMut != null) {
     const rest = splitLastChunkMut[0];
     const end = splitLastChunkMut[1];
-    end[1] = rest.length | 0;
+    end[1] = rest.length;
   }
   console.log(`[${words.join(", ")}]`);
 

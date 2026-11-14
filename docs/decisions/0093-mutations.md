@@ -470,3 +470,17 @@ THIR's range code. On the bridge build they're each caught or gone:
 
 `hasher-mut-not-read-through`, the 49th, isn't a range rule, and goes to
 its own area (#1724, #1730).
+
+## Amendment: THIR's range rules once MIR decides each cast (2026-11-14, #1672)
+
+M3's step 3 makes MIR's intervals decide each integer cast. THIR's
+range-proven casts (`range_casts`) are now the shadow's alone, and 20 of its
+range rules' mutations, each caught on `main` only through a cast, survived:
+
+- **2 are caught by test/intervals-bridged.test.ts,** which they now name:
+  `ranges-break-dropped` and `enumerate-of-any-slice-fn`.
+- **18 go.** Each changes only THIR's casts and bounds facts, both the
+  shadow's alone, in every program their tests compile, and no bridged
+  site. Their code stays until M4 deletes THIR's ranges with the bridge.
+  They are:
+  `let-else-present-index-unknown`, `cast-kept-out-of-range`, `utf16-count-any-usize`, `ranges-callees-walked-as-a-stack`, `ranges-each-tell-counted`, `join-unbound-forgets`, `join-one-bound`, `widened-counter-forgets-bound`, `widened-counter-past-bound`, `widened-length-counter-below-type-most`, `enumerate-slice-rebound-kept`, `uncast-out-of-range`, `length-arm-unknown`, `length-arm-guard-passed`, `length-arm-not-next-passed`, `utf16-count-impure`, `string-deref-not-read`, `rest-value-read-unread`.

@@ -790,7 +790,7 @@ function made(N) {
   const bytes = new Array(N).fill(0);
   for (let i = 0; i < N; i++) {
     const value = ((i * 7) >>> 0) % 251;
-    bytes[$at(bytes, i)] = value & 255;
+    bytes[$at(bytes, i)] = value;
   }
   return bytes;
 }

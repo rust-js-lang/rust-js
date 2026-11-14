@@ -429,3 +429,32 @@ Corpus case bridged_port_shapes holds the port's three shapes the corpus
 lacked: a `Vec` behind a `RefCell` indexed at `len() - 1` past
 `!is_empty()`; a `&mut`-captured counter in `catch_unwind`; and
 `with_borrow`'s `get(i).cloned()`.
+
+## M3, step 3: casts decided by MIR (2026-11-14)
+
+An integer `as` another is the number it casts, written as it is, where
+MIR's intervals prove its value in the target's range (`Proofs::casts`,
+`cast_proved`, by the statement's location). THIR's range-proven casts are
+now the shadow's alone (`range_casts`, a `cast` or `mir-only-cast` line);
+THIR's other kept casts stay, as they aren't range code: a float known whole
+(`whole_casts`), and the signed count of text's `repeat`.
+
+- **Both of 32 bits at most.** A 64-bit integer is a `BigInt`: its value
+  may fit, `n as u64` of `n < 200`, but the JS value isn't the same. The
+  first cut proved those too, and 12 corpus cases threw "Cannot mix BigInt
+  and other types" against native, as did the regenerated std. The corpus
+  caught it before anything landed.
+- **A body whose only question is a cast is walked.** The walk had been left
+  out of a body with no bounds check and no `+`, `-` or `*`, so a `size_hint`'s
+  `self.0 as usize` was proved nowhere; with it, 127 of the first 128
+  losses went.
+
+Measured against main:
+- **Corpus:** all cases pass against native; 6 outputs changed.
+- **Gains:** a length as an `i32`, below what an allocation holds
+  (`rest.length`, `$byteLen(kind)`, no `| 0`); and `i * 7 % 251` as a `u8`.
+- **Lost:** one, `lanes as u32` in a closure (#1701), now
+  `clz32(lanes >>> 0)`, the same value.
+- **Snapshots, guide and std:** unchanged.
+- **The port:** it couldn't be regenerated. On main, `js::validate`
+  (eeeffeafa) refuses two of its files, for reasons unrelated to casts.
