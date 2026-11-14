@@ -6,25 +6,10 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, performanceTrack, run, target } from "./support";
+import { buildReact, fixture, performanceTrack, target, wrapsDisagreed } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
-
-// `lib.rs` of `dir` compiled to `lib.js`, and the functions it leaves to
-// the bridge (ADR 1137): each with a wrap THIR's ranges leave out that MIR's
-// intervals don't prove. A test of a rule of MIR's says which, none where
-// the rule is all it needs, so the rule lost fails the test though THIR's
-// ranges, which the bridge takes, write the same JS.
-function bridgedOf(dir: string, args: string[] = []): string[] {
-  const log = join(dir, "shadow.txt");
-  writeFileSync(log, "");
-  run([compiler, "--intervals-shadow", log, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...args]);
-  return readFileSync(log, "utf8")
-    .split("\n")
-    .filter((line) => line.startsWith("bridged\t"))
-    .map((line) => line.split("\t")[1]);
-}
 
 // ADR 0576: what a body's integers can be, walked as it runs, shows an index
 // in bounds and an operator that can't wrap: React's scheduler heap reads
@@ -144,7 +129,7 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
     items[0]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if (heap[leftIndex] < heap[index]) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
   expect(js).toContain("  const halfLength = length >>> 1;\n");
@@ -268,7 +253,7 @@ pub fn upto(n: u8) -> u8 {
     i
 }
 `);
-  expect(bridgedOf(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
+  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap skips"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
@@ -379,7 +364,7 @@ pub fn sum_below(xs: &[u32], n: usize) -> u32 {
     sum
 }
 `);
-  expect(bridgedOf(dir)).toEqual([]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    found.push(n - k - 1);\n");
   expect(js).toContain("    found.push(line - k + 1);\n");
@@ -422,7 +407,7 @@ pub fn last(s: &str) -> u32 {
     length(s) - 1
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return substr.length < 10 && str.length + substr.length < 40;\n");
   expect(js).toContain("  return a.length + b.length;\n");
@@ -485,7 +470,7 @@ pub fn past(items: &[i32]) -> i32 {
     if i != items.len() { items[i] } else { 0 }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  let c = control.length - 1;\n");
   expect(js).toContain("  if (s === sample.length) {\n    s = sample.length - 1;\n  }\n");
@@ -543,7 +528,7 @@ pub fn past(lines: &[&str]) -> usize {
     lines[s as usize].len()
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).toContain("    if (lines[s] !== control[c]) {\n      return s;\n    }\n");
@@ -620,7 +605,7 @@ pub fn deep(indent: usize) -> usize {
     indent
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual(["mir-only-wrap top"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("describe(out, indent + 1, name);");
   expect(js).toContain("    seen++;\n");
@@ -674,7 +659,7 @@ pub fn first_of_some(keys: &[String]) -> String {
     if length >= 2 { keys[1].clone() } else { keys[0].clone() }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `prevLength - 1` is JS's own: the `push` before made the vector at
   // least one long (#1700).
@@ -773,7 +758,7 @@ pub fn through_raw(mut v: Vec<u32>) -> usize {
     v.len() - 1
 }
 `);
-  expect(bridgedOf(dir)).toEqual([]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    count++;\n");
   expect(js).toContain("      added++;\n");
@@ -849,7 +834,7 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
     if let Some(&item) = items.get(i) { item as usize } else { i + 1 }
 }
 `);
-  expect(bridgedOf(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["flushed"]);
+  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["bridged flushed"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `summed`'s, and `flushed`'s, whose `get(i)` is in `with_borrow`'s
   // closure: its `Some` MIR's intervals don't carry out of it yet (#1701),
@@ -878,7 +863,7 @@ pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
     0
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    return $index(v, i);\n");
   const lib = await import(join(dir, "lib.js"));

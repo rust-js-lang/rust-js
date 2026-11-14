@@ -32,6 +32,24 @@ export function run(cmd: string[], timeout = 600_000, env: Record<string, string
   return p.stdout;
 }
 
+/** `lib.rs` of `dir` compiled to `lib.js`, `args` given too, and each wrap
+ * MIR's intervals and THIR's ranges judge apart (ADR 1137), `kind function`:
+ * `bridged`, one THIR's ranges leave out that MIR doesn't prove, which the
+ * bridge takes; `mir-only-wrap`, one MIR proves that THIR's ranges keep. A
+ * test of a range rule, MIR's or THIR's, says which, none where both judge
+ * its program alike, so either rule lost, or one claiming too much, fails
+ * it though the other writes the same JS. */
+export function wrapsDisagreed(dir: string, args: string[] = []): string[] {
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  run([compiler, "--intervals-shadow", log, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...args]);
+  return readFileSync(log, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("bridged\t") || line.startsWith("mir-only-wrap\t"))
+    .map((line) => line.split("\t").slice(0, 2).join(" "))
+    .sort();
+}
+
 /**
  * What generator `script` writes, given `args` and then a scratch file to
  * write to: the one way a generated file is checked against what's

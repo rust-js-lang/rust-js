@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, run, target, wrapsDisagreed } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -315,7 +315,7 @@ pub fn shrunk(mut items: Vec<u32>) -> u32 {
     sum
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
   expect(js).toContain("$index(items, 2)");

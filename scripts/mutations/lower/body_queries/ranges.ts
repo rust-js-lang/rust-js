@@ -247,11 +247,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                *known = either(yes, no);\n                value.or_else(top)",
     replace: "                *known = no;\n                value.or_else(top)",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "ranges-resize-kept",

@@ -12,81 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
   },
   {
-    name: "value-bound-over-length",
-    breaks:
-      "`i < n` of an `i` below `xs.len()` replaces that bound by `n`'s, so `xs[i]` is `$index(xs, i)`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            current.below.clone().with(theirs)\n",
-    replace: "            theirs.or(current.below.clone())\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
-  },
-  {
-    name: "ne-length-cast-not-seen",
-    breaks:
-      "`s != xs.len() as isize` isn't seen through its `as`, so a counter past its loop isn't below the length and `lines[s as usize]` keeps its check",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "        let Some((SliceLength::Len, items)) = self.asks(self.uncast(length, known)) else {\n",
-    replace:
-      "        let Some((SliceLength::Len, items)) = self.asks(length) else {\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed counter below a length",
-    ],
-  },
-  {
-    name: "cast-of-length-unknown",
-    breaks:
-      "a slice's `len()` under an `as` is taken as anything, so `len() as isize` isn't the length a test of it narrows",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                Some((0, self.length_most_of(fun)))\n",
-    replace: "                None\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed counter below a length",
-    ],
-  },
-  {
-    name: "cast-of-length-past-isize",
-    breaks:
-      "a slice's `len()` under an `as` is taken as at most `u32`'s most, so `len() as isize` of sized items isn't seen through",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                Some((0, self.length_most_of(fun)))\n",
-    replace: "                Some((0, u32::MAX as i128))\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed counter below a length",
-    ],
-  },
-  {
-    name: "ne-length-not-below",
-    breaks:
-      "`s != xs.len()` of an `s` at most the length shows nothing, so `xs[s]` after it is checked",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            range.below.set(slice, Below::LENGTH.offset(-1));\n",
-    replace: "",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
-    name: "ne-length-any-bound",
-    breaks:
-      "`s != xs.len()` puts any `s` below the length, one at most the length plus one too",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            && range.below.get(&slice) == Some(Below::LENGTH)\n",
-    replace: "            && !range.below.is_empty()\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a signed index tested not negative",
-    ],
-  },
-  {
     name: "uncast-out-of-range",
     breaks:
       "a test sees through an `as` that may change the number, so `s as usize == len` narrows a negative `s` as if it were the length",
@@ -125,11 +50,7 @@ export const mutations: Mutation[] = [
     find: "                if !holds\n                    && let Some(slice) = self.slice(items)",
     replace:
       "                if false\n                    && let Some(slice) = self.slice(items)",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "ranges-not-unflipped",
@@ -138,71 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/narrowing.rs",
     find: "                let (yes, no) = self.branches(arg, known);\n                (no, yes)\n",
     replace: "                let (yes, no) = self.branches(arg, known);\n                (yes, no)\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "ranges-or-as-and",
-    breaks:
-      "`a || b` holding shows both, so `items[3]` where only `!items.is_empty()` held reads `undefined`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                let and = matches!(op, LogicalOp::And);\n",
-    replace: "                let and = matches!(op, LogicalOp::And) || true;\n",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
-  },
-  {
-    name: "ranges-lt-false-gt",
-    breaks:
-      "`len < 2` false shows three items, so `items[2]` of two reads `undefined`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                    (BinOp::Lt, false) => BinOp::Ge,",
-    replace: "                    (BinOp::Lt, false) => BinOp::Gt,",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
-  },
-  {
-    name: "ranges-gt-off-by-one",
-    breaks:
-      "`len > 1` shows three items, so `items[2]` of two reads `undefined`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                            BinOp::Gt => other.lo + 1,",
-    replace: "                            BinOp::Gt => other.lo + 2,",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
-  },
-  {
-    name: "ranges-ne-any",
-    breaks: "`len != 5` shows an item, so `items[0]` of none reads `undefined`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                            BinOp::Ne if other.constant() == Some(0) => 1,",
-    replace: "                            BinOp::Ne => 1,",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
-  },
-  {
-    name: "ranges-lt-at-most",
-    breaks:
-      "`i < xs.len()` shows `i` at most the length, so `items[i]` is checked",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                below: below(-1),",
-    replace: "                below: below(0),",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "held-length-shows-nothing",

@@ -3,22 +3,13 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "rev-for-unranged",
-    breaks:
-      "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                [range] if is_iterator_rev(self.tcx, def_id) => head = strip(thir, range),\n",
-    replace: "                [range] if !is_iterator_rev(self.tcx, def_id) => head = strip(thir, range),\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
-  },
-  {
     name: "inclusive-for-unranged",
     breaks:
       "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
     file: "src/lower/body_queries/ranges/loops.rs",
     find: "                Some((start, end, 0))\n",
     replace: "                None\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "another's value"],
+    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "inclusive-for-past-its-end",
@@ -95,19 +86,6 @@ export const mutations: Mutation[] = [
     replace:
       "                        (false && was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
-  },
-  {
-    name: "ranges-for-unknown",
-    breaks:
-      "`for i in 0..xs.len()` shows nothing of `i`, so `items[i]` is checked",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                    below: (end.below)\n                        .filter_map(|slice, b| Some((self.unchanged_in(body, slice.clone())?, b.offset(-past)))),\n",
-    replace: "                    below: Bounds::default(),\n",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "an index a condition shows",
-    ],
   },
   {
     name: "ranges-for-changed-kept",

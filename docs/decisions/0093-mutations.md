@@ -444,3 +444,29 @@ Held by `test/ci.test.ts`, "every mutation whose site a change touches is
 the change's": a change of every mutation's site chooses each of the
 6,000-odd, and one site alone chooses its own; and one whose `find` alone
 changed is the change's own.
+
+## Amendment: THIR's range rules once MIR decides (2026-11-14, #1672)
+
+With e4e24e671, MIR's intervals decide each wrap, and THIR's ranges reach
+the output only through the bridge (ADR 1137), at the sites MIR doesn't
+prove. Main's mutation run at 9dff06aa6 found 49 survivors, almost all of
+THIR's range code. On the bridge build they're each caught or gone:
+
+- **12 are caught by their own tests again,** at sites the bridge decides.
+- **4 are caught by test/intervals-bridged.test.ts,** which they now name:
+  a THIR fact lost makes a listed site stale. They are
+  `ranges-if-else-only`, `inclusive-for-unranged`,
+  `ranges-is-empty-unread` and `ranges-not-unflipped`.
+- **18 are caught by their own tests,** each test now checking that THIR
+  and MIR judge its program's wraps alike (`wrapsDisagreed`,
+  test/support.ts, any disagreement listed by name). A THIR rule lost
+  shows as a `mir-only-wrap` line; one that claims too much shows as a
+  `bridged` line.
+- **14 go.** In every program their tests compile, each changes only THIR's
+  bounds facts, which have fed only the shadow since f7f5bedf4, and no
+  bridged site of the corpus. Their code stays until M4 deletes THIR's
+  ranges with the bridge. They are:
+  `ranges-within-loose`, `rev-for-unranged`, `ranges-for-unknown`, `value-bound-over-length`, `ne-length-cast-not-seen`, `cast-of-length-unknown`, `cast-of-length-past-isize`, `ne-length-not-below`, `ne-length-any-bound`, `ranges-or-as-and`, `ranges-lt-false-gt`, `ranges-gt-off-by-one`, `ranges-ne-any`, `ranges-lt-at-most`.
+
+`hasher-mut-not-read-through`, the 49th, isn't a range rule, and goes to
+its own area (#1724, #1730).

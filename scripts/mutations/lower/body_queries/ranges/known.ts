@@ -49,15 +49,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "ranges-within-loose",
-    breaks:
-      "an index at most the length is taken below it, so `items[i]` where `i <= items.len()` reads `undefined`",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "        self.c <= 1 << self.s && self.b <= -(1 << self.s)",
-    replace: "        self.c <= 1 << self.s && self.b <= 0",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
     name: "pop-as-push",
     breaks:
       "a `pop` is taken as one more item, so `v[n - 1]` of the length before it reads `undefined`",
