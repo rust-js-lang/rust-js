@@ -5,8 +5,8 @@ beside m6-lily's M3; in progress, a fact a commit, each recorded here).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's. A fact keyed by a span was taken of every call a macro's
-expansion writes at that span (#1787, a wrong answer). Elsewhere no output
-changes.
+expansion writes at that span (#1787, #1788, wrong answers); where Rust's
+can't be kept yet, a compile error (#1789). Elsewhere no output changes.
 
 ## Context
 
@@ -45,10 +45,23 @@ a span inside a macro:
    reads no method's own call (#1787). Mutations method-call-by-a-shared-span
    and called-method-by-a-shared-span, caught.
 
-Still to move: the in-place adapters (`body_queries/in_place.rs`,
-`iterators/in_place.rs`) and the collect sources (`body_queries/
-collect_sources.rs`; its lowering side waits on m6-lily's S4, which makes
-`mir/locals.rs`' `in_place_source_names` a map to a `VarId`).
+3. The collect sources (`body_queries/collect_sources.rs`), the `Vec` a
+   `collect()` std may make in place is made of, whose capacity is the
+   collect's (#1259): two collects a macro's repetition writes at one
+   span, of sources `a` and `b`, each took `b`'s capacity, `1 3` where
+   Rust's first is `1 10` (#1788, a wrong answer). Its lowering side, the
+   source's name by the collect's span (`mir/locals.rs`'
+   `in_place_source_names`, read by `mir.rs`' `in_place_source`), waits
+   on m6-lily's S4, which makes it a map to a `VarId`. Till then the
+   analysis refuses collects at one span whose sources differ, naming
+   #1789, which keys both sides by node; of one source alike, or none, as
+   each expansion's own, they compile. Corpus case
+   collect_in_place_in_a_macro, the guide's limitations; mutation
+   collects-at-one-span-of-sources-apart, caught.
+
+Still to move: the in-place adapters (`body_queries/in_place.rs`, read by
+`mir/iter.rs`, `back_stepped` and `type_facts`), once m1-lisa's change 2
+step (a) lands in the `InPlace` decision.
 
 ## Consequences
 

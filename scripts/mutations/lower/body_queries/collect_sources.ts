@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-source-unfound",
     breaks: "a `collect()` std makes in place of `v.into_iter()`'s chain finds no source `Vec`, so its capacity isn't known and `capacity()` refuses it (#1259)",
     file: "src/lower/body_queries/collect_sources.rs",
-    find: "                    found.insert(fn_span, source);\n",
-    replace: "                    let _ = (fn_span, source);\n",
+    find: "                    *collects.last_mut().expect(\"the collect's\") = Some(source);\n",
+    replace: "                    let _ = source;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
   {
@@ -25,5 +25,14 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Deref { arg } if thir[arg].ty.is_box() => at = strip(thir, arg),\n",
     replace: "            ExprKind::Deref { arg } if false && thir[arg].ty.is_box() => at = strip(thir, arg),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
+  },
+  {
+    name: "collects-at-one-span-of-sources-apart",
+    breaks:
+      "two `collect()`s a macro's repetition writes at one span, of sources `a` and `b`, each take `b`'s capacity, `1 3` where Rust's first is `1 10` (#1788)",
+    file: "src/lower/body_queries/collect_sources.rs",
+    find: "        if collects.iter().any(|source| *source != first) {\n",
+    replace: "        if false {\n",
+    tests: ["test/limitations.test.ts", "-t", "macro writes at one place"],
   },
 ];
