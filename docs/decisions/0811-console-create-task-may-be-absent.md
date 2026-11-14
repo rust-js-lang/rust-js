@@ -300,3 +300,20 @@ checking a caller of the consumer's; mutations `written-alias-expanded`,
 `written-alias-declared-as-rust`, `written-alias-unexported-to-consumers`
 (`declarations.ts`) and `written-readonly-index-mutable`
 (`declarations/written.ts`).
+
+## Amendment (2026-11-14): React's hook handles are declared as @types/react names them (#1763)
+
+What a hook gives back, a `Copy` handle `handle!` declares, had no
+`#[rust_js::types]`, so a crate that exported one, `pub set_value:
+&'static Dispatch<SetStateAction<u32>>`, declared it `any`, and a
+TypeScript caller could give a numeric state's setter a string. Each now
+says what @types/react names it: `Dispatch<A>` `react#Dispatch<A>`,
+`SetStateAction<T>` `react#SetStateAction<T>`, `RefObject<T>`
+`react#RefObject<T>` and `ForwardedRef<H>` `react#ForwardedRef<H>`;
+`SetOptimistic<S>`, which @types/react names nowhere, the setter its
+`useOptimistic` returns, `(action: S | ((pendingState: S) => S)) => void`.
+The macro takes each handle's attributes as written, so each says its own.
+The JS is the same function it was given. Held by
+`test/declarations-react-handles.test.ts`, TypeScript checking callers of
+each, a setter's update callback typed by its context, and one given a
+string refused.

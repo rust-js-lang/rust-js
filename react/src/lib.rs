@@ -742,10 +742,11 @@ impl FormAction<DispatchAction> for Dispatch<&'static webapi::FormData> {}
 // module, so using one a React version lacks says which version it needs.
 
 /// Declares a JS function a hook gives back, `setCount` or `dispatch`: a
-/// `Copy` handle, called with `this()` (ADR 0039).
+/// `Copy` handle, called with `this()` (ADR 0039), declared as
+/// @types/react names it, its `#[rust_js::types]` (#1763).
 macro_rules! handle {
-    ($(#[doc = $doc:literal])* $name:ident<$t:ident>) => {
-        $(#[doc = $doc])*
+    ($(#[$meta:meta])* $name:ident<$t:ident>) => {
+        $(#[$meta])*
         pub struct $name<$t>(PhantomData<JsObject>, PhantomData<$t>);
 
         impl<$t> Clone for $name<$t> {
@@ -778,6 +779,7 @@ pub fn use_state<T>(initial: impl FnOnce() -> T) -> (&'static T, &'static Dispat
 /// What [`use_state`]'s setter takes, as @types/react's `SetStateAction<S>`:
 /// a value, `set`, or a function of the previous one, `update`. Its setter
 /// is a `Dispatch<SetStateAction<T>>`, React's `setCount`.
+#[cfg_attr(rust_js, rust_js::types = "react#SetStateAction<T>")]
 pub struct SetStateAction<T>(PhantomData<T>);
 
 impl<T> Dispatch<SetStateAction<T>> {
@@ -846,6 +848,7 @@ pub fn use_reducer_with<S, A, I>(
 handle! {
     /// What sends an action: React's `dispatch`, from [`use_reducer`] and
     /// [`use_action_state`].
+    #[cfg_attr(rust_js, rust_js::types = "react#Dispatch<A>")]
     Dispatch<A>
 }
 
@@ -906,7 +909,9 @@ pub fn use_optimistic_with<S, A>(value: S, reducer: impl Fn(&S, A) -> S + 'stati
 }
 
 handle! {
-    /// What [`use_optimistic`] gives to set the optimistic state.
+    /// What [`use_optimistic`] gives to set the optimistic state, as
+    /// @types/react's `useOptimistic` returns it.
+    #[cfg_attr(rust_js, rust_js::types = "(action: S | ((pendingState: S) => S)) => void")]
     SetOptimistic<S>
 }
 
@@ -945,6 +950,7 @@ pub fn use_ref<T>(initial: T) -> RefObject<T> {
 
 handle! {
     /// What [`use_ref`] gives: `{ current }`.
+    #[cfg_attr(rust_js, rust_js::types = "react#RefObject<T>")]
     RefObject<T>
 }
 
@@ -1965,6 +1971,7 @@ handle! {
     /// The ref a [`forward_ref`] component's parent gave: a callback, a
     /// [`RefObject`], or none, to give on as an element's `ref` or to
     /// [`use_imperative_handle`].
+    #[cfg_attr(rust_js, rust_js::types = "react#ForwardedRef<H>")]
     ForwardedRef<H>
 }
 
