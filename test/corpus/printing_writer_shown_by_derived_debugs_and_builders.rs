@@ -1,3 +1,4 @@
+//@ library-differs
 // A writer that prints as it formats (#1490), shown by a derived `Debug`'s
 // field or a `Debug` builder's step, of a struct, a tuple struct, an enum's
 // variants, nested, a list, a set and a map, `{:?}` and `{:#?}`: each print

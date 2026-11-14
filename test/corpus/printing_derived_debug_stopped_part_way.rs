@@ -1,3 +1,4 @@
+//@ library-differs
 // A derived `Debug`, or a `Debug` builder, of a writer that writes through
 // stdout's line (#1490), one of whose parts prints and then panics, the
 // panic caught: Rust's stdout keeps what the struct wrote before the part,

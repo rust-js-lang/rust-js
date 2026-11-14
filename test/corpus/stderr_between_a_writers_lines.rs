@@ -1,3 +1,4 @@
+//@ library-differs
 // A stdout line a writer's print ends, as `println!` formats, is written by
 // Rust's `LineWriter` there and then, so an `eprintln!` the writer makes
 // after it comes after that line (#1490): of a writer inside another, of
