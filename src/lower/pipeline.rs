@@ -492,33 +492,21 @@ pub fn lower_crate<'tcx>(
                 // Each body run where its module loads that read another
                 // module's `const` by its name, where that module may load
                 // after its own: lowered again, reading its values, once
-                // (ADR 0031, amended).
-                if !settled.loads_in_cycles.is_empty() {
-                    break;
+                // (ADR 0031, amended); a thread-local its module's load
+                // can't make first, made where it's first used (ADR 1006).
+                let modules = (&places[..], &fns, (&imported, &reexports_from[..]), js_modules);
+                let at_load = (&locals_at_load, &loads);
+                match load_cycles::again(tcx, (&lowered_items, &settled.loads_in_cycles), modules, at_load) {
+                    load_cycles::Again::Settled => break,
+                    load_cycles::Again::MadeWhereUsed(cyclic) => return Lowered::MadeWhereUsed(cyclic),
+                    load_cycles::Again::Lower(again) => {
+                        let bodies: Vec<_> = (again.iter())
+                            .filter_map(|&id| work.iter().find(|&&(at, _, copy)| at == id && copy.is_none()).copied())
+                            .collect();
+                        settled.loads_in_cycles.extend(again);
+                        work.extend(bodies);
+                    }
                 }
-                let lowered = || (lowered_items.iter()).map(|(_, item)| &item.dependencies);
-                let edges = (
-                    lowered().flat_map(|d| &d.references),
-                    lowered().flat_map(|d| &d.held),
-                    lowered().flat_map(|d| &d.package_uses),
-                    lowered().flat_map(|d| &d.reexporters),
-                );
-                let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
-                // A thread-local its module's load can't make first: made where
-                // it's first used, lowered again, a `pub` one refused (ADR 1006).
-                let cyclic = load_cycles::made_in_cycles(tcx, &locals_at_load, &fns, &imports);
-                if !cyclic.is_empty() {
-                    return Lowered::MadeWhereUsed(cyclic);
-                }
-                let again = load_cycles::load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
-                if again.is_empty() {
-                    break;
-                }
-                let bodies: Vec<_> = (again.iter())
-                    .filter_map(|&id| work.iter().find(|&&(at, _, copy)| at == id && copy.is_none()).copied())
-                    .collect();
-                settled.loads_in_cycles.extend(again);
-                work.extend(bodies);
             }
         }
         let (def_id, body, copy) = work[next];

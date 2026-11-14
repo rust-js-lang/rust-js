@@ -16,6 +16,57 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::BTreeMap;
 
+/// What the load cycles ask once each body queued is lowered (ADR 0031,
+/// amended; ADR 1006, amended): nothing more, where a round already
+/// lowered them again, `settled` non-empty, or none is read; the
+/// thread-locals a module's load can't make first, made where they're
+/// first used, the crate lowered again so; or the bodies to lower again,
+/// reading the values a cycle reads.
+pub(super) enum Again {
+    Settled,
+    MadeWhereUsed(Vec<LocalDefId>),
+    Lower(Vec<DefId>),
+}
+
+/// The modules' JS as `module_imports` reads it: where each is, the
+/// crate's functions, what each imports and re-exports, and the JS files.
+pub(super) type Modules<'m> = (
+    &'m [ModuleJs],
+    &'m IndexMap<DefId, FnInfo>,
+    (&'m BTreeMap<Export, IndexSet<LocalModId>>, &'m [ReexportFrom]),
+    &'m dyn crate::program::JsModules,
+);
+
+/// What the load cycles ask once `lowered`, the bodies lowered so far, are
+/// (`Again`), of the modules' JS, the thread-locals made as their modules
+/// load, `at_load`, and the bodies run so, `loads`.
+pub(super) fn again(
+    tcx: TyCtxt<'_>,
+    (lowered, settled): (&[(DefId, crate::lower::LoweredFn)], &IndexSet<DefId>),
+    (places, fns, imported, js_modules): Modules<'_>,
+    (at_load, loads): (&AtLoad, &IndexSet<DefId>),
+) -> Again {
+    if !settled.is_empty() {
+        return Again::Settled;
+    }
+    let dependencies = || (lowered.iter()).map(|(_, item)| &item.dependencies);
+    let edges = (
+        dependencies().flat_map(|d| &d.references),
+        dependencies().flat_map(|d| &d.held),
+        dependencies().flat_map(|d| &d.package_uses),
+        dependencies().flat_map(|d| &d.reexporters),
+    );
+    let imports = module_imports(places, fns, edges, imported, js_modules);
+    let cyclic = made_in_cycles(tcx, at_load, fns, &imports);
+    if !cyclic.is_empty() {
+        return Again::MadeWhereUsed(cyclic);
+    }
+    match load_cycles(tcx, lowered, fns, loads, &imports) {
+        again if again.is_empty() => Again::Settled,
+        again => Again::Lower(again),
+    }
+}
+
 /// Each body run where its module loads, of `loads`, that reads another of
 /// the crate's modules' `const` or numbered enum's variant by its name,
 /// where that module may load after its own: one it reaches by what the
@@ -51,7 +102,7 @@ pub(super) fn load_cycles(
 /// Each thread-local made as its module loads, and what its initializer may
 /// run and read there; `None`, what rust-js can't follow (ADR 1006,
 /// amended).
-type AtLoad = IndexMap<LocalDefId, Option<Vec<DefId>>>;
+pub(super) type AtLoad = IndexMap<LocalDefId, Option<Vec<DefId>>>;
 
 /// Each private thread-local, of `at_load`, its module's load can't make
 /// before what its initializer runs and reads (`out_of_order`): made where
