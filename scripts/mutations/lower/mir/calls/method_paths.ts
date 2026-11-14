@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a key's `js::method` held as a function, `let f = js::method((listener, \"handleEvent\")); f()`, compiles, a `&dyn Fn` of what may be no function (rd334)",
     file: "src/lower/mir/calls/method_paths.rs",
-    find: "        if !self.frame.facts.called_methods.contains(&span) {\n",
-    replace: "        if false {\n",
+    find: "        let called = |at| self.frame.facts.called_methods.contains(&at);\n",
+    replace: "        let called = |_| true;\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method of a key read other than as its value's method"],
   },
   {
@@ -29,5 +29,14 @@ export const mutations: Mutation[] = [
     find: "                    .keyed_method()\n",
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
+  },
+  {
+    name: "called-method-by-a-shared-span",
+    breaks:
+      "a `js::method` of a key is read as its value's method where any THIR call at its span is, of two a macro's repetition writes there, one given another `this` (#1671 change 3 M5)",
+    file: "src/lower/mir/calls/method_paths.rs",
+    find: "        if !crate::lower::body_queries::each_call_at(self.frame.thir, span, called) {\n",
+    replace: "        if !self.frame.thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span) && called(at)) {\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a macro's repetition writes is asked of its own call"],
   },
 ];

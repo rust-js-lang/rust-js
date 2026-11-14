@@ -24,7 +24,7 @@ mod method_calls;
 mod ranges;
 mod set_reads;
 mod span_join;
-pub(in crate::lower) use span_join::{the_call_at, the_one, the_one_at};
+pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_one, the_one_at};
 mod total_orders;
 mod values;
 mod whole_casts;
@@ -178,8 +178,8 @@ pub(super) struct BodyFacts<'tcx> {
     /// Where each `function::call` is of a `js::method` of one step whose
     /// `this` is the path's value, the method's call, and where each such
     /// `js::method` is, `method_calls`'s (rd334).
-    pub(super) method_calls: IndexSet<Span>,
-    pub(super) called_methods: IndexSet<Span>,
+    pub(super) method_calls: IndexSet<ExprId>,
+    pub(super) called_methods: IndexSet<ExprId>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, `in_place_adapters`'s: its
     /// maker marks what it makes so (`made_in_place`, #730). Decided once the
@@ -276,9 +276,9 @@ fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Local
 /// through one is what a `Box<dyn Any>` holds written, so `x`'s holds what
 /// it was given, `catch_unwind`'s `Err` of what was thrown, whichever
 /// variables held it before (rd550); `x` itself may be set again, which
-/// its JS says, a `let`. The call itself, which MIR's call asks of the one
-/// THIR call at its span (`the_call_at`), none where a macro's expansion
-/// writes two there (#1671 change 3 M5). One of a variable a closure
+/// its JS says, a `let`. The call itself, which MIR's call asks of each
+/// THIR call at its span (`each_call_at`), of two a macro's expansion
+/// writes there both (#1671 change 3 M5). One of a variable a closure
 /// captured is its family's, `resumes_as_given`'s.
 fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     match lends_dyn_any(tcx, thir) {

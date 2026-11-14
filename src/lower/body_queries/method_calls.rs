@@ -6,27 +6,28 @@
 use crate::collections::IndexSet;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Span;
 
 use super::strip;
 use crate::lower::bindings::{self, JsForm};
 use crate::lower::recognition::is_function_call;
 
-/// Where each such call is, its `fn_span`, and where the `js::method` it
-/// calls is, its own: a `function::call` of a `js::method` of a path of
+/// Each such call, and the `js::method` it calls, each its THIR call,
+/// which MIR's call asks of each THIR call at its span (`each_call_at`),
+/// of two a macro's expansion writes there both (#1671 change 3 M5): a
+/// `function::call` of a `js::method` of a path of
 /// a value and a method or a key, whose `this` is `Some` of the path's
 /// value, the same variable. Its call is the method's, `value.name(..)`,
 /// whose `this` is that value, as `f.call(value, ..)` gives it, where
 /// the JS reads the method in place of the variable it's given
 /// (`Expr::own_method_call`); a key's read is what's read of it nowhere
 /// else (`mir_keyed_method`).
-pub(in crate::lower) fn method_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (IndexSet<Span>, IndexSet<Span>) {
+pub(in crate::lower) fn method_calls<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+) -> (IndexSet<ExprId>, IndexSet<ExprId>) {
     let (mut calls, mut methods) = (IndexSet::default(), IndexSet::default());
-    for expr in thir.exprs.iter() {
-        let ExprKind::Call {
-            fun, ref args, fn_span, ..
-        } = expr.kind
-        else {
+    for (at, expr) in thir.exprs.iter_enumerated() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
         };
         let ty::FnDef(call, _) = *thir[fun].ty.kind() else {
@@ -36,12 +37,12 @@ pub(in crate::lower) fn method_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>)
         if !is_function_call(tcx, call) {
             continue;
         }
+        let read_at = through_borrows(thir, method);
         let ExprKind::Call {
             fun: read,
             args: ref path,
-            fn_span: read_span,
             ..
-        } = thir[through_borrows(thir, method)].kind
+        } = thir[read_at].kind
         else {
             continue;
         };
@@ -62,8 +63,8 @@ pub(in crate::lower) fn method_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>)
         // `Some(value)`, an `Option<&dyn IntoUnknown>`'s one of a field.
         let [ref given] = some.fields[..] else { continue };
         if variable(thir, value).is_some_and(|of| variable(thir, given.expr) == Some(of)) {
-            calls.insert(fn_span);
-            methods.insert(read_span);
+            calls.insert(at);
+            methods.insert(read_at);
         }
     }
     (calls, methods)

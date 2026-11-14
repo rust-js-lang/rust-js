@@ -31,6 +31,21 @@ pub(in crate::lower) fn the_call_at(thir: &Thir<'_>, span: Span) -> Option<ExprI
     }))
 }
 
+/// Whether a fact `holds` of MIR's call at `span`, whichever THIR call
+/// there it is: of each, and there's one. Two a macro's repetition writes
+/// share a span, `$(f.call(..);)*`, and of two alike, both, the fact is
+/// the call's whichever it is; of two apart, neither's is taken of the
+/// other (#1671 change 3 M5). A fact that licenses a form, never one
+/// that's of a call alone, which `the_call_at` joins.
+pub(in crate::lower) fn each_call_at(thir: &Thir<'_>, span: Span, holds: impl Fn(ExprId) -> bool) -> bool {
+    let mut at = (thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
+        rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span => Some(id),
+        _ => None,
+    });
+    let Some(first) = at.next() else { return false };
+    holds(first) && at.all(holds)
+}
+
 /// The one of `found`, or none: none found, or more than one.
 pub(in crate::lower) fn the_one<T>(mut found: impl Iterator<Item = T>) -> Option<T> {
     let one = found.next()?;

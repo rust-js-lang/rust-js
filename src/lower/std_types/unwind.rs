@@ -53,8 +53,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut thrown = Expr::call_helper("$unwinding", vec![value]);
                 // Of a payload as it was given, which a `catch` throws
                 // again as it caught it (rd550).
-                let resumed = crate::lower::body_queries::the_call_at(self.frame.thir, call.span);
-                if resumed.is_some_and(|resumed| self.frame.facts.resumed_as_given.contains(&resumed)) {
+                let as_given = |at| self.frame.facts.resumed_as_given.contains(&at);
+                if crate::lower::body_queries::each_call_at(self.frame.thir, call.span, as_given) {
                     thrown.facts = thrown.facts.with(Known::AsGiven);
                 }
                 out.push(StmtKind::Throw(thrown).at(self.js_span(call.span)));

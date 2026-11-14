@@ -945,8 +945,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`function::call` of a method read of its `this` stays `f.call`, `instance._applyProps.call(instance, instance, props)`, where upstream calls the method, `instance._applyProps(instance, props)` (rd334)",
     file: "src/lower/binding_calls.rs",
-    find: "                match self.frame.facts.method_calls.contains(&span) {\n",
-    replace: "                match false {\n",
+    find: "                let own = |at| self.frame.facts.method_calls.contains(&at);\n",
+    replace: "                let own = |_| false;\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {
@@ -1007,5 +1007,14 @@ export const mutations: Mutation[] = [
     find: "                    true => this.plain(),\n",
     replace: "                    true => this,\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
+  },
+  {
+    name: "method-call-by-a-shared-span",
+    breaks:
+      "a `function::call` of a `js::method` is taken as its method's own call where any THIR call at its span is, of two a macro's repetition writes there, so `a.focus()` is called of `a` where Rust gives `b` (#1671 change 3 M5)",
+    file: "src/lower/binding_calls.rs",
+    find: "                match crate::lower::body_queries::each_call_at(self.frame.thir, span, own) {\n",
+    replace: "                match self.frame.thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span) && own(at)) {\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a macro's repetition writes is asked of its own call"],
   },
 ];

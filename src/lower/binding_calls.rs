@@ -179,7 +179,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // given, which nothing changed: the method's call, where
                 // the read is in place, `listener.handleEvent(event)`
                 // (rd334).
-                match self.frame.facts.method_calls.contains(&span) {
+                let own = |at| self.frame.facts.method_calls.contains(&at);
+                match crate::lower::body_queries::each_call_at(self.frame.thir, span, own) {
                     true => call.own_method(),
                     false => call,
                 }

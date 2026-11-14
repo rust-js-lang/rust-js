@@ -980,6 +980,62 @@ pub fn handle(listener: &'static Unknown, other: &'static Unknown) -> Option<&'s
   }
 });
 
+// A macro's repetition writes two such calls at one span: each is asked
+// of each THIR call at MIR's span (#1671 change 3 M5). Of two alike, each
+// is its method's own call, `a.focus(..)`; of two apart, one given
+// another `this`, neither is, `f.call(this, ..)` with its `this`, and of a
+// key, which only a method's own call may read, each is refused.
+test("function::call of js::method a macro's repetition writes is asked of its own call", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("method-call-in-a-macro");
+  writeFileSync(join(dir, "lib.rs"), `use js::function;
+use webapi::{FocusOptions, HTMLElement};
+
+macro_rules! focus_each {
+    ($($element:expr => $this:expr),*) => {
+        $(function::call(js::method(($element, HTMLElement::focus)), Some($this), (None::<&'static FocusOptions>,));)*
+    };
+}
+
+pub fn focus_both(a: &HTMLElement, b: &HTMLElement) {
+    focus_each!(a => a, b => b);
+}
+
+pub fn focus_apart(a: &HTMLElement, b: &HTMLElement) {
+    focus_each!(a => a, a => b);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function focusBoth(a, b) {\n  a.focus(undefined);\n  b.focus(undefined);\n}");
+  expect(js).toContain("export function focusApart(a, b) {\n  a.focus.call(a, undefined);\n  a.focus.call(b, undefined);\n}");
+  const calls: unknown[] = [];
+  const lib = await import(join(dir, "lib.js"));
+  const a = { focus(this: unknown, options: unknown) { calls.push(["a", this === a, options]); } };
+  const b = { focus(this: unknown, options: unknown) { calls.push(["b", this === b, options]); } };
+  lib.focusBoth(a, b);
+  lib.focusApart(a, b);
+  expect(calls).toEqual([["a", true, undefined], ["b", true, undefined], ["a", true, undefined], ["a", false, undefined]]);
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, function};
+
+macro_rules! handle_each {
+    ($($listener:expr => $this:expr),*) => {
+        $(function::call(js::method(($listener, "handleEvent")), Some($this), ());)*
+    };
+}
+
+pub fn handle_both(a: &'static Unknown, b: &'static Unknown) {
+    handle_each!(a => a, b => b);
+}
+
+pub fn handle_apart(a: &'static Unknown, b: &'static Unknown) {
+    handle_each!(a => a, a => b);
+}
+`);
+  const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
+  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::method` of a key read otherwise yet")]);
+});
+
 // React DOM's localPromise (rd235): `typeof Promise === 'function' ?
 // Promise : undefined` held as the module loads, its static called on the
 // class it holds, `localPromise.resolve(null)`, not the global's: a page

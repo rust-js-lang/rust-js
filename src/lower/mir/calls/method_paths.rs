@@ -72,7 +72,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if !self.frame.facts.called_methods.contains(&span) {
+        let called = |at| self.frame.facts.called_methods.contains(&at);
+        if !crate::lower::body_queries::each_call_at(self.frame.thir, span, called) {
             let why = "a member by its key may be no function, so it's only called as its value's method, \
                  `function::call(js::method((value, key)), Some(value), args)`, the value a variable; \
                  `js::get(value, key)` reads it as a value, and `js::classify`'s `Kind::Function` holds one that's a function";
