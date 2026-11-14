@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's declarations import a library's default class by its name, `import type { Complex }`, which its module doesn't export (ADR 0210, amended)",
     file: "src/lower/library/exports.rs",
-    find: '            default: crate::lower::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == "default",\n',
-    replace: "            default: false,\n",
+    find: '                default: crate::lower::default_exports::exported_as(tcx, id, &name) == "default",\n',
+    replace: "                default: false,\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "default class"],
   },
   {

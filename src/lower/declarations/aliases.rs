@@ -119,7 +119,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     return None;
                 }
                 let home = self.tcx.parent_module_from_def_id(local);
-                let name = self.tcx.item_name(did).to_string();
+                let name = super::type_name(self.tcx, did);
                 if home != self.module {
                     let file = self.files.get(&home)?.clone();
                     self.imported(file, did, name.clone());
@@ -234,7 +234,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         };
         json!({
             "kind": "type",
-            "name": self.tcx.item_name(def_id).as_str(),
+            "name": super::type_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),

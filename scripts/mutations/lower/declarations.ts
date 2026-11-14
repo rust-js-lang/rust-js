@@ -673,15 +673,6 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "class-declared-by-its-struct-name",
-    breaks:
-      "a class named apart from its struct is declared and named by the struct's name, `class Fiber`, where its JS is `FiberNode`",
-    file: "src/lower/declarations.rs",
-    find: "    super::classes::name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())\n",
-    replace: "    tcx.item_name(did).to_string()\n",
-    tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
-  },
-  {
     name: "class-of-another-modules-struct-undeclared",
     breaks:
       "a class whose struct is another module's is declared nowhere, though its references import it from where its constructor is",
@@ -983,6 +974,15 @@ export const mutations: Mutation[] = [
     find: "            ) if written_types(tcx, *def_id).is_some() => self\n",
     replace: "            ) if false && written_types(tcx, *def_id).is_some() => self\n",
     tests: ["test/webapi-event-map.test.ts", "-t", "a binding trait's projection"],
+  },
+  {
+    name: "type-name-given-unread",
+    breaks:
+      "a type's `#[rust_js::name]` is left unread, so `#[rust_js::name = \"ISODate\"] pub type IsoDate = String;` is declared `type IsoDate`, which upstream's consumer, importing `ISODate`, can't name (#1829)",
+    file: "src/lower/declarations.rs",
+    find: "    super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())\n",
+    replace: "    tcx.item_name(did).to_string()\n",
+    tests: ["test/declarations-named.test.ts"],
   },
 ];
 

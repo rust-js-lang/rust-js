@@ -42,7 +42,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         };
         json!({
             "kind": "type",
-            "name": self.tcx.item_name(def_id).as_str(),
+            "name": super::type_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),
@@ -152,7 +152,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .collect();
         json!({
             "kind": "type",
-            "name": self.tcx.item_name(def_id).as_str(),
+            "name": super::type_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),

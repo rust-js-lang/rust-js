@@ -29,7 +29,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 .skip_normalization();
             return Some(json!({
                 "kind": "type",
-                "name": self.tcx.item_name(def_id).as_str(),
+                "name": super::type_name(self.tcx, def_id),
                 "exported": true,
                 "declare": false,
                 "typeParameters": self.generics(def_id),
@@ -207,7 +207,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         if let Some(flattened) = intersected {
             return Some(json!({
                 "kind": "type",
-                "name": self.tcx.item_name(def_id).as_str(),
+                "name": super::type_name(self.tcx, def_id),
                 "exported": true,
                 "declare": false,
                 "typeParameters": self.generics(def_id),
@@ -216,7 +216,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
         Some(json!({
             "kind": "interface",
-            "name": self.tcx.item_name(def_id).as_str(),
+            "name": super::type_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),

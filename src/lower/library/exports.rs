@@ -405,11 +405,14 @@ fn declared_types(tcx: TyCtxt<'_>) -> Vec<crate::library::DeclaredType> {
                 && tcx.visibility(id).is_public()
                 && !crate::lower::bindings::is_mark(tcx, id)
         })
-        .map(|id| crate::library::DeclaredType {
-            key: key(tcx, id),
-            module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
-            name: tcx.item_name(id).to_string(),
-            default: crate::lower::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == "default",
+        .map(|id| {
+            let name = crate::lower::declarations::type_name(tcx, id);
+            crate::library::DeclaredType {
+                key: key(tcx, id),
+                module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
+                default: crate::lower::default_exports::exported_as(tcx, id, &name) == "default",
+                name,
+            }
         })
         .collect();
     types.sort();

@@ -265,3 +265,30 @@ a generic one's `Promise<T | null | undefined>`, and of nothing
 `test/declarations-async.test.ts` checks TypeScript that awaits each
 against them, one that takes the payload for a number refused, and the JS
 resolving to what they say; mutation `async-fn-declared-any`.
+
+## Amendment: a type is declared by the name its `#[rust_js::name]` gives (#1829, 2026-11-15)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. A type has no JS
+of its own; only its declaration's name changes.
+
+The vercel UI port writes upstream's `type ISODate = string` as
+`#[rust_js::name = "ISODate"] pub type IsoDate = String;`, the name
+clippy and rustfmt want and the one its TypeScript consumers import, but
+it was declared `type IsoDate`, so Codex's `import { type ISODate }` found
+none. **A type's name to TypeScript is one owner's,
+`declarations::type_name`**: the name its `#[rust_js::name]` gives, a
+class's JS name of it too, else its Rust name, of its export, every
+reference to it, the import another module's declarations make of it, and
+a library's record of the types its declarations export, which a
+consumer's import names. A unit struct's `#[rust_js::name]` is its value,
+`events::Click`'s `"click"` (ADR 0223), and no unit struct is declared a
+type, so the two never meet. Held by declarations-named's "declarations name a
+type by its #[rust_js::name]", an alias and a struct of one module and
+another's, under strict tsc; mutation type-name-given-unread. A class's
+own arm, `classes::name`, asked first, answered what this does for every
+declared type, so it's gone, with its mutation,
+class-declared-by-its-struct-name, which survived. React's port's
+ReactDOMServerFB.d.ts imports Fizz's `RequestInstance`, the class
+`#[rust_js::name]` names and ReactFizzServer.d.ts exports, where it
+imported `Request`, which no module exports: the library's record of its
+types now names them as its declarations do.

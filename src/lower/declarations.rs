@@ -305,9 +305,12 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     }
 }
 
-/// The name a crate's type is declared by: a class's its JS name.
-fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
-    super::classes::name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())
+/// The name a crate's type is declared by, its export's and every
+/// reference's: the one its `#[rust_js::name]` gives, a class's JS name,
+/// `FiberNode` of `Fiber`, or an alias's, `#[rust_js::name = "ISODate"] pub
+/// type IsoDate = String;`'s `ISODate` (#1829), else its Rust name.
+pub(in crate::lower) fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
+    super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())
 }
 
 /// An item's type parameters bound by a trait that says what it is to
@@ -1067,7 +1070,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // Another crate's untagged enum, `js::Json`: declared here, as
                 // this crate's are, the union of its payloads (ADR 0225).
                 if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {
-                    let name = tcx.item_name(did).to_string();
+                    let name = type_name(tcx, did);
                     if !self.unexported.contains_key(&name) {
                         self.unexported.insert(name.clone(), None);
                         let inner = self.erased(did);
@@ -1108,7 +1111,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     if home != self.module {
                         return keyword("any");
                     }
-                    let name = tcx.item_name(did).to_string();
+                    let name = type_name(tcx, did);
                     if !self.unexported.contains_key(&name) {
                         self.unexported.insert(name.clone(), None);
                         let inner = self.erased(did);
