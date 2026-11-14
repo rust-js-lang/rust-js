@@ -454,8 +454,10 @@ show too ([ADR 1094](../../decisions/1094-a-full-stack-workspace-is-checked-by-p
 `rust-js-check` builds in its own target directory, so it neither waits
 for `rust-js build` nor makes it build again. rustc's warnings show there,
 of what JS uses too: a struct's fields a binding is given, `&Logs { .. }`
-as a `&dyn PropertyDescriptorMap`, and a function only
-`js::export_default!` names are used, as JS reads them. A plain `cargo
+as a `&dyn PropertyDescriptorMap`, a struct given one through generic
+code, `erase(Parameters { .. })` of `fn erase<T>(value: T) { js::any_of(value) }`,
+and a function only `js::export_default!` names are used, as JS reads
+them. A plain `cargo
 check` or `cargo clippy` runs no rust-js and warns of them as dead code
 ([ADR 0440](../../decisions/0440-a-binding-needs-no-allow.md)): lint
 with `rust-js clippy`.

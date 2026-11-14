@@ -246,3 +246,53 @@ pub fn response(reason: &Reason) -> f64 {
   const { code, said, stderr } = clippy(dir, "-D", "warnings");
   expect([code, said], stderr).toEqual([0, []]);
 }, 600_000);
+
+// #1784: a private record given JS through generic code, `erase`, which
+// passes its `T` to `js::any_of`, has each field read, as JS reads it,
+// where it's erased at a call, through a generic caller too; a record
+// never given JS is warned of still.
+test("rust-js clippy of a record JS reads through generic erasure says nothing of its fields", () => {
+  const source = `struct Parameters {
+    threshold: f64,
+}
+
+struct Nested {
+    inner: Parameters,
+}
+
+fn erase<T: 'static>(value: T) -> Option<&'static js::Unknown> {
+    js::any_of(value)
+}
+
+fn relay<U: 'static>(value: U) -> Option<&'static js::Unknown> {
+    erase(value)
+}
+
+pub fn threshold() -> Option<&'static js::Unknown> {
+    let object = erase(Parameters { threshold: 0.1 });
+    js::get(object.expect("parameter record"), "threshold")
+}
+
+pub fn relayed() -> Option<&'static js::Unknown> {
+    relay(Nested {
+        inner: Parameters { threshold: 0.2 },
+    })
+}
+`;
+  const dir = app("clippy-generic-erasure", { "App.rs": source }, { react: false });
+  const { code, said, stderr } = clippy(dir, "-D", "warnings");
+  expect([code, said], stderr).toEqual([0, []]);
+  const unread = app("clippy-generic-erasure-unread", {
+    "App.rs": `${source}
+struct Unread {
+    hidden: u32,
+}
+
+pub fn unread() -> u32 {
+    let _ = Unread { hidden: 1 };
+    0
+}
+`,
+  }, { react: false });
+  expect(clippy(unread, "-D", "warnings").said).toEqual(["error: field `hidden` is never read"]);
+}, 600_000);

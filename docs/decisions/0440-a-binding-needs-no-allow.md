@@ -154,3 +154,31 @@ method's, a trait's and a module's bindings, another method's unread
 parameter still flagged) and "a binding needs no allow"; mutation
 `binding-unread-params-flagged` (`lower/liveness.ts`, moved from
 `jsx_syntax.ts`).
+
+## Amendment: a struct given a binding through generic code (#1784, 2026-11-14)
+
+A private record given JS through generic code was warned of as never
+read: `fn erase<T: 'static>(value: T) -> Option<&'static js::Unknown> {
+js::any_of(value) }`, called as `erase(Parameters { threshold: 0.1 })`,
+then read by JS, `js::get(object, "threshold")`. The walk saw `T` where
+the binding is given it, never `Parameters`, so `rust-js clippy -D
+warnings` failed on a field the JS reads, and a port couldn't be
+clippy-clean without an `#[allow]`.
+
+Now each type parameter a function gives a binding of its body is one the
+walk records (`Given::erased`), as is each function named, called or given
+as a value, with what it's instantiated as there (`Given::instances`).
+Each instance of one, to a fixed point, gives the binding what that call
+makes the parameter: the crate's structs in it, and each fields' as
+before. A caller's own type parameter so given is one it gives a binding
+too, so `relay<U>(value: U) { erase(value) }` called with `Nested { inner:
+Parameters { .. } }` has both read. A record never given JS is still warned
+of. A struct given generic code that gives a binding something else,
+`format!("{v:?}")`'s text, isn't marked: what's recorded is the type
+parameter in the type of what the binding is given.
+
+Held by test/clippy.test.ts' "rust-js clippy of a record JS reads through
+generic erasure says nothing of its fields", the issue's crate, and its
+`Unread` beside it, still warned of; mutations generic-erasure-unfollowed
+and generic-erasure-of-a-generic-caller-unfollowed (`lower/liveness.ts`),
+caught.

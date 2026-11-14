@@ -6,6 +6,22 @@ const clippy = ["test/clippy.test.ts", "-t", "of clean Rust says nothing"];
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-erasure-unfollowed",
+    breaks: "a record given JS through generic code, `erase(Parameters { .. })` of `js::any_of(value)`'s `T`, is warned of as never read (#1784)",
+    file: "src/lower/liveness.rs",
+    find: "        let mut structs = std::mem::take(&mut self.structs);\n",
+    replace: "        return std::mem::take(&mut self.structs);\n        #[allow(unreachable_code)]\n        let mut structs = std::mem::take(&mut self.structs);\n",
+    tests: ["test/clippy.test.ts", "-t", "generic erasure"],
+  },
+  {
+    name: "generic-erasure-of-a-generic-caller-unfollowed",
+    breaks: "a record given JS through two generic functions, `relay`'s `U` given on to `erase`'s `T`, is warned of as never read (#1784)",
+    file: "src/lower/liveness.rs",
+    find: "                            .map(|param| (owner, param)),\n",
+    replace: "                            .map(|param| (owner, param))\n                            .filter(|_| false),\n",
+    tests: ["test/clippy.test.ts", "-t", "generic erasure"],
+  },
+  {
     name: "js-read-fields-dead",
     breaks:
       "a struct given a binding has its fields said never read, as rustc alone sees it, so each needs `#[allow(dead_code)]`",

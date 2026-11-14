@@ -6,10 +6,16 @@
 //! program hands JS, `js::class::<T>()` (ADR 0761): JS makes it, `new T()`,
 //! and reads and calls what its prototype has, so its constructor, its
 //! impl's items and its fields are used, and what they use, as rustc's own
-//! walk from them would find, which never starts there.
+//! walk from them would find, which never starts there. A struct given a
+//! binding through generic code, `fn erase<T>(v: T) { js::any_of(v) }`, is
+//! given it where that code is called with it, `erase(Parameters { .. })`:
+//! each type parameter a generic function gives a binding is, at each call
+//! of it, what that call instantiates it as, followed through generic
+//! callers to the concrete type (#1784).
 
 use std::sync::OnceLock;
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir as hir;
 use rustc_hir::def::Res;
@@ -20,7 +26,7 @@ use rustc_middle::middle::dead_code::DeadCodeLivenessSummary;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_middle::util::Providers;
 use rustc_span::ErrorGuaranteed;
-use rustc_span::def_id::LocalDefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 
 type Liveness = fn(TyCtxt<'_>, ()) -> Result<DeadCodeLivenessSummary, ErrorGuaranteed>;
 
@@ -68,16 +74,20 @@ fn read_by_js(tcx: TyCtxt<'_>) -> Vec<LocalDefId> {
     let mut given = Given {
         tcx,
         results: None,
+        owner: None,
         structs: Vec::new(),
         classes: Vec::new(),
+        erased: IndexMap::default(),
+        instances: Vec::new(),
     };
     for owner in tcx.hir_body_owners() {
         given.results = Some(tcx.typeck(owner));
+        given.owner = Some(tcx.typeck_root_def_id(owner.to_def_id()));
         intravisit::walk_body(&mut given, tcx.hir_body_owned_by(owner));
     }
     let mut fields = used_by_classes(tcx, &given.classes);
     let mut seen = Vec::new();
-    let mut structs = given.structs;
+    let mut structs = given.erased_instances();
     structs.extend(given.classes);
     while let Some(adt) = structs.pop() {
         if seen.contains(&adt) {
@@ -103,12 +113,22 @@ fn local_structs<'tcx>(ty: Ty<'tcx>) -> impl Iterator<Item = ty::AdtDef<'tcx>> {
 }
 
 /// The structs in what each call of a binding is given, and the classes
-/// `js::class::<T>()` hands JS.
+/// `js::class::<T>()` hands JS; and of generic code, each type parameter
+/// of its it gives a binding, and each instance of a function named, which
+/// says what each of those is where it's called.
 struct Given<'tcx> {
     tcx: TyCtxt<'tcx>,
     results: Option<&'tcx ty::TypeckResults<'tcx>>,
+    /// The function whose body, or whose closure's, is walked.
+    owner: Option<DefId>,
     structs: Vec<ty::AdtDef<'tcx>>,
     classes: Vec<ty::AdtDef<'tcx>>,
+    /// Each function's type parameters, by index, a binding is given of
+    /// its body, `T` of `js::any_of(value)`'s `value: T`.
+    erased: IndexMap<DefId, IndexSet<u32>>,
+    /// Each function named, by the function naming it, of what it's
+    /// instantiated as there.
+    instances: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)>,
 }
 
 // Each body on its own, with its own results: a closure's, or a `const`'s
@@ -131,6 +151,21 @@ impl<'tcx> Visitor<'tcx> for Given<'tcx> {
             for arg in args {
                 self.gather(results, arg);
             }
+        }
+        // A function named, called or given as a value, and what it's
+        // instantiated as, which says what a type parameter of its a
+        // binding is given is here.
+        let named = match expr.kind {
+            hir::ExprKind::MethodCall(..) => {
+                (results.type_dependent_def_id(expr.hir_id)).map(|id| (id, results.node_args(expr.hir_id)))
+            }
+            _ => super::fn_def(results.expr_ty(expr)),
+        };
+        if let (Some((id, generic_args)), Some(owner)) = (named, self.owner)
+            && id.is_local()
+            && !super::bindings::is_binding(self.tcx, id)
+        {
+            self.instances.push((owner, id, generic_args));
         }
         // `js::class::<T>()` of the crate's class: JS's `T`.
         if let hir::ExprKind::Call(callee, _) = expr.kind
@@ -155,7 +190,11 @@ impl<'tcx> Given<'tcx> {
     /// each part's type before it's coerced: `&imports` of `Some(&imports)`,
     /// an `Option<&dyn Any>`.
     fn gather(&mut self, results: &'tcx ty::TypeckResults<'tcx>, value: &'tcx hir::Expr<'tcx>) {
-        self.structs.extend(local_structs(results.expr_ty(value)));
+        let ty = results.expr_ty(value);
+        self.structs.extend(local_structs(ty));
+        if let Some(owner) = self.owner {
+            self.erased.entry(owner).or_default().extend(params_in(ty));
+        }
         let parts: Vec<&hir::Expr<'_>> = match value.kind {
             hir::ExprKind::Call(callee, args) if is_constructor(results, callee) => args.iter().collect(),
             hir::ExprKind::AddrOf(_, _, inner) => vec![inner],
@@ -167,6 +206,43 @@ impl<'tcx> Given<'tcx> {
             self.gather(results, part);
         }
     }
+}
+
+impl<'tcx> Given<'tcx> {
+    /// The structs given a binding: in what each call of one is given, and
+    /// what each instance of generic code makes a type parameter it gives
+    /// one, through its generic callers, to a fixed point: a caller's own
+    /// parameter so instantiated is one it gives a binding too.
+    fn erased_instances(&mut self) -> Vec<ty::AdtDef<'tcx>> {
+        let mut structs = std::mem::take(&mut self.structs);
+        loop {
+            let mut grown: Vec<(DefId, u32)> = Vec::new();
+            for &(owner, id, generic_args) in &self.instances {
+                let Some(params) = self.erased.get(&id) else { continue };
+                for instance in (params.iter()).filter_map(|&index| generic_args.get(index as usize)?.as_type()) {
+                    structs.extend(local_structs(instance));
+                    let known = self.erased.get(&owner);
+                    grown.extend(
+                        params_in(instance)
+                            .filter(|param| !known.is_some_and(|known| known.contains(param)))
+                            .map(|param| (owner, param)),
+                    );
+                }
+            }
+            if grown.is_empty() {
+                return structs;
+            }
+            for (owner, param) in grown {
+                self.erased.entry(owner).or_default().insert(param);
+            }
+        }
+    }
+}
+
+/// The type parameters in `ty`, by index.
+fn params_in(ty: Ty<'_>) -> impl Iterator<Item = u32> + '_ {
+    ty.walk()
+        .filter_map(|part| super::generic_facts::type_parameter_of(part.as_type()?))
 }
 
 /// Whether `callee` is a variant's or a tuple struct's constructor, `Some`.
