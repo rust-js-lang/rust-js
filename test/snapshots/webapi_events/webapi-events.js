@@ -335,4 +335,19 @@ export function resourceErrors() {
     true,
   );
 }
+
+/**
+ * A `toggle`, which no spec fires at a document, but each that fires it
+ * gives a `ToggleEvent`: a capturing listener of the document reads a
+ * details' new state (#1817).
+ */
+export function toggles() {
+  document.addEventListener(
+    "toggle",
+    (e) => {
+      globalThis.record(e.newState === "open" ? 1 : 0);
+    },
+    true,
+  );
+}
 //# sourceMappingURL=webapi-events.js.map

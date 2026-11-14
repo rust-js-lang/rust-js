@@ -1,12 +1,12 @@
 use std::cell::Cell;
 
 use webapi::{document, window};
-use webapi::events::{Click, Error, Keydown};
+use webapi::events::{Click, Error, Keydown, Toggle};
 use js::{PropertyDescriptor, function, object};
 use webapi::{
     AddEventListenerOptions, Event, EventListenerObject, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt,
     EventOrStr, HTMLButtonElement, HTMLImageElement, HTMLLinkElement,
-    KeyboardEvent, MediaQueryList, MediaQueryListEvent, PointerEvent, abort_controller, listener,
+    KeyboardEvent, MediaQueryList, MediaQueryListEvent, PointerEvent, ToggleEvent, abort_controller, listener,
 };
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
@@ -335,4 +335,11 @@ pub fn on_removed(button: &HTMLButtonElement) {
 /// event handler it has, `onerror` (#1817).
 pub fn resource_errors() {
     document.add_event_listener(Error, |_: &Event| record(7), Some(&true));
+}
+
+/// A `toggle`, which no spec fires at a document, but each that fires it
+/// gives a `ToggleEvent`: a capturing listener of the document reads a
+/// details' new state (#1817).
+pub fn toggles() {
+    document.add_event_listener(Toggle, |e: &ToggleEvent| record(if e.new_state() == "open" { 1 } else { 0 }), Some(&true));
 }

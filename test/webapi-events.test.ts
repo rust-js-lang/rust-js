@@ -79,6 +79,9 @@ test("event methods keep target types and retained callback lifetimes", () => {
   for (const [body, diagnostic] of [
     ['button.add_event_listener(Keydown, |e: &KeyboardEvent| { let _ = e.client_x(); }, None);', 'no method named `client_x`'],
     ['button.add_event_listener(Message, |_: &Event| {}, None);', 'Listen<webapi::events::Message>'],
+    // A `progress` an XHR fires is a `ProgressEvent`, a media element's an
+    // `Event`: of a button, which no spec fires it at, it's `Event` (#1817).
+    ['button.add_event_listener(webapi::events::Progress, |_: &webapi::ProgressEvent| {}, None);', "expected closure signature `fn(&'static webapi::Event) -> _`"],
     // A listener's parameter says its event: the union a listener is,
     // a closure or one JS gave, gives rustc no closure signature (rd185).
     ['button.add_event_listener(Click, |e| record(e.client_x() as i32), None);', 'type annotations needed'],
@@ -157,8 +160,9 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
 // A target listens for each name of an event handler it has, as
 // TypeScript's maps are made of them (#1817): a document's `onerror`, so a
 // capturing listener of the document catches an image's error, which
-// doesn't bubble, on its way down.
-test("a document's capturing listener catches an image's error in Chromium", async () => {
+// doesn't bubble, on its way down; its `ontoggle` a details' toggle, a
+// `ToggleEvent` as every spec that fires one says.
+test("a document's capturing listeners catch an image's error and a details' toggle in Chromium", async () => {
   const js = compileEvents();
   expect(js).toContain('export function resourceErrors() {\n  document.addEventListener(\n    "error",\n    () => {\n      globalThis.record(7);\n    },\n    true,\n  );\n}');
   const browser = await chromium.launch({ headless: true });
@@ -177,10 +181,18 @@ test("a document's capturing listener catches an image's error in Chromium", asy
         image.onerror = resolve;
         image.src = "data:image/png;base64,AAAA";
       });
+      // And a details' toggle, of its new state.
+      program.toggles();
+      const details = document.createElement("details");
+      document.body.append(details);
+      await new Promise((resolve) => {
+        details.ontoggle = resolve;
+        details.open = true;
+      });
       URL.revokeObjectURL(url);
       return values;
     }, js);
-    expect(result).toEqual([7]);
+    expect(result).toEqual([7, 1]);
   } finally {
     await browser.close();
   }

@@ -201,11 +201,25 @@ a listener of a name always take the same event.
 
 Of TypeScript 7.1's maps: 146 of the 241 targets lacked a name
 TypeScript's map has; none do now. 4,707 more `Listen` impls, 19,530 on
-242 targets, `XMLHttpRequestEventTarget` new, of its handlers alone. A
-name given only by a handler is `Event` where TypeScript says more,
-`toggle`'s `ToggleEvent`: sound, as no spec says what fires it here.
+242 targets, `XMLHttpRequestEventTarget` new, of its handlers alone.
 Where specs give `Event` and UI Events `FocusEvent`, `focus` and `blur`
 stay `Event` (#1823).
 
-What holds it: webapi-events' document capturing an image's error in
-Chromium.
+**Its fallback** (amended): of a name no spec fires at the target, the
+event is the one interface every spec that fires the name gives, else
+`Event`: the same trust as the rule's, a name's event as specs fire it,
+narrowed only where every source agrees. A `toggle` is a `ToggleEvent`,
+a document's and a `<div>`'s alike, and its `ontoggle` takes one; a
+`progress` stays `Event`, an XHR's `ProgressEvent` and a media element's
+`Event`. Of TypeScript 7.1's maps after it: 64 of 242 targets equal, 15
+of none, 163 differing, none by a name it lacks; 150 by a type, each
+Rust's as its specs fire it: `error`, `abort` and `resize` of an
+element `Event` (TypeScript's `ErrorEvent` and `UIEvent`, not an
+`<img>`'s), `progress` `Event`, `command` `CommandEvent` and
+`pointerrawupdate` `PointerEvent` (TypeScript's `Event`), `focus` and
+`blur` `Event` (#1823), and a body's `message` and `messageerror`
+`Event`; and 13 by names alone TypeScript's map lacks.
+
+What holds it: webapi-events' document capturing an image's error and a
+details' toggle, reading its `new_state`, in Chromium, and a button's
+`progress` listener of a `ProgressEvent` refused.

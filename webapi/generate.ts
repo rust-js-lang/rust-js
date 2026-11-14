@@ -2066,7 +2066,10 @@ const nameType = (name: string) =>
 // Where each event is fired, or bubbles to, by target and name: its interfaces.
 type WebrefEvent = { type: string; interface: string; targets?: { target: string; bubblingPath?: string[] }[] };
 const fired = new Map<string, Map<string, Set<string>>>();
+// Each name's interfaces wherever it's fired.
+const firedAnywhere = new Map<string, Set<string>>();
 for (const e of Object.values(await webrefEvents.listAll()) as WebrefEvent[]) {
+  firedAnywhere.set(e.type, (firedAnywhere.get(e.type) ?? new Set<string>()).add(bound(e.interface)));
   for (const t of e.targets ?? []) {
     for (const at of [t.target, ...(t.bubblingPath ?? [])]) {
       const names = fired.get(at) ?? new Map<string, Set<string>>();
@@ -2093,12 +2096,16 @@ for (const name of INTERFACES) {
   // An event handler it has, `onended` of every element's
   // `GlobalEventHandlers`, is a name it listens for too, as TypeScript's
   // maps are made of them (#1817): `document.add_event_listener(Error, ..,
-  // capture)`, where `set_onerror` sets one. Its event the one its `onX`
-  // is given, which is `Event` where no spec fires it at this target.
+  // capture)`, where `set_onerror` sets one. Where no spec fires it at this
+  // target, its event is the one interface every spec that fires the name
+  // gives, a `toggle`'s `ToggleEvent`, else `Event`, where they differ, a
+  // `progress` an XHR's `ProgressEvent` and a media element's `Event`.
   for (const level of [name, ...chain(name)]) {
     for (const { member: m } of interfaces.get(level)?.members ?? []) {
       if (m.type !== "attribute" || !m.name?.startsWith("on") || !HANDLERS[m.idlType!.idlType as string]) continue;
-      if (!map.has(m.name.slice(2))) map.set(m.name.slice(2), "Event");
+      const event = m.name.slice(2);
+      const given = firedAnywhere.get(event);
+      if (!map.has(event)) map.set(event, given?.size === 1 ? [...given][0] : "Event");
     }
   }
   if (map.size > 0) listens.set(name, map);

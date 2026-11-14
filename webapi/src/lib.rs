@@ -3662,7 +3662,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -3670,7 +3670,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -3782,7 +3782,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent)> {
         unreachable!()
     }
 
@@ -3790,7 +3790,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "set oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<CommandEvent>>) {
         unreachable!()
     }
 
@@ -4622,7 +4622,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -4630,7 +4630,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -7195,7 +7195,7 @@ impl HTMLElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -7203,7 +7203,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -12714,7 +12714,7 @@ impl HTMLBodyElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -12722,14 +12722,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -12737,7 +12737,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
@@ -12774,7 +12774,7 @@ impl HTMLBodyElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>> {
         unreachable!()
     }
 
@@ -12782,14 +12782,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<Event>>) {
+    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<BeforeUnloadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&HashChangeEvent)> {
         unreachable!()
     }
 
@@ -12797,7 +12797,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<HashChangeEvent>>) {
         unreachable!()
     }
 
@@ -12879,7 +12879,7 @@ impl HTMLBodyElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -12887,14 +12887,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&PageRevealEvent)> {
         unreachable!()
     }
 
@@ -12902,14 +12902,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<PageRevealEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -12917,14 +12917,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&PageSwapEvent)> {
         unreachable!()
     }
 
@@ -12932,14 +12932,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<PageSwapEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&PopStateEvent)> {
         unreachable!()
     }
 
@@ -12947,14 +12947,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<PopStateEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -12962,14 +12962,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&StorageEvent)> {
         unreachable!()
     }
 
@@ -12977,14 +12977,14 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<StorageEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -12992,7 +12992,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
@@ -17221,7 +17221,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -17229,7 +17229,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -17341,7 +17341,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent)> {
         unreachable!()
     }
 
@@ -17349,7 +17349,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "set oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<CommandEvent>>) {
         unreachable!()
     }
 
@@ -18181,7 +18181,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -18189,7 +18189,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -29922,7 +29922,7 @@ impl SVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -29930,7 +29930,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -30042,7 +30042,7 @@ impl SVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent)> {
         unreachable!()
     }
 
@@ -30050,7 +30050,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<CommandEvent>>) {
         unreachable!()
     }
 
@@ -30882,7 +30882,7 @@ impl SVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -30890,7 +30890,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -31708,7 +31708,7 @@ impl SVGSVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -31716,14 +31716,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -31731,7 +31731,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
@@ -31768,7 +31768,7 @@ impl SVGSVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>> {
         unreachable!()
     }
 
@@ -31776,14 +31776,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<Event>>) {
+    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<BeforeUnloadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&HashChangeEvent)> {
         unreachable!()
     }
 
@@ -31791,7 +31791,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<HashChangeEvent>>) {
         unreachable!()
     }
 
@@ -31873,7 +31873,7 @@ impl SVGSVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -31881,14 +31881,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&PageRevealEvent)> {
         unreachable!()
     }
 
@@ -31896,14 +31896,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<PageRevealEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -31911,14 +31911,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&PageSwapEvent)> {
         unreachable!()
     }
 
@@ -31926,14 +31926,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<PageSwapEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&PopStateEvent)> {
         unreachable!()
     }
 
@@ -31941,14 +31941,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<PopStateEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -31956,14 +31956,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&StorageEvent)> {
         unreachable!()
     }
 
@@ -31971,14 +31971,14 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<StorageEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -31986,7 +31986,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
@@ -52998,7 +52998,7 @@ impl HTMLFrameSetElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -53006,14 +53006,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepadconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent)> {
         unreachable!()
     }
 
@@ -53021,7 +53021,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ongamepaddisconnected(&self, value: Option<&dyn IntoEventHandler<GamepadEvent>>) {
         unreachable!()
     }
 
@@ -53058,7 +53058,7 @@ impl HTMLFrameSetElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>> {
         unreachable!()
     }
 
@@ -53066,14 +53066,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<Event>>) {
+    pub fn set_onbeforeunload(&self, value: Option<&dyn IntoOnBeforeUnloadEventHandler<BeforeUnloadEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&HashChangeEvent)> {
         unreachable!()
     }
 
@@ -53081,7 +53081,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onhashchange")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onhashchange(&self, value: Option<&dyn IntoEventHandler<HashChangeEvent>>) {
         unreachable!()
     }
 
@@ -53163,7 +53163,7 @@ impl HTMLFrameSetElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -53171,14 +53171,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagehide")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagehide(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&PageRevealEvent)> {
         unreachable!()
     }
 
@@ -53186,14 +53186,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpagereveal")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpagereveal(&self, value: Option<&dyn IntoEventHandler<PageRevealEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&PageTransitionEvent)> {
         unreachable!()
     }
 
@@ -53201,14 +53201,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageshow")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageshow(&self, value: Option<&dyn IntoEventHandler<PageTransitionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&PageSwapEvent)> {
         unreachable!()
     }
 
@@ -53216,14 +53216,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpageswap")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpageswap(&self, value: Option<&dyn IntoEventHandler<PageSwapEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&PopStateEvent)> {
         unreachable!()
     }
 
@@ -53231,14 +53231,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onpopstate")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onpopstate(&self, value: Option<&dyn IntoEventHandler<PopStateEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -53246,14 +53246,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onrejectionhandled")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onrejectionhandled(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&StorageEvent)> {
         unreachable!()
     }
 
@@ -53261,14 +53261,14 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onstorage")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onstorage(&self, value: Option<&dyn IntoEventHandler<StorageEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent)> {
         unreachable!()
     }
 
@@ -53276,7 +53276,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onunhandledrejection")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onunhandledrejection(&self, value: Option<&dyn IntoEventHandler<PromiseRejectionEvent>>) {
         unreachable!()
     }
 
@@ -56421,7 +56421,7 @@ impl MathMLElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -56429,7 +56429,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set onbeforetoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onbeforetoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -56541,7 +56541,7 @@ impl MathMLElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent)> {
         unreachable!()
     }
 
@@ -56549,7 +56549,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set oncommand")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_oncommand(&self, value: Option<&dyn IntoEventHandler<CommandEvent>>) {
         unreachable!()
     }
 
@@ -57381,7 +57381,7 @@ impl MathMLElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent)> {
         unreachable!()
     }
 
@@ -57389,7 +57389,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontoggle")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontoggle(&self, value: Option<&dyn IntoEventHandler<ToggleEvent>>) {
         unreachable!()
     }
 
@@ -82774,7 +82774,7 @@ impl XMLHttpRequestEventTarget {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/ontimeout)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeout")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn ontimeout(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn ontimeout(&self) -> Option<&'static dyn Fn(&ProgressEvent)> {
         unreachable!()
     }
 
@@ -82782,14 +82782,14 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "set ontimeout")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_ontimeout(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_ontimeout(&self, value: Option<&dyn IntoEventHandler<ProgressEvent>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadend")]
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub fn onloadend(&self) -> Option<&'static dyn Fn(&Event)> {
+    pub fn onloadend(&self) -> Option<&'static dyn Fn(&ProgressEvent)> {
         unreachable!()
     }
 
@@ -82797,7 +82797,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "set onloadend")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn set_onloadend(&self, value: Option<&dyn IntoEventHandler<Event>>) {
+    pub fn set_onloadend(&self, value: Option<&dyn IntoEventHandler<ProgressEvent>>) {
         unreachable!()
     }
 
@@ -109526,7 +109526,7 @@ impl Listen<events::Autofill> for Document { type Event = Event; }
 impl Listen<events::Auxclick> for Document { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for Document { type Event = InputEvent; }
 impl Listen<events::Beforematch> for Document { type Event = Event; }
-impl Listen<events::Beforetoggle> for Document { type Event = Event; }
+impl Listen<events::Beforetoggle> for Document { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for Document { type Event = Event; }
 impl Listen<events::Blur> for Document { type Event = Event; }
 impl Listen<events::Cancel> for Document { type Event = Event; }
@@ -109535,7 +109535,7 @@ impl Listen<events::Canplaythrough> for Document { type Event = Event; }
 impl Listen<events::Change> for Document { type Event = Event; }
 impl Listen<events::Click> for Document { type Event = PointerEvent; }
 impl Listen<events::Close> for Document { type Event = Event; }
-impl Listen<events::Command> for Document { type Event = Event; }
+impl Listen<events::Command> for Document { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for Document { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for Document { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for Document { type Event = CompositionEvent; }
@@ -109626,7 +109626,7 @@ impl Listen<events::Submit> for Document { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for Document { type Event = Event; }
 impl Listen<events::TextInput> for Document { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for Document { type Event = Event; }
-impl Listen<events::Toggle> for Document { type Event = Event; }
+impl Listen<events::Toggle> for Document { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for Document { type Event = TouchEvent; }
 impl Listen<events::Touchend> for Document { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for Document { type Event = TouchEvent; }
@@ -109912,7 +109912,7 @@ impl Listen<events::Submit> for HTMLElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLElement { type Event = TouchEvent; }
@@ -110037,7 +110037,7 @@ impl Listen<events::Submit> for HTMLAnchorElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLAnchorElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLAnchorElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLAnchorElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLAnchorElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLAnchorElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLAnchorElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLAnchorElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLAnchorElement { type Event = TouchEvent; }
@@ -110162,7 +110162,7 @@ impl Listen<events::Submit> for HTMLButtonElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLButtonElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLButtonElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLButtonElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLButtonElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLButtonElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLButtonElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLButtonElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLButtonElement { type Event = TouchEvent; }
@@ -110287,7 +110287,7 @@ impl Listen<events::Submit> for HTMLDivElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLDivElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDivElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDivElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDivElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDivElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDivElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDivElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDivElement { type Event = TouchEvent; }
@@ -110412,7 +110412,7 @@ impl Listen<events::Submit> for HTMLFormElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLFormElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLFormElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLFormElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLFormElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLFormElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLFormElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLFormElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLFormElement { type Event = TouchEvent; }
@@ -110537,7 +110537,7 @@ impl Listen<events::Submit> for HTMLHeadingElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLHeadingElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLHeadingElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLHeadingElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLHeadingElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLHeadingElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLHeadingElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLHeadingElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLHeadingElement { type Event = TouchEvent; }
@@ -110662,7 +110662,7 @@ impl Listen<events::Submit> for HTMLImageElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLImageElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLImageElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLImageElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLImageElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLImageElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLImageElement { type Event = TouchEvent; }
@@ -110787,7 +110787,7 @@ impl Listen<events::Submit> for HTMLInputElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLInputElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLInputElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLInputElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLInputElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLInputElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLInputElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLInputElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLInputElement { type Event = TouchEvent; }
@@ -110912,7 +110912,7 @@ impl Listen<events::Submit> for HTMLLabelElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLLabelElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLLabelElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLLabelElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLLabelElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLLabelElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLLabelElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLLabelElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLLabelElement { type Event = TouchEvent; }
@@ -111037,7 +111037,7 @@ impl Listen<events::Submit> for HTMLLIElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLLIElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLLIElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLLIElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLLIElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLLIElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLLIElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLLIElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLLIElement { type Event = TouchEvent; }
@@ -111162,7 +111162,7 @@ impl Listen<events::Submit> for HTMLOListElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLOListElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLOListElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLOListElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLOListElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLOListElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLOListElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLOListElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLOListElement { type Event = TouchEvent; }
@@ -111287,7 +111287,7 @@ impl Listen<events::Submit> for HTMLOptionElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLOptionElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLOptionElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLOptionElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLOptionElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLOptionElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLOptionElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLOptionElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLOptionElement { type Event = TouchEvent; }
@@ -111412,7 +111412,7 @@ impl Listen<events::Submit> for HTMLOutputElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLOutputElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLOutputElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLOutputElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLOutputElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLOutputElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLOutputElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLOutputElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLOutputElement { type Event = TouchEvent; }
@@ -111537,7 +111537,7 @@ impl Listen<events::Submit> for HTMLParagraphElement { type Event = SubmitEvent;
 impl Listen<events::Suspend> for HTMLParagraphElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLParagraphElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLParagraphElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLParagraphElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLParagraphElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLParagraphElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLParagraphElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLParagraphElement { type Event = TouchEvent; }
@@ -111662,7 +111662,7 @@ impl Listen<events::Submit> for HTMLSelectElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLSelectElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLSelectElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLSelectElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLSelectElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLSelectElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLSelectElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLSelectElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLSelectElement { type Event = TouchEvent; }
@@ -111787,7 +111787,7 @@ impl Listen<events::Submit> for HTMLSpanElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLSpanElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLSpanElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLSpanElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLSpanElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLSpanElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLSpanElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLSpanElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLSpanElement { type Event = TouchEvent; }
@@ -111912,7 +111912,7 @@ impl Listen<events::Submit> for HTMLTextAreaElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLTextAreaElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTextAreaElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTextAreaElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTextAreaElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTextAreaElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTextAreaElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTextAreaElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTextAreaElement { type Event = TouchEvent; }
@@ -112037,7 +112037,7 @@ impl Listen<events::Submit> for HTMLUListElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLUListElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLUListElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLUListElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLUListElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLUListElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLUListElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLUListElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLUListElement { type Event = TouchEvent; }
@@ -112162,7 +112162,7 @@ impl Listen<events::Submit> for HTMLTableElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLTableElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableElement { type Event = TouchEvent; }
@@ -112287,7 +112287,7 @@ impl Listen<events::Submit> for HTMLTableSectionElement { type Event = SubmitEve
 impl Listen<events::Suspend> for HTMLTableSectionElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableSectionElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableSectionElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableSectionElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableSectionElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableSectionElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableSectionElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableSectionElement { type Event = TouchEvent; }
@@ -112412,7 +112412,7 @@ impl Listen<events::Submit> for HTMLTableRowElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLTableRowElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableRowElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableRowElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableRowElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableRowElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableRowElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableRowElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableRowElement { type Event = TouchEvent; }
@@ -112537,7 +112537,7 @@ impl Listen<events::Submit> for HTMLTableCellElement { type Event = SubmitEvent;
 impl Listen<events::Suspend> for HTMLTableCellElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableCellElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableCellElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableCellElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableCellElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableCellElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableCellElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableCellElement { type Event = TouchEvent; }
@@ -112662,7 +112662,7 @@ impl Listen<events::Submit> for HTMLIFrameElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLIFrameElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLIFrameElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLIFrameElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLIFrameElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLIFrameElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLIFrameElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLIFrameElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLIFrameElement { type Event = TouchEvent; }
@@ -112787,7 +112787,7 @@ impl Listen<events::Submit> for HTMLCanvasElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLCanvasElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLCanvasElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLCanvasElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLCanvasElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLCanvasElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLCanvasElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLCanvasElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLCanvasElement { type Event = TouchEvent; }
@@ -113040,7 +113040,7 @@ impl Listen<events::Submit> for HTMLHtmlElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLHtmlElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLHtmlElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLHtmlElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLHtmlElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLHtmlElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLHtmlElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLHtmlElement { type Event = TouchEvent; }
@@ -113165,7 +113165,7 @@ impl Listen<events::Submit> for HTMLHeadElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLHeadElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLHeadElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLHeadElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLHeadElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLHeadElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLHeadElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLHeadElement { type Event = TouchEvent; }
@@ -113290,7 +113290,7 @@ impl Listen<events::Submit> for HTMLTitleElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLTitleElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTitleElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTitleElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTitleElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTitleElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTitleElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTitleElement { type Event = TouchEvent; }
@@ -113415,7 +113415,7 @@ impl Listen<events::Submit> for HTMLBaseElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLBaseElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLBaseElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLBaseElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLBaseElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLBaseElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLBaseElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLBaseElement { type Event = TouchEvent; }
@@ -113540,7 +113540,7 @@ impl Listen<events::Submit> for HTMLLinkElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLLinkElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLLinkElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLLinkElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLLinkElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLLinkElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLLinkElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLLinkElement { type Event = TouchEvent; }
@@ -113665,7 +113665,7 @@ impl Listen<events::Submit> for HTMLMetaElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMetaElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMetaElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMetaElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMetaElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMetaElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMetaElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMetaElement { type Event = TouchEvent; }
@@ -113790,7 +113790,7 @@ impl Listen<events::Submit> for HTMLStyleElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLStyleElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLStyleElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLStyleElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLStyleElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLStyleElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLStyleElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLStyleElement { type Event = TouchEvent; }
@@ -113823,7 +113823,7 @@ impl Listen<events::Beforeinput> for HTMLBodyElement { type Event = InputEvent; 
 impl Listen<events::Beforematch> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Beforeprint> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Beforetoggle> for HTMLBodyElement { type Event = ToggleEvent; }
-impl Listen<events::Beforeunload> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Beforeunload> for HTMLBodyElement { type Event = BeforeUnloadEvent; }
 impl Listen<events::Beforexrselect> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Blur> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Cancel> for HTMLBodyElement { type Event = Event; }
@@ -113863,10 +113863,10 @@ impl Listen<events::Focusout> for HTMLBodyElement { type Event = FocusEvent; }
 impl Listen<events::Formdata> for HTMLBodyElement { type Event = FormDataEvent; }
 impl Listen<events::Fullscreenchange> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Fullscreenerror> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Gamepadconnected> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Gamepaddisconnected> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Gamepadconnected> for HTMLBodyElement { type Event = GamepadEvent; }
+impl Listen<events::Gamepaddisconnected> for HTMLBodyElement { type Event = GamepadEvent; }
 impl Listen<events::Gotpointercapture> for HTMLBodyElement { type Event = PointerEvent; }
-impl Listen<events::Hashchange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Hashchange> for HTMLBodyElement { type Event = HashChangeEvent; }
 impl Listen<events::Input> for HTMLBodyElement { type Event = InputEvent; }
 impl Listen<events::Installresult> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Invalid> for HTMLBodyElement { type Event = Event; }
@@ -113894,10 +113894,10 @@ impl Listen<events::Navnotarget> for HTMLBodyElement { type Event = UIEvent; }
 impl Listen<events::Offline> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Online> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Orientationchange> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Pagehide> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Pagereveal> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Pageshow> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Pageswap> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Pagehide> for HTMLBodyElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pagereveal> for HTMLBodyElement { type Event = PageRevealEvent; }
+impl Listen<events::Pageshow> for HTMLBodyElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pageswap> for HTMLBodyElement { type Event = PageSwapEvent; }
 impl Listen<events::Paste> for HTMLBodyElement { type Event = ClipboardEvent; }
 impl Listen<events::Pause> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Play> for HTMLBodyElement { type Event = Event; }
@@ -113911,12 +113911,12 @@ impl Listen<events::Pointerout> for HTMLBodyElement { type Event = PointerEvent;
 impl Listen<events::Pointerover> for HTMLBodyElement { type Event = PointerEvent; }
 impl Listen<events::Pointerrawupdate> for HTMLBodyElement { type Event = PointerEvent; }
 impl Listen<events::Pointerup> for HTMLBodyElement { type Event = PointerEvent; }
-impl Listen<events::Popstate> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Popstate> for HTMLBodyElement { type Event = PopStateEvent; }
 impl Listen<events::Progress> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Promptaction> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Promptdismiss> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Ratechange> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Rejectionhandled> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Rejectionhandled> for HTMLBodyElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Reset> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Resize> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Scroll> for HTMLBodyElement { type Event = Event; }
@@ -113929,12 +113929,12 @@ impl Listen<events::Selectionchange> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Selectstart> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Slotchange> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Stalled> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Storage> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Storage> for HTMLBodyElement { type Event = StorageEvent; }
 impl Listen<events::Submit> for HTMLBodyElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLBodyElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLBodyElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLBodyElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLBodyElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLBodyElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLBodyElement { type Event = TouchEvent; }
@@ -113943,7 +113943,7 @@ impl Listen<events::Transitioncancel> for HTMLBodyElement { type Event = Transit
 impl Listen<events::Transitionend> for HTMLBodyElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionrun> for HTMLBodyElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionstart> for HTMLBodyElement { type Event = TransitionEvent; }
-impl Listen<events::Unhandledrejection> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Unhandledrejection> for HTMLBodyElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Unload> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Validationstatuschange> for HTMLBodyElement { type Event = Event; }
 impl Listen<events::Volumechange> for HTMLBodyElement { type Event = Event; }
@@ -114060,7 +114060,7 @@ impl Listen<events::Submit> for HTMLHRElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLHRElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLHRElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLHRElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLHRElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLHRElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLHRElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLHRElement { type Event = TouchEvent; }
@@ -114185,7 +114185,7 @@ impl Listen<events::Submit> for HTMLPreElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLPreElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLPreElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLPreElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLPreElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLPreElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLPreElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLPreElement { type Event = TouchEvent; }
@@ -114310,7 +114310,7 @@ impl Listen<events::Submit> for HTMLQuoteElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLQuoteElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLQuoteElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLQuoteElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLQuoteElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLQuoteElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLQuoteElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLQuoteElement { type Event = TouchEvent; }
@@ -114435,7 +114435,7 @@ impl Listen<events::Submit> for HTMLMenuElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMenuElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMenuElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMenuElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMenuElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMenuElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMenuElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMenuElement { type Event = TouchEvent; }
@@ -114560,7 +114560,7 @@ impl Listen<events::Submit> for HTMLDListElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLDListElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDListElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDListElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDListElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDListElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDListElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDListElement { type Event = TouchEvent; }
@@ -114685,7 +114685,7 @@ impl Listen<events::Submit> for HTMLDataElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLDataElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDataElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDataElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDataElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDataElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDataElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDataElement { type Event = TouchEvent; }
@@ -114810,7 +114810,7 @@ impl Listen<events::Submit> for HTMLTimeElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLTimeElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTimeElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTimeElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTimeElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTimeElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTimeElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTimeElement { type Event = TouchEvent; }
@@ -114935,7 +114935,7 @@ impl Listen<events::Submit> for HTMLBRElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLBRElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLBRElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLBRElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLBRElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLBRElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLBRElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLBRElement { type Event = TouchEvent; }
@@ -115060,7 +115060,7 @@ impl Listen<events::Submit> for HTMLModElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLModElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLModElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLModElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLModElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLModElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLModElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLModElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLModElement { type Event = TouchEvent; }
@@ -115185,7 +115185,7 @@ impl Listen<events::Submit> for HTMLPictureElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLPictureElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLPictureElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLPictureElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLPictureElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLPictureElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLPictureElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLPictureElement { type Event = TouchEvent; }
@@ -115310,7 +115310,7 @@ impl Listen<events::Submit> for HTMLSourceElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLSourceElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLSourceElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLSourceElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLSourceElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLSourceElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLSourceElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLSourceElement { type Event = TouchEvent; }
@@ -115435,7 +115435,7 @@ impl Listen<events::Submit> for HTMLEmbedElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLEmbedElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLEmbedElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLEmbedElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLEmbedElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLEmbedElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLEmbedElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLEmbedElement { type Event = TouchEvent; }
@@ -115560,7 +115560,7 @@ impl Listen<events::Submit> for HTMLObjectElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLObjectElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLObjectElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLObjectElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLObjectElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLObjectElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLObjectElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLObjectElement { type Event = TouchEvent; }
@@ -115686,7 +115686,7 @@ impl Listen<events::Submit> for HTMLVideoElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLVideoElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLVideoElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLVideoElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLVideoElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLVideoElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLVideoElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLVideoElement { type Event = TouchEvent; }
@@ -115813,7 +115813,7 @@ impl Listen<events::Submit> for HTMLAudioElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLAudioElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLAudioElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLAudioElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLAudioElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLAudioElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLAudioElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLAudioElement { type Event = TouchEvent; }
@@ -115939,7 +115939,7 @@ impl Listen<events::Submit> for HTMLTrackElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLTrackElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTrackElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTrackElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTrackElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTrackElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTrackElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTrackElement { type Event = TouchEvent; }
@@ -116065,7 +116065,7 @@ impl Listen<events::Submit> for HTMLMediaElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMediaElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMediaElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMediaElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMediaElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMediaElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMediaElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMediaElement { type Event = TouchEvent; }
@@ -116191,7 +116191,7 @@ impl Listen<events::Submit> for HTMLMapElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMapElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMapElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMapElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMapElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMapElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMapElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMapElement { type Event = TouchEvent; }
@@ -116316,7 +116316,7 @@ impl Listen<events::Submit> for HTMLAreaElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLAreaElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLAreaElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLAreaElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLAreaElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLAreaElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLAreaElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLAreaElement { type Event = TouchEvent; }
@@ -116441,7 +116441,7 @@ impl Listen<events::Submit> for HTMLTableCaptionElement { type Event = SubmitEve
 impl Listen<events::Suspend> for HTMLTableCaptionElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableCaptionElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableCaptionElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableCaptionElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableCaptionElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableCaptionElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableCaptionElement { type Event = TouchEvent; }
@@ -116566,7 +116566,7 @@ impl Listen<events::Submit> for HTMLTableColElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLTableColElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTableColElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTableColElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTableColElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTableColElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTableColElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTableColElement { type Event = TouchEvent; }
@@ -116691,7 +116691,7 @@ impl Listen<events::Submit> for HTMLDataListElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLDataListElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDataListElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDataListElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDataListElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDataListElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDataListElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDataListElement { type Event = TouchEvent; }
@@ -116816,7 +116816,7 @@ impl Listen<events::Submit> for HTMLOptGroupElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLOptGroupElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLOptGroupElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLOptGroupElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLOptGroupElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLOptGroupElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLOptGroupElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLOptGroupElement { type Event = TouchEvent; }
@@ -116941,7 +116941,7 @@ impl Listen<events::Submit> for HTMLProgressElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLProgressElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLProgressElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLProgressElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLProgressElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLProgressElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLProgressElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLProgressElement { type Event = TouchEvent; }
@@ -117066,7 +117066,7 @@ impl Listen<events::Submit> for HTMLMeterElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMeterElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMeterElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMeterElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMeterElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMeterElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMeterElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMeterElement { type Event = TouchEvent; }
@@ -117191,7 +117191,7 @@ impl Listen<events::Submit> for HTMLFieldSetElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLFieldSetElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLFieldSetElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLFieldSetElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLFieldSetElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLFieldSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLFieldSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLFieldSetElement { type Event = TouchEvent; }
@@ -117316,7 +117316,7 @@ impl Listen<events::Submit> for HTMLLegendElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLLegendElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLLegendElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLLegendElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLLegendElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLLegendElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLLegendElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLLegendElement { type Event = TouchEvent; }
@@ -117441,7 +117441,7 @@ impl Listen<events::Submit> for HTMLSelectedContentElement { type Event = Submit
 impl Listen<events::Suspend> for HTMLSelectedContentElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLSelectedContentElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLSelectedContentElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLSelectedContentElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLSelectedContentElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLSelectedContentElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLSelectedContentElement { type Event = TouchEvent; }
@@ -117566,7 +117566,7 @@ impl Listen<events::Submit> for HTMLDialogElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLDialogElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDialogElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDialogElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDialogElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDialogElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDialogElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDialogElement { type Event = TouchEvent; }
@@ -117691,7 +117691,7 @@ impl Listen<events::Submit> for HTMLScriptElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLScriptElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLScriptElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLScriptElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLScriptElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLScriptElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLScriptElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLScriptElement { type Event = TouchEvent; }
@@ -117816,7 +117816,7 @@ impl Listen<events::Submit> for HTMLTemplateElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for HTMLTemplateElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLTemplateElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLTemplateElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLTemplateElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLTemplateElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLTemplateElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLTemplateElement { type Event = TouchEvent; }
@@ -117941,7 +117941,7 @@ impl Listen<events::Submit> for HTMLSlotElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLSlotElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLSlotElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLSlotElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLSlotElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLSlotElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLSlotElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLSlotElement { type Event = TouchEvent; }
@@ -117977,7 +117977,7 @@ impl Listen<events::Beforeinput> for Window { type Event = InputEvent; }
 impl Listen<events::Beforeinstallprompt> for Window { type Event = Event; }
 impl Listen<events::Beforematch> for Window { type Event = Event; }
 impl Listen<events::Beforeprint> for Window { type Event = Event; }
-impl Listen<events::Beforetoggle> for Window { type Event = Event; }
+impl Listen<events::Beforetoggle> for Window { type Event = ToggleEvent; }
 impl Listen<events::Beforeunload> for Window { type Event = BeforeUnloadEvent; }
 impl Listen<events::Beforexrselect> for Window { type Event = Event; }
 impl Listen<events::Blur> for Window { type Event = Event; }
@@ -117988,7 +117988,7 @@ impl Listen<events::Change> for Window { type Event = Event; }
 impl Listen<events::Click> for Window { type Event = PointerEvent; }
 impl Listen<events::Clipboardchange> for Window { type Event = Event; }
 impl Listen<events::Close> for Window { type Event = Event; }
-impl Listen<events::Command> for Window { type Event = Event; }
+impl Listen<events::Command> for Window { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for Window { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for Window { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for Window { type Event = CompositionEvent; }
@@ -118093,7 +118093,7 @@ impl Listen<events::Submit> for Window { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for Window { type Event = Event; }
 impl Listen<events::TextInput> for Window { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for Window { type Event = Event; }
-impl Listen<events::Toggle> for Window { type Event = Event; }
+impl Listen<events::Toggle> for Window { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for Window { type Event = TouchEvent; }
 impl Listen<events::Touchend> for Window { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for Window { type Event = TouchEvent; }
@@ -118129,7 +118129,7 @@ impl Listen<events::Animationstart> for SVGElement { type Event = AnimationEvent
 impl Listen<events::Auxclick> for SVGElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGElement { type Event = Event; }
 impl Listen<events::Blur> for SVGElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGElement { type Event = Event; }
@@ -118138,7 +118138,7 @@ impl Listen<events::Canplaythrough> for SVGElement { type Event = Event; }
 impl Listen<events::Change> for SVGElement { type Event = Event; }
 impl Listen<events::Click> for SVGElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGElement { type Event = Event; }
-impl Listen<events::Command> for SVGElement { type Event = Event; }
+impl Listen<events::Command> for SVGElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGElement { type Event = CompositionEvent; }
@@ -118224,7 +118224,7 @@ impl Listen<events::Submit> for SVGElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGElement { type Event = TouchEvent; }
@@ -118254,7 +118254,7 @@ impl Listen<events::Animationstart> for SVGGraphicsElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGGraphicsElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGGraphicsElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGGraphicsElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGGraphicsElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGGraphicsElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGGraphicsElement { type Event = Event; }
 impl Listen<events::Blur> for SVGGraphicsElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGGraphicsElement { type Event = Event; }
@@ -118263,7 +118263,7 @@ impl Listen<events::Canplaythrough> for SVGGraphicsElement { type Event = Event;
 impl Listen<events::Change> for SVGGraphicsElement { type Event = Event; }
 impl Listen<events::Click> for SVGGraphicsElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGGraphicsElement { type Event = Event; }
-impl Listen<events::Command> for SVGGraphicsElement { type Event = Event; }
+impl Listen<events::Command> for SVGGraphicsElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGGraphicsElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGGraphicsElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGGraphicsElement { type Event = CompositionEvent; }
@@ -118349,7 +118349,7 @@ impl Listen<events::Submit> for SVGGraphicsElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGGraphicsElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGGraphicsElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGGraphicsElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGGraphicsElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGGraphicsElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGGraphicsElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGGraphicsElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGGraphicsElement { type Event = TouchEvent; }
@@ -118379,7 +118379,7 @@ impl Listen<events::Animationstart> for SVGGeometryElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGGeometryElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGGeometryElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGGeometryElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGGeometryElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGGeometryElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGGeometryElement { type Event = Event; }
 impl Listen<events::Blur> for SVGGeometryElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGGeometryElement { type Event = Event; }
@@ -118388,7 +118388,7 @@ impl Listen<events::Canplaythrough> for SVGGeometryElement { type Event = Event;
 impl Listen<events::Change> for SVGGeometryElement { type Event = Event; }
 impl Listen<events::Click> for SVGGeometryElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGGeometryElement { type Event = Event; }
-impl Listen<events::Command> for SVGGeometryElement { type Event = Event; }
+impl Listen<events::Command> for SVGGeometryElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGGeometryElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGGeometryElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGGeometryElement { type Event = CompositionEvent; }
@@ -118474,7 +118474,7 @@ impl Listen<events::Submit> for SVGGeometryElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGGeometryElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGGeometryElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGGeometryElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGGeometryElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGGeometryElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGGeometryElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGGeometryElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGGeometryElement { type Event = TouchEvent; }
@@ -118506,8 +118506,8 @@ impl Listen<events::Auxclick> for SVGSVGElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGSVGElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Beforeprint> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Beforeunload> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGSVGElement { type Event = ToggleEvent; }
+impl Listen<events::Beforeunload> for SVGSVGElement { type Event = BeforeUnloadEvent; }
 impl Listen<events::Beforexrselect> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Blur> for SVGSVGElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGSVGElement { type Event = Event; }
@@ -118516,7 +118516,7 @@ impl Listen<events::Canplaythrough> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Change> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Click> for SVGSVGElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Command> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Command> for SVGSVGElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGSVGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGSVGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGSVGElement { type Event = CompositionEvent; }
@@ -118547,10 +118547,10 @@ impl Listen<events::Focusout> for SVGSVGElement { type Event = FocusEvent; }
 impl Listen<events::Formdata> for SVGSVGElement { type Event = FormDataEvent; }
 impl Listen<events::Fullscreenchange> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Fullscreenerror> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Gamepadconnected> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Gamepaddisconnected> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Gamepadconnected> for SVGSVGElement { type Event = GamepadEvent; }
+impl Listen<events::Gamepaddisconnected> for SVGSVGElement { type Event = GamepadEvent; }
 impl Listen<events::Gotpointercapture> for SVGSVGElement { type Event = PointerEvent; }
-impl Listen<events::Hashchange> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Hashchange> for SVGSVGElement { type Event = HashChangeEvent; }
 impl Listen<events::Input> for SVGSVGElement { type Event = InputEvent; }
 impl Listen<events::Installresult> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Invalid> for SVGSVGElement { type Event = Event; }
@@ -118577,10 +118577,10 @@ impl Listen<events::Navbeforefocus> for SVGSVGElement { type Event = UIEvent; }
 impl Listen<events::Navnotarget> for SVGSVGElement { type Event = UIEvent; }
 impl Listen<events::Offline> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Online> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Pagehide> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Pagereveal> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Pageshow> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Pageswap> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Pagehide> for SVGSVGElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pagereveal> for SVGSVGElement { type Event = PageRevealEvent; }
+impl Listen<events::Pageshow> for SVGSVGElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pageswap> for SVGSVGElement { type Event = PageSwapEvent; }
 impl Listen<events::Paste> for SVGSVGElement { type Event = ClipboardEvent; }
 impl Listen<events::Pause> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Play> for SVGSVGElement { type Event = Event; }
@@ -118594,12 +118594,12 @@ impl Listen<events::Pointerout> for SVGSVGElement { type Event = PointerEvent; }
 impl Listen<events::Pointerover> for SVGSVGElement { type Event = PointerEvent; }
 impl Listen<events::Pointerrawupdate> for SVGSVGElement { type Event = PointerEvent; }
 impl Listen<events::Pointerup> for SVGSVGElement { type Event = PointerEvent; }
-impl Listen<events::Popstate> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Popstate> for SVGSVGElement { type Event = PopStateEvent; }
 impl Listen<events::Progress> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Promptaction> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Promptdismiss> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Ratechange> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Rejectionhandled> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Rejectionhandled> for SVGSVGElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Reset> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Resize> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Scroll> for SVGSVGElement { type Event = Event; }
@@ -118612,12 +118612,12 @@ impl Listen<events::Selectionchange> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Selectstart> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Slotchange> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Stalled> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Storage> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Storage> for SVGSVGElement { type Event = StorageEvent; }
 impl Listen<events::Submit> for SVGSVGElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGSVGElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGSVGElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGSVGElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGSVGElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGSVGElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGSVGElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGSVGElement { type Event = TouchEvent; }
@@ -118626,7 +118626,7 @@ impl Listen<events::Transitioncancel> for SVGSVGElement { type Event = Transitio
 impl Listen<events::Transitionend> for SVGSVGElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionrun> for SVGSVGElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionstart> for SVGSVGElement { type Event = TransitionEvent; }
-impl Listen<events::Unhandledrejection> for SVGSVGElement { type Event = Event; }
+impl Listen<events::Unhandledrejection> for SVGSVGElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Unload> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Validationstatuschange> for SVGSVGElement { type Event = Event; }
 impl Listen<events::Volumechange> for SVGSVGElement { type Event = Event; }
@@ -118648,7 +118648,7 @@ impl Listen<events::Animationstart> for SVGGElement { type Event = AnimationEven
 impl Listen<events::Auxclick> for SVGGElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGGElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGGElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGGElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGGElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGGElement { type Event = Event; }
 impl Listen<events::Blur> for SVGGElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGGElement { type Event = Event; }
@@ -118657,7 +118657,7 @@ impl Listen<events::Canplaythrough> for SVGGElement { type Event = Event; }
 impl Listen<events::Change> for SVGGElement { type Event = Event; }
 impl Listen<events::Click> for SVGGElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGGElement { type Event = Event; }
-impl Listen<events::Command> for SVGGElement { type Event = Event; }
+impl Listen<events::Command> for SVGGElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGGElement { type Event = CompositionEvent; }
@@ -118743,7 +118743,7 @@ impl Listen<events::Submit> for SVGGElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGGElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGGElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGGElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGGElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGGElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGGElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGGElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGGElement { type Event = TouchEvent; }
@@ -118773,7 +118773,7 @@ impl Listen<events::Animationstart> for SVGDefsElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGDefsElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGDefsElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGDefsElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGDefsElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGDefsElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGDefsElement { type Event = Event; }
 impl Listen<events::Blur> for SVGDefsElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGDefsElement { type Event = Event; }
@@ -118782,7 +118782,7 @@ impl Listen<events::Canplaythrough> for SVGDefsElement { type Event = Event; }
 impl Listen<events::Change> for SVGDefsElement { type Event = Event; }
 impl Listen<events::Click> for SVGDefsElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGDefsElement { type Event = Event; }
-impl Listen<events::Command> for SVGDefsElement { type Event = Event; }
+impl Listen<events::Command> for SVGDefsElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGDefsElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGDefsElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGDefsElement { type Event = CompositionEvent; }
@@ -118868,7 +118868,7 @@ impl Listen<events::Submit> for SVGDefsElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGDefsElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGDefsElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGDefsElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGDefsElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGDefsElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGDefsElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGDefsElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGDefsElement { type Event = TouchEvent; }
@@ -118898,7 +118898,7 @@ impl Listen<events::Animationstart> for SVGSymbolElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGSymbolElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGSymbolElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGSymbolElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGSymbolElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGSymbolElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGSymbolElement { type Event = Event; }
 impl Listen<events::Blur> for SVGSymbolElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGSymbolElement { type Event = Event; }
@@ -118907,7 +118907,7 @@ impl Listen<events::Canplaythrough> for SVGSymbolElement { type Event = Event; }
 impl Listen<events::Change> for SVGSymbolElement { type Event = Event; }
 impl Listen<events::Click> for SVGSymbolElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGSymbolElement { type Event = Event; }
-impl Listen<events::Command> for SVGSymbolElement { type Event = Event; }
+impl Listen<events::Command> for SVGSymbolElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGSymbolElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGSymbolElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGSymbolElement { type Event = CompositionEvent; }
@@ -118993,7 +118993,7 @@ impl Listen<events::Submit> for SVGSymbolElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGSymbolElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGSymbolElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGSymbolElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGSymbolElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGSymbolElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGSymbolElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGSymbolElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGSymbolElement { type Event = TouchEvent; }
@@ -119023,7 +119023,7 @@ impl Listen<events::Animationstart> for SVGUseElement { type Event = AnimationEv
 impl Listen<events::Auxclick> for SVGUseElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGUseElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGUseElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGUseElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGUseElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGUseElement { type Event = Event; }
 impl Listen<events::Blur> for SVGUseElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGUseElement { type Event = Event; }
@@ -119032,7 +119032,7 @@ impl Listen<events::Canplaythrough> for SVGUseElement { type Event = Event; }
 impl Listen<events::Change> for SVGUseElement { type Event = Event; }
 impl Listen<events::Click> for SVGUseElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGUseElement { type Event = Event; }
-impl Listen<events::Command> for SVGUseElement { type Event = Event; }
+impl Listen<events::Command> for SVGUseElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGUseElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGUseElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGUseElement { type Event = CompositionEvent; }
@@ -119118,7 +119118,7 @@ impl Listen<events::Submit> for SVGUseElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGUseElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGUseElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGUseElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGUseElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGUseElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGUseElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGUseElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGUseElement { type Event = TouchEvent; }
@@ -119148,7 +119148,7 @@ impl Listen<events::Animationstart> for SVGSwitchElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGSwitchElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGSwitchElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGSwitchElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGSwitchElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGSwitchElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGSwitchElement { type Event = Event; }
 impl Listen<events::Blur> for SVGSwitchElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGSwitchElement { type Event = Event; }
@@ -119157,7 +119157,7 @@ impl Listen<events::Canplaythrough> for SVGSwitchElement { type Event = Event; }
 impl Listen<events::Change> for SVGSwitchElement { type Event = Event; }
 impl Listen<events::Click> for SVGSwitchElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGSwitchElement { type Event = Event; }
-impl Listen<events::Command> for SVGSwitchElement { type Event = Event; }
+impl Listen<events::Command> for SVGSwitchElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGSwitchElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGSwitchElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGSwitchElement { type Event = CompositionEvent; }
@@ -119243,7 +119243,7 @@ impl Listen<events::Submit> for SVGSwitchElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGSwitchElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGSwitchElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGSwitchElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGSwitchElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGSwitchElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGSwitchElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGSwitchElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGSwitchElement { type Event = TouchEvent; }
@@ -119273,7 +119273,7 @@ impl Listen<events::Animationstart> for SVGTitleElement { type Event = Animation
 impl Listen<events::Auxclick> for SVGTitleElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTitleElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTitleElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTitleElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTitleElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTitleElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTitleElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTitleElement { type Event = Event; }
@@ -119282,7 +119282,7 @@ impl Listen<events::Canplaythrough> for SVGTitleElement { type Event = Event; }
 impl Listen<events::Change> for SVGTitleElement { type Event = Event; }
 impl Listen<events::Click> for SVGTitleElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTitleElement { type Event = Event; }
-impl Listen<events::Command> for SVGTitleElement { type Event = Event; }
+impl Listen<events::Command> for SVGTitleElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTitleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTitleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTitleElement { type Event = CompositionEvent; }
@@ -119368,7 +119368,7 @@ impl Listen<events::Submit> for SVGTitleElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGTitleElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTitleElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTitleElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTitleElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTitleElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTitleElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTitleElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTitleElement { type Event = TouchEvent; }
@@ -119398,7 +119398,7 @@ impl Listen<events::Animationstart> for SVGDescElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGDescElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGDescElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGDescElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGDescElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGDescElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGDescElement { type Event = Event; }
 impl Listen<events::Blur> for SVGDescElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGDescElement { type Event = Event; }
@@ -119407,7 +119407,7 @@ impl Listen<events::Canplaythrough> for SVGDescElement { type Event = Event; }
 impl Listen<events::Change> for SVGDescElement { type Event = Event; }
 impl Listen<events::Click> for SVGDescElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGDescElement { type Event = Event; }
-impl Listen<events::Command> for SVGDescElement { type Event = Event; }
+impl Listen<events::Command> for SVGDescElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGDescElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGDescElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGDescElement { type Event = CompositionEvent; }
@@ -119493,7 +119493,7 @@ impl Listen<events::Submit> for SVGDescElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGDescElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGDescElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGDescElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGDescElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGDescElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGDescElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGDescElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGDescElement { type Event = TouchEvent; }
@@ -119523,7 +119523,7 @@ impl Listen<events::Animationstart> for SVGMetadataElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGMetadataElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGMetadataElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGMetadataElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGMetadataElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGMetadataElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGMetadataElement { type Event = Event; }
 impl Listen<events::Blur> for SVGMetadataElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGMetadataElement { type Event = Event; }
@@ -119532,7 +119532,7 @@ impl Listen<events::Canplaythrough> for SVGMetadataElement { type Event = Event;
 impl Listen<events::Change> for SVGMetadataElement { type Event = Event; }
 impl Listen<events::Click> for SVGMetadataElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGMetadataElement { type Event = Event; }
-impl Listen<events::Command> for SVGMetadataElement { type Event = Event; }
+impl Listen<events::Command> for SVGMetadataElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGMetadataElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGMetadataElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGMetadataElement { type Event = CompositionEvent; }
@@ -119618,7 +119618,7 @@ impl Listen<events::Submit> for SVGMetadataElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGMetadataElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGMetadataElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGMetadataElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGMetadataElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGMetadataElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGMetadataElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGMetadataElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGMetadataElement { type Event = TouchEvent; }
@@ -119648,7 +119648,7 @@ impl Listen<events::Animationstart> for SVGStyleElement { type Event = Animation
 impl Listen<events::Auxclick> for SVGStyleElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGStyleElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGStyleElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGStyleElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGStyleElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGStyleElement { type Event = Event; }
 impl Listen<events::Blur> for SVGStyleElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGStyleElement { type Event = Event; }
@@ -119657,7 +119657,7 @@ impl Listen<events::Canplaythrough> for SVGStyleElement { type Event = Event; }
 impl Listen<events::Change> for SVGStyleElement { type Event = Event; }
 impl Listen<events::Click> for SVGStyleElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGStyleElement { type Event = Event; }
-impl Listen<events::Command> for SVGStyleElement { type Event = Event; }
+impl Listen<events::Command> for SVGStyleElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGStyleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGStyleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGStyleElement { type Event = CompositionEvent; }
@@ -119743,7 +119743,7 @@ impl Listen<events::Submit> for SVGStyleElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGStyleElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGStyleElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGStyleElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGStyleElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGStyleElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGStyleElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGStyleElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGStyleElement { type Event = TouchEvent; }
@@ -119773,7 +119773,7 @@ impl Listen<events::Animationstart> for SVGScriptElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGScriptElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGScriptElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGScriptElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGScriptElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGScriptElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGScriptElement { type Event = Event; }
 impl Listen<events::Blur> for SVGScriptElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGScriptElement { type Event = Event; }
@@ -119782,7 +119782,7 @@ impl Listen<events::Canplaythrough> for SVGScriptElement { type Event = Event; }
 impl Listen<events::Change> for SVGScriptElement { type Event = Event; }
 impl Listen<events::Click> for SVGScriptElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGScriptElement { type Event = Event; }
-impl Listen<events::Command> for SVGScriptElement { type Event = Event; }
+impl Listen<events::Command> for SVGScriptElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGScriptElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGScriptElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGScriptElement { type Event = CompositionEvent; }
@@ -119868,7 +119868,7 @@ impl Listen<events::Submit> for SVGScriptElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGScriptElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGScriptElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGScriptElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGScriptElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGScriptElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGScriptElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGScriptElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGScriptElement { type Event = TouchEvent; }
@@ -119898,7 +119898,7 @@ impl Listen<events::Animationstart> for SVGPathElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGPathElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGPathElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGPathElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGPathElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGPathElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGPathElement { type Event = Event; }
 impl Listen<events::Blur> for SVGPathElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGPathElement { type Event = Event; }
@@ -119907,7 +119907,7 @@ impl Listen<events::Canplaythrough> for SVGPathElement { type Event = Event; }
 impl Listen<events::Change> for SVGPathElement { type Event = Event; }
 impl Listen<events::Click> for SVGPathElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGPathElement { type Event = Event; }
-impl Listen<events::Command> for SVGPathElement { type Event = Event; }
+impl Listen<events::Command> for SVGPathElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGPathElement { type Event = CompositionEvent; }
@@ -119993,7 +119993,7 @@ impl Listen<events::Submit> for SVGPathElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGPathElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGPathElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGPathElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGPathElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGPathElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGPathElement { type Event = TouchEvent; }
@@ -120023,7 +120023,7 @@ impl Listen<events::Animationstart> for SVGRectElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGRectElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGRectElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGRectElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGRectElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGRectElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGRectElement { type Event = Event; }
 impl Listen<events::Blur> for SVGRectElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGRectElement { type Event = Event; }
@@ -120032,7 +120032,7 @@ impl Listen<events::Canplaythrough> for SVGRectElement { type Event = Event; }
 impl Listen<events::Change> for SVGRectElement { type Event = Event; }
 impl Listen<events::Click> for SVGRectElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGRectElement { type Event = Event; }
-impl Listen<events::Command> for SVGRectElement { type Event = Event; }
+impl Listen<events::Command> for SVGRectElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGRectElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGRectElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGRectElement { type Event = CompositionEvent; }
@@ -120118,7 +120118,7 @@ impl Listen<events::Submit> for SVGRectElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGRectElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGRectElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGRectElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGRectElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGRectElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGRectElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGRectElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGRectElement { type Event = TouchEvent; }
@@ -120148,7 +120148,7 @@ impl Listen<events::Animationstart> for SVGCircleElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGCircleElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGCircleElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGCircleElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGCircleElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGCircleElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGCircleElement { type Event = Event; }
 impl Listen<events::Blur> for SVGCircleElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGCircleElement { type Event = Event; }
@@ -120157,7 +120157,7 @@ impl Listen<events::Canplaythrough> for SVGCircleElement { type Event = Event; }
 impl Listen<events::Change> for SVGCircleElement { type Event = Event; }
 impl Listen<events::Click> for SVGCircleElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGCircleElement { type Event = Event; }
-impl Listen<events::Command> for SVGCircleElement { type Event = Event; }
+impl Listen<events::Command> for SVGCircleElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGCircleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGCircleElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGCircleElement { type Event = CompositionEvent; }
@@ -120243,7 +120243,7 @@ impl Listen<events::Submit> for SVGCircleElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGCircleElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGCircleElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGCircleElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGCircleElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGCircleElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGCircleElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGCircleElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGCircleElement { type Event = TouchEvent; }
@@ -120273,7 +120273,7 @@ impl Listen<events::Animationstart> for SVGEllipseElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGEllipseElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGEllipseElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGEllipseElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGEllipseElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGEllipseElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGEllipseElement { type Event = Event; }
 impl Listen<events::Blur> for SVGEllipseElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGEllipseElement { type Event = Event; }
@@ -120282,7 +120282,7 @@ impl Listen<events::Canplaythrough> for SVGEllipseElement { type Event = Event; 
 impl Listen<events::Change> for SVGEllipseElement { type Event = Event; }
 impl Listen<events::Click> for SVGEllipseElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGEllipseElement { type Event = Event; }
-impl Listen<events::Command> for SVGEllipseElement { type Event = Event; }
+impl Listen<events::Command> for SVGEllipseElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGEllipseElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGEllipseElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGEllipseElement { type Event = CompositionEvent; }
@@ -120368,7 +120368,7 @@ impl Listen<events::Submit> for SVGEllipseElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGEllipseElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGEllipseElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGEllipseElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGEllipseElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGEllipseElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGEllipseElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGEllipseElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGEllipseElement { type Event = TouchEvent; }
@@ -120398,7 +120398,7 @@ impl Listen<events::Animationstart> for SVGLineElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGLineElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGLineElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGLineElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGLineElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGLineElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGLineElement { type Event = Event; }
 impl Listen<events::Blur> for SVGLineElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGLineElement { type Event = Event; }
@@ -120407,7 +120407,7 @@ impl Listen<events::Canplaythrough> for SVGLineElement { type Event = Event; }
 impl Listen<events::Change> for SVGLineElement { type Event = Event; }
 impl Listen<events::Click> for SVGLineElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGLineElement { type Event = Event; }
-impl Listen<events::Command> for SVGLineElement { type Event = Event; }
+impl Listen<events::Command> for SVGLineElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGLineElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGLineElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGLineElement { type Event = CompositionEvent; }
@@ -120493,7 +120493,7 @@ impl Listen<events::Submit> for SVGLineElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGLineElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGLineElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGLineElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGLineElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGLineElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGLineElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGLineElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGLineElement { type Event = TouchEvent; }
@@ -120523,7 +120523,7 @@ impl Listen<events::Animationstart> for SVGPolylineElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGPolylineElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGPolylineElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGPolylineElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGPolylineElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGPolylineElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGPolylineElement { type Event = Event; }
 impl Listen<events::Blur> for SVGPolylineElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGPolylineElement { type Event = Event; }
@@ -120532,7 +120532,7 @@ impl Listen<events::Canplaythrough> for SVGPolylineElement { type Event = Event;
 impl Listen<events::Change> for SVGPolylineElement { type Event = Event; }
 impl Listen<events::Click> for SVGPolylineElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGPolylineElement { type Event = Event; }
-impl Listen<events::Command> for SVGPolylineElement { type Event = Event; }
+impl Listen<events::Command> for SVGPolylineElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGPolylineElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGPolylineElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGPolylineElement { type Event = CompositionEvent; }
@@ -120618,7 +120618,7 @@ impl Listen<events::Submit> for SVGPolylineElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGPolylineElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGPolylineElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGPolylineElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGPolylineElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGPolylineElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGPolylineElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGPolylineElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGPolylineElement { type Event = TouchEvent; }
@@ -120648,7 +120648,7 @@ impl Listen<events::Animationstart> for SVGPolygonElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGPolygonElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGPolygonElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGPolygonElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGPolygonElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGPolygonElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGPolygonElement { type Event = Event; }
 impl Listen<events::Blur> for SVGPolygonElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGPolygonElement { type Event = Event; }
@@ -120657,7 +120657,7 @@ impl Listen<events::Canplaythrough> for SVGPolygonElement { type Event = Event; 
 impl Listen<events::Change> for SVGPolygonElement { type Event = Event; }
 impl Listen<events::Click> for SVGPolygonElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGPolygonElement { type Event = Event; }
-impl Listen<events::Command> for SVGPolygonElement { type Event = Event; }
+impl Listen<events::Command> for SVGPolygonElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGPolygonElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGPolygonElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGPolygonElement { type Event = CompositionEvent; }
@@ -120743,7 +120743,7 @@ impl Listen<events::Submit> for SVGPolygonElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGPolygonElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGPolygonElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGPolygonElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGPolygonElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGPolygonElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGPolygonElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGPolygonElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGPolygonElement { type Event = TouchEvent; }
@@ -120773,7 +120773,7 @@ impl Listen<events::Animationstart> for SVGTextContentElement { type Event = Ani
 impl Listen<events::Auxclick> for SVGTextContentElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTextContentElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTextContentElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTextContentElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTextContentElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTextContentElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTextContentElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTextContentElement { type Event = Event; }
@@ -120782,7 +120782,7 @@ impl Listen<events::Canplaythrough> for SVGTextContentElement { type Event = Eve
 impl Listen<events::Change> for SVGTextContentElement { type Event = Event; }
 impl Listen<events::Click> for SVGTextContentElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTextContentElement { type Event = Event; }
-impl Listen<events::Command> for SVGTextContentElement { type Event = Event; }
+impl Listen<events::Command> for SVGTextContentElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTextContentElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTextContentElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTextContentElement { type Event = CompositionEvent; }
@@ -120868,7 +120868,7 @@ impl Listen<events::Submit> for SVGTextContentElement { type Event = SubmitEvent
 impl Listen<events::Suspend> for SVGTextContentElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTextContentElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTextContentElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTextContentElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTextContentElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTextContentElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTextContentElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTextContentElement { type Event = TouchEvent; }
@@ -120898,7 +120898,7 @@ impl Listen<events::Animationstart> for SVGTextPositioningElement { type Event =
 impl Listen<events::Auxclick> for SVGTextPositioningElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTextPositioningElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTextPositioningElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTextPositioningElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTextPositioningElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTextPositioningElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTextPositioningElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTextPositioningElement { type Event = Event; }
@@ -120907,7 +120907,7 @@ impl Listen<events::Canplaythrough> for SVGTextPositioningElement { type Event =
 impl Listen<events::Change> for SVGTextPositioningElement { type Event = Event; }
 impl Listen<events::Click> for SVGTextPositioningElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTextPositioningElement { type Event = Event; }
-impl Listen<events::Command> for SVGTextPositioningElement { type Event = Event; }
+impl Listen<events::Command> for SVGTextPositioningElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTextPositioningElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTextPositioningElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTextPositioningElement { type Event = CompositionEvent; }
@@ -120993,7 +120993,7 @@ impl Listen<events::Submit> for SVGTextPositioningElement { type Event = SubmitE
 impl Listen<events::Suspend> for SVGTextPositioningElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTextPositioningElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTextPositioningElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTextPositioningElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTextPositioningElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTextPositioningElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTextPositioningElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTextPositioningElement { type Event = TouchEvent; }
@@ -121023,7 +121023,7 @@ impl Listen<events::Animationstart> for SVGTextElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGTextElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTextElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTextElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTextElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTextElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTextElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTextElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTextElement { type Event = Event; }
@@ -121032,7 +121032,7 @@ impl Listen<events::Canplaythrough> for SVGTextElement { type Event = Event; }
 impl Listen<events::Change> for SVGTextElement { type Event = Event; }
 impl Listen<events::Click> for SVGTextElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTextElement { type Event = Event; }
-impl Listen<events::Command> for SVGTextElement { type Event = Event; }
+impl Listen<events::Command> for SVGTextElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTextElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTextElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTextElement { type Event = CompositionEvent; }
@@ -121118,7 +121118,7 @@ impl Listen<events::Submit> for SVGTextElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGTextElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTextElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTextElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTextElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTextElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTextElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTextElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTextElement { type Event = TouchEvent; }
@@ -121148,7 +121148,7 @@ impl Listen<events::Animationstart> for SVGTSpanElement { type Event = Animation
 impl Listen<events::Auxclick> for SVGTSpanElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTSpanElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTSpanElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTSpanElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTSpanElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTSpanElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTSpanElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTSpanElement { type Event = Event; }
@@ -121157,7 +121157,7 @@ impl Listen<events::Canplaythrough> for SVGTSpanElement { type Event = Event; }
 impl Listen<events::Change> for SVGTSpanElement { type Event = Event; }
 impl Listen<events::Click> for SVGTSpanElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTSpanElement { type Event = Event; }
-impl Listen<events::Command> for SVGTSpanElement { type Event = Event; }
+impl Listen<events::Command> for SVGTSpanElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTSpanElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTSpanElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTSpanElement { type Event = CompositionEvent; }
@@ -121243,7 +121243,7 @@ impl Listen<events::Submit> for SVGTSpanElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGTSpanElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTSpanElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTSpanElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTSpanElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTSpanElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTSpanElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTSpanElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTSpanElement { type Event = TouchEvent; }
@@ -121273,7 +121273,7 @@ impl Listen<events::Animationstart> for SVGTextPathElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGTextPathElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGTextPathElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGTextPathElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGTextPathElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGTextPathElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGTextPathElement { type Event = Event; }
 impl Listen<events::Blur> for SVGTextPathElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGTextPathElement { type Event = Event; }
@@ -121282,7 +121282,7 @@ impl Listen<events::Canplaythrough> for SVGTextPathElement { type Event = Event;
 impl Listen<events::Change> for SVGTextPathElement { type Event = Event; }
 impl Listen<events::Click> for SVGTextPathElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGTextPathElement { type Event = Event; }
-impl Listen<events::Command> for SVGTextPathElement { type Event = Event; }
+impl Listen<events::Command> for SVGTextPathElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGTextPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGTextPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGTextPathElement { type Event = CompositionEvent; }
@@ -121368,7 +121368,7 @@ impl Listen<events::Submit> for SVGTextPathElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGTextPathElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGTextPathElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGTextPathElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGTextPathElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGTextPathElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGTextPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGTextPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGTextPathElement { type Event = TouchEvent; }
@@ -121398,7 +121398,7 @@ impl Listen<events::Animationstart> for SVGImageElement { type Event = Animation
 impl Listen<events::Auxclick> for SVGImageElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGImageElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGImageElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGImageElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGImageElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGImageElement { type Event = Event; }
 impl Listen<events::Blur> for SVGImageElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGImageElement { type Event = Event; }
@@ -121407,7 +121407,7 @@ impl Listen<events::Canplaythrough> for SVGImageElement { type Event = Event; }
 impl Listen<events::Change> for SVGImageElement { type Event = Event; }
 impl Listen<events::Click> for SVGImageElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGImageElement { type Event = Event; }
-impl Listen<events::Command> for SVGImageElement { type Event = Event; }
+impl Listen<events::Command> for SVGImageElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGImageElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGImageElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGImageElement { type Event = CompositionEvent; }
@@ -121493,7 +121493,7 @@ impl Listen<events::Submit> for SVGImageElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGImageElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGImageElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGImageElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGImageElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGImageElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGImageElement { type Event = TouchEvent; }
@@ -121523,7 +121523,7 @@ impl Listen<events::Animationstart> for SVGForeignObjectElement { type Event = A
 impl Listen<events::Auxclick> for SVGForeignObjectElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGForeignObjectElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGForeignObjectElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGForeignObjectElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGForeignObjectElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGForeignObjectElement { type Event = Event; }
 impl Listen<events::Blur> for SVGForeignObjectElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGForeignObjectElement { type Event = Event; }
@@ -121532,7 +121532,7 @@ impl Listen<events::Canplaythrough> for SVGForeignObjectElement { type Event = E
 impl Listen<events::Change> for SVGForeignObjectElement { type Event = Event; }
 impl Listen<events::Click> for SVGForeignObjectElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGForeignObjectElement { type Event = Event; }
-impl Listen<events::Command> for SVGForeignObjectElement { type Event = Event; }
+impl Listen<events::Command> for SVGForeignObjectElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGForeignObjectElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGForeignObjectElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGForeignObjectElement { type Event = CompositionEvent; }
@@ -121618,7 +121618,7 @@ impl Listen<events::Submit> for SVGForeignObjectElement { type Event = SubmitEve
 impl Listen<events::Suspend> for SVGForeignObjectElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGForeignObjectElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGForeignObjectElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGForeignObjectElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGForeignObjectElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGForeignObjectElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGForeignObjectElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGForeignObjectElement { type Event = TouchEvent; }
@@ -121648,7 +121648,7 @@ impl Listen<events::Animationstart> for SVGMarkerElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGMarkerElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGMarkerElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGMarkerElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGMarkerElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGMarkerElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGMarkerElement { type Event = Event; }
 impl Listen<events::Blur> for SVGMarkerElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGMarkerElement { type Event = Event; }
@@ -121657,7 +121657,7 @@ impl Listen<events::Canplaythrough> for SVGMarkerElement { type Event = Event; }
 impl Listen<events::Change> for SVGMarkerElement { type Event = Event; }
 impl Listen<events::Click> for SVGMarkerElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGMarkerElement { type Event = Event; }
-impl Listen<events::Command> for SVGMarkerElement { type Event = Event; }
+impl Listen<events::Command> for SVGMarkerElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGMarkerElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGMarkerElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGMarkerElement { type Event = CompositionEvent; }
@@ -121743,7 +121743,7 @@ impl Listen<events::Submit> for SVGMarkerElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGMarkerElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGMarkerElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGMarkerElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGMarkerElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGMarkerElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGMarkerElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGMarkerElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGMarkerElement { type Event = TouchEvent; }
@@ -121773,7 +121773,7 @@ impl Listen<events::Animationstart> for SVGGradientElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGGradientElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGGradientElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGGradientElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGGradientElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGGradientElement { type Event = Event; }
 impl Listen<events::Blur> for SVGGradientElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGGradientElement { type Event = Event; }
@@ -121782,7 +121782,7 @@ impl Listen<events::Canplaythrough> for SVGGradientElement { type Event = Event;
 impl Listen<events::Change> for SVGGradientElement { type Event = Event; }
 impl Listen<events::Click> for SVGGradientElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGGradientElement { type Event = Event; }
-impl Listen<events::Command> for SVGGradientElement { type Event = Event; }
+impl Listen<events::Command> for SVGGradientElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGGradientElement { type Event = CompositionEvent; }
@@ -121868,7 +121868,7 @@ impl Listen<events::Submit> for SVGGradientElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGGradientElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGGradientElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGGradientElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGGradientElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGGradientElement { type Event = TouchEvent; }
@@ -121898,7 +121898,7 @@ impl Listen<events::Animationstart> for SVGLinearGradientElement { type Event = 
 impl Listen<events::Auxclick> for SVGLinearGradientElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGLinearGradientElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGLinearGradientElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGLinearGradientElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGLinearGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGLinearGradientElement { type Event = Event; }
 impl Listen<events::Blur> for SVGLinearGradientElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGLinearGradientElement { type Event = Event; }
@@ -121907,7 +121907,7 @@ impl Listen<events::Canplaythrough> for SVGLinearGradientElement { type Event = 
 impl Listen<events::Change> for SVGLinearGradientElement { type Event = Event; }
 impl Listen<events::Click> for SVGLinearGradientElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGLinearGradientElement { type Event = Event; }
-impl Listen<events::Command> for SVGLinearGradientElement { type Event = Event; }
+impl Listen<events::Command> for SVGLinearGradientElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGLinearGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGLinearGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGLinearGradientElement { type Event = CompositionEvent; }
@@ -121993,7 +121993,7 @@ impl Listen<events::Submit> for SVGLinearGradientElement { type Event = SubmitEv
 impl Listen<events::Suspend> for SVGLinearGradientElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGLinearGradientElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGLinearGradientElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGLinearGradientElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGLinearGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGLinearGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGLinearGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGLinearGradientElement { type Event = TouchEvent; }
@@ -122023,7 +122023,7 @@ impl Listen<events::Animationstart> for SVGRadialGradientElement { type Event = 
 impl Listen<events::Auxclick> for SVGRadialGradientElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGRadialGradientElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGRadialGradientElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGRadialGradientElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGRadialGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGRadialGradientElement { type Event = Event; }
 impl Listen<events::Blur> for SVGRadialGradientElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGRadialGradientElement { type Event = Event; }
@@ -122032,7 +122032,7 @@ impl Listen<events::Canplaythrough> for SVGRadialGradientElement { type Event = 
 impl Listen<events::Change> for SVGRadialGradientElement { type Event = Event; }
 impl Listen<events::Click> for SVGRadialGradientElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGRadialGradientElement { type Event = Event; }
-impl Listen<events::Command> for SVGRadialGradientElement { type Event = Event; }
+impl Listen<events::Command> for SVGRadialGradientElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGRadialGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGRadialGradientElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGRadialGradientElement { type Event = CompositionEvent; }
@@ -122118,7 +122118,7 @@ impl Listen<events::Submit> for SVGRadialGradientElement { type Event = SubmitEv
 impl Listen<events::Suspend> for SVGRadialGradientElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGRadialGradientElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGRadialGradientElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGRadialGradientElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGRadialGradientElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGRadialGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGRadialGradientElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGRadialGradientElement { type Event = TouchEvent; }
@@ -122148,7 +122148,7 @@ impl Listen<events::Animationstart> for SVGStopElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGStopElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGStopElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGStopElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGStopElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGStopElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGStopElement { type Event = Event; }
 impl Listen<events::Blur> for SVGStopElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGStopElement { type Event = Event; }
@@ -122157,7 +122157,7 @@ impl Listen<events::Canplaythrough> for SVGStopElement { type Event = Event; }
 impl Listen<events::Change> for SVGStopElement { type Event = Event; }
 impl Listen<events::Click> for SVGStopElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGStopElement { type Event = Event; }
-impl Listen<events::Command> for SVGStopElement { type Event = Event; }
+impl Listen<events::Command> for SVGStopElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGStopElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGStopElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGStopElement { type Event = CompositionEvent; }
@@ -122243,7 +122243,7 @@ impl Listen<events::Submit> for SVGStopElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGStopElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGStopElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGStopElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGStopElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGStopElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGStopElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGStopElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGStopElement { type Event = TouchEvent; }
@@ -122273,7 +122273,7 @@ impl Listen<events::Animationstart> for SVGPatternElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGPatternElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGPatternElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGPatternElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGPatternElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGPatternElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGPatternElement { type Event = Event; }
 impl Listen<events::Blur> for SVGPatternElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGPatternElement { type Event = Event; }
@@ -122282,7 +122282,7 @@ impl Listen<events::Canplaythrough> for SVGPatternElement { type Event = Event; 
 impl Listen<events::Change> for SVGPatternElement { type Event = Event; }
 impl Listen<events::Click> for SVGPatternElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGPatternElement { type Event = Event; }
-impl Listen<events::Command> for SVGPatternElement { type Event = Event; }
+impl Listen<events::Command> for SVGPatternElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGPatternElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGPatternElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGPatternElement { type Event = CompositionEvent; }
@@ -122368,7 +122368,7 @@ impl Listen<events::Submit> for SVGPatternElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGPatternElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGPatternElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGPatternElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGPatternElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGPatternElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGPatternElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGPatternElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGPatternElement { type Event = TouchEvent; }
@@ -122398,7 +122398,7 @@ impl Listen<events::Animationstart> for SVGAElement { type Event = AnimationEven
 impl Listen<events::Auxclick> for SVGAElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGAElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGAElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGAElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGAElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGAElement { type Event = Event; }
 impl Listen<events::Blur> for SVGAElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGAElement { type Event = Event; }
@@ -122407,7 +122407,7 @@ impl Listen<events::Canplaythrough> for SVGAElement { type Event = Event; }
 impl Listen<events::Change> for SVGAElement { type Event = Event; }
 impl Listen<events::Click> for SVGAElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGAElement { type Event = Event; }
-impl Listen<events::Command> for SVGAElement { type Event = Event; }
+impl Listen<events::Command> for SVGAElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGAElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGAElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGAElement { type Event = CompositionEvent; }
@@ -122493,7 +122493,7 @@ impl Listen<events::Submit> for SVGAElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGAElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGAElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGAElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGAElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGAElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGAElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGAElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGAElement { type Event = TouchEvent; }
@@ -122523,7 +122523,7 @@ impl Listen<events::Animationstart> for SVGViewElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGViewElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGViewElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGViewElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGViewElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGViewElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGViewElement { type Event = Event; }
 impl Listen<events::Blur> for SVGViewElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGViewElement { type Event = Event; }
@@ -122532,7 +122532,7 @@ impl Listen<events::Canplaythrough> for SVGViewElement { type Event = Event; }
 impl Listen<events::Change> for SVGViewElement { type Event = Event; }
 impl Listen<events::Click> for SVGViewElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGViewElement { type Event = Event; }
-impl Listen<events::Command> for SVGViewElement { type Event = Event; }
+impl Listen<events::Command> for SVGViewElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGViewElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGViewElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGViewElement { type Event = CompositionEvent; }
@@ -122618,7 +122618,7 @@ impl Listen<events::Submit> for SVGViewElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGViewElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGViewElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGViewElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGViewElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGViewElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGViewElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGViewElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGViewElement { type Event = TouchEvent; }
@@ -122648,7 +122648,7 @@ impl Listen<events::Animationstart> for SVGAnimationElement { type Event = Anima
 impl Listen<events::Auxclick> for SVGAnimationElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGAnimationElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGAnimationElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGAnimationElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGAnimationElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGAnimationElement { type Event = Event; }
 impl Listen<events::Begin> for SVGAnimationElement { type Event = Event; }
 impl Listen<events::Blur> for SVGAnimationElement { type Event = FocusEvent; }
@@ -122658,7 +122658,7 @@ impl Listen<events::Canplaythrough> for SVGAnimationElement { type Event = Event
 impl Listen<events::Change> for SVGAnimationElement { type Event = Event; }
 impl Listen<events::Click> for SVGAnimationElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGAnimationElement { type Event = Event; }
-impl Listen<events::Command> for SVGAnimationElement { type Event = Event; }
+impl Listen<events::Command> for SVGAnimationElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGAnimationElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGAnimationElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGAnimationElement { type Event = CompositionEvent; }
@@ -122746,7 +122746,7 @@ impl Listen<events::Submit> for SVGAnimationElement { type Event = SubmitEvent; 
 impl Listen<events::Suspend> for SVGAnimationElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGAnimationElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGAnimationElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGAnimationElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGAnimationElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGAnimationElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGAnimationElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGAnimationElement { type Event = TouchEvent; }
@@ -122776,7 +122776,7 @@ impl Listen<events::Animationstart> for SVGAnimateElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGAnimateElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGAnimateElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGAnimateElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGAnimateElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGAnimateElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGAnimateElement { type Event = Event; }
 impl Listen<events::Begin> for SVGAnimateElement { type Event = Event; }
 impl Listen<events::Blur> for SVGAnimateElement { type Event = FocusEvent; }
@@ -122786,7 +122786,7 @@ impl Listen<events::Canplaythrough> for SVGAnimateElement { type Event = Event; 
 impl Listen<events::Change> for SVGAnimateElement { type Event = Event; }
 impl Listen<events::Click> for SVGAnimateElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGAnimateElement { type Event = Event; }
-impl Listen<events::Command> for SVGAnimateElement { type Event = Event; }
+impl Listen<events::Command> for SVGAnimateElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGAnimateElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGAnimateElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGAnimateElement { type Event = CompositionEvent; }
@@ -122874,7 +122874,7 @@ impl Listen<events::Submit> for SVGAnimateElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGAnimateElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGAnimateElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGAnimateElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGAnimateElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGAnimateElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGAnimateElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGAnimateElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGAnimateElement { type Event = TouchEvent; }
@@ -122904,7 +122904,7 @@ impl Listen<events::Animationstart> for SVGSetElement { type Event = AnimationEv
 impl Listen<events::Auxclick> for SVGSetElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGSetElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGSetElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGSetElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGSetElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGSetElement { type Event = Event; }
 impl Listen<events::Begin> for SVGSetElement { type Event = Event; }
 impl Listen<events::Blur> for SVGSetElement { type Event = FocusEvent; }
@@ -122914,7 +122914,7 @@ impl Listen<events::Canplaythrough> for SVGSetElement { type Event = Event; }
 impl Listen<events::Change> for SVGSetElement { type Event = Event; }
 impl Listen<events::Click> for SVGSetElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGSetElement { type Event = Event; }
-impl Listen<events::Command> for SVGSetElement { type Event = Event; }
+impl Listen<events::Command> for SVGSetElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGSetElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGSetElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGSetElement { type Event = CompositionEvent; }
@@ -123002,7 +123002,7 @@ impl Listen<events::Submit> for SVGSetElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGSetElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGSetElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGSetElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGSetElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGSetElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGSetElement { type Event = TouchEvent; }
@@ -123032,7 +123032,7 @@ impl Listen<events::Animationstart> for SVGAnimateMotionElement { type Event = A
 impl Listen<events::Auxclick> for SVGAnimateMotionElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGAnimateMotionElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGAnimateMotionElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGAnimateMotionElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGAnimateMotionElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGAnimateMotionElement { type Event = Event; }
 impl Listen<events::Begin> for SVGAnimateMotionElement { type Event = Event; }
 impl Listen<events::Blur> for SVGAnimateMotionElement { type Event = FocusEvent; }
@@ -123042,7 +123042,7 @@ impl Listen<events::Canplaythrough> for SVGAnimateMotionElement { type Event = E
 impl Listen<events::Change> for SVGAnimateMotionElement { type Event = Event; }
 impl Listen<events::Click> for SVGAnimateMotionElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGAnimateMotionElement { type Event = Event; }
-impl Listen<events::Command> for SVGAnimateMotionElement { type Event = Event; }
+impl Listen<events::Command> for SVGAnimateMotionElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGAnimateMotionElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGAnimateMotionElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGAnimateMotionElement { type Event = CompositionEvent; }
@@ -123130,7 +123130,7 @@ impl Listen<events::Submit> for SVGAnimateMotionElement { type Event = SubmitEve
 impl Listen<events::Suspend> for SVGAnimateMotionElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGAnimateMotionElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGAnimateMotionElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGAnimateMotionElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGAnimateMotionElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGAnimateMotionElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGAnimateMotionElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGAnimateMotionElement { type Event = TouchEvent; }
@@ -123160,7 +123160,7 @@ impl Listen<events::Animationstart> for SVGMPathElement { type Event = Animation
 impl Listen<events::Auxclick> for SVGMPathElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGMPathElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGMPathElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGMPathElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGMPathElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGMPathElement { type Event = Event; }
 impl Listen<events::Blur> for SVGMPathElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGMPathElement { type Event = Event; }
@@ -123169,7 +123169,7 @@ impl Listen<events::Canplaythrough> for SVGMPathElement { type Event = Event; }
 impl Listen<events::Change> for SVGMPathElement { type Event = Event; }
 impl Listen<events::Click> for SVGMPathElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGMPathElement { type Event = Event; }
-impl Listen<events::Command> for SVGMPathElement { type Event = Event; }
+impl Listen<events::Command> for SVGMPathElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGMPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGMPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGMPathElement { type Event = CompositionEvent; }
@@ -123255,7 +123255,7 @@ impl Listen<events::Submit> for SVGMPathElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGMPathElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGMPathElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGMPathElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGMPathElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGMPathElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGMPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGMPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGMPathElement { type Event = TouchEvent; }
@@ -123285,7 +123285,7 @@ impl Listen<events::Animationstart> for SVGAnimateTransformElement { type Event 
 impl Listen<events::Auxclick> for SVGAnimateTransformElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGAnimateTransformElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGAnimateTransformElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGAnimateTransformElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGAnimateTransformElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGAnimateTransformElement { type Event = Event; }
 impl Listen<events::Begin> for SVGAnimateTransformElement { type Event = Event; }
 impl Listen<events::Blur> for SVGAnimateTransformElement { type Event = FocusEvent; }
@@ -123295,7 +123295,7 @@ impl Listen<events::Canplaythrough> for SVGAnimateTransformElement { type Event 
 impl Listen<events::Change> for SVGAnimateTransformElement { type Event = Event; }
 impl Listen<events::Click> for SVGAnimateTransformElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGAnimateTransformElement { type Event = Event; }
-impl Listen<events::Command> for SVGAnimateTransformElement { type Event = Event; }
+impl Listen<events::Command> for SVGAnimateTransformElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGAnimateTransformElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGAnimateTransformElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGAnimateTransformElement { type Event = CompositionEvent; }
@@ -123383,7 +123383,7 @@ impl Listen<events::Submit> for SVGAnimateTransformElement { type Event = Submit
 impl Listen<events::Suspend> for SVGAnimateTransformElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGAnimateTransformElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGAnimateTransformElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGAnimateTransformElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGAnimateTransformElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGAnimateTransformElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGAnimateTransformElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGAnimateTransformElement { type Event = TouchEvent; }
@@ -123413,7 +123413,7 @@ impl Listen<events::Animationstart> for SVGFilterElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGFilterElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFilterElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFilterElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFilterElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFilterElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFilterElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFilterElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFilterElement { type Event = Event; }
@@ -123422,7 +123422,7 @@ impl Listen<events::Canplaythrough> for SVGFilterElement { type Event = Event; }
 impl Listen<events::Change> for SVGFilterElement { type Event = Event; }
 impl Listen<events::Click> for SVGFilterElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFilterElement { type Event = Event; }
-impl Listen<events::Command> for SVGFilterElement { type Event = Event; }
+impl Listen<events::Command> for SVGFilterElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFilterElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFilterElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFilterElement { type Event = CompositionEvent; }
@@ -123508,7 +123508,7 @@ impl Listen<events::Submit> for SVGFilterElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFilterElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFilterElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFilterElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFilterElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFilterElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFilterElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFilterElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFilterElement { type Event = TouchEvent; }
@@ -123538,7 +123538,7 @@ impl Listen<events::Animationstart> for SVGFEBlendElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEBlendElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEBlendElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEBlendElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEBlendElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEBlendElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEBlendElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEBlendElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEBlendElement { type Event = Event; }
@@ -123547,7 +123547,7 @@ impl Listen<events::Canplaythrough> for SVGFEBlendElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEBlendElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEBlendElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEBlendElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEBlendElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEBlendElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEBlendElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEBlendElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEBlendElement { type Event = CompositionEvent; }
@@ -123633,7 +123633,7 @@ impl Listen<events::Submit> for SVGFEBlendElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEBlendElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEBlendElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEBlendElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEBlendElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEBlendElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEBlendElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEBlendElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEBlendElement { type Event = TouchEvent; }
@@ -123663,7 +123663,7 @@ impl Listen<events::Animationstart> for SVGFEColorMatrixElement { type Event = A
 impl Listen<events::Auxclick> for SVGFEColorMatrixElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEColorMatrixElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEColorMatrixElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEColorMatrixElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEColorMatrixElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEColorMatrixElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEColorMatrixElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEColorMatrixElement { type Event = Event; }
@@ -123672,7 +123672,7 @@ impl Listen<events::Canplaythrough> for SVGFEColorMatrixElement { type Event = E
 impl Listen<events::Change> for SVGFEColorMatrixElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEColorMatrixElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEColorMatrixElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEColorMatrixElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEColorMatrixElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEColorMatrixElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEColorMatrixElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEColorMatrixElement { type Event = CompositionEvent; }
@@ -123758,7 +123758,7 @@ impl Listen<events::Submit> for SVGFEColorMatrixElement { type Event = SubmitEve
 impl Listen<events::Suspend> for SVGFEColorMatrixElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEColorMatrixElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEColorMatrixElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEColorMatrixElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEColorMatrixElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEColorMatrixElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEColorMatrixElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEColorMatrixElement { type Event = TouchEvent; }
@@ -123788,7 +123788,7 @@ impl Listen<events::Animationstart> for SVGFEComponentTransferElement { type Eve
 impl Listen<events::Auxclick> for SVGFEComponentTransferElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEComponentTransferElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEComponentTransferElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEComponentTransferElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEComponentTransferElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEComponentTransferElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEComponentTransferElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEComponentTransferElement { type Event = Event; }
@@ -123797,7 +123797,7 @@ impl Listen<events::Canplaythrough> for SVGFEComponentTransferElement { type Eve
 impl Listen<events::Change> for SVGFEComponentTransferElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEComponentTransferElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEComponentTransferElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEComponentTransferElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEComponentTransferElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEComponentTransferElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEComponentTransferElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEComponentTransferElement { type Event = CompositionEvent; }
@@ -123883,7 +123883,7 @@ impl Listen<events::Submit> for SVGFEComponentTransferElement { type Event = Sub
 impl Listen<events::Suspend> for SVGFEComponentTransferElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEComponentTransferElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEComponentTransferElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEComponentTransferElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEComponentTransferElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEComponentTransferElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEComponentTransferElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEComponentTransferElement { type Event = TouchEvent; }
@@ -123913,7 +123913,7 @@ impl Listen<events::Animationstart> for SVGComponentTransferFunctionElement { ty
 impl Listen<events::Auxclick> for SVGComponentTransferFunctionElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGComponentTransferFunctionElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGComponentTransferFunctionElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGComponentTransferFunctionElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGComponentTransferFunctionElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGComponentTransferFunctionElement { type Event = Event; }
 impl Listen<events::Blur> for SVGComponentTransferFunctionElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGComponentTransferFunctionElement { type Event = Event; }
@@ -123922,7 +123922,7 @@ impl Listen<events::Canplaythrough> for SVGComponentTransferFunctionElement { ty
 impl Listen<events::Change> for SVGComponentTransferFunctionElement { type Event = Event; }
 impl Listen<events::Click> for SVGComponentTransferFunctionElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGComponentTransferFunctionElement { type Event = Event; }
-impl Listen<events::Command> for SVGComponentTransferFunctionElement { type Event = Event; }
+impl Listen<events::Command> for SVGComponentTransferFunctionElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGComponentTransferFunctionElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGComponentTransferFunctionElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGComponentTransferFunctionElement { type Event = CompositionEvent; }
@@ -124008,7 +124008,7 @@ impl Listen<events::Submit> for SVGComponentTransferFunctionElement { type Event
 impl Listen<events::Suspend> for SVGComponentTransferFunctionElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGComponentTransferFunctionElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGComponentTransferFunctionElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGComponentTransferFunctionElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGComponentTransferFunctionElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGComponentTransferFunctionElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGComponentTransferFunctionElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGComponentTransferFunctionElement { type Event = TouchEvent; }
@@ -124038,7 +124038,7 @@ impl Listen<events::Animationstart> for SVGFEFuncRElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEFuncRElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEFuncRElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEFuncRElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEFuncRElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEFuncRElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEFuncRElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEFuncRElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEFuncRElement { type Event = Event; }
@@ -124047,7 +124047,7 @@ impl Listen<events::Canplaythrough> for SVGFEFuncRElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEFuncRElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEFuncRElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEFuncRElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEFuncRElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEFuncRElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEFuncRElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEFuncRElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEFuncRElement { type Event = CompositionEvent; }
@@ -124133,7 +124133,7 @@ impl Listen<events::Submit> for SVGFEFuncRElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEFuncRElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEFuncRElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEFuncRElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEFuncRElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEFuncRElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEFuncRElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEFuncRElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEFuncRElement { type Event = TouchEvent; }
@@ -124163,7 +124163,7 @@ impl Listen<events::Animationstart> for SVGFEFuncGElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEFuncGElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEFuncGElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEFuncGElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEFuncGElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEFuncGElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEFuncGElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEFuncGElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEFuncGElement { type Event = Event; }
@@ -124172,7 +124172,7 @@ impl Listen<events::Canplaythrough> for SVGFEFuncGElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEFuncGElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEFuncGElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEFuncGElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEFuncGElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEFuncGElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEFuncGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEFuncGElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEFuncGElement { type Event = CompositionEvent; }
@@ -124258,7 +124258,7 @@ impl Listen<events::Submit> for SVGFEFuncGElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEFuncGElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEFuncGElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEFuncGElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEFuncGElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEFuncGElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEFuncGElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEFuncGElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEFuncGElement { type Event = TouchEvent; }
@@ -124288,7 +124288,7 @@ impl Listen<events::Animationstart> for SVGFEFuncBElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEFuncBElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEFuncBElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEFuncBElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEFuncBElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEFuncBElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEFuncBElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEFuncBElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEFuncBElement { type Event = Event; }
@@ -124297,7 +124297,7 @@ impl Listen<events::Canplaythrough> for SVGFEFuncBElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEFuncBElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEFuncBElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEFuncBElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEFuncBElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEFuncBElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEFuncBElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEFuncBElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEFuncBElement { type Event = CompositionEvent; }
@@ -124383,7 +124383,7 @@ impl Listen<events::Submit> for SVGFEFuncBElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEFuncBElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEFuncBElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEFuncBElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEFuncBElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEFuncBElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEFuncBElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEFuncBElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEFuncBElement { type Event = TouchEvent; }
@@ -124413,7 +124413,7 @@ impl Listen<events::Animationstart> for SVGFEFuncAElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEFuncAElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEFuncAElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEFuncAElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEFuncAElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEFuncAElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEFuncAElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEFuncAElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEFuncAElement { type Event = Event; }
@@ -124422,7 +124422,7 @@ impl Listen<events::Canplaythrough> for SVGFEFuncAElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEFuncAElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEFuncAElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEFuncAElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEFuncAElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEFuncAElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEFuncAElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEFuncAElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEFuncAElement { type Event = CompositionEvent; }
@@ -124508,7 +124508,7 @@ impl Listen<events::Submit> for SVGFEFuncAElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEFuncAElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEFuncAElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEFuncAElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEFuncAElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEFuncAElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEFuncAElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEFuncAElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEFuncAElement { type Event = TouchEvent; }
@@ -124538,7 +124538,7 @@ impl Listen<events::Animationstart> for SVGFECompositeElement { type Event = Ani
 impl Listen<events::Auxclick> for SVGFECompositeElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFECompositeElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFECompositeElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFECompositeElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFECompositeElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFECompositeElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFECompositeElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFECompositeElement { type Event = Event; }
@@ -124547,7 +124547,7 @@ impl Listen<events::Canplaythrough> for SVGFECompositeElement { type Event = Eve
 impl Listen<events::Change> for SVGFECompositeElement { type Event = Event; }
 impl Listen<events::Click> for SVGFECompositeElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFECompositeElement { type Event = Event; }
-impl Listen<events::Command> for SVGFECompositeElement { type Event = Event; }
+impl Listen<events::Command> for SVGFECompositeElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFECompositeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFECompositeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFECompositeElement { type Event = CompositionEvent; }
@@ -124633,7 +124633,7 @@ impl Listen<events::Submit> for SVGFECompositeElement { type Event = SubmitEvent
 impl Listen<events::Suspend> for SVGFECompositeElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFECompositeElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFECompositeElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFECompositeElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFECompositeElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFECompositeElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFECompositeElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFECompositeElement { type Event = TouchEvent; }
@@ -124663,7 +124663,7 @@ impl Listen<events::Animationstart> for SVGFEConvolveMatrixElement { type Event 
 impl Listen<events::Auxclick> for SVGFEConvolveMatrixElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEConvolveMatrixElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEConvolveMatrixElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEConvolveMatrixElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEConvolveMatrixElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEConvolveMatrixElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEConvolveMatrixElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEConvolveMatrixElement { type Event = Event; }
@@ -124672,7 +124672,7 @@ impl Listen<events::Canplaythrough> for SVGFEConvolveMatrixElement { type Event 
 impl Listen<events::Change> for SVGFEConvolveMatrixElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEConvolveMatrixElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEConvolveMatrixElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEConvolveMatrixElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEConvolveMatrixElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEConvolveMatrixElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEConvolveMatrixElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEConvolveMatrixElement { type Event = CompositionEvent; }
@@ -124758,7 +124758,7 @@ impl Listen<events::Submit> for SVGFEConvolveMatrixElement { type Event = Submit
 impl Listen<events::Suspend> for SVGFEConvolveMatrixElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEConvolveMatrixElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEConvolveMatrixElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEConvolveMatrixElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEConvolveMatrixElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEConvolveMatrixElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEConvolveMatrixElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEConvolveMatrixElement { type Event = TouchEvent; }
@@ -124788,7 +124788,7 @@ impl Listen<events::Animationstart> for SVGFEDiffuseLightingElement { type Event
 impl Listen<events::Auxclick> for SVGFEDiffuseLightingElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEDiffuseLightingElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEDiffuseLightingElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEDiffuseLightingElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEDiffuseLightingElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEDiffuseLightingElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEDiffuseLightingElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEDiffuseLightingElement { type Event = Event; }
@@ -124797,7 +124797,7 @@ impl Listen<events::Canplaythrough> for SVGFEDiffuseLightingElement { type Event
 impl Listen<events::Change> for SVGFEDiffuseLightingElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEDiffuseLightingElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEDiffuseLightingElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEDiffuseLightingElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEDiffuseLightingElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEDiffuseLightingElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEDiffuseLightingElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEDiffuseLightingElement { type Event = CompositionEvent; }
@@ -124883,7 +124883,7 @@ impl Listen<events::Submit> for SVGFEDiffuseLightingElement { type Event = Submi
 impl Listen<events::Suspend> for SVGFEDiffuseLightingElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEDiffuseLightingElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEDiffuseLightingElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEDiffuseLightingElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEDiffuseLightingElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEDiffuseLightingElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEDiffuseLightingElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEDiffuseLightingElement { type Event = TouchEvent; }
@@ -124913,7 +124913,7 @@ impl Listen<events::Animationstart> for SVGFEDisplacementMapElement { type Event
 impl Listen<events::Auxclick> for SVGFEDisplacementMapElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEDisplacementMapElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEDisplacementMapElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEDisplacementMapElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEDisplacementMapElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEDisplacementMapElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEDisplacementMapElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEDisplacementMapElement { type Event = Event; }
@@ -124922,7 +124922,7 @@ impl Listen<events::Canplaythrough> for SVGFEDisplacementMapElement { type Event
 impl Listen<events::Change> for SVGFEDisplacementMapElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEDisplacementMapElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEDisplacementMapElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEDisplacementMapElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEDisplacementMapElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEDisplacementMapElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEDisplacementMapElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEDisplacementMapElement { type Event = CompositionEvent; }
@@ -125008,7 +125008,7 @@ impl Listen<events::Submit> for SVGFEDisplacementMapElement { type Event = Submi
 impl Listen<events::Suspend> for SVGFEDisplacementMapElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEDisplacementMapElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEDisplacementMapElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEDisplacementMapElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEDisplacementMapElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEDisplacementMapElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEDisplacementMapElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEDisplacementMapElement { type Event = TouchEvent; }
@@ -125038,7 +125038,7 @@ impl Listen<events::Animationstart> for SVGFEDropShadowElement { type Event = An
 impl Listen<events::Auxclick> for SVGFEDropShadowElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEDropShadowElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEDropShadowElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEDropShadowElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEDropShadowElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEDropShadowElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEDropShadowElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEDropShadowElement { type Event = Event; }
@@ -125047,7 +125047,7 @@ impl Listen<events::Canplaythrough> for SVGFEDropShadowElement { type Event = Ev
 impl Listen<events::Change> for SVGFEDropShadowElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEDropShadowElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEDropShadowElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEDropShadowElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEDropShadowElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEDropShadowElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEDropShadowElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEDropShadowElement { type Event = CompositionEvent; }
@@ -125133,7 +125133,7 @@ impl Listen<events::Submit> for SVGFEDropShadowElement { type Event = SubmitEven
 impl Listen<events::Suspend> for SVGFEDropShadowElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEDropShadowElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEDropShadowElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEDropShadowElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEDropShadowElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEDropShadowElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEDropShadowElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEDropShadowElement { type Event = TouchEvent; }
@@ -125163,7 +125163,7 @@ impl Listen<events::Animationstart> for SVGFEFloodElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEFloodElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEFloodElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEFloodElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEFloodElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEFloodElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEFloodElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEFloodElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEFloodElement { type Event = Event; }
@@ -125172,7 +125172,7 @@ impl Listen<events::Canplaythrough> for SVGFEFloodElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEFloodElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEFloodElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEFloodElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEFloodElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEFloodElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEFloodElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEFloodElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEFloodElement { type Event = CompositionEvent; }
@@ -125258,7 +125258,7 @@ impl Listen<events::Submit> for SVGFEFloodElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEFloodElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEFloodElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEFloodElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEFloodElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEFloodElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEFloodElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEFloodElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEFloodElement { type Event = TouchEvent; }
@@ -125288,7 +125288,7 @@ impl Listen<events::Animationstart> for SVGFEGaussianBlurElement { type Event = 
 impl Listen<events::Auxclick> for SVGFEGaussianBlurElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEGaussianBlurElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEGaussianBlurElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEGaussianBlurElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEGaussianBlurElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEGaussianBlurElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEGaussianBlurElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEGaussianBlurElement { type Event = Event; }
@@ -125297,7 +125297,7 @@ impl Listen<events::Canplaythrough> for SVGFEGaussianBlurElement { type Event = 
 impl Listen<events::Change> for SVGFEGaussianBlurElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEGaussianBlurElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEGaussianBlurElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEGaussianBlurElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEGaussianBlurElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEGaussianBlurElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEGaussianBlurElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEGaussianBlurElement { type Event = CompositionEvent; }
@@ -125383,7 +125383,7 @@ impl Listen<events::Submit> for SVGFEGaussianBlurElement { type Event = SubmitEv
 impl Listen<events::Suspend> for SVGFEGaussianBlurElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEGaussianBlurElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEGaussianBlurElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEGaussianBlurElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEGaussianBlurElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEGaussianBlurElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEGaussianBlurElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEGaussianBlurElement { type Event = TouchEvent; }
@@ -125413,7 +125413,7 @@ impl Listen<events::Animationstart> for SVGFEImageElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEImageElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEImageElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEImageElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEImageElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEImageElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEImageElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEImageElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEImageElement { type Event = Event; }
@@ -125422,7 +125422,7 @@ impl Listen<events::Canplaythrough> for SVGFEImageElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEImageElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEImageElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEImageElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEImageElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEImageElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEImageElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEImageElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEImageElement { type Event = CompositionEvent; }
@@ -125508,7 +125508,7 @@ impl Listen<events::Submit> for SVGFEImageElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEImageElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEImageElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEImageElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEImageElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEImageElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEImageElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEImageElement { type Event = TouchEvent; }
@@ -125538,7 +125538,7 @@ impl Listen<events::Animationstart> for SVGFEMergeElement { type Event = Animati
 impl Listen<events::Auxclick> for SVGFEMergeElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEMergeElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEMergeElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEMergeElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEMergeElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEMergeElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEMergeElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEMergeElement { type Event = Event; }
@@ -125547,7 +125547,7 @@ impl Listen<events::Canplaythrough> for SVGFEMergeElement { type Event = Event; 
 impl Listen<events::Change> for SVGFEMergeElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEMergeElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEMergeElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEMergeElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEMergeElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEMergeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEMergeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEMergeElement { type Event = CompositionEvent; }
@@ -125633,7 +125633,7 @@ impl Listen<events::Submit> for SVGFEMergeElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEMergeElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEMergeElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEMergeElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEMergeElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEMergeElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEMergeElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEMergeElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEMergeElement { type Event = TouchEvent; }
@@ -125663,7 +125663,7 @@ impl Listen<events::Animationstart> for SVGFEMergeNodeElement { type Event = Ani
 impl Listen<events::Auxclick> for SVGFEMergeNodeElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEMergeNodeElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEMergeNodeElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEMergeNodeElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEMergeNodeElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEMergeNodeElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEMergeNodeElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEMergeNodeElement { type Event = Event; }
@@ -125672,7 +125672,7 @@ impl Listen<events::Canplaythrough> for SVGFEMergeNodeElement { type Event = Eve
 impl Listen<events::Change> for SVGFEMergeNodeElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEMergeNodeElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEMergeNodeElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEMergeNodeElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEMergeNodeElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEMergeNodeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEMergeNodeElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEMergeNodeElement { type Event = CompositionEvent; }
@@ -125758,7 +125758,7 @@ impl Listen<events::Submit> for SVGFEMergeNodeElement { type Event = SubmitEvent
 impl Listen<events::Suspend> for SVGFEMergeNodeElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEMergeNodeElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEMergeNodeElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEMergeNodeElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEMergeNodeElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEMergeNodeElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEMergeNodeElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEMergeNodeElement { type Event = TouchEvent; }
@@ -125788,7 +125788,7 @@ impl Listen<events::Animationstart> for SVGFEMorphologyElement { type Event = An
 impl Listen<events::Auxclick> for SVGFEMorphologyElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEMorphologyElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEMorphologyElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEMorphologyElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEMorphologyElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEMorphologyElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEMorphologyElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEMorphologyElement { type Event = Event; }
@@ -125797,7 +125797,7 @@ impl Listen<events::Canplaythrough> for SVGFEMorphologyElement { type Event = Ev
 impl Listen<events::Change> for SVGFEMorphologyElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEMorphologyElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEMorphologyElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEMorphologyElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEMorphologyElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEMorphologyElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEMorphologyElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEMorphologyElement { type Event = CompositionEvent; }
@@ -125883,7 +125883,7 @@ impl Listen<events::Submit> for SVGFEMorphologyElement { type Event = SubmitEven
 impl Listen<events::Suspend> for SVGFEMorphologyElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEMorphologyElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEMorphologyElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEMorphologyElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEMorphologyElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEMorphologyElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEMorphologyElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEMorphologyElement { type Event = TouchEvent; }
@@ -125913,7 +125913,7 @@ impl Listen<events::Animationstart> for SVGFEOffsetElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGFEOffsetElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEOffsetElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEOffsetElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEOffsetElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEOffsetElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEOffsetElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEOffsetElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEOffsetElement { type Event = Event; }
@@ -125922,7 +125922,7 @@ impl Listen<events::Canplaythrough> for SVGFEOffsetElement { type Event = Event;
 impl Listen<events::Change> for SVGFEOffsetElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEOffsetElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEOffsetElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEOffsetElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEOffsetElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEOffsetElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEOffsetElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEOffsetElement { type Event = CompositionEvent; }
@@ -126008,7 +126008,7 @@ impl Listen<events::Submit> for SVGFEOffsetElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFEOffsetElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEOffsetElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEOffsetElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEOffsetElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEOffsetElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEOffsetElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEOffsetElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEOffsetElement { type Event = TouchEvent; }
@@ -126038,7 +126038,7 @@ impl Listen<events::Animationstart> for SVGFESpecularLightingElement { type Even
 impl Listen<events::Auxclick> for SVGFESpecularLightingElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFESpecularLightingElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFESpecularLightingElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFESpecularLightingElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFESpecularLightingElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFESpecularLightingElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFESpecularLightingElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFESpecularLightingElement { type Event = Event; }
@@ -126047,7 +126047,7 @@ impl Listen<events::Canplaythrough> for SVGFESpecularLightingElement { type Even
 impl Listen<events::Change> for SVGFESpecularLightingElement { type Event = Event; }
 impl Listen<events::Click> for SVGFESpecularLightingElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFESpecularLightingElement { type Event = Event; }
-impl Listen<events::Command> for SVGFESpecularLightingElement { type Event = Event; }
+impl Listen<events::Command> for SVGFESpecularLightingElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFESpecularLightingElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFESpecularLightingElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFESpecularLightingElement { type Event = CompositionEvent; }
@@ -126133,7 +126133,7 @@ impl Listen<events::Submit> for SVGFESpecularLightingElement { type Event = Subm
 impl Listen<events::Suspend> for SVGFESpecularLightingElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFESpecularLightingElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFESpecularLightingElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFESpecularLightingElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFESpecularLightingElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFESpecularLightingElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFESpecularLightingElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFESpecularLightingElement { type Event = TouchEvent; }
@@ -126163,7 +126163,7 @@ impl Listen<events::Animationstart> for SVGFETileElement { type Event = Animatio
 impl Listen<events::Auxclick> for SVGFETileElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFETileElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFETileElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFETileElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFETileElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFETileElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFETileElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFETileElement { type Event = Event; }
@@ -126172,7 +126172,7 @@ impl Listen<events::Canplaythrough> for SVGFETileElement { type Event = Event; }
 impl Listen<events::Change> for SVGFETileElement { type Event = Event; }
 impl Listen<events::Click> for SVGFETileElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFETileElement { type Event = Event; }
-impl Listen<events::Command> for SVGFETileElement { type Event = Event; }
+impl Listen<events::Command> for SVGFETileElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFETileElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFETileElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFETileElement { type Event = CompositionEvent; }
@@ -126258,7 +126258,7 @@ impl Listen<events::Submit> for SVGFETileElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGFETileElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFETileElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFETileElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFETileElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFETileElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFETileElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFETileElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFETileElement { type Event = TouchEvent; }
@@ -126288,7 +126288,7 @@ impl Listen<events::Animationstart> for SVGFETurbulenceElement { type Event = An
 impl Listen<events::Auxclick> for SVGFETurbulenceElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFETurbulenceElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFETurbulenceElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFETurbulenceElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFETurbulenceElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFETurbulenceElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFETurbulenceElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFETurbulenceElement { type Event = Event; }
@@ -126297,7 +126297,7 @@ impl Listen<events::Canplaythrough> for SVGFETurbulenceElement { type Event = Ev
 impl Listen<events::Change> for SVGFETurbulenceElement { type Event = Event; }
 impl Listen<events::Click> for SVGFETurbulenceElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFETurbulenceElement { type Event = Event; }
-impl Listen<events::Command> for SVGFETurbulenceElement { type Event = Event; }
+impl Listen<events::Command> for SVGFETurbulenceElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFETurbulenceElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFETurbulenceElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFETurbulenceElement { type Event = CompositionEvent; }
@@ -126383,7 +126383,7 @@ impl Listen<events::Submit> for SVGFETurbulenceElement { type Event = SubmitEven
 impl Listen<events::Suspend> for SVGFETurbulenceElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFETurbulenceElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFETurbulenceElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFETurbulenceElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFETurbulenceElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFETurbulenceElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFETurbulenceElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFETurbulenceElement { type Event = TouchEvent; }
@@ -126413,7 +126413,7 @@ impl Listen<events::Animationstart> for SVGFEDistantLightElement { type Event = 
 impl Listen<events::Auxclick> for SVGFEDistantLightElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEDistantLightElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEDistantLightElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEDistantLightElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEDistantLightElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEDistantLightElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEDistantLightElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEDistantLightElement { type Event = Event; }
@@ -126422,7 +126422,7 @@ impl Listen<events::Canplaythrough> for SVGFEDistantLightElement { type Event = 
 impl Listen<events::Change> for SVGFEDistantLightElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEDistantLightElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEDistantLightElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEDistantLightElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEDistantLightElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEDistantLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEDistantLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEDistantLightElement { type Event = CompositionEvent; }
@@ -126508,7 +126508,7 @@ impl Listen<events::Submit> for SVGFEDistantLightElement { type Event = SubmitEv
 impl Listen<events::Suspend> for SVGFEDistantLightElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEDistantLightElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEDistantLightElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEDistantLightElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEDistantLightElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEDistantLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEDistantLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEDistantLightElement { type Event = TouchEvent; }
@@ -126538,7 +126538,7 @@ impl Listen<events::Animationstart> for SVGFEPointLightElement { type Event = An
 impl Listen<events::Auxclick> for SVGFEPointLightElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFEPointLightElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFEPointLightElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFEPointLightElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFEPointLightElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFEPointLightElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFEPointLightElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFEPointLightElement { type Event = Event; }
@@ -126547,7 +126547,7 @@ impl Listen<events::Canplaythrough> for SVGFEPointLightElement { type Event = Ev
 impl Listen<events::Change> for SVGFEPointLightElement { type Event = Event; }
 impl Listen<events::Click> for SVGFEPointLightElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFEPointLightElement { type Event = Event; }
-impl Listen<events::Command> for SVGFEPointLightElement { type Event = Event; }
+impl Listen<events::Command> for SVGFEPointLightElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFEPointLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFEPointLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFEPointLightElement { type Event = CompositionEvent; }
@@ -126633,7 +126633,7 @@ impl Listen<events::Submit> for SVGFEPointLightElement { type Event = SubmitEven
 impl Listen<events::Suspend> for SVGFEPointLightElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFEPointLightElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFEPointLightElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFEPointLightElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFEPointLightElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFEPointLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFEPointLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFEPointLightElement { type Event = TouchEvent; }
@@ -126663,7 +126663,7 @@ impl Listen<events::Animationstart> for SVGFESpotLightElement { type Event = Ani
 impl Listen<events::Auxclick> for SVGFESpotLightElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGFESpotLightElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGFESpotLightElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGFESpotLightElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGFESpotLightElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGFESpotLightElement { type Event = Event; }
 impl Listen<events::Blur> for SVGFESpotLightElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGFESpotLightElement { type Event = Event; }
@@ -126672,7 +126672,7 @@ impl Listen<events::Canplaythrough> for SVGFESpotLightElement { type Event = Eve
 impl Listen<events::Change> for SVGFESpotLightElement { type Event = Event; }
 impl Listen<events::Click> for SVGFESpotLightElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGFESpotLightElement { type Event = Event; }
-impl Listen<events::Command> for SVGFESpotLightElement { type Event = Event; }
+impl Listen<events::Command> for SVGFESpotLightElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGFESpotLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGFESpotLightElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGFESpotLightElement { type Event = CompositionEvent; }
@@ -126758,7 +126758,7 @@ impl Listen<events::Submit> for SVGFESpotLightElement { type Event = SubmitEvent
 impl Listen<events::Suspend> for SVGFESpotLightElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGFESpotLightElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGFESpotLightElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGFESpotLightElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGFESpotLightElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGFESpotLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGFESpotLightElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGFESpotLightElement { type Event = TouchEvent; }
@@ -126788,7 +126788,7 @@ impl Listen<events::Animationstart> for SVGClipPathElement { type Event = Animat
 impl Listen<events::Auxclick> for SVGClipPathElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGClipPathElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGClipPathElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGClipPathElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGClipPathElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGClipPathElement { type Event = Event; }
 impl Listen<events::Blur> for SVGClipPathElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGClipPathElement { type Event = Event; }
@@ -126797,7 +126797,7 @@ impl Listen<events::Canplaythrough> for SVGClipPathElement { type Event = Event;
 impl Listen<events::Change> for SVGClipPathElement { type Event = Event; }
 impl Listen<events::Click> for SVGClipPathElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGClipPathElement { type Event = Event; }
-impl Listen<events::Command> for SVGClipPathElement { type Event = Event; }
+impl Listen<events::Command> for SVGClipPathElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGClipPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGClipPathElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGClipPathElement { type Event = CompositionEvent; }
@@ -126883,7 +126883,7 @@ impl Listen<events::Submit> for SVGClipPathElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGClipPathElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGClipPathElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGClipPathElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGClipPathElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGClipPathElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGClipPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGClipPathElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGClipPathElement { type Event = TouchEvent; }
@@ -126913,7 +126913,7 @@ impl Listen<events::Animationstart> for SVGMaskElement { type Event = AnimationE
 impl Listen<events::Auxclick> for SVGMaskElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for SVGMaskElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for SVGMaskElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for SVGMaskElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for SVGMaskElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for SVGMaskElement { type Event = Event; }
 impl Listen<events::Blur> for SVGMaskElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for SVGMaskElement { type Event = Event; }
@@ -126922,7 +126922,7 @@ impl Listen<events::Canplaythrough> for SVGMaskElement { type Event = Event; }
 impl Listen<events::Change> for SVGMaskElement { type Event = Event; }
 impl Listen<events::Click> for SVGMaskElement { type Event = PointerEvent; }
 impl Listen<events::Close> for SVGMaskElement { type Event = Event; }
-impl Listen<events::Command> for SVGMaskElement { type Event = Event; }
+impl Listen<events::Command> for SVGMaskElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for SVGMaskElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for SVGMaskElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for SVGMaskElement { type Event = CompositionEvent; }
@@ -127008,7 +127008,7 @@ impl Listen<events::Submit> for SVGMaskElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for SVGMaskElement { type Event = Event; }
 impl Listen<events::TextInput> for SVGMaskElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for SVGMaskElement { type Event = Event; }
-impl Listen<events::Toggle> for SVGMaskElement { type Event = Event; }
+impl Listen<events::Toggle> for SVGMaskElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for SVGMaskElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for SVGMaskElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for SVGMaskElement { type Event = TouchEvent; }
@@ -127439,7 +127439,7 @@ impl Listen<events::Submit> for HTMLDirectoryElement { type Event = SubmitEvent;
 impl Listen<events::Suspend> for HTMLDirectoryElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLDirectoryElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLDirectoryElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLDirectoryElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLDirectoryElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLDirectoryElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLDirectoryElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLDirectoryElement { type Event = TouchEvent; }
@@ -127564,7 +127564,7 @@ impl Listen<events::Submit> for HTMLFontElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLFontElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLFontElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLFontElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLFontElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLFontElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLFontElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLFontElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLFontElement { type Event = TouchEvent; }
@@ -127689,7 +127689,7 @@ impl Listen<events::Submit> for HTMLFrameElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLFrameElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLFrameElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLFrameElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLFrameElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLFrameElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLFrameElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLFrameElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLFrameElement { type Event = TouchEvent; }
@@ -127722,7 +127722,7 @@ impl Listen<events::Beforeinput> for HTMLFrameSetElement { type Event = InputEve
 impl Listen<events::Beforematch> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Beforeprint> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Beforetoggle> for HTMLFrameSetElement { type Event = ToggleEvent; }
-impl Listen<events::Beforeunload> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Beforeunload> for HTMLFrameSetElement { type Event = BeforeUnloadEvent; }
 impl Listen<events::Beforexrselect> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Blur> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Cancel> for HTMLFrameSetElement { type Event = Event; }
@@ -127762,10 +127762,10 @@ impl Listen<events::Focusout> for HTMLFrameSetElement { type Event = FocusEvent;
 impl Listen<events::Formdata> for HTMLFrameSetElement { type Event = FormDataEvent; }
 impl Listen<events::Fullscreenchange> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Fullscreenerror> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Gamepadconnected> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Gamepaddisconnected> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Gamepadconnected> for HTMLFrameSetElement { type Event = GamepadEvent; }
+impl Listen<events::Gamepaddisconnected> for HTMLFrameSetElement { type Event = GamepadEvent; }
 impl Listen<events::Gotpointercapture> for HTMLFrameSetElement { type Event = PointerEvent; }
-impl Listen<events::Hashchange> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Hashchange> for HTMLFrameSetElement { type Event = HashChangeEvent; }
 impl Listen<events::Input> for HTMLFrameSetElement { type Event = InputEvent; }
 impl Listen<events::Installresult> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Invalid> for HTMLFrameSetElement { type Event = Event; }
@@ -127792,10 +127792,10 @@ impl Listen<events::Navbeforefocus> for HTMLFrameSetElement { type Event = UIEve
 impl Listen<events::Navnotarget> for HTMLFrameSetElement { type Event = UIEvent; }
 impl Listen<events::Offline> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Online> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Pagehide> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Pagereveal> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Pageshow> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Pageswap> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Pagehide> for HTMLFrameSetElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pagereveal> for HTMLFrameSetElement { type Event = PageRevealEvent; }
+impl Listen<events::Pageshow> for HTMLFrameSetElement { type Event = PageTransitionEvent; }
+impl Listen<events::Pageswap> for HTMLFrameSetElement { type Event = PageSwapEvent; }
 impl Listen<events::Paste> for HTMLFrameSetElement { type Event = ClipboardEvent; }
 impl Listen<events::Pause> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Play> for HTMLFrameSetElement { type Event = Event; }
@@ -127809,12 +127809,12 @@ impl Listen<events::Pointerout> for HTMLFrameSetElement { type Event = PointerEv
 impl Listen<events::Pointerover> for HTMLFrameSetElement { type Event = PointerEvent; }
 impl Listen<events::Pointerrawupdate> for HTMLFrameSetElement { type Event = PointerEvent; }
 impl Listen<events::Pointerup> for HTMLFrameSetElement { type Event = PointerEvent; }
-impl Listen<events::Popstate> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Popstate> for HTMLFrameSetElement { type Event = PopStateEvent; }
 impl Listen<events::Progress> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Promptaction> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Promptdismiss> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Ratechange> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Rejectionhandled> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Rejectionhandled> for HTMLFrameSetElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Reset> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Resize> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Scroll> for HTMLFrameSetElement { type Event = Event; }
@@ -127827,12 +127827,12 @@ impl Listen<events::Selectionchange> for HTMLFrameSetElement { type Event = Even
 impl Listen<events::Selectstart> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Slotchange> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Stalled> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Storage> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Storage> for HTMLFrameSetElement { type Event = StorageEvent; }
 impl Listen<events::Submit> for HTMLFrameSetElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLFrameSetElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLFrameSetElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLFrameSetElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLFrameSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLFrameSetElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLFrameSetElement { type Event = TouchEvent; }
@@ -127841,7 +127841,7 @@ impl Listen<events::Transitioncancel> for HTMLFrameSetElement { type Event = Tra
 impl Listen<events::Transitionend> for HTMLFrameSetElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionrun> for HTMLFrameSetElement { type Event = TransitionEvent; }
 impl Listen<events::Transitionstart> for HTMLFrameSetElement { type Event = TransitionEvent; }
-impl Listen<events::Unhandledrejection> for HTMLFrameSetElement { type Event = Event; }
+impl Listen<events::Unhandledrejection> for HTMLFrameSetElement { type Event = PromiseRejectionEvent; }
 impl Listen<events::Unload> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Validationstatuschange> for HTMLFrameSetElement { type Event = Event; }
 impl Listen<events::Volumechange> for HTMLFrameSetElement { type Event = Event; }
@@ -127958,7 +127958,7 @@ impl Listen<events::Submit> for HTMLMarqueeElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLMarqueeElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLMarqueeElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLMarqueeElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLMarqueeElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLMarqueeElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLMarqueeElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLMarqueeElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLMarqueeElement { type Event = TouchEvent; }
@@ -128083,7 +128083,7 @@ impl Listen<events::Submit> for HTMLParamElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLParamElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLParamElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLParamElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLParamElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLParamElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLParamElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLParamElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLParamElement { type Event = TouchEvent; }
@@ -128208,7 +128208,7 @@ impl Listen<events::Submit> for HTMLUnknownElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for HTMLUnknownElement { type Event = Event; }
 impl Listen<events::TextInput> for HTMLUnknownElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for HTMLUnknownElement { type Event = Event; }
-impl Listen<events::Toggle> for HTMLUnknownElement { type Event = Event; }
+impl Listen<events::Toggle> for HTMLUnknownElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for HTMLUnknownElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for HTMLUnknownElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for HTMLUnknownElement { type Event = TouchEvent; }
@@ -128264,7 +128264,7 @@ impl Listen<events::Animationstart> for MathMLElement { type Event = AnimationEv
 impl Listen<events::Auxclick> for MathMLElement { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for MathMLElement { type Event = InputEvent; }
 impl Listen<events::Beforematch> for MathMLElement { type Event = Event; }
-impl Listen<events::Beforetoggle> for MathMLElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for MathMLElement { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for MathMLElement { type Event = Event; }
 impl Listen<events::Blur> for MathMLElement { type Event = FocusEvent; }
 impl Listen<events::Cancel> for MathMLElement { type Event = Event; }
@@ -128273,7 +128273,7 @@ impl Listen<events::Canplaythrough> for MathMLElement { type Event = Event; }
 impl Listen<events::Change> for MathMLElement { type Event = Event; }
 impl Listen<events::Click> for MathMLElement { type Event = PointerEvent; }
 impl Listen<events::Close> for MathMLElement { type Event = Event; }
-impl Listen<events::Command> for MathMLElement { type Event = Event; }
+impl Listen<events::Command> for MathMLElement { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for MathMLElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for MathMLElement { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for MathMLElement { type Event = CompositionEvent; }
@@ -128359,7 +128359,7 @@ impl Listen<events::Submit> for MathMLElement { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for MathMLElement { type Event = Event; }
 impl Listen<events::TextInput> for MathMLElement { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for MathMLElement { type Event = Event; }
-impl Listen<events::Toggle> for MathMLElement { type Event = Event; }
+impl Listen<events::Toggle> for MathMLElement { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for MathMLElement { type Event = TouchEvent; }
 impl Listen<events::Touchend> for MathMLElement { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for MathMLElement { type Event = TouchEvent; }
@@ -128736,7 +128736,7 @@ impl Listen<events::Autofill> for XMLDocument { type Event = Event; }
 impl Listen<events::Auxclick> for XMLDocument { type Event = PointerEvent; }
 impl Listen<events::Beforeinput> for XMLDocument { type Event = InputEvent; }
 impl Listen<events::Beforematch> for XMLDocument { type Event = Event; }
-impl Listen<events::Beforetoggle> for XMLDocument { type Event = Event; }
+impl Listen<events::Beforetoggle> for XMLDocument { type Event = ToggleEvent; }
 impl Listen<events::Beforexrselect> for XMLDocument { type Event = Event; }
 impl Listen<events::Blur> for XMLDocument { type Event = Event; }
 impl Listen<events::Cancel> for XMLDocument { type Event = Event; }
@@ -128745,7 +128745,7 @@ impl Listen<events::Canplaythrough> for XMLDocument { type Event = Event; }
 impl Listen<events::Change> for XMLDocument { type Event = Event; }
 impl Listen<events::Click> for XMLDocument { type Event = PointerEvent; }
 impl Listen<events::Close> for XMLDocument { type Event = Event; }
-impl Listen<events::Command> for XMLDocument { type Event = Event; }
+impl Listen<events::Command> for XMLDocument { type Event = CommandEvent; }
 impl Listen<events::Compositionend> for XMLDocument { type Event = CompositionEvent; }
 impl Listen<events::Compositionstart> for XMLDocument { type Event = CompositionEvent; }
 impl Listen<events::Compositionupdate> for XMLDocument { type Event = CompositionEvent; }
@@ -128836,7 +128836,7 @@ impl Listen<events::Submit> for XMLDocument { type Event = SubmitEvent; }
 impl Listen<events::Suspend> for XMLDocument { type Event = Event; }
 impl Listen<events::TextInput> for XMLDocument { type Event = TextEvent; }
 impl Listen<events::Timeupdate> for XMLDocument { type Event = Event; }
-impl Listen<events::Toggle> for XMLDocument { type Event = Event; }
+impl Listen<events::Toggle> for XMLDocument { type Event = ToggleEvent; }
 impl Listen<events::Touchcancel> for XMLDocument { type Event = TouchEvent; }
 impl Listen<events::Touchend> for XMLDocument { type Event = TouchEvent; }
 impl Listen<events::Touchmove> for XMLDocument { type Event = TouchEvent; }
@@ -128868,10 +128868,10 @@ impl Listen<events::Timeout> for XMLHttpRequest { type Event = ProgressEvent; }
 impl Listen<events::Abort> for XMLHttpRequestEventTarget { type Event = Event; }
 impl Listen<events::Error> for XMLHttpRequestEventTarget { type Event = Event; }
 impl Listen<events::Load> for XMLHttpRequestEventTarget { type Event = Event; }
-impl Listen<events::Loadend> for XMLHttpRequestEventTarget { type Event = Event; }
+impl Listen<events::Loadend> for XMLHttpRequestEventTarget { type Event = ProgressEvent; }
 impl Listen<events::Loadstart> for XMLHttpRequestEventTarget { type Event = Event; }
 impl Listen<events::Progress> for XMLHttpRequestEventTarget { type Event = Event; }
-impl Listen<events::Timeout> for XMLHttpRequestEventTarget { type Event = Event; }
+impl Listen<events::Timeout> for XMLHttpRequestEventTarget { type Event = ProgressEvent; }
 
 impl Listen<events::Abort> for XMLHttpRequestUpload { type Event = ProgressEvent; }
 impl Listen<events::Error> for XMLHttpRequestUpload { type Event = ProgressEvent; }
