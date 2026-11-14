@@ -127,11 +127,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-js-object-refused",
-    breaks: "a flattened `Dict` is refused, whose keys spread",
+    breaks: "a flattened `Dict` is refused as no struct of named fields too, beside its own refusal, which names `js::object::spread` (#1822)",
     file: "src/lower/analysis/validation.rs",
     find: " && !std(adt) || marks_js_object(tcx, adt, args)\n",
     replace: " && !std(adt)\n",
-    tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
+    tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
   },
   {
     name: "extern-fn-declared-accepted",

@@ -734,9 +734,10 @@ pub fn has_key() -> bool {
 }
 `)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`&'a js::Dict<u32>\`, ${why} yet`)]);
   // Beside a struct, react.dev's SandpackRoot's `{ ...template, ...files }`:
-  // a `&js::Unknown` and a `&Dict`.
+  // a `&js::Unknown` and a `&Dict`, refused for what they are alone, never
+  // as no struct of named fields too.
   for (const files of ["&'a js::Unknown", "&'a js::Dict<u32>"]) {
-    expect(refusal(`pub struct Inner {
+    const [compiled, said] = refusal(`pub struct Inner {
     pub a: u32,
 }
 pub struct Files<'a> {
@@ -748,7 +749,9 @@ pub struct Files<'a> {
 pub fn made<'a>(template: &'a Inner, files: ${files}) -> Files<'a> {
     Files { template, files }
 }
-`)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`${files}\`, ${why} yet`)]);
+`);
+    expect([compiled, said]).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`${files}\`, ${why} yet`)]);
+    expect(said).not.toContain("a flattened field is a struct of named fields");
   }
   // A `Copy` handle by value, whose copies are one object.
   const handle = `#[derive(Clone, Copy)]
