@@ -2,6 +2,31 @@
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
+
+  {
+    name: "untagged-records-shadow-unchecked",
+    breaks: "a flattened untagged enum whose record has a key its parent has too, `keyCode`, or its test member, `nativeEvent`, is taken as its parent's keys, which the parent's own would answer (#1818)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                && let Some(key) = shadowed_of(tcx, parent, &keys)\n",
+    replace: "                && let Some(key) = shadowed_of(tcx, parent, &keys).filter(|_| false)\n",
+    tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
+  },
+  {
+    name: "untagged-records-written-whole",
+    breaks: "a flattened untagged enum of records written whole, which would leave the other record's keys, isn't refused (#1818)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>\n",
+    replace: "                        && !(flattened.enum_of_keys(expr.ty) && placed.contains(&e)) =>\n",
+    tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
+  },
+  {
+    name: "untagged-records-matched-refused",
+    breaks: "a flattened untagged enum of records matched where it's flattened, the parent object, is refused as read whole (#1818)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>\n",
+    replace: "                        && !(keyed(expr.ty) && matched.contains(&e)) =>\n",
+    tests: ["test/flattened-untagged.test.ts", "-t", "declared an intersection"],
+  },
   {
     name: "flattened-variant-field-allowed",
     breaks:
@@ -374,8 +399,8 @@ export const mutations: Mutation[] = [
     name: "keyed-shadow-unchecked",
     breaks: "a keyed enum flattened into a parent with a field of one of its keys compiles, and the parent's own is overwritten (#504)",
     file: "src/lower/analysis/validation.rs",
-    find: "        .find(|key| keyed.keys.contains(key))\n",
-    replace: "        .find(|_| false)\n",
+    find: "    shadowed_of(tcx, parent, &keyed.keys)\n",
+    replace: "    shadowed_of(tcx, parent, &keyed.keys).filter(|_| false)\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
   },
   {
@@ -398,16 +423,16 @@ export const mutations: Mutation[] = [
     name: "keyed-placed-refused",
     breaks: "a flattened keyed enum matched where it's a place, or written whole, is refused as one read whole (#504)",
     file: "src/lower/analysis/validation.rs",
-    find: "                        && !(keyed(expr.ty) && placed.contains(&e)) =>\n",
-    replace: "                        =>\n",
+    find: "                        && !(keyed(expr.ty) && placed.contains(&e))\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
   {
     name: "keyed-placed-anything",
     breaks: "a flattened field of any type matched or written whole compiles, a type parameter's too (#504)",
     file: "src/lower/analysis/validation.rs",
-    find: "                        && !(keyed(expr.ty) && placed.contains(&e)) =>\n",
-    replace: "                        && !placed.contains(&e) =>\n",
+    find: "                        && !(keyed(expr.ty) && placed.contains(&e))\n",
+    replace: "                        && !placed.contains(&e)\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "moved out"],
   },
   {

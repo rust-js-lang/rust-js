@@ -43,14 +43,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // one TypeScript can't see, another module's (`any`), is what a
         // `Rest` is. A name both have is this one's, which TypeScript's
         // `Omit` says (ADR 0205).
-        // A keyed enum's, or a type parameter's, which an interface can't
-        // extend: what it's of besides, `{ flags: number } & K` (#504).
+        // A keyed enum's, an untagged enum's of records, or a type
+        // parameter's, which an interface can't extend: what it's of
+        // besides, `{ flags: number } & K` (#504, #1818).
         let flattened = variant.fields.iter().find(|f| is_flatten(self.tcx, f));
         let intersected = flattened
             .map(|field| self.tcx.type_of(field.did).instantiate_identity().skip_normalization())
             .filter(|ty| match ty.kind() {
                 ty::Param(_) => true,
-                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),
+                ty::Adt(..) => self.flattened.enum_of_keys(*ty),
                 _ => false,
             })
             .map(|ty| self.ts(ty));

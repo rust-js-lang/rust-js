@@ -288,7 +288,11 @@ pub(super) fn reject_flatten_misuse<'tcx>(
             // parent's (#504), or a type parameter, given one.
             let object = match ty.peel_refs().kind() {
                 _ if bindings::flattened_state(tcx, ty).is_some() => true,
-                ty::Adt(adt, _) if adt.is_enum() => flattened.keyed.contains(&adt.did()),
+                // Or an untagged enum of records, its record's keys the
+                // parent's (#1818): by value, as `flattened` finds it.
+                ty::Adt(adt, _) if adt.is_enum() => {
+                    flattened.keyed.contains(&adt.did()) || flattened.untagged.contains(&adt.did())
+                }
                 ty::Param(_) => !ty.is_ref(),
                 ty::Adt(adt, args) => plain(*adt, args),
                 _ => false,
@@ -297,7 +301,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 refuse(
                     tcx.def_span(field.did),
                     format!(
-                        "flattening `{ty}`: a flattened field is a struct of named fields, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields"
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields, or a `#[rust_js::untagged]` enum each of whose variants holds a struct of named fields"
                     ),
                 );
             }
@@ -319,6 +323,21 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 refuse(
                     tcx.def_span(field.did),
                     format!("flattening `{ty}`, whose `{key}` is a key of its parent's own"),
+                );
+            }
+            // An untagged enum's records' keys are its parent's too, and its
+            // test reads them, which a key of the parent's own would answer
+            // (#1818).
+            if let ty::Adt(adt, _) = ty.kind()
+                && flattened.untagged.contains(&adt.did())
+                && let Some(keys) = bindings::untagged_records(tcx, *adt)
+                && let Some(key) = shadowed_of(tcx, parent, &keys)
+            {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!(
+                        "flattening `{ty}`, whose `{key}` is a key of its parent's own, which its untagged test would read"
+                    ),
                 );
             }
         }
@@ -452,12 +471,20 @@ pub(super) fn reject_flatten_misuse<'tcx>(
             .collect();
         // A keyed enum's field is its parent's keys where it's matched, a
         // place a `match` or a `let` tests, or written whole (#504).
+        // An untagged enum of records, matched there, never written whole,
+        // which would leave another record's keys (#1818).
         let keyed = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()));
         let placed: IndexSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Match { scrutinee: at, .. }
                 | ExprKind::Let { expr: at, .. }
                 | ExprKind::Assign { lhs: at, .. } => Some(strip(thir, at)),
+                _ => None,
+            })
+            .collect();
+        let matched: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Match { scrutinee: at, .. } | ExprKind::Let { expr: at, .. } => Some(strip(thir, at)),
                 _ => None,
             })
             .collect();
@@ -525,7 +552,8 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                         && !lent.contains(&e)
                         && !bases.contains(&e)
                         && !own_calls.contains(&e)
-                        && !(keyed(expr.ty) && placed.contains(&e)) =>
+                        && !(keyed(expr.ty) && placed.contains(&e))
+                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>
                 {
                     refuse(
                         expr.span,
@@ -579,10 +607,16 @@ pub(super) fn reject_flattened_copies<'tcx>(
 /// A key of `keyed`'s that `parent`, a struct, has as its own field's
 /// (#504).
 fn shadowed_key(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keyed: &bindings::Keyed) -> Option<String> {
+    shadowed_of(tcx, parent, &keyed.keys)
+}
+
+/// A key of `keys`, a flattened enum's, that `parent`, a struct, has as
+/// its own field's (#504, #1818).
+fn shadowed_of(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keys: &[String]) -> Option<String> {
     (parent.fields.iter())
         .filter(|field| !bindings::is_flatten(tcx, field))
         .filter_map(|field| bindings::field_key(tcx, field).name().map(str::to_owned))
-        .find(|key| keyed.keys.contains(key))
+        .find(|key| keys.contains(key))
 }
 
 /// The names of `ty`'s fields its JS object has: a struct's own, and,

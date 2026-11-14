@@ -6,7 +6,9 @@ field is a struct of named fields, and
 [1044](1044-a-flattened-state-is-its-classs-own-keys.md), whose is a
 `RefCell` of a discriminated union, to an enum with no tag, and to a type
 parameter given one. Amended (2026-11-03): a type parameter given a
-struct is flattened as before.
+struct is flattened as before. Amended (2026-11-15, #1818): an untagged
+enum each of whose variants holds a record is flattened too, its record's
+keys the parent's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference. Each value of the enum the program makes has its variant's
@@ -190,3 +192,80 @@ Held by the corpus's `flattened_keyed_param`, whose graph is given a
 struct for its kind too (its JS `sub.width`, `total.text`), against native
 Rust, and `test/jsx-props.test.ts`'s DetailedHTMLProps cases; mutation
 `keyed-param-given-a-struct-refused` (`analysis/validation.ts`).
+
+## Amended (2026-11-15): an untagged enum of records (#1818)
+
+A UI kit's numeric keyboard takes a key and its modifiers together with a
+composition event, direct or wrapped by a framework, upstream's `{ key;
+shiftKey?; altKey? } & Parameters<typeof isComposing>[0]`, one object.
+Its port writes the union as the kit's events module does, and flattens it:
+
+```rust
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum CompositionInput<'a> {
+    Wrapped(WrappedCompositionEvent<'a>), // { #[rust_js::test] native_event, .. }
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Direct(&'a CompositionFields),        // { is_composing, key_code }
+}
+
+pub struct NumberKeyEvent<'a> {
+    pub key: &'a str,
+    pub shift_key: Option<bool>,
+    pub alt_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub composition: CompositionInput<'a>,
+}
+```
+
+It was refused, as a flattened enum was one told by its keys alone.
+
+**An untagged enum each of whose variants holds a record is flattened
+as its record's keys** (`bindings::untagged_records`, `Flattened.untagged`,
+the one owner, `flattened`, finding it of a field that names it). The
+record is a struct of named fields, of a crate's, or a reference to one.
+An untagged enum's value is its payload already (ADR 0214), so it's that
+record's object; flattened, its keys are the parent's, `{ key, shiftKey,
+altKey, ...composition }`, a variant made in place written there, and the
+field lent whole, `&event.composition`, is the parent itself, as a
+flattened field lent is (ADR 0204, amended), its `match` the enum's own
+test of the parent, `typeof event.nativeEvent === "object"`.
+
+- **Declared,** an intersection, as a keyed enum's parent is: `export type
+  NumberKeyEvent = { key: string; shiftKey?: boolean | undefined; altKey?:
+  boolean | undefined } & CompositionInput;`, upstream's.
+- **The enum's test decides on the parent** wherever the parent has no key
+  of a record's of its own, the test member's among them: each record's is
+  a member's kind or what the others aren't, which reads only the record's
+  keys. A parent's own key a record has, `key_code`, or a variant's test
+  member, `native_event`, is refused at the field, naming it.
+- **Refused** besides: a variant without fields, whose value is no object;
+  a JS object's, which an `instanceof` or a binding's test tells and the
+  parent isn't (a binding's JS object type is a tuple struct, which isn't a
+  record); a record with a flattened field of its own, or a key a symbol
+  names; a reference to the enum, which would copy its record; and the
+  field written whole, `event.composition = ..`, which would leave the
+  other record's keys, as a whole write of one is no keyed enum's.
+- **A reference payload is a flattened reference** (#1819, #1822): its
+  record's keys copied into the parent, so `Direct(&'a CompositionFields)`
+  is refused where that copy could be told from the source, a `Cell` of
+  its own, a `&mut`, or its address compared (`copied_references`), the
+  lead's decision on identity: the same guarantee, and the same refusals,
+  as a struct's flattened reference has.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where it's allowed;
+D where it's refused.
+
+Held by the corpus's `flattened_untagged_records` (each variant made in
+place and made elsewhere, matched, lent whole, read through, against
+native Rust in both builds), and `test/flattened-untagged.test.ts`: the
+kit's own types, with webapi's `Event`, their declarations checked by
+`tsc` with a caller's objects of either record, `@ts-expect-error` of a
+wrong one, and JS's own objects told apart as Rust's are; and each
+refusal by name, a parent's own key and test member, the field written
+whole, a reference payload's `Cell`, its address compared and a `&mut`, a
+reference to the enum and an enum of a JS object. Mutations
+`untagged-records-unfound`, `untagged-records-payload-uncopied`
+(`bindings/flattened.ts`), `untagged-records-shadow-unchecked`,
+`untagged-records-written-whole`, `untagged-records-matched-refused`
+(`analysis/validation.ts`) and `untagged-records-declared-extended`
+(`declarations.ts`).

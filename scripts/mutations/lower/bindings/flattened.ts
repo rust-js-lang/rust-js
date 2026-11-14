@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-records-unfound",
+    breaks: "an untagged enum of records a field flattens isn't its parent's keys, so a numeric keyboard's event is refused (#1818)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                ty::Adt(adt, _) if untagged_records(tcx, *adt).is_some() => {\n",
+    replace: "                ty::Adt(adt, _) if false && untagged_records(tcx, *adt).is_some() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_untagged_records.rs$"],
+  },
+  {
+    name: "untagged-records-payload-uncopied",
+    breaks: "an untagged enum's reference payload, spread into its parent, isn't asked whether its copy could be told from its referent, a `Cell` of its own or its address compared (#1818, #1819)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "        ty::Adt(adt, args) if untagged_records(tcx, *adt).is_some() => (adt.variants().iter())\n",
+    replace: "        ty::Adt(adt, args) if false && untagged_records(tcx, *adt).is_some() => (adt.variants().iter())\n",
+    tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
+  },
+
+  {
     name: "flattened-js-object-allowed",
     breaks: "a flattened JS object is copied into its parent, which misses a key `js::dict::set` sets later (#1822)",
     file: "src/lower/bindings/flattened.rs",

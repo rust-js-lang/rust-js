@@ -7,6 +7,13 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-records-declared-extended",
+    breaks: "a struct that flattens an untagged enum of records extends it, which an interface can't, not `{ key: string } & CompositionInput` (#1818)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
+    replace: "                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
+    tests: ["test/flattened-untagged.test.ts", "-t", "declared an intersection"],
+  },  {
     name: "cell-option-field-required",
     breaks:
       "a plain `Cell<Option<f64>>` field is declared `byteSize: number | null | undefined`, its cell's `Option` not seen, where it's `byteSize?: number | undefined` as an `Option` field is (rd415)",
@@ -229,8 +236,8 @@ export const mutations: Mutation[] = [
     name: "flattened-param-extended",
     breaks: "a struct of a flattened type parameter is declared an interface extending it, which TypeScript refuses (#504)",
     file: "src/lower/declarations/structures.rs",
-    find: "                ty::Param(_) => true,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
-    replace: "                ty::Param(_) => false,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
+    find: "                ty::Param(_) => true,\n                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
+    replace: "                ty::Param(_) => false,\n                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
   {

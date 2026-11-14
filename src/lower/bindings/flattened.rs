@@ -1,7 +1,8 @@
 //! What a `#[rust_js::flatten]` field holds as its parent's own keys,
 //! beside a struct's fields (ADR 0204): a `RefCell` of a discriminated
-//! union, a class's state (rd380, ADR 1044), and an enum each of whose
-//! variants a key of its own tells, a node's kind (#504, ADR 1071). The
+//! union, a class's state (rd380, ADR 1044), an enum each of whose
+//! variants a key of its own tells, a node's kind (#504, ADR 1071), and an
+//! untagged enum each of whose variants holds a record (#1818). The
 //! crate's of each, `flattened`, is the one answer representation,
 //! validation and declarations read.
 
@@ -128,6 +129,50 @@ pub(in crate::lower) fn keyed_shape(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Opt
     Some(Keyed { tells, keys })
 }
 
+/// The keys of `adt`'s records, where it's a `#[rust_js::untagged]` enum
+/// each of whose variants holds one, a struct of named fields of a crate's,
+/// or a reference to one (#1818): its value is that record's object, as
+/// any untagged enum's is its payload, so flattened, the record's keys are
+/// the parent's, `{ key, ...composition }`, and the untagged test of the
+/// parent, `"nativeEvent" in event`'s kind, is the record's where the
+/// parent has none of those keys of its own (`validation`). Each key once,
+/// in the order they're first declared. `None` of any other enum: one of
+/// a variant without fields, whose value is no object; of a JS object,
+/// which an `instanceof` or a binding's test tells, as the parent isn't;
+/// or of a record with a flattened field, or a key a symbol names.
+pub(in crate::lower) fn untagged_records(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Vec<String>> {
+    if !adt.is_enum() || !is_untagged(tcx, adt.did()) || crate::lower::recognition::is_std_crate(tcx, adt.did()) {
+        return None;
+    }
+    let mut keys: Vec<String> = Vec::new();
+    for variant in adt.variants() {
+        let ([field], Some(CtorKind::Fn)) = (&variant.fields.raw[..], variant.ctor_kind()) else {
+            return None;
+        };
+        let held = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        let ty::Adt(record, args) = held.peel_refs().kind() else {
+            return None;
+        };
+        if !record.is_struct()
+            || record.non_enum_variant().ctor.is_some()
+            || crate::lower::recognition::is_std_crate(tcx, record.did())
+            || crate::lower::representation::marks_js_object(tcx, *record, args)
+        {
+            return None;
+        }
+        for field in &record.non_enum_variant().fields {
+            if is_flatten(tcx, field) {
+                return None;
+            }
+            let key = field_key(tcx, field).name()?.to_owned();
+            if !keys.contains(&key) {
+                keys.push(key);
+            }
+        }
+    }
+    Some(keys)
+}
+
 /// What the crate's flattened fields hold that's their parents' own keys,
 /// beside a struct's fields.
 #[derive(Default)]
@@ -146,9 +191,20 @@ pub(in crate::lower) struct Flattened {
     /// Each struct's flattened type parameters, by their indices: what
     /// each type naming it gives one is flattened.
     pub params: IndexMap<DefId, Vec<u32>>,
+    /// Its untagged enums of records a field flattens (`untagged_records`,
+    /// #1818): each value its record's object, as any untagged enum's is,
+    /// whose keys are its parent's, the parent itself where it's lent.
+    pub untagged: IndexSet<DefId>,
 }
 
 impl Flattened {
+    /// Whether a value of `ty`, a flattened field's, is its parent's keys
+    /// as an enum's: a keyed one's, or an untagged one's of records,
+    /// matched where it's flattened as the parent object (#504, #1818).
+    pub(in crate::lower) fn enum_of_keys(&self, ty: Ty<'_>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.keyed.contains(&adt.did()) || self.untagged.contains(&adt.did()))
+    }
+
     /// `adt`'s keys, where its values are told by them.
     pub(in crate::lower) fn keyed(&self, tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Keyed> {
         match self.keyed.contains(&adt.did()) {
@@ -196,6 +252,9 @@ pub(in crate::lower) fn flattened<'tcx>(
             match ty.kind() {
                 ty::Adt(adt, _) if adt.did().is_local() && keyed_shape(tcx, *adt).is_some() => {
                     found.keyed.insert(adt.did());
+                }
+                ty::Adt(adt, _) if untagged_records(tcx, *adt).is_some() => {
+                    found.untagged.insert(adt.did());
                 }
                 ty::Param(param) => found.params.entry(id.to_def_id()).or_default().push(param.index),
                 _ => {}
@@ -272,8 +331,9 @@ pub(in crate::lower) fn flattened<'tcx>(
 
 /// What a flattened field's value holds that its parent's object copies,
 /// `{ ...item, severity }` (ADR 0204, amended), while something else may
-/// hold it too: a field's own `&Item`, and a JS object, whose handle any
-/// copy of shares it. Each is shared with its source in Rust, and a copy
+/// hold it too: a field's own `&Item`, an untagged enum's variant's,
+/// `Direct(&'a CompositionFields)` (#1818), and a JS object, whose handle
+/// any copy of shares it. Each is shared with its source in Rust, and a copy
 /// in JS, so each is asked `copy_seen`, and a reference's referent
 /// `copy_seen_in_crate`, which must find nothing that tells them apart
 /// (#1819, #1822).
@@ -281,6 +341,11 @@ pub(in crate::lower) fn copied_references<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>)
     match ty.kind() {
         ty::Ref(..) => vec![ty],
         ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args) => vec![ty],
+        ty::Adt(adt, args) if untagged_records(tcx, *adt).is_some() => (adt.variants().iter())
+            .flat_map(|variant| variant.fields.iter())
+            .map(|field| field.ty(tcx, args).skip_normalization())
+            .filter(|held| held.is_ref())
+            .collect(),
         _ => Vec::new(),
     }
 }

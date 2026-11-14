@@ -901,6 +901,16 @@ export function size(input) {
   webapi's `BlobPart::from(chunk)`, is the value, and one there that
   isn't the variant of its argument is an error where it's written
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #1775).
+- **Flattened, one each of whose variants holds a record is its record's
+  keys in its parent**, a struct of named fields or a reference to one,
+  as TypeScript's `{ key: string } & CompositionInput` is one object:
+  `#[cfg_attr(rust_js, rust_js::flatten)] pub composition:
+  CompositionInput<'a>` makes `{ key, ...composition }`, its `match` the
+  enum's test of the parent and `&event.composition` the parent itself. A
+  key the parent has too, the field written whole, and a reference payload
+  whose copy could be told from its source, a `Cell` of its own or its
+  address compared, are errors
+  ([ADR 1071](../../decisions/1071-a-flattened-enum-is-told-by-its-keys.md), amended, #1818).
 
 Arrays of different lengths, as React's Fizz server keeps a replay node,
 `[name, key, children, slots]` or a boundary's six, are told by their
