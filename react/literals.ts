@@ -10,7 +10,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 
 type Model = any;
 
@@ -57,10 +57,10 @@ function strings(t: Model): string[] | null {
 const membersOf = (name: string): Model[] => {
   const i = interfaces.get(name.replace(/^React\./, ""));
   if (!i) return [];
-  return [...i.members.filter((m: Model) => m.kind === "property"), ...i.extends.flatMap((e: Model) => membersOf(e.name))];
+  return [...checkedMembers(i.members).filter((m: Model) => m.kind === "property"), ...i.extends.flatMap((e: Model) => membersOf(e.name))];
 };
 const byAttribute = new Map<string, Map<string, string[]>>();
-for (const member of intrinsic.members) {
+for (const member of checkedMembers(intrinsic.members).filter((m: Model) => m.kind === "property")) {
   const props =
     member.type.name === "React.DetailedHTMLProps" ? member.type.args[0].name : /^React\.SVG/.test(member.type.name) ? member.type.name : null;
   if (!props) continue;

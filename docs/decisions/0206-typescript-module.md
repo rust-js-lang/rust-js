@@ -76,3 +76,28 @@ await ts.close();
 - **The compiler prints through the package a project has installed**, so
   a change to the model needs both released together: an older
   `@rust-js/typescript` can't print a newer compiler's type parameters.
+
+## Amendment (2026-11-15): construct signatures are structured members
+
+A Member of kind construct holds typeParameters, params and returns, read
+with the existing readers and printed by TypeScript
+createConstructSignatureDeclaration. It is distinct from a method named
+new (quoted by the printer) and from a class constructor. Interfaces and
+object types share this one model. Optional and rest parameters, generic
+constraints and the return type survive a read/print/read round trip.
+
+Builtins and WebAPI coverage consume construct members to count
+constructors; the old raw-text new regexes are removed. Property/method
+readers deliberately skip construct members. checkedMembers, owned by this
+module, validates the Member discriminants before those readers select
+the kinds they consume; an unknown kind throws. It preserves the input
+type and does not validate or invent field representations. The negative
+protocol test supplies an unknown member to both the guard and printer.
+Rust transports JSON models to the printer; existing Rust declaration
+producers continue producing their existing property/method/index members.
+
+This follows ADR 0262 case N: these are TypeScript syntax/model boundaries,
+with no new Rust/JavaScript semantic exception. Tests cover both interface
+and nested object positions, a method literally named new, optional/rest
+arguments, generic constraints and exact round trips. Intl coverage uses
+the same constructor model to exercise every changed native call site.

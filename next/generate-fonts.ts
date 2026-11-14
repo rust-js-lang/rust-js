@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 
 const next = join(import.meta.dir, "../examples/next/node_modules/next");
 const declarations = join(next, "dist/compiled/@next/font/dist/google/index.d.ts");
@@ -55,7 +55,7 @@ const fonts: Font[] = [];
 for (const d of found) {
   if (d.kind !== "function") continue;
   const [options] = d.params;
-  const members: Member[] = options.type.members;
+  const members: Member[] = checkedMembers(options.type.members).filter((m: Member) => m.kind === "property");
   for (const m of members) {
     if (m.name in values) literals(m.type).forEach((v) => values[m.name as keyof typeof values].add(v));
   }

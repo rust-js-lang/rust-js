@@ -11,7 +11,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 
 const types = join(import.meta.dir, "../node_modules/@types/node");
 const src = join(import.meta.dir, "src");
@@ -120,7 +120,7 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
         for (const d of module.declarations) {
           if (d.kind === "const" && d.name === assigned && d.type?.kind === "reference") {
             const shape = interfaces.get(d.type.name.split(".").pop());
-            for (const m of shape?.members ?? []) if ((m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name)) own.set(m.name, "value");
+            for (const m of checkedMembers(shape?.members ?? [])) if ((m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name)) own.set(m.name, "value");
           }
           if (d.kind === "namespace" && d.name === assigned) {
             for (const inner of d.declarations) {
@@ -150,7 +150,7 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
     const find = (list: any[]) => {
       for (const d of list) {
         if (d.kind === "interface" && d.name === shape) {
-          for (const m of d.members) if ((m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name)) members.set(m.name, "value");
+          for (const m of checkedMembers(d.members)) if ((m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name)) members.set(m.name, "value");
         }
         if (d.declarations) find(d.declarations);
       }

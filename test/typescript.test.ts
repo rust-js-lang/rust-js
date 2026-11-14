@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 import { fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
@@ -273,4 +273,44 @@ test("print writes erasable syntax only", async () => {
   } finally {
     await ts.close();
   }
+});
+
+// Construct signatures are callable with new; a method named "new" is not.
+test("construct signatures retain generics and optional/rest arguments in every member position", async () => {
+  const dir = fixture("typescript-construct");
+  const file = join(dir, "construct.d.ts");
+  writeFileSync(file, `export interface Factory {
+    new <T extends object>(value: T, label?: string, ...rest: number[]): T;
+    "new"(): string;
+}
+
+export type Nested = {
+    new (value?: string): Factory;
+};
+`);
+  const ts = await open([file]);
+  try {
+    const model = await ts.read(file);
+    const factory = model.declarations[0];
+    expect(factory).toMatchObject({kind: "interface", members: [
+      {kind: "construct", typeParameters: [{name: "T", constraint: {kind: "keyword", keyword: "object"}}], params: [
+        {name: "value", optional: false, rest: false},
+        {name: "label", optional: true, rest: false},
+        {name: "rest", optional: false, rest: true},
+      ], returns: {kind: "reference", name: "T"}},
+      {kind: "method", name: "new"},
+    ]});
+    expect(model.declarations[1]).toMatchObject({kind: "type", type: {kind: "object", members: [{kind: "construct", params: [{optional: true}], returns: {kind: "reference", name: "Factory"}}]}});
+    if (factory.kind !== "interface") throw new Error("expected the factory interface");
+    expect(checkedMembers(factory.members)).toBe(factory.members);
+    expect(() => checkedMembers([{kind: "future-member"}] as any)).toThrow("isn't one TypeScript is given");
+    const printed = await ts.print(model);
+    expect(printed).toBe(await Bun.file(file).text());
+    const again = join(dir, "again.d.ts");
+    writeFileSync(again, printed);
+    const reopened = await open([again]);
+    try { expect(await reopened.read(again)).toEqual(model); }
+    finally { await reopened.close(); }
+    await expect(ts.print({declarations: [{...factory, members: [{kind: "unrecognized-member"}]}]} as any)).rejects.toThrow("isn't one TypeScript is given");
+  } finally { await ts.close(); }
 });

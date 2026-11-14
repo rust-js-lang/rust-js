@@ -191,6 +191,22 @@ What it has:
   `&f64::sqrt` lent as a `&dyn Fn`, is `Math.sqrt`, and `std::f64::consts::PI` is `Math.PI`
   ([Numbers](../interop/types.md#numbers),
   [ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md)).
+- **Intl inputs:** `js::intl::date_time_format::new(Some(&"en-US"), Some(&options))`
+  takes a locale string, an Intl.Locale, or a list. Use None for the runtime's
+  locale or default options. Owned strings/vectors and borrowed arrays/slices
+  use the same input trait; a mixed list uses LocaleElement::Text and
+  LocaleElement::Locale. DisplayNames still requires its options.
+  A formatter's `format(Some(&timestamp))` and `format(Some(&date))`
+  accept numbers and Date objects; `format(None)` uses the current time.
+  formatToParts follows the same rule. Range methods take their two values
+  directly, including the pinned TypeScript library's bigint form. Bindings
+  preserve the engine's native coercion and errors. getCanonicalLocales uses
+  its distinct string/list-only contract, with None for no locales.
+  Date and String locale methods take the same locale union as formatters.
+  supported_locales_of takes full formatter options for Collator,
+  DateTimeFormat, NumberFormat and RelativeTimeFormat; other formatters
+  use SupportedLocalesOptions with a LocaleMatcher enum.
+  Native formatter records remain typed when exported from Rust.
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and

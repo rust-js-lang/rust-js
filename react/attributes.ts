@@ -9,7 +9,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 import { needsJsName, snake } from "../scripts/rust-names";
 import { EVENT_TYPES } from "./names";
 
@@ -36,7 +36,7 @@ const aliases = new Map<string, Model>(
 // The element each interface types, `HTMLAnchorElement` of `<a>`'s: one
 // interface of several elements' is their base's.
 const elementOf = new Map<string, Set<string>>();
-for (const member of intrinsic.members) {
+for (const member of checkedMembers(intrinsic.members).filter((m: Model) => m.kind === "property")) {
   const [attributes, element] = member.type.args ?? [];
   const props = attributes?.kind === "reference" && attributes.args?.[0]?.kind === "reference" ? attributes : null;
   if (!props || element?.kind !== "reference") continue;
@@ -60,7 +60,7 @@ const element = (name: string, base: string) => {
 // a struct flattens one other only.
 type Struct = { rust: string; ts: string; element: string; own: Model[]; flatten?: { field: string; struct: string } };
 const structs: Struct[] = [];
-const flat = (name: string) => [interfaces.get("AriaAttributes"), interfaces.get("DOMAttributes"), interfaces.get(name)].flatMap((i) => i.members);
+const flat = (name: string) => [interfaces.get("AriaAttributes"), interfaces.get("DOMAttributes"), interfaces.get(name)].flatMap((i) => checkedMembers(i.members));
 structs.push({ rust: "HTMLAttributes", ts: "HTMLAttributes", element: "HTMLElement", own: flat("HTMLAttributes") });
 structs.push({ rust: "SVGAttributes", ts: "SVGAttributes", element: "SVGElement", own: flat("SVGAttributes") });
 // As @types/react names it: `AnchorHTMLAttributes`.
@@ -75,7 +75,7 @@ for (const [name, declaration] of interfaces) {
     rust: rustName(name),
     ts: name,
     element: element(name, "HTMLElement"),
-    own: declaration.members,
+    own: checkedMembers(declaration.members),
     flatten: { field: base.name === "HTMLAttributes" ? "html" : snake(base.name.replace("HTMLAttributes", "")), struct: rustName(base.name) },
   });
 }
@@ -197,7 +197,7 @@ for (const struct of structs) {
 // `ClassAttributes`'s, is hand-written).
 for (const [name, declaration] of interfaces) {
   if (!/^SVG\w+ElementAttributes$/.test(name)) continue;
-  if (declaration.members.length || declaration.extends.length !== 1 || declaration.extends[0].name !== "SVGProps") {
+  if (checkedMembers(declaration.members).length || declaration.extends.length !== 1 || declaration.extends[0].name !== "SVGProps") {
     throw new Error(`${name} isn't SVGProps alone`);
   }
   const of = name.replace(/Attributes$/, "");

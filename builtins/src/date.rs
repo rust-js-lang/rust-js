@@ -5,7 +5,7 @@
 //! an `i32`, as ReScript's Stdlib has them.
 
 
-use super::intl::DateTimeFormatOptions;
+use super::intl::{DateTimeFormatOptions, IntoLocalesArgument};
 use super::{JsError, JsObject};
 use core::marker::PhantomData;
 
@@ -263,19 +263,19 @@ impl Date {
 
     /// [`date.toLocaleString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString): its date and time as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleString")]
-    pub fn to_locale_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
+    pub fn to_locale_string(&self, locales: Option<&dyn IntoLocalesArgument>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 
     /// [`date.toLocaleDateString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString): its date as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleDateString")]
-    pub fn to_locale_date_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
+    pub fn to_locale_date_string(&self, locales: Option<&dyn IntoLocalesArgument>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 
     /// [`date.toLocaleTimeString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleTimeString): its time as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleTimeString")]
-    pub fn to_locale_time_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
+    pub fn to_locale_time_string(&self, locales: Option<&dyn IntoLocalesArgument>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 }

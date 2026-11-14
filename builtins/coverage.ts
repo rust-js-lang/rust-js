@@ -11,7 +11,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
+import { snake } from "../scripts/rust-names";
 
 /** The built-ins measured: classes, namespaces and objects of functions. */
 export const SCOPE = [
@@ -45,15 +46,108 @@ export type Coverage = { all: string[]; covered: string[] };
 const libs = new URL("../node_modules/typescript-es/lib/", import.meta.url).pathname;
 const src = new URL("./src/", import.meta.url).pathname;
 
+/** The one library-level selection for member and argument coverage. */
+const libraryFiles = () => readdirSync(libs)
+  .filter((f) => /^lib\.es(5|20(1[5-9]|2[0-4]))(\.[a-z.]+)?\.d\.ts$/.test(f) && !f.includes(".full."))
+  .map((f) => join(libs, f));
+
+/** Native Rust callers derived from the pinned library's argument unions.
+ * Unknown future members fail here, rather than leaving narrower bindings green.
+ * Compile these callers: deleting a trait member must lose coverage too. */
+export async function intlArgumentCases(): Promise<{ source: string; cases: number; sites: string[] }> {
+  const files = libraryFiles();
+  const session = await open(files);
+  const aliases = new Map<string, any>();
+  const calls = new Map<string, { params: any[]; invoke: (args: string[]) => string }[]>();
+  const formatters = new Set(SCOPE.filter(name => name.startsWith("Intl.") && name !== "Intl.Locale").map(name => name.slice(5)));
+  const add = (name: string, params: any[], invoke: (args: string[]) => string) => {
+    calls.set(name, [...(calls.get(name) ?? []), {params, invoke}]);
+  };
+  const walk = (declarations: any[], namespace = "") => {
+    for (const d of declarations) {
+      if (d.kind === "namespace") walk(d.declarations, namespace + d.name + ".");
+      else if (d.kind === "type") aliases.set(namespace + d.name, d.type);
+      else if (namespace === "Intl." && d.kind === "function" && d.name === "getCanonicalLocales") {
+        add("Intl.getCanonicalLocales", d.params, args => "intl::get_canonical_locales(" + args.join(", ") + ")");
+      } else if (namespace === "Intl." && (d.kind === "interface" || (d.kind === "const" && d.type.kind === "object"))) {
+        const name = d.name.replace(/Constructor$/, "");
+        for (const m of checkedMembers(d.members ?? d.type.members)) {
+          if (formatters.has(name) && (m.kind === "construct" || (m.kind === "method" && m.name === "supportedLocalesOf"))) {
+            const method = m.kind === "construct" ? "new" : "supported_locales_of";
+            add("Intl." + name + "." + method, m.params, args => "intl::" + snake(name) + "::" + method + "(" + args.join(", ") + ")");
+          } else if (d.name === "DateTimeFormat" && m.kind === "method" && /^(format|formatToParts|formatRange|formatRangeToParts)$/.test(m.name)) {
+            add("Intl.DateTimeFormat." + m.name, m.params, args => "formatter." + snake(m.name) + "(" + args.join(", ") + ")");
+          }
+        }
+      } else if (d.kind === "interface" && (d.name === "Date" || d.name === "String")) {
+        for (const m of checkedMembers(d.members)) if (m.kind === "method" && /^toLocale(String|DateString|TimeString|LowerCase|UpperCase)$/.test(m.name) && m.params.length) {
+          add(d.name + "." + m.name, m.params, args => d.name === "Date"
+            ? "date." + snake(m.name) + "(" + args.join(", ") + ")"
+            : "js::string::" + snake(m.name) + '("TEXT", ' + args.join(", ") + ")");
+        }
+      }
+    }
+  };
+  try { for (const file of files) walk((await session.read(file)).declarations); }
+  finally { await session.close(); }
+  const values = (type: any): (string | undefined)[] => {
+    if (type.kind === "union") return [...new Set<string | undefined>(type.types.flatMap(values))];
+    if (type.kind === "reference") {
+      const alias = aliases.get(type.name) ?? aliases.get("Intl." + type.name);
+      if (alias) return values(alias);
+      if (type.name === "Locale") return ['intl::locale::new("de-DE", &intl::LocaleOptions::default()).unwrap()'];
+      if (type.name === "Date") return ['js::date::new(Some(&0.0))'];
+    }
+    if (type.kind === "keyword") {
+      if (type.keyword === "string") return ['"en-US"', 'String::from("en-US")', '&String::from("en-US")'];
+      if (type.keyword === "number") return ["0.0"];
+      if (type.keyword === "bigint") return ["0_i64", "0_u64"];
+      if (type.keyword === "undefined") return [undefined];
+    }
+    if (type.kind === "array") return values(type.element).flatMap(value => {
+      if (value === undefined) throw new Error("an Intl array element admits undefined; extend its Rust union");
+      return [`&[${value}]`, `vec![${value}]`];
+    });
+    throw new Error("uncovered Intl argument member: " + JSON.stringify(type));
+  };
+  const source = ['use js::intl;'];
+  const options = new Map<string, string>();
+  const emitted = new Set<string>();
+  for (const overloads of calls.values()) for (const {params, invoke} of overloads) {
+    const variants = params.map(p => {
+      if (p.name === "options") {
+        const name = p.type.kind === "reference" && p.type.name !== "Pick"
+          ? p.type.name.replace(/^Intl\./, "") : "SupportedLocalesOptions";
+        const value = "options_" + snake(name);
+        options.set(name, value);
+        return [value, ...(p.optional ? [undefined] : [])];
+      }
+      const result = values(p.type);
+      return p.optional && !result.includes(undefined) ? [...result, undefined] : result;
+    });
+    const argument = (value: string | undefined, index: number) => {
+      if (value === undefined) return "None";
+      if (params[index].name === "options") return params[index].optional ? `Some(${value})` : value;
+      if (params[index].optional || variants[index].includes(undefined) || overloads.some(o => o.params[index]?.optional || (o.params[index] && o.params[index].name !== "options" && values(o.params[index].type).includes(undefined)))) return `Some(&${value})`;
+      return value;
+    };
+    for (let i = 0; i < params.length; i++) for (const value of variants[i]) {
+      const args = params.map((_, j) => argument(i === j ? value : variants[j][0], j));
+      emitted.add("    let _ = " + invoke(args) + ";");
+    }
+  }
+  source.push("pub fn coverage(formatter: &intl::DateTimeFormat, date: &js::Date, " + [...options].map(([name, value]) => `${value}: &intl::${name}`).join(", ") + ") {", ...emitted, "}");
+  return {source: source.join("\n") + "\n", cases: emitted.size, sites: [...calls.keys()].sort()};
+}
+
 /** Each built-in's members: instance ones by name, `static:` ones, and
  * `constructor` where `new` makes one. */
 async function typescript(): Promise<Map<string, Set<string>>> {
-  const files = readdirSync(libs)
-    .filter((f) => /^lib\.es(5|20(1[5-9]|2[0-4]))(\.[a-z.]+)?\.d\.ts$/.test(f) && !f.includes(".full."))
-    .map((f) => join(libs, f));
+  const files = libraryFiles();
   const session = await open(files);
   const interfaces = new Map<string, Set<string>>();
   const heritage = new Map<string, string[]>();
+  const constructSignatures = new Set<string>();
   const constructors = new Map<string, { statics: Set<string>; ctor: boolean } | string>();
   const functions = new Set<string>();
   const named = (m: any) => (m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name);
@@ -62,16 +156,17 @@ async function typescript(): Promise<Map<string, Set<string>>> {
       const name = prefix + d.name;
       if (d.kind === "interface") {
         const set = interfaces.get(name) ?? new Set<string>();
-        for (const m of d.members) if (named(m)) set.add(m.name);
+        for (const m of checkedMembers(d.members)) if (named(m)) set.add(m.name);
         interfaces.set(name, set);
+        if (checkedMembers(d.members).some((m: any) => m.kind === "construct")) constructSignatures.add(name);
         // What it extends, by its name in the namespace it's in.
         const parents = d.extends.filter((e: any) => e.kind === "reference").map((e: any) => prefix + e.name);
         heritage.set(name, [...(heritage.get(name) ?? []), ...parents]);
       } else if (d.kind === "const") {
         if (d.type.kind === "reference") constructors.set(name, prefix + d.type.name);
         else if (d.type.kind === "object") {
-          const statics = new Set<string>(d.type.members.filter(named).map((m: any) => m.name));
-          const ctor = d.type.members.some((m: any) => m.kind === "other" && /^new\s*[(<]/.test(m.text.replace(/\/\*[\s\S]*?\*\//g, "").trim()));
+          const statics = new Set<string>(checkedMembers(d.type.members).filter(named).map((m: any) => m.name));
+          const ctor = checkedMembers(d.type.members).some((m: any) => m.kind === "construct");
           constructors.set(name, { statics, ctor });
         }
       } else if (d.kind === "function") {
@@ -82,11 +177,8 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     }
   };
   for (const f of files) walk((await session.read(f)).declarations, "");
-  // A constructor interface's construct signatures aren't members the model
-  // names: read them from its text. And what TypeScript marks
-  // `@deprecated`, "a legacy feature for browser compatibility", `RegExp.$1`,
+  // What TypeScript marks `@deprecated`, "a legacy feature for browser compatibility", `RegExp.$1`,
   // by the interface it's in: not counted.
-  const ctorText = new Map<string, boolean>();
   const deprecated = new Set<string>();
   for (const f of files) {
     const text = readFileSync(f, "utf8");
@@ -94,10 +186,6 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     for (const m of text.matchAll(comment)) {
       const owner = [...text.slice(0, m.index).matchAll(/interface (\w+)/g)].at(-1)?.[1];
       if (owner) deprecated.add(`${owner}.${m[1] ?? m[2]}`);
-    }
-    // An interface ends at the brace indented as it is: one in `namespace Intl` too.
-    for (const m of text.matchAll(/^( *)interface (\w+Constructor)\s*(?:<[^>]*>)?\s*\{([\s\S]*?)\n\1\}/gm)) {
-      if (/^\s*new\s*[(<]/m.test(m[3])) ctorText.set(m[2], true);
     }
   }
   await session.close();
@@ -116,7 +204,7 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     if (typeof ctor === "string") {
       const of = ctor.split(".").pop()!;
       for (const m of interfaces.get(ctor) ?? []) if (m !== "prototype" && !deprecated.has(`${of}.${m}`)) members.add(`static:${m}`);
-      if (!own && ctorText.get(ctor.split(".").pop()!)) members.add("constructor");
+      if (!own && constructSignatures.has(ctor)) members.add("constructor");
     } else if (ctor) {
       for (const m of ctor.statics) if (m !== "prototype") members.add(`static:${m}`);
       if (ctor.ctor) members.add("constructor");

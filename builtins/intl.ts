@@ -20,8 +20,11 @@ const close = () => {
   if (out.at(-1) === "") out.pop();
 };
 
+const stringUnions = new Map<string, string[]>();
+
 /** An enum of a string union's values, each its JS. */
 const union = (name: string, doc: string, values: string[]) => {
+  stringUnions.set(name, values);
   line(`/// ${doc}`);
   line(`#[derive(Clone, Copy, Debug, PartialEq, Eq)]`);
   line(`pub enum ${name} {`);
@@ -44,20 +47,35 @@ const field = ([js, ty]: Field) => {
  * an `undefined` option. A field given as required isn't. */
 /** The options structs that borrow text, `<'a>`. */
 const borrowing = new Set<string>();
-const options = (name: string, doc: string, fields: Field[], required: string[] = []) => {
+const options = (name: string, doc: string, fields: Field[], required: string[] = [], types: string | null = `Intl.${name}`) => {
   const lifetime = fields.some(([, ty]) => ty.includes("'a"));
   if (lifetime) borrowing.add(name);
   line(`/// ${doc}`);
   line(`/// A JS object of these fields, a \`None\` one not given${required.length ? "" : ": `..Default::default()` the rest"}.`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(types ?? anonymous(fields, required))})]`);
   if (!required.length) line("#[derive(Default)]");
   line(`pub struct ${name}${lifetime ? "<'a>" : ""} {`);
   for (const [js, ty] of fields) field([js, required.includes(js) ? ty : `Option<${ty}>`]);
   line("}");
   line();
 };
+/** An anonymous native record, from the same fields that write its Rust.
+ * Intl has no names for SupportedLocalesOptions or ListFormat's part. */
+const anonymous = (fields: Field[], required: string[]) => "{ " + fields.map(([js, rust]) => {
+  const optional = rust.startsWith("Option<");
+  const type = optional ? rust.slice(7, -1) : rust;
+  const union = stringUnions.get(type);
+  const value = type === "String" || /^&(?:'\w+ )?str$/.test(type) ? "string"
+    : union ? union.map(value => JSON.stringify(value)).join(" | ")
+    : undefined;
+  if (!value) throw new Error("anonymous Intl field type is not supported: " + rust);
+  return js + (optional || !required.includes(js) ? "?" : "") + ": " + value;
+}).join("; ") + " }";
+
 /** What's read: a JS object's fields as it gives them. */
-const record = (name: string, doc: string, fields: Field[]) => {
+const record = (name: string, doc: string, fields: Field[], types: string | null = `Intl.${name}`) => {
   line(`/// ${doc}`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(types ?? anonymous(fields, fields.map(([name]) => name)))})]`);
   line(`#[derive(Clone, Debug, PartialEq)]`);
   line(`pub struct ${name} {`);
   for (const f of fields) field(f);
@@ -85,9 +103,12 @@ const classed = (name: string) => {
 
 /** A formatter: its type, its methods, and its module's constructor and
  * `supportedLocalesOf`. */
-const formatter = (name: string, doc: string, methods: [string, string, string][], ctor: { options: string; result?: string; doc?: string }) => {
+// lib.es2020.intl.d.ts:453/459/465 reuse constructor options for these formatters;
+// lib.es2020.intl.d.ts also names RelativeTimeFormatOptions for its static.
+const formatter = (name: string, doc: string, methods: [string, string, string][], ctor: { options: string; result?: string; doc?: string; supportedOptions?: "constructor" }) => {
   const js = `Intl.${name}`;
   const module = snake(name);
+  const supportedOptions = ctor.supportedOptions === "constructor" ? ctor.options : "SupportedLocalesOptions";
   line(`/// [\`${js}\`](${page(name)}): ${doc}`);
   line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(js)})]`);
@@ -106,12 +127,12 @@ const formatter = (name: string, doc: string, methods: [string, string, string][
   method(
     ctor.doc ?? `[\`new ${js}(locales, options)\`](${page(`${name}/${name}`)}): one of the first of \`locales\` it has, or the user's of none, as \`options\` say.`,
     `new ${js}`,
-    `new(locales: &[&str], options: &${ctor.options}${borrowing.has(ctor.options) ? "<'_>" : ""}) -> ${ctor.result ?? `&'static ${name}`}`,
+    `new(locales: Option<&dyn IntoLocalesArgument>, options: ${name === "DisplayNames" ? "&" : "Option<&"}${ctor.options}${borrowing.has(ctor.options) ? "<'_>" : ""}${name === "DisplayNames" ? "" : ">"}) -> ${ctor.result ?? `&'static ${name}`}`,
   );
   method(
     `[\`${js}.supportedLocalesOf(locales)\`](${page(`${name}/supportedLocalesOf`)}): those of \`locales\` it has, without falling back to the user's.`,
     `${js}.supportedLocalesOf`,
-    "supported_locales_of(locales: &[&str], options: &SupportedLocalesOptions) -> Vec<String>",
+    `supported_locales_of(locales: Option<&dyn IntoLocalesArgument>, options: Option<&${supportedOptions}${borrowing.has(supportedOptions) ? "<'_>" : ""}>) -> Vec<String>`,
   );
   close();
   line("}");
@@ -123,7 +144,7 @@ const resolved = (name: string) => [`[\`${name.toLowerCase()}.resolvedOptions()\
 line("//! JS's [`Intl`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl):");
 line("//! text, numbers, dates, plurals and lists as a locale writes them (ADR 0283),");
 line("//! as TypeScript's `lib.es*.intl.d.ts` and ReScript's `Stdlib_Intl` have it.");
-line("//! A formatter is made of `locales`, `&[\"de-DE\"]`, the user's of none, and");
+line("//! A formatter takes an optional locale or list, `Some(&\"de-DE\")`, the user's of `None`, and");
 line("//! options, `&NumberFormatOptions { style: Some(NumberStyle::Currency), ..Default::default() }`,");
 line("//! of which JS throws a `RangeError` of one it can't have.");
 line("//! Generated by `builtins/intl.ts`; edit the shape there.");
@@ -132,8 +153,49 @@ line();
 line("use core::cmp::Ordering;");
 line("use core::marker::PhantomData;");
 line();
-line("use super::{Date, JsError, JsObject};");
+line("use super::{BigInt, Date, JsError, JsObject};");
 line();
+
+// Argument membership is written once here; sealed implementations and the
+// public erased input trait are derived from it (ADRs 0229, 0443).
+const argument = (name: string, type: string, members: string[], lists = false) => {
+  const module = snake(name);
+  line(`mod ${module} {`);
+  if (members.some(member => /Date|Locale|BigInt/.test(member))) line("    use super::*;");
+  line("    pub trait Sealed {}");
+  if (lists) line("    pub trait Element {}");
+  for (const member of members) {
+    line(`    impl Sealed for ${member} {}`);
+    if (lists) line(`    impl Element for ${member} {}`);
+  }
+  if (lists) {
+    for (const member of ["&[T]", "Vec<T>", "&Vec<T>"]) line(`    impl<T: Element> Sealed for ${member} {}`);
+    for (const member of ["[T; N]", "&[T; N]"]) line(`    impl<T: Element, const N: usize> Sealed for ${member} {}`);
+  }
+  line("}");
+  line(`/// A \`${type}\` input: each member as it is, without a wrapper.`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(type)})]`);
+  line(`pub trait ${name}: ${module}::Sealed {}`);
+  line(`impl<T: ${module}::Sealed> ${name} for T {}`);
+  line();
+};
+// typescript-es 5.9.3 lib.es2020.intl.d.ts:98 (LocalesArgument).
+line("/// A member of a mixed locales list, a string or Intl.Locale.");
+line("#[cfg_attr(rust_js, rust_js::untagged)]");
+line("pub enum LocaleElement<'a> {");
+line("    Text(&'a str),");
+line("    #[cfg_attr(rust_js, rust_js::otherwise)]");
+line("    Locale(&'a Locale),");
+line("}");
+line();
+argument("IntoLocalesArgument", "Intl.LocalesArgument", ["&str", "String", "&String", "&Locale", "LocaleElement<'_>"], true);
+// lib.es2016.intl.d.ts:24: getCanonicalLocales accepts strings, not Locale.
+argument("IntoStrOrStrList", "string | readonly string[]", ["&str", "String", "&String"], true);
+// lib.es5.d.ts:4548 and lib.es2017.intl.d.ts:42: optional Date | number.
+const dateMembers = ["&Date", "f64"];
+argument("IntoDateOrNumber", "Date | number", dateMembers);
+// lib.es2021.intl.d.ts:37-38: required Date | number | bigint.
+argument("IntoBigIntOrDateOrNumber", "bigint | Date | number", [...dateMembers, "&BigInt", "i64", "u64"]);
 
 // ── What's shared ───────────────────────────────────────────────────────
 
@@ -142,12 +204,13 @@ union("Style", "How wide a word is written: `\"long\"`, `\"short\"` or `\"narrow
 union("CaseFirst", "Which of upper and lower case is ordered first: `caseFirst`.", ["upper", "lower", "false"]);
 union("HourCycle", "How hours are counted: `hourCycle`, `\"h23\"` from 0 to 23.", ["h11", "h12", "h23", "h24"]);
 union("RangeSource", "Which of a range's ends a part is of: `source`.", ["startRange", "endRange", "shared"]);
-options("SupportedLocalesOptions", "What `supported_locales_of` is given.", [["localeMatcher", "LocaleMatcher"]]);
+// These two shapes are anonymous in the pinned lib; refer to their actual owner.
+options("SupportedLocalesOptions", "What `supported_locales_of` is given.", [["localeMatcher", "LocaleMatcher"]], [], null);
 
 // ── Intl ────────────────────────────────────────────────────────────────
 
 union("SupportedValuesKey", "What `supported_values_of` lists.", ["calendar", "collation", "currency", "numberingSystem", "timeZone", "unit"]);
-method(`[\`Intl.getCanonicalLocales(locales)\`](${page("getCanonicalLocales")}): \`locales\`, each as JS writes it, once, or the \`RangeError\` of one that isn't a locale.`, "Intl.getCanonicalLocales", "get_canonical_locales(locales: &[&str]) -> Result<Vec<String>, &'static JsError>", "");
+method(`[\`Intl.getCanonicalLocales(locales)\`](${page("getCanonicalLocales")}): \`locales\`, each as JS writes it, once, or the \`RangeError\` of one that isn't a locale.`, "Intl.getCanonicalLocales", "get_canonical_locales(locales: Option<&dyn IntoStrOrStrList>) -> Result<Vec<String>, &'static JsError>", "");
 method(`[\`Intl.supportedValuesOf(key)\`](${page("supportedValuesOf")}): the calendars, currencies, time zones or units it has.`, "Intl.supportedValuesOf", "supported_values_of(key: SupportedValuesKey) -> Vec<String>", "");
 
 // ── Collator ────────────────────────────────────────────────────────────
@@ -165,7 +228,7 @@ record("ResolvedCollatorOptions", "What a collator uses.", [
 formatter("Collator", "text compared as a locale orders it.", [
   [`[\`collator.compare(a, b)\`](${page("Collator/compare")}): how \`a\` is ordered to \`b\`, \`v.sort_by(|a, b| collator.compare(a, b))\`; JS's -1, 0 or 1 (ADR 0057).`, "compare", "compare(&self, a: &str, b: &str) -> Ordering"],
   resolved("Collator"),
-], { options: "CollatorOptions" });
+], { options: "CollatorOptions", supportedOptions: "constructor" });
 
 // ── NumberFormat ────────────────────────────────────────────────────────
 
@@ -218,7 +281,7 @@ formatter("NumberFormat", "numbers written as a locale writes them.", [
   [`[\`format.formatRange(start, end)\`](${nf("formatRange")}): the range written, \`$3–5\`.`, "formatRange", "format_range(&self, start: f64, end: f64) -> String"],
   [`[\`format.formatRangeToParts(start, end)\`](${nf("formatRangeToParts")}): the range written, part by part.`, "formatRangeToParts", "format_range_to_parts(&self, start: f64, end: f64) -> Vec<NumberRangeFormatPart>"],
   resolved("NumberFormat"),
-], { options: "NumberFormatOptions" });
+], { options: "NumberFormatOptions", supportedOptions: "constructor" });
 
 // ── DateTimeFormat ──────────────────────────────────────────────────────
 
@@ -248,12 +311,12 @@ record("DateTimeFormatPart", "A part of a written date: `formatToParts`'.", [["t
 record("DateTimeRangeFormatPart", "A part of a written range of dates, and which end it's of.", [["type", "DateTimeFormatPartType"], ["value", "String"], ["source", "RangeSource"]]);
 const dtf = (m: string) => page(`DateTimeFormat/${m}`);
 formatter("DateTimeFormat", "dates written as a locale writes them.", [
-  [`[\`format.format(date)\`](${dtf("format")}): \`date\` written.`, "format", "format(&self, date: &Date) -> String"],
-  [`[\`format.formatToParts(date)\`](${dtf("formatToParts")}): \`date\` written, part by part.`, "formatToParts", "format_to_parts(&self, date: &Date) -> Vec<DateTimeFormatPart>"],
-  [`[\`format.formatRange(start, end)\`](${dtf("formatRange")}): the range written, \`Jan 10 – 20, 2007\`.`, "formatRange", "format_range(&self, start: &Date, end: &Date) -> String"],
-  [`[\`format.formatRangeToParts(start, end)\`](${dtf("formatRangeToParts")}): the range written, part by part.`, "formatRangeToParts", "format_range_to_parts(&self, start: &Date, end: &Date) -> Vec<DateTimeRangeFormatPart>"],
+  [`[\`format.format(date)\`](${dtf("format")}): \`date\` written.`, "format", "format(&self, date: Option<&dyn IntoDateOrNumber>) -> String"],
+  [`[\`format.formatToParts(date)\`](${dtf("formatToParts")}): \`date\` written, part by part.`, "formatToParts", "format_to_parts(&self, date: Option<&dyn IntoDateOrNumber>) -> Vec<DateTimeFormatPart>"],
+  [`[\`format.formatRange(start, end)\`](${dtf("formatRange")}): the range written, \`Jan 10 – 20, 2007\`.`, "formatRange", "format_range(&self, start: impl IntoBigIntOrDateOrNumber, end: impl IntoBigIntOrDateOrNumber) -> String"],
+  [`[\`format.formatRangeToParts(start, end)\`](${dtf("formatRangeToParts")}): the range written, part by part.`, "formatRangeToParts", "format_range_to_parts(&self, start: impl IntoBigIntOrDateOrNumber, end: impl IntoBigIntOrDateOrNumber) -> Vec<DateTimeRangeFormatPart>"],
   resolved("DateTimeFormat"),
-], { options: "DateTimeFormatOptions" });
+], { options: "DateTimeFormatOptions", supportedOptions: "constructor" });
 
 // ── PluralRules ─────────────────────────────────────────────────────────
 
@@ -283,7 +346,7 @@ formatter("RelativeTimeFormat", "a time from now written as a locale writes it, 
   [`[\`format.format(value, unit)\`](${rtf("format")}): \`value\` \`unit\`s from now written, ago if negative.`, "format", "format(&self, value: f64, unit: RelativeTimeUnit) -> String"],
   [`[\`format.formatToParts(value, unit)\`](${rtf("formatToParts")}): written, part by part.`, "formatToParts", "format_to_parts(&self, value: f64, unit: RelativeTimeUnit) -> Vec<RelativeTimeFormatPart>"],
   resolved("RelativeTimeFormat"),
-], { options: "RelativeTimeFormatOptions" });
+], { options: "RelativeTimeFormatOptions", supportedOptions: "constructor" });
 
 // ── ListFormat ──────────────────────────────────────────────────────────
 
@@ -291,7 +354,7 @@ union("ListFormatType", "What a list says: `\"conjunction\"` `a, b, and c`, `\"d
 union("ListFormatPartType", "What a part of a written list is: an item, or what's between.", ["element", "literal"]);
 options("ListFormatOptions", "What [`list_format::new`] is given.", [["localeMatcher", "LocaleMatcher"], ["type", "ListFormatType"], ["style", "Style"]]);
 record("ResolvedListFormatOptions", "What a list format uses.", [["locale", "String"], ["style", "Style"], ["type", "ListFormatType"]]);
-record("ListFormatPart", "A part of a written list.", [["type", "ListFormatPartType"], ["value", "String"]]);
+record("ListFormatPart", "A part of a written list.", [["type", "ListFormatPartType"], ["value", "String"]], null);
 formatter("ListFormat", "lists written as a locale writes them.", [
   [`[\`format.format(list)\`](${page("ListFormat/format")}): \`list\` written.`, "format", "format(&self, list: &[&str]) -> String"],
   [`[\`format.formatToParts(list)\`](${page("ListFormat/formatToParts")}): \`list\` written, part by part.`, "formatToParts", "format_to_parts(&self, list: &[&str]) -> Vec<ListFormatPart>"],

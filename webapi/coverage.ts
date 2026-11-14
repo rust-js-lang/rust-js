@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import idl from "@webref/idl";
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 
 /** A class's members, and of them its methods, and what each that gives a
  * `NodeListOf<X>` lists, `querySelectorAll`'s `Element`. */
@@ -94,7 +94,7 @@ export async function typescriptInterfaces(): Promise<Map<string, { members: Set
   for (const d of declarations as any[]) {
     if (d.kind !== "interface") continue;
     const known = interfaces.get(d.name) ?? { members: new Set<string>(), required: new Set<string>() };
-    for (const member of d.members) {
+    for (const member of checkedMembers(d.members)) {
       if (member.kind === "method" || member.kind === "property") known.members.add(member.name);
       if (member.kind === "property" && !member.optional) known.required.add(member.name);
     }
@@ -166,7 +166,7 @@ export async function typescript(): Promise<Map<string, Members>> {
     const ds = declared.get(name) ?? [];
     const params = ds.flatMap((d) => (d.typeParameters ?? []).map((p: any) => p.name));
     for (const d of ds) {
-      const index = d.members.find((m: any) => m.kind === "index" && m.key?.keyword === "number");
+      const index = checkedMembers(d.members).find((m: any) => m.kind === "index" && m.key?.keyword === "number");
       if (index?.type?.kind === "reference" && !params.includes(index.type.name)) return index.type.name;
       if (index) return undefined;
     }
@@ -174,7 +174,7 @@ export async function typescript(): Promise<Map<string, Members>> {
       if (e.kind !== "reference") continue;
       const parentDs = declared.get(e.name) ?? [];
       const parentParams = parentDs.flatMap((d) => (d.typeParameters ?? []).map((p: any) => p.name));
-      const index = parentDs.flatMap((d) => d.members).find((m: any) => m.kind === "index" && m.key?.keyword === "number");
+      const index = parentDs.flatMap((d) => checkedMembers(d.members)).find((m: any) => m.kind === "index" && m.key?.keyword === "number");
       const at = index?.type?.kind === "reference" ? parentParams.indexOf(index.type.name) : -1;
       if (at >= 0 && e.args[at]?.kind === "reference") return e.args[at].name;
       const inherited = indexed(e.name, seen);
@@ -186,24 +186,24 @@ export async function typescript(): Promise<Map<string, Members>> {
     if (d.kind === "interface") {
       const m = of(d.name);
       for (const e of d.extends) if (e.kind === "reference") m.extends.push(e.name);
-      for (const member of d.members) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
-      for (const member of d.members) if (member.kind === "method") m.methods.add(member.name);
-      for (const member of d.members) if (member.kind === "property" && isFunction(member.type)) m.functions.add(member.name);
+      for (const member of checkedMembers(d.members)) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
+      for (const member of checkedMembers(d.members)) if (member.kind === "method") m.methods.add(member.name);
+      for (const member of checkedMembers(d.members)) if (member.kind === "property" && isFunction(member.type)) m.functions.add(member.name);
       // What may be `null`, `T | null` or `null`, and what can't, of its own.
       const isNull = (t: any) => t?.kind === "keyword" && t.keyword === "null";
       const mayBeNull = (t: any) => isNull(t) || (t?.kind === "union" && t.types.some(isNull));
-      for (const member of d.members) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(member.name);
-      for (const member of d.members) {
+      for (const member of checkedMembers(d.members)) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(member.name);
+      for (const member of checkedMembers(d.members)) {
         const back = member.kind === "method" ? givenBack(member) : undefined;
         if (back) m.givesBack.set(member.name, back);
         const item = listed(member);
         if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
       }
-    } else if (d.kind === "const" && d.type.kind === "object" && d.type.members.some((x: any) => x.name === "prototype")) {
+    } else if (d.kind === "const" && d.type.kind === "object" && checkedMembers(d.type.members).some((x: any) => x.name === "prototype")) {
       classes.add(d.name);
       const m = of(d.name);
-      for (const x of d.type.members) {
-        if (x.kind === "other" && /^new\s*[(<]/.test(x.text)) m.ctor = true;
+      for (const x of checkedMembers(d.type.members)) {
+        if (x.kind === "construct") m.ctor = true;
         else if (x.name && x.name !== "prototype") m.statics.add(x.name);
       }
     }
@@ -384,12 +384,12 @@ export async function typescriptEventMaps(): Promise<{
     if (d.kind !== "interface") continue;
     const parents = (d.extends as any[]).filter((e) => e.kind === "reference").map((e) => e.name as string);
     extendsOf.set(d.name, [...(extendsOf.get(d.name) ?? []), ...parents]);
-    const listen = (d.members as any[]).find((m) => m.kind === "method" && m.name === "addEventListener" && m.typeParameters?.length);
+    const listen = checkedMembers(d.members as any[]).find((m) => m.kind === "method" && m.name === "addEventListener" && m.typeParameters?.length);
     const map = listen?.typeParameters[0].constraint?.text?.match(/^keyof (\w+)$/)?.[1];
     if (map) mapOf.set(d.name, map);
     if (d.name.endsWith("EventMap")) {
       const events = own.get(d.name)?.events ?? new Map<string, string>();
-      for (const m of d.members as any[]) if (m.kind === "property") events.set(m.name, text(m.type));
+      for (const m of checkedMembers(d.members as any[])) if (m.kind === "property") events.set(m.name, text(m.type));
       own.set(d.name, { extends: [...(own.get(d.name)?.extends ?? []), ...parents], events });
     }
   }

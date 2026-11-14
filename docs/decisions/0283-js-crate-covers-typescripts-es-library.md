@@ -439,3 +439,54 @@ the infinities among them, each beside counts 0, 1, 2.7, 15, 100, 101, -1,
 `NaN`, `Infinity` and none, each answer or error against JS's own; the
 stepping's `Number((distance / step).toPrecision(15))`; and the JS,
 `x.toFixed(digits)` and `x.toPrecision(precision)`.
+
+## Amendment (2026-11-15): exact Intl argument unions (#1830, #1834)
+
+The hand-written Intl spec remains the one authority. The pinned coverage
+library is typescript-es 5.9.3, ES5 through ES2024. Its declarations, cited
+beside the spec's input definitions, determine the unions and optionality.
+
+- Formatter constructors and supportedLocalesOf share IntoLocalesArgument:
+  a string, Intl.Locale, or a list mixing them. Borrowed and owned strings,
+  slices, arrays and vectors use that form; LocaleElement represents a mixed
+  list's elements. An optional union is Option<&dyn IntoLocalesArgument>.
+  Date and String locale methods consume this same form.
+- getCanonicalLocales has a distinct string/list-only union, IntoStrOrStrList.
+  It does not admit Locale in its Rust contract. Undefined is None.
+- format and formatToParts take an optional Date | number. Range methods
+  take required Date | number | bigint arguments. Each union has one sealed
+  input trait, reused by its methods. They forward values unchanged,
+  including native errors and coercion; there is no runtime adapter.
+- Options are optional where TypeScript makes them optional. DisplayNames'
+  options remain required. SupportedLocalesOptions' localeMatcher remains
+  LocaleMatcher, the exact lookup/best-fit union. Collator, DateTimeFormat,
+  NumberFormat and RelativeTimeFormat supportedLocalesOf take their full
+  formatter options, as the pinned overloads specify; the others take the
+  matcher-only shape.
+- Native Intl records/options carry their actual native TypeScript types.
+  Named records use their names; the two anonymous records derive their
+  structural type from the same field catalog that generates their Rust,
+  with string-union membership shared with enum generation.
+
+This follows ADR 0262's first case: there is no observable difference at
+these foreign API boundaries. Rustc checks membership; no cast or wrapper
+admits another shape. Negative caller tests reject nonmembers. Bun and
+Chromium compare compiled Rust calls with the same engine's native Intl,
+including invalid tags, invalid dates, range ordering and bigint errors.
+The APIs have no native Rust implementation; the oracle is JavaScript's
+actual Intl, not an approximate Rust locale library.
+
+Member-count coverage is supplemented by callers derived from the pinned
+TypeScript union model. A future union member cannot silently leave a
+narrower Rust binding green: an unknown member fails coverage, and removing
+an admitted Rust member fails the derived callers. The same library-file
+selection owns member coverage and argument coverage. Public Result return
+declarations remain the separately tracked #1835 limitation.
+
+The argument-coverage test reads structured construct signatures through
+ADR 0206, never a regex over their source. It covers all 26 changed sites:
+eight constructors, eight supportedLocalesOf statics, three Date methods,
+two String methods, four DateTimeFormat methods and getCanonicalLocales.
+Every overload contributes accepted union members. Typed option inputs also
+catch narrowing a full formatter options type to matcher-only. Unknown
+argument members fail coverage rather than silently disappear.

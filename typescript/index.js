@@ -37,6 +37,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *
  * @typedef {{ kind: "property", name: MemberName, optional: boolean, readonly: boolean, type: Type, docs?: string }
  *   | { kind: "method", name: MemberName, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
+ *   | { kind: "construct", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", readonly?: boolean, parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
  *
@@ -65,6 +66,28 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "unique-symbol" }
  *   | { kind: "other", text: string }} Type
  */
+
+/** Check the Member protocol before a reader selects the kinds it consumes.
+ * A construct signature is deliberately distinct from a class constructor.
+ * @template {readonly {kind: string}[]} T
+ * @param {T} members
+ * @returns {T}
+ */
+export function checkedMembers(members) {
+  for (const m of members) {
+    switch (m.kind) {
+      case "property":
+      case "method":
+      case "construct":
+      case "index":
+      case "other":
+        break;
+      default:
+        throw new Error(`a member isn't one TypeScript is given: ${JSON.stringify(m)}`);
+    }
+  }
+  return members;
+}
 
 const KEYWORDS = {
   [SyntaxKind.StringKeyword]: "string",
@@ -399,6 +422,15 @@ function readMember(node, text) {
         kind: "method",
         name: nameOf(node.name, text),
         optional: optional(node),
+        typeParameters: typeParameters(node, text),
+        params: node.parameters.map((p) => readParam(p, text)),
+        returns: node.type
+          ? readType(node.type, text)
+          : { kind: "keyword", keyword: "any" },
+      };
+    case SyntaxKind.ConstructSignature:
+      return {
+        kind: "construct",
         typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
         returns: node.type
@@ -752,6 +784,12 @@ function member(m) {
         // type's `new(): Counter` is its construct signature (#507).
         m.name === "new" ? string(m.name) : propertyName(m.name),
         m.optional ? f.createToken(SyntaxKind.QuestionToken) : undefined,
+        typeParameterNodes(m.typeParameters),
+        m.params.map(param),
+        typeNode(m.returns),
+      );
+    case "construct":
+      return f.createConstructSignatureDeclaration(
         typeParameterNodes(m.typeParameters),
         m.params.map(param),
         typeNode(m.returns),

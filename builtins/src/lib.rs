@@ -2617,7 +2617,7 @@ pub mod string {
     /// host's of `None`, left out: Turkish's `I` is a dotless `ı`, where
     /// `str::to_lowercase`, which is no locale's, gives `i`.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleLowerCase")]
-    pub fn to_locale_lower_case(this: &str, locales: Option<&[&str]>) -> String {
+    pub fn to_locale_lower_case(this: &str, locales: Option<&dyn super::intl::IntoLocalesArgument>) -> String {
         unreachable!()
     }
 
@@ -2626,7 +2626,7 @@ pub mod string {
     /// host's of `None`, left out: Turkish's `i` is a dotted `İ`, where
     /// `str::to_uppercase` gives `I`.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleUpperCase")]
-    pub fn to_locale_upper_case(this: &str, locales: Option<&[&str]>) -> String {
+    pub fn to_locale_upper_case(this: &str, locales: Option<&dyn super::intl::IntoLocalesArgument>) -> String {
         unreachable!()
     }
 }

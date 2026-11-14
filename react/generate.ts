@@ -19,7 +19,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 import { snake } from "../scripts/rust-names";
 import { EVENT_TYPES } from "./names";
 
@@ -190,7 +190,7 @@ await ts.close();
 const typed: string[] = declarations
   .find((d: any) => d.kind === "namespace" && d.name === "React")
   .declarations.filter((d: any) => d.kind === "interface" && /(HTML|SVG)Attributes$/.test(d.name))
-  .flatMap((d: any) => d.members)
+  .flatMap((d: any) => checkedMembers(d.members))
   .filter((m: any) => m.kind === "property" && /^[a-zA-Z]+$/.test(m.name))
   .map((m: any) => m.name);
 // What each attribute takes, as @types/react types it in every interface
@@ -224,7 +224,7 @@ const kindsOf = (t: any): string[] => {
 const valueKinds = new Map<string, Set<string>>();
 for (const d of reactNamespace) {
   if (d.kind !== "interface" || !/(HTML|SVG)Attributes$/.test(d.name)) continue;
-  for (const m of d.members) {
+  for (const m of checkedMembers(d.members)) {
     if (m.kind !== "property" || !/^[a-zA-Z][a-zA-Z0-9]*$/.test(m.name)) continue;
     if (!valueKinds.has(m.name)) valueKinds.set(m.name, new Set());
     for (const kind of kindsOf(m.type)) valueKinds.get(m.name)!.add(kind);
@@ -274,7 +274,7 @@ const interfaces = new Map<string, any>(reactTypes.filter((d: any) => d.kind ===
 const propsOf = (name: string): Set<string> => {
   const i = interfaces.get(name.replace(/^React\./, ""));
   if (!i) return new Set();
-  const own = i.members.filter((m: any) => m.kind === "property" && /^[a-zA-Z][a-zA-Z0-9]*$/.test(m.name)).map((m: any) => m.name);
+  const own = checkedMembers(i.members).filter((m: any) => m.kind === "property" && /^[a-zA-Z][a-zA-Z0-9]*$/.test(m.name)).map((m: any) => m.name);
   return new Set([...own, ...i.extends.flatMap((e: any) => [...propsOf(e.name)])]);
 };
 const everyElements = propsOf("HTMLAttributes");
@@ -283,7 +283,7 @@ const intrinsic = reactTypes
   .find((d: any) => d.kind === "namespace" && d.name === "JSX")
   .declarations.find((d: any) => d.kind === "interface" && d.name === "IntrinsicElements");
 const accepts = new Map<string, { elements: Set<string>; tags: Set<string> }>();
-for (const member of intrinsic.members) {
+for (const member of checkedMembers(intrinsic.members).filter((m: any) => m.kind === "property")) {
   const [props] = member.type.name === "React.DetailedHTMLProps" ? member.type.args : [];
   const element = tagElements.get(member.name);
   if (!props || !element) continue;
@@ -448,7 +448,7 @@ const cssKinds = (t: any): string[] => {
 const cssTypes = new Map<string, string>();
 for (const d of cssDeclarations) {
   if (d.kind !== "interface" || !/Properties$/.test(d.name) || /Hyphen|Fallback/.test(d.name)) continue;
-  for (const m of d.members) {
+  for (const m of checkedMembers(d.members)) {
     if (m.kind !== "property" || cssTypes.has(m.name)) continue;
     const kinds = new Set(cssKinds(m.type));
     if (kinds.has("other") || kinds.size === 0) continue;
@@ -464,7 +464,7 @@ const vendorProperties = [
   ...new Set(
     cssDeclarations
       .filter((d: any) => d.kind === "interface" && /Properties$/.test(d.name) && !/Hyphen|Fallback/.test(d.name))
-      .flatMap((d: any) => d.members.filter((m: any) => m.kind === "property" && vendored.test(m.name)).map((m: any) => m.name as string)),
+      .flatMap((d: any) => checkedMembers(d.members).filter((m: any) => m.kind === "property" && vendored.test(m.name)).map((m: any) => m.name as string)),
   ),
 ].sort();
 lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it. Each takes what", "/// csstype types it as (ADR 0228). A vendor's, `webkit_mask_image`, is", "/// `WebkitMaskImage`, as csstype names it (#1806).", "impl CSSProperties {");

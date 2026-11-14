@@ -29,6 +29,10 @@ Added focused #1861 coverage on 2026-11-15: a seventh source-workspace case chec
 
 Historical suite totals below are not a recount.
 
+Added on 2026-11-15: `test/intl-arguments.test.ts` checks native Intl calls
+in Bun and Chromium, derives accepted Rust callers from pinned TypeScript
+unions across 26 sites, checks declarations and rejects nonmembers (#1830, #1834).
+
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |

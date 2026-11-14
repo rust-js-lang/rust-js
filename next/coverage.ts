@@ -7,7 +7,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-import { open } from "@rust-js/typescript";
+import { checkedMembers, open } from "@rust-js/typescript";
 import { camelCase } from "../scripts/rust-names";
 
 const next = join(import.meta.dir, "../examples/next/node_modules/next");
@@ -108,7 +108,7 @@ function shapesOf(path: string, declarations: any[]) {
     seen.add(d);
     if (d.kind === "interface") {
       const inherited = (d.extends ?? []).flatMap((e: any) => (e.kind === "reference" ? of(index.get(e.name), seen) : []));
-      return [...d.members.filter(named).map((m: any) => m.name), ...inherited];
+      return [...checkedMembers(d.members).filter(named).map((m: any) => m.name), ...inherited];
     }
     if (d.kind === "type") return typed(d.type, seen);
     if (d.kind === "class") return d.members;
@@ -118,7 +118,7 @@ function shapesOf(path: string, declarations: any[]) {
     if (!t) return [];
     switch (t.kind) {
       case "object":
-        return t.members.filter(named).map((m: any) => m.name);
+        return checkedMembers(t.members).filter(named).map((m: any) => m.name);
       case "intersection":
       case "union":
         return t.types.flatMap((part: any) => typed(part, seen));
