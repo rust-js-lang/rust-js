@@ -11,6 +11,9 @@ export type Exit = {
   signal: string | null;
   timedOut: boolean;
   overflowed: boolean;
+  /** Completion observed this far past the deadline; a queued exit is not
+   * proof the child itself ran late. */
+  observedOverdueMs?: number;
   /** Stopped where it and what it started held more memory than `run`'s
    * `memoryCap` (#1097). */
   overgrown?: boolean;
@@ -22,6 +25,15 @@ export type Exit = {
 };
 
 type Printed = Pick<Exit, "stdout" | "stderr" | "bytes">;
+
+const observationPrefix = "warning: child observed ";
+
+/** The child owner's diagnostic lines, passed through by check:fast with
+ * the job name. Formatting and recognition share this one authority. */
+export function childWarnings(output: string): string[] {
+  return output.split("\n").filter(line => line.startsWith(observationPrefix));
+}
+
 
 /** What `a` printed to `stream`, to show beside what `b` did: its text, or
  * its bytes, in hex, where they read as the same text as `b`'s. */
@@ -183,8 +195,11 @@ export function treeBytes(tree: { pid: number; bytes: number }[], held: Map<numb
 
 /** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
 async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>, memoryCap?: number): Promise<Exit> {
+  const began = performance.now();
   const p = Bun.spawn(guarded(cmd), { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
   let timedOut = false;
+  let exited = false;
+  let observedMs = 0;
   let overflowed = false;
   let overgrown = false;
   const readers = [p.stdout.getReader(), p.stderr.getReader()];
@@ -194,8 +209,13 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
     cut ??= setTimeout(() => readers.forEach((reader) => reader.cancel()), grace);
   };
   const timer = setTimeout(() => {
-    timedOut = true;
-    stop();
+    // A blocked parent can queue both this deadline and a completed exit.
+    // Drain pending I/O before deciding that the child is still running.
+    setTimeout(() => {
+      if (exited) return;
+      timedOut = true;
+      stop();
+    }, 0);
   }, timeout);
   // Each second, what it and what it started hold: past the cap, each is
   // stopped, a process another started in a group of its own too.
@@ -230,6 +250,8 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
   // Its end is seen when it comes, not when its output closes, which what
   // it started may hold open: that goes with it then.
   void p.exited.then(() => {
+    exited = true;
+    observedMs = performance.now() - began;
     clearTimeout(timer);
     clearInterval(watching);
     stop();
@@ -237,12 +259,15 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
   const [stdout, stderr] = await Promise.all(readers.map(read));
   await p.exited;
   clearTimeout(cut);
+  const observedOverdueMs = !timedOut && observedMs > timeout ? Math.ceil(observedMs - timeout) : undefined;
+  if (observedOverdueMs !== undefined) console.warn(observationPrefix + observedOverdueMs + " ms past its " + timeout + " ms deadline (" + cmd.slice(0,2).join(" ") + "): a blocked parent or a slow child");
   return {
     code: p.exitCode,
     signal: signalName(p.signalCode),
     timedOut,
     overflowed,
     ...(overgrown ? { overgrown } : {}),
+    ...(observedOverdueMs === undefined ? {} : { observedOverdueMs }),
     stdout: stdout.toString(),
     stderr: stderr.toString(),
     bytes: { stdout, stderr },

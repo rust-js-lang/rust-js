@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
+import { childWarnings, compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { execute, nativeCommand, nativeShare } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -263,3 +263,66 @@ test.skipIf(process.platform !== "darwin")("a native run past its memory share i
   expect([ran.stopped, String(ran.outcome).startsWith("stopped past its memory share"), ran.stdout]).toEqual([true, true, ""]);
   expect(Date.now() - started).toBeLessThan(30_000);
 }, underLoad(90_000));
+
+// #1861: a source workspace copy blocked the runner for seconds. A child
+// had already exited 0 after 25 ms, but an overdue parent timer recorded a
+// timeout before its queued exit callback. Promise callbacks expose the race.
+test("a completed child is never timed out by a blocked parent loop", () => {
+  const directory = fixture("child-blocked-parent-fast");
+  const deadline = underLoad(500);
+  const source = [
+    'import {run} from ' + JSON.stringify(join(import.meta.dir,"child.ts")) + ';',
+    'import {writeFileSync,readFileSync} from "node:fs";',
+    'const deadline = ' + deadline + ';',
+    'const contexts = {direct: async f => f(), timer:f=>new Promise((resolve,reject)=>setTimeout(()=>f().then(resolve,reject),0)), check:f=>new Promise((resolve,reject)=>setImmediate(()=>f().then(resolve,reject))), microtask:f=>Promise.resolve().then(f)};',
+    'const results = []; let sequence = 0;',
+    'for (const [kind, context] of Object.entries(contexts)) {',
+    '  const row = await context(async () => {',
+    '    const start=Date.now();',
+    '    const files=Array.from({length:4},()=>"ended-"+sequence++);',
+    '    const pending=files.map(file=>run([process.execPath,"-e",\'require("node:fs").writeFileSync(\'+JSON.stringify(file)+\',String(Date.now()))\'],process.cwd(),deadline));',
+    '    const blocked=Bun.spawnSync(["/bin/sleep",String((deadline+200)/1000)],{timeout:deadline+1000});',
+    '    if(blocked.exitCode!==0)throw new Error("blocking fixture failed");',
+    '    const answers=await Promise.all(pending);',
+    '    return answers.map((answer,index)=>({finishedIn:Number(readFileSync(files[index],"utf8"))-start,code:answer.code,signal:answer.signal,timedOut:answer.timedOut}));',
+    '  }); results.push({kind,row});',
+    '}',
+    'console.log(JSON.stringify(results));',
+  ].join("\n");
+  const answer=runSync([process.execPath,"-e",source],directory,underLoad(12000));
+  expect([answer.code,answer.signal,answer.timedOut]).toEqual([0,null,false]);
+  const warnings=childWarnings(answer.stderr);
+  expect(warnings.length).toBeGreaterThan(0);
+  expect(answer.stderr.trim().split("\n")).toEqual(warnings);
+  const results=JSON.parse(answer.stdout);
+  expect(results).toHaveLength(4);
+  for(const context of results) for(const row of context.row) {
+    // This is genuinely an exit within the child's deadline, not a late exit.
+    expect(row.finishedIn).toBeLessThan(deadline);
+    expect([row.code,row.signal,row.timedOut]).toEqual([0,null,false]);
+  }
+});
+
+// With no child-reported clock a late observation cannot distinguish a slow
+// child from a blocked parent. Surface the slow spot, without inventing a kill.
+test("a late child observation warns without guessing its lifetime", async () => {
+  const directory = fixture("child-blocked-parent-slow");
+  const late = join(directory, "late");
+  const deadline = underLoad(500);
+  const answer = await Promise.resolve().then(async () => {
+    const source = 'await Bun.sleep(' + (deadline + 100) + '); require("node:fs").writeFileSync(' + JSON.stringify(late) + ', "too late");';
+    const pending = run([process.execPath,"-e",source],directory,deadline);
+    const blocked = Bun.spawnSync(["/bin/sleep",String((deadline+400)/1000)],{timeout:deadline+1500});
+    expect(blocked.exitCode).toBe(0);
+    return pending;
+  });
+  expect([answer.code,answer.signal,answer.timedOut]).toEqual([0,null,false]);
+  expect(answer.observedOverdueMs).toBeGreaterThan(0);
+  expect(existsSync(late)).toBe(true);
+});
+
+// Own-kill provenance remains distinct from the child's own external signal.
+test("an external SIGKILL is not reported as a timeout", async () => {
+  const answer=await run(["sh","-c","kill -KILL $$"],".",underLoad(2000));
+  expect([answer.code,answer.signal,answer.timedOut]).toEqual([null,"SIGKILL",false]);
+});

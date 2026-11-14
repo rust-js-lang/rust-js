@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2573
-lines	342475
+files	2574
+lines	342549
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
 $iter	2868	83.7
 Iterator.from	266	7.8
 return;	331	9.7
-renamed x$1	16214	473.4
+renamed x$1	16214	473.3
 role fallbacks	8850	258.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
@@ -1499,6 +1499,7 @@ test/corpus/next_if_drops_its_item_as_its_test_panics.js	175	0	0	0	3	0	0	0	2
 test/corpus/next_power_of_two.js	26	0	0	0	0	0	0	0	1
 test/corpus/non_null.js	47	0	0	0	0	0	0	0	0
 test/corpus/non_zero_constants_matched.js	30	0	0	0	0	0	1	0	1
+test/corpus/none_given_to_an_optional_argument.js	72	0	0	0	0	0	0	0	0
 test/corpus/nonzero.js	78	0	0	0	0	0	0	8	8
 test/corpus/nth_passed_drops_unwind.js	278	0	0	0	12	1	0	2	11
 test/corpus/nth_passes_a_slice_or_each.js	1357	0	0	0	39	0	0	186	46
@@ -1659,7 +1660,7 @@ test/corpus/parse_error_order.js	34	0	0	0	0	0	0	2	3
 test/corpus/parse_to_an_associated_type.js	88	0	0	0	0	0	0	3	4
 test/corpus/partial_eq_other_type.js	50	0	0	0	0	0	0	6	3
 test/corpus/partial_ord_apart_from_ord.js	257	0	0	0	0	0	0	30	9
-test/corpus/partial_ord_other_through_refs.js	67	0	0	0	0	0	0	6	4
+test/corpus/partial_ord_other_through_refs.js	69	0	0	0	0	0	0	6	4
 test/corpus/partial_ord_other_type.js	34	0	0	0	0	0	0	0	0
 test/corpus/parts_close_past_a_panic.js	442	0	0	0	15	0	0	3	9
 test/corpus/passed_item_drops_that_panic.js	106	0	0	0	1	0	0	0	1

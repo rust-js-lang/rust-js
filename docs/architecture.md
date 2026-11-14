@@ -53,6 +53,8 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
 | The class names a CSS Module exports, the one thing read of a stylesheet, by Lightning CSS (ADR 1133) | `src/css_modules.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
+| Test child outcomes, own-kill provenance, queued-exit drain and observed-overrun diagnostics | `test/child.ts`; `scripts/checkFast.ts` labels the owner's diagnostic with its job |
+| Source-owner controls, workspace lifetime and actual-load proof; filesystem copying, aliases and disk-floor checks | `scripts/source-mutations.ts`; `scripts/source-workspace.ts` is the one filesystem owner, executed on a worker under the existing runner slots |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
 | Native app build and editor check; the command each JS test runner runs a crate's tests by (ADR 1076) | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js`, `tooling/runners.js` |
 | Host manifest validation and file publication | `tooling/manifest.js`, `tooling/publish.js` |

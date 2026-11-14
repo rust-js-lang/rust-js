@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fixture } from "./support";
 import {
@@ -15,7 +15,7 @@ import { passed, summary } from "../scripts/test-summary";
 
 // A workspace alias must resolve inside the independent copy, while a normal
 // installed package is shared read-only. Mutating the copy cannot change source.
-test("source mutation workspaces isolate sources and workspace package aliases", () => {
+test("source mutation workspaces isolate sources and workspace package aliases", async () => {
   const dir = fixture("source-mutation-isolation");
   const source = join(dir, "source");
   const workspace = join(dir, "copy");
@@ -37,7 +37,7 @@ test("source mutation workspaces isolate sources and workspace package aliases",
     join(source, "node_modules", "external", "index.js"),
     "export const value = 2;\n",
   );
-  makeSourceWorkspace(source, workspace, [
+  await makeSourceWorkspace(source, workspace, [
     "package.json",
     "typescript/package.json",
     "typescript/index.js",
@@ -176,4 +176,15 @@ test("failed mutation setup still removes its independently copied workspace", a
   expect(existsSync(join(example.work, "sources", "owner-value-mutant"))).toBe(
     false,
   );
+});
+
+// The worker can fail after creating its destination. Its error must reject
+// the async operation and the outer lifetime must still remove the copy.
+test("a workspace worker failure rejects and removes its partial source tree", async () => {
+  const example = exampleSource("source-worker-failure", ownerTest);
+  mkdirSync(join(example.root,"node_modules"));
+  symlinkSync(join(example.root,"missing-package"),join(example.root,"node_modules","@broken"));
+  await expect(executeSource(example)).rejects.toThrow(/ENOENT/);
+  expect(existsSync(join(example.work,"sources","owner-value-control"))).toBe(false);
+  expect(readFileSync(join(example.root,"owner.js"),"utf8")).toContain("value = 1");
 });

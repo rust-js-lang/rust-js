@@ -24,6 +24,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
+import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
@@ -625,6 +626,7 @@ export function run(
           const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
           const cpu = Number(p.resourceUsage()?.cpuTime.total ?? 0) / 1e6;
           const result: Ran = { job, code, log: out + err, start: (start - began) / 1000, end: (Date.now() - began) / 1000, cpu };
+          for (const warning of childWarnings(result.log)) console.warn(name + ": " + warning);
           // Its whole output kept as it fails: a check an outer limit
           // stops keeps it (#1706).
           if (code !== 0) console.log(`FAIL ${name} (${seconds.toFixed(0)}s${stopped}), its whole output: ${logs.keep(name, result.log)}`);

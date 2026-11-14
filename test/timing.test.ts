@@ -273,3 +273,27 @@ await run([job("fails", ["sh", "-c", "echo the whole output of a failure; exit 1
   expect(out).toContain(`its whole output: ${join(store, runs[0])}`);
   expect(readFileSync(join(store, runs[0], "fails.log"), "utf8")).toContain("the whole output of a failure");
 }, underLoad(90_000));
+
+// A passing job's output is normally hidden. An observed child overrun is
+// still a slow spot and must remain visible, labelled by that actual job.
+test("check:fast preserves a passing job's child observation warning", () => {
+  const dir=fixture("child-observation-job");
+  const deadline=underLoad(500);
+  const command=[
+    'import {run} from '+JSON.stringify(join(root,"test/child.ts"))+';',
+    'const pending=run([process.execPath,"-e","void 0"],process.cwd(),'+deadline+');',
+    'Bun.spawnSync(["/bin/sleep",'+JSON.stringify(String((deadline+200)/1000))+'],{timeout:'+(deadline+1000)+'});',
+    'const answer=await pending;if(answer.code!==0||answer.timedOut)throw new Error("child did not complete");',
+  ].join("\n");
+  const job={name:"child observation job",cmd:[process.execPath,"-e",command],env:{},timeout:30,weight:1,memory:0};
+  const source=[
+    'import {run} from '+JSON.stringify(join(root,"scripts/checkFast.ts"))+';',
+    'import {checkLogRun} from '+JSON.stringify(join(root,"scripts/checkLogs.ts"))+';',
+    'const results=await run('+JSON.stringify([job])+',"unused",1,{began:Date.now(),samples:[]},checkLogRun({store:'+JSON.stringify(join(dir,"logs"))+'}),'+JSON.stringify(join(dir,"times"))+','+JSON.stringify(join(dir,"leases"))+');',
+    'if(results.some(result=>result.code!==0))throw new Error("job did not pass");',
+  ].join("\n");
+  const result=Bun.spawnSync([process.execPath,"-e",source],{cwd:root,timeout:underLoad(10000),env:{...process.env,RUST_JS_LEASED:""}});
+  expect([result.exitCode,result.signalCode ?? null]).toEqual([0,null]);
+  expect(result.stderr.toString()).toContain("child observation job: warning: child observed ");
+  expect(result.stderr.toString()).toContain("a blocked parent or a slow child");
+});

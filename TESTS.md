@@ -25,6 +25,8 @@ under strict tsc through each crate's declarations.
 Added source-owner mutation coverage on 2026-11-15 (#1848): six real
 workspace/load/control/cleanup tests and five self-mutants through the
 existing runner. Feature-owner registrations are reviewed separately.
+Added focused #1861 coverage on 2026-11-15: a seventh source-workspace case checks a partial worker-copy failure; three child cases retain in-budget exits under a blocked loop, observed-overrun warnings and external-signal provenance; a timing case checks that a passing check job still shows the warning with its name. Local whole-gate comparison on ef8807570: 6,915 existing test-name/status multisets unchanged, five new passing names, none removed; nine of nine harness mutants caught. Recorded lines: 6,469 pass/616 skip before, 6,474 pass/616 skip after (repeated names included). Local --all samples, not a nightly/CI recount.
+
 Historical suite totals below are not a recount.
 
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.

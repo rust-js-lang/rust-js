@@ -1,98 +1,34 @@
 // Tracked non-crate inputs of the existing mutation runner (#1848). A
 // workspace owns every source it may write; installed third-party packages
 // are read-only inputs, while workspace package links point inside the copy.
-import {
-  constants,
-  copyFileSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { bytesOf, freeBytes } from "../tooling/bounded.js";
-import { floorBytes } from "../test/bounded";
+import {existsSync,readFileSync,rmSync,writeFileSync} from "node:fs";
+import {join,resolve} from "node:path";
+import {Worker} from "node:worker_threads";
+import {bytesOf} from "../tooling/bounded.js";
 import { run, type Exit } from "../test/child";
 import type { Mutation } from "./mutations";
 import { underLoad } from "./timing";
 
-/** A generator's preparation: 18 ms alone in a quiet workspace, but past a
- * second for three of ten mutants run at once, which #1861 is finding the
- * cause of. Until it's found, twice the most the measured step took, 9.5 s
- * with the workspace's copy in a batch beside another checkout's check (ADR
- * 1154), as the load makes it (`underLoad`): a slow spot listed in
- * docs/dev-loop.md, not a bound the generator needs. */
-const prepareTimeout = underLoad(20_000);
+/** Preparation excludes workspace copying. The real Intl trace takes 21–25 ms
+ * from launch to exit; retain the existing 1 s scheduling floor, scaled by
+ * load. Worker copying and the shared child verdict remove the false timeout
+ * rather than retaining the diagnostic interim 20 s allowance (#1861). */
+const prepareTimeout = underLoad(1_000);
 
-/** An independently writable source tree, without generated stores. The
- * caller supplies Git's tracked files, including current working-tree edits. */
-export function makeSourceWorkspace(
-  root: string,
-  workspace: string,
-  files: string[],
-): number {
-  const kept = files.filter(
-    (file) =>
-      !file
-        .split("/")
-        .some((part) => ["target", "node_modules", ".git"].includes(part)),
-  );
-  const needed = kept.reduce(
-    (total, file) => total + lstatSync(join(root, file)).blocks * 512,
-    0,
-  );
-  if (freeBytes(root) - needed < floorBytes)
-    throw new Error(
-      "a source mutation workspace would cross the development disk floor",
-    );
-  mkdirSync(workspace, { recursive: true });
-  for (const file of kept) {
-    const from = join(root, file),
-      to = join(workspace, file);
-    mkdirSync(dirname(to), { recursive: true });
-    copyFileSync(from, to, constants.COPYFILE_FICLONE);
-  }
-  const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  const packages = new Map<string, string>();
-  for (const pattern of manifest.workspaces ?? []) {
-    for (const directory of new Bun.Glob(pattern).scanSync({
-      cwd: root,
-      onlyFiles: false,
-    })) {
-      const file = join(root, directory, "package.json");
-      if (existsSync(file))
-        packages.set(JSON.parse(readFileSync(file, "utf8")).name, directory);
-    }
-  }
-  const linkDependencies = (directory: string) => {
-    const installed = join(root, directory, "node_modules");
-    const local = join(workspace, directory, "node_modules");
-    mkdirSync(local, { recursive: true });
-    for (const name of existsSync(installed) ? readdirSync(installed) : []) {
-      if (name === ".bin") continue;
-      const source = join(installed, name);
-      if (name.startsWith("@") && statSync(source).isDirectory()) {
-        mkdirSync(join(local, name), { recursive: true });
-        for (const child of readdirSync(source)) {
-          if (!packages.has(name + "/" + child))
-            symlinkSync(join(source, child), join(local, name, child));
-        }
-      } else if (!packages.has(name)) symlinkSync(source, join(local, name));
-    }
-    for (const [name, path] of packages) {
-      const to = join(local, name);
-      mkdirSync(dirname(to), { recursive: true });
-      symlinkSync(join(workspace, path), to);
-    }
-  };
-  linkDependencies("");
-  for (const directory of packages.values()) linkDependencies(directory);
-  return bytesOf(workspace);
+/** Copy on a worker so one mutant's files cannot block another child's exit.
+ * Existing build/test slots bound how many copies may be active. */
+export function makeSourceWorkspace(root: string, workspace: string, files: string[]): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./source-workspace.ts", import.meta.url), {workerData:{root,workspace,files}});
+    let bytes: number | undefined;
+    worker.once("message", (value: number) => { bytes = value; });
+    worker.once("error", reject);
+    // Wait for module completion too: appended actual-load markers must run.
+    worker.once("exit", code => {
+      if (code === 0 && bytes !== undefined) resolve(bytes);
+      else reject(new Error("source workspace worker exited " + code + " without a result"));
+    });
+  });
 }
 
 /** Record execution, not merely resolution or a successful test process.
@@ -156,7 +92,7 @@ export async function sourceMutation(
     rmSync(workspace, { recursive: true, force: true });
     const began = performance.now();
     try {
-      peak = Math.max(peak, makeSourceWorkspace(root, workspace, files));
+      peak = Math.max(peak, await makeSourceWorkspace(root, workspace, files));
       const owner = join(workspace, mutation.file),
         marker = join(workspace, ".mutation-loaded");
       let source = readFileSync(owner, "utf8");

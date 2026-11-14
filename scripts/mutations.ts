@@ -1146,7 +1146,7 @@ async function main() {
   const template = join(sourceWorkspaces, ".template");
   if (sources.size) {
     const started = performance.now();
-    const bytes = makeSourceWorkspace(root, template, tracked);
+    const bytes = await makeSourceWorkspace(root, template, tracked);
     console.log(`source template: ${bytes} bytes in ${shown((performance.now() - started) / 1000)}`);
   }
   const one = async (batch: Sited[], slot: number) => {
