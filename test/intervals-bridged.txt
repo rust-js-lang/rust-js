@@ -28,7 +28,6 @@ lent_place_set_read_in_place.rs:129:31	guarded::{closure#0}	#1701
 moved_closure.rs:14:21	main::{closure#1}	#1701
 present_index_counts.rs:32:9	flush	#1701
 ranges_end_at_a_diverging_call.rs:75:13	main::{closure#0}	#1701
-ranges_kept_of_what_stops_changing.rs:9:16	walk	#1742
 rc_of_functions_uncounted_beside_a_counted_one.rs:16:29	main::{closure#0}	#1701
 self_handle.rs:26:27	countdown::{closure#0}	#1701
 stepped_range_loops.rs:50:36	each::{closure#0}	#1701

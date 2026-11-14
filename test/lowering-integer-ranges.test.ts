@@ -889,6 +889,78 @@ pub fn past_none(i: usize) -> usize {
   expect(lib.pastNone(0)).toBe(4294967295);
 });
 
+// A function that calls itself is walked to a fixed point of what its own
+// calls give it, from what its callers give (#1742): `k`, the same at each
+// call, at most 7, so `k + 1` is JS's own by MIR alone; `n`, a wider one
+// each time, forgotten past four rounds, so `n + 1` of `up`, which can
+// pass 255, keeps its wrap. And of two that call each other, the same.
+test("a function that calls itself is given what its calls give it, at their fixed point", async () => {
+  const dir = fixture("recursion-given");
+  writeFileSync(join(dir, "lib.rs"), `fn walk(n: u32, k: u8) -> u32 {
+    if n % 7 == 3 {
+        return (k + 1) as u32;
+    }
+    walk(n.wrapping_add(1), k).wrapping_add(1)
+}
+
+fn up(n: u8, d: u32) -> u8 {
+    if d == 0 {
+        return n;
+    }
+    up(n + 1, d - 1)
+}
+
+fn grow(n: u32, d: u32, k: u8) -> u8 {
+    if d == 0 { k + 3 } else { grow(n + 1, d - 1, k) }
+}
+
+fn bumped(n: u8, first: bool) -> u8 {
+    if first { bumped(1, false) } else { n + 5 }
+}
+
+fn even(n: u8, k: u8) -> u8 {
+    if n == 0 { k + 1 } else { odd(n - 1, k) }
+}
+
+fn odd(n: u8, k: u8) -> u8 {
+    if n == 0 { k + 2 } else { even(n - 1, k) }
+}
+
+pub fn walked() -> u32 {
+    walk(0, 3) + walk(25, 7)
+}
+
+pub fn upped() -> u8 {
+    up(250, 10)
+}
+
+pub fn parity() -> u8 {
+    even(5, 4)
+}
+
+pub fn grown() -> u8 {
+    grow(0, 10, 4)
+}
+
+pub fn bumps() -> u8 {
+    bumped(255, false).wrapping_add(bumped(0, true))
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return k + 1;");
+  expect(js).toContain("(n + 1) & 255");
+  expect(js).toContain("? k + 1 :");
+  expect(js).toContain("? k + 2 :");
+  // `n` of `grow`, wider each round, forgotten past four; `k` kept.
+  expect(js).toContain("d === 0 ? k + 3 :");
+  // `n` of `bumped`, 1 from its own call and 255 from outside: `n + 5`
+  // may pass 255.
+  expect(js).toContain("(n + 5) & 255");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.walked(), lib.upped(), lib.parity(), lib.grown(), lib.bumps()]).toEqual([21, 4, 6, 7, 10]);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below

@@ -572,9 +572,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `OnceCell`'s `set` is never of a cell known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));\n",
-    replace:
-      "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun) && false);\n",
+    find: "                let empty = crate::lower::analysis::empty_set_proved(self.tcx, state.body, block);\n",
+    replace: "                let empty = false && crate::lower::analysis::empty_set_proved(self.tcx, state.body, block);\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },

@@ -496,3 +496,12 @@ and "made by any call", as MIR makes a cell known empty only at
 `OnceCell::new`. THIR's `once-drop-runs-nothing` moved there with
 `drop_runs_code`, as `mir-once-destructor-runs-nothing`. The 11 gone:
 `once-set-leaves-empty`, `once-set-through-holder-unforgotten`, `once-set-judged-once`, `once-mention-quiet`, `once-place-unmentioned`, `once-holder-reaches-nothing`, `once-raw-borrow-unread`, `once-made-unknown`, `once-made-by-any-call`, `once-rc-clone-gives-cells`, `once-rc-deref-unfollowed`.
+
+## Amendment: a recursive function's walk (2026-11-14, #1742)
+
+`intervals-given-before-every-call` goes. It held that a recursive function
+wasn't walked as given only its outer calls' values before its own call of
+itself was seen. That way of walking one is gone: a component that calls
+itself is walked to a fixed point now, which `callers-recursion-unknown`,
+`callers-recursion-never-forgets` and `callers-recursion-outside-unjoined`
+hold.

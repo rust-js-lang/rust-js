@@ -483,3 +483,23 @@ first, the corpus showed no disagreement: MIR proves each of the 11 sites
 THIR did, in once_cell_known_empty.rs and once_cell_fields.rs, and no
 others. The corpus, snapshots and port are unchanged. THIR's 11 once-cell
 mutations went, each with a MIR twin; 11 new ones of MIR's are caught.
+
+## M4: the bridge's gaps closed (2026-11-14)
+
+Each gap closed takes its sites off test/intervals-bridged.txt in the same
+commit:
+- **An outer loop's index across an inner loop** (#1742). The widening's
+  thresholds take each collection's most length too, and one less. An
+  index that grows by the outer loop's turns, widened at the inner loop's
+  head, stops at the most `get`'s `Some` puts it below, not its type's,
+  which no narrowing would leave. 1 site.
+- **A generic constant** (#1742). A constant that doesn't evaluate, `N` of
+  `while i < N`, is a value of its type's range (`Value::Range`): `i < N`
+  puts `i` below the type's most, and `i >= N` puts it at least the type's
+  least. 1 site.
+- **A function that calls itself** (#1742). A component of the call graph
+  that calls itself is walked to a fixed point of what its own calls give,
+  from what its callers outside give. A member nothing has given anything
+  yet isn't walked that round, so two that call each other aren't seeded
+  with nothing known. Past four rounds, what its own calls still change is
+  forgotten (ADR 0577's rule); past 64, all of it. 1 site.
