@@ -78,3 +78,19 @@ which TypeScript 7.1.0-beta's lib doesn't. Ten types are marked:
 (ADR 0024, amended), SpeechRecognition's four and WebTransport's two. A
 consumer that adds `@types/web` too has two declarations of it, which
 TypeScript merges as one interface where their members agree.
+
+## Amendment (2026-11-15): webapi's dictionaries, by TypeScript's name or declared of their fields (#1817, step 1)
+
+A webapi dictionary a public function takes, `Option<&webapi::AddEventListenerOptions>`,
+was declared `any`: the generator wrote `#[rust_js::types]` of interfaces
+alone, so a crate's declarations had no name for a dictionary's struct.
+Each dictionary is marked as an interface is: `#[rust_js::types = "AddEventListenerOptions"]`,
+TypeScript's DOM lib's interface of its name, so the function is
+`capturing(options?: AddEventListenerOptions | null | undefined)`, and a
+caller's `{ capture: "yes" }` is tsc's TS2322; and, where the DOM lib has
+none, `#[rust_js::declares]` too, which declares it of its fields, as a
+crate's own struct is declared (`structure`): `declare global { interface
+BoxQuadOptions { box?: string | undefined; .. } }`. Of 334 dictionaries,
+317 are TypeScript's and 17 declared so. Held by `test/webapi-declares.test.ts`'s
+"a webapi dictionary a function takes".
+

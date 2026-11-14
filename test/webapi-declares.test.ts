@@ -80,6 +80,37 @@ export const name: string = tag(selected);
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
 
+// A webapi dictionary a public function takes is TypeScript's own of its
+// name, `AddEventListenerOptions`, imported from nowhere as the DOM lib's,
+// never `any` (#1817); one TypeScript's lib lacks, `BoxQuadOptions`, is
+// declared of its fields, as a crate's own struct is.
+test("a webapi dictionary a function takes is TypeScript's of its name, or declared of its fields", () => {
+  const dir = fixture("webapi-dictionaries");
+  writeFileSync(join(dir, "lib.rs"), `pub fn capturing(options: Option<&webapi::AddEventListenerOptions>) -> bool {
+    options.and_then(|options| options.capture).unwrap_or(false)
+}
+
+pub fn boxed(options: &webapi::BoxQuadOptions) -> bool {
+    options.r#box.is_some()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function capturing(options?: AddEventListenerOptions | null | undefined): boolean;");
+  expect(declarations).toContain("export function boxed(options: BoxQuadOptions): boolean;");
+  expect(declarations).toContain("declare global {\n    interface BoxQuadOptions {\n        box?: string | undefined;");
+  writeFileSync(join(dir, "use.ts"), `import { boxed, capturing } from "./lib.js";
+export const on: boolean = capturing({ capture: true, once: false, signal: new AbortController().signal });
+export const off: boolean = capturing(undefined);
+export const quad: boolean = boxed({ box: "border" });
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  writeFileSync(join(dir, "wrong.ts"), `import { capturing } from "./lib.js";
+export const wrong: boolean = capturing({ capture: "yes" });
+`);
+  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+});
+
 // DOM's WebIDL moved `startContainer` from `AbstractRange` to `NodeRange`,
 // which `Range` and `StaticRange` inherit and TypeScript hasn't caught up
 // with: bound, a `Range` derefs to it and reads it, and it's declared.

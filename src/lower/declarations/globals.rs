@@ -38,9 +38,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .insert(key, Some(json!({ "kind": "global", "declarations": [interface] })));
     }
 
-    /// The interface `did`'s binding is, its methods' and accessors'.
+    /// The interface `did`'s binding is, its methods' and accessors'; a
+    /// dictionary's, a struct of named fields, its fields', as the crate's
+    /// own struct is declared (`structure`, #1817).
     fn global_interface(&mut self, did: DefId, name: &str) -> Value {
         let tcx = self.tcx;
+        let fielded =
+            matches!(tcx.def_kind(did), DefKind::Struct) && tcx.adt_def(did).non_enum_variant().ctor.is_none();
+        if fielded && let Some(mut declared) = self.structure(did) {
+            declared["exported"] = json!(false);
+            declared["name"] = json!(name);
+            return declared;
+        }
         let methods: Vec<DefId> = (tcx.inherent_impls(did).iter())
             .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
             .filter(|&item| tcx.def_kind(item) == DefKind::AssocFn && tcx.associated_item(item).is_method())

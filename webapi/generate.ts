@@ -2907,6 +2907,10 @@ const derives = (name: string, optional: boolean) => {
 for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b]) => a.localeCompare(b))) {
   line();
   line(`/// The [\`${name}\`](https://developer.mozilla.org/docs/Web/API/${name}) dictionary: a JS object of these fields, a \`None\` one not given.`);
+  // What it is to TypeScript: its DOM lib's interface of the same name, or
+  // one rust-js's declarations declare of its fields where it has none (#1817).
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(name)})]`);
+  if (!typescriptDeclares.has(name)) line("#[cfg_attr(rust_js, rust_js::declares)]");
   derives(typeName(name), fields.every((f) => f.optional));
   line(`pub struct ${typeName(name)}${borrows ? "<'a>" : ""} {`);
   for (const f of fields) {
