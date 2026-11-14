@@ -5,17 +5,42 @@
 // calls down, through a function pointer or a closure, either may be
 // one, or through a trait's method generic code or a `dyn` calls, which
 // any of its impls may be, or by code std runs of what it's given: a
-// closure, a function, a function pointer, a `dyn`, a type's `Drop`.
+// closure, a function, a function pointer, a `dyn`, a type's `Drop`; and
+// a pointer std's code makes of it, `ptr::from_mut`, a slice's
+// `as_mut_ptr`, a `NonNull` kept in a field, is one it keeps.
 // Miri finds no undefined behaviour: a read through the owner, `n == 0`,
 // leaves the pointer it lent able to write.
 use std::cell::Cell;
+use std::ptr::NonNull;
 
 thread_local! {
     static KEPT: Cell<*mut u32> = const { Cell::new(std::ptr::null_mut()) };
+    static HELD: Cell<Option<Pointed>> = const { Cell::new(None) };
 }
 
 fn keep(n: &mut u32) {
     KEPT.with(|kept| kept.set(n));
+}
+
+#[derive(Clone, Copy)]
+struct Pointed {
+    to: NonNull<u32>,
+}
+
+fn zero_held() {
+    HELD.with(|held| unsafe { *held.get().unwrap().to.as_ptr() = 0 });
+}
+
+fn kept_of_std_from_mut(n: &mut u32) {
+    KEPT.with(|kept| kept.set(std::ptr::from_mut(n)));
+}
+
+fn kept_of_a_slices_pointer(n: &mut u32) {
+    KEPT.with(|kept| kept.set(std::slice::from_mut(n).as_mut_ptr()));
+}
+
+fn kept_in_a_field(n: &mut u32) {
+    HELD.with(|held| held.set(Some(Pointed { to: NonNull::from(n) })));
 }
 
 fn zero_kept() {
@@ -277,6 +302,33 @@ fn stashed_through_a_boxed_dyn(mut n: u32) -> u32 {
     n - 1
 }
 
+fn stashed_of_std_from_mut(mut n: u32) -> u32 {
+    kept_of_std_from_mut(&mut n);
+    if n == 0 {
+        return 0;
+    }
+    zero_kept();
+    n - 1
+}
+
+fn stashed_of_a_slices_pointer(mut n: u32) -> u32 {
+    kept_of_a_slices_pointer(&mut n);
+    if n == 0 {
+        return 0;
+    }
+    zero_kept();
+    n - 1
+}
+
+fn stashed_in_a_field(mut n: u32) -> u32 {
+    kept_in_a_field(&mut n);
+    if n == 0 {
+        return 0;
+    }
+    zero_held();
+    n - 1
+}
+
 fn bumped(mut n: u32) -> u32 {
     add_one(&mut n);
     n
@@ -298,5 +350,8 @@ fn main() {
     println!("{}", stashed_through_a_dyn_of_a_closure(29));
     println!("{}", stashed_by_std_given_a_pointer(31));
     println!("{}", stashed_through_a_boxed_dyn(33));
+    println!("{}", stashed_of_std_from_mut(35));
+    println!("{}", stashed_of_a_slices_pointer(37));
+    println!("{}", stashed_in_a_field(39));
     println!("{}", bumped(5));
 }
