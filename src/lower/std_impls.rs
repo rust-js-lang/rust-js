@@ -368,7 +368,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill(Role::Item, x, out),
         };
         let mut body = Vec::new();
-        let param = Expr::param_apart("each", &[&x]);
+        let param = self.fresh(Role::Each);
         let same = self.eq_value(Expr::var(&param), x.clone(), item, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
             if matches!(&each.kind, js::ExprKind::Var(v) if *v == param) && **of == x);

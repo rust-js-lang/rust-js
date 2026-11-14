@@ -214,9 +214,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !self.kept_may_change(item) {
                 return Ok(Expr::builtin(place, "slice", Vec::new()));
             }
-            let body = self.kept_copy(Expr::var("item"), item, span)?;
+            let name = self.fresh(crate::lower::Base::Named("item"));
+            let body = self.kept_copy(Expr::var(&name), item, span)?;
             let copy = Expr::arrow(
-                vec!["item".into()],
+                vec![name.as_str().into()],
                 vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
             );
             Ok(Expr::builtin(place, "map", vec![copy]))

@@ -37,20 +37,20 @@ function main() {
   console.log(`[${m.join(", ")}]`);
 
   const p = { x: 0, tags: [] };
-  const b = p;
+  let b = p;
   b.x = 2;
   b.tags.push("t");
   console.log(`${pointDebug_fmt(p)}`);
 
   const t = [1, "a"];
-  let b$1 = t;
-  b$1[0] = 9;
-  b$1[1] += "b";
+  b = t;
+  b[0] = 9;
+  b[1] += "b";
   console.log(`(${t[0]}, ${$debugStr(t[1])})`);
 
   const map = new Map();
-  b$1 = map;
-  b$1.set(1, 2);
+  b = map;
+  b.set(1, 2);
   console.log(
     `{${Array.from(map)
       .map(([key, value]) => `${key}: ${value}`)
@@ -58,8 +58,8 @@ function main() {
   );
 
   const h = { items: [1], count: 0, name: "h" };
-  b$1 = h.items;
-  b$1.push(2);
+  b = h.items;
+  b.push(2);
   h.count = (h.count + 5) >>> 0;
   h.name += "!";
   console.log(`[${h.items.join(", ")}] ${h.count} ${h.name}`);
@@ -83,13 +83,13 @@ function main() {
   console.log(`${levelDebug_fmt(l)}`);
 
   const v = [2, 1];
-  b$1 = v;
-  b$1.sort((a, b) => a - b);
+  b = v;
+  b.sort((a, b) => a - b);
   console.log(`[${v.join(", ")}]`);
 
   const w = [1];
-  b$1 = w;
-  b$1.push(2);
+  b = w;
+  b.push(2);
   s = w;
   s[$at(s, 0)] = 7;
   console.log(`[${w.join(", ")}]`);

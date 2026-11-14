@@ -598,6 +598,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         strip(self.frame.thir, e)
     }
 
+    /// A name of the item's, `base`'s word or given apart from those it has:
+    /// its variables', its module's functions' and imports', and the
+    /// globals it binds. So the parameter of an arrow lowering makes around
+    /// a value the program gives never hides what that value reads,
+    /// `next_if_eq(&item)`'s `(item$1) => item$1 === item` (#1667, #1681
+    /// change 3, M2).
     fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> String {
         fresh_in(&mut self.names.borrow_mut(), &base.into().word())
     }

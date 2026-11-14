@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<&T>`'s `cloned()` of a type parameter's, whose clone is itself, is held in a `const` first, `const value = items.at(-1); return value;` (#587)",
     file: "src/lower/std_impls/clones.rs",
-    find: "                        self.names.swap_remove(held);\n                        out.pop();\n                        return Ok(written);\n",
+    find: "                        self.names.borrow_mut().swap_remove(held);\n                        out.pop();\n                        return Ok(written);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_option_of_a_type_parameter.rs$"],
     snapshots: true,
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Clone` dictionary's `clone(value)` of an `Option<Option<T>>` binds what its `Some` holds as `const value`, its own parameter's name again, so the module doesn't parse (#1246)",
     file: "src/lower/std_impls/clones.rs",
-    find: "        let taken = self.names.insert(name.to_string());\n",
+    find: "        let taken = self.names.borrow_mut().insert(name.to_string());\n",
     replace: "        let taken = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_dictionary_of_a_nested_option.rs$"],
   },

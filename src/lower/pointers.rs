@@ -1002,9 +1002,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `Copy` value JS holds as an object something changes:
                 // each place its own, as Rust's copy is.
                 if let Some(item) = pointee.filter(|&t| self.contains_mutated(t) && self.is_copy(t)) {
-                    let copy = self.copy(Expr::var("item"), item);
+                    let name = self.fresh(crate::lower::Base::Named("item"));
+                    let copy = self.copy(Expr::var(&name), item);
                     list.push(Expr::arrow(
-                        vec!["item".into()],
+                        vec![name.as_str().into()],
                         vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
                     ));
                 }

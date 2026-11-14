@@ -344,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Vec::new(),
                     vec![StmtKind::Return(Some(Expr::call_helper("$someValue", vec![to.clone()]))).at(js::Span::NONE)],
                 );
-                let v = Expr::param_apart("v", &[&to]);
+                let v = self.fresh(Role::V);
                 let setter = Expr::arrow(
                     vec![v.clone().into()],
                     vec![
@@ -414,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Vec::new(),
                 vec![StmtKind::Return(Some(js::result::held(to.clone()))).at(js::Span::NONE)],
             );
-            let v = Expr::param_apart("v", &[&to]);
+            let v = self.fresh(Role::V);
             let replaced = js::result::made(ok, Expr::var(&v));
             let setter = Expr::arrow(
                 vec![v.into()],
@@ -1185,8 +1185,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Room for them, which std checks first (ADR 0774).
                 let size = self.room_item_size(item());
                 // Its clone given only where it isn't its copy, a hand-written
-                // `clone`'s.
-                let clone = clone.filter(|clone| copy.as_ref() != Some(clone));
+                // `clone`'s, the two alike but for their parameters' names
+                // (#1681).
+                let clone = clone.filter(|clone| !copy.as_ref().is_some_and(|copy| js::scopes::alpha_eq(copy, clone)));
                 let copy = copy.or_else(|| clone.is_some().then(Expr::js_undefined));
                 helper(
                     "$repeatItems",

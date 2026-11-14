@@ -754,7 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = once(self, key, Role::Key, out);
                 let key_ty = search_key(generic_args);
                 let compare = self.cmp_fn(key_ty, false, span)?;
-                let param = Expr::param_apart("item", &[&f, &key, &compare]);
+                let param = self.fresh(Role::Item);
                 let mapped = apply(f, vec![Expr::var(&param)]);
                 let body = vec![StmtKind::Return(Some(apply(compare, vec![mapped, key]))).at(js::Span::NONE)];
                 let by = Expr::arrow(vec![param.into()], body);

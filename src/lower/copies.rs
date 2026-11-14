@@ -154,9 +154,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if !self.contains_mutated(*item) {
                         return Expr::builtin(place, "slice", Vec::new());
                     }
-                    let body = self.copy(Expr::var("item"), *item);
+                    let name = self.fresh(crate::lower::Base::Named("item"));
+                    let body = self.copy(Expr::var(&name), *item);
                     let copy = Expr::arrow(
-                        vec!["item".into()],
+                        vec![name.as_str().into()],
                         vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                     );
                     return Expr::builtin(place, "map", vec![copy]);
@@ -310,12 +311,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pointer's at each (#1553); else shared.
             Shape::Other => match *ty.kind() {
                 ty::Array(item, _) if inline(item) => {
-                    let copied = self.moved_apart(Expr::var("item"), item)?;
+                    let name = self.fresh(crate::lower::Base::Named("item"));
+                    let copied = self.moved_apart(Expr::var(&name), item)?;
                     Some(Expr::read(
                         place,
                         "map",
                         vec![Expr::arrow(
-                            vec![js::Pattern::Name("item".into())],
+                            vec![js::Pattern::Name(name)],
                             vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
                         )],
                     ))
@@ -404,11 +406,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// hand-written `Clone`, which std doesn't make there (ADR 0623,
     /// amended); `None` where the copy is the item itself.
     pub(super) fn bits_copy_fn(&self, item: Ty<'tcx>) -> Option<Expr> {
-        let copied = self.copy_if_needed(Expr::var("item"), item);
+        let item_name = self.fresh(crate::lower::Base::Named("item"));
+        let copied = self.copy_if_needed(Expr::var(&item_name), item);
         match &copied.kind {
-            js::ExprKind::Var(name) if name == "item" => None,
+            js::ExprKind::Var(name) if *name == item_name => None,
             _ => Some(Expr::arrow(
-                vec!["item".into()],
+                vec![item_name.as_str().into()],
                 vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
             )),
         }

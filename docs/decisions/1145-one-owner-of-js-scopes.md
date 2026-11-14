@@ -95,3 +95,39 @@ names its parameter of the item's names, `FnCx::catch_names`, each its own,
 where each was `error` as it is. The corpus is what it was, byte for byte.
 Tidy's own catches, `aborting_finally`'s and a poisoned lock's, are made
 after M2's names are, where tidy starts; M3's `VarId`s name them.
+
+## Amendment: the third family, the parameters of arrows lowering makes (2026-11-14)
+
+An arrow lowering makes around an item, a copy's, a clone's, a drop's,
+a `Debug`'s or `Any`'s, and the arrows of `next_if_eq(&item)` and of a
+`for_each(x)` that hold the program's values, names its parameter of the
+item's names, `FnCx::fresh`'s, each its own, where each was written as it
+is, `item`, `a`, `b`, `each`, `x`. The item's names hold every name such a
+value can read, a global it binds too, so `Expr::param_apart`, which gave
+the parameter apart from those, is gone (ADR 0352, amended).
+Byte for byte, the corpus is what it was but four cases, each still
+native's. In each, one of tidy's own rules now applies where a
+parameter written `b`, or `item`, kept a program binding of that
+spelling from it, as it applies wherever nothing collides:
+`borrow_mut_of_a_value_as_itself` reuses its `let b` for the first `b`
+too, as it already did for the later ones; `arrow_parameters_named_apart`
+reuses `let each$1`; `ref_mut_bindings_copied` writes `nested[0][0] =
+5`; and `user_deref` writes its `println!`'s arguments in its template,
+in their order. Keeping the old bytes would mean keeping a spelling
+shared on purpose, the name-as-identity M2 removes.
+
+The program's own names were not reserved first. Reserving them gave
+none of the four back, and gave a temporary that had a name free in its
+own scope, `d`, `l` or `result`, `tmp$1` or `value` instead.
+
+Two compared expressions became alike but for their parameters' names:
+`vec![p; n]` gives `$repeatItems` a hand-written clone only where it
+isn't the copy, and the two are compared with `alpha_eq`
+(`slice.rs`), where `!=` gave the copy twice.
+
+`clone_fn` and `key_parts_fn` still name their parameter for their own
+scope alone. Given the item's names, they are named before the program's
+locals and take the program's own `key` and `value`, `key$1` for the
+program's. They are the next family: compiler-made names of the start of
+M3's names table, spelled once by preparation, and refused by the
+validator if one reaches printing.

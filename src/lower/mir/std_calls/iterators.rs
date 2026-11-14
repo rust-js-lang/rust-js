@@ -323,7 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 };
                                 // Its parameter named apart from what it compares
                                 // with, a variable the program calls `item` (#1667).
-                                let item = Expr::param_apart("item", &[&x]);
+                                let item = this.fresh(Role::Item);
                                 let same = Expr::arrow(
                                     vec![item.clone().into()],
                                     vec![

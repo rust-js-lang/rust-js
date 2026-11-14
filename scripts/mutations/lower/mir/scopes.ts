@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "scope-function-names-its-own",
     breaks: "a scope struct's method's function names its variables apart from none of its function's, a `counter` of its own hiding the one it closes over",
     file: "src/lower/mir/scopes.rs",
-    find: "            names: self.names.clone(),\n",
+    find: "            names: self.names.borrow().clone(),\n",
     replace: "            names: Default::default(),\n",
     tests: scopes,
   },

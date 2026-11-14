@@ -96,3 +96,12 @@ changes where none does. Held by
 compared, and mutation `param-shadows-what-its-arrow-holds`. That a name
 is the identity of what it reads, which this rule works within, goes with
 review #1671's change 3 (per-item variable ids).
+
+Amended 2026-11-14 (#1681 change 3, M2): such a parameter is the item's
+own name, `FnCx::fresh`'s, and the item's names hold each name a value it
+embeds can read: the item's variables, its module's functions and
+imports, and the globals it binds. `Expr::param_apart`, which gave it
+apart from the names the value read, is gone with the check, which no
+value could reach any more; mutation `param-shadows-what-its-arrow-holds`
+is gone with it. A global the value reads, `next_if_eq(&ITEM)` of a
+`#[link_name = "item"]` static, holds the rule in `test/validate.test.ts`.

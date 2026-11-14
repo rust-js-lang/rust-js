@@ -149,9 +149,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let mut body = Vec::new();
-        // Named apart from the comparator or key the program gives (#1667).
-        let embedded: Vec<&Expr> = by.iter().collect();
-        let names = (Expr::param_apart("a", &embedded), Expr::param_apart("b", &embedded));
+        // Of the item's names, so apart from the comparator or key the
+        // program gives (`FnCx::fresh`, #1667).
+        let names = (self.fresh(Role::A), self.fresh(Role::B));
         let (a, b) = (Expr::var(&names.0), Expr::var(&names.1));
         let less = match with {
             SortWith::Order => self.operator_value(Op::Lt, a, b, item, span, &mut body)?,

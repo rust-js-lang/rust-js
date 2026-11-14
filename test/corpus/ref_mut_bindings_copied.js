@@ -23,8 +23,7 @@ function main() {
 
   const nested = [[1, 2], 3];
   const old = [[nested[0][0], nested[0][1]], nested[1]];
-  const item = nested[0];
-  item[0] = 5;
+  nested[0][0] = 5;
   console.log(
     `((${old[0][0]}, ${old[0][1]}), ${old[1]}) ((${nested[0][0]}, ${nested[0][1]}), ${nested[1]})`,
   );

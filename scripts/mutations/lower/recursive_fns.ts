@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's `eqExpr` is named as the variable `let eq_expr = a == b` of the function that makes it is, which hides it there: `const eqExpr = eqExpr(a, b)` throws (#517)",
     file: "src/lower/recursive_fns.rs",
-    find: "        taken.extend(self.names.iter().cloned());\n",
+    find: "        taken.extend(self.names.borrow().iter().cloned());\n",
     replace: "",
     tests: perModule,
   },

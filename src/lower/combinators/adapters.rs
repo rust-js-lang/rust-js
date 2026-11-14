@@ -209,11 +209,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (name.clone(), value.clone())
                 }
                 _ => {
-                    let item = Expr::param_apart("item", &[&f]);
+                    let item = self.fresh(Role::Item);
                     (item.clone(), Expr::call(f, vec![Expr::var(&item)]))
                 }
             },
-            None => ("item".to_string(), Expr::var("item")),
+            None => {
+                let item = self.fresh(crate::lower::Base::Named("item"));
+                (item.clone(), Expr::var(&item))
+            }
         };
         // A `Result`'s is read twice, its tag and its value: a variable.
         let twice = self.is_std_type(inner, crate::lower::recognition::StdItem::Result);
@@ -253,11 +256,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (name.clone(), value.clone())
                 }
                 _ => {
-                    let item = Expr::param_apart("item", &[&f]);
+                    let item = self.fresh(Role::Item);
                     (item.clone(), Expr::call(f, vec![Expr::var(&item)]))
                 }
             },
-            None => ("item".to_string(), Expr::var("item")),
+            None => {
+                let item = self.fresh(crate::lower::Base::Named("item"));
+                (item.clone(), Expr::var(&item))
+            }
         };
         // An associated type's, `I::Item`'s, its dictionary's `into_iter`,
         // `as_js_iterator`'s (#278): a where clause's `Self::Item:
@@ -333,9 +339,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0298, amended).
         let kept = generic_args.types().nth(1);
         let present = || {
-            let test = Expr::presence(Expr::var("item"), true);
+            let item = self.fresh(crate::lower::Base::Named("item"));
+            let test = Expr::presence(Expr::var(&item), true);
             Expr::arrow(
-                vec!["item".into()],
+                vec![item.as_str().into()],
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],
             )
         };
@@ -393,9 +400,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         item.is_array() || item.is_slice() || self.is_vec_like(item)
                     } =>
                 {
-                    let stepped = self.stepped_items(Expr::var("item"));
+                    let name = self.fresh(crate::lower::Base::Named("item"));
+                    let stepped = self.stepped_items(Expr::var(&name));
                     let each = Expr::arrow(
-                        vec!["item".into()],
+                        vec![name.as_str().into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
                     self.flat_mapped(items, each, item, own_count)
@@ -404,9 +412,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flat_mapped(items, each, item, own_count)
                 }
                 _ => {
+                    let item = self.fresh(crate::lower::Base::Named("item"));
                     let each = Expr::arrow(
-                        vec!["item".into()],
-                        vec![StmtKind::Return(Some(Expr::var("item"))).at(js::Span::NONE)],
+                        vec![item.as_str().into()],
+                        vec![StmtKind::Return(Some(Expr::var(&item))).at(js::Span::NONE)],
                     );
                     method(items, "flatMap", vec![each])
                 }
@@ -525,8 +534,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.extend(self.item_drop_of(receiver_ty, span)?);
                     return Ok(crate::lower::iterators::stepped_every(list));
                 }
-                let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
-                let body = match self.item_drop_call(receiver_ty, Expr::var("item"), span)? {
+                let (item, i) = (
+                    self.fresh(crate::lower::Base::Named("item")),
+                    self.fresh(crate::lower::Base::Named("i")),
+                );
+                let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var(&i), n), Expr::int(0));
+                let body = match self.item_drop_call(receiver_ty, Expr::var(&item), span)? {
                     Some(dropped) => vec![
                         StmtKind::If(
                             keep,
@@ -539,8 +552,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ],
                     None => vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
                 };
-                let param = if body.len() > 1 { "item" } else { "_" };
-                method(items, "filter", vec![Expr::arrow(vec![param.into(), "i".into()], body)])
+                let param = if body.len() > 1 { item.as_str() } else { "_" };
+                method(
+                    items,
+                    "filter",
+                    vec![Expr::arrow(vec![param.into(), i.as_str().into()], body)],
+                )
             }
             // Each passed over dropped as it's passed, of items with a
             // destructor (ADR 0098); a key made once for each, as std's.
@@ -610,7 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.spill(Role::Inspect, f, out)
                 };
-                let param = Expr::param_apart("item", &[&f]);
+                let param = self.fresh(Role::Item);
                 let item = Expr::var(&param);
                 let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
                 let mut inspected = vec![inspected];

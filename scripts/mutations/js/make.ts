@@ -562,14 +562,6 @@ export const mutations: Mutation[] = [
     unitTests: "js::tests::a_constants_array_of_literals_is_known_literal",
   },
   {
-    name: "param-shadows-what-its-arrow-holds",
-    breaks: "an arrow the compiler makes names its parameter `item` though the program's value it holds reads an `item`, `(item) => item === item` (#1667)",
-    file: "src/js/make.rs",
-    find: "            true => crate::names::fresh_apart(&mut taken, base),\n",
-    replace: "            true => base.to_string(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^arrow_parameters_named_apart_from_program_values.rs$"],
-  },
-  {
     name: "global-unmarked",
     breaks: "a global's read, `Array` of `Array.from(..)`, is made unmarked, a read nothing declares: the program refused (#1681)",
     file: "src/js/make.rs",

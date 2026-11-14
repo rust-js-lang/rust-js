@@ -171,9 +171,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let values = std::iter::once(items).chain(key).collect();
             return self.stable_sort_call(with, values, generic_args, span, out);
         }
-        // Named apart from the key the program gives (#1667).
-        let embedded: Vec<&Expr> = key.iter().collect();
-        let names = (Expr::param_apart("a", &embedded), Expr::param_apart("b", &embedded));
+        // Of the item's names, so apart from the key the program gives
+        // (`FnCx::fresh`, #1667).
+        let names = (self.fresh(Role::A), self.fresh(Role::B));
         let (a, b) = (Expr::var(&names.0), Expr::var(&names.1));
         Ok(match key {
             // Sorting, in place (ADR 0036). JS's `sort()` compares as strings:

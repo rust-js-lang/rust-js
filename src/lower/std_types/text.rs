@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a closure that may panic, std's `String::retain` leaves
             // what it kept of the characters before (#1171).
             StringEdit::Retain if unwinds => {
-                let kept = Expr::param_apart("kept", &[&current]);
+                let kept = self.fresh(Role::Kept);
                 let set = vec![StmtKind::Assign(current.clone(), Expr::var(&kept)).at(js::Span::NONE)];
                 given.push(Expr::arrow(vec![kept.into()], set));
                 (helper("$retainText", given), None)
@@ -428,7 +428,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && item.is_char()
         {
             let set = values[at].clone();
-            let c = Expr::param_apart("c", &[&set]);
+            let c = self.fresh(Role::C);
             let one_of = Expr::builtin(set, "includes", vec![Expr::var(&c)]);
             values[at] = Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)]);
         }
@@ -983,8 +983,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Ok(Expr::js_undefined());
                         }
                         let mut dropped = Vec::new();
-                        self.drop_value(Expr::var("item"), ty, span, &mut dropped)?;
-                        Ok(Expr::arrow(vec!["item".into()], dropped))
+                        let name = self.fresh(crate::lower::Base::Named("item"));
+                        self.drop_value(Expr::var(&name), ty, span, &mut dropped)?;
+                        Ok(Expr::arrow(vec![name.as_str().into()], dropped))
                     };
                     let (made, left) = (dropper(output)?, dropper(*item)?);
                     return Ok(Some(Expr::call_helper(

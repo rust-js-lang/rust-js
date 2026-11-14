@@ -48,12 +48,12 @@ function main() {
   const each = [2];
   const result = [[1], [2]];
   console.log(`${result.some((each$1) => $eq(each$1, each))}`);
-  const each$1 = 2;
+  let each$1 = 2;
   const result$1 = [1, 2, 3];
   const value$1 = $binarySearch(result$1, each$1);
   console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`);
-  const each$2 = [3];
-  const value$2 = $position([[1], [3]], (p) => $eq(p, each$2));
+  each$1 = [3];
+  const value$2 = $position([[1], [3]], (p) => $eq(p, each$1));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const item$2 = (p) => p[0];
   const result$2 = [[1], [3]];

@@ -721,7 +721,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill(Role::Item, x, out),
         };
         let mut body = Vec::new();
-        let each = Expr::param_apart("each", &[&x]);
+        let each = self.fresh(Role::Each);
         let order = self.cmp_value(Expr::var(&each), x, item, false, span, &mut body)?;
         body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
         Ok(Expr::call_helper(

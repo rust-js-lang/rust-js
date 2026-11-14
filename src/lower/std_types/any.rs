@@ -264,9 +264,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .collect(),
                     );
                 }
+                let name = self.fresh(crate::lower::Base::Named("item"));
                 let each = Expr::arrow(
-                    vec!["item".into()],
-                    vec![StmtKind::Return(Some(Expr::held(Expr::var("item")))).at(js::Span::NONE)],
+                    vec![name.as_str().into()],
+                    vec![StmtKind::Return(Some(Expr::held(Expr::var(&name)))).at(js::Span::NONE)],
                 );
                 Expr::builtin(value, "map", vec![each])
             }

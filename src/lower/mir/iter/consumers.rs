@@ -336,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = self.unary_callback(f, own);
             return Ok(Expr::call(Expr::member(it, "forEach"), vec![f]));
         };
-        let x = Expr::param_apart("x", &[&f]);
+        let x = self.fresh(Role::X);
         let each = Expr::arrow(
             vec!["_".into(), x.clone().into()],
             vec![StmtKind::Expr(Expr::call(f, vec![Expr::var(&x)])).at(js::Span::NONE)],

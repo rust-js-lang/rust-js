@@ -990,4 +990,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|borrow_mut_supertrait).rs$"],
     snapshots: true,
   },
+  {
+    name: "bound-global-name-free-to-a-local",
+    breaks: "a global a binding reads, `#[link_name = \"item\"]`, is a name a local lowering makes may take, `next_if_eq(&ITEM)`'s `(item) => item === item` (#1667, #1681)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                    uses.globals.insert(bindings::first_name(path).to_string());\n",
+    replace: "                    let _ = path;\n",
+    tests: ["test/validate.test.ts", "-t", "named apart from a global its value reads"],
+  },
 ];

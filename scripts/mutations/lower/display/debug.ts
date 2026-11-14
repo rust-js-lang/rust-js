@@ -406,8 +406,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
     file: "src/lower/display/debug.rs",
-    find: 'is_var(&shown, "item") || matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item"));\n',
-    replace: 'is_var(&shown, "item") || false && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item"));\n',
+    find: 'is_var(&shown, &name) || matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, &name));\n',
+    replace: 'is_var(&shown, &name) || false && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, &name));\n',
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",

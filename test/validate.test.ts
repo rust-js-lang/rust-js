@@ -49,3 +49,30 @@ pub fn both() -> (&'static Unknown, &'static Unknown) {
   expect(compiled.exitCode, compiled.stderr.toString()).toBe(0);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const complete = window.$RC;\n  const { $RX: clientRender } = window;\n");
 });
+
+// An arrow lowering makes around a value the program gives names its
+// parameter of the item's names, which hold the module's own too, and
+// apart from what the value reads, a global's: `next_if_eq(&ITEM)` of a
+// global `item` is `(item$1) => item$1 === item`, where `(item) => item
+// === item` is always true (#1667, #1681 change 3, M2).
+test("an arrow's parameter is named apart from a global its value reads", async () => {
+  const dir = fixture("validate-global-apart");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "item"]
+    safe static ITEM: i32;
+}
+
+pub fn taken() -> Vec<i32> {
+    let mut it = [1, 5, 3].into_iter().peekable();
+    it.next_if_eq(&ITEM).into_iter().collect()
+}
+`);
+  const compiled = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(compiled.stderr.toString()).not.toContain("error");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("(item$1) => item$1 === item");
+  const lib = await import(join(dir, "lib.js"));
+  (globalThis as { item?: number }).item = 5;
+  expect(lib.taken()).toEqual([]);
+  (globalThis as { item?: number }).item = 1;
+  expect(lib.taken()).toEqual([1]);
+});
