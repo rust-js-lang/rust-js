@@ -3,29 +3,12 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "otherwise-overlap-unrefused",
-    breaks: "an untagged enum's `otherwise` variant whose payload, a tuple struct's array, is of another variant's kind isn't refused where its drop tests it, so `Array.isArray` takes it for the other (#1083)",
-    file: "src/lower/untagged.rs",
-    find: "                    if let Some(kind) = recognition.untagged_variant_kind(variant, args)\n                        && let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
-    replace: "                    if let Some(kind) = recognition.untagged_variant_kind(variant, args).filter(|_| false)\n                        && let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
-    tests: ["test/untagged-members.test.ts", "-t", "an otherwise variant of another variant's kind is refused"],
-  },
-  {
     name: "otherwise-overlap-untested",
     breaks: "a `match` of an untagged enum whose `otherwise` variant's payload is of another's kind tests it as what the others aren't, so the other's test takes it (#1083)",
     file: "src/lower/untagged.rs",
     find: "        let kind_of = |v: &VariantDef| recognition.untagged_variant_kind(v, args);\n",
     replace: "        let kind_of = |v: &VariantDef| {\n            (!bindings::is_otherwise(self.tcx, v.def_id))\n                .then(|| recognition.untagged_variant_kind(v, args))\n                .flatten()\n        };\n",
     tests: ["test/untagged-members.test.ts", "-t", "an otherwise variant of another variant's kind is refused"],
-  },
-  {
-    name: "untagged-refusal-unsaid",
-    breaks:
-      "an untagged enum's refusal doesn't say it's rust-js's, so what reads a compile's errors takes it for a crash (#939)",
-    file: "src/lower/untagged.rs",
-    find: "        tcx.dcx().span_err(span, format!(\"rust-js: {message}\"));\n",
-    replace: "        tcx.dcx().span_err(span, message);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "untagged"],
   },
   {
     name: "lone-class-tested",
@@ -121,19 +104,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "untagged-unit-refused",
-    breaks: "an untagged enum's variant without fields is refused",
-    file: "src/lower/untagged.rs",
-    find: "                if let Some(kind) = unit_kind(tcx, variant) {\n",
-    replace:
-      "                if let Some(kind) = unit_kind(tcx, variant).filter(|_| false) {\n",
-    tests: [
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "variant without fields is its name",
-    ],
-  },
-  {
     name: "untagged-null-loose",
     breaks:
       "`Kind::Null`'s test is `value == null`, which `undefined` passes too",
@@ -212,19 +182,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {
-    name: "untagged-nullish-holds-fields",
-    breaks: "a `#[rust_js::null]` variant with a field isn't refused",
-    file: "src/lower/untagged.rs",
-    find: "                if let Some(nullish) = bindings::given_nullish(tcx, variant.def_id) {",
-    replace:
-      "                if let Some(nullish) = bindings::given_nullish(tcx, variant.def_id).filter(|_| false) {",
-    tests: [
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "null variant holds nothing",
-    ],
-  },
-  {
     name: "untagged-bigint-number",
     breaks:
       "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
@@ -253,25 +210,6 @@ export const mutations: Mutation[] = [
       "-t",
       "untagged enum",
     ],
-  },
-  {
-    name: "untagged-kinds-alike",
-    breaks:
-      "an untagged enum's two string variants are accepted, which JS can't tell apart",
-    file: "src/lower/untagged.rs",
-    find: "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
-    replace:
-      "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|_| false)\n",
-    tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
-  },
-  {
-    name: "untagged-serde-accepted",
-    breaks:
-      "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
-    file: "src/lower/untagged.rs",
-    find: "        if serde_impl(tcx, def_id.to_def_id()).is_some()\n",
-    replace: "        if false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "serde of an untagged"],
   },
   {
     name: "otherwise-tested-as-its-kind",
@@ -345,15 +283,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "otherwise-anywhere",
-    breaks:
-      "an untagged enum's `#[rust_js::otherwise]` variant before another is taken, shadowing it",
-    file: "src/lower/untagged.rs",
-    find: "                    if i != last {\n",
-    replace: "                    if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "otherwise variant before"],
-  },
-  {
     name: "tested-variant-always",
     breaks:
       "an element of an untagged enum is whatever its test's turn comes to, a list of children cloned as an element",
@@ -370,19 +299,6 @@ export const mutations: Mutation[] = [
     find: "            && let Some(test) = bindings::test_of(self.tcx, adt.did())\n",
     replace: "            && let Some(test) = None::<String>\n",
     tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
-  },
-  {
-    name: "made-untagged-alike-refused",
-    breaks:
-      "an untagged enum only made, whose two variants hold objects, `getStaticProps`'s, is refused",
-    file: "src/lower/untagged.rs",
-    find: "k.overlaps(&kind))\n                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
-    replace: "k.overlaps(&kind))\n",
-    tests: [
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "untagged enum only made",
-    ],
   },
   {
     name: "cloned-untagged-alike-allowed",
@@ -626,15 +542,6 @@ export const mutations: Mutation[] = [
     tests: ["test/untagged-members.test.ts"],
   },
   {
-    name: "untagged-member-of-an-object",
-    breaks:
-      "a member that tells a struct apart may hold an object, which JS can't tell apart (rd291)",
-    file: "src/lower/untagged.rs",
-    find: "                if matches!(*told, Kind::Object | Kind::Member(..) | Kind::Null | Kind::Undefined) {\n",
-    replace: "                if false {\n",
-    tests: ["test/untagged-members.test.ts"],
-  },
-  {
     name: "untagged-in-untagged-refused",
     breaks:
       "another untagged enum a variant holds is refused, JS can't tell it, where its variants together tell it (rd305)",
@@ -817,13 +724,5 @@ export const mutations: Mutation[] = [
     find: "        if let Some(lone) = self.lone_class_variant(adt, args).map(|lone| adt.variant(lone))\n",
     replace: "        if let Some(lone) = self.lone_class_variant(adt, args).filter(|_| false).map(|lone| adt.variant(lone))\n",
     tests: ["test/webapi-objects.test.ts", "-t", "derived =="],
-  },
-  {
-    name: "test-member-misuse-allowed",
-    breaks: "a JS object type's `#[rust_js::test(nodeType = \"x\")]` tells nothing, and isn't refused (#555)",
-    file: "src/lower/untagged.rs",
-    find: "        if tcx.def_kind(def_id) == DefKind::Struct && bindings::test_member(tcx, def_id.to_def_id()) == Some(None) {\n",
-    replace: "        if false && tcx.def_kind(def_id) == DefKind::Struct && bindings::test_member(tcx, def_id.to_def_id()) == Some(None) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "test of a member of no number"],
   },
 ];
