@@ -26,6 +26,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "export-default", name: string }
  *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
+ *   | { kind: "global", declarations: Declaration[] }
  *   | { kind: "class", name: string, exported: boolean, declare: boolean, extends?: Type, members: ClassMember[], docs?: string }
  *   | { kind: "other", text: string }
  *   | { kind: "note", text: string }} Declaration
@@ -126,16 +127,22 @@ export async function open(files = []) {
     async print(/** @type {Module} */ module) {
       const parts = [];
       let previous;
+      const printed = async (/** @type {Declaration} */ declaration) =>
+        documented(declaration, await api.printer.printNode(statement(declaration)), (node) =>
+          api.printer.printNode(node),
+        );
       for (const declaration of module.declarations) {
         // A note where a declaration would be, a `//` line (ADR 1077).
+        // `declare global { .. }`, a type TypeScript's DOM lacks, which a
+        // binding says rust-js declares (`rust_js::declares`, #1790): each
+        // of its declarations as TypeScript prints it, inside, as its
+        // factory has no global augmentation to give the printer.
         const text =
           declaration.kind === "note"
             ? declaration.text
-            : await documented(
-                declaration,
-                await api.printer.printNode(statement(declaration)),
-                (node) => api.printer.printNode(node),
-              );
+            : declaration.kind === "global"
+              ? `declare global {\n${(await Promise.all(declaration.declarations.map(printed))).join("\n\n").replace(/^(?=.)/gm, "    ")}\n}`
+              : await printed(declaration);
         // Imports together, then a blank line before each declaration.
         const together = previous === "import" && declaration.kind === "import";
         parts.push(previous && !together ? `\n${text}` : text);

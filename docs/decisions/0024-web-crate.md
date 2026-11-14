@@ -338,3 +338,11 @@ it runs, so their sign isn't known (ADR 0011).
 Held by `test/webapi-namespaces.test.ts`: each namespace constant @webref/idl
 declares whose name TypeScript's DOM has is its module's; and WebGPU's flags,
 compiled and run.
+
+## Amendment (2026-11-14): battery-status read whole, and what TypeScript lacks declared (#1790)
+
+`battery-status` joins `SPECS`: `navigator.get_battery()` and its
+`BatteryManager`, which `@types/web` doesn't declare. The generator marks
+each bound type TypeScript's DOM lacks `#[rust_js::declares]`, and a
+crate's declarations that name one declare it of the binding
+([ADR 1152](1152-rust-js-declares-what-typescripts-dom-lacks.md)).

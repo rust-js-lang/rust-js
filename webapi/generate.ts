@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 
 import idl from "@webref/idl";
-import { typescript, typescriptInterfaces, typescriptNamespaces } from "./coverage";
+import { typescript, typescriptInterfaces, typescriptNamespaces, typescriptNames } from "./coverage";
 import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
@@ -25,7 +25,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer", "url", "console"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer", "url", "console", "battery-status"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -94,6 +94,9 @@ const INTERFACES = [
   "SVGFEGaussianBlurElement", "SVGFEImageElement", "SVGFEMergeElement", "SVGFEMergeNodeElement", "SVGFEMorphologyElement",
   "SVGFEOffsetElement", "SVGFESpecularLightingElement", "SVGFETileElement", "SVGFETurbulenceElement",
   "SVGFEDistantLightElement", "SVGFEPointLightElement", "SVGFESpotLightElement", "SVGClipPathElement", "SVGMaskElement",
+  // battery-status: the device's battery, `navigator.getBattery()`, which
+  // TypeScript's DOM doesn't declare: rust-js declares it (#1790)
+  "BatteryManager",
 ];
 // And every other class TypeScript's DOM has (`@types/web`), from whichever
 // spec WebIDL has it in (ADR 0281).
@@ -536,6 +539,9 @@ const anyClassHas = new Set([...typescriptDom.values()].flatMap((c) => [...c.mem
 // What TypeScript's DOM declares of each namespace, `GPUBufferUsage`'s
 // constants: a namespace's members are kept as an interface's are (#1779).
 const typescriptNamespace = await typescriptNamespaces();
+// Each name TypeScript's DOM declares: a type bound here that isn't one,
+// `BatteryManager`, rust-js's declarations declare, of its binding (#1790).
+const typescriptDeclares = await typescriptNames();
 // Every spec's: what the specs above have, as they have it, and of the
 // others' members those TypeScript's DOM has, not one it leaves out as
 // still an experiment (ADR 0281).
@@ -2466,6 +2472,10 @@ for (const name of INTERFACES) {
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   // What it is to TypeScript: its DOM lib's interface of the same name.
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : (i.ts ?? jsName(i)))})]`);
+  // A type TypeScript's DOM lacks is declared by the declarations of what
+  // names it, of this binding (#1790).
+  // One of a namespace TypeScript declares, `WebAssembly.Module`, is.
+  if (!listOf && !i.ts && !typescriptDeclares.has(jsName(i).split(".")[0])) line("#[cfg_attr(rust_js, rust_js::declares)]");
   // A node's `nodeType`, which tells it in an untagged enum (#555).
   const told = i.ts ? undefined : nodeTypes(name);
   if (told) line(`#[cfg_attr(rust_js, rust_js::test(${told.map((type) => `nodeType = ${type}`).join(", ")}))]`);

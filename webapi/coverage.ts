@@ -102,6 +102,16 @@ export async function typescriptInterfaces(): Promise<Map<string, { members: Set
   return interfaces;
 }
 
+/** Each name TypeScript's DOM declares at its top, an interface's, a
+ * type's, a value's or a namespace's: what a type it lacks is told apart
+ * by, which rust-js's declarations declare (`rust_js::declares`, #1790). */
+export async function typescriptNames(): Promise<Set<string>> {
+  const session = await open([dom]);
+  const { declarations } = await session.read(dom);
+  await session.close();
+  return new Set((declarations as any[]).map((d) => d.name).filter((name): name is string => typeof name === "string"));
+}
+
 /** Each namespace @webref/idl declares, and the names of its constants. */
 export async function idlNamespaceConstants(): Promise<Map<string, string[]>> {
   const constants = new Map<string, string[]>();

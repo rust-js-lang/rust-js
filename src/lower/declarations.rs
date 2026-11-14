@@ -28,6 +28,7 @@ mod comments;
 mod dictionaries;
 mod enums;
 mod functions;
+mod globals;
 mod imports;
 mod namespaces;
 mod parts;
@@ -1256,6 +1257,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
                 // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
                 if let Some(declared) = written_types(tcx, did) {
+                    self.declare_global(did, &declared);
                     return self.written(did, &declared, args);
                 }
                 // A `Cow`, what it borrowed or owns, `{ TAG: "Borrowed"; _0:
