@@ -162,7 +162,11 @@ export function version(cases: Row[]): string {
 
 /** What an iterator yields: an item that prints as it's dropped, `D`, a
  * number, a reference to either, or a pair of them. */
-type Item = "D" | "N" | "&D" | "&N" | "pair";
+/** An item: the crate's `D`, which prints as it drops; a number; a
+ * `String` of a number's digits, `S`, whose freeing JS never sees, a
+ * collection's items no `Drop` of the crate's runs on (#1681's step (a));
+ * a reference to one; or a pair an `enumerate` or a `zip` makes. */
+type Item = "D" | "N" | "S" | "&D" | "&N" | "&S" | "pair";
 
 /** An iterator so far: what it yields, whether a `D` it owns is in it
  * (whose `Drop` may panic), and the traits it has. */
@@ -225,7 +229,16 @@ export const sources: Source[] = [
   // own iterator of an array, as webapi's `keys()` is (ADR 1136).
   { name: "boxed dyn", shape: { item: "D", owns: true, back: false, exact: false }, expr: () => "boxed(ds())", own: false },
   { name: "js values", shape: { item: "N", owns: false, back: false, exact: false }, before: "let js_nums: Vec<u32> = vec![1, 2, 3, 4, 5];", expr: () => "js_values(&js_nums)", own: false },
+  // A `Vec<String>`'s, by value and borrowed: items with no `Drop` of the
+  // crate's, whose freeing JS never sees (#1681's step (a)).
+  { name: "strings", shape: { item: "S", owns: false, back: true, exact: true }, expr: () => "texts().into_iter()", own: false },
+  { name: "strings iter", shape: { item: "&S", owns: false, back: true, exact: true }, before: "let words = texts();", expr: () => "words.iter()", own: false },
 ];
+
+/** Two items of each of `from`'s, past 10 and itself, in a `vec!` or an
+ * array (`made`): a flatten's. */
+const twice = (from: Shape, made: string) =>
+  `${made}[${{ D: "D(x.0 + 10)", N: "x + 10", S: "(x.v() + 10).to_string()" }[from.item as "D" | "N" | "S"]}, x]`;
 
 /** An adapter: the shape it makes of `from`, or none where it doesn't
  * apply; and its text, `panics` saying it's the stage that panics. */
@@ -236,7 +249,7 @@ type Adapter = { name: string; closure: boolean; shape: (from: Shape) => Shape |
 type Panics = boolean | "point";
 
 const base = (item: Item) => item !== "pair";
-const owned = (item: Item) => item === "D" || item === "N";
+const owned = (item: Item) => item === "D" || item === "N" || item === "S";
 /** A closure's body, after a counter of its calls panics at the second, if
  * it's the one that does; of the points table, after its point. */
 const counted = (panics: Panics, what: string, body: string) =>
@@ -246,9 +259,9 @@ export const adapters: Adapter[] = [
   {
     name: "map",
     closure: true,
-    shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
+    shape: (from) => (from.item === "D" || from.item === "S" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
     text: (from, panics) => {
-      const body = { D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" }[from.item];
+      const body = { D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" }[from.item];
       return `.map(|x| ${counted(panics, "map", body)})`;
     },
   },
@@ -273,14 +286,15 @@ export const adapters: Adapter[] = [
     name: "chain",
     closure: false,
     shape: (from) => (base(from.item) ? { ...from, exact: false } : undefined),
-    text: (from) => `.chain(${{ D: "vec![D(6), D(7)]", N: "6..8u32", "&D": "tail.iter()", "&N": "[6u32, 7].iter()", pair: "" }[from.item]})`,
+    text: (from) => `.chain(${{ D: "vec![D(6), D(7)]", N: "6..8u32", S: "texts_of(&[6, 7])", "&D": "tail.iter()", "&N": "[6u32, 7].iter()", "&S": "tail.iter()", pair: "" }[from.item]})`,
   },
   { name: "rev", closure: false, shape: (from) => (from.back ? from : undefined), text: () => ".rev()" },
   { name: "copied", closure: false, shape: (from) => (from.item === "&N" ? { ...from, item: "N" } : undefined), text: () => ".copied()" },
   {
     name: "cloned",
     closure: false,
-    shape: (from) => (from.item === "&N" ? { ...from, item: "N" } : from.item === "&D" ? { ...from, item: "D", owns: true } : undefined),
+    shape: (from) =>
+      from.item === "&N" ? { ...from, item: "N" } : from.item === "&D" ? { ...from, item: "D", owns: true } : from.item === "&S" ? { ...from, item: "S" } : undefined,
     text: () => ".cloned()",
   },
   { name: "step_by", closure: false, shape: (from) => ({ ...from, back: from.back && from.exact }), text: () => ".step_by(2)" },
@@ -289,7 +303,7 @@ export const adapters: Adapter[] = [
     closure: true,
     // Each item made two, by a closure of its own.
     shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
-    text: (from, panics) => `.map(|x| ${counted(panics, "flatten", from.item === "D" ? "vec![D(x.0 + 10), x]" : "vec![x + 10, x]")}).flatten()`,
+    text: (from, panics) => `.map(|x| ${counted(panics, "flatten", twice(from, "vec!"))}).flatten()`,
   },
   {
     name: "zip",
@@ -563,7 +577,7 @@ function setterText(setter: Setter, it: string): string {
 // double-ended, and a type parameter of a `Vec`'s and of the crate's.
 
 /** What a `map` makes of an item of `from`, its number past 100. */
-const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" })[from.item];
+const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" })[from.item];
 
 /** The adapters only the table runs, besides the matrix's. */
 export const stepAdapters: Adapter[] = [
@@ -574,7 +588,7 @@ export const stepAdapters: Adapter[] = [
     name: "flat_map array",
     closure: true,
     shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
-    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map array", from.item === "D" ? "[D(x.0 + 10), x]" : "[x + 10, x]")})`,
+    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map array", twice(from, ""))})`,
   },
   {
     name: "flatten option",
@@ -617,7 +631,7 @@ export const stepAdapters: Adapter[] = [
     name: "flat_map",
     closure: true,
     shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
-    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map", from.item === "D" ? "vec![D(x.0 + 10), x]" : "vec![x + 10, x]")})`,
+    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map", twice(from, "vec!"))})`,
   },
   {
     // A closure that holds a `D` of its own, `drop 80`, `caseFn`'s `h`,
@@ -625,7 +639,7 @@ export const stepAdapters: Adapter[] = [
     // 0991).
     name: "map holding",
     closure: true,
-    shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
+    shape: (from) => (from.item === "D" || from.item === "S" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
     text: (from, panics) => `.map(move |x| { let _h = &h; ${counted(panics, "map", mapped(from))} })`,
   },
   {
@@ -633,7 +647,7 @@ export const stepAdapters: Adapter[] = [
     // statement form does since #759's fix.
     name: "map holding block",
     closure: true,
-    shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
+    shape: (from) => (from.item === "D" || from.item === "S" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
     text: (from, panics) => `.map({ let h = D(80); move |x| { let _h = &h; ${counted(panics, "map", mapped(from))} } })`,
   },
   // Lent, `caseFn`'s: its steps are `&mut I`'s.
@@ -699,6 +713,17 @@ export const stepConsumers: Consumer[] = [
     text: (it, p) => `let r = ${it}.position(|x| { ${call(p)} x.v() % 3 == 0 });\n    println!("position {r:?} after {seen}");`,
   },
   { name: "size_hint", closure: false, takes: any, text: (it) => `let it = ${it};\n    println!("hint {:?}", it.size_hint());` },
+  {
+    // What a collect into a `Vec` of an iterator that knows its exact length
+    // reserved: that length, natively, as std's hint says, `v.iter().map(f)`'s
+    // and `(0..n).map(f)`'s and an enumeration of them, which the held flip
+    // and the transparent-chain predicate's `capacity` reason decide by
+    // (#1681's step (a)): the number itself, as native prints it.
+    name: "exact capacity",
+    closure: false,
+    takes: (shape) => shape.exact,
+    text: (it) => `let v: Vec<_> = ${it}.collect();\n    println!("vec{} capacity {}", show(&v), v.capacity());`,
+  },
   {
     // What a collect into a `Vec` reserved, by the hints it asked as it grew
     // (#728, #733), which the crate's `Hints` and `Exact` print: its room
@@ -821,7 +846,7 @@ export const stepConsumers: Consumer[] = [
 
 // The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
 // a collect into a `Vec` reserves by (#733).
-const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values"];
+const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values", "strings", "strings iter"];
 // The sources whose `size_hint` prints as it runs, of which alone a
 // consumer that asks it shows when (#820).
 const hinting = ["own Hints", "own Exact", "own Every", "generic own Every"];
@@ -900,7 +925,7 @@ export function adapterCalls(): Map<string, Set<string>> {
   const word = (a: Adapter) => a.name.split(" ")[0];
   const names = new Set(adapters.map(word));
   const out = new Map<string, Set<string>>();
-  const items: Item[] = ["D", "N", "&D", "&N", "pair"];
+  const items: Item[] = ["D", "N", "S", "&D", "&N", "&S", "pair"];
   const flags = [true, false];
   for (const a of adapters) {
     for (const from of items.flatMap((item) => flags.flatMap((owns) => flags.flatMap((back) => flags.map((exact) => ({ item, owns, back, exact })))))) {
@@ -997,6 +1022,7 @@ function caseFn(c: Case, n: number): string {
   if (site === "drop+drop") body.push("TWICE.store(1, Ordering::Relaxed);");
   if (source.before && !source.generic) body.push(source.before);
   if (chain.some((a) => a.name === "chain") && source.shape.item === "&D") body.push("let tail = vec![D(6), D(7)];");
+  if (chain.some((a) => a.name === "chain") && source.shape.item === "&S") body.push("let tail = texts_of(&[6, 7]);");
   if (site === "stage") body.push("let mut calls = 0;");
   if (consumer.closure) body.push("let mut seen = 0;");
   let shape = source.shape;

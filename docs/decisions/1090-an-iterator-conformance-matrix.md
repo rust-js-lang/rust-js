@@ -716,3 +716,32 @@ ledger). Its
 naming of identifiers does elsewhere. `test/iterator-rows.test.ts` holds
 both rules; scripts have no mutations (ADR 0093), so its assertions are
 the check.
+
+## Amendment: a `String`'s items and an exact capacity (#1681's step (a), 2026-11-14)
+
+The transparent-chain predicate's step (a) asks the drops owner whether a
+destructor of the crate's runs, not whether rustc says a type needs a
+drop, and the capacity owner whether what's collected knows its exact
+length. Both had kept React's everyday chains out, of a `String`'s items
+and of `(0..n).map(f)`. Their rows:
+
+- **A `String`'s items.** Items `S`, a `String` of a number's digits whose
+  `v()` is that number, and `&S`; sources `strings`,
+  `texts().into_iter()`, and `strings iter`, `words.iter()`, in both
+  tables. Each adapter's per-item text has its `S` and `&S` forms: a map's
+  `(x.v() + 100).to_string()`, a chain's `texts_of(&[6, 7])` or its
+  `tail.iter()`, a flatten's `vec![(x.v() + 10).to_string(), x]`
+  (`twice`), a `cloned()` of `&S`'s. 9,138 matrix rows and 2,711 of the
+  table's.
+- **An exact capacity.** The table's `exact capacity` consumer, of each
+  shape that knows its length, prints the `Vec`'s capacity itself, where
+  `capacity`'s says only that it holds its length: 277 rows, each
+  adapter alone over each exact source, `v.iter().map(f)`'s,
+  `(0..n).map(f)`'s and an enumeration of them among them.
+
+Each runs as native Rust does in both builds and the twin net, but those
+under #1180, `capacity()` of a collect std may make in place, its known
+error. They found #1792, a slice's `inspect()` collected with room for 8
+where std's is 5, fixed before they landed (ADR 0419, amended). The
+known list's rows were made again by case id, each the case it was: none
+lost.

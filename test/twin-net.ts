@@ -39,6 +39,7 @@ const why = {
   sort: "a sort, which rust-js writes as its own in both builds",
   format: "`Debug`, which std's build doesn't compile",
   cells: "a `RefCell`'s borrows and its guards, a map of one too, which std's build doesn't compile",
+  numbers: "a number parsed from text, its `FromStr`, which std's build doesn't compile: the tables' `String` items' `v()` (#1681's step (a))",
 } as const;
 
 /** Each helper a whole run pits against std's body: a slice may see one
@@ -126,6 +127,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$count": "consumers",
   "$clone": "glue",
   "$debugDuration": "format",
+  "$debugParseError": "format",
   "$debugF64": "format",
   "$debugList": "format",
   "$debugMap": "format",
@@ -239,6 +241,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$orInsertWith": "collections",
   "$orInsertWithKey": "collections",
   "$panicMessage": "glue",
+  "$parseInt": "numbers",
   "$partialEq": "glue",
   "$partiallyOrdered": "glue",
   "$partialOrd": "glue",

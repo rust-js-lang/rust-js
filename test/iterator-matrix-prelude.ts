@@ -76,6 +76,18 @@ impl Sum<u32> for Total {
     }
 }
 
+impl Sum<String> for Total {
+    fn sum<I: Iterator<Item = String>>(iter: I) -> Total {
+        Total(iter.fold(0, |t, s| t + s.v()))
+    }
+}
+
+impl<'a> Sum<&'a String> for Total {
+    fn sum<I: Iterator<Item = &'a String>>(iter: I) -> Total {
+        Total(iter.fold(0, |t, s| t + s.v()))
+    }
+}
+
 impl<'a> Sum<&'a u32> for Total {
     fn sum<I: Iterator<Item = &'a u32>>(iter: I) -> Total {
         Total(iter.fold(0, |t, n| t + n))
@@ -99,6 +111,12 @@ impl V for u32 {
     }
 }
 
+impl V for String {
+    fn v(&self) -> u32 {
+        self.parse().unwrap()
+    }
+}
+
 impl V for usize {
     fn v(&self) -> u32 {
         *self as u32
@@ -119,6 +137,15 @@ impl<A: V, B: V> V for (A, B) {
 
 fn ds() -> Vec<D> {
     vec![D(1), D(2), D(3), D(4), D(5)]
+}
+
+/** Each number's digits, a \`String\`'s. */
+fn texts_of(numbers: &[u32]) -> Vec<String> {
+    numbers.iter().map(|n| n.to_string()).collect()
+}
+
+fn texts() -> Vec<String> {
+    texts_of(&[1, 2, 3, 4, 5])
 }
 
 /** What a function gives as a \`Box<dyn Iterator>\`, as a crate's or a
