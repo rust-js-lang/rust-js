@@ -103,6 +103,7 @@ which always says what found it.
 | `found-by: review` | A person's report, or a review of the code |
 | `found-by: mutations` | A surviving mutation showed it: a mutation its tests missed, whose case then found the wrong answer |
 | `found-by: rustc-tests` | rustc's own test suite, run as JS, or its report: a test newly failing or failing worse (ADR 0089) |
+| `found-by: validator` | The check of every tree the compiler prints (`js::validate`, ADR 1143): a compile it refused, in whichever suite or net compiled the program, a read nothing declares or a jump that lands nowhere |
 | `found-by: unknown` | The issue gives no evidence of how it was found |
 
 A net that found it while someone fixed another issue is that net's, not

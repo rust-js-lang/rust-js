@@ -29,6 +29,7 @@ export const nets = [
   "review",
   "mutations",
   "rustc-tests",
+  "validator",
   "unknown",
 ] as const;
 export type Net = (typeof nets)[number];
@@ -54,6 +55,9 @@ const said: [Net, RegExp][] = [
   ["object-model", /object[- ]model net|#891\b/i],
   ["neighbour", /neighbou?r(s)? (net|shuffle)|#853\b|test\/neighbours/i],
   ["metamorphic", /metamorphic|#939\b|#1008\b|EMI net|#1086\b/i],
+  // A tree the check of every compile refused, whatever suite compiled it
+  // (ADR 1143).
+  ["validator", /js::validate|\bvalidator\b|scope check of every tree|ADR 1143/i],
   ["crate-corpus", /crate[- ]corpus/i],
   ["mutations", /surviv(ing|ed|or)s? (of )?(a |the )?mutation|mutation (that )?survived|mutation survivors?/i],
   ["rustc-tests", /rustc's (own )?(run-pass )?tests|rustc tests?\b|rustc \/ report|test:rustc|rustc-known-failures/i],
