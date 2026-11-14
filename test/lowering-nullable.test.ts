@@ -66,7 +66,7 @@ pub fn has(context: &Context) -> bool {
   expect(js).toContain("export function reset(context) {\n  context.renderer = null;\n}");
   expect(js).toContain("export function set(context, renderer) {\n  context.renderer = renderer;\n}");
   expect(js).toContain("export function given(context, renderer) {\n  context.renderer = renderer ?? null;\n}");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer: unknown | null;\n    label: string | null;\n");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer: unknown;\n    label: string | null;\n");
   const lib = await import(join(dir, "lib.js"));
   const context = lib.make(1);
   expect([context.renderer, lib.has(context)]).toEqual([null, false]);
@@ -715,7 +715,7 @@ pub fn label(context: &mut Context, label: &'static str) {
   expect(js).toContain("return {\n    value: 2,\n    provider: null,\n    renderer: renderer ?? null,\n  };");
   // A nullable field given one's value, which may be \`undefined\`, makes it \`null\`.
   expect(js).toContain("return { name: context.label ?? null };");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown | null | undefined;\n    label?: string | null | undefined;\n");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown;\n    label?: string | null | undefined;\n");
   const lib = await import(join(dir, "lib.js"));
   const prod = lib.make(1, false);
   const dev = lib.make(1, true);

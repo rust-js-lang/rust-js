@@ -725,9 +725,9 @@ pub fn has_module_loading(response: &Response) -> bool {
   // Its `.d.ts` says each nullable field is present, `T | null`, whoever
   // sets it (ADR 1072, amended); the optional one may be left out.
   for (const field of ["moduleLoading", "nonce", "copy", "both", "readFirst", "inIf", "afterGiven", "never", "one", "late", "value", "held"]) {
-    expect(dts).toContain(`  ${field}: unknown | null;\n`);
+    expect(dts).toContain(`  ${field}: unknown;\n`);
   }
-  expect(dts).toContain("  task?: unknown | null | undefined;\n");
+  expect(dts).toContain("  task?: unknown;\n");
 });
 
 // What a closure's `#[rust_js::nullable(..)]` names is a binding of its own

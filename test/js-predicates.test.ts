@@ -56,7 +56,7 @@ test("a js::Is is upstream's predicate, its JS and its declaration", async () =>
   expect(js).toContain('export function isISODate(value) {\n  return typeof value === "string" && year(value) != null;\n}');
   expect(js).toContain("isISODate(value)");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("export function isISODate(value?: unknown | null | undefined): value is ISODate;");
+  expect(declarations).toContain("export function isISODate(value?: unknown): value is ISODate;");
   // Rust's answers: each a date of a string, never of another kind.
   const { counted, isISODate } = await import(join(dir, "lib.js"));
   expect([isISODate("2024-02-29"), isISODate("2024-2-29"), isISODate(2024), isISODate(undefined), isISODate(null)]).toEqual([true, false, false, false, false]);

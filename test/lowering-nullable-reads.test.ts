@@ -1091,7 +1091,7 @@ pub fn closure_called() -> bool {
   // still tested `!= null`, so JS that leaves it out reads `None` (rd642,
   // ADR 1072, amended).
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(dts).toContain("export interface Own {\n    x: unknown | null;\n}");
+  expect(dts).toContain("export interface Own {\n    x: unknown;\n}");
   expect(dts).toContain("export interface Options {\n    nonce: string | null;\n}");
   expect(js).toContain("return options.nonce != null;");
   expect(js).toContain("return reply.body != null;");

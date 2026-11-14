@@ -316,3 +316,19 @@ variant's `()` field is declared `_0: undefined` where its JS leaves the
 key out, as every enum's is: #1851. Held by declarations-results, a
 consumer reading each branch under strict tsc and a `Result` taken for its
 value refused; mutation result-declared-any.
+
+## Amendment: a union with `unknown` or `any` is that type (#1850, 2026-11-15)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. TypeScript reads
+the two the same.
+
+An `Option<&js::Unknown>` was declared `unknown | null | undefined`, its
+array `(unknown | null | undefined)[]`, where TypeScript, and upstream's
+`isISODate(value: unknown)`, write `unknown`. **The printer prints a union
+of which one member is `any` or `unknown` as that keyword** (`absorbed`,
+typescript/index.js), `any` first, for every producer of a union, an
+array's element too: `unknown`, `unknown[]`, `debugStack?: any`. A
+parameter's `?` stays the one trailing-`Option` rule's (#1845's to
+decide). Held by typescript.test's "print writes a union with unknown or
+any as that keyword"; every declaration test and the guide's fences
+updated with it.

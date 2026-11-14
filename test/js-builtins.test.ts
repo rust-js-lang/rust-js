@@ -124,7 +124,7 @@ pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<js:
   expect(js).not.toContain("const key");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export const propsParents: WeakMap<object, unknown>;");
-  expect(declarations).toContain("export const childrenParents: WeakMap<(unknown | null | undefined)[], unknown>;");
+  expect(declarations).toContain("export const childrenParents: WeakMap<unknown[], unknown>;");
   expect(declarations).toContain("export const named: WeakMap<WeakKey, string>;");
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 const props = { name: "props" };

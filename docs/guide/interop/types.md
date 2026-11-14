@@ -1748,14 +1748,14 @@ export function hasState(fiber) {
 
 ```ts
 export interface Fiber {
-    memoizedState?: unknown | null | undefined;
-    debugStack?: any | null | undefined;
+    memoizedState?: unknown;
+    debugStack?: any;
     name?: string | null | undefined;
 }
 
 export function createFiber(): Fiber;
 
-export function setState(fiber: Fiber, state?: unknown | null | undefined): void;
+export function setState(fiber: Fiber, state?: unknown): void;
 
 export function copy(workInProgress: Fiber, current: Fiber): void;
 
@@ -3003,7 +3003,7 @@ export function saveModule(render: Function): string;
 
 export function readModule(idx: string): Function | null | undefined;
 
-export function initial(value?: unknown | null | undefined): unknown | null | undefined;
+export function initial(value?: unknown): unknown;
 
 export function saved(): string;
 ```
@@ -3663,7 +3663,7 @@ export function isISODate(value) {
 }
 ```
 
-`isISODate(value?: unknown | null | undefined): value is ISODate`.
+`isISODate(value?: unknown): value is ISODate`.
 TypeScript narrows a predicate's parameter both ways, so `when` is given
 the function's own parameter, as it was passed, of `Option<&js::Unknown>`,
 TypeScript's `unknown`, whose false branch narrows nothing: of any other

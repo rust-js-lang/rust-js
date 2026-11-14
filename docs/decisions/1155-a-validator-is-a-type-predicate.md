@@ -43,7 +43,7 @@ export function isISODate(value) {
 ```
 
 ```ts
-export function isISODate(value?: unknown | null | undefined): value is ISODate;
+export function isISODate(value?: unknown): value is ISODate;
 ```
 
 - **It can't lie of what it's given.** `js::Is` is `#[repr(transparent)]`

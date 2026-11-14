@@ -23,19 +23,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
   },
   {
-    name: "any-value-declared-null",
-    breaks:
-      "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
-    file: "src/lower/declarations.rs",
-    find: "                            && super::representation::none_form(\n                                out.tcx,\n                                super::representation::NonePlace::CollectionValue(of.type_at(0)),\n                            ) == super::representation::NoneForm::Null =>\n",
-    replace: " =>\n",
-    tests: [
-      "test/js-collections.test.ts",
-      "-t",
-      "a Map of any value holds undefined as it is",
-    ],
-  },
-  {
     name: "default-class-declared-const",
     breaks:
       "a default class is declared `declare const Complex: Complex;`, not a class",
@@ -739,9 +726,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
     file: "src/lower/declarations.rs",
-    find: "                        if nullable.contains(&param.index)\n",
-    replace:
-      "                        if false && nullable.contains(&param.index)\n",
+    find: "                        if nullable.contains(&param.index) && out.tcx.is_lang_item(",
+    replace: "                        if false && nullable.contains(&param.index) && out.tcx.is_lang_item(",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {

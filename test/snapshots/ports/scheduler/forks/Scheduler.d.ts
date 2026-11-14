@@ -49,6 +49,6 @@ export function unstable_requestPaint(): void;
 
 export function unstable_forceFrameRate(fps: number): void;
 
-export const unstable_Profiling: any | null | undefined;
+export const unstable_Profiling: any;
 
 export { getCurrentTime as unstable_now, shouldYieldToHost as unstable_shouldYield };

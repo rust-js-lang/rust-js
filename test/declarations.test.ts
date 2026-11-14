@@ -426,7 +426,7 @@ pub fn fail(message: &str) -> ! {
     "export interface DownloadProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n    label: string;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
-    "export function first(values: unknown[]): unknown | null | undefined;",
+    "export function first(values: unknown[]): unknown;",
     "export function parsed(text: string): Json | null | undefined;",
     "export function names(numbers: {\n    [key: string]: number;\n}): string[];",
     "type Json = string | number | boolean | (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",

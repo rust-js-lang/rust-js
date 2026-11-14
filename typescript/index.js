@@ -831,10 +831,25 @@ function param(p) {
 
 /** `t`, in parentheses where an array's element needs them: `(string | undefined)[]`. */
 function element(t) {
+  t = absorbed(t);
   const node = typeNode(t);
   return ["union", "intersection", "function"].includes(t.kind)
     ? f.createParenthesizedTypeNode(node)
     : node;
+}
+
+/**
+ * What TypeScript makes of a union: `unknown | null | undefined` is
+ * `unknown`, and `any | T` is `any`, each the whole union (#1850).
+ * @param {Type} t
+ * @returns {Type}
+ */
+function absorbed(t) {
+  if (t.kind !== "union") return t;
+  const keyword = ["any", "unknown"].find((word) =>
+    t.types.some((part) => part.kind === "keyword" && part.keyword === word),
+  );
+  return keyword ? { kind: "keyword", keyword } : t;
 }
 
 /** @param {Type} t */
@@ -871,8 +886,11 @@ function typeNode(t) {
         entity(t.name),
         t.args?.length ? t.args.map(typeNode) : undefined,
       );
-    case "union":
+    case "union": {
+      const whole = absorbed(t);
+      if (whole !== t) return typeNode(whole);
       return f.createUnionTypeNode(t.types.map(typeNode));
+    }
     case "intersection":
       return f.createIntersectionTypeNode(t.types.map(typeNode));
     case "array": {

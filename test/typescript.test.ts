@@ -179,6 +179,38 @@ test("print writes a name that's an identifier as it is, and quotes any other", 
   }
 });
 
+// A union with `unknown` or `any` is that keyword, as TypeScript reads it:
+// an `Option<&Unknown>`'s `unknown | null | undefined` is `unknown`, an
+// array of them `unknown[]` (#1850).
+test("print writes a union with unknown or any as that keyword", async () => {
+  const ts = await open();
+  try {
+    const keyword = (word: string) => ({ kind: "keyword" as const, keyword: word });
+    const union = (...words: string[]) => ({ kind: "union" as const, types: words.map(keyword) });
+    const alias = (name: string, type: ReturnType<typeof union> | { kind: "array"; element: ReturnType<typeof union>; readonly: boolean }) =>
+      ({ kind: "type" as const, name, exported: true, declare: false, typeParameters: [], type });
+    const printed = await ts.print({
+      header: "",
+      declarations: [
+        alias("Given", union("unknown", "null", "undefined")),
+        alias("Loose", union("string", "any", "unknown")),
+        alias("Items", { kind: "array", element: union("unknown", "null"), readonly: false }),
+        alias("Kept", union("string", "null")),
+      ],
+    });
+    expect(printed).toBe(`export type Given = unknown;
+
+export type Loose = any;
+
+export type Items = unknown[];
+
+export type Kept = string | null;
+`);
+  } finally {
+    await ts.close();
+  }
+});
+
 // What react's generator reads (ADR 0207): React's own element attributes.
 test("read takes @types/react's element attributes apart", async () => {
   const file = join(root, "node_modules/@types/react/index.d.ts");

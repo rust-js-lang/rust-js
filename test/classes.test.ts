@@ -226,14 +226,14 @@ pureComponentPrototype.isPureReactComponent = true;`);
   expect(js).toContain("const update = (a, b) => a.forceUpdate(b);");
   expect(ts).toContain(`/** Base class helpers for the updating state of a component. */
 export declare class Component {
-    constructor(props?: unknown | null | undefined, context?: unknown | null | undefined, updater?: Updater | null | undefined);
+    constructor(props?: unknown, context?: unknown, updater?: Updater | null | undefined);
     props?: unknown;
     context?: unknown;
     refs: EmptyObject;
     updater: Updater;
     isReactComponent: EmptyObject;
     /** Sets a subset of the state. */
-    setState(partialState?: unknown | null | undefined, callback?: (() => void) | null | undefined): void;
+    setState(partialState?: unknown, callback?: (() => void) | null | undefined): void;
     /** Forces an update. */
     forceUpdate(callback?: (() => void) | null | undefined): void;
 }`);
@@ -775,7 +775,7 @@ pub fn query() -> fn(&ScopeInstance, &Fiber) -> Option<&'static Unknown> {
   expect(js).toContain("  return (a, b) => a.DO_NOT_USE_queryFirstNode(b);\n");
   expect(js).not.toContain("export function containsNode");
   expect(ts).toContain(
-    "export interface ScopeInstance {\n    queries: number;\n    /** Whether `fiber` is in this scope. */\n    containsNode(fiber?: Fiber | null | undefined): boolean;\n    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown | null | undefined;\n}\n",
+    "export interface ScopeInstance {\n    queries: number;\n    /** Whether `fiber` is in this scope. */\n    containsNode(fiber?: Fiber | null | undefined): boolean;\n    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown;\n}\n",
   );
   const lib = await import(join(dir, "lib.js"));
   const scope = lib.createScopeInstance();

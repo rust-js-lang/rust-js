@@ -113,7 +113,7 @@ pub fn sums(v: &[f64]) -> Vec<f64> {
   // A variable of it is it, called as it is.
   expect(out).toContain("total($index(v, 1)),");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("export default function formatProdErrorMessage(code: number, ...args: (unknown | null | undefined)[]): string;");
+  expect(declarations).toContain("export default function formatProdErrorMessage(code: number, ...args: unknown[]): string;");
   expect(declarations).toContain("export function total(...xs: number[]): number;");
 
   const lib = await import(join(dir, "lib.js"));
@@ -610,7 +610,7 @@ pub fn cache(r#fn: &'static Function) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> 
   expect(out).toContain("      const result = fn.apply(null, args);\n");
   expect(out).toContain("      erroredNode.v = error;\n      throw error;\n");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain(
-    "export function cache(fn: Function): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;",
+    "export function cache(fn: Function): (...args: unknown[]) => unknown;",
   );
   writeFileSync(join(dir, "upstream.js"), upstreamCache);
   const lib = await import(join(dir, "lib.js"));

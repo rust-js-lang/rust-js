@@ -351,7 +351,9 @@ export function greet(name: string, greeting?: string | null | undefined): strin
 `greet("Ada")`, `greet("Ada", undefined)` and `greet("Ada", null)` are
 each `None`. An `Option` before a parameter that isn't one is declared
 `T | null | undefined` and isn't optional: the caller gives it, as
-`undefined` if it's `None`.
+`undefined` if it's `None`. Of a `js::Unknown`, TypeScript's `unknown`,
+that's `unknown` alone, as a union with `unknown` or `any` is that type to
+TypeScript: `value?: unknown` (#1850).
 
 ## Rest parameters
 
@@ -414,7 +416,7 @@ export function order(prices) {
 ```
 
 ```ts
-export default function formatProdErrorMessage(code: number, ...args: (unknown | null | undefined)[]): string;
+export default function formatProdErrorMessage(code: number, ...args: unknown[]): string;
 
 export function total(...prices: number[]): number;
 
@@ -519,7 +521,7 @@ export function named(names) {
 ```
 
 ```ts
-export function logged(fn: Function): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;
+export function logged(fn: Function): (...args: unknown[]) => unknown;
 
 export function joined(): (...args: string[]) => string;
 
@@ -631,7 +633,7 @@ export const cloneInstance = shim;
 ```
 
 ```ts
-export const cloneInstance: (...args: (unknown | null | undefined)[]) => never;
+export const cloneInstance: (...args: unknown[]) => never;
 ```
 
 - **Refused, each with what to write**: rest arguments as a value before
@@ -985,7 +987,7 @@ export const NOOP: Updater;
 
 /** Base class helpers for the updating state of a component. */
 export declare class Component {
-    constructor(props?: unknown | null | undefined, updater?: Updater | null | undefined);
+    constructor(props?: unknown, updater?: Updater | null | undefined);
     props?: unknown;
     updater: Updater;
     isReactComponent: boolean;
@@ -994,12 +996,12 @@ export declare class Component {
 }
 
 export declare class PureComponent {
-    constructor(props?: unknown | null | undefined, updater?: Updater | null | undefined);
+    constructor(props?: unknown, updater?: Updater | null | undefined);
     props?: unknown;
     updater: Updater;
 }
 
-export function mounted(props?: unknown | null | undefined): Component;
+export function mounted(props?: unknown): Component;
 ```
 
 - **Its fields are `this`'s**, and its `fn new(..) -> Self` is the
@@ -1097,9 +1099,9 @@ export function createFiber(tag, dev) {
 export declare class FiberNode {
     constructor(tag: number, dev: boolean);
     tag: number;
-    memoizedState?: unknown | null | undefined;
+    memoizedState?: unknown;
     actualDuration?: number | null | undefined;
-    _debugOwner?: unknown | null | undefined;
+    _debugOwner?: unknown;
 }
 
 export function createFiber(tag: number, dev: boolean): FiberNode;
@@ -1751,7 +1753,7 @@ export interface ScopeInstance {
     queries: number;
     /** Whether `fiber` is in this scope. */
     containsNode(fiber?: Fiber | null | undefined): boolean;
-    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown | null | undefined;
+    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown;
 }
 
 export function createScopeInstance(): ScopeInstance;

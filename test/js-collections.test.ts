@@ -236,7 +236,7 @@ pub fn named(names: &Map<str, Option<&str>>) {
   // it's held where it's made, is JS's read itself (ADR 0884, amended).
   expect(js).toContain('const map = new Map([\n    ["none", null],\n    ["one", 1],\n  ]);\n  map.set("zero", 0);\n  map.set("later", null);');
   expect(js).toContain("  map.set(key, null);\n  const other = {};\n  const held = new Map([[key, null]]);\n  return [map.get(key) === null, map.get(other) === undefined, held.get(key) === null];");
-  expect(dts).toContain("export function given(map: Map<string, unknown | null | undefined>, key: string): string;");
+  expect(dts).toContain("export function given(map: Map<string, unknown>, key: string): string;");
   expect(dts).toContain("export function named(names: Map<string, string | null>): void;");
   const out = ran(dir, `const lib = await import("./lib.js");
 const given = new Map([["null", null], ["zero", 0]]);
@@ -305,7 +305,7 @@ pub fn made_before() -> &'static str {
 `);
   expect(js).toContain("data.set(key, value);");
   expect(js).not.toContain("?? null");
-  expect(dts).toContain("data: Map<string, unknown | null | undefined>");
+  expect(dts).toContain("data: Map<string, unknown>");
   const out = ran(dir, `const lib = await import("./lib.js");
 const data = new Map();
 let made = 0;

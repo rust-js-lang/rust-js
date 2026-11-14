@@ -141,11 +141,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations/structures.rs",
     find: "                true => crate::lower::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),\n",
     replace: "                true => self.option(ty),\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "nullable Cell field's None is null",
-    ],
+    tests: ["test/declarations-nullable.test.ts"],
   },
   {
     name: "once-field-declared-a-cell",

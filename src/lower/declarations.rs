@@ -594,13 +594,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
             Some(param) if (param.index as usize) < args.len() => {
                 let given = args.type_at(param.index as usize);
                 match given.kind() {
+                    // One whose `None` is `undefined`, of any value, is
+                    // `unknown` as `unknown | null` is (#1850).
                     ty::Adt(adt, of)
-                        if nullable.contains(&param.index)
-                            && out.tcx.is_lang_item(adt.did(), LangItem::Option)
-                            && super::representation::none_form(
-                                out.tcx,
-                                super::representation::NonePlace::CollectionValue(of.type_at(0)),
-                            ) == super::representation::NoneForm::Null =>
+                        if nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>
                     {
                         Given::Is(json!({ "kind": "union", "types": [out.ts(of.type_at(0)), keyword("null")] }))
                     }
