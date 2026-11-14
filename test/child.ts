@@ -145,6 +145,10 @@ export function processTree(pid: number): { pid: number; bytes: number; command:
   return tree;
 }
 
+/** How long a `footprint` may take, in ms: hundreds of its usual 10 ms,
+ * a hang past it (`footprints`). */
+export const footprintLimit = 5_000;
+
 /** What each of `pids` holds, in bytes, on macOS: its physical footprint,
  * which counts the pages the memory compressor holds of it, as `ps`'
  * `rss` doesn't, the measure the system's memory pressure takes and
@@ -152,12 +156,18 @@ export function processTree(pid: number): { pid: number; bytes: number; command:
  * Under memory pressure the compressor takes most of what a process holds,
  * 400 MB of ones seen as 10 MB resident, so a watch of `rss` let a variant
  * past its share (#1499). One `footprint` of them all, by pid alone, a
- * process gone by then left out. Elsewhere, none: `rss` is it. */
-export function footprints(pids: number[]): Map<number, number> {
+ * process gone by then left out. Elsewhere, none: `rss` is it.
+ * `footprint` answers in about 10 ms, but now and then hangs for minutes,
+ * which stalled a check's or mutation run's watch of its parts with it:
+ * stopped past `footprintLimit`, what it said by then is read, and each
+ * pid it didn't answer for is measured by its `rss` (`treeBytes`). `tool`,
+ * a test's stand-in for one that hangs. */
+export function footprints(pids: number[], tool: string[] = ["footprint"]): Map<number, number> {
   const held = new Map<number, number>();
   if (process.platform !== "darwin" || pids.length === 0) return held;
   const args = pids.flatMap((pid) => ["--pid", String(pid)]);
-  const out = Bun.spawnSync(["footprint", ...args, "-f", "bytes", "--noCategories"]).stdout.toString();
+  const cmd = [...tool, ...args, "-f", "bytes", "--noCategories"];
+  const out = Bun.spawnSync(cmd, { timeout: footprintLimit, killSignal: "SIGKILL" }).stdout.toString();
   for (const [, pid, bytes] of out.matchAll(/\[(\d+)\]: .*Footprint: (\d+) B/g)) held.set(Number(pid), Number(bytes));
   return held;
 }

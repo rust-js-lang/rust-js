@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { compileFailure, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
+import { compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { execute, nativeCommand, nativeShare } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -175,6 +175,17 @@ test("what a run holds counts what the memory compressor holds of it", async () 
   await p.exited;
   expect(held).toBeGreaterThanOrEqual(64 << 20);
   expect(footprints([])).toEqual(new Map());
+}, underLoad(30_000));
+
+// A `footprint` that hangs, as macOS's now and then does for minutes, is
+// stopped past its limit, and what it didn't say is read of `rss`: it
+// stalled every part's watch with it, a check's and a mutation run's.
+test("a footprint that hangs is stopped past its limit", () => {
+  if (process.platform !== "darwin") return;
+  const started = Date.now();
+  const hangs = [process.execPath, "-e", "await Bun.sleep(600000)"];
+  expect(footprints([process.pid], hangs)).toEqual(new Map());
+  expect(Date.now() - started).toBeLessThan(footprintLimit + 5_000);
 }, underLoad(30_000));
 
 // A run's command goes with the process that ran it: one SIGKILLed, by a
