@@ -267,8 +267,11 @@ const crashLine = (stderr: string) =>
 /** How a compile that didn't succeed failed. rust-js rejects a program by
  * exiting 1 with errors of its own, each `error: rust-js ..`; anything
  * else crashed, whatever it said first: a panic, an internal compiler
- * error, a signal, running out of time, another exit code, or an error of
- * rustc's that native Rust didn't give. */
+ * error, a signal, running out of time, another exit code, an error of
+ * rustc's that native Rust didn't give, or one of rust-js's that says it's
+ * a bug of rust-js's, a tree `js::validate` refuses (ADR 1143) or a module
+ * it can't read back, `const 3 = ..`, which is no refusal of the
+ * program's. */
 export function compileFailure(exit: Exit, timeout: number): { kind: "rejected" | "crashed"; reason: string } {
   const why = stopped(exit, timeout);
   if (why) return { kind: "crashed", reason: why };
@@ -279,5 +282,7 @@ export function compileFailure(exit: Exit, timeout: number): { kind: "rejected" 
   if (exit.code !== 1) return { kind: "crashed", reason: `exited ${exit.code}: ${first}` };
   const other = all.find((line) => !line.startsWith("error: rust-js"));
   if (all.length === 0 || other) return { kind: "crashed", reason: other ?? first };
+  const bug = all.find((line) => line.endsWith("a bug of rust-js's"));
+  if (bug) return { kind: "crashed", reason: bug };
   return { kind: "rejected", reason: first };
 }

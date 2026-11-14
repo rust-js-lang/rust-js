@@ -119,3 +119,20 @@ What each read resolves to, and which names a scope declares twice, are
 `js::scopes`'s answers, the one owner of JS's scoping, which reclaim asks
 too (ADR [1145](1145-one-owner-of-js-scopes.md)); `js::validate` keeps the
 check of jumps alone, which isn't scoping.
+
+## Amendment: a tree refused is a crash to the suites (2026-11-14)
+
+A refusal of the check's says it's a bug of rust-js's, and the suites
+told a compile's failure apart by its errors alone: an error of
+rust-js's, exit 1, was a rejection. So test/tidy-stages.test.ts, which
+excuses a tidied stage's rejection as a later phase's refusal (ADR 0659,
+amended), excused a broken stage too: mutation `tuple-field-of-no-value-read`,
+a tuple's field of no value read as the temporary nothing declares,
+`[count, _14$1]`, survived on main, its stage refused by this check where
+before its JS threw as it ran. `compileFailure` (test/child.ts), the one
+place a failure is told apart, takes an error that says it's a bug of
+rust-js's for a crash, which no suite excuses. A module rust-js can't read
+back, `const 3 = ..`, says so too now, so tidy-stages' own test of its
+words is gone, the one rule covering both. test/child.test.ts holds it;
+the mutation is caught, as is `inlined-guard-named-by-number`, which the
+words' test held.

@@ -1209,7 +1209,7 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
         let text = code.lines().nth(line - 1).unwrap_or("").trim();
         let what = if declarations { "declarations" } else { "module" };
         return Err(format!(
-            "rust-js can't read the {what} it wrote: {error}, at line {line}: `{text}`"
+            "rust-js can't read the {what} it wrote: {error}, at line {line}: `{text}`: a bug of rust-js's"
         ));
     }
     let mut found = Specifiers(Vec::new());

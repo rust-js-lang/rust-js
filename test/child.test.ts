@@ -27,6 +27,15 @@ test("rust-js's own errors, and exit 1, are a rejection", () => {
   expect(compileFailure(exit(1, "error: rust-js: generated trait implementation name `x` collides\n"), 1000).kind).toBe("rejected");
 });
 
+// A tree `js::validate` refuses is rust-js's error, and says it's a bug of
+// rust-js's: no refusal of the program's, which a suite may excuse (ADR 1143).
+test("rust-js's error that's a bug of rust-js's is a crash", () => {
+  const broken = "error: rust-js: rust-js made case.js wrong as it was lowered: `_14$1` is read, and nothing declares it nor made it a global: a bug of rust-js's\n";
+  expect(compileFailure(exit(1, broken), 1000)).toEqual({ kind: "crashed", reason: broken.trim() });
+  const unread = "error: rust-js: rust-js can't read the module it wrote: Unexpected token, at line 19: `const 3 = n + 1 >>> 0;`: a bug of rust-js's\n";
+  expect(compileFailure(exit(1, unread), 1000).kind).toBe("crashed");
+});
+
 test("a rejection followed by a crash is a crash", () => {
   const panicked = `${rejection}thread 'rustc' panicked at src/lower.rs:1:1:\nboom\n`;
   expect(compileFailure(exit(101, panicked), 1000)).toEqual({ kind: "crashed", reason: "thread 'rustc' panicked at src/lower.rs:1:1:" });

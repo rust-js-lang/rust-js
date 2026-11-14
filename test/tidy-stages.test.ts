@@ -266,16 +266,17 @@ async function differences(file: string, dir: string, edition: string, native: R
       // read only by what it holds. That phase refuses the body as it
       // would however it was reached, so no JS is made to be wrong, and
       // there's none to run (ADR 0659, amended). A crash isn't a refusal,
-      // nor is one of the finished stage, nor JS rust-js wrote and can't
-      // read back, `const 3 = ..`, which is no phase's refusal but a
-      // stage's broken body; nor one of preparation's, which runs after
+      // nor is one of the finished stage, nor a tree `js::validate`
+      // refuses, a read of what nothing declares, nor JS rust-js wrote and
+      // can't read back, `const 3 = ..`: each says it's a bug of rust-js's,
+      // no phase's refusal but a stage's broken body, a crash
+      // (`compileFailure`); nor one of preparation's, which runs after
       // every phase that refuses.
-      const unreadable = compiled.error.includes("rust-js can't read the module it wrote");
       const tidied = flags[0] === "--tidy-until" && flags[1] !== finalEnd;
       // And a std function whose recogniser is left out is refused, as
       // rust-js has no other model of it: what's wanted of one (ADR 1128).
       const unrecognized = flags[0] === "--without-recognizer";
-      if (compiled.kind === "rejected" && (tidied || unrecognized) && !unreadable) continue;
+      if (compiled.kind === "rejected" && (tidied || unrecognized)) continue;
       problems.push(`${name}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
       continue;
     }

@@ -626,10 +626,10 @@ mod tests {
     fn a_refusal_keeps_why_however_it_was_said() {
         let json = br#"{"message":"a refusal of x","level":"error"}"#;
         assert_eq!(refused_for(json), "a refusal of x");
-        let written = b"warning: unused\nerror: rust-js: rust-js can't read the module it wrote: Invalid Character\nerror: aborting due to 1 previous error\n";
+        let written = b"warning: unused\nerror: rust-js: rust-js can't read the module it wrote: Invalid Character: a bug of rust-js's\nerror: aborting due to 1 previous error\n";
         assert_eq!(
             refused_for(written),
-            "rust-js: rust-js can't read the module it wrote: Invalid Character"
+            "rust-js: rust-js can't read the module it wrote: Invalid Character: a bug of rust-js's"
         );
         let panic =
             b"\nthread 'rustc' panicked at src/lower.rs:1:1:\nindex out of bounds\nnote: run with `RUST_BACKTRACE=1`\n";
