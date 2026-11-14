@@ -129,7 +129,7 @@ function main() {
       },
       loudDrop_drop,
     );
-    $extend(v, repeated);
+    $extend(v, repeated, true);
     repeated.return();
     console.log(`extended ${v.length}`);
   } catch (error) {

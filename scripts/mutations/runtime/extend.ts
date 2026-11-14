@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  if (byFold && typeof items.fold === \"function\") {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
+  {
+    name: "extend-trusted-grown-by-next",
+    breaks: "a `Vec` grown as std grows it, `$grownBy`'s, extended by what's `TrustedLen` is stepped by `next`, not as std's `extend_trusted` steps it, its hint asked once and then its fold, so a map's closure drops after its source's rest as it panics (#1805)",
+    file: "src/runtime/extend.js",
+    find: "  if (byFold && typeof items.extendTrusted === \"function\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_in_generic_code_drops_a_maps_closure_first.rs$"],
+  },
 ];

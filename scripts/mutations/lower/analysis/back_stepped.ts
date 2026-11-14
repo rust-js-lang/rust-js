@@ -551,10 +551,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "grown-take-uncounted",
-    breaks: "a `take(n)` of a map's values a crate that reads a `Vec`'s capacity grows one by, held in a temporary, isn't counted where it's made, and is refused (#1317)",
+    breaks: "a `take(n)` of a map's values a crate that reads a `Vec`'s capacity grows one by, held in a temporary, isn't counted where it's made, `$taking`: JS's own `take` and `map` of it, `$closing(values).take(n).map(f)`, which know no hint, so its capacity is JS's growth, not std's (#1317; refused before #1792 gave hintless forms their length)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "                                    if !user_variable(decl) && erased(decl.ty) == ty {\n",
     replace: "                                    if false && !user_variable(decl) && erased(decl.ty) == ty {\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
   {

@@ -20,9 +20,9 @@ function main() {
 
   const extended = [1];
   const result = { ...ok };
-  $extend(extended, result.TAG === "Ok" ? [result._0] : []);
+  $extend(extended, result.TAG === "Ok" ? [result._0] : [], true);
   const result$1 = { ...err };
-  $extend(extended, result$1.TAG === "Ok" ? [result$1._0] : []);
+  $extend(extended, result$1.TAG === "Ok" ? [result$1._0] : [], true);
   const result$2 = { ...ok };
   const result$3 = { ...err };
   const chained = [

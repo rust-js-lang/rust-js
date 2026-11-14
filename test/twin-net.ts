@@ -187,6 +187,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$heapSorted": "collections",
   "$held": "glue",
   "$index": "glue",
+  "$inPlaceCapacityFrom": "collections", // #1428: a `Vec` collected in place, its capacity its source buffer's, walked from the iterator std's struct holds
   "$insert": "collections",
   "$insertAt": "collections",
   "$insertMut": "collections",

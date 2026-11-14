@@ -24,9 +24,9 @@ function main() {
   ]);
 
   const v = [0];
-  $extend(v, $sortedKeys(new $BTreeSet(set), $cmp));
+  $extend(v, $sortedKeys(new $BTreeSet(set), $cmp), true);
   const pairs = [];
-  $extend(pairs, $sortedEntries(new $BTreeMap(map), $cmp));
+  $extend(pairs, $sortedEntries(new $BTreeMap(map), $cmp), true);
   let text = "";
   text += Array.from($sortedKeys(new $BTreeSet(["c", "a"]), $cmp)).join("");
   console.log(

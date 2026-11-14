@@ -63,6 +63,26 @@ function main() {
   );
   const arg = $capacity(v, 4) >= v.length;
   console.log(`[${v.join(", ")}] ${arg}`);
+  // Six of eight, counted where they're made: std's room for them all
+  // after the first, 6, where JS's own `take` and `map`, which know no
+  // hint, would grow from 4 to 8.
+  const h = new Map(
+    $reserveHint(
+      $lazyRange(1, 9).map((n) => [n, n]),
+      8,
+      4,
+    ),
+  );
+  const x = $grownVec(
+    $roomForHint(
+      $taking($iter(Array.from(h.values())), (limit() + 4) >>> 0).map((n) => (n * 2) >>> 0),
+      4,
+      false,
+    ),
+    (grown) => Array.from(grown),
+  );
+  const arg$1 = $capacity(x, 4);
+  console.log(`${x.length} ${arg$1}`);
   const n = new Map(
     $reserveHint(
       $lazyRange(1, 40).map((n) => [n, String(n)]),
@@ -78,21 +98,21 @@ function main() {
     ),
     (grown) => Array.from(grown),
   );
-  const arg$1 = $capacity(w, 12);
-  console.log(`${w.length} ${arg$1}`);
+  const arg$2 = $capacity(w, 12);
+  console.log(`${w.length} ${arg$2}`);
   const items = $range(1, 41);
   const s = $skipping($iter(items), 1);
   const r = $grownVec($roomForHint($rev($mapEnds(s, (x) => (x + 1) >>> 0)), 4, false), (grown) =>
     Array.from(grown),
   );
   const value$1 = $slice(r, 0, 3);
-  const arg$2 = $capacity(r, 4);
-  console.log(`${r.length} [${value$1.join(", ")}] ${arg$2}`);
+  const arg$3 = $capacity(r, 4);
+  console.log(`${r.length} [${value$1.join(", ")}] ${arg$3}`);
   const t = $skipping($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
   const u = $grownVec($roomForHint($rev($mapEnds(t, mapped)), 4, false), (grown) =>
     $collectDropping(grown),
   );
-  const arg$3 = $capacity(u, 4) >= 2;
-  console.log(`[${u.join(", ")}] ${arg$3}`);
+  const arg$4 = $capacity(u, 4) >= 2;
+  console.log(`[${u.join(", ")}] ${arg$4}`);
 }
 //# sourceMappingURL=case.js.map

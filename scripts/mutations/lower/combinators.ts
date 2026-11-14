@@ -563,9 +563,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
     file: "src/lower/combinators.rs",
-    find: '            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
+    find: '            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
     replace:
-      '            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
+      '            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },
@@ -859,4 +859,31 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^deque_retain_back.rs$"],
   },
 
+  {
+    name: "extend-trusted-onto-a-vec-by-next",
+    breaks: "a `Vec` extended by a `TrustedLen` iterator, a zip of a reversed `Vec`'s items with a shorter range, is stepped by `next`, which takes one more of its longer side and drops it first, `drop 2` before `drop 1` (#1803)",
+    file: "src/lower/combinators.rs",
+    find: "        if (onto_vec && call || self.folds_held_function(iter_ty))\n",
+    replace: "        if (false && call || self.folds_held_function(iter_ty))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_by_a_zip_drops_what_it_leaves_in_order.rs$"],
+  },
+  {
+    name: "extend-of-a-dictionary-stand-in-trusted",
+    breaks: "a `Vec`'s `Extend` dictionary entry, whose items' type is the collection's stand-in for whatever its callers give, is taken for a `vec::IntoIter`, `TrustedLen`, and folds an iterator of the crate's whose `fold` prints, where std steps it by `next` (#1803)",
+    file: "src/lower/combinators.rs",
+    find: "        let call = !generic_args.is_empty();\n",
+    replace: "        let call = true;\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator.rs$"],
+  },
+  {
+    name: "extend-callers-trusted-unread",
+    breaks: "generic code's `Vec::extend` of a map of what its caller gives is stepped by `next` whatever the caller gives, so as the map's closure panics its capture drops after the source's rest, where std's fold of a `TrustedLen` one drops it first (#1805)",
+    file: "src/lower/combinators.rs",
+    find: "        if onto_vec\n            && call\n            && let Some(trusted) = self.callers_said_trusted(iter_ty)\n",
+    replace: "        if false\n            && call\n            && let Some(trusted) = self.callers_said_trusted(iter_ty)\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_in_generic_code_drops_a_maps_closure_first.rs$"],
+  },
 ];

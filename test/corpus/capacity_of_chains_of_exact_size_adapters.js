@@ -87,7 +87,7 @@ function repeated() {
         throw error;
       }
       const chain = $lazyChain(value, $closing(Iterator.from(tmp), $dropEach(lDrop_drop)));
-      $grew(x, 4, x.length, $extend(x, chain));
+      $grew(x, 4, x.length, $extend(x, chain, true));
       console.log(`${x.length} ${$capacity(x, 4)}`);
     } catch (error) {
       throw $unwindsOn(error);

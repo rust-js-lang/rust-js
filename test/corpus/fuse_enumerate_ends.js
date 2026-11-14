@@ -112,7 +112,7 @@ function fusedBack(it, IFused) {
       false,
     ),
   );
-  $extend(rest, last == null ? [] : [last]);
+  $extend(rest, last == null ? [] : [last], true);
   return rest;
 }
 

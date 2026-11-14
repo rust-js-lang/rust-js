@@ -745,3 +745,26 @@ error. They found #1792, a slice's `inspect()` collected with room for 8
 where std's is 5, fixed before they landed (ADR 0419, amended). The
 known list's rows were made again by case id, each the case it was: none
 lost.
+
+## Amendment: std's own consumer `extend` (#1681's change 2, 2026-11-14)
+
+The transparent-chain predicate takes a chain given to a std collection's
+`extend` for consumed where it's made, as `collect()` is, where a row
+proves `$extend`'s hand-written form. The table's extend consumers ran
+only of the sources that print their hint (`asks`), so none proved a
+`Vec`'s or a range's. Their rows:
+
+- **`extend`**, in the matrix's consumers, which the table runs too: an
+  empty `Vec` extended by the chain, what it holds and that its room
+  holds it, of every source and chain but `&u32`s, whose `Vec<_>` rustc
+  can't infer beside `Vec`'s `Extend<&T>` of a `Copy` `T`: of those,
+  `extend copies` into a `Vec<u32>`, that `Extend<&T>`, and `extend refs`
+  into a `Vec<&u32>`, its `Extend<T>`, each of std's impls proved.
+- **`extend exact capacity`**, the table's, of each shape that knows its
+  length: the capacity itself.
+
+7,405 matrix rows, 1,191 of the table's and 480 points. Each runs as
+native Rust does in both builds and the twin net, but those under #1180.
+They found #1803 (a zip's leftovers dropped in reverse), #1804 (#1792 by
+`extend`) and #1805 (a generic map's capture dropped after its source's
+rest), each fixed before they land (ADRs 0991 and 0419, amended).

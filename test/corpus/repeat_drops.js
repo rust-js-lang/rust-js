@@ -21,14 +21,14 @@ function loudDrop_drop(loud) {
 }
 
 function fill(v, value, n) {
-  $grew(v, 8, v.length, $extend(v, $repeating(value, undefined, loudDrop_drop).take(n)));
+  $grew(v, 8, v.length, $extend(v, $repeating(value, undefined, loudDrop_drop).take(n), true));
   console.log(`filled ${v.length}`);
 }
 
 function fillGeneric(v, value, n, TClone, TSize, dropT) {
   const iter = $repeating(value, (value) => TClone.clone(value), dropT).take(n);
   try {
-    $grew(v, TSize, v.length, $extend(v, iter));
+    $grew(v, TSize, v.length, $extend(v, iter, true));
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -166,7 +166,7 @@ function main() {
     const length$1 = v.length;
     const option = ["i"];
     try {
-      $grew(v, 8, length$1, $extend(v, option == null ? [] : [option]));
+      $grew(v, 8, length$1, $extend(v, option == null ? [] : [option], true));
     } catch (error) {
       $cleanup(() => {
         if (first != null) {
@@ -197,7 +197,7 @@ function main() {
       throw error;
     }
     try {
-      $grew(v, 8, v.length, $extend(v, [["k"]]));
+      $grew(v, 8, v.length, $extend(v, [["k"]], true));
     } catch (error) {
       $cleanup(() => {
         if (first != null) {

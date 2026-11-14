@@ -63,6 +63,7 @@ pub(super) fn collect_asks<'tcx>(
             keeps_capacity,
         ));
         asked.extend(table_room_asked(recognition, typing_env, owner, (callee, args)));
+        asked.extend(extend_trusted_asked(recognition, typing_env, owner, (callee, args)));
         asked
     };
     // A library's default the crate compiles itself as a function over
@@ -245,6 +246,38 @@ fn trusted_asked<'tcx>(
     if !keeps_capacity || !recognition.grows_as_vec(output) {
         return Vec::new();
     }
+    (crate::lower::generic_facts::trusted_len_asked(tcx, typing_env, iter).into_iter())
+        .filter_map(|fact| asked_of(tcx, foreign, typing_env, caller, fact))
+        .collect()
+}
+
+/// Of a `Vec`'s `extend` of an iterator built of type parameters, in any
+/// crate, what says whether it's `TrustedLen`, its callers'
+/// (`trusted_len_asked`): std's `Vec` steps one that is by its fold,
+/// `extend_trusted`, and another by `next`, which drop what an adapter holds
+/// and what's left in other orders, a map's closure before or after its
+/// source's rest as it panics (#1805).
+fn extend_trusted_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Asked<'tcx>> {
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let extend = tcx
+        .trait_of_assoc(callee)
+        .is_some_and(|tr| crate::lower::recognition::is_extend(tcx, tr));
+    // `Extend::extend`'s `Self`, the collection, and its `I`, what it's given.
+    let [this, _, given] = args.types().collect::<Vec<_>>()[..] else {
+        return Vec::new();
+    };
+    if !extend || !recognition.is_std_type(this, crate::lower::recognition::StdItem::Vec) {
+        return Vec::new();
+    }
+    // What an `impl Iterator` stands for, as std's specialization sees
+    // through it, its opaque types revealed.
+    let typing_env = typing_env.with_post_analysis_normalized(tcx);
+    let iter = crate::lower::recognition::iterator_type_of(tcx, typing_env, given);
     (crate::lower::generic_facts::trusted_len_asked(tcx, typing_env, iter).into_iter())
         .filter_map(|fact| asked_of(tcx, foreign, typing_env, caller, fact))
         .collect()

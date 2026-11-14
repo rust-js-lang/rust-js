@@ -69,7 +69,7 @@ function allButLast(stack) {
     if (stack.length === 0 || top == null) {
       break;
     }
-    $extend(out, top == null ? [] : [top]);
+    $extend(out, top == null ? [] : [top], true);
   }
   return out;
 }

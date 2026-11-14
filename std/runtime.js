@@ -15078,6 +15078,30 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
       return it.return?.();
     },
   );
+  // Extended as std's `extend_trusted` extends a `Vec` by a `TrustedLen`
+  // one, which `$extend` asks where it is (#1803, #1805): its hint asked
+  // once, room for its upper bound, none a `capacity overflow`, then its
+  // fold, whose adapters drop what they hold before what they leave, as
+  // std's do; not stepped by `next`, a zip's once more than its fold.
+  steps.extendTrusted = (push) => {
+    if (size !== undefined && !$capacityUnknown(v)) {
+      asked = true;
+      const [[, upper], known] = byValue ? $hintAsked(it) : [$sizeHint(it), true];
+      unkept ||= !known;
+      if (upper === undefined || upper === null) throw new Error("capacity overflow");
+      const capacity = size === 0 ? Infinity : $capacity(v);
+      if (capacity - v.length < upper) {
+        if (v.length + upper > max) throw new Error("capacity overflow");
+        $reserve(v, upper, size);
+        $roomFor($capacity(v), size);
+      }
+    } else if (own && size !== undefined && $capacityUnknown(v)) {
+      throw $unsupported("rust-js does not support an `extend` that asks the crate's own hint as a `Vec` fills, of a `Vec` whose growth it didn't keep (#1180)");
+    }
+    if (typeof it.fold === "function") it.fold(undefined, (_, x) => push(x));
+    else for (let step = it.next(); !step.done; step = it.next()) push(step.value);
+    ended();
+  };
   steps.from = [it];
   return steps;
 }
@@ -20090,6 +20114,14 @@ export function $charIndicesOffset(it) {
 // `$folded` made, by its fold, as std's consumer that routes through it is
 // (#1161).
 export function $extend(v, items, byFold = false) {
+  // A `TrustedLen` one grown as std grows it, `$grownBy`'s, as std's
+  // `extend_trusted` steps it (#1803, #1805).
+  if (byFold && typeof items.extendTrusted === "function") {
+    items.extendTrusted((x) => {
+      v.push(x);
+    });
+    return;
+  }
   if ((byFold || items.byItsFold) && typeof items.fold === "function") {
     items.fold(undefined, (_, x) => {
       v.push(x);

@@ -29,7 +29,7 @@ function main() {
   for (let i = 0; i < xs.length; i++) {
     out.push(xs[i]);
   }
-  $extend(out, xs.toReversed().toReversed());
+  $extend(out, xs.toReversed().toReversed(), true);
   for (let i = 0; i < xs.length; i++) {
     out.push(xs[i]);
   }

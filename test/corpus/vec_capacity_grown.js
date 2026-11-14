@@ -60,7 +60,7 @@ function kept(xs, not, TPartialEq, TSize) {
 }
 
 function grown(v, x, n, TSize) {
-  $grew(v, TSize, v.length, $extend(v, $repeating(x, (value) => value).take(n)));
+  $grew(v, TSize, v.length, $extend(v, $repeating(x, (value) => value).take(n), true));
   $extend(
     v,
     $grownBy(

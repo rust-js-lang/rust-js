@@ -58,6 +58,7 @@ function extended() {
     $extend(
       v,
       $lazyRange(2, 4).map((value) => [value]),
+      true,
     );
   } catch (error) {
     $cleanup(() => {
@@ -95,7 +96,7 @@ function extended() {
   }
   const w = [];
   try {
-    $extend(w, $repeatingWith(() => [0]).take(2));
+    $extend(w, $repeatingWith(() => [0]).take(2), true);
   } catch (error) {
     $cleanup(() => {
       for (const item of w) {

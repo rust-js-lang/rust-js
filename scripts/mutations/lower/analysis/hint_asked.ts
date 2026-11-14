@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                } else if !recognition.grows_by_exact_len(iter_ty) {\n",
     replace: "                } else if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(vec_grown_by_iterators_whose_hint_is_stds|inspect_of_a_slice_collected_where_capacity_is_read|counted_adapters_where_capacity_is_read).rs$"],
     snapshots: true,
   },
 ];

@@ -163,3 +163,42 @@ counted.rs no longer caught `dropped-function-dropped-again`, which
 closure_block_value.rs now does. **The guard and its mutation are
 removed**: when a closure drops is the compiler's to say, once, and a
 double drop shows as one. Case: N.
+
+## Amendment (2026-11-14): a `Vec`'s `extend` of any `TrustedLen` is its fold (#1803, #1805)
+
+#710 extended a collection by its iterator's fold only where an adapter
+of it holds a function with a destructor. std's `Vec` folds every
+`TrustedLen` one it's extended by (`extend_trusted`'s `for_each`), and
+steps another by `next`, and the two drop in other orders. A zip of a
+reversed `Vec`'s items with a shorter range, stepped by `next`, takes one
+more of its longer side and drops it first, `drop 2` before `drop 1`
+(#1803); a reversed `take` too. Generic code's map, whose fold moves its
+closure in, drops the closure's capture before its source's rest as it
+panics, where `next` drops it after (#1805). So:
+
+- **Onto a `Vec`, of a type known here,** a `TrustedLen` iterator is
+  extended by its fold, `$extend(v, it, true)`. Not in a dictionary's
+  entry, whose items' type is the collection's stand-in for whatever its
+  callers give (`extend_dictionary`, given no arguments of its own,
+  `call`), which steps by `next` as before.
+- **Of one built of type parameters,** whether it's `TrustedLen` is its
+  callers', `ITrustedLen`: the facts owner asks it of a `Vec`'s `extend`
+  (`extend_trusted_asked`, `trusted_len_asked`, collect's owner, #1614),
+  and the lowering gives `$extend` what was given (`callers_said_trusted`),
+  nothing where it wasn't.
+- **Grown as std grows it,** `$grownBy`'s, where a crate keeps
+  capacities, `$extend` of a `TrustedLen` one takes its `extendTrusted`:
+  std's `extend_trusted` step for step, the hint asked once, room for its
+  upper bound or a `capacity overflow` where it has none, then its fold.
+  It stepped by `next`, reserving `lower + 1` each time it was full.
+
+Found by the matrix's and the table's new `extend` consumer rows, of every
+source and chain, and the table's `extend exact capacity` (ADR 1090). 16
+snapshots move, each a `Vec`'s `extend` of what's `TrustedLen` by its fold,
+`$extend(v, it, true)`, as native prints. New corpus cases
+extend_by_a_zip_drops_what_it_leaves_in_order and
+extend_in_generic_code_drops_a_maps_closure_first against native Rust;
+mutations extend-trusted-onto-a-vec-by-next,
+extend-of-a-dictionary-stand-in-trusted, extend-callers-trusted-unread,
+extend-trusted-unasked and extend-trusted-grown-by-next, caught;
+extend-copies-first retargeted, caught.

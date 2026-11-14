@@ -67,7 +67,7 @@ function held(it) {
         ),
     ),
   );
-  $extend(out, last == null ? [] : [last]);
+  $extend(out, last == null ? [] : [last], true);
   return out;
 }
 
@@ -111,14 +111,14 @@ function heldNumbered(it) {
       ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
     ),
   );
-  $extend(out, last == null ? [] : [last]);
+  $extend(out, last == null ? [] : [last], true);
   return out;
 }
 
 function heldMapped(it) {
   const last = mapDoubleEndedIterator_nextBack(it);
   const out = $foldToArray(it);
-  $extend(out, last == null ? [] : [last]);
+  $extend(out, last == null ? [] : [last], true);
   out.push(0);
   return out;
 }
@@ -130,7 +130,7 @@ function heldRev(it) {
     getUnchecked: mapIterator___iteratorGetUnchecked,
   });
   const out = $foldToArray(it);
-  $extend(out, first == null ? [] : [first]);
+  $extend(out, first == null ? [] : [first], true);
   out.push(0);
   return out;
 }
@@ -199,7 +199,7 @@ function heldNumberedRev(it) {
       ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
     ),
   );
-  $extend(out, last == null ? [] : [last]);
+  $extend(out, last == null ? [] : [last], true);
   return out;
 }
 

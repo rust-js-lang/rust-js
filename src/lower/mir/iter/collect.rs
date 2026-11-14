@@ -1008,6 +1008,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if trusted || !self.krate.keeps_capacity {
             return Ok(None);
         }
+        self.callers_trusted(iter_ty, span)
+    }
+
+    /// `callers_trusted`, where each fact it reads was given this body, a
+    /// `Vec`'s `extend`'s (`extend_trusted_asked`, #1805): `None` where one
+    /// wasn't, a std impl's dictionary entry whose callers weren't asked,
+    /// `Extend::extend` of a `C: Extend<u32>`'s `Vec`, which steps it by
+    /// `next` as before.
+    pub(in crate::lower) fn callers_said_trusted(&mut self, iter_ty: Ty<'tcx>) -> Option<Expr> {
+        let facts = crate::lower::generic_facts::trusted_len_asked(self.tcx, self.typing_env, iter_ty);
+        let mut said: Option<Expr> = None;
+        for (of, fact) in facts {
+            let given = self.given_fact_of(of, fact)?;
+            let value = match fact {
+                crate::lower::recognition::TypeFact::ConstSize => Expr::bin(js::Op::Ne, given, Expr::js_undefined()),
+                _ => given,
+            };
+            said = Some(match said {
+                Some(before) => Expr::bin(js::Op::And, before, value),
+                None => value,
+            });
+        }
+        said
+    }
+
+    /// Whether `iter_ty`, built of type parameters, is `TrustedLen` as its
+    /// callers say: each fact `trusted_len_asked` finds holds, a JS boolean
+    /// of them; `None` where none is asked, a collect's (#1614).
+    fn callers_trusted(&mut self, iter_ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let facts = crate::lower::generic_facts::trusted_len_asked(self.tcx, self.typing_env, iter_ty);
         let mut said: Option<Expr> = None;
         for (of, fact) in facts {

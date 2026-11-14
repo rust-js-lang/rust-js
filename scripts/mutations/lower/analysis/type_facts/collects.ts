@@ -195,4 +195,13 @@ export const mutations: Mutation[] = [
     replace: "        drop(trusted_asked(\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
   },
+  {
+    name: "extend-trusted-unasked",
+    breaks: "generic code's `Vec::extend` asks its callers no `ITrustedLen`, so it's given none and steps a `TrustedLen` map by `next`, its closure's capture dropped after the source's rest as it panics (#1805)",
+    file: "src/lower/analysis/type_facts/collects.rs",
+    find: "    if !extend || !recognition.is_std_type(this, crate::lower::recognition::StdItem::Vec) {\n",
+    replace: "    if true || !extend || !recognition.is_std_type(this, crate::lower::recognition::StdItem::Vec) {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_in_generic_code_drops_a_maps_closure_first.rs$"],
+  },
 ];

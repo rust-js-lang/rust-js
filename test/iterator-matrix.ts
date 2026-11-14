@@ -405,6 +405,33 @@ export const consumers: Consumer[] = [
     takes: any,
     text: (it, p) => `let m: HashMap<u32, u32> = ${it}.map(|x| { ${call(p)} (x.v() % 3, x.v()) }).collect();\n    println!("map {:?}", sorted(m.into_iter().collect()));`,
   },
+  {
+    // Given to std's own consumer, as known as `collect()`, which the
+    // transparent-chain predicate takes for consumed where it's made, not
+    // escaping, `$extend`'s hand-written form proved here of every source
+    // and chain (#1681's change 2): what it holds, and that its room holds it.
+    name: "extend",
+    closure: false,
+    // Not of `&u32`s, whose `Vec<_>` rustc can't infer, `Vec`'s
+    // `Extend<&T>` of a `Copy` `T` beside its `Extend<T>`: `extend copies`
+    // and `extend refs` say which.
+    takes: (shape) => shape.item !== "&N",
+    text: (it) => `let mut v = Vec::new();\n    v.extend(${it});\n    println!("extend{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
+  {
+    // Of `&u32`s, into a `Vec<u32>`, std's `Extend<&T>` of a `Copy` `T`,
+    // and into a `Vec<&u32>`, its `Extend<T>`: each of std's impls proved.
+    name: "extend copies",
+    closure: false,
+    takes: (shape) => shape.item === "&N",
+    text: (it) => `let mut v: Vec<u32> = Vec::new();\n    v.extend(${it});\n    println!("extend copies{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
+  {
+    name: "extend refs",
+    closure: false,
+    takes: (shape) => shape.item === "&N",
+    text: (it) => `let mut v: Vec<&u32> = Vec::new();\n    v.extend(${it});\n    println!("extend refs{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
 ];
 
 /** What a crate steps from the back of a type, which may decide how the
@@ -713,6 +740,16 @@ export const stepConsumers: Consumer[] = [
     text: (it, p) => `let r = ${it}.position(|x| { ${call(p)} x.v() % 3 == 0 });\n    println!("position {r:?} after {seen}");`,
   },
   { name: "size_hint", closure: false, takes: any, text: (it) => `let it = ${it};\n    println!("hint {:?}", it.size_hint());` },
+  {
+    // What an empty `Vec` extended by an iterator that knows its exact
+    // length reserved, std's `reserve` of its hint, the number itself, as
+    // native prints it: what the predicate's capacity reason asks of a
+    // `Vec`'s `extend` as of its collect (#1681's change 2).
+    name: "extend exact capacity",
+    closure: false,
+    takes: (shape) => shape.exact && shape.item !== "&N",
+    text: (it) => `let mut v = Vec::new();\n    v.extend(${it});\n    println!("extend vec{} capacity {}", show(&v), v.capacity());`,
+  },
   {
     // What a collect into a `Vec` of an iterator that knows its exact length
     // reserved: that length, natively, as std's hint says, `v.iter().map(f)`'s

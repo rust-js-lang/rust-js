@@ -28,6 +28,12 @@ fn main() {
     let m: HashMap<u32, Loud> = (1..2).map(|n| (n, Loud(n))).collect();
     let v: Vec<u32> = m.into_values().take(limit()).map(mapped).collect();
     println!("{v:?} {}", v.capacity() >= v.len());
+    // Six of eight, counted where they're made: std's room for them all
+    // after the first, 6, where JS's own `take` and `map`, which know no
+    // hint, would grow from 4 to 8.
+    let h: HashMap<u32, u32> = (1..9).map(|n| (n, n)).collect();
+    let x: Vec<u32> = h.into_values().take(limit() + 4).map(|n| n * 2).collect();
+    println!("{} {}", x.len(), x.capacity());
     let n: HashMap<u32, String> = (1..40).map(|n| (n, n.to_string())).collect();
     let w: Vec<String> = n.into_values().take(10).map(|s| s + "!").collect();
     println!("{} {}", w.len(), w.capacity());

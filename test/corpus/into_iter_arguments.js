@@ -21,9 +21,9 @@ function main() {
   const some = 4;
   const none = undefined;
   const v = [1];
-  $extend(v, some == null ? [] : [some]);
-  $extend(v, none == null ? [] : [none]);
-  $extend(v, $lazyRange(3, 5));
+  $extend(v, some == null ? [] : [some], true);
+  $extend(v, none == null ? [] : [none], true);
+  $extend(v, $lazyRange(3, 5), true);
   const chained = [
     ...$lazyRange(0, 2),
     ...$lazyRange(5, 7),

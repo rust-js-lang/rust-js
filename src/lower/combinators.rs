@@ -1025,17 +1025,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let whole = self.extends_by_an_array(generic_args);
-        self.extended_whole(collection, items, (iterable, into), whole, span, out)
+        // A call's own: a dictionary's entry, given no arguments of its own
+        // (`extend_dictionary`), the collection's type said for what it's
+        // given, is of whatever its callers give.
+        let call = !generic_args.is_empty();
+        self.extended_whole(collection, items, (iterable, into), (whole, call), span, out)
     }
 
     /// `extended`'s; `whole`, where the call's own type for what it's given
-    /// says it's an array given whole (`extends_by_an_array`).
+    /// says it's an array given whole (`extends_by_an_array`); `call`, where
+    /// `iterable` is what the call gives, not a dictionary's stand-in.
     fn extended_whole(
         &mut self,
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
-        whole: bool,
+        (whole, call): (bool, bool),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -1076,15 +1081,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.pushed_each(collection, list, copied, span, out);
         }
-        // Of a `TrustedLen` iterator whose fold moves a function an adapter
-        // holds with a destructor, by its fold, `$extend(v, it, true)`, as
-        // std's `extend_trusted` steps it, so the function drops before what
-        // it hasn't given (#710).
-        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
-        if self.folds_held_function(iter_ty)
+        // Of a `TrustedLen` iterator, by its fold, `$extend(v, it, true)`, as
+        // std's `extend_trusted` steps it: onto a `Vec`, any one's, whose
+        // `next` would step a zip once more than its fold, taking an item of
+        // its longer side to drop before the rest it leaves (#1803); onto
+        // another, one whose fold moves a function an adapter holds with a
+        // destructor, so the function drops before what it hasn't given
+        // (#710).
+        // What an `impl Iterator` stands for, as std's specialization sees
+        // through it (#1805).
+        let iter_ty = self.reveal(crate::lower::recognition::iterator_type_of(
+            self.tcx,
+            self.typing_env,
+            iterable,
+        ));
+        let onto_vec = self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec);
+        // Onto a `Vec`, of what the call gives, not a dictionary's entry's
+        // stand-in, whatever its callers give (`call`).
+        if (onto_vec && call || self.folds_held_function(iter_ty))
             && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
         {
             return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));
+        }
+        // Onto a `Vec`, of one built of type parameters, as its callers say
+        // it's `TrustedLen` (`callers_trusted`, asked by the facts owner's
+        // `extend_trusted_asked`): a generic map's closure drops before its
+        // source's rest as it panics, as std's fold of it does (#1805).
+        if onto_vec
+            && call
+            && let Some(trusted) = self.callers_said_trusted(iter_ty)
+        {
+            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));
         }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
     }

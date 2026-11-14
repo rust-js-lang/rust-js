@@ -123,7 +123,7 @@ function pastFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {
     }
     console.log(`past got ${x == null ? "None" : `Some(${x})`}`);
     try {
-      $extend(got, x == null ? [] : [x]);
+      $extend(got, x == null ? [] : [x], true);
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);

@@ -7,6 +7,14 @@
 // `$folded` made, by its fold, as std's consumer that routes through it is
 // (#1161).
 function $extend(v, items, byFold = false) {
+  // A `TrustedLen` one grown as std grows it, `$grownBy`'s, as std's
+  // `extend_trusted` steps it (#1803, #1805).
+  if (byFold && typeof items.extendTrusted === "function") {
+    items.extendTrusted((x) => {
+      v.push(x);
+    });
+    return;
+  }
   if ((byFold || items.byItsFold) && typeof items.fold === "function") {
     items.fold(undefined, (_, x) => {
       v.push(x);
