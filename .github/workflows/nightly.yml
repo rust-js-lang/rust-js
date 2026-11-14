@@ -224,7 +224,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: bun install --frozen-lockfile
+      # The browser too: the sweep runs each test file whole, so each writes
+      # all its programs, and the Vite and Next ones drive one (#1747).
+      - name: Install packages and the browser
+        run: |
+          bun install --frozen-lockfile
+          bunx --bun playwright install --with-deps chromium
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
       - name: Run part ${{ matrix.part }} of 2
