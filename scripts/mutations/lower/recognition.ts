@@ -132,7 +132,10 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Io(_)\n",
-    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
+    // How the JS reads, which its snapshots hold: the writes in place,
+    // where a dictionary would give the same answer.
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(hash_values|generic_hasher_given_a_std_hasher).rs$"],
   },
   {
     name: "mir-same-trait-dispatched",
