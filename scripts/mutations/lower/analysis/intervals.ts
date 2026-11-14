@@ -277,4 +277,12 @@ export const mutations: Mutation[] = [
     replace: "                if !self.cells.is_empty() && self.may_write_cells(func) {\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
+  {
+    name: "kept-row-lends-lent",
+    breaks: "a row's `&mut` of a table whose rows nothing resizes is lent for the whole body, so the written `board[r][c] = ..` keeps its check, a call-bounds line",
+    file: "src/lower/analysis/intervals.rs",
+    find: "        .filter(|place| !matches!(*body.local_decls[place.local].ty.kind(), ty::Ref(_, row, ty::Mutability::Mut) if kept_rows.contains(&row)))\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
+  },
 ];

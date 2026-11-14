@@ -27,7 +27,7 @@ pub(super) struct Guards {
 }
 
 /// Each place a statement or a terminator reads or writes `local` at.
-fn uses<'tcx>(body: &Body<'tcx>, local: Local) -> Vec<(Location, PlaceContext)> {
+pub(super) fn uses<'tcx>(body: &Body<'tcx>, local: Local) -> Vec<(Location, PlaceContext)> {
     struct Uses(Local, Vec<(Location, PlaceContext)>);
     impl<'tcx> Visitor<'tcx> for Uses {
         fn visit_local(&mut self, local: Local, context: PlaceContext, location: Location) {
@@ -43,7 +43,7 @@ fn uses<'tcx>(body: &Body<'tcx>, local: Local) -> Vec<(Location, PlaceContext)> 
 
 /// The call a terminator at `at` is, if it is one: its function, its
 /// arguments and where it writes.
-fn call_at<'a, 'tcx>(body: &'a Body<'tcx>, at: Location) -> Option<CallAt<'a, 'tcx>> {
+pub(super) fn call_at<'a, 'tcx>(body: &'a Body<'tcx>, at: Location) -> Option<CallAt<'a, 'tcx>> {
     let data = &body.basic_blocks[at.block];
     if at.statement_index != data.statements.len() {
         return None;
@@ -60,7 +60,7 @@ fn call_at<'a, 'tcx>(body: &'a Body<'tcx>, at: Location) -> Option<CallAt<'a, 't
 }
 
 /// A call's function, its arguments and where it writes.
-type CallAt<'a, 'tcx> = (
+pub(super) type CallAt<'a, 'tcx> = (
     &'a Operand<'tcx>,
     &'a [rustc_span::Spanned<Operand<'tcx>>],
     &'a mir::Place<'tcx>,
@@ -92,7 +92,7 @@ fn given_whole(body: &Body<'_>, local: Local) -> bool {
 
 /// Whether a statement is one that does nothing as the program runs, a
 /// `let`'s `FakeRead` or a `PlaceMention`, borrowck's.
-fn inert(kind: &StatementKind<'_>) -> bool {
+pub(super) fn inert(kind: &StatementKind<'_>) -> bool {
     matches!(kind, StatementKind::FakeRead(..) | StatementKind::PlaceMention(..))
 }
 

@@ -642,3 +642,186 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-call-bounds twice"]);
 });
+
+// #1672 M3, step 5: a table's lengths (ADR 0576). `vec![x; n]` is as long
+// as `n`, or as the slice `n` is the length of; an array as its type
+// says; of a table of rows, each row as long as the one it was made of,
+// where no `&mut` in the body may resize one. Not past a `pop()` of
+// either, nor of a table whose rows a `truncate`, a closure or a row
+// written whole may resize, nor past a call given the table `&mut` or its
+// slice's, `fill`, `swap`, a fn item given to `for_each`; nor of a function
+// taken as a value, which no caller's facts reach. MIR proves `i as u32`
+// of `i` below `count`, which THIR keeps.
+test("a table is as long as what it's made of, its rows as their row, until one may change", () => {
+  expect(shadowOf(`pub fn rain(terraces: &[f64]) -> f64 {
+    let mut left = vec![0.0; terraces.len()];
+    for i in 1..terraces.len() {
+        left[i] = terraces[i].max(left[i - 1]);
+    }
+    left.iter().sum()
+}
+pub fn sums(count: usize) -> Vec<u32> {
+    let mut sums = vec![0; count];
+    for i in 0..count {
+        sums[i] = i as u32;
+    }
+    sums
+}
+pub fn paths(width: usize, height: usize) -> u64 {
+    let mut board = vec![vec![1; width]; height];
+    for r in 1..height {
+        for c in 1..width {
+            board[r][c] = board[r - 1][c] + board[r][c - 1];
+        }
+    }
+    board[0][0]
+}
+pub fn prefix(keys: [i32; 11]) -> i32 {
+    let f = || keys[..6].iter().sum::<i32>();
+    f()
+}
+pub fn popped(terraces: &[f64]) -> f64 {
+    let mut left = vec![0.0; terraces.len()];
+    left.pop();
+    let mut total = 0.0;
+    for i in 0..terraces.len() {
+        total += left[i];
+    }
+    total
+}
+pub fn renewed(count: usize) -> u32 {
+    let mut sums = vec![0; count];
+    sums = Vec::new();
+    let mut total = 0;
+    for i in 0..count {
+        total += sums[i];
+    }
+    total
+}
+pub fn truncated(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    board[0].truncate(0);
+    let mut total = 0;
+    for r in 0..height {
+        for c in 0..width {
+            total += board[r][c];
+        }
+    }
+    total
+}
+pub fn emptied(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    board[0] = Vec::new();
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn closed(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    for row in board.iter_mut() {
+        let mut shrink = || row.pop();
+        shrink();
+    }
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn written(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    *std::ops::IndexMut::index_mut(&mut board, 0) = Vec::new();
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn swapped_out(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    let mut empty = Vec::new();
+    std::mem::swap(&mut board[0], &mut empty);
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn taken(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    let row = std::mem::take(&mut board[0]);
+    let mut total = row.len() as u32;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn filled(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    board.fill(Vec::new());
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn rows_swapped(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    board.swap(0, 1);
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn cleared_each(width: usize, height: usize) -> u32 {
+    let mut board: Vec<Vec<u32>> = vec![vec![1; width]; height];
+    board.iter_mut().for_each(Vec::clear);
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+fn first_of(width: usize, height: usize) -> u32 {
+    let board = vec![vec![1; width]; height];
+    board[0][0]
+}
+pub fn late(count: usize, i: usize) -> u32 {
+    if i < count {
+        let sums = vec![0; count];
+        return sums[i];
+    }
+    0
+}
+fn first(width: usize, height: usize) -> u32 {
+    let board = vec![vec![1; width]; height];
+    board[0][0]
+}
+fn clear_first(board: &mut Vec<Vec<u32>>) {
+    board[0].clear();
+}
+pub fn lent(width: usize, height: usize) -> u32 {
+    let mut board = vec![vec![1; width]; height];
+    clear_first(&mut board);
+    let mut total = 0;
+    for c in 0..width {
+        total += board[0][c];
+    }
+    total
+}
+pub fn main() {
+    println!("{} {:?} {} {}", rain(&[1.0, 2.0]), sums(3), paths(3, 2), prefix([1; 11]));
+    println!("{} {} {}", popped(&[]), renewed(0), truncated(0, 0));
+    println!("{} {} {}", emptied(0, 1), closed(0, 1), lent(0, 1));
+    println!("{} {} {} {}", written(0, 1), swapped_out(0, 1), taken(0, 1), filled(0, 1));
+    println!("{} {}", rows_swapped(0, 2), cleared_each(0, 1));
+    println!("{} {}", first_of(2, 2), late(3, 1));
+    // Taken as a value, first has no caller's facts: its board[0] stays checked.
+    let f: fn(usize, usize) -> u32 = first;
+    println!("{}", f(2, 2));
+}
+`)).toEqual(["mir-only-cast sums"]);
+});

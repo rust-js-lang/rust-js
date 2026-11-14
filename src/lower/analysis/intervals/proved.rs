@@ -153,14 +153,37 @@ impl<'tcx> Walk<'_, 'tcx> {
     }
 
     fn index_below(&self, state: &State, slice: Local, index: &Operand<'tcx>, strict: bool) -> bool {
-        let least = state.least.get(&slice).copied().unwrap_or(0);
+        let slices = state.as_long_as(slice);
+        // At least what's known of it, or an array's own, `[i32; 11]`'s 11.
+        let typed = (self.length(self.body.local_decls[slice].ty)).map_or(0, |n| n.lo);
+        // Of each as long, its least, and the least of what holds its
+        // length, `height` of `vec![row; height]`.
+        let held = (state.lens.iter())
+            .filter(|(_, s)| slices.contains(s))
+            .filter_map(|(&w, _)| state.intervals[w].map(|n| n.lo));
+        let known = (slices.iter())
+            .filter_map(|s| state.least.get(s).copied())
+            .chain(held)
+            .max()
+            .unwrap_or(0);
+        let least = known.max(typed);
         let in_least = (self.operand(index, state))
             .is_some_and(|i| 0 <= i.lo && if strict { i.hi < least } else { i.hi <= least });
         let local = index.place().and_then(|p| p.as_local()).map(|i| state.root(i));
+        // Below an integer that holds its length, `i < count` of
+        // `vec![0; count]` (`tables`), as below its length.
+        let below = |i: Local, s: Local, strict: bool| {
+            state.below.contains(&(i, Term::Len(s), strict))
+                || (state.below.iter()).any(|&(x, y, st)| {
+                    x == i && st == strict && matches!(y, Term::Int(w) if state.length_of(w) == Some(s))
+                })
+        };
         let related = local.is_some_and(|i| {
-            state.below.contains(&(i, Term::Len(slice), true))
-                || (state.below_past.iter()).any(|&(x, s, c)| (x, s) == (i, slice) && state.least_of(slice) > c)
-                || !strict && (state.below.contains(&(i, Term::Len(slice), false)) || state.length_of(i) == Some(slice))
+            slices.iter().any(|&s| {
+                below(i, s, true)
+                    || (state.below_past.iter()).any(|&(x, sl, c)| (x, sl) == (i, s) && state.least_of(s) > c)
+                    || !strict && (below(i, s, false) || state.length_of(i) == Some(s))
+            })
         });
         in_least || related
     }

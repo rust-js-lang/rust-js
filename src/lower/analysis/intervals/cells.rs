@@ -78,5 +78,7 @@ impl State {
         self.below_past.retain(|&(_, slice, _)| slice != cell);
         self.keys.retain(|&(map, _)| map != cell);
         self.has_keys.retain(|_, &mut (map, _)| map != cell);
+        self.equal_lens.retain(|&(a, b)| a != cell && b != cell);
+        self.rows.retain(|&table, &mut row| table != cell && row != cell);
     }
 }

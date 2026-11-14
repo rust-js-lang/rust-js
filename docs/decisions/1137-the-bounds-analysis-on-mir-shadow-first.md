@@ -781,3 +781,44 @@ are `Rc<RefCell<HashMap>>`s a closure captured,
 `Rc`'s `deref` gave, the shape #1839 tracks. So the shadow's call-bounds
 lines go from 110 to 112: two map sites now compared, not two lost. MIR
 proves a second `m[&k]` of the same key where THIR keeps its check.
+
+### Step 5: a table's lengths (2026-11-15)
+
+THIR's facts decided 37 call indexes of tables MIR didn't prove (ADR
+0576): `vec![x; n]`'s, a table of rows' and an array's. Now MIR proves
+them (`tables`):
+- **An array is as long as its type says**, `&keys[..6]` of a captured
+  `[i32; 11]` (`index_below`'s least).
+- **`vec![x; n]` is as long as `n`:** `n` holds its length, or where `n`
+  is another slice's length, the two are as long (`State::equal_lens`):
+  `vec![0.0; terraces.len()]` and `terraces`. An index is below a slice's
+  length below any as long, or below an integer that holds it, `i < count`
+  of `vec![0; count]`; and what holds its length gives its least, `board[0]`
+  where the callers give `height` at least 2. Those caller facts are only
+  of a function `only_called` reaches (ADR 0577), not one taken as a value.
+- **A table of rows is known by its row** (`State::rows`),
+  `vec![vec![1; width]; height]`: `board[r]` is as long as the row it was
+  made of, so `board[r][c]` under `c < width` is proved. That holds only of
+  a row type no `&mut` in the body may resize (`rows_kept`):
+  - each `&mut` row is read only as an `index_mut`'s or a `deref_mut`'s
+    receiver, a shared borrow, or a reborrow read so;
+  - a closure or a function reaches a row only through such a `&mut`,
+    or a call given the table's `&mut`;
+  - a call given the table's `&mut`, or its slice's, forgets its rows, but
+    one that keeps them, `index_mut`, `deref_mut`, an index or a length.
+  So a row written whole, `board[0] = vec![]` or `*board.index_mut(0) =
+  ..`, swapped out, taken, `fill`ed or `swap`ped, keeps its checks, as
+  #1849's `table_rows_resized_unseen` runs against native.
+
+The shadow's call-bounds lines fall from 112 to 31: the tables' 31, and
+beyond them an array's typed length and an index below an integer that holds a
+slice's length prove 50 more across 32 cases. These are `&bytes[..len]` of
+an array, `v[i]` of `vec![0; n]` under `i < n`, and `&v[..n]`. What a table
+lends for a view, `board.iter_mut()`, forgets its rows, so the 4 lines of
+`table_rows_kept_by_views`' loop that only writes cells stay THIR's
+(#1852). Eight sites are newly MIR's, each sound:
+- of an array's type, `&bytes[..len]` past `bytes[len] = b`,
+  `[5, 6, 7, 8][1..]`, `&PAST_THE_LIMIT[..16384]` of a `[u8; 16385]` and
+  `[guard][0]`;
+- `right_max_levels[i + 1]` under `i < terraces.len() - 1`;
+- `pattern_table[prefix_index - 1]` past `p[prefix_index]`, as long as `p`.

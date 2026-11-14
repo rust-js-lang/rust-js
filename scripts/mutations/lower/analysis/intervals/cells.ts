@@ -54,4 +54,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
   },
+  {
+    name: "equal-lengths-kept-when-resized",
+    breaks: "two slices as long are kept so when one's length may change, so `left[i]` under `i < terraces.len()` past `left.pop()` is taken in bounds, a mir-only-call-bounds line",
+    file: "src/lower/analysis/intervals/cells.rs",
+    find: "        self.equal_lens.retain(|&(a, b)| a != cell && b != cell);\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
+  },
 ];

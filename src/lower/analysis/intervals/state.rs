@@ -101,6 +101,11 @@ pub(super) struct State {
     pub(super) keys: IndexSet<(Local, Local)>,
     /// Each `bool` a `contains_key` gave, by the map and the key it asks.
     pub(super) has_keys: IndexMap<Local, (Local, Local)>,
+    /// Each two slices as long as each other, the lesser local first
+    /// (`tables`): `vec![0.0; terraces.len()]` and `terraces`.
+    pub(super) equal_lens: IndexSet<(Local, Local)>,
+    /// Each table of rows, by the row each of its rows is as long as.
+    pub(super) rows: IndexMap<Local, Local>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -210,6 +215,8 @@ impl State {
                 .filter(|&(k, v)| other.has_keys.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
+            equal_lens: self.equal_lens.intersection(&other.equal_lens).copied().collect(),
+            rows: both(&self.rows, &other.rows),
         }
     }
 
@@ -321,6 +328,8 @@ impl State {
         self.keys.retain(|&(map, key)| map != local && key != local);
         self.has_keys
             .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
+        self.equal_lens.retain(|&(a, b)| a != local && b != local);
+        self.rows.retain(|&table, &mut row| table != local && row != local);
     }
 
     /// Whether a held guard guards `cell`.

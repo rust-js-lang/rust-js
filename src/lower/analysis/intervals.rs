@@ -44,6 +44,7 @@ mod pushed;
 mod ranges;
 mod session;
 mod state;
+mod tables;
 
 use callers::parameter_intervals;
 use captures::{capture_intervals, closure_results};
@@ -127,6 +128,8 @@ struct Walk<'a, 'tcx> {
     called_on: IndexMap<Local, Local>,
     /// The `borrow_mut()` guards held while they live (`guards`).
     guards: guards::Guards,
+    /// The row types of tables no `&mut` resizes (`tables::rows_kept`).
+    kept_rows: IndexSet<Ty<'tcx>>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -177,7 +180,8 @@ fn walk<'a, 'tcx>(
     };
     let called_on = called_on::called_on(tcx, &body);
     let guards = guards::guards(tcx, &body);
-    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, &guards);
+    let kept_rows = tables::rows_kept(tcx, &body);
+    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, (&guards, &kept_rows));
     Walk {
         tcx,
         typing_env,
@@ -190,6 +194,7 @@ fn walk<'a, 'tcx>(
         captured,
         called_on,
         guards,
+        kept_rows,
     }
 }
 
@@ -200,7 +205,7 @@ fn facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
     called_on: &IndexMap<Local, Local>,
-    guards: &guards::Guards,
+    (guards, kept_rows): (&guards::Guards, &IndexSet<Ty<'tcx>>),
 ) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
     // A local whose own place is lent; not a reference to a slice, an
     // array or text whose pointee is, `&mut (*heap)` of `heap.swap(..)`,
@@ -225,6 +230,8 @@ fn facts<'tcx>(
         .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().any(|&of| of == place.local))
         // A held guard, lent only to its `deref_mut`, and what that lends.
         .filter(|place| !guards.held.contains(&place.local) && !guards.lends.contains(&place.local))
+        // A row's `&mut` of a table whose rows nothing resizes (`rows_kept`).
+        .filter(|place| !matches!(*body.local_decls[place.local].ty.kind(), ty::Ref(_, row, ty::Mutability::Mut) if kept_rows.contains(&row)))
         .map(|place| place.local)
         .collect();
     let stepped = stepped_ranges(tcx, body);
@@ -306,6 +313,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             guarded: IndexMap::default(),
             keys: IndexSet::default(),
             has_keys: IndexMap::default(),
+            equal_lens: IndexSet::default(),
+            rows: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -1142,6 +1151,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     self.derefed(func, args, local, state, &mut after);
                     self.guarded(args, local, func, state, &mut after);
                     self.asked_key(func, args, local, state, &mut after);
+                    self.tabled(func, args, local, state, &mut after);
                 }
                 target.map(|t| vec![(t, after)]).unwrap_or_default()
             }
