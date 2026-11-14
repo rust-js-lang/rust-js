@@ -1289,19 +1289,6 @@ fn statement_starts(body: &[Stmt]) -> Vec<u32> {
     starts
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::collections::IndexSet;
-
-    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
-    #[test]
-    fn each_pass_is_named_apart() {
-        let names = super::super::pass_names();
-        let unique: IndexSet<_> = names.iter().collect();
-        assert_eq!(unique.len(), names.len());
-    }
-}
-
 /// Whether each read and write of `name` in `stmts`, past its own `let
 /// name;`, is in a block that declares it again, a loop's item, `const row
 /// = v[i];`, so none is of the `let`'s.
@@ -1343,4 +1330,17 @@ fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
         fixed: &fixed,
     };
     bottom_up(b, &mut |s| decisions::decisions(s, &told))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::collections::IndexSet;
+
+    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
+    #[test]
+    fn each_pass_is_named_apart() {
+        let names = super::super::pass_names();
+        let unique: IndexSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+    }
 }

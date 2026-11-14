@@ -135,6 +135,18 @@ pub fn jsdoc(lines: &[&str]) -> Option<String> {
     })
 }
 
+/// The run of `///` doc comment lines `own` starts with, and each one's text
+/// past its `///`: what's one JSDoc before an item, or a re-export (`jsdoc`).
+pub fn doc_lines<'s>(own: &[crate::program::Comment], text: &'s str) -> (usize, Vec<&'s str>) {
+    let run = (own.iter())
+        .take_while(|c| c.doc && text[c.lo as usize..].starts_with("///"))
+        .count();
+    let lines = (own[..run].iter())
+        .map(|c| text[c.lo as usize..c.hi as usize].trim_start_matches("///"))
+        .collect();
+    (run, lines)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{leading_comments, left_out};
@@ -164,16 +176,4 @@ mod tests {
         let file = "// License.\n\n/*\nA.\n\nB.\n */\npub fn f() {}\n";
         assert_eq!(leading_comments(file), "// License.");
     }
-}
-
-/// The run of `///` doc comment lines `own` starts with, and each one's text
-/// past its `///`: what's one JSDoc before an item, or a re-export (`jsdoc`).
-pub fn doc_lines<'s>(own: &[crate::program::Comment], text: &'s str) -> (usize, Vec<&'s str>) {
-    let run = (own.iter())
-        .take_while(|c| c.doc && text[c.lo as usize..].starts_with("///"))
-        .count();
-    let lines = (own[..run].iter())
-        .map(|c| text[c.lo as usize..c.hi as usize].trim_start_matches("///"))
-        .collect();
-    (run, lines)
 }
