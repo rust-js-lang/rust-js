@@ -79,6 +79,7 @@ function $padAdapter(f, state = { onNewline: true }) {
       state.onNewline = c === "\n";
       f.writeChar(c);
     },
+    f.armed,
   );
 }
 // A list's or a set's `entry` and `entries`, std's `DebugInner`.

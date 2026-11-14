@@ -1,5 +1,4 @@
 //@ run-fail: RefCell already borrowed
-//@ library-differs
 // A class's flattened state's cell swapped with a plain `RefCell` of its
 // state, borrowed while it's swapped: Rust's `borrow_mut` of the plain one
 // panics, and so does the JS, which checks that one's borrows, as they're

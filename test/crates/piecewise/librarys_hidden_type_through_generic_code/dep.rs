@@ -1,7 +1,7 @@
 //! A library's types no consumer can name, which it gives out as an `impl
 //! Display`, one through a private function's: each is published as a type
 //! reachable from outside it is, as a consumer writes it into a writer as
-//! that type (#1743).
+//! that type (#1743), a generic one too (#1712).
 use std::fmt;
 
 struct Hidden(i32);
@@ -12,9 +12,9 @@ impl fmt::Display for Hidden {
     }
 }
 
-struct Inner(char);
+struct Wrap<T>(T);
 
-impl fmt::Display for Inner {
+impl<T: fmt::Display> fmt::Display for Wrap<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({})", self.0)
     }
@@ -25,7 +25,7 @@ pub fn hidden(n: i32) -> impl fmt::Display {
 }
 
 fn inner(c: char) -> impl fmt::Display {
-    Inner(c)
+    Wrap(c)
 }
 
 pub fn wrapped(c: char) -> impl fmt::Display {

@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state's cell swapped with another, `RefCell::swap`:
 // each moved out, a copy of its variant's keys, and written with the
 // other's (#687, ADR 1044). Two classes' states, a state and a `RefCell`

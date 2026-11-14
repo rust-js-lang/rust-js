@@ -100,4 +100,20 @@ export const mutations: Mutation[] = [
     replace: "        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
+  {
+    name: "std-compiled-writer-unarmed",
+    breaks: "a std adapter `@rust-js/std` compiles isn't armed in a framed writer, which refuses it (#1712)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            if (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed(instance.def_id()))\n",
+    replace: "            if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
+  },
+  {
+    name: "arguments-dyn-display-unwritten",
+    breaks: "an `fmt::Arguments` made a `dyn Display` written into a writer is refused (#1712)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            Std::FmtDisplay if self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments) => {\n",
+    replace: "            Std::FmtDisplay if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_sink_arguments_made_dyn)\\.rs$"],
+  },
 ];

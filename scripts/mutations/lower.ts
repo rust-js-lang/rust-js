@@ -429,4 +429,12 @@ export const mutations: Mutation[] = [
     replace: "        None => rooted(path, Expr::var),\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
   },
+  {
+    name: "writer-instance-pointer-options-dropped",
+    breaks: "a generic writer function's instance as a `fn` pointer takes no options, so its dictionaries land a place early (#1758)",
+    file: "src/lower.rs",
+    find: "            let options = formatter.is_some() && self.takes_options(def_id);\n",
+    replace: "            let options = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_fn_pointer_of_an_instance_given_options)\\.rs$"],
+  },
 ];

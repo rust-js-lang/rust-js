@@ -232,4 +232,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
   },
+  {
+    name: "reified-writer-pointer-options-dropped",
+    breaks: "a generic writer function's instance whose forms differ, as a `fn` pointer, takes no options (#1758)",
+    file: "src/lower/generic_facts.rs",
+    find: "        let options = formatter.is_some() && self.takes_options(def_id);\n",
+    replace: "        let options = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_fn_pointer_of_an_instance_given_options)\\.rs$"],
+  },
 ];

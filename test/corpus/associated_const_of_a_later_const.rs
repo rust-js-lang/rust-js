@@ -1,4 +1,3 @@
-//@ library-differs
 // A type's associated constant whose value is a module's `const` declared
 // after it, getrandom 0.1's `impl Error { pub const UNKNOWN: Error =
 // UNSUPPORTED; }` with `const UNSUPPORTED: Error = ..` below: the type's

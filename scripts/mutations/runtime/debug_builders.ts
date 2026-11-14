@@ -137,4 +137,12 @@ export const mutations: Mutation[] = [
     replace: "  map.entriesWith(entries, writeValue, writeKey);\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
+  {
+    name: "pad-adapter-unarmed",
+    breaks: "`{:#?}`'s `PadAdapter` over a writer's sink isn't armed, so a generic writer writes a value its dictionary knows as text inside it (#1712)",
+    file: "src/runtime/debug_builders.js",
+    find: "    f.armed,\n  );\n}\n// A list's or a set's `entry` and `entries`, std's `DebugInner`.\n",
+    replace: "    false,\n  );\n}\n// A list's or a set's `entry` and `entries`, std's `DebugInner`.\n",
+    tests: ["test/writer-sink.test.ts", "-t", "writeBy writes by fmtInto"],
+  },
 ];

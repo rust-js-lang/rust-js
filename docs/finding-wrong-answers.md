@@ -156,6 +156,21 @@ say.
     of the transfer function, not only the common one. Write the case
     where the callee writes a value outside what was known before.
 
+13. **Whole text isn't unobservable when the writer prints.** #1712's first
+    rule for a value only a dictionary knows, written by a generic writer
+    into a sink no writer armed, was that the sink is only making text, so
+    the value's `fmt` text written whole is the same as its pieces. It is
+    the same text. But a writer that prints as it formats (#1608) prints
+    where its pieces are written, and under `{:#?}` std's `PadAdapter`
+    writes the indent before each line: whole, the print lands after the
+    indent, `    <step 2>    2,`; in pieces, before it, `<step 2>
+    2,` (the pair library_writer_prints_in_a_programs_line, and the corpus
+    case writer_sink_printing_in_a_generic). The dictionary's `fmtInto` is
+    used wherever it has one (`$writeBy`), and a type whose writer may
+    print carries one where a generic writer may write it. Before a
+    shortcut calls an effect unobservable, run the cases where formatting
+    has an effect of its own: a print, a panic, a writer's `Err`.
+
 Lessons 10 to 12 are one family: an analysis that licenses JS's own
 operator must prove every property the dropped normalization gave (10),
 keep a relation only where its arithmetic can't wrap (11), and forget what

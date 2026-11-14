@@ -84,16 +84,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
             let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             (dictionary, value)
-        } else if (ty.ty_adt_def()).is_some_and(|adt| self.krate.foreign.lists_fmt_into(adt.did())) {
+        } else if (ty.ty_adt_def()).is_some_and(|adt| {
+            // Not std's, whose compiled writer is armed itself
+            // (`writes_into_a_writer`), its dictionary made here of it.
+            self.krate.foreign.lists_fmt_into(adt.did())
+                && crate::lower::recognition::std_crate(self.tcx, adt.did().krate).is_none()
+        }) {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
             (self.dictionary(tr, span)?, value)
         } else {
             return Ok(None);
         };
-        Ok(Some(SinkWrite::Call(
-            Expr::member(dictionary, FMT_INTO),
-            vec![value, options],
-        )))
+        // An armed sink's pieces, its `fmtInto`'s; an unarmed one's text,
+        // its `fmt`'s (`$writeBy`).
+        Ok(Some(SinkWrite::Helper("$writeBy", vec![dictionary, value, options])))
     }
 
     /// The `fmtInto` entry of the dictionary of `tr`, an impl of the crate's
@@ -109,23 +113,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<js::Prop>> {
         // Of the crate's type, or a library's whose impl the crate compiles
-        // its own of, which its contract lists (`listed_writers_compiled_here`).
-        let adt = match tr.self_ty().kind() {
-            ty::Adt(adt, _) if adt.did().is_local() => adt.did(),
-            ty::Adt(adt, _) if self.krate.foreign.lists_fmt_into(adt.did()) => adt.did(),
-            _ => return Ok(None),
+        // its own of, which its contract lists (`listed_writers_compiled_here`),
+        // or of `@rust-js/std`'s build, a std type whose writer it compiles
+        // and frames, `fuseDebug`'s (#1712).
+        let ty::Adt(adt, _) = tr.self_ty().kind() else {
+            return Ok(None);
         };
-        let listed = !adt.is_local();
-        if !(listed || self.krate.written.of_adt(adt)) || !self.is_fmt_trait(tr.def_id) {
+        let adt = adt.did();
+        if !self.is_fmt_trait(tr.def_id) {
             return Ok(None);
         }
         let fmt = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "fmt");
-        let (writes_through_sink, takes_options) = match self.resolve_self_instance(fmt, tr.args) {
-            Ok(Some(instance)) => (
-                (instance.def_id().is_local() || listed) && self.writes_through_sink(instance.def_id()),
-                self.takes_options(instance.def_id()),
+        let instance = self.resolve_self_instance(fmt, tr.args).ok().flatten();
+        let compiled_std = instance.is_some_and(|instance| {
+            crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id())
+                && self.writes_through_sink(instance.def_id())
+        });
+        let listed = !adt.is_local() && !compiled_std && self.krate.foreign.lists_fmt_into(adt);
+        if !adt.is_local() && !listed && !compiled_std {
+            return Ok(None);
+        }
+        // And of a type whose writer may print as it formats, so where a
+        // generic writer writes it, a print lands between its pieces, as
+        // Rust's line has it, not before its text (#1608, #1712).
+        let printing = self.krate.prints.framed_generic && self.krate.prints.types.contains(&adt);
+        if !(listed || printing || self.krate.written.of_adt(adt, tr.def_id)) {
+            return Ok(None);
+        }
+        let (writes_through_sink, takes_options) = match instance {
+            Some(instance) => (
+                (instance.def_id().is_local() || listed || compiled_std) && self.writes_through_sink(instance.def_id()),
+                // As the dictionary's own `fmt` entry gives them, of a
+                // writer this build compiles (`traits::impls`).
+                self.compiled_writer_takes_options(instance.def_id()),
             ),
-            _ => (false, false),
+            None => (false, false),
         };
         let entry = (props.iter()).find_map(|prop| match prop {
             js::Prop::Field(name, value) if name == "fmt" => Some(value.clone()),
@@ -133,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         // Reached only as a field of a type whose writer never shows it,
         // which framing leaves, nothing writes so (`given_adt`).
-        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt) {
+        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt, tr.def_id) {
             return Ok(None);
         }
         let (Some(entry), true) = (entry, writes_through_sink) else {
@@ -154,7 +176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         }
         .unwrap_or((entry, Vec::new()));
-        // Its options only where it takes them, as `writer_given` calls it:
+        // Its options only where it takes them, as its `fmt` entry calls it:
         // a generic impl's dictionaries come next, `pairDisplay_fmt(pair,
         // TDisplay)` (#1739).
         let mut args = vec![Expr::var(&sink), writer, Expr::var(&value)];
@@ -214,12 +236,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let shown = ty.peel_refs();
-        // Not the crate's own type's, nor what only a dictionary knows, whose
-        // `fmtInto` its caller's dictionary may not carry.
-        if matches!(shown.kind(), ty::Adt(adt, _) if adt.did().is_local())
-            || rustc_middle::ty::TypeVisitableExt::has_non_region_param(&shown)
-            || crate::lower::recognition::known_by_a_dictionary(shown)
-        {
+        // Not the crate's own type's, whose writer is framed itself. What only
+        // a dictionary knows, itertools' `Format`'s `I::Item`'s, is written
+        // by it, `$writeBy`: its text where nothing's armed (#1712).
+        if matches!(shown.kind(), ty::Adt(adt, _) if adt.did().is_local()) {
             return Ok(None);
         }
         let trait_id = self.tcx.trait_of_assoc(def_id).expect("a formatting trait's `fmt`");
@@ -247,11 +267,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given the `Formatter`'s options as it runs. Refused where its split
     /// isn't followed yet (#1652).
     pub(in crate::lower) fn std_fmt_into(&mut self, kind: Std, ty: Ty<'tcx>, span: Span) -> R<Option<js::Prop>> {
-        if !self.krate.written.of_type(self.tcx, ty) {
+        let written = self.krate.written.of_type(self.tcx, ty);
+        // Of one holding a type whose writer may print, its pieces where
+        // they're followed, so a print lands between them (#1608, #1712).
+        let printing = self.krate.prints.holds_printing(ty);
+        if !written && !printing {
             return Ok(None);
         }
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
         let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (&value, &options), span)? else {
+            if !written {
+                return Ok(None);
+            }
             return Err(self.refused_piecewise(span, &format!("a `{ty}` written into a writer through generic code")));
         };
         // One std function given just the value and its options is the

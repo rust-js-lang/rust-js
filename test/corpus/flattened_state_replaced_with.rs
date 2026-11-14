@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state's `replace_with(f)`: `f` given a `&mut` to it,
 // its handle on the class's keys, which it writes through; what it held
 // then a copy of its variant's keys, apart from the class's object, and

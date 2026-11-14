@@ -23,14 +23,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (options, pretty): (&Expr, &Expr),
         span: Span,
     ) -> R<Option<Vec<SinkWrite>>> {
-        let mut ty = ty.peel_refs();
-        while let Some(inner) = ty.boxed_ty() {
-            ty = inner.peel_refs();
-        }
+        // What it points at, read as `{:?}` reads it: a `&mut i32` a struct
+        // holds, its cell's `value` (#1755), a counted `Rc`'s, a `Box`'s.
+        let (value, ty) = self.shown_through(value, ty);
         if let Some(written) = self.sink_writes_given(value.clone(), (Std::FmtDebug, ty), options.clone(), span)? {
             return Ok(Some(written));
         }
         let helper = |name: &'static str, args: Vec<Expr>| Ok(Some(vec![SinkWrite::Helper(name, args)]));
+        // A text that leaves the value unread, `()`'s: the value evaluated
+        // first, where reading it runs code, a call's (#1756).
+        let evaluated = value.has_effects().then(|| value.clone());
+        let unread = |text: Expr| evaluated_first(evaluated.clone(), text);
         // A parse error's derived `Debug`, of its message (ADR 0063).
         if self.recognition().is_parse_error(ty)
             && let ty::Adt(adt, _) = ty.kind()
@@ -44,12 +47,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(layout) = self.recognition().layout(ty) {
             return match layout {
                 true => helper("$writeDebugLayout", vec![value, pretty.clone(), options.clone()]),
-                false => Ok(Some(vec![SinkWrite::Str(Expr::str("LayoutError"))])),
+                false => Ok(Some(vec![SinkWrite::Str(unread(Expr::str("LayoutError")))])),
             };
         }
         // `()`'s, `f.pad("()")`.
         if ty.is_unit() {
-            return helper("$writePadded", vec![Expr::str("()"), options.clone()]);
+            return helper("$writePadded", vec![unread(Expr::str("()")), options.clone()]);
+        }
+        // A `PhantomData<T>`'s, its `write!(f, "PhantomData<{}>",
+        // type_name::<T>())`: three writes, the name the one `type_name`
+        // gives (ADR 0132), of a type parameter its caller's (ADR 0452).
+        if let ty::Adt(_, args) = ty.kind()
+            && self.is_lang_adt(ty, LangItem::PhantomData)
+        {
+            let name = self.type_fact_value(args.type_at(0), crate::lower::recognition::TypeFact::Name, span)?;
+            return Ok(Some(vec![
+                SinkWrite::Str(unread(Expr::str("PhantomData<"))),
+                SinkWrite::Str(name),
+                SinkWrite::Str(Expr::str(">")),
+            ]));
         }
         // `Some(x)`'s derived tuple, `None` one write.
         if let Some(inner) = self.option_of(ty) {
@@ -159,6 +175,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             };
             return helper("$writeDebugMap", vec![items, write, write_value, pretty.clone()]);
+        }
+        // A `Cycle` a struct holds, the runtime's, std's derived `Debug` of
+        // what it started with and what it steps (ADR 0544): `Cycle { orig:
+        // .., iter: .. }`, each field by its `Debug` (#1712).
+        if let Some(source) = self.held_cycle(ty) {
+            let Some(write) =
+                self.writing_fn(|cx, part| cx.debug_sink_writes(part, source, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            let field =
+                |name: &str| Expr::array(vec![Expr::str(name), Expr::member(value.clone(), name), write.clone()]);
+            if !value.reads_same() {
+                return Ok(None);
+            }
+            return helper(
+                "$writeDebugStruct",
+                vec![
+                    Expr::str("Cycle"),
+                    Expr::array(vec![field("orig"), field("iter")]),
+                    pretty.clone(),
+                ],
+            );
+        }
+        // An iterator over an array or a slice, `IntoIter([2, 3])`, its
+        // `debug_tuple` of what it has left (ADR 0473; #1712).
+        if let Some(name) = self.recognition().shows_its_slice(ty) {
+            let item = self.iterator_item(ty).expect("an iterator's item");
+            let Some(write) =
+                self.writing_fn(|cx, entry| cx.debug_sink_writes(entry, item, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            let pretty_list = pretty.clone();
+            let Some(list) = self.writing_fn(|cx, it| {
+                let left = cx.stepped_left(it, ty, false, span)?;
+                Ok(Some(vec![SinkWrite::Helper(
+                    "$writeDebugList",
+                    vec![left, write, pretty_list],
+                )]))
+            })?
+            else {
+                return Ok(None);
+            };
+            let field = Expr::array(vec![value, list]);
+            return helper(
+                "$writeDebugTuple",
+                vec![Expr::str(name), Expr::array(vec![field]), pretty.clone()],
+            );
         }
         // A sequence's, `debug_list().entries(..)`.
         let item = match ty.kind() {

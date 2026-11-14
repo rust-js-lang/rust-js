@@ -6,6 +6,7 @@ import {
   $out,
   $printing,
   $sink,
+  $writeBy,
   $writeInteger,
   $writerSink,
   $writerWriteFmt,
@@ -37,7 +38,7 @@ function bracketed(n, IsI32) {
 function bumped(n, TDisplay) {
   const f = $sink();
   f.write("<");
-  TDisplay.fmtInto(f, n.value);
+  $writeBy(f, TDisplay, n.value);
   f.write(">");
   return f.done();
 }

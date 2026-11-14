@@ -19,12 +19,13 @@ impl Foreign<'_, '_> {
 
     /// Is `adt` a library's type whose formatting dictionaries its contract
     /// says carry `fmtInto`, which writes it into a writer a piece at a time
-    /// (#1652): one it publishes, or writes so itself.
+    /// (#1652): one it publishes, or writes so itself; and a std type whose
+    /// writer `@rust-js/std` compiles, `Fuse<I>`'s derived `Debug` (#1712).
     pub(in crate::lower) fn lists_fmt_into(&self, adt: DefId) -> bool {
         !adt.is_local()
             && self
                 .library(adt.krate)
-                .is_some_and(|library| !library.builtin && library.written_into.contains(&key(self.tcx, adt)))
+                .is_some_and(|library| true && library.written_into.contains(&key(self.tcx, adt)))
     }
 
     /// Does any of the libraries write a value into a writer a piece at a

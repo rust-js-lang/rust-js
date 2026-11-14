@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "                        .insert(root, (kind, type_name.clone(), Vec::new(), Taken::Parts(parts.clone())));\n",
     replace: "                        .get(&root);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+    tests: ["test/crates.test.ts", "-t", "two crates: held_builder_in_a_librarys_generic_writer"],
   },
   {
     name: "text-place-through-a-cell-unread",

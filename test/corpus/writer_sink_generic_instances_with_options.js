@@ -7,9 +7,8 @@ import {
   $formatted,
   $sink,
   $traitImpl,
-  $writeCharOf,
+  $writeBy,
   $writeFloat,
-  $writeInteger,
   $writePadded,
   $writerSink,
   $writerWriteFmt,
@@ -43,12 +42,12 @@ function wrapDisplay_fmt(wrap, options, TDisplay) {
   const f = $sink();
   if (options?.alternate === true) {
     f.write("<<");
-    TDisplay.fmtInto(f, wrap[0]);
+    $writeBy(f, TDisplay, wrap[0]);
     f.write(">>");
     return f.done();
   } else {
     f.write("<");
-    TDisplay.fmtInto(f, wrap[0]);
+    $writeBy(f, TDisplay, wrap[0]);
     f.write(">");
     return f.done();
   }
@@ -92,16 +91,13 @@ function main() {
   $writingInto(f$1, wrapDisplay_fmt, [["t"]], undefined, tagDisplay);
   f$1.write("]");
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
-  console.log(`${wrapDisplay_fmt(["s"], undefined, { fmt: $formatted, fmtInto: $writePadded })}`);
+  console.log(`${wrapDisplay_fmt(["s"], undefined, { fmt: $formatted })}`);
   console.log(`${wrapDisplay_fmt([[["x"]]], { alternate: true }, wrapDisplay(tagDisplay))}`);
   console.log(
-    `${wrapped(9, {
-      fmt: (value, options) => $formatted(String(value), options, true),
-      fmtInto: $writeInteger,
-    })}`,
+    `${wrapped(9, { fmt: (value, options) => $formatted(String(value), options, true) })}`,
   );
   console.log(`${wrapped(["y"], tagDisplay)}`);
-  const shown = { value: ["z"], impl: wrapDisplay({ fmt: $formatted, fmtInto: $writeCharOf }) };
+  const shown = { value: ["z"], impl: wrapDisplay({ fmt: $formatted }) };
   console.log(`${shown.impl.fmt(shown.value, { alternate: true })}`);
 }
 //# sourceMappingURL=case.js.map

@@ -1,4 +1,3 @@
-//@ library-differs
 // ppv-lite86's generic vectors (#1402): a 16-byte slice read as a
 // `[u8; 16]` through a raw pointer and transmuted to four `u32` lanes or two
 // `u64` lanes, and back, little-endian as wasm32 is; and a slice of `u32`s

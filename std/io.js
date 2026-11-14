@@ -6,7 +6,6 @@ import {
   $bigMin,
   $cleanup,
   $followedReadBuf,
-  $formatted,
   $grew,
   $index,
   $ioThrow,
@@ -14,15 +13,19 @@ import {
   $live,
   $memchr,
   $partialEq,
-  $pretty,
   $readByte,
   $readerDefaults,
+  $sink,
   $slice,
   $strPop,
   $takeReadBuf,
   $traitImpl,
   $unwindsOn,
   $view,
+  $writeBy,
+  $writeDebugStruct,
+  $writeInteger,
+  $writingInto,
 } from "./runtime.js";
 
 export const Chain = {
@@ -418,11 +421,29 @@ export function cursorClone_cloneFrom(cursor, other, TClone, dropT) {
 }
 
 export function cursorDebug_fmt(cursor, options, TDebug) {
-  const shown = TDebug.fmt(cursor.inner, options);
-  const shown$1 = $formatted(String(cursor.pos), options, true);
-  return options?.alternate
-    ? $pretty("Cursor {", [`inner: ${shown}`, `pos: ${shown$1}`], "}")
-    : `Cursor { inner: ${shown}, pos: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Cursor",
+    [
+      [
+        "inner",
+        cursor.inner,
+        (f, value) => {
+          $writeBy(f, TDebug, value, options);
+        },
+      ],
+      [
+        "pos",
+        cursor.pos,
+        (f, value) => {
+          $writeInteger(f, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function cursorPartialEq_eq(cursor, other, TPartialEq) {
@@ -669,6 +690,7 @@ export function cursorClone(TClone, dropT) {
 export function cursorDebug(TDebug) {
   return $traitImpl($cursorDebug, [TDebug], () => ({
     fmt: (arg0, arg1) => cursorDebug_fmt(arg0, arg1, TDebug),
+    fmtInto: (f, value, options) => $writingInto(f, cursorDebug_fmt, value, options, TDebug),
   }));
 }
 

@@ -185,6 +185,8 @@ depends on what the program does:
 - A `ToString` of the crate's with no `Display`: `struct A; impl ToString for A { fn to_string(&self) -> String { "A".into() } } println!("{}", A.to_string());`
 - `{:?}` of one item of a collection of a `dyn` whose trait has `Debug` as a supertrait, `v[0]`, which is made where it's shown; the whole collection's compiles: `trait Ev: std::fmt::Debug {} #[derive(Debug)] struct C; impl Ev for C {} let v: Vec<Box<dyn Ev>> = vec![Box::new(C)]; println!("{:?}", v[0]);`
 
+- An `fmt::Arguments` given to generic code that writes it into a writer a piece at a time, `own(&mut log, &format_args!(..))` where `own` writes its `T` into its `W` (#1745); one made a `&dyn Display` compiles: `use std::fmt::Write; struct Log(Vec<String>); impl Write for Log { fn write_str(&mut self, s: &str) -> std::fmt::Result { self.0.push(s.into()); Ok(()) } } fn own<W: Write, T: std::fmt::Display>(w: &mut W, t: &T) -> std::fmt::Result { write!(w, "[{}]", t) } let mut log = Log(Vec::new()); own(&mut log, &format_args!("a{}", 1)).unwrap(); println!("{:?}", log.0);`
+
 ## Hashing
 
 std's hashers and a crate's own hash as native Rust's

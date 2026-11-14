@@ -359,4 +359,12 @@ export const mutations: Mutation[] = [
     replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
   },
+  {
+    name: "framed-writer-function-forms-unadapted",
+    breaks: "a framed call of a generic writer function given a `&mut Point` gives the object, where generic code reads a box (#1759)",
+    file: "src/lower/display/written.rs",
+    find: "            if let Some(form) = self.form_of(given) {\n",
+    replace: "            if let Some(form) = self.form_of(given).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(closure_gives_a_mut_to_a_generic_writer)\\.rs$"],
+  },
 ];

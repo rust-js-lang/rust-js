@@ -481,4 +481,12 @@ export const mutations: Mutation[] = [
     replace: "                ty::Array(item, _) if false && inline(item) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_when_written_whole.rs$"],
   },
+  {
+    name: "write-result-copied-as-tagged",
+    breaks: "a copy of a write's result where one is held in a `RefCell` is a tagged object's, `{ ...undefined }`, so `Ok(())` reads as an `Err` (#1757)",
+    file: "src/lower/copies.rs",
+    find: "                if self.is_write_result(ty) {\n                    return place;\n",
+    replace: "                if false {\n                    return place;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(write_result_copied_where_one_is_held_in_a_cell)\\.rs$"],
+  },
 ];

@@ -361,15 +361,16 @@ what's held before it, as a browser's console takes whole lines
   $writePadded(f, "zoë", { width: 6, align: "Right" });
   ```
 
-  A library's type reachable from outside it, of no type parameters, or
-  one it gives out as an `impl Trait`, is written so too, by its
-  dictionary, `Dep.hexyDebug.fmtInto(f, h, options)`: its library
-  compiles its writer to write through a sink. A generic one's isn't yet
-  (#1712). A generic type of the crate's own
-  written into a writer writes its parameters by their dictionaries,
-  `TDisplay.fmtInto(f, x)`, wherever it's formatted, so each instance of
-  it the crate formats gives its parameters dictionaries that write so
-  (#1738).
+  A library's type reachable from outside it, generic or not, or one it
+  gives out as an `impl Trait`, is written so too, by its dictionary,
+  `$writeBy(f, Dep.hexyDebug, h, options)`: its library compiles its
+  writer to write through a sink. A generic writer writes a value only its
+  dictionary knows the same way, `$writeBy(f, TDisplay, x)`: by the
+  dictionary's `fmtInto`, each piece a call of the writer's, which it
+  carries where a write into a writer reaches its type, or where its
+  writer may print; else, formatted plainly, by its text (#1712). std's
+  iterator adapters' `Debug`, `Fuse { iter: Some(..) }`, is written so by
+  `@rust-js/std`'s compiled bodies.
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`
@@ -2393,7 +2394,9 @@ React and JSX are [their own pages](README.md#react).
 57. A `Display` or `Debug` that panics part-way through a `println!`'s
     line loses what that line had written, `x half` of `println!("x {}
     y", halfway)`, in a program that catches no panic: Rust's stdout keeps
-    it in its line buffer and writes it as the program ends. In a program
+    it in its line buffer and writes it as the program ends. A line the
+    writer printed and ended before its panic is written, as Rust's is at
+    its newline (#1761). In a program
     with a `catch_unwind`, which may print after it, it's kept and written
     as Rust writes it (ADR 0262, the user's decision, 2026-11-12, #1496;
     [ADR 1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).

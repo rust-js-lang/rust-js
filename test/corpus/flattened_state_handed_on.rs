@@ -1,4 +1,3 @@
-//@ library-differs
 // A `&mut` to a class's flattened state its guard lends, handed on:
 // `Cell::from_mut(&mut *state)`'s cell swapped, taken, set and given to a
 // function, and the `&mut` given to a function that gives it back. Each is

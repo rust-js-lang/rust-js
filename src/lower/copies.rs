@@ -116,6 +116,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.own_captures_copied(ty) == Some(true) {
                     return once(place, &|f| Expr::call_helper("$clone", vec![f]));
                 }
+                // A write's result, `Ok(())`'s `undefined` or an `Err`'s
+                // `$FmtError` (ADR 0187), which nothing changes in place:
+                // itself, never a tagged object's copy (#1757).
+                if self.is_write_result(ty) {
+                    return place;
+                }
                 if let Some(inner) = self.option_of(ty) {
                     if !self.contains_mutated(inner) {
                         return place;

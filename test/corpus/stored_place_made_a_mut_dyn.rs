@@ -1,4 +1,3 @@
-//@ library-differs
 // A `&mut` to a place that stores what's written its own way, made a `&mut
 // dyn Trait`: its pair stores so too, as its handle does (#977). A
 // `#[rust_js::nullable]` field's `None` is `null` (ADR 0772), and a class's

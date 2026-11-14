@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_write_into_a_string_keeps_text_before_a_failure.rs$"],
   },
+  {
+    name: "panic-part-way-lines-dropped",
+    breaks: "a writer that prints a line and then panics part-way through a `println!` loses the line it printed (#1761)",
+    file: "src/runtime/fmt_error.js",
+    find: "  else if ($printFrames.at(-1) === $out && f !== \"\") {\n",
+    replace: "  else if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_prints_a_line_then_panics)\\.rs$"],
+  },
 ];

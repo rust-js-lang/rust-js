@@ -418,6 +418,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let kind = match (self.radix_trait(trait_id), self.exp_trait(trait_id)) {
                     (Some(radix), _) => Some(Std::FmtRadix(radix)),
                     (_, Some(upper)) => Some(Std::FmtExp(upper)),
+                    // A `{:p}`'s, of a `T` by its dictionary, thiserror's
+                    // `Var<T>`'s, a library's published type (#1712).
+                    _ if self.recognition().other_fmt_trait(Std::FmtPointer) == Some(trait_id) => Some(Std::FmtPointer),
                     _ => None,
                 };
                 let ty = generic_args.type_at(0).peel_refs();

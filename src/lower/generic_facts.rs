@@ -390,16 +390,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         let output = (def_id, declared.output(), self.instantiated(declared.output(), args));
         let span = self.tcx.def_span(def_id);
+        // And its `Formatter`'s options where it takes them, which a call
+        // through the pointer gives after its arguments (ADR 0538,
+        // `mir_closure_call`'s), before its dictionaries (#1758).
+        let options = formatter.is_some() && self.takes_options(def_id);
         let made = move |cx: &mut Self| -> super::R<Expr> {
-            let params: Vec<String> = (names.iter())
+            let mut params: Vec<String> = (names.iter())
                 .map(|name| cx.fresh(super::temporary_names::Base::Named(name)))
                 .collect();
-            let given = (params.iter().zip(&inputs))
+            let mut given = (params.iter().zip(&inputs))
                 .map(|(name, &given)| match cx.form_of(given) {
                     Some(form) => cx.form_given(form, given, Expr::var(name), span),
                     None => Ok(Expr::var(name)),
                 })
                 .collect::<super::R<Vec<_>>>()?;
+            if options {
+                let name = cx.fresh(super::temporary_names::Role::Options);
+                given.push(Expr::var(&name));
+                params.push(name);
+            }
             let called = Expr::call(function, given);
             let called = match cx.form_of(output) {
                 Some(form) => cx.form_back(form, output, called),

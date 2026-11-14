@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state's `get_mut`: the `&mut` rustc holds alone is
 // its handle on the class's keys, written in a field, whole, moved out of
 // with `mem::replace`, and lent to a function that writes it whole (#687,

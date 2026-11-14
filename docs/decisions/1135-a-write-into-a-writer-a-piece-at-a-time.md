@@ -454,7 +454,8 @@ go.
     in programs that ran before it, each a generic type of the crate's
     own written into a writer, so its writer is framed:
     - **Each instance of a generic formatting impl the crate asks for gives
-      its type parameters dictionaries that carry `fmtInto`** (#1738). A
+      its type parameters dictionaries that carry `fmtInto`** (#1738;
+      replaced by step 11's `$writeBy`, which needs none of it). A
       framed writer writes its parameters by its dictionaries,
       `TDisplay.fmtInto(f, x)`, however it's called, so
       `println!("{}", Wrap(String::from("s")))` beside a `write!` of
@@ -501,6 +502,100 @@ go.
     contract doesn't list asks of the type an `impl Trait` hides. Proof:
     the pair librarys_hidden_type_through_generic_code against native, and
     of a contract that doesn't list them, refused; 3 mutations.
+
+11. **A library's generic types are published, and std's adapters' `Debug`
+    is written by its compiled bodies** (#1712, amended 2026-11-14; the
+    lead approved each choice). Library ABI 38.
+    - **One rule for a value only a dictionary knows**, `$writeBy(f,
+      TDisplay, x, options)`: the dictionary's `fmtInto` where it carries
+      one; else, of a sink no writer armed, which is making text, `fmt`'s
+      text whole; else, of an armed sink, a thrown rust-js error, a bug to
+      file, never a split std doesn't make. A sink knows whether it's armed
+      (`armed`, a writer's, and one armed with it). So a framed writer
+      called plainly needs nothing of its parameters' dictionaries, and
+      they carry `fmtInto` only where a write into a writer reaches their
+      type, as `written_params` found it before step 10. Step 10's first
+      fix of #1738, which gave each formatting impl instance the crate asks
+      for `fmtInto`, is gone with its analysis: plain formatting was
+      refused wherever an instance held a std type whose split isn't
+      followed (15 corpus cases, `{:?}` of a `Fuse<vec::IntoIter<i32>>`),
+      and 45 snapshots changed for nothing. Its cases still run as native
+      does. The first cut keyed `$writeBy` on armedness alone; a writer
+      that prints as it formats (#1608) under `{:#?}` then printed inside
+      `PadAdapter`'s indent, its text written whole (the trap is
+      docs/finding-wrong-answers.md's 13th lesson). So a type whose writer
+      may print carries `fmtInto` where a generic writer is framed.
+    - **A library publishes its generic types**, as its others: each
+      writer is framed, its contract lists the type, and a consumer writes
+      one into a writer by its dictionary, made of the consumer's
+      dictionaries of its parameters, `Dep.eitherDisplay(TDisplay)`. A
+      derived writer isn't framed by publication: its library has no JS of
+      it, and a consumer compiles and frames its own (ADR 0052); what it
+      shows is, its fields' types', but a `dyn`, which it doesn't write a
+      piece at a time: a published struct deriving `Debug` of an
+      `Option<Box<dyn Error>>` field had its library refused (#1750).
+    - **`@rust-js/std` frames std's compiled formatting bodies** in its
+      build, `fuseDebug_fmt` of a `Fuse<I>`'s derived `Debug`, and lists
+      their types, so a framed writer of either build arms the compiled
+      body where the build compiles it, `$writingInto(f, fuseDebug_fmt, x,
+      options, IDebug)`. The plain build's own forms of what it doesn't
+      compile are written so too: a `Cycle` it holds, `Cycle { orig: ..,
+      iter: .. }` (ADR 0544), and an array's or a slice's iterator,
+      `IntoIter([1, 2])`, of what it has left (ADR 0473).
+    - What the crate corpus's first runs found, each fixed: a `{:p}` of a
+      `T` by its dictionary (thiserror's `Var`); a `PhantomData<T>`'s three writes; a
+      case mapping's `Display`, each `char` a `write_char`, `$writeChars`
+      (heck); a `dyn` shown frames only its trait's writers and their
+      supertraits', `dyn Display` no `Debug` writer (itertools'
+      `format_with`); a library makes a `dyn` only by a coercion or std's
+      conversion, `From`, `Into` or `?`'s `from_residual`, never by
+      passing one on, either's `inner.source()` (`makes_fmt_dyns`); an
+      `fmt::Arguments` made a `dyn` is the function that writes into the
+      sink it claims (`given_to_a_write`), itertools' `f(&format_args!(..))`;
+      and a std formatting trait's `fmt` taken as a `fn` pointer of a type
+      only a dictionary knows, itertools' `Format`'s `I::Item`, writes by
+      `$writeBy`. One given to generic code that writes it is refused
+      where it's given, naming #1745.
+
+    - What the nightly's metamorphic net found in the write model (#1747),
+      each fixed, each its own case against native in both builds:
+      - a `&mut` a struct holds, its derived `Debug` written so, is read
+        through its cell as `{:?}` reads it (`shown_through`, #1755, a
+        wrong answer, writer_sink_mut_ref_field);
+      - a `()` a call makes, written so, runs the call first
+        (`evaluated_first`, as `debug_string_with` does; #1756, a wrong
+        answer, writer_sink_unit_made_by_a_call);
+      - a write's result copied where one is held in a `RefCell` is
+        itself, never a tagged object's copy (#1757, a wrong answer,
+        write_result_copied_where_one_is_held_in_a_cell);
+      - a generic writer function's instance as a `fn` pointer takes its
+        options where it does, as a call through it gives them (#1758,
+        writer_fn_pointer_of_an_instance_given_options);
+      - a framed call of a generic writer function gives generic code's
+        forms, a `&mut Point`'s box (#1759, #1714,
+        closure_gives_a_mut_to_a_generic_writer);
+      - a library frames each writer function another crate can reach, as
+        a consumer may name one a `fn` pointer (#1760, the pair
+        librarys_writer_function_named_a_fn_pointer);
+      - a writer that prints a line and then panics part-way through a
+        `println!` has the line it printed written, as Rust's stdout writes
+        a line at its newline; the rest of the line stays lost, the guide's
+        difference 57 (#1761, a wrong answer,
+        writer_prints_a_line_then_panics).
+
+    Measured: the corpus, 2,499 cases, all as native; 6 snapshots of the
+    `writer_sink_` cases take `$writeBy`, 15 cases' library form is their
+    program's now; the full crate corpus as docs/crate-corpus.md says,
+    itertools and heck running; the React port, no `fmtInto`. Proof,
+    against native Rust in both builds and by their metamorphic rewrites:
+    corpus cases writer_sink_std_adapters, writer_sink_phantom_data,
+    writer_sink_case_mapping, writer_sink_arguments_made_dyn,
+    writer_sink_printing_in_a_generic and writer_sink_generic_padded; the
+    pairs librarys_generic_types_written_and_formatted and
+    librarys_hidden_type_through_generic_code (a generic hidden type now
+    too), dyn_passed_on_by_a_library and
+    dyn_made_by_a_librarys_conversion; the runtime's unit test of
+    `$writeBy`; mutations.
 
 ## Alternatives
 

@@ -24,7 +24,7 @@ use rustc_middle::ty;
 use rustc_span::def_id::DefId;
 
 use super::may_run::Runs;
-use super::written_params::{Asked, WrittenArguments};
+use super::written_params::WrittenArguments;
 
 /// What `prints` found of a crate.
 #[derive(Default)]
@@ -72,6 +72,9 @@ pub(in crate::lower) struct Prints {
     /// nothing, makes its text whole. Its contract's, so a consumer that
     /// catches a panic refuses to show one in a line (#1608, #1530).
     pub(in crate::lower) stopping_where_caught: IndexSet<DefId>,
+    /// Whether a framed writer is generic, so writes a value only its
+    /// dictionary knows, `$writeBy(f, TDebug, x)` (#1712).
+    pub(in crate::lower) framed_generic: bool,
 }
 
 impl Prints {
@@ -85,6 +88,17 @@ impl Prints {
     /// at a time, each a call of that writer's (#1652)?
     pub(in crate::lower) fn writes_into_writers(&self, writer: DefId) -> bool {
         self.framed.contains(&writer)
+    }
+
+    /// Does `ty` hold a type of the crate's one of whose writers may print,
+    /// `Vec<Loud>`, which a generic framed writer may write by its
+    /// dictionary, so a print it makes lands between its pieces (#1608,
+    /// #1712)?
+    pub(in crate::lower) fn holds_printing(&self, ty: ty::Ty<'_>) -> bool {
+        self.framed_generic
+            && !self.types.is_empty()
+            && (ty.walk().filter_map(|part| part.as_type()))
+                .any(|part| part.ty_adt_def().is_some_and(|adt| self.types.contains(&adt.did())))
     }
 
     /// May any writer of the crate's print as it formats: what may run in
@@ -158,7 +172,7 @@ pub(super) fn prints<'tcx>(
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
-    (library, arguments, asked): (bool, &WrittenArguments, &[Asked<'tcx>]),
+    (library, arguments): (bool, &WrittenArguments),
 ) -> Prints {
     let mut found = printing_writers(recognition, all_bodies, runs, unwinding, library);
     for error in [false, true] {
@@ -175,9 +189,15 @@ pub(super) fn prints<'tcx>(
             })
             .map(|body| body.def_id),
     );
-    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments), asked);
+    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
     found.framed.extend(listed_writers_compiled_here(recognition));
     found.through_sink.extend(found.framed.iter().copied());
+    found.framed_generic = (found.framed.iter()).any(|&writer| {
+        recognition
+            .tcx
+            .generics_of(writer)
+            .requires_monomorphization(recognition.tcx)
+    });
     found
 }
 
@@ -198,13 +218,15 @@ fn written_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, arguments): (bool, &WrittenArguments),
-    asked: &[Asked<'tcx>],
 ) -> (IndexSet<DefId>, IndexSet<DefId>) {
     let tcx = recognition.tcx;
     let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
+    // The crate's, and of `@rust-js/std`'s build, std's compiled bodies,
+    // `fuseDebug_fmt` of a `Fuse<I>`'s derived `Debug` (#1712).
+    let compiled_std = |id: DefId| crate::lower::recognition::is_compiled_std(tcx, id);
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
         .filter(|body| {
-            body.def_id.is_local()
+            (body.def_id.is_local() || compiled_std(body.def_id))
                 && tcx.def_kind(body.def_id).is_fn_like()
                 && recognition.formatter_param(body.def_id).is_some()
         })
@@ -281,12 +303,12 @@ fn written_into_writers<'tcx>(
         })
     };
     // Of a library, each type of its own reachable from outside it that a
-    // writer of its own formats, of no type or constant parameters: a
-    // consumer may write it into a writer, so each is shown so. A generic
-    // one's writer writes what its parameters are by dictionaries a
-    // consumer gives, which may carry no `fmtInto`: not yet (#1712). And
-    // each of its types an `impl Trait` it gives out hides, through a
-    // private function's too, which a consumer writes as that type (#1743).
+    // writer of its own formats: a consumer may write it into a writer, so
+    // each is shown so. A generic one's writer writes its parameters by the
+    // dictionaries its consumer gives, which its contract says carry
+    // `fmtInto` (the impl's `written_into` marks, #1712). And each of its
+    // types an `impl Trait` it gives out hides, through a private
+    // function's too, which a consumer writes as that type (#1743).
     let reachable = |id: rustc_span::def_id::LocalDefId| tcx.effective_visibilities(()).is_reachable(id);
     let hidden: IndexSet<DefId> = match library {
         true => (tcx.hir_crate_items(()).opaques())
@@ -303,19 +325,64 @@ fn written_into_writers<'tcx>(
             .collect(),
         false => IndexSet::default(),
     };
+    // Of `@rust-js/std`'s build, each std type it compiles a writer of, as
+    // every consumer may write one.
     let published: IndexSet<DefId> = match library {
         true => (writers.iter())
-            .filter_map(|writer| type_of(writer.def_id))
-            .filter(|&adt| {
+            .filter_map(|writer| Some((type_of(writer.def_id)?, writer.def_id)))
+            .filter(|&(adt, writer)| {
                 adt.as_local()
                     .is_some_and(|local| reachable(local) || hidden.contains(&adt))
-                    && !tcx.generics_of(adt).requires_monomorphization(tcx)
+                    || (!adt.is_local() && compiled_std(writer))
             })
+            .map(|(adt, _)| adt)
             .collect(),
         false => IndexSet::default(),
     };
-    shown.extend((published.iter()).map(|&adt| (tcx.type_of(adt).instantiate_identity().skip_normalization(), true)));
+    // Each published type's writers are framed, but a derived one's, which
+    // its library has no JS of, a consumer writing its own in place (ADR
+    // 0052) and framing it (`listed_writers_compiled_here`): what that one
+    // shows is shown, its fields' types' writers framed (#1712). Not std's,
+    // whose compiled derived `Debug` `@rust-js/std` exports.
+    let derived =
+        |writer: DefId| (tcx.trait_impl_of_assoc(writer)).is_some_and(|imp| tcx.is_automatically_derived(imp));
     let mut found: IndexSet<DefId> = IndexSet::default();
+    for writer in (writers.iter()).filter(|writer| type_of(writer.def_id).is_some_and(|adt| published.contains(&adt))) {
+        let framed = !derived(writer.def_id) || compiled_std(writer.def_id);
+        // Of a derived one not framed, what it shows but a `dyn`, which it
+        // doesn't write a piece at a time: an `Option<Box<dyn Error>>` field
+        // frames none of the crate's `Debug` writers (#1750).
+        let dyn_part = |ty: &ty::Ty<'tcx>| {
+            ty.walk()
+                .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(..))))
+        };
+        shown.extend(
+            (shown_by(writer).into_iter())
+                .filter(|ty| framed || !dyn_part(ty))
+                .map(|ty| (ty, true)),
+        );
+        if framed {
+            found.insert(writer.def_id);
+        }
+        // So the walk below runs, which follows what each found calls.
+        shown.push((tcx.types.unit, true));
+    }
+    // Of a library, each writer function another crate can reach, generic
+    // ones too: a consumer's writer may give it its `Formatter`, or name it
+    // a `fn` pointer a framed writer calls, `Via(bracketed, -3)` (#1760).
+    if library {
+        let functions = (writers.iter()).filter(|writer| {
+            tcx.trait_impl_of_assoc(writer.def_id).is_none()
+                && !tcx.is_closure_like(writer.def_id)
+                && writer.def_id.as_local().is_some_and(reachable)
+        });
+        for writer in functions {
+            if found.insert(writer.def_id) {
+                shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
+                shown.push((tcx.types.unit, true));
+            }
+        }
+    }
     // Where a library it uses writes a piece at a time, each callable of the
     // crate's given a `Formatter` as a value: a library's writer may call
     // it with its sink armed, `(self.0)(f)` of a boxed closure (#1736).
@@ -331,20 +398,35 @@ fn written_into_writers<'tcx>(
     }
     let mut types: IndexSet<DefId> = IndexSet::default();
     let mut any = false;
+    // The traits a `dyn` shown is of, with their supertraits: a `dyn
+    // Display` may be any of the crate's `Display` writers, never its
+    // `Debug` ones; and a writer of no trait's, a closure's, any (#1712).
+    let mut dyn_traits: IndexSet<DefId> = IndexSet::default();
+    let of_dyn = |writer: DefId, dyn_traits: &IndexSet<DefId>| {
+        !dyn_traits.is_empty()
+            && (tcx.trait_item_of(writer))
+                .is_none_or(|declared| (tcx.trait_of_assoc(declared)).is_none_or(|tr| dyn_traits.contains(&tr)))
+    };
     let mut called_up_to = 0;
     while let Some((ty, instantiated)) = shown.pop() {
         for part in ty.walk().filter_map(|part| part.as_type()) {
             match part.kind() {
-                ty::Adt(adt, _) if adt.did().is_local() => {
+                // The crate's, and std's whose writer it compiles.
+                ty::Adt(adt, _) => {
                     types.insert(adt.did());
                 }
-                ty::Dynamic(..) => any = true,
+                ty::Dynamic(traits, ..) => match traits.principal_def_id() {
+                    Some(principal) => dyn_traits.extend(ty::elaborate::supertrait_def_ids(tcx, principal)),
+                    None => any = true,
+                },
                 _ if !instantiated && crate::lower::recognition::known_by_a_dictionary(part) => any = true,
                 _ => {}
             }
         }
         for writer in &writers {
-            let of_shown = any || type_of(writer.def_id).is_some_and(|did| types.contains(&did));
+            let of_shown = any
+                || of_dyn(writer.def_id, &dyn_traits)
+                || type_of(writer.def_id).is_some_and(|did| types.contains(&did));
             if of_shown && found.insert(writer.def_id) {
                 shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));
             }
@@ -354,15 +436,6 @@ fn written_into_writers<'tcx>(
         while let Some(by) = found.get_index(called_up_to).copied() {
             called_up_to += 1;
             let by_body = writers.iter().find(|writer| writer.def_id == by);
-            // Each instance of its impl the crate asks for, which its writer
-            // writes the type parameters of by what that gives (#1738): as
-            // shown, a writer's of its own type parameters, instantiated.
-            if let Some(imp) = tcx.impl_of_assoc(by) {
-                for asked in asked.iter().filter(|asked| asked.imp == imp) {
-                    let in_writer = writers.iter().any(|writer| writer.def_id == asked.body);
-                    shown.push((asked.ty, in_writer));
-                }
-            }
             // A callable only a value says may be any of them.
             if by_body.is_some_and(|by| calls_held(by)) {
                 for &held in &held_writers {
@@ -411,7 +484,10 @@ fn listed_writers_compiled_here(recognition: &Recognition<'_, '_>) -> Vec<DefId>
     (tcx.crates(()).iter())
         .flat_map(|&krate| tcx.trait_impls_in_crate(krate).iter().copied())
         .filter(|&imp| {
-            matches!(tcx.type_of(imp).skip_binder().kind(),
+            // Not std's, whose writers `@rust-js/std` compiles, never a
+            // consumer.
+            crate::lower::recognition::std_crate(tcx, imp.krate).is_none()
+                && matches!(tcx.type_of(imp).skip_binder().kind(),
                 ty::Adt(adt, _) if recognition.foreign.lists_fmt_into(adt.did()))
         })
         .flat_map(|imp| tcx.associated_item_def_ids(imp).iter().copied())
@@ -446,9 +522,34 @@ pub(super) fn shown_by<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'t
             } => Some(body.thir[source].ty),
             _ => None,
         }))
+        // Of a body of MIR alone, std's compiled in `@rust-js/std`'s build,
+        // its MIR's: a derived `Debug`'s `&&self.iter as &dyn Debug`.
+        .chain(unsized_in_mir(tcx, body))
         // Each `impl Display` the type it hides, anstyle's `render()`'s
         // `EffectsDisplay`, as its MIR is lowered.
         .map(|ty| crate::lower::mir::revealed(tcx, ty))
+        .collect()
+}
+
+/// Of `body`, a body of MIR alone, what it makes a `dyn` of: each unsized
+/// cast's operand's type. None of a body with THIR, whose coercions say.
+fn unsized_in_mir<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
+    use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
+    let (None, Some(mir)) = (body.root(), &body.mir) else {
+        return Vec::new();
+    };
+    let mir = &mir.body;
+    (mir.basic_blocks.iter())
+        .flat_map(|data| data.statements.iter())
+        .filter_map(|statement| match &statement.kind {
+            StatementKind::Assign(assign) => match &assign.1 {
+                Rvalue::Cast(CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _), operand, _) => {
+                    Some(operand.ty(&mir.local_decls, tcx))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
         .collect()
 }
 

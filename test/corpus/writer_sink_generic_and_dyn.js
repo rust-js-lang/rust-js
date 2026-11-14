@@ -22,6 +22,7 @@ import {
   $stringError,
   $traitImpl,
   $unwrapErr,
+  $writeBy,
   $writeCharOf,
   $writeDebugChar,
   $writeDebugList,
@@ -141,13 +142,13 @@ function duoDebug_fmt(duo, options, TDebug) {
         [
           duo[0],
           (f, value) => {
-            TDebug.fmtInto(f, value, options);
+            $writeBy(f, TDebug, value, options);
           },
         ],
         [
           duo[1],
           (f, value) => {
-            TDebug.fmtInto(f, value, options);
+            $writeBy(f, TDebug, value, options);
           },
         ],
       ],
@@ -178,9 +179,9 @@ function duoDisplay_fmt(duo, options, TDisplay) {
   const f = $sink();
   try {
     f.write("(");
-    TDisplay.fmtInto(f, duo[0]);
+    $writeBy(f, TDisplay, duo[0]);
     f.write(", ");
-    TDisplay.fmtInto(f, duo[1], { width: 3, align: "Right" });
+    $writeBy(f, TDisplay, duo[1], { width: 3, align: "Right" });
     f.write(")");
   } catch (error) {
     throw $fmtWritten(error, f.done());
@@ -210,7 +211,7 @@ function labelledDebug_fmt(labelled, options, TDebug) {
               f,
               value,
               (f, value) => {
-                TDebug.fmtInto(f, $someValue(value), options);
+                $writeBy(f, TDebug, $someValue(value), options);
               },
               options?.alternate,
             );
@@ -250,15 +251,15 @@ function shownGeneric(w, t, WWrite, TDisplay, TDebug) {
   WWrite.writeFmt(w, () => {
     const f = $sink();
     try {
-      TDisplay.fmtInto(f, t);
+      $writeBy(f, TDisplay, t);
       f.write("|");
-      TDisplay.fmtInto(f, t, { width: 6, align: "Right" });
+      $writeBy(f, TDisplay, t, { width: 6, align: "Right" });
       f.write("|");
-      TDebug.fmtInto(f, t);
+      $writeBy(f, TDebug, t);
       f.write("|");
-      TDebug.fmtInto(f, t, { alternate: true });
+      $writeBy(f, TDebug, t, { alternate: true });
       f.write("|");
-      TDebug.fmtInto(f, t, { width: 4, align: "Left" });
+      $writeBy(f, TDebug, t, { width: 4, align: "Left" });
     } catch (error) {
       throw $fmtWritten(error, f.done());
     }
@@ -270,13 +271,13 @@ function radixes(w, t, WWrite, TLowerHex, TUpperHex) {
   WWrite.writeFmt(w, () => {
     const f = $sink();
     try {
-      TLowerHex.fmtInto(f, t);
+      $writeBy(f, TLowerHex, t);
       f.write("|");
-      TLowerHex.fmtInto(f, t, { alternate: true, width: 6, zero: true });
+      $writeBy(f, TLowerHex, t, { alternate: true, width: 6, zero: true });
       f.write("|");
-      TUpperHex.fmtInto(f, t);
+      $writeBy(f, TUpperHex, t);
       f.write("|");
-      TUpperHex.fmtInto(f, t, { width: 8, align: "Right" });
+      $writeBy(f, TUpperHex, t, { width: 8, align: "Right" });
     } catch (error) {
       throw $fmtWritten(error, f.done());
     }
@@ -288,13 +289,13 @@ function bits(w, t, WWrite, TOctal, TBinary) {
   WWrite.writeFmt(w, () => {
     const f = $sink();
     try {
-      TOctal.fmtInto(f, t);
+      $writeBy(f, TOctal, t);
       f.write("|");
-      TOctal.fmtInto(f, t, { alternate: true });
+      $writeBy(f, TOctal, t, { alternate: true });
       f.write("|");
-      TBinary.fmtInto(f, t);
+      $writeBy(f, TBinary, t);
       f.write("|");
-      TBinary.fmtInto(f, t, { alternate: true, width: 10, zero: true });
+      $writeBy(f, TBinary, t, { alternate: true, width: 10, zero: true });
     } catch (error) {
       throw $fmtWritten(error, f.done());
     }
@@ -312,7 +313,7 @@ function shownOnce(w, t, WWrite, TDisplay) {
     const f = $sink();
     try {
       f.write("[");
-      TDisplay.fmtInto(f, t, { width: 5, align: "Center" });
+      $writeBy(f, TDisplay, t, { width: 5, align: "Center" });
       f.write("]");
     } catch (error) {
       throw $fmtWritten(error, f.done());
@@ -416,7 +417,7 @@ function listedDisplay_fmt(listed, options) {
     };
     const list = $debugList(f, options?.alternate);
     list.entryWith(d, (f, value) => {
-      value.impl.fmtInto(f, value.value, options);
+      $writeBy(f, value.impl, value.value, options);
     });
     list.entryWith("s", (f, value) => {
       $writeDebugStr(f, value);
@@ -724,9 +725,9 @@ function main() {
     const d = shown[i];
     const result = $writeTry(() => {
       const f = $writerSink(l$2, charsWrite_writeStr, charsWrite_writeChar);
-      d.impl.fmtInto(f, d.value, { width: 3, align: "Right" });
+      $writeBy(f, d.impl, d.value, { width: 3, align: "Right" });
       f.write(";");
-      d.impl.fmtInto(f, d.value);
+      $writeBy(f, d.impl, d.value);
       f.write("|");
     });
     $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
@@ -736,7 +737,7 @@ function main() {
           return value.impl.fmt(value.value, options);
         },
         fmtInto(f, value, options) {
-          value.impl.fmtInto(f, value.value, options);
+          $writeBy(f, value.impl, value.value, options);
         },
       }),
     );
@@ -758,11 +759,11 @@ function main() {
   for (const e of [message, own, io, kind, parse]) {
     const result = $writeTry(() => {
       const f = $writerSink(l$3, charsWrite_writeStr, charsWrite_writeChar);
-      e.impl.Display().fmtInto(f, e.value);
+      $writeBy(f, e.impl.Display(), e.value);
       f.write("|");
-      e.impl.Display().fmtInto(f, e.value, { width: 8, align: "Right" });
+      $writeBy(f, e.impl.Display(), e.value, { width: 8, align: "Right" });
       f.write("|");
-      e.impl.Display().fmtInto(f, e.value, { precision: 2 });
+      $writeBy(f, e.impl.Display(), e.value, { precision: 2 });
       f.write("|");
     });
     $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
@@ -772,10 +773,10 @@ function main() {
     const nth = [0, n, ""];
     const r = $writeTry(() => shownGeneric($cellOf(nth), [-5, 6], nthWrite, DuoDisplay, DuoDebug));
     const dynNth = [0, n, ""];
-    const receiver = $index(shown, 3);
+    const value = $index(shown, 3);
     const d = $writeTry(() => {
       const f = $writerSink(dynNth, nthWrite_writeStr, nthWrite_writeStr);
-      receiver.impl.fmtInto(f, receiver.value, { width: 4, align: "Right" });
+      $writeBy(f, value.impl, value.value, { width: 4, align: "Right" });
     });
     console.log(
       `${n} ${$debugStr(nth[2])} ${r === undefined ? "Ok(())" : "Err(Error)"} | ${$debugStr(dynNth[2])} ${d === undefined ? "Ok(())" : "Err(Error)"}`,
@@ -823,9 +824,9 @@ function main() {
     const item = items[i];
     const result = $writeTry(() => {
       const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
-      item.impl.fmtInto(f, item.value);
+      $writeBy(f, item.impl, item.value);
       f.write("|");
-      item.impl.fmtInto(f, item.value, { alternate: true });
+      $writeBy(f, item.impl, item.value, { alternate: true });
       f.write("|");
     });
     $writeExpect(result, "called `Result::unwrap()` on an `Err` value");

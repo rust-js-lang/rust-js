@@ -19,11 +19,9 @@ pub(in crate::lower) enum SinkWrite {
     /// `f.writeChar(c)`: one `write_char`.
     Char(Expr),
     /// A std function that writes its pieces into the sink, given it first,
-    /// `$writeInteger(f, n, options)`: `pad_integral`'s or `pad`'s.
+    /// `$writeInteger(f, n, options)`: `pad_integral`'s or `pad`'s; a
+    /// dictionary's, `$writeBy(f, TDisplay, t, options)` (`fmt_into`).
     Helper(&'static str, Vec<Expr>),
-    /// A dictionary's entry that writes its pieces into the sink, given it
-    /// first, `TDisplay.fmtInto(f, t, options)` (`fmt_into`).
-    Call(Expr, Vec<Expr>),
 }
 
 impl SinkWrite {
@@ -35,10 +33,6 @@ impl SinkWrite {
             SinkWrite::Helper(name, mut args) => {
                 args.insert(0, sink.clone());
                 Expr::call_helper(name, args)
-            }
-            SinkWrite::Call(callee, mut args) => {
-                args.insert(0, sink.clone());
-                Expr::call(callee, args)
             }
         };
         StmtKind::Expr(call).at(js_span)
@@ -132,6 +126,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.extend(options.then(options_given));
                 SinkWrite::Helper("$writeFloat", args)
             }
+            // A `char`'s case mapping's, `c.to_lowercase()`'s, as core's
+            // `CaseMappingIter` writes it: each `char` a `write_char`, its
+            // options unread.
+            Std::FmtDisplay if crate::lower::recognition::is_case_mapping(self.tcx, ty.peel_refs()) => {
+                let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
+                SinkWrite::Helper("$writeChars", vec![text])
+            }
             // A `char`'s `Display`, given no width nor precision, is its
             // `write_char`; else `pad` of its text.
             Std::FmtDisplay if ty.is_char() => match width.is_none() && precision.is_none() {
@@ -193,6 +194,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         options: Expr,
         span: Span,
     ) -> R<Option<Vec<SinkWrite>>> {
+        // What it points at, read as `{}` reads it (#1755).
+        let (value, ty) = self.shown_through(value, ty);
         if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), options.clone(), span)? {
             return Ok(Some(vec![write]));
         }
@@ -245,6 +248,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let upper = Radix::UpperHex.digits(value.clone(), num);
                 SinkWrite::Helper("$writeDebugInteger", vec![value, lower, upper, options])
             }
+            Std::FmtDisplay if crate::lower::recognition::is_case_mapping(self.tcx, ty.peel_refs()) => {
+                let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
+                SinkWrite::Helper("$writeChars", vec![text])
+            }
+            // An `Arguments`' `Display`, of one made a `dyn Display`, which
+            // is the function that writes into the sink it claims (step 6,
+            // `given_to_a_write`): armed with this one, as std's
+            // `fmt::write` of it writes each piece (#1712). One generic code
+            // writes is refused where it's given (`written_params`).
+            Std::FmtDisplay if self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments) => {
+                SinkWrite::Helper("$writingInto", vec![value])
+            }
             Std::FmtDisplay if ty.is_char() => SinkWrite::Helper("$writeCharOf", given(value)),
             Std::FmtDisplay | Std::FmtDebug if ty.is_bool() => SinkWrite::Helper(
                 "$writePadded",
@@ -277,18 +292,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does `ty`'s `fmt` of `kind`, `Display` or `Debug`, write through a
     /// sink a `write!` into a writer arms (`analysis::prints`'
     /// `written_into_writers`): a writer of the crate's own type, which it
-    /// compiles. Another crate's writer makes its text whole.
+    /// compiles; or a std type's `@rust-js/std` compiles and frames, its
+    /// contract says, `fuseDebug_fmt` (#1712). Another crate's writer makes
+    /// its text whole.
     pub(in crate::lower) fn writes_into_a_writer(&self, kind: Std, ty: Ty<'tcx>) -> bool {
         let Some(fmt_trait) = self.fmt_trait_of(kind) else {
             return false;
         };
-        if !ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
+        let Some(adt) = ty.ty_adt_def().map(|adt| adt.did()) else {
+            return false;
+        };
+        // Compiled into `@rust-js/std` for this build: of the plain one, not
+        // a `Cycle`, which the runtime holds (`held_cycle`).
+        let std_framed = |instance: DefId| {
+            crate::lower::recognition::is_compiled_std(self.tcx, instance) && self.krate.foreign.lists_fmt_into(adt)
+        };
+        if !adt.is_local() && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none() {
             return false;
         }
         let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
         let args = self.tcx.mk_args(&[ty.into()]);
         matches!(self.resolve_self_instance(fmt, args), Ok(Some(instance))
-            if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))
+            if (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed(instance.def_id()))
     }
 
     /// `ty`'s writer of `kind`, such a writer, called given `value` and

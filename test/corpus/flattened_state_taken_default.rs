@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state's cell's own `take`, of a `Default` of the
 // crate's: std's `RefCell::take` is `self.replace(Default::default())`, so
 // `Default` runs before the cell is borrowed, and what's moved out is what

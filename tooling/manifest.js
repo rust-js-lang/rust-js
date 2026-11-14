@@ -3,7 +3,7 @@
 // The library ABI a contract is of: `src/library.rs`' `VERSION`, its
 // authority, mirrored here across the compiler's boundary; every library
 // a test builds and reads holds the two equal.
-export const LIBRARY_ABI = 37;
+export const LIBRARY_ABI = 38;
 
 // The facts a contract's sets hold, by name: `src/library.rs`' `ItemFact`,
 // `ParamFact` and `FieldFact`, their authority, mirrored here across the

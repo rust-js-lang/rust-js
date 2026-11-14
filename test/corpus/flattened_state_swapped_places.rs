@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state swapped with another place, `mem::swap`: a
 // struct's field and a `Vec`'s item, through its guard
 // and lent to a function. Each side's value is moved out apart, a

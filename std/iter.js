@@ -8,6 +8,7 @@ import {
   $consume,
   $controlFlowTry,
   $count,
+  $debugStruct,
   $dispose,
   $div,
   $dropping,
@@ -16,7 +17,6 @@ import {
   $foldBack,
   $foldDropping,
   $foldOf,
-  $formatted,
   $fromFn,
   $getUnchecked,
   $given,
@@ -36,10 +36,10 @@ import {
   $nthSome,
   $overflowing,
   $peekableHint,
-  $pretty,
   $rem,
   $rev,
   $revAdvanceBy,
+  $sink,
   $sizeHint,
   $some,
   $someMut,
@@ -50,6 +50,12 @@ import {
   $tryFoldInto,
   $tryOf,
   $unwindsOn,
+  $writeBy,
+  $writeDebugOption,
+  $writeDebugStruct,
+  $writeInteger,
+  $writePadded,
+  $writingInto,
 } from "./runtime.js";
 
 export const Inspect = {
@@ -1625,29 +1631,43 @@ export function peekableClone_clone(
 }
 
 export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
-  const shown = IDebug.fmt(peekable.iter, options);
-  const shown$1 =
-    peekable.peeked == null
-      ? "None"
-      : options?.alternate
-        ? $pretty(
-            "Some(",
-            [
-              ((value) =>
-                value == null
-                  ? "None"
-                  : options?.alternate
-                    ? $pretty("Some(", [IItemDebug.fmt($someValue(value), options)], ")")
-                    : `Some(${IItemDebug.fmt($someValue(value), options)})`)(
-                $someValue(peekable.peeked),
-              ),
-            ],
-            ")",
-          )
-        : `Some(${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [IItemDebug.fmt($someValue(value), options)], ")") : `Some(${IItemDebug.fmt($someValue(value), options)})`))($someValue(peekable.peeked))})`;
-  return options?.alternate
-    ? $pretty("Peekable {", [`iter: ${shown}`, `peeked: ${shown$1}`], "}")
-    : `Peekable { iter: ${shown}, peeked: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Peekable",
+    [
+      [
+        "iter",
+        peekable.iter,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+      [
+        "peeked",
+        peekable.peeked,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeDebugOption(
+                f,
+                $someValue(value),
+                (f, value) => {
+                  $writeBy(f, IItemDebug, $someValue(value), options);
+                },
+                options?.alternate,
+              );
+            },
+            options?.alternate,
+          );
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function fuseIterator_next(fuse, IIterator = { next: $next }, IFused, dropI, dropIItem) {
@@ -2252,15 +2272,29 @@ export function fuseClone_clone(fuse, IClone) {
 }
 
 export function fuseDebug_fmt(fuse, options, IDebug) {
-  const shown =
-    fuse.iter == null
-      ? "None"
-      : options?.alternate
-        ? $pretty("Some(", [IDebug.fmt($someValue(fuse.iter), options)], ")")
-        : `Some(${IDebug.fmt($someValue(fuse.iter), options)})`;
-  return options?.alternate
-    ? $pretty("Fuse {", [`iter: ${shown}`], "}")
-    : `Fuse { iter: ${shown} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Fuse",
+    [
+      [
+        "iter",
+        fuse.iter,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeBy(f, IDebug, $someValue(value), options);
+            },
+            options?.alternate,
+          );
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function revIterator_next(
@@ -2496,8 +2530,22 @@ export function revClone_clone(rev, TClone) {
 }
 
 export function revDebug_fmt(rev, options, TDebug) {
-  const shown = TDebug.fmt(rev.iter, options);
-  return options?.alternate ? $pretty("Rev {", [`iter: ${shown}`], "}") : `Rev { iter: ${shown} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Rev",
+    [
+      [
+        "iter",
+        rev.iter,
+        (f, value) => {
+          $writeBy(f, TDebug, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function enumerateIterator_next(enumerate, IIterator = { next: $next }, dropI, dropIItem) {
@@ -2829,11 +2877,29 @@ export function enumerateClone_clone(enumerate, IClone, dropI) {
 }
 
 export function enumerateDebug_fmt(enumerate, options, IDebug) {
-  const shown = IDebug.fmt(enumerate.iter, options);
-  const shown$1 = $formatted(String(enumerate.count$), options, true);
-  return options?.alternate
-    ? $pretty("Enumerate {", [`iter: ${shown}`, `count: ${shown$1}`], "}")
-    : `Enumerate { iter: ${shown}, count: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Enumerate",
+    [
+      [
+        "iter",
+        enumerate.iter,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+      [
+        "count",
+        enumerate.count$,
+        (f, value) => {
+          $writeInteger(f, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function mapIterator_next(map, IIterator = { next: $next }, dropB, dropI, dropF, dropIItem) {
@@ -3140,9 +3206,13 @@ export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
 }
 
 export function mapDebug_fmt(map, options, IDebug, dropI, dropF) {
-  return options?.alternate
-    ? $pretty("Map {", [`iter: ${IDebug.fmt(map.iter, options)}`], "}")
-    : `Map { iter: ${IDebug.fmt(map.iter, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "Map", options?.alternate);
+  struct.fieldWith("iter", map.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function filterIterator_next(filter, IIterator = { next: $next }, dropI, dropP, dropIItem) {
@@ -3529,9 +3599,13 @@ export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
 }
 
 export function filterDebug_fmt(filter, options, IDebug, dropI, dropP) {
-  return options?.alternate
-    ? $pretty("Filter {", [`iter: ${IDebug.fmt(filter.iter, options)}`], "}")
-    : `Filter { iter: ${IDebug.fmt(filter.iter, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "Filter", options?.alternate);
+  struct.fieldWith("iter", filter.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function copiedIterator_next(copied, IIterator = { next: $next }, TCopy, dropI) {
@@ -3805,10 +3879,22 @@ export function copiedClone_clone(copied, IClone) {
 }
 
 export function copiedDebug_fmt(copied, options, IDebug) {
-  const shown = IDebug.fmt(copied.it, options);
-  return options?.alternate
-    ? $pretty("Copied {", [`it: ${shown}`], "}")
-    : `Copied { it: ${shown} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Copied",
+    [
+      [
+        "it",
+        copied.it,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function clonedIterator_next(cloned, IIterator = { next: $next }, TClone, dropI, dropT) {
@@ -4099,10 +4185,22 @@ export function clonedClone_clone(cloned, IClone) {
 }
 
 export function clonedDebug_fmt(cloned, options, IDebug) {
-  const shown = IDebug.fmt(cloned.it, options);
-  return options?.alternate
-    ? $pretty("Cloned {", [`it: ${shown}`], "}")
-    : `Cloned { it: ${shown} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Cloned",
+    [
+      [
+        "it",
+        cloned.it,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function filterMapIterator_next(
@@ -4415,9 +4513,13 @@ export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
 }
 
 export function filterMapDebug_fmt(filterMap, options, IDebug, dropI, dropF) {
-  return options?.alternate
-    ? $pretty("FilterMap {", [`iter: ${IDebug.fmt(filterMap.iter, options)}`], "}")
-    : `FilterMap { iter: ${IDebug.fmt(filterMap.iter, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "FilterMap", options?.alternate);
+  struct.fieldWith("iter", filterMap.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function takeWhileIterator_next(
@@ -4607,16 +4709,16 @@ export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
 }
 
 export function takeWhileDebug_fmt(takeWhile, options, IDebug, dropI, dropP) {
-  return options?.alternate
-    ? $pretty(
-        "TakeWhile {",
-        [
-          `iter: ${IDebug.fmt(takeWhile.iter, options)}`,
-          `flag: ${$formatted(String(takeWhile.flag), options)}`,
-        ],
-        "}",
-      )
-    : `TakeWhile { iter: ${IDebug.fmt(takeWhile.iter, options)}, flag: ${$formatted(String(takeWhile.flag), options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "TakeWhile", options?.alternate);
+  struct.fieldWith("iter", takeWhile.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.fieldWith("flag", takeWhile.flag, (f, value) => {
+    $writePadded(f, value ? "true" : "false", options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function skipWhileIterator_next(
@@ -4878,16 +4980,16 @@ export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
 }
 
 export function skipWhileDebug_fmt(skipWhile, options, IDebug, dropI, dropP) {
-  return options?.alternate
-    ? $pretty(
-        "SkipWhile {",
-        [
-          `iter: ${IDebug.fmt(skipWhile.iter, options)}`,
-          `flag: ${$formatted(String(skipWhile.flag), options)}`,
-        ],
-        "}",
-      )
-    : `SkipWhile { iter: ${IDebug.fmt(skipWhile.iter, options)}, flag: ${$formatted(String(skipWhile.flag), options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "SkipWhile", options?.alternate);
+  struct.fieldWith("iter", skipWhile.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.fieldWith("flag", skipWhile.flag, (f, value) => {
+    $writePadded(f, value ? "true" : "false", options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function mapWhileIterator_next(
@@ -5042,9 +5144,13 @@ export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
 }
 
 export function mapWhileDebug_fmt(mapWhile, options, IDebug, dropI, dropP) {
-  return options?.alternate
-    ? $pretty("MapWhile {", [`iter: ${IDebug.fmt(mapWhile.iter, options)}`], "}")
-    : `MapWhile { iter: ${IDebug.fmt(mapWhile.iter, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "MapWhile", options?.alternate);
+  struct.fieldWith("iter", mapWhile.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function scanIterator_next(
@@ -5257,13 +5363,16 @@ export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dr
 }
 
 export function scanDebug_fmt(scan, options, IDebug, StDebug, dropI, dropSt, dropF) {
-  return options?.alternate
-    ? $pretty(
-        "Scan {",
-        [`iter: ${IDebug.fmt(scan.iter, options)}`, `state: ${StDebug.fmt(scan.state, options)}`],
-        "}",
-      )
-    : `Scan { iter: ${IDebug.fmt(scan.iter, options)}, state: ${StDebug.fmt(scan.state, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "Scan", options?.alternate);
+  struct.fieldWith("iter", scan.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.fieldWith("state", scan.state, (f, value) => {
+    $writeBy(f, StDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function inspectIterator_next(
@@ -5530,9 +5639,13 @@ export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
 }
 
 export function inspectDebug_fmt(inspect, options, IDebug, dropI, dropF) {
-  return options?.alternate
-    ? $pretty("Inspect {", [`iter: ${IDebug.fmt(inspect.iter, options)}`], "}")
-    : `Inspect { iter: ${IDebug.fmt(inspect.iter, options)} }`;
+  const f = $sink();
+  const struct = $debugStruct(f, "Inspect", options?.alternate);
+  struct.fieldWith("iter", inspect.iter, (f, value) => {
+    $writeBy(f, IDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function flattenIterator_next(
@@ -7261,11 +7374,29 @@ export function skipClone_clone(skip, IClone, dropI) {
 }
 
 export function skipDebug_fmt(skip, options, IDebug) {
-  const shown = IDebug.fmt(skip.iter, options);
-  const shown$1 = $formatted(String(skip.n), options, true);
-  return options?.alternate
-    ? $pretty("Skip {", [`iter: ${shown}`, `n: ${shown$1}`], "}")
-    : `Skip { iter: ${shown}, n: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Skip",
+    [
+      [
+        "iter",
+        skip.iter,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+      [
+        "n",
+        skip.n,
+        (f, value) => {
+          $writeInteger(f, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function takeIterator_next(take, IIterator = { next: $next }, dropI, dropIItem) {
@@ -7781,11 +7912,29 @@ export function takeClone_clone(take, IClone, dropI) {
 }
 
 export function takeIDebug_fmt(take, options, IDebug) {
-  const shown = IDebug.fmt(take.iter, options);
-  const shown$1 = $formatted(String(take.n), options, true);
-  return options?.alternate
-    ? $pretty("Take {", [`iter: ${shown}`, `n: ${shown$1}`], "}")
-    : `Take { iter: ${shown}, n: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Take",
+    [
+      [
+        "iter",
+        take.iter,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+      [
+        "n",
+        take.n,
+        (f, value) => {
+          $writeInteger(f, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function stepByIterator_next(stepBy, IIterator = { next: $next }, dropI, dropIItem) {
@@ -8696,21 +8845,43 @@ export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
 }
 
 export function chainABDebug_fmt(chain, options, ADebug, BDebug) {
-  const shown =
-    chain.a == null
-      ? "None"
-      : options?.alternate
-        ? $pretty("Some(", [ADebug.fmt($someValue(chain.a), options)], ")")
-        : `Some(${ADebug.fmt($someValue(chain.a), options)})`;
-  const shown$1 =
-    chain.b == null
-      ? "None"
-      : options?.alternate
-        ? $pretty("Some(", [BDebug.fmt($someValue(chain.b), options)], ")")
-        : `Some(${BDebug.fmt($someValue(chain.b), options)})`;
-  return options?.alternate
-    ? $pretty("Chain {", [`a: ${shown}`, `b: ${shown$1}`], "}")
-    : `Chain { a: ${shown}, b: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Chain",
+    [
+      [
+        "a",
+        chain.a,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeBy(f, ADebug, $someValue(value), options);
+            },
+            options?.alternate,
+          );
+        },
+      ],
+      [
+        "b",
+        chain.b,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeBy(f, BDebug, $someValue(value), options);
+            },
+            options?.alternate,
+          );
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function zipIterator_next(
@@ -9153,6 +9324,7 @@ export function repeatNClone_clone(repeatN, AClone) {
 }
 
 export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
+  const f = $sink();
   let tmp;
   let tmp$1;
   if (repeatN.inner == null) {
@@ -9165,16 +9337,22 @@ export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
   }
   const count = tmp;
   const element = tmp$1;
-  return options?.alternate
-    ? $pretty(
-        "RepeatN {",
-        [
-          `count: ${$formatted(String(count), options, true)}`,
-          `element: ${element == null ? "None" : options?.alternate ? $pretty("Some(", [ADebug.fmt($someValue(element), options)], ")") : `Some(${ADebug.fmt($someValue(element), options)})`}`,
-        ],
-        "}",
-      )
-    : `RepeatN { count: ${$formatted(String(count), options, true)}, element: ${element == null ? "None" : options?.alternate ? $pretty("Some(", [ADebug.fmt($someValue(element), options)], ")") : `Some(${ADebug.fmt($someValue(element), options)})`} }`;
+  const struct = $debugStruct(f, "RepeatN", options?.alternate);
+  struct.fieldWith("count", count, (f, value) => {
+    $writeInteger(f, value, options);
+  });
+  struct.fieldWith("element", element, (f, value) => {
+    $writeDebugOption(
+      f,
+      value,
+      (f, value) => {
+        $writeBy(f, ADebug, $someValue(value), options);
+      },
+      options?.alternate,
+    );
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function cycleIterator_next(cycle, IClone, IIterator = { next: $next }, dropI, dropIItem) {
@@ -9473,11 +9651,29 @@ export function cycleClone_clone(cycle, IClone, dropI) {
 }
 
 export function cycleDebug_fmt(cycle, options, IDebug) {
-  const shown = IDebug.fmt(cycle.orig, options);
-  const shown$1 = IDebug.fmt(cycle.iter, options);
-  return options?.alternate
-    ? $pretty("Cycle {", [`orig: ${shown}`, `iter: ${shown$1}`], "}")
-    : `Cycle { orig: ${shown}, iter: ${shown$1} }`;
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Cycle",
+    [
+      [
+        "orig",
+        cycle.orig,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+      [
+        "iter",
+        cycle.iter,
+        (f, value) => {
+          $writeBy(f, IDebug, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
 }
 
 export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
@@ -14855,6 +15051,8 @@ export function peekableClone(IClone, IIterator, IItemClone, dropI, dropIItem) {
 export function peekableDebug(IDebug, IItemDebug) {
   return $traitImpl($peekableDebug, [IDebug, IItemDebug], () => ({
     fmt: (arg0, arg1) => peekableDebug_fmt(arg0, arg1, IDebug, IItemDebug),
+    fmtInto: (f, value, options) =>
+      $writingInto(f, peekableDebug_fmt, value, options, IDebug, IItemDebug),
   }));
 }
 
@@ -14867,6 +15065,7 @@ export function fuseClone(IClone) {
 export function fuseDebug(IDebug) {
   return $traitImpl($fuseDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => fuseDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, fuseDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -14877,6 +15076,7 @@ export function revClone(TClone) {
 export function revDebug(TDebug) {
   return $traitImpl($revDebug, [TDebug], () => ({
     fmt: (arg0, arg1) => revDebug_fmt(arg0, arg1, TDebug),
+    fmtInto: (f, value, options) => $writingInto(f, revDebug_fmt, value, options, TDebug),
   }));
 }
 
@@ -14894,6 +15094,7 @@ export function enumerateClone(IClone, dropI) {
 export function enumerateDebug(IDebug) {
   return $traitImpl($enumerateDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => enumerateDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, enumerateDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -14915,6 +15116,9 @@ export function mapDebug(IDebug, dropI, dropF) {
     },
     $drop(map) {
       map.return();
+    },
+    fmtInto(f, value, options) {
+      return $writingInto(f, mapDebug_fmt, value, options, IDebug, dropI, dropF);
     },
   }));
 }
@@ -14938,6 +15142,9 @@ export function filterDebug(IDebug, dropI, dropP) {
     $drop(filter) {
       filter.return();
     },
+    fmtInto(f, value, options) {
+      return $writingInto(f, filterDebug_fmt, value, options, IDebug, dropI, dropP);
+    },
   }));
 }
 
@@ -14950,6 +15157,7 @@ export function copiedClone(IClone) {
 export function copiedDebug(IDebug) {
   return $traitImpl($copiedDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => copiedDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, copiedDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -14962,6 +15170,7 @@ export function clonedClone(IClone) {
 export function clonedDebug(IDebug) {
   return $traitImpl($clonedDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => clonedDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, clonedDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -14983,6 +15192,9 @@ export function filterMapDebug(IDebug, dropI, dropF) {
     },
     $drop(filterMap) {
       filterMap.return();
+    },
+    fmtInto(f, value, options) {
+      return $writingInto(f, filterMapDebug_fmt, value, options, IDebug, dropI, dropF);
     },
   }));
 }
@@ -15006,6 +15218,9 @@ export function takeWhileDebug(IDebug, dropI, dropP) {
     $drop(takeWhile) {
       takeWhile.return();
     },
+    fmtInto(f, value, options) {
+      return $writingInto(f, takeWhileDebug_fmt, value, options, IDebug, dropI, dropP);
+    },
   }));
 }
 
@@ -15027,6 +15242,9 @@ export function skipWhileDebug(IDebug, dropI, dropP) {
     },
     $drop(skipWhile) {
       skipWhile.return();
+    },
+    fmtInto(f, value, options) {
+      return $writingInto(f, skipWhileDebug_fmt, value, options, IDebug, dropI, dropP);
     },
   }));
 }
@@ -15050,6 +15268,9 @@ export function mapWhileDebug(IDebug, dropI, dropP) {
     $drop(mapWhile) {
       mapWhile.return();
     },
+    fmtInto(f, value, options) {
+      return $writingInto(f, mapWhileDebug_fmt, value, options, IDebug, dropI, dropP);
+    },
   }));
 }
 
@@ -15071,6 +15292,9 @@ export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
     },
     $drop(scan) {
       scan.return();
+    },
+    fmtInto(f, value, options) {
+      return $writingInto(f, scanDebug_fmt, value, options, IDebug, StDebug, dropI, dropSt, dropF);
     },
   }));
 }
@@ -15094,6 +15318,9 @@ export function inspectDebug(IDebug, dropI, dropF) {
     $drop(inspect) {
       inspect.return();
     },
+    fmtInto(f, value, options) {
+      return $writingInto(f, inspectDebug_fmt, value, options, IDebug, dropI, dropF);
+    },
   }));
 }
 
@@ -15111,6 +15338,7 @@ export function skipClone(IClone, dropI) {
 export function skipDebug(IDebug) {
   return $traitImpl($skipDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => skipDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, skipDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -15128,6 +15356,7 @@ export function takeClone(IClone, dropI) {
 export function takeIDebug(IDebug) {
   return $traitImpl($takeIDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => takeIDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, takeIDebug_fmt, value, options, IDebug),
   }));
 }
 
@@ -15156,6 +15385,8 @@ export function chainClone(AClone, BClone, dropA, dropB) {
 export function chainABDebug(ADebug, BDebug) {
   return $traitImpl($chainABDebug, [ADebug, BDebug], () => ({
     fmt: (arg0, arg1) => chainABDebug_fmt(arg0, arg1, ADebug, BDebug),
+    fmtInto: (f, value, options) =>
+      $writingInto(f, chainABDebug_fmt, value, options, ADebug, BDebug),
   }));
 }
 
@@ -15184,6 +15415,9 @@ export function repeatNDebug(ADebug, dropA) {
     $drop(repeatN) {
       repeatN.return();
     },
+    fmtInto(f, value, options) {
+      return $writingInto(f, repeatNDebug_fmt, value, options, ADebug, dropA);
+    },
   }));
 }
 
@@ -15201,6 +15435,7 @@ export function cycleClone(IClone, dropI) {
 export function cycleDebug(IDebug) {
   return $traitImpl($cycleDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => cycleDebug_fmt(arg0, arg1, IDebug),
+    fmtInto: (f, value, options) => $writingInto(f, cycleDebug_fmt, value, options, IDebug),
   }));
 }
 //# sourceMappingURL=iter.js.map

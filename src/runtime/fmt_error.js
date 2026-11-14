@@ -14,9 +14,18 @@ class $FmtError extends $WriteError {
 function $fmtError() {
   throw new $FmtError();
 }
-// What `f` had written before `error` came out of what it called.
+// What `f` had written before `error` came out of what it called. Of a
+// panic part-way through a line, each line that text ended, what it printed
+// as it formatted, written already, as Rust's stdout writes a line at its
+// newline; the rest of the line is lost as the program ends (#1761, the
+// guide's difference 57).
 function $fmtWritten(error, f) {
   if (error instanceof $FmtError) error.written = f + error.written;
+  else if ($printFrames.at(-1) === $out && f !== "") {
+    $captures.push({ text: f });
+    $flushAhead();
+    $captures.pop();
+  }
   return error;
 }
 // A write's result as a value: what `write` returns, `undefined`, or its error.

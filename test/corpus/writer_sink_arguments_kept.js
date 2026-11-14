@@ -9,6 +9,7 @@ import {
   $fmtWritten,
   $print,
   $sink,
+  $writeBy,
   $writeExpect,
   $writeInteger,
   $writePadded,
@@ -319,7 +320,7 @@ function logged(value, TDisplay) {
   const log = [[]];
   const result = $writeTry(() => {
     const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
-    TDisplay.fmtInto(f, value);
+    $writeBy(f, TDisplay, value);
   });
   $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   return `[${log[0].map((item) => $debugStr(item)).join(", ")}]`;
@@ -329,7 +330,7 @@ function failing(value, at, TDisplay) {
   const w = [0, at, ""];
   const r = $writeTry(() => {
     const f = $writerSink(w, failingWrite_writeStr, failingWrite_writeStr);
-    TDisplay.fmtInto(f, value);
+    $writeBy(f, TDisplay, value);
   });
   return `${r === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(w[2])}`;
 }

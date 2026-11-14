@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "line-left-unended-lost",
     breaks: "what's left unended of a line, a `print!`'s or a panic's part-way, is never written (#1490)",
     file: "src/runtime/print.js",
-    find: "      $print(rest);\n    }\n  }\n}\n// What a writer that may print",
-    replace: "    }\n  }\n}\n// What a writer that may print",
+    find: "      $print(rest);\n    }\n    // What was written ahead",
+    replace: "    }\n    // What was written ahead",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
   {
@@ -177,5 +177,21 @@ export const mutations: Mutation[] = [
     find: "    $writerArmed = undefined;\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
+  },
+  {
+    name: "sink-armed-by-another-always-armed",
+    breaks: "a sink armed with a text sink's is taken as a writer's, so a plain `{:?}` of an adapter of a dictionary without `fmtInto` throws (#1712)",
+    file: "src/runtime/print.js",
+    find: "    return $sinkOf(into.write, () => \"\", into.writeChar, into.armed);\n",
+    replace: "    return $sinkOf(into.write, () => \"\", into.writeChar, true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
+  },
+  {
+    name: "line-ahead-kept-past-a-panic",
+    breaks: "what was written ahead of a line a panic stopped is kept, so a print after the panic is \"written ahead of other text\" (#1761)",
+    file: "src/runtime/print.js",
+    find: "    if ($printFrames.length === 0) $lineAhead = \"\";\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(writer_prints_a_line_then_panics)\\.rs$"],
   },
 ];

@@ -1121,23 +1121,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // a piece at a time, whose `format_args!` show what a writer shows
     // (#1652, step 6).
     let written_arguments = written_params::written_arguments(&recognition, all_bodies);
-    // Each instance of a generic formatting impl the crate asks for, whose
-    // writer, where framed, writes what it's given so (#1738).
-    let fmt_impls_asked = written_params::fmt_impls_asked(&recognition, all_bodies);
     let prints = prints::prints(
         &recognition,
         all_bodies,
         &may_run,
         (&never_but_through_whats_shown, &failing),
-        (library, &written_arguments, &fmt_impls_asked),
+        (library, &written_arguments),
     );
-    let mut written_params = written_params::written_params(
-        &recognition,
-        all_bodies,
-        &prints,
-        &foreign,
-        (written_arguments, &fmt_impls_asked),
-    );
+    let mut written_params =
+        written_params::written_params(&recognition, all_bodies, &prints, &foreign, written_arguments);
     written_params.arguments.arms = written_params::arms_sinks(
         &recognition,
         all_bodies,

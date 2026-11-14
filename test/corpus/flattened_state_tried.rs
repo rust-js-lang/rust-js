@@ -1,4 +1,3 @@
-//@ library-differs
 // A class's flattened state's `try_borrow` and `try_borrow_mut`, each held
 // only while no other borrow can meet it: `Ok` of its guard, the handle on
 // the class's keys, as no other borrow can be held (#687, ADR 1044); read,

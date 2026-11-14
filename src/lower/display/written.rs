@@ -178,6 +178,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mut values: Vec<Expr>,
         span: Span,
     ) -> R<Vec<Expr>> {
+        // Each in generic code's form where its caller's differs, a `&mut
+        // Point`'s box `$cellOf(p)`, as a call of it gives it (#1187, #1759).
+        let declared = (self.tcx.fn_sig(def_id).instantiate_identity())
+            .skip_normalization()
+            .skip_binder();
+        let formatter = self.recognition().formatter_param(def_id);
+        let inputs: Vec<crate::lower::generic_facts::Crossing<'tcx>> = (declared.inputs().iter().enumerate())
+            .filter(|&(at, _)| Some(at) != formatter)
+            .map(|(_, &input)| (def_id, input, self.instantiated(input, generic_args)))
+            .collect();
+        for (value, &given) in values.iter_mut().zip(&inputs) {
+            if let Some(form) = self.form_of(given) {
+                *value = self.form_given(form, given, value.clone(), span)?;
+            }
+        }
         values.extend(self.given_to_writer(Some(def_id)));
         values.extend(self.evidence_args(def_id, generic_args, span)?);
         Ok(values)

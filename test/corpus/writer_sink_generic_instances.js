@@ -6,12 +6,10 @@ import {
   $displayF64,
   $sink,
   $traitImpl,
-  $writeCharOf,
-  $writeDebugStr,
+  $writeBy,
   $writeDebugStruct,
   $writeFloat,
   $writeInteger,
-  $writePadded,
   $writerSink,
   $writerWriteFmt,
   $writingInto,
@@ -43,23 +41,14 @@ export function wrapDisplay(TDisplay) {
 function wrapDisplay_fmt(wrap, TDisplay) {
   const f = $sink();
   f.write("<");
-  TDisplay.fmtInto(f, wrap[0]);
+  $writeBy(f, TDisplay, wrap[0]);
   f.write(">");
   return f.done();
 }
 
-export const pointDisplay = {
-  fmt: pointDisplay_fmt,
-  fmtInto: (f, value) => $writingInto(f, pointDisplay_fmt, value),
-};
+export const pointDisplay = { fmt: pointDisplay_fmt };
 function pointDisplay_fmt(point) {
-  const f = $sink();
-  f.write("(");
-  $writeInteger(f, point[0]);
-  f.write(", ");
-  $writeInteger(f, point[1]);
-  f.write(")");
-  return f.done();
+  return `(${point[0]}, ${point[1]})`;
 }
 
 function pairDebug_fmt(pair, TDebug) {
@@ -72,14 +61,14 @@ function pairDebug_fmt(pair, TDebug) {
         "left",
         pair.left,
         (f, value) => {
-          TDebug.fmtInto(f, value);
+          $writeBy(f, TDebug, value);
         },
       ],
       [
         "right",
         pair.right,
         (f, value) => {
-          TDebug.fmtInto(f, value);
+          $writeBy(f, TDebug, value);
         },
       ],
     ],
@@ -97,7 +86,7 @@ function boxed(t, TDisplay) {
 }
 
 function main() {
-  const display = { fmt: (value) => value, fmtInto: $writePadded };
+  const display = { fmt: (value) => value };
   const log = [[]];
   const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   f.write("[");
@@ -127,44 +116,16 @@ function main() {
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
   console.log(`${wrapDisplay_fmt(["s"], display)}`);
   console.log(`${wrapDisplay_fmt([[1, 2]], pointDisplay)}`);
-  console.log(`${wrapped("c", { fmt: (value) => value, fmtInto: $writeCharOf })}`);
+  console.log(`${wrapped("c", display)}`);
   console.log(`${wrapped([3, 4], pointDisplay)}`);
-  const shown = {
-    value: [true],
-    impl: wrapDisplay({
-      fmt: String,
-      fmtInto(f, value, options) {
-        $writePadded(f, value ? "true" : "false", options);
-      },
-    }),
-  };
+  const shown = { value: [true], impl: wrapDisplay({ fmt: String }) };
   console.log(`${shown.impl.fmt(shown.value)}`);
-  const lent = {
-    value: [0.25],
-    impl: wrapDisplay({
-      fmt: $displayF32,
-      fmtInto(f, value, options) {
-        $writeFloat(f, value, "D", true, options);
-      },
-    }),
-  };
+  const lent = { value: [0.25], impl: wrapDisplay({ fmt: $displayF32 }) };
   console.log(`${lent.impl.fmt(lent.value)}`);
-  const made = boxed(-7n, { fmt: String, fmtInto: $writeInteger });
+  const made = boxed(-7n, { fmt: String });
   console.log(`${made.impl.fmt(made.value)}`);
   console.log(`${wrapDisplay_fmt([5], { fmt: String, fmtInto: $writeInteger })}`);
   console.log(`${wrapDisplay_fmt([["in"]], wrapDisplay(display))}`);
-  console.log(
-    `${pairDebug_fmt(
-      { left: "a", right: "b" },
-      {
-        fmt(value) {
-          return $debugStr(value);
-        },
-        fmtInto(f, value, options) {
-          $writeDebugStr(f, value);
-        },
-      },
-    )}`,
-  );
+  console.log(`${pairDebug_fmt({ left: "a", right: "b" }, { fmt: (value) => $debugStr(value) })}`);
 }
 //# sourceMappingURL=case.js.map

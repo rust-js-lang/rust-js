@@ -104,8 +104,11 @@ use std::path::Path;
 /// into a writer is written a piece at a time, the one way: a library's
 /// published types, its writer functions, and the `fmt::Arguments` it
 /// keeps or returns are written so, which a consumer arms (#1652, ADR
-/// 1135's switch-over).
-pub const VERSION: u32 = 37;
+/// 1135's switch-over). 38: a library's generic types are published too,
+/// and `@rust-js/std`'s compiled std types, listed in `written_into`; each
+/// writer writes a parameter by `$writeBy`, its dictionary's `fmtInto`
+/// where it has one, else its text where no writer armed the sink (#1712).
+pub const VERSION: u32 = 38;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

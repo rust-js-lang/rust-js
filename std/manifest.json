@@ -6,7 +6,7 @@
     "abi": 1
   },
   "library": {
-    "version": 37,
+    "version": 38,
     "name": "rust_js_std",
     "crate_id": "ca591bd2b3d92476",
     "crate_hash": "5ca403e745b9e31c",
@@ -268,7 +268,15 @@
           "io"
         ],
         "export": "cursorDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::chain::{impl#6}",
@@ -336,7 +344,21 @@
           "iter"
         ],
         "export": "chainABDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::chain::{impl#2}::next_back",
@@ -874,7 +896,15 @@
           "iter"
         ],
         "export": "clonedDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::cloned::{impl#2}::next_back",
@@ -1231,7 +1261,15 @@
           "iter"
         ],
         "export": "copiedDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::copied::{impl#2}::advance_back_by",
@@ -1712,7 +1750,15 @@
           "iter"
         ],
         "export": "cycleDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::cycle::{impl#1}::advance_by",
@@ -1892,7 +1938,15 @@
           "iter"
         ],
         "export": "enumerateDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::enumerate::{impl#2}::next_back",
@@ -2384,7 +2438,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -2799,7 +2854,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -4202,7 +4258,15 @@
           "iter"
         ],
         "export": "fuseDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::fuse::{impl#4}::next_back",
@@ -5177,7 +5241,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -5591,7 +5656,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -6091,7 +6157,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -6354,7 +6421,15 @@
           "iter"
         ],
         "export": "peekableDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::peekable::{impl#2}::next_back",
@@ -6715,7 +6790,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           }
         ]
@@ -7386,7 +7462,15 @@
           "iter"
         ],
         "export": "revDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::scan::{impl#5}",
@@ -7493,13 +7577,15 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
             "index": 1,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -7768,7 +7854,15 @@
           "iter"
         ],
         "export": "skipDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::skip::{impl#3}::next_back",
@@ -8257,7 +8351,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -9118,7 +9213,15 @@
           "iter"
         ],
         "export": "takeIDebug_fmt",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
       },
       {
         "key": "core::iter::adapters::take::{impl#4}::next_back",
@@ -9740,7 +9843,8 @@
           {
             "index": 0,
             "marks": [
-              "drop"
+              "drop",
+              "written_into"
             ]
           },
           {
@@ -15355,6 +15459,28 @@
     "makes_dropping_errors": false,
     "makes_dropping_fn_dyns": false,
     "drops_any": false,
+    "written_into": [
+      "core::io::cursor::Cursor",
+      "core::iter::adapters::chain::Chain",
+      "core::iter::adapters::cloned::Cloned",
+      "core::iter::adapters::copied::Copied",
+      "core::iter::adapters::cycle::Cycle",
+      "core::iter::adapters::enumerate::Enumerate",
+      "core::iter::adapters::filter::Filter",
+      "core::iter::adapters::filter_map::FilterMap",
+      "core::iter::adapters::fuse::Fuse",
+      "core::iter::adapters::inspect::Inspect",
+      "core::iter::adapters::map::Map",
+      "core::iter::adapters::map_while::MapWhile",
+      "core::iter::adapters::peekable::Peekable",
+      "core::iter::adapters::rev::Rev",
+      "core::iter::adapters::scan::Scan",
+      "core::iter::adapters::skip::Skip",
+      "core::iter::adapters::skip_while::SkipWhile",
+      "core::iter::adapters::take::Take",
+      "core::iter::adapters::take_while::TakeWhile",
+      "core::iter::sources::repeat_n::RepeatN"
+    ],
     "modules": [
       {
         "key": "ca591bd2b3d92476ca591bd2b3d92476",
@@ -15859,8 +15985,8 @@
       ],
       "links": [
         {
-          "start": 718,
-          "end": 730,
+          "start": 821,
+          "end": 833,
           "file": "runtime.js"
         }
       ],
@@ -15922,8 +16048,8 @@
       ],
       "links": [
         {
-          "start": 357,
-          "end": 369,
+          "start": 407,
+          "end": 419,
           "file": "runtime.js"
         }
       ],
@@ -16029,7 +16155,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "07a63e6324e40238"
+      "hash": "15b465e459bb9d81"
     },
     {
       "file": "iter.js.map",
@@ -16037,7 +16163,7 @@
     },
     {
       "file": "io.js",
-      "hash": "706c5b9f9231c529"
+      "hash": "e5690e7c4a60bdc4"
     },
     {
       "file": "io.js.map",

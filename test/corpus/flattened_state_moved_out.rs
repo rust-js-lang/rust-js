@@ -1,4 +1,3 @@
-//@ library-differs
 // What's moved out of a class's flattened state whole, `mem::replace`,
 // `mem::take`, `mem::swap` and `Cell::from_mut(..).replace`: a copy of its
 // variant's keys, apart from the class's object, which the write then

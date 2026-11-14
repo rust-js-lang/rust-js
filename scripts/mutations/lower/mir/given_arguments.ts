@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/given_arguments.rs",
     find: "            || resolves_to_own(&self.recognition(), callee, generic_args)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$|^own_write_fmt_given_a_held_arguments.rs$"],
   },
   {
     name: "given-to-a-writer-failing-text-lost",

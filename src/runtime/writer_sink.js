@@ -7,7 +7,19 @@ function $writerSink(w, writeStr, writeChar) {
   return {
     write: (s) => writeStr(w, s),
     writeChar: (c) => writeChar(w, c),
+    armed: true,
   };
+}
+// A value only its formatting dictionary knows, a `T`'s or a `dyn`'s,
+// written into the sink `f` (#1712): `fmtInto`'s pieces where the dictionary
+// carries it, as std's `fmt` writes them, each a call of an armed sink's
+// writer, a print it makes landing between them; else, of an unarmed sink,
+// which is making text where no split can be seen, `fmt`'s text whole. An
+// armed sink given a dictionary with no `fmtInto` is rust-js's bug, thrown.
+function $writeBy(f, dictionary, value, options) {
+  if (dictionary.fmtInto !== undefined) return dictionary.fmtInto(f, value, options);
+  if (!f.armed) return f.write(dictionary.fmt(value, options));
+  throw new Error("rust-js: a value written into a writer by a dictionary with no `fmtInto`, a bug of rust-js's: please file it");
 }
 // std's `write_fmt` of a writer whose `write_fmt` is std's, its
 // dictionary's `writeFmt` (#1652, step 6 of ADR 1135): `fmt::write` of
@@ -85,6 +97,12 @@ function $writeDebugInteger(f, n, lower, upper, options = {}) {
 function $writeCharOf(f, c, options = {}) {
   if (options.width === undefined && options.precision === undefined) return f.writeChar(c);
   return $writePadded(f, c, options);
+}
+// A `char`'s case mapping's `Display` into a writer, `c.to_lowercase()`'s
+// text, as core's `CaseMappingIter` writes it: each `char` a `write_char`,
+// its options unread.
+function $writeChars(f, s) {
+  for (const c of s) f.writeChar(c);
 }
 // A writer of the crate's own shown into a writer, `f`, a piece at a time
 // (#1652, ADR 1135): `writer` called with `args`, the sink armed for it.

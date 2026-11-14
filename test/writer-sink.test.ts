@@ -345,7 +345,8 @@ test("a library's generic writer, and a library's type written through generic c
 // private type whose `Debug` nothing shows.
 test("a library's published type is written into a consumer's writer a piece at a time", () => {
   const out = piecewiseChain(piecewisePairs, "librarys_published_type_through_generic_code");
-  expect(contract(out).written_into.length).toBe(7);
+  // Not `Bytes`, the private type `Der` holds, which nothing writes.
+  expect(contract(out).written_into.length).toBe(6);
 }, underLoad(300_000));
 
 // A library's writer function, which no writer of its own calls, is
@@ -366,6 +367,30 @@ test("a consumer's Arguments given a library's trait's method through a dyn writ
 test("a consumer's closure and fn pointer a library's writer calls write a piece at a time", () => {
   piecewiseChain(piecewisePairs, "consumers_closure_called_by_a_librarys_writer");
 }, underLoad(300_000));
+
+// `$writeBy` (#1712): a dictionary's `fmtInto` where it carries one, each
+// piece a call of the writer's; else, into a sink no writer armed, `fmt`'s
+// text; else, into an armed sink, a `PadAdapter`'s over one too, a thrown
+// rust-js error, never the text whole.
+test("$writeBy writes by fmtInto, else its text where nothing's armed, else throws", async () => {
+  const std: Record<string, any> = await import(helpersModule);
+  const log: string[] = [];
+  const f = std.$writerSink(log, (w: string[], s: string) => w.push(`s${s}`), (w: string[], c: string) => w.push(`c${c}`));
+  const plain = { fmt: (x: number) => `<${x}>` };
+  expect(() => std.$writeBy(f, plain, 1)).toThrow("a bug of rust-js's");
+  expect(() => std.$writeBy(std.$padAdapter(f), plain, 1)).toThrow("a bug of rust-js's");
+  std.$writingInto(f, () => {
+    const armed = std.$sink();
+    expect(() => std.$writeBy(armed, plain, 1)).toThrow("a bug of rust-js's");
+    return armed.done();
+  });
+  const text = std.$sink();
+  std.$writeBy(text, plain, 2);
+  expect(text.done()).toBe("<2>");
+  const pieces = { fmt: plain.fmt, fmtInto: (g: any, x: number) => [g.write("a"), g.write(String(x))] };
+  std.$writeBy(f, pieces, 3);
+  expect(log).toEqual(["sa", "s3"]);
+});
 
 test("a writer armed that gives back its text, a writer it called claiming the sink, is an error, not that text", async () => {
   const std: Record<string, any> = await import(helpersModule);
@@ -419,15 +444,37 @@ test("a library's dyn Debug written into a writer is refused", () => {
   expect(native).toBe('["Some", "(", "7", ")"]\n');
 }, underLoad(300_000));
 
-// A library's generic type isn't published yet (#1712): written into a
-// writer through generic code, it's refused, naming #1688, as its
-// dictionary carries no `fmtInto`.
-test("a library's generic type written through generic code is refused, naming #1688", () => {
-  const native = piecewiseChain(piecewisePairs, "generic_librarys_type_through_generic_code", [
-    "writing a `dep::Wrap<i32>` into a writer of the crate's own or a generic one through generic code",
+// A library makes a `dyn` by a coercion or std's conversion, `?`'s
+// `From<E> for Box<dyn Error>`, never by passing one on, either's
+// `self.0.source()` (`makes_fmt_dyns`, #1712): a consumer's `dyn` written
+// beside the second is written a piece at a time; one of the first's,
+// refused, naming #1688.
+test("a library that passes a dyn on makes none; one whose ? converts into one does", () => {
+  const out = piecewiseChain(piecewisePairs, "dyn_passed_on_by_a_library");
+  expect(contract(out).makes_fmt_dyns ?? false).toBe(false);
+  const native = piecewiseChain(piecewisePairs, "dyn_made_by_a_librarys_conversion", [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
     "#1688",
   ]);
-  expect(native).toBe('["[", "<", "3", ">", "]"]\n');
+  expect(native).toBe('["[", "bad ", "12", "]"]\n');
+}, underLoad(300_000));
+
+// A library frames each writer function another crate can reach, as a
+// consumer may name one a `fn` pointer its framed writer calls (#1760).
+test("a library's writer function a consumer names a fn pointer writes a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "librarys_writer_function_named_a_fn_pointer");
+  expect(contract(out).framed_writers.length).toBe(2);
+}, underLoad(300_000));
+
+// A library's generic types are published (#1712): an `Either`, a list of
+// a constant capacity, thiserror's `Var` and a derived `Debug`, written
+// into a consumer's writer and formatted plainly, of std values, the
+// consumer's own types and one nested in another. Each writer writes its
+// parameters by `$writeBy`, so a consumer's dictionaries carry `fmtInto`
+// only where it writes the type into a writer.
+test("a library's generic types are written into a consumer's writer a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "librarys_generic_types_written_and_formatted");
+  expect(contract(out).written_into.length).toBe(4);
 }, underLoad(300_000));
 
 // A library's types it gives out as an `impl Display`, one through a

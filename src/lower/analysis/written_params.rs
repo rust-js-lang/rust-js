@@ -40,10 +40,18 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     /// The types given such a parameter, or held by what is
     /// (`given_adt`).
     given_adts: IndexSet<DefId>,
+    /// Of a library, its types `prints` published, which its contract
+    /// lists, std's of `@rust-js/std`'s build too.
+    published: IndexSet<DefId>,
     /// Whether a `dyn` of a formatting trait is written so, by the crate
     /// or a library it gives one to: every impl of the crate's own carries
     /// `fmtInto`.
     pub(in crate::lower) dyn_written: bool,
+    /// Of a `dyn` written so, the traits it may be of, each with its
+    /// supertraits, `dyn Display`'s `Display`; where any may, none here and
+    /// `dyn_any` (a library's given one, or a `dyn Any`).
+    dyn_traits: IndexSet<DefId>,
+    dyn_any: bool,
     /// Whether the crate makes a `dyn Display` or a `dyn Error`, a pair of
     /// a value and its dictionary, which a library's contract says
     /// (`Library::makes_fmt_dyns`).
@@ -64,16 +72,22 @@ impl<'tcx> WrittenParams<'tcx> {
     /// Does the dictionary of an impl for `adt`, one of the crate's types,
     /// carry `fmtInto`, as one of its instances reaches such a parameter,
     /// or as a `dyn` is written so?
-    pub(in crate::lower) fn of_adt(&self, adt: DefId) -> bool {
-        self.dyn_written || self.adts.contains(&adt)
+    pub(in crate::lower) fn of_adt(&self, adt: DefId, tr: DefId) -> bool {
+        self.of_dyn(tr) || self.adts.contains(&adt)
+    }
+
+    /// May a `dyn` written so be an impl of `tr`: one of `tr`'s, or of a
+    /// trait it's a supertrait of, `dyn Error`'s `Debug` (#1712)?
+    fn of_dyn(&self, tr: DefId) -> bool {
+        self.dyn_any || self.dyn_traits.contains(&tr)
     }
 
     /// Is `adt` given such a parameter itself, or held by what is, `Vec<T>`'s
     /// `T`, or a `dyn` written so: not reached only as a field of the crate's
     /// type, whose writer writes it so only where framing frames its writer
     /// too, `Der`'s private `BytesInner`, which its own `Debug` never shows.
-    pub(in crate::lower) fn given_adt(&self, adt: DefId) -> bool {
-        self.dyn_written || self.given_adts.contains(&adt)
+    pub(in crate::lower) fn given_adt(&self, adt: DefId, tr: DefId) -> bool {
+        self.of_dyn(tr) || self.given_adts.contains(&adt)
     }
 
     /// The crate's types whose impls' dictionaries carry `fmtInto`, which a
@@ -92,7 +106,11 @@ impl<'tcx> WrittenParams<'tcx> {
                 })
                 .map(|id| id.to_def_id())
                 .collect(),
-            false => self.adts.iter().copied().filter(|did| did.is_local()).collect(),
+            // And of `@rust-js/std`'s build, the std types it compiles a
+            // writer of, which `prints` published (#1712).
+            false => (self.adts.iter().copied())
+                .filter(|&did| did.is_local() || self.published.contains(&did))
+                .collect(),
         }
     }
 
@@ -105,6 +123,12 @@ impl<'tcx> WrittenParams<'tcx> {
     /// each type `ty` is made of, reach it.
     fn give(&mut self, tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> bool {
         let mut changed = false;
+        // An `impl Display` a library gives out, as the type it hides, a
+        // `Wrap<char>`, whose `char`'s dictionary its writer is given (#1743).
+        let revealed = crate::lower::mir::revealed(tcx, ty);
+        if revealed != ty {
+            changed |= self.give(tcx, owner, revealed);
+        }
         let given = (ty.walk().filter_map(|part| part.as_type())).filter_map(|part| part.ty_adt_def());
         self.given_adts.extend(given.map(|adt| adt.did()));
         let identity = ty::GenericArgs::identity_for_item(tcx, owner);
@@ -151,7 +175,7 @@ pub(super) fn written_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     prints: &Prints,
     foreign: &Foreign<'_, 'tcx>,
-    (arguments, asked): (WrittenArguments, &[Asked<'tcx>]),
+    arguments: WrittenArguments,
 ) -> WrittenParams<'tcx> {
     let tcx = recognition.tcx;
     let mut found = WrittenParams {
@@ -161,6 +185,7 @@ pub(super) fn written_params<'tcx>(
     // Of a library, its types a consumer may write into a writer, which
     // `prints` framed: their dictionaries carry `fmtInto`.
     found.adts.extend(prints.published.iter().copied());
+    found.published.extend(prints.published.iter().copied());
     let is_dyn = |ty: Ty<'tcx>| {
         ty.walk()
             .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(..))))
@@ -181,10 +206,30 @@ pub(super) fn written_params<'tcx>(
             tcx.def_kind(imp) == rustc_hir::def::DefKind::Impl { of_trait: true } && tcx.is_automatically_derived(imp)
         })
     };
+    // What makes a pair `dyn`: a coercion of what isn't one, `Box::new(e)`
+    // as a `Box<dyn Error>`, or std's conversion into one, `?`'s
+    // `from_residual` or a `From<E> for Box<dyn Error>`; not one passed on,
+    // either's `inner.source()`, which what made it made (#1712).
+    let makes = |body: &Body<'tcx>, expr: &rustc_middle::thir::Expr<'tcx>| match expr.kind {
+        ExprKind::PointerCoercion {
+            cast: PointerCoercion::Unsize,
+            source,
+            ..
+        } => fmt_dyn(expr.ty) && !fmt_dyn(body.thir[source].ty),
+        ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty).is_some_and(|(callee, args)| {
+            let converts = tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+                || tcx.trait_of_assoc(callee).is_some_and(|tr| {
+                    use crate::lower::recognition::{StdItem, is_std_def};
+                    is_std_def(tcx, tr, StdItem::From) || is_std_def(tcx, tr, StdItem::Into)
+                });
+            converts && args.types().any(fmt_dyn)
+        }),
+        _ => false,
+    };
     found.makes_dyns = all_bodies
         .iter()
         .filter(|body| !derived(body))
-        .any(|body| body.thir.exprs.iter().any(|expr| fmt_dyn(expr.ty)));
+        .any(|body| body.thir.exprs.iter().any(|expr| makes(body, expr)));
     // Of each body, what it writes into a writer: a `write!` into one's
     // values, and a writer's shown into one, what it shows; and where a
     // `dyn` is among them, where.
@@ -210,6 +255,16 @@ pub(super) fn written_params<'tcx>(
         for ty in written {
             if is_dyn(ty) {
                 dyns_written.push(writes_into.map_or_else(|| tcx.def_span(body.def_id), |expr| expr.span));
+                for part in ty.walk().filter_map(|part| part.as_type()) {
+                    if let ty::Dynamic(traits, ..) = part.kind() {
+                        match traits.principal_def_id() {
+                            Some(principal) => found
+                                .dyn_traits
+                                .extend(ty::elaborate::supertrait_def_ids(tcx, principal)),
+                            None => found.dyn_any = true,
+                        }
+                    }
+                }
             }
             found.give(tcx, owner, ty);
         }
@@ -222,6 +277,7 @@ pub(super) fn written_params<'tcx>(
     // Where a `dyn` is written so, here or by a library given one, each
     // value the crate makes a `dyn` of: its pair's dictionary writes it.
     found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();
+    found.dyn_any |= foreign.writes_dyns_given();
     if found.dyn_written {
         for body in all_bodies {
             let owner = tcx.typeck_root_def_id(body.def_id);
@@ -268,128 +324,30 @@ pub(super) fn written_params<'tcx>(
                 }
             }
         }
-        // And what each instance of a formatting impl asked for gives the
-        // type parameters its writer writes so (#1738).
-        for asked in asked {
-            let Some(fmt) = impl_fmt(tcx, asked.imp) else { continue };
-            // Its `fmt`'s parameters are its impl's, by the same indexes.
-            let written: Vec<u32> = found.of_fn(fmt).collect();
-            for index in written {
-                if let Some(ty) = asked.args.get(index as usize).and_then(|arg| arg.as_type()) {
-                    changed |= found.give(tcx, tcx.typeck_root_def_id(asked.body), ty);
-                    given.insert((ty, asked.span));
-                }
-            }
-        }
         if !changed {
             break;
         }
     }
     for (ty, span) in given {
         refuse_lacked(tcx, foreign, ty, span);
+        refuse_arguments(tcx, ty, span);
     }
     found
 }
 
-/// An instance of a generic formatting impl a body asks for (#1738): by a
-/// type it gives a function, `Argument::new_display::<Wrap<String>>` of a
-/// `{}`, `to_string::<Wrap<u8>>`, `shown::<Wrap<T>>` of a bound, or by one
-/// it makes a `dyn` of. The impl's writer, framed where its type is written
-/// into a writer anywhere, writes its type parameters by the dictionaries
-/// this instance gives, `TDisplay.fmtInto(f, x, options)`, however it's
-/// called, so what it gives them reaches a parameter written so.
-pub(super) struct Asked<'tcx> {
-    /// The body that asks for it.
-    pub(super) body: DefId,
-    /// The impl, the crate's or a library's.
-    pub(super) imp: DefId,
-    /// The impl's arguments, of the instance asked for.
-    pub(super) args: ty::GenericArgsRef<'tcx>,
-    /// The type it's of, `Wrap<String>`.
-    pub(super) ty: Ty<'tcx>,
-    pub(super) span: Span,
-}
-
-/// Each instance of a generic formatting impl `all_bodies` ask for, by a
-/// type each gives a function or makes a `dyn` of, as trait selection,
-/// within the body, finds it (`Asked`): of the crate's own types, and of a
-/// library's whose contract lists them as written into a writer a piece at
-/// a time.
-pub(super) fn fmt_impls_asked<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
-) -> Vec<Asked<'tcx>> {
-    let tcx = recognition.tcx;
-    // Of each generic type, the formatting traits it has generic impls of.
-    let mut impls: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
-    let crates = std::iter::once(rustc_span::def_id::LOCAL_CRATE).chain(tcx.crates(()).iter().copied());
-    for imp in crates.flat_map(|krate| tcx.trait_impls_in_crate(krate).iter().copied()) {
-        let ty::Adt(adt, _) = *tcx.type_of(imp).skip_binder().kind() else {
-            continue;
-        };
-        if !(adt.did().is_local() || recognition.foreign.lists_fmt_into(adt.did()))
-            || !tcx.generics_of(imp).requires_monomorphization(tcx)
-        {
-            continue;
-        }
-        let tr = tcx.impl_trait_id(imp);
-        if crate::lower::recognition::is_fmt_trait(tcx, tr) {
-            impls.entry(adt.did()).or_default().insert(tr);
-        }
+/// Refuses `ty`, given at `span` to generic code that writes it into a
+/// writer through its dictionaries, if it holds an `fmt::Arguments`, which
+/// is the function that writes into the sink it claims only where a write
+/// of it is followed, or it's made a `dyn` (#1652, `given_to_a_write`).
+fn refuse_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, span: Span) {
+    use rustc_hir::attrs::lang_items::LangItem;
+    let arguments = (ty.walk().filter_map(|part| part.as_type()))
+        .any(|part| matches!(part.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments)));
+    if arguments {
+        let what = format!("an `fmt::Arguments` given to generic code that writes a `{ty}` into a writer");
+        let why = "std writes it a piece at a time, which isn't followed for one given so (#1745)";
+        crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
     }
-    let mut asked: Vec<Asked<'tcx>> = Vec::new();
-    if impls.is_empty() {
-        return asked;
-    }
-    let mut seen: IndexSet<(DefId, DefId, Ty<'tcx>)> = IndexSet::default();
-    for body in all_bodies {
-        let recognition = within(recognition, body.def_id);
-        let typing_env = recognition.typing_env;
-        let given = (crate::lower::instances::calls_of(body).into_iter())
-            .flat_map(|(_, args, span)| args.types().map(move |ty| (ty, span)))
-            .chain((body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
-                ExprKind::PointerCoercion {
-                    cast: PointerCoercion::Unsize,
-                    source,
-                    ..
-                } => Some((body.thir[source].ty, expr.span)),
-                _ => None,
-            }));
-        for (ty, span) in given {
-            for part in ty.walk().filter_map(|part| part.as_type()) {
-                let Some(of_adt) = part.ty_adt_def().and_then(|adt| impls.get(&adt.did())) else {
-                    continue;
-                };
-                let Ok(part) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(part)) else {
-                    continue;
-                };
-                for &tr in of_adt {
-                    if !seen.insert((body.def_id, tr, part)) {
-                        continue;
-                    }
-                    let tr = ty::TraitRef::new(tcx, tr, [part]);
-                    if let Ok(rustc_middle::traits::ImplSource::UserDefined(found)) =
-                        crate::lower::traits::select(tcx, typing_env, tr)
-                    {
-                        asked.push(Asked {
-                            body: body.def_id,
-                            imp: found.impl_def_id,
-                            args: found.args,
-                            ty: part,
-                            span,
-                        });
-                    }
-                }
-            }
-        }
-    }
-    asked
-}
-
-/// The `fmt` method of `imp`, a formatting impl.
-pub(super) fn impl_fmt(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
-    (tcx.associated_item_def_ids(imp).iter().copied())
-        .find(|&item| tcx.opt_item_name(item).is_some_and(|name| name.as_str() == "fmt"))
 }
 
 /// Refuses `ty`, given at `span` where it's written into a writer through
@@ -597,12 +555,17 @@ pub(in crate::lower) fn given_to_a_write<'tcx>(
                 {
                     holders.push(to);
                 }
-                // Kept: in a field, a capture, or what's returned.
+                // Kept: in a field, a capture, or what's returned; or made a
+                // `&dyn Display`, which a writer may be given, itertools'
+                // `format_with`'s `f(&format_args!(..))` (#1712).
                 if let StatementKind::Assign(assign) = &statement.kind
                     && match &assign.1 {
                         Rvalue::Aggregate(_, operands) => operands.iter().any(|operand| is_holder(operand, holder)),
                         Rvalue::Use(operand, _) => {
                             is_holder(operand, holder) && (assign.0.as_local()).is_none_or(|to| to == mir::RETURN_PLACE)
+                        }
+                        Rvalue::Cast(mir::CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, _) => {
+                            is_holder(operand, holder)
                         }
                         _ => false,
                     }

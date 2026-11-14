@@ -13338,6 +13338,9 @@ export function $printing(write) {
       $lineHeld = "";
       $print(rest);
     }
+    // What was written ahead of a line a panic stopped, which never reaches
+    // it (#1761).
+    if ($printFrames.length === 0) $lineAhead = "";
   }
 }
 // What a writer that may print writes its text to: in a line, a capture of
@@ -13353,7 +13356,7 @@ export function $sink() {
   if ($writerArmed !== undefined) {
     const into = $writerArmed;
     $writerArmed = undefined;
-    return $sinkOf(into.write, () => "", into.writeChar);
+    return $sinkOf(into.write, () => "", into.writeChar, into.armed);
   }
   if ($printFrames.at(-1) !== $out) {
     let text = "";
@@ -13378,11 +13381,15 @@ export function $sink() {
     },
   );
 }
-export function $sinkOf(write, done, writeChar = write) {
+// `armed`: whether it's a writer's, each piece a call of the writer's
+// (`$writeBy`), not text being made; a sink armed with another's is what
+// that one is.
+export function $sinkOf(write, done, writeChar = write, armed = false) {
   return {
     write,
     writeChar,
     done,
+    armed,
     get value() {
       return "";
     },
@@ -13575,6 +13582,7 @@ export function $padAdapter(f, state = { onNewline: true }) {
       state.onNewline = c === "\n";
       f.writeChar(c);
     },
+    f.armed,
   );
 }
 // A list's or a set's `entry` and `entries`, std's `DebugInner`.
@@ -18919,7 +18927,19 @@ export function $writerSink(w, writeStr, writeChar) {
   return {
     write: (s) => writeStr(w, s),
     writeChar: (c) => writeChar(w, c),
+    armed: true,
   };
+}
+// A value only its formatting dictionary knows, a `T`'s or a `dyn`'s,
+// written into the sink `f` (#1712): `fmtInto`'s pieces where the dictionary
+// carries it, as std's `fmt` writes them, each a call of an armed sink's
+// writer, a print it makes landing between them; else, of an unarmed sink,
+// which is making text where no split can be seen, `fmt`'s text whole. An
+// armed sink given a dictionary with no `fmtInto` is rust-js's bug, thrown.
+export function $writeBy(f, dictionary, value, options) {
+  if (dictionary.fmtInto !== undefined) return dictionary.fmtInto(f, value, options);
+  if (!f.armed) return f.write(dictionary.fmt(value, options));
+  throw new Error("rust-js: a value written into a writer by a dictionary with no `fmtInto`, a bug of rust-js's: please file it");
 }
 // std's `write_fmt` of a writer whose `write_fmt` is std's, its
 // dictionary's `writeFmt` (#1652, step 6 of ADR 1135): `fmt::write` of
@@ -18997,6 +19017,12 @@ export function $writeDebugInteger(f, n, lower, upper, options = {}) {
 export function $writeCharOf(f, c, options = {}) {
   if (options.width === undefined && options.precision === undefined) return f.writeChar(c);
   return $writePadded(f, c, options);
+}
+// A `char`'s case mapping's `Display` into a writer, `c.to_lowercase()`'s
+// text, as core's `CaseMappingIter` writes it: each `char` a `write_char`,
+// its options unread.
+export function $writeChars(f, s) {
+  for (const c of s) f.writeChar(c);
 }
 // A writer of the crate's own shown into a writer, `f`, a piece at a time
 // (#1652, ADR 1135): `writer` called with `args`, the sink armed for it.
@@ -19332,9 +19358,18 @@ export class $FmtError extends $WriteError {
 export function $fmtError() {
   throw new $FmtError();
 }
-// What `f` had written before `error` came out of what it called.
+// What `f` had written before `error` came out of what it called. Of a
+// panic part-way through a line, each line that text ended, what it printed
+// as it formatted, written already, as Rust's stdout writes a line at its
+// newline; the rest of the line is lost as the program ends (#1761, the
+// guide's difference 57).
 export function $fmtWritten(error, f) {
   if (error instanceof $FmtError) error.written = f + error.written;
+  else if ($printFrames.at(-1) === $out && f !== "") {
+    $captures.push({ text: f });
+    $flushAhead();
+    $captures.pop();
+  }
   return error;
 }
 // A write's result as a value: what `write` returns, `undefined`, or its error.

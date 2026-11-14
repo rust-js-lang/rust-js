@@ -199,6 +199,9 @@ function $printing(write) {
       $lineHeld = "";
       $print(rest);
     }
+    // What was written ahead of a line a panic stopped, which never reaches
+    // it (#1761).
+    if ($printFrames.length === 0) $lineAhead = "";
   }
 }
 // What a writer that may print writes its text to: in a line, a capture of
@@ -214,7 +217,7 @@ function $sink() {
   if ($writerArmed !== undefined) {
     const into = $writerArmed;
     $writerArmed = undefined;
-    return $sinkOf(into.write, () => "", into.writeChar);
+    return $sinkOf(into.write, () => "", into.writeChar, into.armed);
   }
   if ($printFrames.at(-1) !== $out) {
     let text = "";
@@ -239,11 +242,15 @@ function $sink() {
     },
   );
 }
-function $sinkOf(write, done, writeChar = write) {
+// `armed`: whether it's a writer's, each piece a call of the writer's
+// (`$writeBy`), not text being made; a sink armed with another's is what
+// that one is.
+function $sinkOf(write, done, writeChar = write, armed = false) {
   return {
     write,
     writeChar,
     done,
+    armed,
     get value() {
       return "";
     },

@@ -868,9 +868,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 js::ExprKind::Var(name) => name.clone(),
                 _ => camel_case(self.tcx.item_name(def_id).as_str()),
             };
+            // And its options where it takes them, which a call through the
+            // pointer gives after its arguments, before its dictionaries
+            // (`mir_closure_call`, #1758).
+            let options = formatter.is_some() && self.takes_options(def_id);
             let made = move |cx: &mut Self| {
                 let evidence = cx.evidence_args_with(def_id, args, location, span)?;
-                let params: Vec<String> = (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
+                let mut params: Vec<String> = (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
+                if options {
+                    params.push(cx.fresh(Role::Options));
+                }
                 let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
                 Ok(Expr::arrow(
                     params.into_iter().map(Into::into).collect(),
