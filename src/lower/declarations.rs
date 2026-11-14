@@ -38,7 +38,7 @@ use super::representation::{SignatureForms, held_ts as held};
 use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
-use parts::{flattened_keys, opaque_fn_signature};
+use parts::{flattened_keys, opaque_fn_signature, opaque_future_output};
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -1122,6 +1122,23 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     && let Some(declared) = written_types(tcx, t) =>
             {
                 self.written(t, &declared, ty::List::empty())
+            }
+            // An `impl Future`, an `async fn`'s result: the `Promise` its JS
+            // gives, of what it resolves to, `Promise<string[]>`, of nothing
+            // `Promise<void>` (ADR 0029, #1769).
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Opaque { .. },
+                    ..
+                },
+            ) if let Some(output) = opaque_future_output(tcx, *alias) => {
+                let payload = if output.is_unit() {
+                    keyword("void")
+                } else {
+                    self.ts(output)
+                };
+                reference("Promise", vec![payload])
             }
             // An `impl Fn(A) -> R` a function gives: the function it says, as
             // a parameter's is, `cache`'s `(...args: unknown[]) => unknown`.

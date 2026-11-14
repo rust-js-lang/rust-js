@@ -35,6 +35,21 @@ pub(super) fn opaque_fn_signature<'tcx>(
     Some((inputs?, output))
 }
 
+/// What an `impl Future` gives, its `Output`, an `async fn`'s result's:
+/// `None` of another opaque type (#1769).
+pub(super) fn opaque_future_output<'tcx>(tcx: TyCtxt<'tcx>, alias: ty::AliasTy<'tcx>) -> Option<Ty<'tcx>> {
+    let ty::Opaque { def_id } = alias.kind else { return None };
+    let bounds = tcx
+        .explicit_item_bounds(def_id)
+        .iter_instantiated_copied(tcx, alias.args);
+    bounds.map(|bound| bound.skip_normalization()).find_map(|(clause, _)| {
+        let projection = clause.as_projection_clause()?.skip_binder();
+        tcx.is_lang_item(projection.def_id(), LangItem::FutureOutput)
+            .then(|| projection.term.as_type())
+            .flatten()
+    })
+}
+
 /// The JS names of `ty`'s fields, a flattened struct's, or one's it
 /// refers to, and of those of the flattened struct in it (ADR 0205).
 pub(super) fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {

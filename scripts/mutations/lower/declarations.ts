@@ -1212,4 +1212,13 @@ export const mutations: Mutation[] = [
     find: "                    return union(self.tagged_variants(did, args, true));\n",
     replace: "                    return union(self.tagged_variants(did, args, false));\n",
     tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
-  },];
+  },
+  {
+    name: "async-fn-declared-any",
+    breaks: "an `async fn`'s result, an `impl Future`, is declared `any`, though its JS is the `Promise` of what it resolves to (#1769)",
+    file: "src/lower/declarations.rs",
+    find: "            ) if let Some(output) = opaque_future_output(tcx, *alias) => {\n",
+    replace: "            ) if let Some(output) = opaque_future_output(tcx, *alias).filter(|_| false) => {\n",
+    tests: ["test/declarations-async.test.ts"],
+  },
+];

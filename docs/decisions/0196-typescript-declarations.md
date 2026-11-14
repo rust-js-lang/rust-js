@@ -248,3 +248,20 @@ method's rule of `tcx` alone, no catalog of its own. A crate's own enums
 are declared as they were. `test/declarations-collections.test.ts` checks
 TypeScript that narrows one against it, and one that reads its payload as
 a number refused; mutations `cow-declared-any` and `cow-owned-unnormalized`.
+
+## Amendment: an `async fn` is declared the `Promise` it gives (#1769, 2026-11-14)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a declaration says
+what the JS is.
+
+An exported `pub async fn names() -> Vec<String>` was declared `export
+function names(): any;`: its result is an opaque `impl Future`, which no
+branch of `ts` named but an `impl Fn`'s. Its JS is an `async function`
+(ADR 0029), a `Promise` of what it resolves to, so its declaration is
+`Promise` of its `Future`'s `Output`, read of the opaque type's bounds
+(`opaque_future_output`, beside `opaque_fn_signature`): `Promise<string[]>`,
+a generic one's `Promise<T | null | undefined>`, and of nothing
+`Promise<void>`, as a function of nothing returns `void`.
+`test/declarations-async.test.ts` checks TypeScript that awaits each
+against them, one that takes the payload for a number refused, and the JS
+resolving to what they say; mutation `async-fn-declared-any`.
