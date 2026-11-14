@@ -4,16 +4,28 @@ import {
   $catchUnwind,
   $cleanup,
   $dropEach,
-  $enumerate,
   $exactLen,
   $filterEnds,
   $foldDropping,
   $iterator,
+  $knowing,
   $live,
   $mapEnds,
   $rev,
   $stepBy,
+  $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
+  enumerateExactSizeIterator_len,
+  iterator_enumerate,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
+  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -121,31 +133,85 @@ function main() {
   run("own map rev", () => {
     const x = $foldDropping(
       $rev(
-        $mapEnds(
-          $iterator(
+        $knowing(
+          iterator_map(
             [0, 4],
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            undefined,
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-          ),
-          (d) => {
-            try {
-              boom(d, 1);
-              return [(d[0] + 100) >>> 0];
-            } catch (error) {
-              throw $unwindsOn(error);
-            } finally {
-              if ($live()) {
-                dDrop_drop(d);
+            (d) => {
+              try {
+                boom(d, 1);
+                return [(d[0] + 100) >>> 0];
+              } catch (error) {
+                throw $unwindsOn(error);
+              } finally {
+                if ($live()) {
+                  dDrop_drop(d);
+                }
               }
-            }
-          },
+            },
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
+            undefined,
+            dDrop_drop,
+            undefined,
+            dDrop_drop,
+          ),
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              dDrop_drop,
+              undefined,
+              undefined,
+              dDrop_drop,
+            ),
+          (iterator) =>
+            mapExactSizeIterator_len(
+              iterator,
+              { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+              dDrop_drop,
+              undefined,
+              undefined,
+              dDrop_drop,
+            ),
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              dDrop_drop,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              dDrop_drop,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
       ),
       [],
@@ -187,21 +253,78 @@ function main() {
     }
   });
   run("own enumerate rev", () => {
+    const countExactSizeIterator = {
+      len: (iterator) => $exactLen(countIterator_sizeHint(iterator)),
+    };
     const x = $foldDropping(
       $rev(
-        $enumerate(
-          $iterator(
+        $knowing(
+          iterator_enumerate(
             [20, 24],
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
             undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
+            dDrop_drop,
           ),
+          (iterator) =>
+            enumerateDoubleEndedIterator_nextBack(
+              iterator,
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              undefined,
+              dDrop_drop,
+            ),
+          (iterator) =>
+            enumerateExactSizeIterator_len(iterator, countExactSizeIterator, undefined, dDrop_drop),
+          (iterator, init, f, unwind, ends) =>
+            enumerateDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          (iterator, k) =>
+            enumerateDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              undefined,
+              dDrop_drop,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            enumerateDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
       ).map(([i, d]) => {
         console.log(`at ${i}`);

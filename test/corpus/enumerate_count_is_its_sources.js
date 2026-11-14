@@ -5,8 +5,13 @@ import {
   $cleanup,
   $count,
   $enumerate,
+  $foldOf,
   $held,
+  $live,
+  $next,
   $peek,
+  $unwindsOn,
+  iterator_enumerate,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -55,11 +60,27 @@ function main() {
   }
   const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
-  console.log(
-    `count ${$count($enumerate(it), (value) => {
-      dDrop_drop(value[1]);
-    })}`,
+  const iter = iterator_enumerate(
+    it,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
+    dDrop_drop,
   );
+  let result;
+  try {
+    result = $count(iter, (value) => {
+      dDrop_drop(value[1]);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  console.log(`count ${result}`);
 
   // As the source's `next` panics, too: its source unwinds first.
   const ended = $catchUnwind(() => {
@@ -77,9 +98,27 @@ function main() {
     }
     const value = peek?.[0];
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
-    const n = $count($enumerate(it), (value) => {
-      dDrop_drop(value[1]);
-    });
+    const iter = iterator_enumerate(
+      it,
+      { next: $next, fold: $foldOf },
+      (peekable) => {
+        peekable.return();
+      },
+      dDrop_drop,
+    );
+    let result;
+    try {
+      result = $count(iter, (value) => {
+        dDrop_drop(value[1]);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    const n = result;
     console.log(`count ${n}`);
   });
   console.log(`panicked ${ended.TAG === "Err"}`);

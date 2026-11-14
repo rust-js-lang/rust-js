@@ -9,6 +9,7 @@ import {
   $last,
   $next,
   $someAt,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -29,19 +30,12 @@ function wrapIterator_last(wrap, IIterator, IVecCollect, IItemSize) {
 function main() {
   const value = wrapIterator_last([$iter([1, 2, 3])], { next: $next }, { inPlace: 4 }, 4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = Array.from(
-    $iterator(
-      [$iter([1, 2])],
-      (iterator) => wrapIterator_next(iterator, { next: $next }),
-      true,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      (iterator) => wrapIterator_last(iterator, { next: $next }, { inPlace: 1 }, 1),
-    ).map((x) => (x * 2) & 255),
-  ).at(-1);
+  const value$1 = $last(
+    iterator_map([$iter([1, 2])], (x) => (x * 2) & 255, {
+      next: (iterator) => wrapIterator_next(iterator, { next: $next }),
+      last: (iterator) => wrapIterator_last(iterator, { next: $next }, { inPlace: 1 }, 1),
+    }),
+  );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const last = $last(
     $iterator(

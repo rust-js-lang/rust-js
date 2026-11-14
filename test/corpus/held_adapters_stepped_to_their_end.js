@@ -13,6 +13,7 @@ import {
   $next,
   $rangeFromStep,
   $unwindsOn,
+  iterator_map,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -169,9 +170,14 @@ function main() {
     }
   }
   const mapped = $held(
-    $closing($iterator(count("map"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).map((x) => (x * 3) >>> 0),
+    iterator_map(
+      count("map"),
+      (x) => (x * 3) >>> 0,
+      { next: countIterator_next },
+      (count) => {
+        loudDrop_drop(count._loud);
+      },
+    ),
   );
   try {
     let x;

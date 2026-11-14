@@ -4,8 +4,8 @@ import {
   $catchUnwind,
   $cleanup,
   $cmp,
-  $collectDropping,
   $dropItems,
+  $foldToArray,
   $insert,
   $lazyRange,
   $madeEach,
@@ -16,12 +16,15 @@ import {
   $ordTreeSet,
   $partialEq,
   $partialOrd,
+  $rangeNext,
   $rem,
   $remove,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $stepBy,
   $treeFromSorted,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -458,8 +461,18 @@ function main() {
     try {
       s = $treeFromSorted(
         new ($ordTreeSet(keyOrd_cmp))(),
-        $collectDropping(
-          $lazyRange(0, n).map((i) => [$rem((i * 5) >>> 0, n) >>> 0]),
+        $foldToArray(
+          $roomForHint(
+            iterator_map(
+              { start: 0, end: n },
+              (i) => [$rem((i * 5) >>> 0, n) >>> 0],
+              { next: $rangeNext },
+              undefined,
+              keyDrop_drop,
+            ),
+            4,
+            true,
+          ),
           keyDrop_drop,
           true,
         ),

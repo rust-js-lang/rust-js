@@ -28,7 +28,9 @@ import {
   $unwindsOn,
   $upperOnly,
   iterator_chain,
+  iterator_enumerate,
   iterator_flatMap,
+  iterator_map,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -224,7 +226,7 @@ function main() {
   show(
     "enumerate",
     $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
+      iterator_enumerate(own(), { next: ownIterator_next, sizeHint: ownIterator_sizeHint }),
     ),
   );
   show(
@@ -270,9 +272,10 @@ function main() {
   inGeneric("tag", { fmt: (value) => $debugStr(value) });
   const s = Array.from(
     $reserveHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).map(
-        (x) => String.fromCharCode((97 + (x & 255)) & 255),
-      ),
+      iterator_map(own(), (x) => String.fromCharCode((97 + (x & 255)) & 255), {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
       1,
     ),
   ).join("");
@@ -289,9 +292,10 @@ function main() {
   console.log(`${h.size}`);
   const m = new Map(
     $reserveHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).map(
-        (x) => [x, Math.imul(x, x) >>> 0],
-      ),
+      iterator_map(own(), (x) => [x, Math.imul(x, x) >>> 0], {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
       8,
       4,
     ),
@@ -303,15 +307,11 @@ function main() {
   const folded = Array.from(
     $reserveHint(
       $folded(
-        $iterator(
-          [own()],
-          foldsIterator_next,
-          false,
-          undefined,
-          undefined,
-          foldsIterator_sizeHint,
-          foldsIterator_fold,
-        ).map((x) => String.fromCharCode((97 + (x & 255)) & 255)),
+        iterator_map([own()], (x) => String.fromCharCode((97 + (x & 255)) & 255), {
+          next: foldsIterator_next,
+          sizeHint: foldsIterator_sizeHint,
+          fold: foldsIterator_fold,
+        }),
       ),
       1,
     ),

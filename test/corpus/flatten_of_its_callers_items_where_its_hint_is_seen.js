@@ -4,12 +4,12 @@ import {
   $collectDropping,
   $collectVec,
   $iter,
-  $iterator,
   $jsIteratorSome,
   $next,
   $roomForHint,
   iterator_flatMap,
   iterator_flatten,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,9 +56,10 @@ function main() {
   };
   console.log(
     `[${flat(
-      $iterator([4], ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).map(
-        (n) => [n, (n + 10) >>> 0],
-      ),
+      iterator_map([4], (n) => [n, (n + 10) >>> 0], {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
       intoIterator,
       false,
       2,
@@ -67,9 +68,10 @@ function main() {
   );
   console.log(
     `[${flat(
-      $iterator([3], ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).map((n) =>
-        new Array(3).fill(n),
-      ),
+      iterator_map([3], (n) => new Array(3).fill(n), {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
       intoIterator,
       false,
       undefined,

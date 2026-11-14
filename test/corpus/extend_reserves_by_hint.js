@@ -9,6 +9,7 @@ import {
   $iterator,
   $print,
   $reserveHint,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,9 +36,10 @@ function main() {
   let s = "ab";
   $extendText(
     $reserveHint(
-      $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (x) => String.fromCharCode((99 + (x & 255)) & 255),
-      ),
+      iterator_map(loud(3), (x) => String.fromCharCode((99 + (x & 255)) & 255), {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
       1,
       undefined,
       s,
@@ -49,9 +51,10 @@ function main() {
   $print(`chars ${s}\n`);
   s = "";
   $extendText(
-    $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-      (x) => String(x),
-    ),
+    iterator_map(loud(2), (x) => String(x), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     (piece) => {
       s += piece;
     },
@@ -61,9 +64,10 @@ function main() {
   const cs = ["x", "y"];
   $extendText(
     $reserveHint(
-      $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (x) => $index(cs, x),
-      ),
+      iterator_map(loud(2), (x) => $index(cs, x), {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
       1,
       undefined,
       s,
@@ -77,9 +81,10 @@ function main() {
   $extendMap(
     m,
     $reserveHint(
-      $iterator(loud(4), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (x) => [x, x],
-      ),
+      iterator_map(loud(4), (x) => [x, x], {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
       8,
       4,
       m,
@@ -89,9 +94,10 @@ function main() {
   $extendMap(
     m,
     $reserveHint(
-      $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (x) => [(x + 10) >>> 0, x],
-      ),
+      iterator_map(loud(3), (x) => [(x + 10) >>> 0, x], {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
       8,
       4,
       m,
@@ -114,9 +120,10 @@ function main() {
   const b = new $BTreeMap();
   $extendMap(
     b,
-    $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-      (x) => [x, x],
-    ),
+    iterator_map(loud(3), (x) => [x, x], {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     false,
   );
   const bs = new $BTreeSet();

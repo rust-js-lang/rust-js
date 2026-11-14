@@ -5,7 +5,6 @@ import {
   $cleanup,
   $closing,
   $dropEach,
-  $enumerate,
   $exactLen,
   $filterEnds,
   $findBack,
@@ -29,6 +28,9 @@ import {
   $tryOf,
   $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_tryRfold,
+  enumerateExactSizeIterator_len,
   iterator_enumerate,
   iterator_skip,
   iterator_take,
@@ -121,6 +123,9 @@ function generic(it, p, dropI) {
 }
 
 function main() {
+  const hintsExactSizeIterator$1 = {
+    len: (iterator) => $exactLen(hintsIterator_sizeHint(iterator)),
+  };
   second("rfind", (p) => {
     const value = $iter(ds());
     let result;
@@ -540,16 +545,51 @@ function main() {
     return result;
   });
   second("enumerate rfind", (p) => {
+    const hintsExactSizeIterator = hintsExactSizeIterator$1;
     const rfind = $findBack(
-      $enumerate(
-        $iterator(
+      $knowing(
+        iterator_enumerate(
           [3],
-          hintsIterator_next,
-          false,
-          hintsDoubleEndedIterator_nextBack,
-          (it) => $exactLen(hintsIterator_sizeHint(it)),
-          hintsIterator_sizeHint,
+          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+          undefined,
+          dDrop_drop,
         ),
+        (iterator) =>
+          enumerateDoubleEndedIterator_nextBack(
+            iterator,
+            hintsExactSizeIterator,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator) =>
+          enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator, undefined, dDrop_drop),
+        undefined,
+        (iterator, k) =>
+          enumerateDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            hintsExactSizeIterator,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          enumerateDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            hintsExactSizeIterator,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
       ),
       ([, d]) => p(d),
       undefined,
@@ -564,15 +604,49 @@ function main() {
     return result;
   });
   const found = $findBack(
-    $enumerate(
-      $iterator(
+    $knowing(
+      iterator_enumerate(
         [4],
-        hintsIterator_next,
-        false,
-        hintsDoubleEndedIterator_nextBack,
-        (it) => $exactLen(hintsIterator_sizeHint(it)),
-        hintsIterator_sizeHint,
+        { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+        undefined,
+        dDrop_drop,
       ),
+      (iterator) =>
+        enumerateDoubleEndedIterator_nextBack(
+          iterator,
+          hintsExactSizeIterator$1,
+          { next_back: hintsDoubleEndedIterator_nextBack },
+          undefined,
+          dDrop_drop,
+        ),
+      (iterator) =>
+        enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator$1, undefined, dDrop_drop),
+      undefined,
+      (iterator, k) =>
+        enumerateDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+          hintsExactSizeIterator$1,
+          { next_back: hintsDoubleEndedIterator_nextBack },
+          undefined,
+          dDrop_drop,
+        ),
+      (iterator, init, f, broke, unwind, ends) =>
+        enumerateDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+          hintsExactSizeIterator$1,
+          { next_back: hintsDoubleEndedIterator_nextBack },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+          undefined,
+          dDrop_drop,
+        ),
     ),
     ([, d]) => d[0] % 2 === 1,
     undefined,
@@ -595,7 +669,7 @@ function main() {
   );
   const nextBack = enumerateDoubleEndedIterator_nextBack(
     counted,
-    { len: (iterator) => $exactLen(hintsIterator_sizeHint(iterator)) },
+    hintsExactSizeIterator$1,
     { next_back: hintsDoubleEndedIterator_nextBack },
     undefined,
     dDrop_drop,
@@ -607,17 +681,17 @@ function main() {
   }
   const value$1 = nextBack != null ? map$1(nextBack) : undefined;
   console.log(`${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
-  const last = $nextBack(
-    $enumerate(
-      $iterator(
-        [3],
-        hintsIterator_next,
-        false,
-        hintsDoubleEndedIterator_nextBack,
-        (it) => $exactLen(hintsIterator_sizeHint(it)),
-        hintsIterator_sizeHint,
-      ),
+  const last = enumerateDoubleEndedIterator_nextBack(
+    iterator_enumerate(
+      [3],
+      { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+      undefined,
+      dDrop_drop,
     ),
+    hintsExactSizeIterator$1,
+    { next_back: hintsDoubleEndedIterator_nextBack },
+    undefined,
+    dDrop_drop,
   );
   function map$2([i, d]) {
     const result = [i, d[0]];
@@ -628,15 +702,49 @@ function main() {
   console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
   const first = $next(
     $rev(
-      $enumerate(
-        $iterator(
+      $knowing(
+        iterator_enumerate(
           [3],
-          hintsIterator_next,
-          false,
-          hintsDoubleEndedIterator_nextBack,
-          (it) => $exactLen(hintsIterator_sizeHint(it)),
-          hintsIterator_sizeHint,
+          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+          undefined,
+          dDrop_drop,
         ),
+        (iterator) =>
+          enumerateDoubleEndedIterator_nextBack(
+            iterator,
+            hintsExactSizeIterator$1,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator) =>
+          enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator$1, undefined, dDrop_drop),
+        undefined,
+        (iterator, k) =>
+          enumerateDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            hintsExactSizeIterator$1,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          enumerateDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            hintsExactSizeIterator$1,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
       ),
     ),
   );

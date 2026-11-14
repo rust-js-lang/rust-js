@@ -7,7 +7,9 @@ import {
   $iterator,
   $lazyRange,
   $live,
+  $rangeNext,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,9 +37,7 @@ function main() {
   console.log(`${$isSortedBy($iter([3, 1]), (a, b) => a <= b)}`);
   console.log(
     `${$isSortedBy(
-      $lazyRange(0, 5)
-        .map((x) => (x % 3) | 0)
-        .map((x) => x),
+      iterator_map({ start: 0, end: 5 }, (x) => (x % 3) | 0, { next: $rangeNext }).map((x) => x),
       (a, b) => a <= b,
     )}`,
   );
@@ -124,7 +124,7 @@ function main() {
   let calls = 0;
   console.log(
     `${$isSortedBy(
-      $lazyRange(0, 6).map((x) => (x === 2 ? 9 : x)),
+      iterator_map({ start: 0, end: 6 }, (x) => (x === 2 ? 9 : x), { next: $rangeNext }),
       (a, b) => {
         calls = (calls + 1) | 0;
         return a <= b;

@@ -6,14 +6,17 @@ import {
   $collectDropping,
   $collectResults,
   $dropItems,
+  $foldToArray,
   $lazyChain,
   $lazyRange,
   $lazyZip,
   $range,
+  $rangeNext,
   $repeating,
   $repeatingN,
   $roomFor,
   $roomForHint,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -130,8 +133,10 @@ function inclusive(x, n, TCopy, TSize) {
 }
 
 function held(x, n, TCopy, TSize) {
-  const it = $lazyRange(0, n).map(() => (TCopy ? TCopy.copy(x) : x));
-  return Array.from($roomForHint(it, TSize, true)).length;
+  const it = iterator_map({ start: 0, end: n }, () => (TCopy ? TCopy.copy(x) : x), {
+    next: $rangeNext,
+  });
+  return $foldToArray($roomForHint(it, TSize, true)).length;
 }
 
 function ofItems(x, items, TCopy) {

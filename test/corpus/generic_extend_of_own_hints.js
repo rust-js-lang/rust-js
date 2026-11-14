@@ -11,8 +11,10 @@ import {
   $iterator,
   $lazyRange,
   $print,
+  $rangeNext,
   $reserveHint,
   $unwinds,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,9 +62,10 @@ const Buf = {
 function letters(c, n, CExtendChar) {
   CExtendChar.extend(
     c,
-    $iterator([n], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map((x) =>
-      String.fromCharCode((97 + (x & 255)) & 255),
-    ),
+    iterator_map([n], (x) => String.fromCharCode((97 + (x & 255)) & 255), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
   );
 }
 
@@ -92,7 +95,7 @@ function main() {
   fill($cellOf(v), [1, 2, 3], vecExtend);
   fill(
     $cellOf(v),
-    $lazyRange(0, 4).map((x) => (x * 2) >>> 0),
+    iterator_map({ start: 0, end: 4 }, (x) => (x * 2) >>> 0, { next: $rangeNext }),
     vecExtend,
   );
   fill($cellOf(v), $iterator([3], quietIterator_next), vecExtend);

@@ -9,7 +9,7 @@ import { runInNewContext } from "node:vm";
 import { machine, memoryBudget } from "../scripts/shard";
 import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
-import { helpersModule } from "./packages-of";
+import { helpersModule, stdDir } from "./packages-of";
 import { compiler, contentDirectory, nativeBinary, root, run } from "./support";
 
 export const node = Bun.which("node");
@@ -424,7 +424,14 @@ function consoleLines(js: string): string[] {
     queueMicrotask: (task: () => void) => tasks.push(task),
     TextDecoder,
   };
-  const runtime = readFileSync(helpersModule, "utf8").replace(/^export /gm, "");
+  // The helpers, and std's bodies compiled beside them, `iterator_map`'s
+  // among them, each module `@rust-js/std`'s entry re-exports, in its
+  // order, as the browser's bundle holds them.
+  const modules = [...readFileSync(join(stdDir, "index.js"), "utf8").matchAll(/^export \* from "\.\/(.+\.js)";$/gm)].map((m) => m[1]);
+  const runtime = (modules.length > 0 ? modules : ["runtime.js"])
+    .map((module) => (module === "runtime.js" ? helpersModule : join(stdDir, module)))
+    .map((file) => readFileSync(file, "utf8").replace(/^import \{[^}]*\} from "\.\/runtime\.js";$/gm, "").replace(/^export /gm, ""))
+    .join("\n");
   const code = readFileSync(js, "utf8")
     .replace(/^import \{[^}]*\} from "@rust-js\/std";$/m, "")
     .replace(/^export /gm, "")

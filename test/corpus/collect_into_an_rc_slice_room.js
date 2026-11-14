@@ -13,6 +13,7 @@ import {
   $roomForCounted,
   $unwound,
   $vecCollectWay,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -90,7 +91,7 @@ function main() {
     `${said(
       () =>
         made(
-          $lazyRange(0, 4294967295).map((i) => BigInt(i)),
+          iterator_map({ start: 0, end: 4294967295 }, (i) => BigInt(i), { next: $rangeNext }),
           {
             fromIter: (items, ITrustedLen, IInPlace) =>
               $collectCounted(

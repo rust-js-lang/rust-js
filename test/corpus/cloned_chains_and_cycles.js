@@ -33,6 +33,8 @@ export function entry() {
 }
 
 function cycles() {
+  const clone = { clone: (value) => value };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const a = [1, 2];
   const makeMap = (it, f) =>
     $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
@@ -61,35 +63,27 @@ function cycles() {
       ).take(5),
     ).join(", ")}]`,
   );
-  const makeMap$1 = (it, f) =>
-    $cloning($iterator(it, $rangeNext).map(f), () =>
-      makeMap$1({ start: it.start, end: it.end }, f),
-    );
   const value = $next(
     $cycleOf(
-      makeMap$1({ start: 0, end: 0 }, (x) => x),
-      $clone,
+      iterator_map({ start: 0, end: 0 }, (x) => x, { next: $rangeNext }),
+      (iterator) => mapClone_clone(iterator, rangeClone, clone),
       $next,
     ),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const makeMap$2 = (it, f) =>
-    $cloning($iterator(it, $rangeNext).map(f), () =>
-      makeMap$2({ start: it.start, end: it.end }, f),
-    );
   const it = $cycleOf(
-    makeMap$2({ start: 1, end: 4 }, (x) => (x * 2) | 0),
-    $clone,
+    iterator_map({ start: 1, end: 4 }, (x) => (x * 2) | 0, { next: $rangeNext }),
+    (iterator) => mapClone_clone(iterator, rangeClone, clone),
     $next,
   );
   $next(it);
   console.log(`[${Array.from(it.take(4)).join(", ")}]`);
-  const makeMap$3 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
+  const makeMap$1 = (it, f) =>
+    $cloning(it.map(f), () => makeMap$1($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$3($iter(["a", "b"]), (s) => s.toUpperCase()),
+        makeMap$1($iter(["a", "b"]), (s) => s.toUpperCase()),
         $clone,
         $next,
       ).take(3),
@@ -97,12 +91,12 @@ function cycles() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const makeMap$4 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$4($iter(it.items.slice(it.at, it.end)), f));
+  const makeMap$2 = (it, f) =>
+    $cloning(it.map(f), () => makeMap$2($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$4($iter([1, undefined]), (o) => o),
+        makeMap$2($iter([1, undefined]), (o) => o),
         $clone,
         $nextSome,
         true,

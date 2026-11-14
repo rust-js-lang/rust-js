@@ -4,7 +4,6 @@ import {
   $BTreeMap,
   $BTreeSet,
   $cmp,
-  $enumerate,
   $extend,
   $extendMap,
   $extendText,
@@ -28,6 +27,8 @@ import {
   $stepBy,
   $unwrap,
   $unzip,
+  iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -107,18 +108,11 @@ function main() {
     console.log(`each ${x}`);
   });
   console.log(
-    `map fold ${$iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    )
-      .map((x) => (x * 10) >>> 0)
-      .reduce((a, x) => (a + x) >>> 0, 0)}`,
+    `map fold ${iterator_map(up(), (x) => (x * 10) >>> 0, {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
   console.log(
     `filter map sum ${$iterator(
@@ -136,7 +130,11 @@ function main() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `enumerate ${$enumerate($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, [i, x]) => (a + (Math.imul(i, x) >>> 0)) >>> 0, 0)}`,
+    `enumerate ${iterator_enumerate(up(), {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }).reduce((a, [i, x]) => (a + (Math.imul(i, x) >>> 0)) >>> 0, 0)}`,
   );
   const max = $max(
     $iterator(
@@ -260,31 +258,21 @@ function main() {
   );
   let text = Array.from(
     $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).map((x) => $unwrap($fromDigit(x, 10))),
+      iterator_map(up(), (x) => $unwrap($fromDigit(x, 10)), {
+        next: upIterator_next,
+        fold: upIterator_fold,
+        nth: upIterator_nth,
+      }),
     ),
   ).join("");
   console.log(`string ${text}`);
   let map = new Map(
     $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).map((x) => [x, x]),
+      iterator_map(up(), (x) => [x, x], {
+        next: upIterator_next,
+        fold: upIterator_fold,
+        nth: upIterator_nth,
+      }),
     ),
   );
   console.log(`map ${map.size}`);
@@ -349,16 +337,11 @@ function main() {
   );
   console.log(`partition [${even.join(", ")}] [${odd.join(", ")}]`);
   const [a, b] = $unzip(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).map((x) => [x, x]),
+    iterator_map(up(), (x) => [x, x], {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }),
   );
   console.log(`unzip [${a.join(", ")}] [${b.join(", ")}]`);
   console.log(
@@ -398,16 +381,11 @@ function main() {
   console.log(`extend set ${set.size}`);
   text = "";
   $extendText(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).map((x) => $unwrap($fromDigit(x, 10))),
+    iterator_map(up(), (x) => $unwrap($fromDigit(x, 10)), {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }),
     (piece) => {
       text += piece;
     },
@@ -432,32 +410,22 @@ function main() {
   map = new Map();
   $extendMap(
     map,
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).map((x) => [x, x]),
+    iterator_map(up(), (x) => [x, x], {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }),
     false,
   );
   console.log(`extend map ${map.size}`);
   const sorted = new $BTreeMap();
   $extendMap(
     sorted,
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).map((x) => [x, x]),
+    iterator_map(up(), (x) => [x, x], {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }),
     false,
   );
   console.log(

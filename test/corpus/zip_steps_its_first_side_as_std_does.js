@@ -4,7 +4,6 @@ import {
   $foldOf,
   $foldToArray,
   $iter,
-  $lazyRange,
   $lazyZip,
   $next,
   $rangeInclusiveNext,
@@ -100,10 +99,14 @@ function main() {
   );
   console.log(`[${c.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const n = $lazyZip(
-    $lazyRange(1, 5).map((x) => {
-      console.log(`d${x}`);
-      return x;
-    }),
+    iterator_map(
+      { start: 1, end: 4 },
+      (x) => {
+        console.log(`d${x}`);
+        return x;
+      },
+      { next: $rangeInclusiveNext },
+    ),
     [1, 2],
   );
   const next = $next(n);

@@ -10,15 +10,17 @@ import {
   $filterEnds,
   $foldBack,
   $foldDropping,
+  $foldToArray,
   $held,
   $iter,
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
-  $range,
   $rangeNext,
+  $roomForHint,
   $slicing,
   $tryFoldOk,
+  iterator_map,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -41,7 +43,19 @@ function accDrop_drop(acc) {
 }
 
 function ds() {
-  return $range(1, 8).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 8 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function odd(d) {

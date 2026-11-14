@@ -8,6 +8,7 @@ import {
   $cleanup,
   $cmp,
   $collectDropping,
+  $foldToArray,
   $held,
   $lazyRange,
   $mapExtractIf,
@@ -16,13 +17,15 @@ import {
   $ordTreeSet,
   $partialEq,
   $partialOrd,
-  $range,
+  $rangeNext,
   $reserveHint,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
   $treeFromSorted,
   $treeRange,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -64,7 +67,21 @@ function seenOrd_cmp(seen, other) {
 function main() {
   const m = $treeFrom(
     new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))(),
-    $range(0, 6).map((i) => [[i], i]),
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 0, end: 6 },
+          (i) => [[i], i],
+          { next: $rangeNext },
+          undefined,
+          (value) => {
+            kDrop_drop(value[0]);
+          },
+        ),
+        8,
+        true,
+      ),
+    ),
     false,
     (a, b) => $cmp(a[0], b[0]),
     undefined,
@@ -215,7 +232,19 @@ function main() {
   try {
     s = $treeFrom(
       new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-      $range(0, 4).map((value) => [value]),
+      $foldToArray(
+        $roomForHint(
+          iterator_map(
+            { start: 0, end: 4 },
+            (value) => [value],
+            { next: $rangeNext },
+            undefined,
+            kDrop_drop,
+          ),
+          4,
+          true,
+        ),
+      ),
       true,
       (a, b) => $cmp(a[0], b[0]),
       undefined,
@@ -286,7 +315,19 @@ function main() {
   try {
     seen = $treeFromSorted(
       new ($ordTreeSet(seenOrd_cmp))(),
-      $range(0, 14).map((value) => [value]),
+      $foldToArray(
+        $roomForHint(
+          iterator_map(
+            { start: 0, end: 14 },
+            (value) => [value],
+            { next: $rangeNext },
+            undefined,
+            seenDrop_drop,
+          ),
+          4,
+          true,
+        ),
+      ),
       seenOrd,
       "general8",
       4,

@@ -8,7 +8,9 @@ import {
   $index,
   $lazyRange,
   $pretty,
+  $rangeNext,
   $strSlice,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,7 +36,7 @@ function pairsDebug_fmt(pairs, options) {
         "{",
         [`${$debugStr("a")}: 1`].concat(
           Array.from(
-            $lazyRange(0, pairs[0]).map((i) => [i, i]),
+            iterator_map({ start: 0, end: pairs[0] }, (i) => [i, i], { next: $rangeNext }),
             (entry) => `${entry[0]}: ${entry[1]}`,
           ),
         ),
@@ -43,7 +45,7 @@ function pairsDebug_fmt(pairs, options) {
     : `{${[`${$debugStr("a")}: 1`]
         .concat(
           Array.from(
-            $lazyRange(0, pairs[0]).map((i) => [i, i]),
+            iterator_map({ start: 0, end: pairs[0] }, (i) => [i, i], { next: $rangeNext }),
             (entry) => `${entry[0]}: ${entry[1]}`,
           ),
         )

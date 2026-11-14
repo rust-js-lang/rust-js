@@ -75,8 +75,20 @@ function sums(items, IItemIntoIterator) {
 }
 
 function main() {
-  const named = Array.from($iterator(same([0]), countIterator_next).map((n) => (n * 2) >>> 0));
-  const mapped = Array.from($iterator(hidden([0]), countIterator_next).map((n) => (n * 2) >>> 0));
+  const named = Array.from(
+    $roomForHint(
+      iterator_map(same([0]), (n) => (n * 2) >>> 0, { next: countIterator_next }),
+      4,
+      false,
+    ),
+  );
+  const mapped = Array.from(
+    $roomForHint(
+      iterator_map(hidden([0]), (n) => (n * 2) >>> 0, { next: countIterator_next }),
+      4,
+      false,
+    ),
+  );
   const whole = Array.from($iterator(hidden([0]), countIterator_next));
   console.log(`[${named.join(", ")}] [${mapped.join(", ")}] [${whole.join(", ")}]`);
   console.log(`[${Count.doubled([0]).join(", ")}]`);

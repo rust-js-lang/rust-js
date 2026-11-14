@@ -15,10 +15,10 @@ import {
   $held,
   $iter,
   $knowing,
-  $lazyRange,
   $live,
   $next,
   $nextBack,
+  $rangeNext,
   $rcDrop,
   $rev,
   $roomForCounted,
@@ -473,10 +473,16 @@ function main() {
               tmp = {
                 value: $collectDropping(
                   $roomForCounted(
-                    $lazyRange(0, 4).map((i) => {
-                      step();
-                      return [(i + 5) & 255];
-                    }),
+                    iterator_map(
+                      { start: 0, end: 4 },
+                      (i) => {
+                        step();
+                        return [(i + 5) & 255];
+                      },
+                      { next: $rangeNext },
+                      undefined,
+                      loudDrop_drop,
+                    ),
                     1,
                     1,
                   ),

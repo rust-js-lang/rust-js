@@ -187,9 +187,7 @@ function twice(it, IVecCollect, dropI) {
 function main() {
   console.log(
     `${byNext(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).map((x) => (x + 1) >>> 0),
+      iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop),
       (map) => {
         map.return();
       },
@@ -212,9 +210,7 @@ function main() {
   );
   console.log(
     `${byRefSum(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).map((x) => (x + 1) >>> 0),
+      iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop),
       (map) => {
         map.return();
       },
@@ -232,9 +228,7 @@ function main() {
   );
   console.log(
     `${byFor(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).map((x) => (x + 1) >>> 0),
+      iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop),
       (map) => {
         map.return();
       },
@@ -251,11 +245,7 @@ function main() {
     )}`,
   );
   let skipped = twice(
-    $closing($iterator(f(), flakyIterator_next), (it) => {
-      flakyDrop_drop(it.of);
-    })
-      .map((x) => (x + 1) >>> 0)
-      .drop(3),
+    iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop).drop(3),
     "next",
     (skip) => {
       skip.return();

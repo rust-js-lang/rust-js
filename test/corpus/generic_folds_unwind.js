@@ -9,9 +9,10 @@ import {
   $dropEach,
   $foldBack,
   $foldDropping,
+  $foldToArray,
   $held,
   $iter,
-  $iterator,
+  $knowing,
   $lazyTakeWhile,
   $live,
   $mapEnds,
@@ -19,10 +20,12 @@ import {
   $nextBack,
   $rangeNext,
   $rev,
-  $roomFor,
+  $roomForHint,
   $tryFoldInto,
+  $tryOf,
   $unwindsOn,
   iterator_map,
+  mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
@@ -36,9 +39,13 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  const it = $iterator(r, $rangeNext).map((value) => [value]);
-  $roomFor(Math.max(r.end - r.start, 0), 4);
-  return Array.from(it);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
+      4,
+      true,
+    ),
+  );
 }
 
 function boom(d, at) {
@@ -606,30 +613,67 @@ function main() {
   });
   run("generic rfold of an own rfold", () => {
     const x = backwards(
-      $mapEnds(
-        $iterator(
+      $knowing(
+        iterator_map(
           [100, 104],
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
+          (d) => {
+            try {
+              boom(d, 102);
+            } catch (error) {
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
+              throw error;
+            }
+            return d;
+          },
+          { next: countIterator_next },
           undefined,
+          dDrop_drop,
           undefined,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
+          dDrop_drop,
         ),
-        (d) => {
-          try {
-            boom(d, 102);
-          } catch (error) {
-            $cleanup(() => {
-              dDrop_drop(d);
-            }, error);
-            throw error;
-          }
-          return d;
-        },
+        (iterator) =>
+          mapDoubleEndedIterator_nextBack(
+            iterator,
+            { next_back: countDoubleEndedIterator_nextBack, rfold: countDoubleEndedIterator_rfold },
+            dDrop_drop,
+            undefined,
+            undefined,
+            dDrop_drop,
+          ),
+        undefined,
+        (iterator, init, f, unwind, ends) =>
+          mapDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next },
+            { next_back: countDoubleEndedIterator_nextBack, rfold: countDoubleEndedIterator_rfold },
+            dDrop_drop,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next },
+            { next_back: countDoubleEndedIterator_nextBack, rfold: countDoubleEndedIterator_rfold },
+            $tryOf(broke),
+            dDrop_drop,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
       ),
     );
     console.log(`${x.length}`);

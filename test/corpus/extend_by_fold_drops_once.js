@@ -24,6 +24,7 @@ import {
   $sortedKeys,
   $unwindsOn,
   $unwrap,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -58,10 +59,14 @@ function upIterator_fold(up, init, f, dropB, dropF) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Up ${up.n}`);
+      upDrop_drop(up);
     }
   }
   return result;
+}
+
+function upDrop_drop(up) {
+  console.log(`drop Up ${up.n}`);
 }
 
 function up() {
@@ -156,7 +161,7 @@ function main() {
     $closing(
       $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
       (it) => {
-        console.log(`drop Up ${it.of.n}`);
+        upDrop_drop(it.of);
       },
     ).drop(1),
     true,
@@ -165,12 +170,12 @@ function main() {
   const set4 = new $BTreeSet();
   $extendMap(
     set4,
-    $closing(
-      $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
-      (it) => {
-        console.log(`drop Up ${it.of.n}`);
-      },
-    ).map((x) => (x * 2) >>> 0),
+    iterator_map(
+      up(),
+      (x) => (x * 2) >>> 0,
+      { next: upIterator_next, fold: upIterator_fold },
+      upDrop_drop,
+    ),
     true,
   );
   console.log(`map tree {${Array.from($sortedKeys(set4, $cmp)).join(", ")}}`);
@@ -183,12 +188,12 @@ function main() {
   console.log(`extend set ${set.size}`);
   let text = "";
   $extendText(
-    $closing(
-      $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
-      (it) => {
-        console.log(`drop Up ${it.of.n}`);
-      },
-    ).map((x) => $unwrap($fromDigit(x, 10))),
+    iterator_map(
+      up(),
+      (x) => $unwrap($fromDigit(x, 10)),
+      { next: upIterator_next, fold: upIterator_fold },
+      upDrop_drop,
+    ),
     (piece) => {
       text += piece;
     },
@@ -204,24 +209,24 @@ function main() {
   const map = new Map();
   $extendMap(
     map,
-    $closing(
-      $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
-      (it) => {
-        console.log(`drop Up ${it.of.n}`);
-      },
-    ).map((x) => [x, x]),
+    iterator_map(
+      up(),
+      (x) => [x, x],
+      { next: upIterator_next, fold: upIterator_fold },
+      upDrop_drop,
+    ),
     false,
   );
   console.log(`extend map ${map.size}`);
   const sorted = new $BTreeMap();
   $extendMap(
     sorted,
-    $closing(
-      $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
-      (it) => {
-        console.log(`drop Up ${it.of.n}`);
-      },
-    ).map((x) => [x, x]),
+    iterator_map(
+      up(),
+      (x) => [x, x],
+      { next: upIterator_next, fold: upIterator_fold },
+      upDrop_drop,
+    ),
     false,
   );
   console.log(
@@ -248,7 +253,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Up ${iter.n}`);
+      upDrop_drop(iter);
     }
   }
   console.log(`extend deque [${deque.join(", ")}]`);
@@ -264,7 +269,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Up ${iter$1.n}`);
+      upDrop_drop(iter$1);
     }
   }
   console.log(`extend heap ${heap.length}`);
@@ -279,7 +284,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Up ${iter$2.n}`);
+      upDrop_drop(iter$2);
     }
   }
   console.log(`extend vec [${vec.join(", ")}]`);
@@ -303,7 +308,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Up ${iter$3.n}`);
+      upDrop_drop(iter$3);
     }
   }
   const tree2 = result;

@@ -339,9 +339,6 @@ for (const [name, source, message, crate] of [
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter made here, a JS iterator's,
   // which knows nothing of its length, refused, not `(0, None)` where Rust gives `(0, Some(3))` (#382).
   ["the size hint of a peekable filter made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter(|x| **x > 1).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Filter"],
-  // A map of a range stepped from its end, made in place, isn't read as its source's map, which
-  // would step the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987).
-  ["a map of a reversed range given where its length is asked", "fn first<I: ExactSizeIterator<Item = u32>>(mut it: I) -> Option<u32> { it.next() }\npub fn f() -> Option<u32> { first((1..9u32).map(|x| x + 1).rev()) }", "as an `ExactSizeIterator`, which rust-js can't count"],
   // A map a variable holds made in place, JS's own `values().map(..)`, which knows no hint,
   // inspected and collected where a capacity is read: refused, not grown 4 then 8 where std's
   // `Inspect` of it reserves 5 (#1792).

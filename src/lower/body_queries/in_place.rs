@@ -173,10 +173,19 @@ fn held_links<'tcx>(
         }
         _ => None,
     };
+    let made_knowing = |source: ExprId| back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty);
     let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), (keeps_capacity, drops));
     (chains.into_iter())
-        .filter(|chain| chain.answer == crate::lower::iterators::Transparency::Held)
-        .filter(|chain| chain.source.is_some_and(held_apart))
+        .filter(|chain| match chain.answer {
+            crate::lower::iterators::Transparency::Admitted => false,
+            crate::lower::iterators::Transparency::Held => chain.source.is_some_and(held_apart),
+            // Nor one whose value is made knowing its back or length where
+            // it's held, `let shifted = (1..6).map(f); shifted.enumerate()
+            // .rfold(..)`'s, `$mapEnds` as it is, which std's struct would
+            // be given that knowing only by each of std's back dictionaries,
+            // three times its JS.
+            _ => !chain.source.is_some_and(made_knowing) && !made_knowing(chain.links[0]),
+        })
         // Its links are from what's called last to what's called on the
         // source.
         .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))

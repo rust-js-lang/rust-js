@@ -7,8 +7,9 @@ import {
   $debugF64,
   $debugStr,
   $iter,
-  $lazyRange,
   $parseBig,
+  $rangeInclusiveNext,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -50,7 +51,9 @@ function main() {
     values.reduce((a, b) => BigInt.asUintN(64, a + b), 0n),
   );
   const g = $collectOptions(
-    $lazyRange(1, 5).map((x) => $checked(x * 1000, -2147483648, 2147483647)),
+    iterator_map({ start: 1, end: 4 }, (x) => $checked(x * 1000, -2147483648, 2147483647), {
+      next: $rangeInclusiveNext,
+    }),
     false,
     (values) => values.reduce((a, b) => (a * b) | 0, 1),
   );

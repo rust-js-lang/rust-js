@@ -11,6 +11,7 @@ import {
   $maxByKey,
   $minByKey,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -27,6 +28,10 @@ function upIterator_next(up) {
     return up[0];
   }
   return up[0] < up[1] ? value() : undefined;
+}
+
+function upDrop_drop(up) {
+  console.log("drop Up");
 }
 
 function best(it, dropI) {
@@ -60,7 +65,7 @@ function leastBy(it, dropI) {
 function main() {
   const maxByKey = $maxByKey(
     $closing($iterator([0, 3], upIterator_next), (it) => {
-      console.log("drop Up");
+      upDrop_drop(it.of);
     }),
     (x) => [x],
     (a, b) => $cmp(a[0], b[0]),
@@ -72,7 +77,7 @@ function main() {
   console.log(`${maxByKey == null ? "None" : `Some(${maxByKey})`}`);
   const minByKey = $minByKey(
     $closing($iterator([0, 3], upIterator_next), (it) => {
-      console.log("drop Up");
+      upDrop_drop(it.of);
     }),
     (x) => [x],
     (a, b) => $cmp(a[0], b[0]),
@@ -84,7 +89,7 @@ function main() {
   console.log(`${minByKey == null ? "None" : `Some(${minByKey})`}`);
   const value = $maxByKey(
     $closing($iterator([0, 0], upIterator_next), (it) => {
-      console.log("drop Up");
+      upDrop_drop(it.of);
     }),
     (x) => [x],
     (a, b) => $cmp(a[0], b[0]),
@@ -96,7 +101,7 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $minByKey(
     $closing($iterator([0, 1], upIterator_next), (it) => {
-      console.log("drop Up");
+      upDrop_drop(it.of);
     }),
     (x) => [x],
     (a, b) => $cmp(a[0], b[0]),
@@ -106,38 +111,46 @@ function main() {
     kDrop_drop,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $maxByKey(
-    $closing($iterator([0, 3], upIterator_next), (it) => {
-      console.log("drop Up");
-    }).map((x) => (x * 2) >>> 0),
-    (x) => [x],
-    (a, b) => $cmp(a[0], b[0]),
-    false,
-    undefined,
-    undefined,
-    kDrop_drop,
-  );
+  const iter = iterator_map([0, 3], (x) => (x * 2) >>> 0, { next: upIterator_next }, upDrop_drop);
+  let result;
+  try {
+    result = $maxByKey(
+      iter,
+      (x) => [x],
+      (a, b) => $cmp(a[0], b[0]),
+      false,
+      undefined,
+      undefined,
+      kDrop_drop,
+    );
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  console.log(`${result == null ? "None" : `Some(${result})`}`);
+  const value$2 = best($iterator([0, 3], upIterator_next), (it) => {
+    upDrop_drop(it.of);
+  });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = best($iterator([0, 3], upIterator_next), (it) => {
-    console.log("drop Up");
+  const value$3 = best($iterator([0, 0], upIterator_next), (it) => {
+    upDrop_drop(it.of);
   });
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = best($iterator([0, 0], upIterator_next), (it) => {
-    console.log("drop Up");
+  const value$4 = leastBy($iterator([0, 3], upIterator_next), (it) => {
+    upDrop_drop(it.of);
   });
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = leastBy($iterator([0, 3], upIterator_next), (it) => {
-    console.log("drop Up");
+  const value$5 = leastBy($iterator([0, 0], upIterator_next), (it) => {
+    upDrop_drop(it.of);
   });
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
-  const value$6 = leastBy($iterator([0, 0], upIterator_next), (it) => {
-    console.log("drop Up");
-  });
+  const value$6 = best($iter([1, 5, 2]));
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
-  const value$7 = best($iter([1, 5, 2]));
+  const value$7 = leastBy($iter([4, 2]));
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  const value$8 = leastBy($iter([4, 2]));
-  console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
 
   const up = [0, 3];
   try {
@@ -155,14 +168,14 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log("drop Up");
+      upDrop_drop(up);
     }
   }
 
   const r = $catchUnwind(() =>
     $maxByKey(
       $closing($iterator([0, 3], upIterator_next), (it) => {
-        console.log("drop Up");
+        upDrop_drop(it.of);
       }),
       (x) => {
         if (x === 3) {

@@ -6,10 +6,13 @@ import {
   $count,
   $dropEach,
   $enumerate,
+  $foldToArray,
   $iter,
-  $range,
+  $rangeInclusiveNext,
   $rev,
+  $roomForHint,
   $skipping,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,7 +34,19 @@ function quietDrop_drop(quiet) {
 }
 
 function five() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 5 },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function run(name, boom$1, f) {
@@ -67,7 +82,19 @@ function main() {
       dDrop_drop(value[1]);
     }),
   );
-  const quiet = $range(1, 5).map((value) => [value]);
+  const quiet = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 4 },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        quietDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   console.log(
     `quiet ${$count($rev($closing($iter(quiet), $dropEach(quietDrop_drop))).take(2), quietDrop_drop)}`,
   );

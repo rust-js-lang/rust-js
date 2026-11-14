@@ -12,7 +12,6 @@ import {
   $held,
   $index,
   $iter,
-  $iterator,
   $jsIteratorSome,
   $live,
   $mapEnds,
@@ -183,8 +182,22 @@ function main() {
     }
   });
   run("wide, a panic", () => {
-    const wides = Array.from(
-      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
+    const wides = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1n, end: 4n },
+          (n) => [n],
+          { next: $rangeInclusiveNext },
+          undefined,
+          (option) => {
+            if (option != null) {
+              dDrop_drop(option);
+            }
+          },
+        ),
+        16,
+        true,
+      ),
     );
     const value = held(
       $mapEnds(
@@ -262,8 +275,18 @@ function main() {
     }
   });
   run("narrow, a panic", () => {
-    const narrows = $collectDropping(
-      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [[n]]),
+    const narrows = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1n, end: 4n },
+          (n) => [[n]],
+          { next: $rangeInclusiveNext },
+          undefined,
+          $dropEach(dDrop_drop),
+        ),
+        12,
+        true,
+      ),
       $dropEach(dDrop_drop),
       true,
     );
@@ -303,7 +326,13 @@ function main() {
   });
   run("not in place", () => {
     const value = held(
-      $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext).map((n) => [[n]]),
+      iterator_map(
+        { start: 1n, end: 2n },
+        (n) => [[n]],
+        { next: $rangeInclusiveNext },
+        undefined,
+        $dropEach(dDrop_drop),
+      ),
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),

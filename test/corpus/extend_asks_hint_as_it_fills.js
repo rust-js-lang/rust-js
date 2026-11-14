@@ -16,6 +16,7 @@ import {
   $roomFor,
   $unwindsOn,
   $withCapacity,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -103,9 +104,10 @@ function main() {
     v,
     $grownBy(
       v,
-      $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (x) => x & 255,
-      ),
+      iterator_map(loud(9), (x) => x & 255, {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
       1,
       false,
       undefined,
@@ -171,9 +173,7 @@ function main() {
     units,
     $grownBy(
       units,
-      $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        () => {},
-      ),
+      iterator_map(loud(3), () => {}, { next: loudIterator_next, sizeHint: loudIterator_sizeHint }),
       0,
       false,
       undefined,
@@ -188,14 +188,13 @@ function main() {
         v,
         $grownBy(
           v,
-          $iterator(
+          iterator_map(
             { n: 9, panicsBelow: 5 },
-            loudIterator_next,
-            false,
+            (value) => [value],
+            { next: loudIterator_next, sizeHint: loudIterator_sizeHint },
             undefined,
-            undefined,
-            loudIterator_sizeHint,
-          ).map((value) => [value]),
+            noisyDrop_drop,
+          ),
           4,
           false,
           noisyDrop_drop,

@@ -9,6 +9,7 @@ import {
   $dropEach,
   $filterEnds,
   $foldOf,
+  $foldToArray,
   $held,
   $iter,
   $lazyChain,
@@ -16,8 +17,9 @@ import {
   $mapEnds,
   $next,
   $nextBack,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $tryOf,
   $unwindsOn,
   chainDoubleEndedIterator_nthBack,
@@ -42,7 +44,19 @@ function dDrop_drop(d) {
 }
 
 function ds(from) {
-  return $range(from, from + 3, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: from, end: from + 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

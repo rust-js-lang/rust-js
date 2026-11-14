@@ -241,30 +241,8 @@ function others() {
                 ),
             ),
             $knowing(
-              $knowing(
-                named(3),
-                (iterator) =>
-                  mapDoubleEndedIterator_nextBack(iterator, {
-                    next_back: $rangeNextBack,
-                    nthBack: $rangeNthBack,
-                  }),
-                (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-                undefined,
-                undefined,
-                (iterator, init, f, broke, unwind, ends) =>
-                  mapDoubleEndedIterator_tryRfold(
-                    iterator,
-                    init,
-                    f,
-                    { next: $rangeNext },
-                    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                    $tryOf(broke),
-                    undefined,
-                    undefined,
-                    undefined,
-                    unwind,
-                    ends,
-                  ),
+              $knowing(named(3), undefined, (iterator) =>
+                mapExactSizeIterator_len(iterator, { len: $rangeLen }),
               ),
               (iterator) =>
                 mapDoubleEndedIterator_nextBack(iterator, {

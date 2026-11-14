@@ -3,7 +3,6 @@
 import {
   $cleanup,
   $closing,
-  $enumerate,
   $held,
   $iterator,
   $lent,
@@ -12,6 +11,7 @@ import {
   $step,
   $stepBy,
   $unwindsOn,
+  iterator_enumerate,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -104,22 +104,11 @@ function taken() {
 }
 
 function counted() {
-  const enumerate = $enumerate(
-    $closing(
-      $iterator(
-        louds(),
-        loudsIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        loudsIterator_nth,
-      ),
-      (it) => {
-        loudsDrop_drop(it.of);
-      },
-    ),
+  const enumerate = iterator_enumerate(
+    louds(),
+    { next: loudsIterator_next, nth: loudsIterator_nth },
+    loudsDrop_drop,
+    loudDrop_drop,
   );
   let tmp;
   try {

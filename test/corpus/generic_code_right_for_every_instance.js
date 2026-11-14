@@ -128,9 +128,9 @@ function main() {
     "next",
   );
   const c = gather(
-    $iterator({ start: 0n, end: 7n }, $rangeNext)
-      .map((x) => [x, x])
-      .filter((p) => p[0] % 2n === 0n),
+    iterator_map({ start: 0n, end: 7n }, (x) => [x, x], { next: $rangeNext }).filter(
+      (p) => p[0] % 2n === 0n,
+    ),
     16,
     "next",
   );

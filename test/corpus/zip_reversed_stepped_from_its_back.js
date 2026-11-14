@@ -4,11 +4,14 @@ import {
   $closing,
   $dropEach,
   $foldBack,
+  $foldToArray,
   $iter,
   $nthBack,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $zipEnds,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,7 +26,19 @@ function main() {
   const w = [10, 20, 30];
   const value = $nthBack($rev($zipEnds($iter(v), $iter(w))), 1);
   console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-  const a = $range(1, 4).map((value) => [value]);
+  const a = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 4 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const b = [7, 8, 9];
   const s = $foldBack(
     $rev(

@@ -8,6 +8,7 @@ import {
   $findBack,
   $foldBack,
   $foldOf,
+  $foldToArray,
   $given,
   $givenDrop,
   $held,
@@ -15,11 +16,11 @@ import {
   $next,
   $nextBack,
   $nthBack,
-  $range,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $roomForHint,
   $tryOf,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
@@ -153,7 +154,23 @@ function main() {
   );
   console.log(`${secondLast == null ? "None" : `Some(${secondLast})`}`);
   const value$2 = HeldD.secondLast(
-    [$iter($range(1, 5).map((value) => [value]))],
+    [
+      $iter(
+        $foldToArray(
+          $roomForHint(
+            iterator_map(
+              { start: 1, end: 5 },
+              (value) => [value],
+              { next: $rangeNext },
+              undefined,
+              dDrop_drop,
+            ),
+            4,
+            true,
+          ),
+        ),
+      ),
+    ],
     { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     $dropEach(dDrop_drop),

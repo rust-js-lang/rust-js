@@ -17,6 +17,7 @@ import {
   $partialEq,
   $partialOrd,
   $range,
+  $rangeNext,
   $rem,
   $remove,
   $retainMap,
@@ -273,7 +274,9 @@ function maps(n) {
   report("clone", n, ofMap(copy));
   $extendMap(
     m,
-    $lazyRange(0, (n / 4) >>> 0).map(() => [key(random(span)), 2]),
+    iterator_map({ start: 0, end: (n / 4) >>> 0 }, () => [key(random(span)), 2], {
+      next: $rangeNext,
+    }),
     false,
   );
   report("extend", n, ofMap(m));

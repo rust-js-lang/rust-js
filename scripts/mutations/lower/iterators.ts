@@ -29,11 +29,7 @@ export const mutations: Mutation[] = [
     find: "            _ if is_stepped_items(e) => true,\n",
     replace:
       "            _ if is_stepped_items(e) || steps(e).is_some() => true,\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "a map of a reversed range given where its length is asked",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|map_of_a_reversed_range_given_for_its_length).rs$"],
   },
   {
     name: "made-array-helper-lazy",

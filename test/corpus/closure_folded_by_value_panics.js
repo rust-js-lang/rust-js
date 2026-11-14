@@ -5,15 +5,18 @@ import {
   $cleanup,
   $closing,
   $dropEach,
+  $foldToArray,
   $holding,
   $iter,
   $live,
   $position,
   $print,
-  $range,
+  $rangeNext,
   $retain,
+  $roomForHint,
   $sortStable,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -42,7 +45,24 @@ function main() {
     let g$live = true;
     let take;
     try {
-      take = $closing($iter($range(1, 6).map((value) => [value])), $dropEach(dDrop_drop)).take(3);
+      take = $closing(
+        $iter(
+          $foldToArray(
+            $roomForHint(
+              iterator_map(
+                { start: 1, end: 6 },
+                (value) => [value],
+                { next: $rangeNext },
+                undefined,
+                dDrop_drop,
+              ),
+              4,
+              true,
+            ),
+          ),
+        ),
+        $dropEach(dDrop_drop),
+      ).take(3);
       g$live = false;
     } catch (error) {
       $cleanup(() => {

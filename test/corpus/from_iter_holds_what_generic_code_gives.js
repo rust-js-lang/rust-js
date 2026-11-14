@@ -9,6 +9,7 @@ import {
   $lazyZip,
   $next,
   $rangeFromStep,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -88,9 +89,14 @@ function main() {
   );
   console.log(`sum ${sum}`);
   const [sum$1] = collected(
-    $closing($iterator({ n: 0, _loud: ["map"] }, countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).map((n) => [n, n]),
+    iterator_map(
+      { n: 0, _loud: ["map"] },
+      (n) => [n, n],
+      { next: countIterator_next },
+      (count) => {
+        loudDrop_drop(count._loud);
+      },
+    ),
     sumFromIterator_u32__u32_,
     false,
     undefined,

@@ -18,12 +18,14 @@ import {
   $debugStr,
   $displayF64,
   $eq,
+  $foldOf,
   $index,
   $iterator,
   $lazyRange,
   $lent,
   $max,
   $minBy,
+  $next,
   $ord,
   $partialCmp,
   $partialEq,
@@ -34,6 +36,8 @@ import {
   $some,
   $thenCmp,
   $traitImpl,
+  iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 const semverPartialOrd = $partialOrd({
@@ -384,9 +388,11 @@ export function genericIterations() {
       $iterator({ item: 2, times: 3 }, (iterator) => repeatIterator_next(iterator, clone), true),
     ),
     $max(
-      $iterator({ n: 5 }, countdownIterator_next)
-        .map((x, i) => [i, x])
-        .map(([i, x]) => Math.imul(i, x) >>> 0),
+      iterator_map(
+        iterator_enumerate({ n: 5 }, { next: countdownIterator_next }),
+        ([i, x]) => Math.imul(i, x) >>> 0,
+        { next: $next, fold: $foldOf },
+      ),
     ),
   ];
 }

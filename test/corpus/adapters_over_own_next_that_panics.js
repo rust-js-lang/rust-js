@@ -7,17 +7,15 @@ import {
   $collectDropping,
   $count,
   $dropEach,
-  $enumerate,
   $exactLen,
-  $foldBack,
   $foldDropping,
   $held,
   $iter,
   $iterator,
+  $knowing,
   $lazyChain,
   $lazyZip,
   $live,
-  $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
@@ -29,8 +27,13 @@ import {
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  enumerateDoubleEndedIterator_rfold,
+  iterator_enumerate,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
+  mapDoubleEndedIterator_rfold,
+  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -295,32 +298,40 @@ function run(name, f) {
 function main() {
   run("exact map fold", () =>
     foldExact(
-      $mapEnds(
-        $closing(
-          $iterator(
-            own({ start: 0, end: 3 }, 99),
-            ownIterator_next,
-            false,
-            undefined,
-            (it) => $exactLen(ownIterator_sizeHint(it)),
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
+      $knowing(
+        iterator_map(
+          own({ start: 0, end: 3 }, 99),
+          (d) => {
+            const result = [(d[0] + 1000) >>> 0];
+            dDrop_drop(d);
+            return result;
+          },
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          (own) => {
             console.log("drop own");
-            for (const item of it.of.items) {
+            for (const item of own.items) {
               dDrop_drop(item);
             }
           },
+          dDrop_drop,
+          undefined,
+          dDrop_drop,
         ),
-        (d) => {
-          const result = [(d[0] + 1000) >>> 0];
-          dDrop_drop(d);
-          return result;
-        },
+        undefined,
+        (iterator) =>
+          mapExactSizeIterator_len(
+            iterator,
+            { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+            dDrop_drop,
+            (own) => {
+              console.log("drop own");
+              for (const item of own.items) {
+                dDrop_drop(item);
+              }
+            },
+            undefined,
+            dDrop_drop,
+          ),
       ),
       (map) => {
         map.return();
@@ -329,32 +340,40 @@ function main() {
   );
   run("exact map fold panics", () =>
     foldExact(
-      $mapEnds(
-        $closing(
-          $iterator(
-            own({ start: 0, end: 3 }, 1),
-            ownIterator_next,
-            false,
-            undefined,
-            (it) => $exactLen(ownIterator_sizeHint(it)),
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
+      $knowing(
+        iterator_map(
+          own({ start: 0, end: 3 }, 1),
+          (d) => {
+            const result = [(d[0] + 1000) >>> 0];
+            dDrop_drop(d);
+            return result;
+          },
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          (own) => {
             console.log("drop own");
-            for (const item of it.of.items) {
+            for (const item of own.items) {
               dDrop_drop(item);
             }
           },
+          dDrop_drop,
+          undefined,
+          dDrop_drop,
         ),
-        (d) => {
-          const result = [(d[0] + 1000) >>> 0];
-          dDrop_drop(d);
-          return result;
-        },
+        undefined,
+        (iterator) =>
+          mapExactSizeIterator_len(
+            iterator,
+            { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+            dDrop_drop,
+            (own) => {
+              console.log("drop own");
+              for (const item of own.items) {
+                dDrop_drop(item);
+              }
+            },
+            undefined,
+            dDrop_drop,
+          ),
       ),
       (map) => {
         map.return();
@@ -815,27 +834,16 @@ function main() {
   });
   run("enumerate fold", () => {
     const fold = $foldDropping(
-      $enumerate(
-        $closing(
-          $iterator(
-            own({ start: 130, end: 134 }, 132),
-            ownIterator_next,
-            false,
-            ownDoubleEndedIterator_nextBack,
-            (it) => $exactLen(ownIterator_sizeHint(it)),
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+      iterator_enumerate(
+        own({ start: 130, end: 134 }, 132),
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
       ),
       [],
       (acc, [, d]) => push(acc, d),
@@ -1124,32 +1132,32 @@ function main() {
     return collect.length;
   });
   run("enumerate rfold", () => {
-    const rfold = $foldBack(
-      $enumerate(
-        $closing(
-          $iterator(
-            own({ start: 210, end: 214 }, 211),
-            ownIterator_next,
-            false,
-            ownDoubleEndedIterator_nextBack,
-            (it) => $exactLen(ownIterator_sizeHint(it)),
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+    const rfold = enumerateDoubleEndedIterator_rfold(
+      iterator_enumerate(
+        own({ start: 210, end: 214 }, 211),
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
       ),
       [],
       (acc, [, d]) => push(acc, d),
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+      { next_back: ownDoubleEndedIterator_nextBack, rfold: ownDoubleEndedIterator_rfold },
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
       $dropEach(dDrop_drop),
+      undefined,
+      dDrop_drop,
     );
     for (const item of rfold) {
       dDrop_drop(item);
@@ -1157,37 +1165,40 @@ function main() {
     return rfold.length;
   });
   run("map rfold", () => {
-    const rfold = $foldBack(
-      $mapEnds(
-        $closing(
-          $iterator(
-            own({ start: 220, end: 224 }, 221),
-            ownIterator_next,
-            false,
-            ownDoubleEndedIterator_nextBack,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+    const rfold = mapDoubleEndedIterator_rfold(
+      iterator_map(
+        own({ start: 220, end: 224 }, 221),
         (d) => {
           const result = [(d[0] + 1000) >>> 0];
           dDrop_drop(d);
           return result;
         },
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
+        undefined,
+        dDrop_drop,
       ),
       [],
       push,
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      { next_back: ownDoubleEndedIterator_nextBack, rfold: ownDoubleEndedIterator_rfold },
+      dDrop_drop,
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
+      undefined,
       $dropEach(dDrop_drop),
+      undefined,
+      dDrop_drop,
     );
     for (const item of rfold) {
       dDrop_drop(item);

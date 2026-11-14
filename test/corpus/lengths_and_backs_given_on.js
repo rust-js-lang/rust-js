@@ -2,18 +2,25 @@
 
 import {
   $count,
-  $enumerate,
   $iter,
   $iterator,
+  $knowing,
   $next,
   $nextBackSome,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $sizeHint,
   $skipping,
   $taking,
+  $tryOf,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_tryRfold,
+  enumerateExactSizeIterator_len,
+  iterator_enumerate,
   iterator_map,
 } from "@rust-js/std";
 
@@ -49,7 +56,38 @@ function main() {
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
   const value$2 = counted(
-    $enumerate($iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack, $rangeLen)),
+    $knowing(
+      iterator_enumerate({ start: 1, end: 5 }, { next: $rangeNext }),
+      (iterator) =>
+        enumerateDoubleEndedIterator_nextBack(
+          iterator,
+          { len: $rangeLen },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+      (iterator) => enumerateExactSizeIterator_len(iterator, { len: $rangeLen }),
+      undefined,
+      (iterator, k) =>
+        enumerateDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: $rangeNext },
+          { len: $rangeLen },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+      (iterator, init, f, broke, unwind, ends) =>
+        enumerateDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          { len: $rangeLen },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
   console.log(`(${value$2[0]}, ${value$2[1]})`);
   const v = [1, 2, 3];

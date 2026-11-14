@@ -4,14 +4,17 @@ import {
   $catchUnwind,
   $debugList,
   $eprint,
+  $foldToArray,
   $formatting,
   $live,
   $out,
   $print,
   $printing,
-  $roomFor,
+  $rangeNext,
+  $roomForHint,
   $sink,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -40,8 +43,19 @@ function loudDebug_fmt(loud) {
 export const gridDebug = { fmt: gridDebug_fmt };
 function gridDebug_fmt(grid) {
   const f = $sink();
-  $roomFor(grid[0], 4);
-  const cells = Array.from({ length: grid[0] }, (_, value) => [value]);
+  const cells = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: grid[0] },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   try {
     const list = $debugList(f);
     list.entries(cells, (entry) => loudDebug_fmt(entry));

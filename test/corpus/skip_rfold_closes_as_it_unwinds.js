@@ -6,12 +6,15 @@ import {
   $dropEach,
   $enumerate,
   $foldBack,
+  $foldToArray,
   $iter,
   $live,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $skipping,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -24,7 +27,19 @@ function dDrop_drop(d) {
 
 function main() {
   const r = $catchUnwind(() => {
-    const ds = $range(1, 6).map((value) => [value]);
+    const ds = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1, end: 6 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          dDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    );
     return $foldBack(
       $enumerate($skipping($rev($closing($iter(ds), $dropEach(dDrop_drop))), 1, dDrop_drop)),
       0,
@@ -45,7 +60,19 @@ function main() {
     );
   });
   console.log(`panicked ${r.TAG === "Err"}`);
-  const ds = $range(1, 6).map((value) => [value]);
+  const ds = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 6 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const n = $foldBack(
     $enumerate($skipping($rev($closing($iter(ds), $dropEach(dDrop_drop))), 1, dDrop_drop)),
     0,

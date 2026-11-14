@@ -5,13 +5,13 @@ import {
   $cleanup,
   $closing,
   $count,
-  $enumerate,
   $iterator,
   $lastDropping,
   $lazyChain,
   $live,
   $skipping,
   $unwindsOn,
+  iterator_enumerate,
 } from "@rust-js/std";
 
 export function entry() {
@@ -234,37 +234,29 @@ function main() {
     ),
   );
   console.log(`skip count panicked: ${counted.TAG === "Err"}`);
-  counted = $catchUnwind(() =>
-    $count(
-      $enumerate(
-        $closing(
-          $iterator(
-            counts(13, true),
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
-      (value) => {
-        dDrop_drop(value[1]);
+  counted = $catchUnwind(() => {
+    const iter = iterator_enumerate(
+      counts(13, true),
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
       },
-    ),
-  );
+      dDrop_drop,
+    );
+    try {
+      return $count(iter, (value) => {
+        dDrop_drop(value[1]);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+  });
   console.log(`enumerate count panicked: ${counted.TAG === "Err"}`);
   let last = $catchUnwind(() => {
     const value = counts(21, true);

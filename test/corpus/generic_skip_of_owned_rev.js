@@ -5,15 +5,17 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $foldToArray,
   $held,
   $iter,
   $lazyChain,
   $lent,
   $nthDropping,
-  $range,
+  $rangeInclusiveNext,
   $rev,
   $roomForHint,
   $skipping,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -99,7 +101,19 @@ function chainedNth(a, b, dropI) {
 }
 
 function noisy(n) {
-  return $range(1, n + 1, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: n },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        noisyDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

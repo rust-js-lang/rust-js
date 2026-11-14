@@ -10,6 +10,7 @@ import {
   $dropEach,
   $filterEnds,
   $foldOf,
+  $foldToArray,
   $intoIter,
   $iter,
   $iterator,
@@ -22,10 +23,10 @@ import {
   $mapEnds,
   $next,
   $nth,
-  $range,
   $rangeNext,
   $rangeNextBack,
   $repeating,
+  $roomForHint,
   $unwindsOn,
   $vecCollectWay,
   iterator_map,
@@ -152,7 +153,7 @@ function main() {
   shown("in place, from its items", v);
   // By its fold: room for its hint's upper bound first.
   v = all(
-    $lazyRange(0, 5).map((x) => (x + 1) >>> 0),
+    iterator_map({ start: 0, end: 5 }, (x) => (x + 1) >>> 0, { next: $rangeNext }),
     "fold",
     4,
   );
@@ -185,7 +186,7 @@ function main() {
   shown("by next, relayed", v);
   // Into a `B` of the caller's, a `Vec`.
   v = built(
-    $lazyRange(0, 3).map((x) => (x * 3) >>> 0),
+    iterator_map({ start: 0, end: 3 }, (x) => (x * 3) >>> 0, { next: $rangeNext }),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collectVec(
@@ -200,12 +201,18 @@ function main() {
   // Of items that drop: what it collected, dropped as a panic unwinds.
   let r = $catchUnwind(() => {
     const v = built(
-      $lazyRange(1, 5).map((n) => {
-        if (n >= 3) {
-          throw new Error(`at ${n}`);
-        }
-        return [n];
-      }),
+      iterator_map(
+        { start: 1, end: 5 },
+        (n) => {
+          if (n >= 3) {
+            throw new Error(`at ${n}`);
+          }
+          return [n];
+        },
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
       {
         fromIter: (items, ITrustedLen, IInPlace) =>
           $collectVec(
@@ -249,7 +256,19 @@ function main() {
   // By its fold, of a `Vec`'s items made bigger, not in place: what's
   // left of the source dropped before what it collected.
   r = $catchUnwind(() => {
-    const source = $range(1, 5).map((value) => [value]);
+    const source = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1, end: 5 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    );
     const value = all(
       iterator_map(
         iterator_zip(
@@ -310,7 +329,19 @@ function main() {
   console.log(`zipped bigger, of items that drop: ${r.TAG === "Err"}`);
   // In place, the source's items left dropped after what it collected.
   r = $catchUnwind(() => {
-    const source = $range(1, 5).map((value) => [value]);
+    const source = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1, end: 5 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    );
     const value = all(
       $mapEnds($closing($iter(source), $dropEach(loudDrop_drop)), (l) => {
         try {
@@ -372,9 +403,31 @@ function main() {
       false,
     ),
   );
-  r = $catchUnwind(() => kept($lazyRange(1, 5).map((value) => [value])));
+  r = $catchUnwind(() =>
+    kept(
+      iterator_map(
+        { start: 1, end: 5 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+    ),
+  );
   console.log(`kept, by next: ${r.TAG === "Err"}`);
-  source = $range(1, 5).map((value) => [value]);
+  source = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 5 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   r = $catchUnwind(() => kept($iter(source), [4, 4], $dropEach(loudDrop_drop)));
   console.log(`kept, in place: ${r.TAG === "Err"}`);
   // Endless and `TrustedLen`, stepped once first: nothing more is stepped.

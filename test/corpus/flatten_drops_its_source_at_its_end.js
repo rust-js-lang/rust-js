@@ -13,6 +13,7 @@ import {
   $next,
   $tryFoldSome,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,6 +36,9 @@ function countIterator_next(count) {
     count[0]++;
     return count[0];
   }
+}
+function countDrop_drop(count) {
+  console.log(`drop ${count[1]} ${count[0]}`);
 }
 function c(name) {
   return [0, name];
@@ -94,12 +98,12 @@ function counted() {
   const skipWhile = $held(
     $lazySkipWhile(
       $closing($iterator(c("outer"), countIterator_next), (it) => {
-        console.log(`drop ${it.of[1]} ${it.of[0]}`);
+        countDrop_drop(it.of);
       })
         .take(2)
         .flatMap(() =>
           $closing($iterator(c("inner"), countIterator_next), (it) => {
-            console.log(`drop ${it.of[1]} ${it.of[0]}`);
+            countDrop_drop(it.of);
           }).drop(2),
         ),
       (x) => x < 4,
@@ -125,11 +129,9 @@ function counted() {
     console.log(`total ${total}`);
     console.log("after by_ref");
     const f = $held(
-      $closing($iterator(c("fused"), countIterator_next), (it) => {
-        console.log(`drop ${it.of[1]} ${it.of[0]}`);
-      })
-        .map((x) => [x])
-        .flatMap((item) => item),
+      iterator_map(c("fused"), (x) => [x], { next: countIterator_next }, countDrop_drop).flatMap(
+        (item) => item,
+      ),
     );
     try {
       let x;
@@ -140,7 +142,7 @@ function counted() {
       const k = Array.from(
         $lazyTakeWhile(
           $closing($iterator(c("tf"), countIterator_next), (it) => {
-            console.log(`drop ${it.of[1]} ${it.of[0]}`);
+            countDrop_drop(it.of);
           })
             .map((x) => x)
             .filter((item) => item != null),
@@ -159,7 +161,7 @@ function counted() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${byRef[1]} ${byRef[0]}`);
+      countDrop_drop(byRef);
     }
   }
 }
@@ -168,7 +170,7 @@ function counted() {
 function folded() {
   const f = $held(
     $closing($iterator(c("tf2"), countIterator_next), (it) => {
-      console.log(`drop ${it.of[1]} ${it.of[0]}`);
+      countDrop_drop(it.of);
     }).flatMap((x) => [x]),
   );
   let g;
@@ -177,7 +179,7 @@ function folded() {
     console.log(`${n == null ? "None" : `Some(${n})`}`);
     g = $held(
       $closing($iterator(c("any"), countIterator_next), (it) => {
-        console.log(`drop ${it.of[1]} ${it.of[0]}`);
+        countDrop_drop(it.of);
       }).flatMap((x) => [x, x]),
     );
     try {

@@ -23,6 +23,7 @@ import {
   iterator_flatMap,
   iterator_flatten,
   iterator_fuse,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -377,21 +378,10 @@ function main() {
     `mapped ${[2, 3]
       .values()
       .flatMap((n) =>
-        $iterator(
-          [n],
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_count,
-        ).map((x) => (x + 1) >>> 0),
+        iterator_map([n], (x) => (x + 1) >>> 0, {
+          next: ownIterator_next,
+          count: ownIterator_count,
+        }),
       )
       .reduce((n) => n + 1, 0)}`,
   );

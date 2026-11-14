@@ -19,7 +19,9 @@ import {
   $rev,
   $stepBy,
   $unwindsOn,
+  iterator_enumerate,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -168,11 +170,16 @@ function main() {
   });
   case$("map", (g) => {
     let g$5$live = true;
-    let map;
+    let iter;
     try {
-      map = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).map((x) => (x * 2) >>> 0);
+      iter = iterator_map(
+        It.new(3, "it"),
+        (x) => (x * 2) >>> 0,
+        { next: itIterator_next },
+        (it) => {
+          dDrop_drop(it._held);
+        },
+      );
       g$5$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -183,9 +190,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(map, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("take", (g) => {
     let g$6$live = true;
@@ -284,11 +299,11 @@ function main() {
   });
   case$("enumerate", (g) => {
     let g$10$live = true;
-    let enumerate;
+    let iter;
     try {
-      enumerate = $closing($iterator(It.new(2, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).map((x, i) => [i, x]);
+      iter = iterator_enumerate(It.new(2, "it"), { next: itIterator_next }, (it) => {
+        dDrop_drop(it._held);
+      });
       g$10$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -299,9 +314,17 @@ function main() {
       throw error;
     }
     const f = (a, [i, x]) => (((((a + i) >>> 0) + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(enumerate, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("step_by", (g) => {
     let g$11$live = true;

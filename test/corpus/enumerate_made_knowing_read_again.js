@@ -6,6 +6,7 @@ import {
   $dropEach,
   $enumerate,
   $foldOf,
+  $foldToArray,
   $held,
   $iter,
   $iterator,
@@ -13,11 +14,12 @@ import {
   $mapEnds,
   $next,
   $nextBack,
-  $range,
+  $rangeInclusiveNext,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $roomForHint,
   $skipping,
   $tryOf,
   $unwindsOn,
@@ -39,7 +41,19 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function ds() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 5 },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 function main() {
   const mapExactSizeIterator = {

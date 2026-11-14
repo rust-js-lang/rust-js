@@ -2,6 +2,7 @@
 
 import {
   $extend,
+  $foldOf,
   $grownBy,
   $iterator,
   $next,
@@ -104,10 +105,17 @@ function main() {
   );
   // Through a `map`, its source's, as std's `Map` passes it on.
   const value$9 = $sizeHint(
-    $iterator([3], countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint),
+    iterator_map(
+      iterator_map([3], (x) => (x + 1) >>> 0, {
+        next: countdownIterator_next,
+        sizeHint: countdownIterator_sizeHint,
+      }),
+      (x) => (x * 2) >>> 0,
+      { next: $next, fold: $foldOf },
+    ),
   );
   console.log(`(${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`);
-  const value$10 = $sizeHint($iterator([0], blinkIterator_next));
+  const value$10 = $sizeHint(iterator_map([0], (x) => (x + 1) >>> 0, { next: blinkIterator_next }));
   console.log(`(${value$10[0]}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`})`);
   const mapped = iterator_map([4], (x) => (x + 1) >>> 0, {
     next: countdownIterator_next,

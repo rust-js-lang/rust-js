@@ -3,10 +3,15 @@
 import {
   $catchUnwind,
   $cleanup,
-  $collectDropping,
-  $lazyRange,
+  $foldOf,
+  $foldToArray,
   $live,
+  $next,
+  $rangeNext,
+  $roomForHint,
   $unwindsOn,
+  iterator_map,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -25,13 +30,23 @@ function made(n) {
 function main() {
   let r = $catchUnwind(() => {
     const w = 3;
-    const cells = $collectDropping(
-      $lazyRange(0, w).map((n) => {
-        if (n === 2) {
-          throw new Error("at 2");
-        }
-        return [n * 0 + 7];
-      }),
+    const cells = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 0, end: w },
+          (n) => {
+            if (n === 2) {
+              throw new Error("at 2");
+            }
+            return [n * 0 + 7];
+          },
+          { next: $rangeNext },
+          undefined,
+          cellDrop_drop,
+        ),
+        4,
+        true,
+      ),
       cellDrop_drop,
       true,
     );
@@ -42,7 +57,15 @@ function main() {
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const collect = $collectDropping($lazyRange(0, 3).map(made), cellDrop_drop, true);
+    const collect = $foldToArray(
+      $roomForHint(
+        iterator_map({ start: 0, end: 3 }, made, { next: $rangeNext }, undefined, cellDrop_drop),
+        4,
+        true,
+      ),
+      cellDrop_drop,
+      true,
+    );
     for (const item of collect) {
       cellDrop_drop(item);
     }
@@ -50,22 +73,43 @@ function main() {
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const collect = $collectDropping(
-      $lazyRange(1, 4)
-        .map((n) => [(n * 10) >>> 0])
-        .map((c) => {
-          if (c[0] === 30) {
-            try {
-              throw new Error("at 30");
-            } catch (error) {
-              $cleanup(() => {
-                cellDrop_drop(c);
-              }, error);
-              throw error;
+    const collect = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          iterator_map(
+            { start: 1, end: 4 },
+            (n) => [(n * 10) >>> 0],
+            { next: $rangeNext },
+            undefined,
+            cellDrop_drop,
+          ),
+          (c) => {
+            if (c[0] === 30) {
+              try {
+                throw new Error("at 30");
+              } catch (error) {
+                $cleanup(() => {
+                  cellDrop_drop(c);
+                }, error);
+                throw error;
+              }
             }
-          }
-          return c;
-        }),
+            return c;
+          },
+          {
+            next: $next,
+            fold: $foldOf,
+            getUnchecked: (iterator, i) =>
+              mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }, cellDrop_drop),
+          },
+          undefined,
+          cellDrop_drop,
+          undefined,
+          cellDrop_drop,
+        ),
+        4,
+        true,
+      ),
       cellDrop_drop,
       true,
     );
@@ -76,7 +120,19 @@ function main() {
   });
   console.log(`${r.TAG === "Err"}`);
   const squares = Array.from({ length: 4 }, (_, n) => Math.imul(n, n) >>> 0);
-  const cells = Array.from({ length: 2 }, (_, n) => [(n + 100) >>> 0]);
+  const cells = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: 2 },
+        (n) => [(n + 100) >>> 0],
+        { next: $rangeNext },
+        undefined,
+        cellDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   try {
     console.log(`[${squares.join(", ")}] ${cells.length}`);
   } catch (error) {

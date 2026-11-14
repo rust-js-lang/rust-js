@@ -6,6 +6,7 @@ import {
   $cmp,
   $dropItems,
   $eq,
+  $foldToArray,
   $insert,
   $intsOrdered,
   $iterator,
@@ -16,11 +17,13 @@ import {
   $ordTreeSet,
   $partialEq,
   $partialOrd,
-  $range,
+  $rangeNext,
   $rangeNextBack,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $treeFromSorted,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -117,7 +120,21 @@ function main() {
   try {
     built = $treeFromSorted(
       new ($ordTreeMap($cmp))(),
-      $range(0, 30).map((k) => [k, [k]]),
+      $foldToArray(
+        $roomForHint(
+          iterator_map(
+            { start: 0, end: 30 },
+            (k) => [k, [k]],
+            { next: $rangeNext },
+            undefined,
+            (value) => {
+              loudDrop_drop(value[1]);
+            },
+          ),
+          8,
+          true,
+        ),
+      ),
       $intsOrdered,
       "general8",
       8,
@@ -312,7 +329,19 @@ function main() {
   try {
     set = $treeFromSorted(
       new ($ordTreeSet((a, b) => $cmp(a[0], b[0])))(),
-      $range(0, 30).map((value) => [value]),
+      $foldToArray(
+        $roomForHint(
+          iterator_map(
+            { start: 0, end: 30 },
+            (value) => [value],
+            { next: $rangeNext },
+            undefined,
+            loudDrop_drop,
+          ),
+          4,
+          true,
+        ),
+      ),
       loudOrd,
       "general8",
       4,

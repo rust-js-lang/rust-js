@@ -14,11 +14,13 @@ import {
   $lazyRange,
   $mapEnds,
   $range,
+  $rangeNext,
   $reserveHint,
   $skipping,
   $sortedKeys,
   $taking,
   $vecCollectWay,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -54,7 +56,7 @@ function main() {
   const sorted = new $BTreeSet($range(0, 40));
   // By its fold: `TrustedLen`.
   const mapped = collected(
-    $lazyRange(0, 6).map((x) => (x * 2) >>> 0),
+    iterator_map({ start: 0, end: 6 }, (x) => (x * 2) >>> 0, { next: $rangeNext }),
     vecFromIterator,
     true,
   );

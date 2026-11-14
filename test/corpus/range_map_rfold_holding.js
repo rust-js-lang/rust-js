@@ -2,17 +2,19 @@
 
 import {
   $cleanup,
-  $foldBack,
-  $iterator,
-  $live,
-  $mapEnds,
   $rangeNext,
   $rangeNextBack,
-  $unwindsOn,
+  $rangeNthBack,
+  iterator_map,
+  mapDoubleEndedIterator_rfold,
 } from "@rust-js/std";
 
 export function entry() {
   main();
+}
+
+function accDrop_drop(acc) {
+  console.log(`drop acc ${acc[0]}`);
 }
 
 function main() {
@@ -22,10 +24,7 @@ function main() {
   let map;
   let tmp;
   try {
-    map = $mapEnds(
-      $iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack),
-      (x) => (x + 100) >>> 0,
-    );
+    map = iterator_map({ start: 1, end: 6 }, (x) => (x + 100) >>> 0, { next: $rangeNext });
     tmp = [0];
     g$live = false;
   } catch (error) {
@@ -36,23 +35,25 @@ function main() {
     }, error);
     throw error;
   }
-  function f(a, x) {
-    seen = (seen + 1) | 0;
-    a[0] = ((((a[0] * 1000) >>> 0) % 1000003) + x) >>> 0;
-    return a;
-  }
-  let value;
-  try {
-    value = $foldBack(map, tmp, f);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
+  const acc = mapDoubleEndedIterator_rfold(
+    map,
+    tmp,
+    (a, x) => {
+      seen = (seen + 1) | 0;
+      a[0] = ((((a[0] * 1000) >>> 0) % 1000003) + x) >>> 0;
+      return a;
+    },
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    undefined,
+    undefined,
+    undefined,
+    accDrop_drop,
+    (value) => {
       console.log(`drop ${g[0]}`);
-    }
-  }
-  const acc = value;
+    },
+  );
   console.log(`rfold ${acc[0]} after ${seen}`);
-  console.log(`drop acc ${acc[0]}`);
+  accDrop_drop(acc);
 }
 //# sourceMappingURL=case.js.map

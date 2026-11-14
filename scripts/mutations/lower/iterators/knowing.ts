@@ -216,9 +216,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {\n",
+    find: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, true, span)? {\n",
     replace:
-      "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)?.filter(|_| false) {\n",
+      "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, true, span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
@@ -901,5 +901,14 @@ export const mutations: Mutation[] = [
     find: "            || self.recognition().hint_kept_by_form(ty, self.krate.chars_whole)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_of_chars_size_hints.rs$"],
+  },
+  {
+    name: "knowing-held-back-unasked",
+    breaks: "std's compiled struct given to generic code bound by `ExactSizeIterator` alone is given its back too, `next_back`, `try_rfold` and std's `DoubleEndedIterator` dictionaries, which nothing asks there, three times its JS (#1681's change 2)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    self.recognition().double_ended_iterator().filter(|_| back_asked),\n",
+    replace: "                    self.recognition().double_ended_iterator(),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^map_of_a_map_given_for_its_len.rs$"],
   },
 ];

@@ -16,9 +16,11 @@ import {
   $repeating,
   $repeatingWith,
   $reserveHint,
+  $roomForHint,
   $some,
   $successors,
   $unzip,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -108,10 +110,10 @@ function main() {
     `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
   const fours = $repeating(4);
-  const bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
+  const bigger = iterator_map([0], (n) => (n + 100) >>> 0, { next: counterIterator_next });
   const a = $next(fours);
   const b = $next(bigger);
-  const rest = Array.from(bigger);
+  const rest = Array.from($roomForHint(bigger, 4, false));
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.join(", ")}]`,
   );

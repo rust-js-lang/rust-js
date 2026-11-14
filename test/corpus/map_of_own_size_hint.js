@@ -5,7 +5,6 @@ import {
   $exactLen,
   $foldOf,
   $grownVec,
-  $iterator,
   $next,
   $peek,
   $roomForHint,
@@ -33,7 +32,10 @@ function hint(it) {
 }
 function main() {
   const sizeHint = $sizeHint(
-    $iterator([3], countIterator_next, false, undefined, undefined, countIterator_sizeHint),
+    iterator_map([3], (x) => (x * 2) >>> 0, {
+      next: countIterator_next,
+      sizeHint: countIterator_sizeHint,
+    }),
   );
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const held = iterator_map([4], (x) => (x + 1) >>> 0, {
@@ -45,9 +47,10 @@ function main() {
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${mapExactSizeIterator_len(held, { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) })}`,
   );
   const value$1 = hint(
-    $iterator([5], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
-      (x) => (x * 3) >>> 0,
-    ),
+    iterator_map([5], (x) => (x * 3) >>> 0, {
+      next: countIterator_next,
+      sizeHint: countIterator_sizeHint,
+    }),
   );
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   const p = iterator_peekable(
@@ -61,9 +64,10 @@ function main() {
   );
   const v = $grownVec(
     $roomForHint(
-      $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
-        (x) => (x * 10) >>> 0,
-      ),
+      iterator_map([6], (x) => (x * 10) >>> 0, {
+        next: countIterator_next,
+        sizeHint: countIterator_sizeHint,
+      }),
       4,
       false,
     ),

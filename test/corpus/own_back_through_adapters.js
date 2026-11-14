@@ -3,7 +3,6 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $enumerate,
   $exactLen,
   $filterEnds,
@@ -551,29 +550,14 @@ function main() {
     `${found == null ? "None" : `Some(${found})`} ${lent == null ? "None" : `Some(${lent})`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
   console.log(
-    `${$foldBack(
-      $mapEnds(
-        $closing(
-          $iterator(
-            { left: 3 },
-            loudIterator_next,
-            false,
-            loudDoubleEndedIterator_nextBack,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            loudDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            loudDrop_drop(it.of);
-          },
-        ),
-        (x) => (x * 10) | 0,
-      ),
+    `${mapDoubleEndedIterator_rfold(
+      iterator_map({ left: 3 }, (x) => (x * 10) | 0, { next: loudIterator_next }, loudDrop_drop),
       0,
       (a, x) => (a + x) | 0,
+      { next: loudIterator_next },
+      { next_back: loudDoubleEndedIterator_nextBack, rfold: loudDoubleEndedIterator_rfold },
+      undefined,
+      loudDrop_drop,
     )}`,
   );
   console.log(

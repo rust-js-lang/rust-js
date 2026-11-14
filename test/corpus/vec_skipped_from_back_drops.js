@@ -7,6 +7,7 @@ import {
   $drain,
   $dropEach,
   $filterDropping,
+  $foldToArray,
   $held,
   $iter,
   $lazyChain,
@@ -15,12 +16,14 @@ import {
   $next,
   $nthBack,
   $nthDropping,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $skipping,
   $slicing,
   $stepBy,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,7 +35,19 @@ function loudDrop_drop(loud) {
 }
 
 function louds(from, n) {
-  return $range(from, from + n, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: from, end: from + n },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

@@ -6,19 +6,22 @@ import {
   $collectDropping,
   $dropEach,
   $exactLen,
+  $foldToArray,
   $held,
   $iter,
   $knowing,
   $live,
   $next,
   $nextBack,
-  $range,
+  $rangeInclusiveNext,
   $rev,
+  $roomForHint,
   $sizeHint,
   $skipping,
   $taking,
   $tryOf,
   $unwindsOn,
+  iterator_map,
   iterator_skip,
   iterator_stepBy,
   iterator_take,
@@ -64,7 +67,19 @@ function every(v) {
   );
 }
 function ds(n) {
-  return $range(1, n + 1, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: n },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };

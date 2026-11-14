@@ -13,9 +13,11 @@ import {
   $lazyScan,
   $live,
   $next,
-  $range,
+  $rangeInclusiveNext,
   $rev,
+  $roomForHint,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,7 +45,19 @@ function itemDrop_drop(item) {
 }
 
 function items() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 5 },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        itemDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function consumed() {

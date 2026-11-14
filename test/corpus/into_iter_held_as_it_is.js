@@ -6,9 +6,11 @@ import {
   $collectDropping,
   $iter,
   $iterator,
+  $jsIteratorSome,
   $next,
   $rangeNext,
   $roomForHint,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -36,13 +38,17 @@ function twiceIterator_next(twice, IIterator, IClone) {
 function twices(all, HItemIntoIterator, HItemIntoIterClone, TwiceSize) {
   return $collectDropping(
     $roomForHint(
-      Iterator.from(all).map((items) => {
-        const iter = HItemIntoIterator.intoIter(items);
-        return {
-          iter: HItemIntoIterClone.clone(iter),
-          orig: iter,
-        };
-      }),
+      iterator_map(
+        all,
+        (items) => {
+          const iter = HItemIntoIterator.intoIter(items);
+          return {
+            iter: HItemIntoIterClone.clone(iter),
+            orig: iter,
+          };
+        },
+        $jsIteratorSome,
+      ),
       TwiceSize,
       false,
     ),

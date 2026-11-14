@@ -6,6 +6,8 @@ import {
   $collectDropping,
   $collectVec,
   $dropEach,
+  $foldOf,
+  $foldToArray,
   $fromFn,
   $held,
   $iter,
@@ -19,9 +21,10 @@ import {
   $lazyZip,
   $lent,
   $next,
-  $range,
   $rangeNext,
+  $roomForHint,
   $stepBy,
+  iterator_enumerate,
   iterator_flatMap,
   iterator_fuse,
   iterator_map,
@@ -55,7 +58,7 @@ function twice(it, IVecCollect) {
 }
 function main() {
   const value = twice(
-    $iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0),
+    iterator_map(f(), (x) => (x * 10) >>> 0, { next: flakyIterator_next }),
     "next",
   );
   console.log(`map ([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}])`);
@@ -67,9 +70,11 @@ function main() {
     `filter ([${value$1[0].join(", ")}], [${value$1[1].join(", ")}], [${value$1[2].join(", ")}])`,
   );
   const value$2 = twice(
-    $iterator(f(), flakyIterator_next)
-      .map((x, i) => [i, x])
-      .map(([i, x]) => (((i * 100) >>> 0) + x) >>> 0),
+    iterator_map(
+      iterator_enumerate(f(), { next: flakyIterator_next }),
+      ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
+      { next: $next, fold: $foldOf },
+    ),
     "next",
   );
   console.log(
@@ -210,15 +215,13 @@ function main() {
   // Std's `advance_by`, which a `map`'s `nth` steps its source by, stops
   // at the first `None`, the rest left to step.
   const skipped = twice(
-    $iterator(f(), flakyIterator_next)
-      .map((x) => (x + 1) >>> 0)
-      .drop(3),
+    iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }).drop(3),
     "next",
   );
   console.log(
     `map skip3 ([${skipped[0].join(", ")}], [${skipped[1].join(", ")}], [${skipped[2].join(", ")}])`,
   );
-  const mapped = $iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0);
+  const mapped = iterator_map(f(), (x) => (x * 10) >>> 0, { next: flakyIterator_next });
   const third = Array.from($lent(mapped).drop(3).take(1))[0];
   const after = $next(mapped);
   console.log(
@@ -226,7 +229,19 @@ function main() {
   );
   // A zip isn't done with at its first end: its other side, which drops
   // what it holds, is still stepped after (#279).
-  const louds = $range(20, 25).map((value) => [value]);
+  const louds = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 20, end: 25 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const zipped = $held(
     iterator_zip(
       f(),
@@ -254,11 +269,25 @@ function main() {
   let first;
   try {
     first = Array.from(
-      $lent(zipped).map(([x, loud]) => {
-        const result = (x + loud[0]) >>> 0;
-        loudDrop_drop(loud);
-        return result;
-      }),
+      $roomForHint(
+        iterator_map(
+          $lent(zipped),
+          ([x, loud]) => {
+            const result = (x + loud[0]) >>> 0;
+            loudDrop_drop(loud);
+            return result;
+          },
+          { next: $next },
+          undefined,
+          undefined,
+          undefined,
+          (value) => {
+            loudDrop_drop(value[1]);
+          },
+        ),
+        4,
+        false,
+      ),
     );
   } catch (error) {
     $cleanup(() => {
@@ -275,11 +304,27 @@ function main() {
     throw error;
   }
   const second = $collectDropping(
-    zipped.map(([x, loud]) => {
-      const result = (x + loud[0]) >>> 0;
-      loudDrop_drop(loud);
-      return result;
-    }),
+    $roomForHint(
+      iterator_map(
+        zipped,
+        ([x, loud]) => {
+          const result = (x + loud[0]) >>> 0;
+          loudDrop_drop(loud);
+          return result;
+        },
+        { next: $next, fold: $foldOf },
+        (zip) => {
+          zip.return();
+        },
+        undefined,
+        undefined,
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+      ),
+      4,
+      false,
+    ),
   );
   console.log(`zip second [${second.join(", ")}]`);
 }

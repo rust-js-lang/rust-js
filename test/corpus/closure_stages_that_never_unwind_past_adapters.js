@@ -15,8 +15,10 @@ import {
   $lazyChain,
   $lazyRange,
   $lazyTakeWhile,
-  $range,
+  $rangeNext,
+  $roomForHint,
   iterator_fuse,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -55,7 +57,19 @@ function tickIterator_next(tick) {
 }
 
 function ds() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 6 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function run(name, boom, case$) {
@@ -99,9 +113,13 @@ function main() {
     return collect.length;
   });
   run("chain", 107, () => {
-    const map = $closing($iterator([7], tickIterator_next), (it) => {
-      tickDrop_drop(it.of);
-    }).map((n) => [(n + 50) >>> 0]);
+    const map = iterator_map(
+      [7],
+      (n) => [(n + 50) >>> 0],
+      { next: tickIterator_next },
+      tickDrop_drop,
+      dDrop_drop,
+    );
     let tmp;
     try {
       tmp = ds();

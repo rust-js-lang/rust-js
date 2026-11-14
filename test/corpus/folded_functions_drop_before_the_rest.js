@@ -24,6 +24,7 @@ import {
   $rev,
   $stepBy,
   $unwindsOn,
+  iterator_enumerate,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -261,22 +262,12 @@ function reachingItsOwnFold() {
   const g$4 = ["f"];
   let enumerate;
   try {
-    enumerate = $enumerate(
-      $closing(
-        $iterator(
-          own(2, "own"),
-          ownIterator_next,
-          false,
-          ownDoubleEndedIterator_nextBack,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          ownIterator_nth,
-        ),
-        (it) => {
-          dDrop_drop(it.of._held);
-        },
-      ),
+    enumerate = iterator_enumerate(
+      own(2, "own"),
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      (own) => {
+        dDrop_drop(own._held);
+      },
     );
     g$4$live = false;
   } catch (error) {

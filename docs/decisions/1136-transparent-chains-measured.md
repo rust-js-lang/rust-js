@@ -326,3 +326,56 @@ a `chars()` collect whose hint isn't std's; mutations
 `drop-glue-admits-a-user-drop` and `capacity-admits-an-inexact-hint`,
 caught, and `transparent-capacity-unseen` and `held-stage-never-decided`
 retargeted, caught.
+
+## Amendment: the map and enumerate flip widened, every reason but admitted (2026-11-15, #1681's step (b))
+
+The held flip took a held chain's `map()`s and `enumerate()`s out of the
+recognizers' hand-written forms. It takes them out of every chain the
+predicate doesn't admit now, whatever keeps it out, as std's compiled
+structs, from its source outward (the re-land's rule): each a chain whose
+hand-written form no table proves to be std's body. Not of one whose
+source, or whose own value, is made knowing its back or its length where
+it's held (`BackStepped::made_knowing`): `let shifted = (1..6).map(f);
+shifted.enumerate().rfold(..)` keeps its `$mapEnds`, which std's struct
+would be given that knowing only by each of std's back dictionaries, three
+times its JS.
+
+Two of the predicate's reasons over-excluded, and were fixed first, so no
+port shape moves:
+
+- **`extend` is a consumer.** A chain given to std's `Extend::extend` of a
+  `Vec`, a `VecDeque`, a `String` or a `HashMap` is consumed where it's
+  made, as one collected is, not escaping; a `Vec`'s asks the capacity
+  reason as a collect's does. React's `rects.extend((0..n).map(f))` is
+  admitted, `$lazyRange(0, n).map(f)` as it was. The rows that prove
+  `$extend`'s hand-written form, of every source and chain, landed with
+  #1803, #1804 and #1805, the three wrong answers they found (ADRs 0419,
+  0991, 1090).
+- **A compiled struct given to generic code is given only what it asks.**
+  `knowing_held` gave std's compiled struct its back, `next_back`, its
+  `rfold`, `nth_back` and `try_rfold` and std's `DoubleEndedIterator`
+  dictionaries, wherever its type had one, to generic code bound by
+  `ExactSizeIterator` alone too, which can't step it from there: now only
+  where it's asked (`as_exact_size`'s `back`).
+
+Measured: 169 corpus snapshots move, each as native prints, ×1.050 their
+lines (55,131 to 57,877); worst enumerate_of_take_from_back ×1.88, a
+range's map of items with a destructor collected, `drop-glue`'s, std's
+compiled `Map` where `$range(1, 7).map(f)` read as JS (#1826, the next
+step: its hand-written form proved by the tables' `drop` and `stage` rows).
+A refusal ends: a map of a range stepped from its end given to generic
+code that asks its length, its hand-written form refused (ADR 0987), is
+std's compiled structs (corpus case
+map_of_a_reversed_range_given_for_its_length, against native Rust, in
+place of its diagnostics row; mutation reversal-of-range-chain-as-items
+retargeted, caught). The stream-order test's console, the browser's, holds
+std's compiled bodies beside the helpers, as `@rust-js/std`'s entry
+re-exports them. The
+React port's JS regenerates byte for byte. Readability reads better in two
+shapes (renamed `x$1` 477.9 to 474.7, role fallbacks 260.9 to 259.1 in
+10,000 lines). The decisions test counts a range's map extended, admitted,
+and a `chars()`'s, a capacity. Mutations transparent-extend-escapes,
+transparent-extend-capacity-unasked, knowing-held-back-unasked and
+widened-flip-of-a-chain-made-knowing, caught; transparent-escapes-unseen,
+transparent-for-loop-escapes, transparent-capacity-unseen and
+capacity-admits-an-inexact-hint retargeted, caught.

@@ -8,7 +8,6 @@ import {
   $foldOf,
   $foldToArray,
   $iter,
-  $iterator,
   $next,
   $nextBack,
   $rangeNext,
@@ -166,15 +165,11 @@ function main() {
   const first = $clone(evens);
   $next(first);
   console.log(`[${Array.from(first).join(", ")}] [${Array.from(evens).join(", ")}]`);
-  const makeMap$1 = (it, f) =>
-    $cloning($iterator(it, $rangeNext).map(f), () =>
-      makeMap$1({ start: it.start, end: it.end }, f),
-    );
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$1({ start: 1, end: 3 }, (x) => (x * 3) | 0),
-        $clone,
+        iterator_map({ start: 1, end: 3 }, (x) => (x * 3) | 0, { next: $rangeNext }),
+        (iterator) => mapClone_clone(iterator, rangeClone, clone),
         $next,
       ).take(5),
     ).join(", ")}]`,

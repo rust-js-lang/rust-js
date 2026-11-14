@@ -15,6 +15,7 @@ import {
   $some,
   $someValue,
   $stepBy,
+  iterator_enumerate,
 } from "@rust-js/std";
 
 export function entry() {
@@ -329,35 +330,11 @@ function main() {
       .reduce((a, x) => (a + x) | 0, 0)}`,
   );
   const value$18 = $nth(
-    $lent(
-      $enumerate(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
-      ),
-    ),
+    $lent(iterator_enumerate(c(), { next: countIterator_next, nth: countIterator_nth })),
     3,
   );
   console.log(`enumerate ${value$18 == null ? "None" : `Some((${value$18[0]}, ${value$18[1]}))`}`);
-  const e = $enumerate(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ),
-  );
+  const e = iterator_enumerate(c(), { next: countIterator_next, nth: countIterator_nth });
   const value$19 = $next(e);
   const value$20 = $nth($lent(e), 2);
   const value$21 = $next(e);

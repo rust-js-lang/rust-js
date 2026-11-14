@@ -22,7 +22,6 @@ import {
   $heapFrom,
   $isMultipleOf,
   $iter,
-  $iterator,
   $lastDropping,
   $lazyChain,
   $lazyMapWhile,
@@ -41,10 +40,8 @@ import {
   $partialOrd,
   $partition,
   $position,
-  $range,
   $rangeNext,
   $rev,
-  $roomFor,
   $roomForHint,
   $sortedEntries,
   $sortedKeys,
@@ -68,9 +65,13 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  const it = $iterator(r, $rangeNext).map((value) => [value]);
-  $roomFor(Math.max(r.end - r.start, 0), 4);
-  return Array.from(it);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
+      4,
+      true,
+    ),
+  );
 }
 
 function cDrop_drop(c) {
@@ -1374,7 +1375,19 @@ function main() {
       }
     }
   });
-  const cs = $range(940, 945).map((value) => [value]);
+  const cs = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 940, end: 945 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        cDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   try {
     run("cloned max_by_key", () => {
       const x = $maxByKey(

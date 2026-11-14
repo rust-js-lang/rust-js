@@ -23,6 +23,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
+  iterator_map,
 } from "@rust-js/std";
 
 const dPartialOrd = $partialOrd({
@@ -174,14 +175,11 @@ function main() {
       $heapFrom(
         Array.from(
           $roomForHint(
-            $iterator(
+            iterator_map(
               own(10, (n) => n),
-              ownIterator_next,
-              true,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-            ).map((n) => (n * 2) >>> 0),
+              (n) => (n * 2) >>> 0,
+              { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            ),
             4,
             false,
           ),

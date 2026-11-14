@@ -10,20 +10,22 @@ import {
   $debugStr,
   $dropEach,
   $dropItems,
-  $enumerate,
   $exactLen,
   $filterEnds,
+  $foldOf,
   $foldToArray,
   $held,
   $iter,
   $iterator,
   $live,
-  $mapEnds,
+  $next,
   $reserveHint,
   $roomForHint,
   $slicing,
   $tryFoldOk,
   $unwindsOn,
+  iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -210,16 +212,12 @@ function main() {
   );
   const s = Array.from(
     $reserveHint(
-      $mapEnds(
-        $enumerate(
-          $iterator(
-            every(),
-            everyIterator_next,
-            false,
-            everyDoubleEndedIterator_nextBack,
-            (it) => $exactLen(everyIterator_sizeHint(it)),
-            everyIterator_sizeHint,
-          ),
+      iterator_map(
+        iterator_enumerate(
+          every(),
+          { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+          undefined,
+          dDrop_drop,
         ),
         ([i, d]) => {
           let result;
@@ -233,6 +231,13 @@ function main() {
           }
           dDrop_drop(d);
           return result;
+        },
+        { next: $next, fold: $foldOf },
+        undefined,
+        undefined,
+        undefined,
+        (value) => {
+          dDrop_drop(value[1]);
         },
       ),
       1,

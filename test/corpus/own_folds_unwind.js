@@ -15,6 +15,7 @@ import {
   $some,
   $someValue,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -395,42 +396,38 @@ function main() {
       extra: [9],
     };
     const x = $foldDropping(
-      $closing(
-        $iterator(
-          w,
-          (iterator) => wrapIterator_next(iterator, dDrop_drop),
-          true,
-          undefined,
-          undefined,
-          undefined,
-          (iterator, init, f, unwind, ends) =>
+      iterator_map(
+        w,
+        (d) => {
+          if (d[0] === 2) {
+            try {
+              throw new Error("2");
+            } catch (error) {
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
+              throw error;
+            }
+          }
+          return d;
+        },
+        {
+          next: (iterator) => wrapIterator_next(iterator, dDrop_drop),
+          fold: (iterator, init, f, unwind, ends) =>
             wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
-          undefined,
-          undefined,
-          (iterator, init, f, unwind, ends) =>
-            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind, ends),
-        ),
-        (it) => {
-          for (const item of it.of.items) {
+        },
+        (wrap) => {
+          for (const item of wrap.items) {
             dDrop_drop(item);
           }
-          if (it.of.extra != null) {
-            dDrop_drop(it.of.extra);
+          if (wrap.extra != null) {
+            dDrop_drop(wrap.extra);
           }
         },
-      ).map((d) => {
-        if (d[0] === 2) {
-          try {
-            throw new Error("2");
-          } catch (error) {
-            $cleanup(() => {
-              dDrop_drop(d);
-            }, error);
-            throw error;
-          }
-        }
-        return d;
-      }),
+        dDrop_drop,
+        undefined,
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -550,34 +547,31 @@ function main() {
   run("owned map fold", () => {
     const owned = { items: [[7], [8], [9]] };
     const x = $foldDropping(
-      $closing(
-        $iterator(
-          owned,
-          ownedIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownedIterator_fold,
-        ),
-        (it) => {
-          for (const item of it.of.items) {
+      iterator_map(
+        owned,
+        (d) => {
+          if (d[0] === 8) {
+            try {
+              throw new Error("8");
+            } catch (error) {
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
+              throw error;
+            }
+          }
+          return d;
+        },
+        { next: ownedIterator_next, fold: ownedIterator_fold },
+        (owned) => {
+          for (const item of owned.items) {
             dDrop_drop(item);
           }
         },
-      ).map((d) => {
-        if (d[0] === 8) {
-          try {
-            throw new Error("8");
-          } catch (error) {
-            $cleanup(() => {
-              dDrop_drop(d);
-            }, error);
-            throw error;
-          }
-        }
-        return d;
-      }),
+        dDrop_drop,
+        undefined,
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),

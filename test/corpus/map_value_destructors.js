@@ -6,13 +6,16 @@ import {
   $cmp,
   $drainAll,
   $extendMap,
+  $foldToArray,
   $insert,
   $iter,
   $orInsert,
-  $range,
+  $rangeInclusiveNext,
   $retainMap,
+  $roomForHint,
   $sortedEntries,
   $treeFrom,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,7 +29,21 @@ function noisyDrop_drop(noisy) {
 function main() {
   const tree = $treeFrom(
     new $BTreeMap(),
-    $range(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1, end: 6 },
+          (k) => [k, [(k * 10) >>> 0]],
+          { next: $rangeInclusiveNext },
+          undefined,
+          (value) => {
+            noisyDrop_drop(value[1]);
+          },
+        ),
+        8,
+        true,
+      ),
+    ),
     false,
     $cmp,
     noisyDrop_drop,

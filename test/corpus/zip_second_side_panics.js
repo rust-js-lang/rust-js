@@ -6,6 +6,7 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $foldToArray,
   $held,
   $iter,
   $iterator,
@@ -14,8 +15,9 @@ import {
   $live,
   $next,
   $rangeNext,
-  $roomFor,
+  $roomForHint,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -44,9 +46,13 @@ function panickyIterator_next(panicky) {
 }
 
 function ds(r) {
-  const it = $iterator(r, $rangeNext).map((value) => [value]);
-  $roomFor(Math.max(r.end - r.start, 0), 4);
-  return Array.from(it);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
+      4,
+      true,
+    ),
+  );
 }
 
 function panicky(r, at) {

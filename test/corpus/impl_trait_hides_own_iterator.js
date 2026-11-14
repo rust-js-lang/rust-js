@@ -7,18 +7,20 @@ import {
   $count,
   $enumerate,
   $exactLen,
+  $foldToArray,
   $held,
   $iterator,
   $lazyChain,
   $lent,
   $live,
   $nthDropping,
-  $range,
+  $rangeNext,
   $rev,
   $roomForHint,
   $skipping,
   $stepBy,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,7 +47,21 @@ function queueDoubleEndedIterator_nextBack(queue) {
 }
 
 function queue(from) {
-  return [$range(from, from + 4, 4).map((value) => [value])];
+  return [
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: from, end: from + 4 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    ),
+  ];
 }
 
 function main() {

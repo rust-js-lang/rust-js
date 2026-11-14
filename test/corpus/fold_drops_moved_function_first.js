@@ -18,7 +18,6 @@ import {
   $held,
   $holding,
   $iter,
-  $iterator,
   $last,
   $lazyChain,
   $lazyMapWhile,
@@ -32,9 +31,9 @@ import {
   $next,
   $partition,
   $print,
-  $range,
   $rangeNext,
   $reduce,
+  $roomForHint,
   $skipping,
   $stepBy,
   iterator_fuse,
@@ -61,7 +60,19 @@ function zero(guard) {
 }
 
 function ds() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 6 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function countingIterator_next(counting) {
@@ -70,6 +81,10 @@ function countingIterator_next(counting) {
     return [counting[0]];
   }
   return counting[0] < 2 ? value() : undefined;
+}
+
+function countingDrop_drop(counting) {
+  $print("counting ");
 }
 
 function case$(name, run) {
@@ -1036,19 +1051,20 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("the crate's iterator", (g) => {
-    function f(d) {
-      const result = (d[0] + zero(g)) >>> 0;
-      dDrop_drop(d);
-      return result;
-    }
-    const iter = $holding(
-      $closing($iterator([0], countingIterator_next), (it) => {
-        $print("counting ");
-      }).map(f),
-      () => {
+    const iter = iterator_map(
+      [0],
+      (d) => {
+        const result = (d[0] + zero(g)) >>> 0;
+        dDrop_drop(d);
+        return result;
+      },
+      { next: countingIterator_next },
+      countingDrop_drop,
+      undefined,
+      (value) => {
         dDrop_drop(g);
       },
-      "after",
+      dDrop_drop,
     );
     let result;
     try {

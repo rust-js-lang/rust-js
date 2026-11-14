@@ -8,16 +8,19 @@ import {
   $enumerate,
   $findBack,
   $foldBack,
+  $foldToArray,
   $held,
   $iter,
   $live,
   $next,
   $nextBack,
   $nthBack,
-  $range,
+  $rangeInclusiveNext,
   $rev,
+  $roomForHint,
   $stepByEnds,
   $unwindsOn,
+  iterator_map,
   iterator_stepBy,
   stepByDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -31,7 +34,19 @@ function lDrop_drop(l) {
 }
 
 function ls(n) {
-  return $range(1, n + 1, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: n },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        lDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

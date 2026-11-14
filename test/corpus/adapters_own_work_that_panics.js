@@ -17,7 +17,6 @@ import {
   $lazyRange,
   $lazyZip,
   $next,
-  $range,
   $rangeLen,
   $rangeNext,
   $repeating,
@@ -27,6 +26,7 @@ import {
   $slice,
   $trustedZip,
   $zipEnds,
+  iterator_map,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -96,7 +96,19 @@ function twiceIterator_next(twice) {
 }
 
 function ds() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 6 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function once(held) {
@@ -104,6 +116,13 @@ function once(held) {
     _held: [held],
     left: 1,
   };
+}
+
+function tickDrop_drop(tick) {
+  console.log(`drop tick ${tick[0]}`);
+  if (boom(tick[0])) {
+    throw new Error("drop");
+  }
 }
 
 function tickIterator_next(tick) {
@@ -445,13 +464,16 @@ function main() {
   run("flatten of a map", [107, 0], () => {
     const collect = $collectDropping(
       $flatMap(
-        $lazyRange(7, 9).map((value) => [value]),
+        iterator_map(
+          { start: 7, end: 9 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          tickDrop_drop,
+        ),
         (item) =>
           $closing($iterator(item, tickIterator_next), (it) => {
-            console.log(`drop tick ${it.of[0]}`);
-            if (boom(it.of[0])) {
-              throw new Error("drop");
-            }
+            tickDrop_drop(it.of);
           }),
       ).map((value) => [value]),
       dDrop_drop,
@@ -464,10 +486,7 @@ function main() {
     const collect = $collectDropping(
       $flatMap($lazyRange(7, 9), (value) =>
         $closing($iterator([value], tickIterator_next), (it) => {
-          console.log(`drop tick ${it.of[0]}`);
-          if (boom(it.of[0])) {
-            throw new Error("drop");
-          }
+          tickDrop_drop(it.of);
         }),
       ).map((value) => [value]),
       dDrop_drop,

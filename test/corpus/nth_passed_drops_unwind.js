@@ -11,11 +11,13 @@ import {
   $foldToArray,
   $held,
   $iter,
-  $range,
+  $rangeInclusiveNext,
   $rev,
+  $roomForHint,
   $skipping,
   $stepBy,
   $tryFoldOk,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -69,7 +71,19 @@ function totalSumD_sum(iter, dropI) {
 }
 
 function seven() {
-  return $range(1, 8).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 7 },
+        (value) => [value],
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function add(a, d) {

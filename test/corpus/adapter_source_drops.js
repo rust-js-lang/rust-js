@@ -9,6 +9,7 @@ import {
   $live,
   $next,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,28 +24,59 @@ function counterIterator_next(counter) {
   return counter.n > 0 ? value() : undefined;
 }
 
+function counterDrop_drop(counter) {
+  console.log(`drop ${counter.name}`);
+}
+
 function main() {
-  const total = $closing($iterator({ n: 3, name: "sum" }, counterIterator_next), (it) => {
-    console.log(`drop ${it.of.name}`);
-  })
-    .map((x) => (x * 2) >>> 0)
-    .reduce((a, b) => (a + b) >>> 0, 0);
+  const iter$1 = iterator_map(
+    { n: 3, name: "sum" },
+    (x) => (x * 2) >>> 0,
+    { next: counterIterator_next },
+    counterDrop_drop,
+  );
+  let result;
+  try {
+    result = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  const total = result;
   console.log(`total ${total}`);
   const all = $collectDropping(
     $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
-      console.log(`drop ${it.of.name}`);
+      counterDrop_drop(it.of);
     }).filter((x) => x % 2 === 0),
   );
   console.log(`all [${all.join(", ")}]`);
-  const count = $closing($iterator({ n: 4, name: "count" }, counterIterator_next), (it) => {
-    console.log(`drop ${it.of.name}`);
-  })
-    .map((x) => (x + 1) >>> 0)
-    .reduce((n) => n + 1, 0);
+  const iter$2 = iterator_map(
+    { n: 4, name: "count" },
+    (x) => (x + 1) >>> 0,
+    { next: counterIterator_next },
+    counterDrop_drop,
+  );
+  let result$1;
+  try {
+    result$1 = iter$2.reduce((n) => n + 1, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$2.return();
+    }
+  }
+  const count = result$1;
   console.log(`count ${count}`);
-  const iter = $closing($iterator({ n: 2, name: "for" }, counterIterator_next), (it) => {
-    console.log(`drop ${it.of.name}`);
-  }).map((x) => (x * 10) >>> 0);
+  const iter = iterator_map(
+    { n: 2, name: "for" },
+    (x) => (x * 10) >>> 0,
+    { next: counterIterator_next },
+    counterDrop_drop,
+  );
   try {
     let x;
     while ((x = $next(iter)) != null) {
@@ -59,16 +91,19 @@ function main() {
   }
   // A chain's first part, done with before its second is stepped, as
   // Rust's `Chain` drops it.
-  const map = $closing($iterator({ n: 1, name: "first" }, counterIterator_next), (it) => {
-    console.log(`drop ${it.of.name}`);
-  }).map((x) => (x + 1) >>> 0);
+  const map = iterator_map(
+    { n: 1, name: "first" },
+    (x) => (x + 1) >>> 0,
+    { next: counterIterator_next },
+    counterDrop_drop,
+  );
   function inspect(x) {
     console.log(`second ${x}`);
   }
   let tmp;
   try {
     tmp = $closing($iterator({ n: 1, name: "second" }, counterIterator_next), (it) => {
-      console.log(`drop ${it.of.name}`);
+      counterDrop_drop(it.of);
     }).map((item) => {
       inspect(item);
       return item;

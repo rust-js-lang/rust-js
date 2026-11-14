@@ -8,6 +8,7 @@ import {
   $count,
   $dropEach,
   $foldOf,
+  $foldToArray,
   $held,
   $iter,
   $lastDropping,
@@ -17,12 +18,14 @@ import {
   $next,
   $nextBack,
   $nthDropping,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $skipping,
   $stepBy,
   $unwindsOn,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
   iterator_rev,
   iterator_take,
@@ -37,7 +40,19 @@ function loudDrop_drop(loud) {
 }
 
 function louds(from, n) {
-  return $range(from, from + n, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: from, end: from + n },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

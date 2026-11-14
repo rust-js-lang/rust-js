@@ -12,15 +12,17 @@ import {
   $count,
   $dropEach,
   $dropItems,
+  $foldToArray,
   $iter,
-  $lazyRange,
   $mapFrom,
-  $range,
+  $rangeNext,
   $reserveHint,
+  $roomForHint,
   $skipping,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -53,7 +55,15 @@ function byNumber() {
   return $mapFrom(
     new Map(),
     $reserveHint(
-      $lazyRange(0, 3).map((i) => [i, [i]]),
+      iterator_map(
+        { start: 0, end: 3 },
+        (i) => [i, [i]],
+        { next: $rangeNext },
+        undefined,
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+      ),
       8,
       4,
     ),
@@ -66,7 +76,15 @@ function byLoud() {
   return $mapFrom(
     new $KeyMap(),
     $reserveHint(
-      $lazyRange(0, 3).map((i) => [[i], i]),
+      iterator_map(
+        { start: 0, end: 3 },
+        (i) => [[i], i],
+        { next: $rangeNext },
+        undefined,
+        (value) => {
+          loudDrop_drop(value[0]);
+        },
+      ),
       8,
       4,
     ),
@@ -121,7 +139,13 @@ function main() {
   const set = $mapFrom(
     new $KeySet(),
     $reserveHint(
-      $lazyRange(0, 3).map((value) => [value]),
+      iterator_map(
+        { start: 0, end: 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
       4,
       4,
     ),
@@ -139,7 +163,21 @@ function main() {
 
   let tree = $treeFrom(
     new $BTreeMap(),
-    $range(0, 3).map((i) => [i, [i]]),
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 0, end: 3 },
+          (i) => [i, [i]],
+          { next: $rangeNext },
+          undefined,
+          (value) => {
+            loudDrop_drop(value[1]);
+          },
+        ),
+        8,
+        true,
+      ),
+    ),
     false,
     $cmp,
     loudDrop_drop,
@@ -153,7 +191,19 @@ function main() {
   console.log(`tree values [${treeValues.join(", ")}] ${arg$4}`);
   const treeSet = $treeFrom(
     new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-    $range(0, 3).map((value) => [value]),
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 0, end: 3 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    ),
     true,
     (a, b) => $cmp(a[0], b[0]),
     undefined,
@@ -166,7 +216,19 @@ function main() {
   );
   const arg$5 = drops();
   console.log(`tree set [${treeItems.join(", ")}] ${arg$5}`);
-  const deque = $range(0, 3).map((value) => [value]);
+  const deque = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const value$12 = $iter(deque);
   const value$13 = limit();
   const dequeItems = $collectDropping(
@@ -174,7 +236,19 @@ function main() {
   );
   const arg$6 = drops();
   console.log(`deque [${dequeItems.join(", ")}] ${arg$6}`);
-  let list = Array.from({ length: 3 }, (_, value) => [value]);
+  let list = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const value$14 = $iter(list);
   const value$15 = limit();
   const listItems = $collectDropping(
@@ -203,7 +277,21 @@ function main() {
   console.log(`keys skipped [${skippedKeys.join(", ")}] ${arg$9}`);
   tree = $treeFrom(
     new $BTreeMap(),
-    $range(0, 3).map((i) => [i, [i]]),
+    $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 0, end: 3 },
+          (i) => [i, [i]],
+          { next: $rangeNext },
+          undefined,
+          (value) => {
+            loudDrop_drop(value[1]);
+          },
+        ),
+        8,
+        true,
+      ),
+    ),
     false,
     $cmp,
     loudDrop_drop,
@@ -217,7 +305,19 @@ function main() {
   );
   const arg$10 = drops();
   console.log(`tree values skipped [${treeSkipped.join(", ")}] ${arg$10}`);
-  list = Array.from({ length: 3 }, (_, value) => [value]);
+  list = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const value$20 = $iter(list);
   const value$21 = limit();
   const listSkipped = $collectDropping(

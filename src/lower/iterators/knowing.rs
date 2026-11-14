@@ -513,7 +513,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// $rangeLen)`; one already, itself.
     pub(in crate::lower) fn as_exact_size(&mut self, value: Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
         // One a struct holds, as `as_double_ended` says (ADR 0549).
-        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
+        if let Some(knowing) = self.knowing_held(value.clone(), ty, back, span)? {
             return Ok(knowing);
         }
         // The crate's, made knowing its length, and its back where asked.
@@ -715,7 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One a struct holds, which keeps its source (ADR 0542): of one given
         // as it is, its back and length this use's dictionaries', wherever it
         // was made; of one made knowing them, an array's or a range's, itself.
-        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
+        if let Some(knowing) = self.knowing_held(value.clone(), ty, true, span)? {
             return Ok(knowing);
         }
         // A flatten made here, `src.flatMap(each)`: `$flattenEnds` of its
@@ -1017,12 +1017,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// have been made where they weren't given (ADR 0549). Or a compiled
     /// std iterator's struct, `Fuse`'s, given its compiled `next_back` and
     /// `len` with this use's dictionaries, where it's each here (ADR 0561).
-    /// `None` of another, or where this use has neither.
-    pub(in crate::lower) fn knowing_held(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    /// `None` of another, or where this use has neither. Its back, `next_back`
+    /// and the folds from there, only where it's asked, `back_asked`: what's given
+    /// to generic code bound by `ExactSizeIterator` alone can't step it from
+    /// there, and the dictionaries of std's `DoubleEndedIterator` it would
+    /// be given were most of a held flip's chain's JS (#1681's change 2).
+    pub(in crate::lower) fn knowing_held(
+        &mut self,
+        it: Expr,
+        ty: Ty<'tcx>,
+        back_asked: bool,
+        span: Span,
+    ) -> R<Option<Expr>> {
         let ty = ty.peel_refs();
         if self.compiled_struct(ty, &it) {
             let traits = [
-                (self.recognition().double_ended_iterator(), "next_back"),
+                (
+                    self.recognition().double_ended_iterator().filter(|_| back_asked),
+                    "next_back",
+                ),
                 (self.recognition().exact_size_iterator(), "len"),
             ];
             let mut steps = Vec::new();
@@ -1046,7 +1059,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // where it holds what drops, which std's drops where it does, a
             // `Peekable`'s source before what it peeked at (#649); of
             // another, the same as by `next_back`.
-            let double_ended = self.recognition().double_ended_iterator();
+            let double_ended = self.recognition().double_ended_iterator().filter(|_| back_asked);
             let std_order = self.drops(ty) != crate::lower::drops::Drops::Nothing;
             let rfold = match double_ended {
                 Some(back) if std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May) => {

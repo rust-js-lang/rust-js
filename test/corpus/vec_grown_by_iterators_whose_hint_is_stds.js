@@ -5,8 +5,6 @@ import {
   $capacity,
   $charIndices,
   $chars,
-  $clone,
-  $cloning,
   $cycleOf,
   $debugStr,
   $extend,
@@ -30,6 +28,7 @@ import {
   flatMapDoubleEndedIterator_tryRfold,
   iterator_flatMap,
   iterator_map,
+  mapClone_clone,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -94,13 +93,16 @@ function main() {
   );
   const arg = $capacity(powers, 8);
   console.log(`powers [${powers.join(", ")}] ${arg}`);
-  const makeMap = (it, f) =>
-    $cloning($iterator(it, $rangeNext).map(f), () => makeMap({ start: it.start, end: it.end }, f));
   const cycled = $grownVec(
     $roomForHint(
       $cycleOf(
-        makeMap({ start: 0, end: 3 }, (x) => (x * 10) | 0),
-        $clone,
+        iterator_map({ start: 0, end: 3 }, (x) => (x * 10) | 0, { next: $rangeNext }),
+        (iterator) =>
+          mapClone_clone(
+            iterator,
+            { clone: (value) => ({ start: value.start, end: value.end }) },
+            { clone: (value) => value },
+          ),
         $next,
       ).take(7),
       4,

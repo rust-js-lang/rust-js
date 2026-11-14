@@ -11,6 +11,7 @@ import {
   $print,
   $rem,
   $reserveHint,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,9 +40,11 @@ function failing(n, at) {
 
 function generic(items, n, TSize) {
   return $collectResults(
-    $iterator(loud(n), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
+    iterator_map(
+      loud(n),
       (r) =>
         r.TAG === "Ok" ? { TAG: "Ok", _0: $index(items, $rem(r._0, items.length) >>> 0) } : r,
+      { next: loudIterator_next, sizeHint: loudIterator_sizeHint },
     ),
     undefined,
     undefined,
@@ -138,9 +141,10 @@ function main() {
   const value = v.TAG === "Ok" ? { TAG: "Ok", _0: v._0.length } : v;
   $print(`vec ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`}\n`);
   v = $collectResults(
-    $iterator(loud(10), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-      (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: r._0 & 255 } : r),
-    ),
+    iterator_map(loud(10), (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: r._0 & 255 } : r), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     undefined,
     undefined,
     false,
@@ -209,9 +213,10 @@ function main() {
   $print(`list ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugStr(value$6._0)})`}\n`);
   v = $collectResults(
     $reserveHint(
-      $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-        (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: [r._0, r._0] } : r),
-      ),
+      iterator_map(loud(6), (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: [r._0, r._0] } : r), {
+        next: loudIterator_next,
+        sizeHint: loudIterator_sizeHint,
+      }),
     ),
     (values) => new Map(values),
   );
@@ -219,25 +224,29 @@ function main() {
   $print(`map ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugStr(value$7._0)})`}\n`);
   v = $collectResults(
     $reserveHint(
-      $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
+      iterator_map(
+        loud(6),
         (r) =>
           r.TAG === "Ok" ? { TAG: "Ok", _0: String.fromCharCode((97 + (r._0 & 255)) & 255) } : r,
+        { next: loudIterator_next, sizeHint: loudIterator_sizeHint },
       ),
     ),
     (values) => values.join(""),
   );
   $print(`string ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}\n`);
   v = $collectResults(
-    $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-      (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: String(r._0) } : r),
-    ),
+    iterator_map(loud(3), (r) => (r.TAG === "Ok" ? { TAG: "Ok", _0: String(r._0) } : r), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     (values) => values.join(""),
   );
   $print(`strings ${v.TAG === "Ok" ? `Ok(${$debugStr(v._0)})` : `Err(${$debugStr(v._0)})`}\n`);
   v = $collectOptions(
-    $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
-      (r) => (r.TAG === "Ok" ? r._0 : undefined),
-    ),
+    iterator_map(loud(9), (r) => (r.TAG === "Ok" ? r._0 : undefined), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     false,
     undefined,
     undefined,
@@ -246,14 +255,10 @@ function main() {
   );
   $print(`option ${v?.length == null ? "None" : `Some(${v?.length})`}\n`);
   v = $collectOptions(
-    $iterator(
-      failing(9, 2),
-      loudIterator_next,
-      false,
-      undefined,
-      undefined,
-      loudIterator_sizeHint,
-    ).map((r) => (r.TAG === "Ok" ? r._0 : undefined)),
+    iterator_map(failing(9, 2), (r) => (r.TAG === "Ok" ? r._0 : undefined), {
+      next: loudIterator_next,
+      sizeHint: loudIterator_sizeHint,
+    }),
     false,
     undefined,
     undefined,

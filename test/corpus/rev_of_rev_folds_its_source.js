@@ -4,16 +4,26 @@ import {
   $cleanup,
   $closing,
   $dropEach,
-  $enumerate,
   $exactLen,
   $foldBack,
+  $foldToArray,
   $iter,
   $iterator,
+  $knowing,
   $lastDropping,
   $live,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
+  $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
+  enumerateExactSizeIterator_len,
+  iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -82,7 +92,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log("drop own");
+      ownDrop_drop(own);
     }
   }
   return result;
@@ -130,7 +140,7 @@ function ownIterator_last(own) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log("drop own");
+      ownDrop_drop(own);
     }
   }
 }
@@ -149,7 +159,7 @@ function ownIterator_count(own) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log("drop own");
+      ownDrop_drop(own);
     }
   }
 }
@@ -160,6 +170,10 @@ function ownDoubleEndedIterator_nextBack(own) {
   }
   own.back = (own.back - 1) >>> 0;
   return [(own.back + 1) >>> 0];
+}
+
+function ownDrop_drop(own) {
+  console.log("drop own");
 }
 
 function lastsIterator_next(lasts) {
@@ -206,6 +220,7 @@ function own() {
 }
 
 function main() {
+  const ownExactSizeIterator = { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) };
   const last = $lastDropping(
     $rev(
       $closing(
@@ -222,7 +237,7 @@ function main() {
           ownIterator_fold,
         ),
         (it) => {
-          console.log("drop own");
+          ownDrop_drop(it.of);
         },
       ),
     ),
@@ -251,7 +266,7 @@ function main() {
           ownIterator_fold,
         ),
         (it) => {
-          console.log("drop own");
+          ownDrop_drop(it.of);
         },
       ),
     ).reduce((n, item) => {
@@ -282,27 +297,85 @@ function main() {
   );
   const n = $foldBack(
     $rev(
-      $enumerate(
-        $closing(
-          $iterator(
-            own(),
-            ownIterator_next,
-            false,
-            ownDoubleEndedIterator_nextBack,
-            (it) => $exactLen(ownIterator_sizeHint(it)),
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            ownIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            ownIterator_count,
-          ),
-          (it) => {
-            console.log("drop own");
+      $knowing(
+        iterator_enumerate(
+          own(),
+          {
+            next: ownIterator_next,
+            sizeHint: ownIterator_sizeHint,
+            fold: ownIterator_fold,
+            last: ownIterator_last,
+            count: ownIterator_count,
           },
+          ownDrop_drop,
+          dDrop_drop,
         ),
+        (iterator) =>
+          enumerateDoubleEndedIterator_nextBack(
+            iterator,
+            ownExactSizeIterator,
+            { next_back: ownDoubleEndedIterator_nextBack },
+            ownDrop_drop,
+            dDrop_drop,
+          ),
+        (iterator) =>
+          enumerateExactSizeIterator_len(iterator, ownExactSizeIterator, ownDrop_drop, dDrop_drop),
+        (iterator, init, f, unwind, ends) =>
+          enumerateDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            {
+              next: ownIterator_next,
+              sizeHint: ownIterator_sizeHint,
+              fold: ownIterator_fold,
+              last: ownIterator_last,
+              count: ownIterator_count,
+            },
+            ownExactSizeIterator,
+            { next_back: ownDoubleEndedIterator_nextBack },
+            ownDrop_drop,
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        (iterator, k) =>
+          enumerateDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            {
+              next: ownIterator_next,
+              sizeHint: ownIterator_sizeHint,
+              fold: ownIterator_fold,
+              last: ownIterator_last,
+              count: ownIterator_count,
+            },
+            ownExactSizeIterator,
+            { next_back: ownDoubleEndedIterator_nextBack },
+            ownDrop_drop,
+            dDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          enumerateDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            {
+              next: ownIterator_next,
+              sizeHint: ownIterator_sizeHint,
+              fold: ownIterator_fold,
+              last: ownIterator_last,
+              count: ownIterator_count,
+            },
+            ownExactSizeIterator,
+            { next_back: ownDoubleEndedIterator_nextBack },
+            $tryOf(broke),
+            ownDrop_drop,
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
       ),
     ),
     0,
@@ -313,7 +386,19 @@ function main() {
     },
   );
   console.log(`enumerate rev rfold ${n}`);
-  const v = $range(1, 4).map((value) => [value]);
+  const v = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 4 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
   const last$1 = $lastDropping($rev($rev($closing($iter(v), $dropEach(dDrop_drop)))), dDrop_drop);
   function map$1(d) {
     const result = d[0];

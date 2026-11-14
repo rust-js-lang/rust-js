@@ -10,13 +10,14 @@ import {
   $fmtError,
   $fmtPartial,
   $fmtWritten,
-  $lazyRange,
   $out,
   $pretty,
   $print,
   $printing,
+  $rangeNext,
   $sink,
   $writeTry,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -98,7 +99,15 @@ function droppingDebug_fmt(dropping, options) {
   const f = $sink();
   const set = $debugSet(f, options?.alternate);
   set.entries(
-    $lazyRange(0, dropping[0]).map((value) => [value]),
+    Iterator.from(
+      iterator_map(
+        { start: 0, end: dropping[0] },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+    ),
     (entry) => loudDebug_fmt(entry, options),
     loudDrop_drop,
   );

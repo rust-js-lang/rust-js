@@ -139,6 +139,38 @@ pub(in crate::lower) fn chains<'tcx>(
     // one Rust makes, `Box::new(..)`, whose `dyn` hides what it boxes,
     // which may be an `Iterator` of the crate's, `Box::new(Counter(0))`.
     let plain = |s: ExprId| is_plain_source(&recognition, thir[s].ty.peel_refs()) || binding_boxed(tcx, thir, s);
+    // What a std collection's `extend` is given, consumed there by std's own
+    // consumer, as known as `collect()`: a `Vec`'s, a `VecDeque`'s, a
+    // `String`'s or a `HashMap`'s, each `$extend`, whose hand-written form
+    // the tables' extend rows prove (#1681's change 2). Not escaping; a
+    // `Vec`'s grown by the hint, as a collect's.
+    let extended: Vec<(ExprId, bool)> = (thir.exprs.indices())
+        .filter_map(|e| {
+            let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
+                return None;
+            };
+            let ty::FnDef(callee, callee_args) = *thir[fun].ty.kind() else {
+                return None;
+            };
+            let extend = tcx
+                .trait_of_assoc(callee)
+                .is_some_and(|tr| crate::lower::recognition::is_extend(tcx, tr));
+            if !extend || !recognition.is_std(callee) {
+                return None;
+            }
+            // `Extend::extend`'s `Self`, the collection extended.
+            let target = callee_args.skip_binder().type_at(0).peel_refs();
+            let vec = recognition.is_std_type(target, StdItem::Vec);
+            let proved = vec
+                || recognition.is_std_type(target, StdItem::VecDeque)
+                || recognition.is_std_type(target, StdItem::HashMap)
+                || recognition.is_lang_adt(target, rustc_hir::attrs::lang_items::LangItem::String);
+            proved
+                .then(|| args.get(1).map(|&given_| (given(thir, given_), vec)))
+                .flatten()
+        })
+        .collect();
+    let extended_by = |root: ExprId| extended.iter().find(|(given, _)| *given == root).map(|&(_, vec)| vec);
     let mut found = Vec::new();
     for &root in links.iter().filter(|&&e| !inner.contains(&e) && !loops_next(e)) {
         let mut chain = vec![root];
@@ -169,7 +201,10 @@ pub(in crate::lower) fn chains<'tcx>(
             Transparency::Held
         } else if !source.is_none_or(plain) {
             Transparency::Source
-        } else if is_iterator(thir[root].ty) && !thir[root].span.is_desugaring(DesugaringKind::ForLoop) {
+        } else if is_iterator(thir[root].ty)
+            && !thir[root].span.is_desugaring(DesugaringKind::ForLoop)
+            && extended_by(root).is_none()
+        {
             Transparency::Escapes
         } else if chain
             .iter()
@@ -188,15 +223,19 @@ pub(in crate::lower) fn chains<'tcx>(
             // whose order a hand-written form may change (#1015).
             Transparency::Order
         } else if keeps_capacity
-            && recognition.is_std_type(thir[root].ty, StdItem::Vec)
-            && !link(root)
-                .and_then(|(.., collected)| collected)
-                .is_some_and(|collected| {
-                    let collected = thir[collected].ty;
-                    recognition.grows_by_exact_len(collected)
-                        || recognition.lower_bound_is_stds_where(collected, false)
-                        || recognition.lower_bound_kept_by_parts_where(collected, false)
-                })
+            && (recognition.is_std_type(thir[root].ty, StdItem::Vec) || extended_by(root) == Some(true))
+            && !(match extended_by(root) {
+                // A `Vec` extended by the chain, grown by its hint as a
+                // collect is.
+                Some(true) => Some(root),
+                _ => link(root).and_then(|(.., collected)| collected),
+            })
+            .is_some_and(|collected| {
+                let collected = thir[collected].ty;
+                recognition.grows_by_exact_len(collected)
+                    || recognition.lower_bound_is_stds_where(collected, false)
+                    || recognition.lower_bound_kept_by_parts_where(collected, false)
+            })
         {
             // A `Vec` collected in a crate that reads capacities, which
             // std's hint makes (#1635), by an iterator whose hand-written

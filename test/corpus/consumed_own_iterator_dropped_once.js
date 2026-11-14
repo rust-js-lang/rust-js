@@ -7,15 +7,18 @@ import {
   $collectDropping,
   $filterDropping,
   $findDropping,
+  $foldToArray,
   $iterator,
   $lastDropping,
   $lent,
   $live,
   $position,
-  $range,
+  $rangeNext,
+  $roomForHint,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,7 +34,21 @@ function itIterator_next(it) {
 }
 
 function it(n) {
-  return { items: $range(n, n + 3, 4).map((value) => [value]) };
+  return {
+    items: $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: n, end: n + 3 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          dDrop_drop,
+        ),
+        4,
+        true,
+      ),
+    ),
+  };
 }
 
 function run(name, f) {
@@ -121,20 +138,35 @@ function main() {
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   });
   run("sum", () => {
-    console.log(
-      `${$closing($iterator(it(40), itIterator_next), (it) => {
+    const iter = iterator_map(
+      it(40),
+      (d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      },
+      { next: itIterator_next },
+      (it) => {
         console.log("drop it");
-        for (const item of it.of.items) {
+        for (const item of it.items) {
           dDrop_drop(item);
         }
-      })
-        .map((d) => {
-          const result = d[0];
-          dDrop_drop(d);
-          return result;
-        })
-        .reduce((a, b) => (a + b) >>> 0, 0)}`,
+      },
+      undefined,
+      undefined,
+      dDrop_drop,
     );
+    let result;
+    try {
+      result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    console.log(`${result}`);
   });
   run("collect", () => {
     const collect = $collectDropping(

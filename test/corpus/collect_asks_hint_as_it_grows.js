@@ -221,19 +221,12 @@ function main() {
     () =>
       $collectDropping(
         $roomForHint(
-          $closing(
-            $iterator(
-              own(20, none, (n) => n),
-              ownIterator_next,
-              true,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ).map((n) => (n + 1) >>> 0),
+          iterator_map(
+            own(20, none, (n) => n),
+            (n) => (n + 1) >>> 0,
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            ownDrop_drop,
+          ),
           4,
           false,
         ),
@@ -336,19 +329,18 @@ function main() {
     it.panicsAt = 1;
     const collect = $collectDropping(
       $roomForHint(
-        $closing(
-          $iterator(
-            it,
-            (iterator) => ownIterator_next(iterator, dDrop_drop),
-            true,
-            undefined,
-            undefined,
-            (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
-          ),
-          (it) => {
-            ownDrop_drop(it.of);
+        iterator_map(
+          it,
+          (d) => d,
+          {
+            next: (iterator) => ownIterator_next(iterator, dDrop_drop),
+            sizeHint: (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
           },
-        ).map((d) => d),
+          ownDrop_drop,
+          dDrop_drop,
+          undefined,
+          dDrop_drop,
+        ),
         4,
         false,
         false,

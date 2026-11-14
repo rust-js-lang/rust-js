@@ -11,10 +11,12 @@ import {
   $mapFrom,
   $panicMessage,
   $partialEq,
+  $rangeNext,
   $reserveHint,
   $tableRoomFor,
   $toBytes,
   $unwound,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -88,7 +90,7 @@ function gathered(it, BFromIteratorIItem, ITrustedLen, IInPlace) {
 
 function collectedThrough(v, n, VCopy, UsizeVAlign, UsizeVSize) {
   return gathered(
-    $lazyRange(0, n).map((i) => [i, VCopy ? VCopy.copy(v) : v]),
+    iterator_map({ start: 0, end: n }, (i) => [i, VCopy ? VCopy.copy(v) : v], { next: $rangeNext }),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $mapFrom(new Map(), $reserveHint($folded(items), UsizeVSize, UsizeVAlign), false),

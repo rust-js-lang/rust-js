@@ -15,6 +15,7 @@ import {
   $skipping,
   $unwindsOn,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -707,16 +708,24 @@ function main() {
   );
   console.log(`max ${value$4 == null ? "None" : `Some(${value$4})`}`);
   const value$5 = top(
-    $closing($iterator([ds(), "m"], heldIterator_next), (it) => {
-      console.log(`drop held ${it.of[1]}`);
-      for (const item of it.of[0]) {
-        dDrop_drop(item);
-      }
-    }).map((d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }),
+    iterator_map(
+      [ds(), "m"],
+      (d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      },
+      { next: heldIterator_next },
+      (held) => {
+        console.log(`drop held ${held[1]}`);
+        for (const item of held[0]) {
+          dDrop_drop(item);
+        }
+      },
+      undefined,
+      undefined,
+      dDrop_drop,
+    ),
     $intsOrdered,
     (map) => {
       map.return();
@@ -755,16 +764,24 @@ function main() {
   );
   console.log(
     `sum ${total(
-      $closing($iterator([ds(), "t"], heldIterator_next), (it) => {
-        console.log(`drop held ${it.of[1]}`);
-        for (const item of it.of[0]) {
-          dDrop_drop(item);
-        }
-      }).map((d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      }),
+      iterator_map(
+        [ds(), "t"],
+        (d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        },
+        { next: heldIterator_next },
+        (held) => {
+          console.log(`drop held ${held[1]}`);
+          for (const item of held[0]) {
+            dDrop_drop(item);
+          }
+        },
+        undefined,
+        undefined,
+        dDrop_drop,
+      ),
       (map) => {
         map.return();
       },

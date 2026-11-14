@@ -8,6 +8,7 @@ import {
   $dropItems,
   $findBack,
   $foldBack,
+  $foldToArray,
   $held,
   $index,
   $iter,
@@ -15,10 +16,12 @@ import {
   $mapEnds,
   $next,
   $print,
-  $range,
+  $rangeNext,
   $rev,
+  $roomForHint,
   $unwindsOn,
   $zipEnds,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,7 +42,19 @@ function accDrop_drop(acc) {
 }
 
 function ds(from, to) {
-  return $range(from, to, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: from, end: to },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

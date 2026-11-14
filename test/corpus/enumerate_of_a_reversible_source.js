@@ -9,6 +9,7 @@ import {
   $enumerate,
   $exactLen,
   $foldBack,
+  $foldOf,
   $held,
   $iter,
   $knowing,
@@ -26,6 +27,7 @@ import {
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
+  iterator_enumerate,
   iterator_fuse,
   iterator_peekable,
   peekableDoubleEndedIterator_nextBack,
@@ -106,11 +108,19 @@ function main() {
   }
   const value$1 = peek$1?.[0];
   console.log(`peeked ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(
-    `count ${$count($enumerate(it), (value) => {
-      dDrop_drop(value[1]);
-    })}`,
+  const iter = iterator_enumerate(
+    it,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
+    dDrop_drop,
   );
+  const result = $count(iter, (value) => {
+    dDrop_drop(value[1]);
+  });
+  iter.return();
+  console.log(`count ${result}`);
   console.log(
     `count ${$count($enumerate(iterator_fuse({ start: 1, end: 5 }, { next: $rangeNext }, true)))}`,
   );

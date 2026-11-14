@@ -13,7 +13,6 @@ import {
   $jsIterator,
   $knowing,
   $live,
-  $mapEnds,
   $nextBack,
   $rev,
   $tryOf,
@@ -249,25 +248,66 @@ function main() {
   console.log(
     `rfold ${$foldBack(
       $flattenEnds(
-        $mapEnds(
-          $closing(
-            $iterator(
-              [0, 3],
-              foldsIterator_next,
-              false,
-              foldsDoubleEndedIterator_nextBack,
-              undefined,
-              undefined,
-              foldsIterator_fold,
-              undefined,
-              undefined,
-              foldsDoubleEndedIterator_rfold,
-            ),
-            (it) => {
-              foldsDrop_drop(it.of);
-            },
+        $knowing(
+          iterator_map(
+            [0, 3],
+            pair,
+            { next: foldsIterator_next, fold: foldsIterator_fold },
+            foldsDrop_drop,
+            $dropEach(dDrop_drop),
+            undefined,
+            dDrop_drop,
           ),
-          pair,
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       ),
@@ -304,25 +344,66 @@ function main() {
   console.log(
     `rev fold ${$rev(
       $flattenEnds(
-        $mapEnds(
-          $closing(
-            $iterator(
-              [0, 3],
-              foldsIterator_next,
-              false,
-              foldsDoubleEndedIterator_nextBack,
-              undefined,
-              undefined,
-              foldsIterator_fold,
-              undefined,
-              undefined,
-              foldsDoubleEndedIterator_rfold,
-            ),
-            (it) => {
-              foldsDrop_drop(it.of);
-            },
+        $knowing(
+          iterator_map(
+            [0, 3],
+            pair,
+            { next: foldsIterator_next, fold: foldsIterator_fold },
+            foldsDrop_drop,
+            $dropEach(dDrop_drop),
+            undefined,
+            dDrop_drop,
           ),
-          pair,
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       ),
@@ -332,25 +413,66 @@ function main() {
     `rev rfold ${$foldBack(
       $rev(
         $flattenEnds(
-          $mapEnds(
-            $closing(
-              $iterator(
-                [0, 3],
-                foldsIterator_next,
-                false,
-                foldsDoubleEndedIterator_nextBack,
-                undefined,
-                undefined,
-                foldsIterator_fold,
-                undefined,
-                undefined,
-                foldsDoubleEndedIterator_rfold,
-              ),
-              (it) => {
-                foldsDrop_drop(it.of);
-              },
+          $knowing(
+            iterator_map(
+              [0, 3],
+              pair,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              foldsDrop_drop,
+              $dropEach(dDrop_drop),
+              undefined,
+              dDrop_drop,
             ),
-            pair,
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(
+                iterator,
+                {
+                  next_back: foldsDoubleEndedIterator_nextBack,
+                  rfold: foldsDoubleEndedIterator_rfold,
+                },
+                $dropEach(dDrop_drop),
+                foldsDrop_drop,
+                undefined,
+                dDrop_drop,
+              ),
+            undefined,
+            (iterator, init, f, unwind, ends) =>
+              mapDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: foldsIterator_next, fold: foldsIterator_fold },
+                {
+                  next_back: foldsDoubleEndedIterator_nextBack,
+                  rfold: foldsDoubleEndedIterator_rfold,
+                },
+                $dropEach(dDrop_drop),
+                foldsDrop_drop,
+                undefined,
+                unwind,
+                ends,
+                dDrop_drop,
+              ),
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: foldsIterator_next, fold: foldsIterator_fold },
+                {
+                  next_back: foldsDoubleEndedIterator_nextBack,
+                  rfold: foldsDoubleEndedIterator_rfold,
+                },
+                $tryOf(broke),
+                $dropEach(dDrop_drop),
+                foldsDrop_drop,
+                undefined,
+                unwind,
+                ends,
+                undefined,
+                dDrop_drop,
+              ),
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
         ),
@@ -361,23 +483,15 @@ function main() {
   );
   console.log(
     `fold ${$flatMap(
-      $closing(
-        $iterator(
-          [0, 3],
-          foldsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          foldsIterator_fold,
-          undefined,
-          undefined,
-          foldsDoubleEndedIterator_rfold,
-        ),
-        (it) => {
-          foldsDrop_drop(it.of);
-        },
-      ).map(pair),
+      iterator_map(
+        [0, 3],
+        pair,
+        { next: foldsIterator_next, fold: foldsIterator_fold },
+        foldsDrop_drop,
+        $dropEach(dDrop_drop),
+        undefined,
+        dDrop_drop,
+      ),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ).reduce(sum, 0)}`,
   );
@@ -462,25 +576,66 @@ function main() {
   let ended = $catchUnwind(() => {
     const n = $foldBack(
       $flattenEnds(
-        $mapEnds(
-          $closing(
-            $iterator(
-              [0, 3],
-              foldsIterator_next,
-              false,
-              foldsDoubleEndedIterator_nextBack,
-              undefined,
-              undefined,
-              foldsIterator_fold,
-              undefined,
-              undefined,
-              foldsDoubleEndedIterator_rfold,
-            ),
-            (it) => {
-              foldsDrop_drop(it.of);
-            },
+        $knowing(
+          iterator_map(
+            [0, 3],
+            pair,
+            { next: foldsIterator_next, fold: foldsIterator_fold },
+            foldsDrop_drop,
+            $dropEach(dDrop_drop),
+            undefined,
+            dDrop_drop,
           ),
-          pair,
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: foldsIterator_next, fold: foldsIterator_fold },
+              {
+                next_back: foldsDoubleEndedIterator_nextBack,
+                rfold: foldsDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              $dropEach(dDrop_drop),
+              foldsDrop_drop,
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       ),
@@ -505,23 +660,15 @@ function main() {
   console.log(`panicked ${ended.TAG === "Err"}`);
   ended = $catchUnwind(() => {
     const n = $flatMap(
-      $closing(
-        $iterator(
-          [0, 3],
-          foldsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          foldsIterator_fold,
-          undefined,
-          undefined,
-          foldsDoubleEndedIterator_rfold,
-        ),
-        (it) => {
-          foldsDrop_drop(it.of);
-        },
-      ).map(pair),
+      iterator_map(
+        [0, 3],
+        pair,
+        { next: foldsIterator_next, fold: foldsIterator_fold },
+        foldsDrop_drop,
+        $dropEach(dDrop_drop),
+        undefined,
+        dDrop_drop,
+      ),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ).reduce((a, d) => {
       try {

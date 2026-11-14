@@ -9,6 +9,7 @@ import {
   $folded,
   $iterator,
   $vecCollectWay,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -20,6 +21,10 @@ function ownIterator_next(own) {
     return;
   }
   return own[0].shift();
+}
+
+function ownDrop_drop(own) {
+  console.log(`drop Own of ${own[0].length}`);
 }
 
 function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
@@ -43,7 +48,7 @@ function main() {
   const text = $catchUnwind(() => {
     collected(
       $closing($iterator([[[5], [6], [7]]], ownIterator_next), (it) => {
-        console.log(`drop Own of ${it.of[0].length}`);
+        ownDrop_drop(it.of);
       })
         .drop(1)
         .map((d) => {
@@ -63,14 +68,17 @@ function main() {
   console.log(`${text.TAG === "Err"}`);
   const numbers = $catchUnwind(() => {
     collected(
-      $closing($iterator([[[1], [2], [3]]], ownIterator_next), (it) => {
-        console.log(`drop Own of ${it.of[0].length}`);
-      }).map((d) => {
-        if (d[0] === 2) {
-          throw new Error("map");
-        }
-        return d[0];
-      }),
+      iterator_map(
+        [[[1], [2], [3]]],
+        (d) => {
+          if (d[0] === 2) {
+            throw new Error("map");
+          }
+          return d[0];
+        },
+        { next: ownIterator_next },
+        ownDrop_drop,
+      ),
       {
         fromIter: (items, ITrustedLen, IInPlace) =>
           $collectVec(
@@ -88,9 +96,7 @@ function main() {
   });
   console.log(`${numbers.TAG === "Err"}`);
   const whole = collected(
-    $closing($iterator([[[8], [9]]], ownIterator_next), (it) => {
-      console.log(`drop Own of ${it.of[0].length}`);
-    }).map((d) => String(d[0])),
+    iterator_map([[[8], [9]]], (d) => String(d[0]), { next: ownIterator_next }, ownDrop_drop),
     stringFromIterator,
     false,
     undefined,

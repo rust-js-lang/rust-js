@@ -9,17 +9,18 @@ import {
   $dropEach,
   $dropItems,
   $foldOf,
+  $foldToArray,
   $given,
   $held,
   $intoIter,
   $iter,
-  $iterator,
   $jsIteratorSome,
   $live,
   $next,
   $nextSome,
   $rangeInclusiveNext,
   $rangeNext,
+  $roomForHint,
   $someValue,
   $took,
   $traitImpl,
@@ -326,8 +327,22 @@ function main() {
     $dropIntoIter: $dropEach(dDrop_drop),
   };
   const r = $catchUnwind(() => {
-    const wides = Array.from(
-      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
+    const wides = $foldToArray(
+      $roomForHint(
+        iterator_map(
+          { start: 1n, end: 4n },
+          (n) => [n],
+          { next: $rangeInclusiveNext },
+          undefined,
+          (option) => {
+            if (option != null) {
+              dDrop_drop(option);
+            }
+          },
+        ),
+        16,
+        true,
+      ),
     );
     return tHolding(
       { next: $nextSome, fold: $foldOf },
@@ -371,7 +386,23 @@ function main() {
   const value = r.TAG === "Ok" ? r._0 : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
 
-  const wides = Array.from($iterator({ start: 5n, end: 6n }, $rangeInclusiveNext).map((n) => [n]));
+  const wides = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 5n, end: 6n },
+        (n) => [n],
+        { next: $rangeInclusiveNext },
+        undefined,
+        (option) => {
+          if (option != null) {
+            dDrop_drop(option);
+          }
+        },
+      ),
+      16,
+      true,
+    ),
+  );
   console.log(
     `${tHolding(
       { next: $nextSome, advanceBy: $advanceSlice },

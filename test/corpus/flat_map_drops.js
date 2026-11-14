@@ -10,7 +10,9 @@ import {
   $lazyRange,
   $live,
   $next,
+  $rangeNext,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,7 +34,15 @@ function innerLeft() {
   const counts = [1, 2];
   try {
     const made = $collectDropping(
-      $flatMap($iter(counts), (n) => $lazyRange(0, n).map((value) => [value])).take(1),
+      $flatMap($iter(counts), (n) =>
+        iterator_map(
+          { start: 0, end: n },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+      ).take(1),
       loudDrop_drop,
       true,
     );

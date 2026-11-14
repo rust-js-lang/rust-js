@@ -14,14 +14,13 @@ import {
   $foldToArray,
   $held,
   $iter,
-  $iterator,
-  $lazyRange,
   $lent,
   $live,
   $mapEnds,
   $next,
   $nthDropping,
   $peek,
+  $rangeNext,
   $unwindsOn,
   iterator_map,
   iterator_peekable,
@@ -105,7 +104,13 @@ function brokenOff() {
 function ofARange() {
   const it = $held(
     $flatMap(
-      $lazyRange(0, 3).map((i) => [[(i + 20) >>> 0], [(i + 30) >>> 0]]),
+      iterator_map(
+        { start: 0, end: 3 },
+        (i) => [[(i + 20) >>> 0], [(i + 30) >>> 0]],
+        { next: $rangeNext },
+        undefined,
+        $dropEach(dDrop_drop),
+      ),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
   );
@@ -183,15 +188,15 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
 }
 function byItsOwnFold() {
   const n = $flatMap(
-    $iterator(
+    iterator_map(
       [0],
-      foldsIterator_next,
-      false,
+      (x) => [[(x[0] + 40) >>> 0], x],
+      { next: foldsIterator_next, fold: foldsIterator_fold },
       undefined,
+      $dropEach(dDrop_drop),
       undefined,
-      undefined,
-      foldsIterator_fold,
-    ).map((x) => [[(x[0] + 40) >>> 0], x]),
+      dDrop_drop,
+    ),
     (item) => $closing($iter(item), $dropEach(dDrop_drop)),
   ).reduce((n, item) => {
     dDrop_drop(item);

@@ -175,6 +175,13 @@ pub fn main() {
     let taken: Vec<i32> = drained.drain(..).collect();
     let louds: Vec<u32> = vec![Loud(1), Loud(2)].into_iter().map(|l| l.0).collect();
     let codes: Vec<u32> = "abc".chars().map(|c| c as u32).collect();
+    // Given to a \`Vec\`'s \`extend\`, std's own consumer: not escaping. Of a
+    // range's map, admitted; of a string's \`chars()\`, whose hint isn't
+    // std's lower bound, a capacity.
+    let mut grown: Vec<u32> = Vec::new();
+    grown.extend((0..3u32).map(|i| i * 2));
+    grown.extend("de".chars().map(|c| c as u32));
+    println!("{}", grown.capacity());
     println!("{louds:?} {codes:?}");
     let from_js: u32 = js_values(&vec![1, 2]).map(|x| x + 1).sum();
     let from_rust: i32 = boxed(vec![1, 2]).map(|x| x + 1).sum();
@@ -193,7 +200,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 1, admitted: 9 });
+  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 2, admitted: 10 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not

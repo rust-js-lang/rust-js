@@ -370,4 +370,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^in_place_adapters_in_a_macro.rs$"],
   },
+  {
+    name: "widened-flip-of-a-chain-made-knowing",
+    breaks: "the flip of a chain kept out for another reason than `held` takes out the `map` of one whose value is made knowing its back where a variable holds it, `let shifted = (1..6).map(f); shifted.enumerate().rfold(..)`, std's struct then given that knowing by each of std's back dictionaries, three times its JS (#1681's change 2)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            _ => !chain.source.is_some_and(made_knowing) && !made_knowing(chain.links[0]),\n",
+    replace: "            _ => !chain.source.is_some_and(made_knowing),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
+  },
 ];

@@ -3,10 +3,10 @@
 import {
   $cleanup,
   $count,
-  $enumerate,
   $iterator,
   $skipping,
   $stepBy,
+  iterator_enumerate,
   iterator_fuse,
 } from "@rust-js/std";
 
@@ -105,22 +105,11 @@ function main() {
   console.log(
     `${$count(
       $skipping(
-        $enumerate(
-          $iterator(
-            [0],
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
+        iterator_enumerate(
+          [0],
+          { next: countsIterator_next, count: countsIterator_count },
+          undefined,
+          dDrop_drop,
         ),
         1,
         (value) => {
@@ -137,22 +126,11 @@ function main() {
   );
   console.log(
     `${$count(
-      $enumerate(
-        $iterator(
-          [0],
-          countsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_count,
-        ),
+      iterator_enumerate(
+        [0],
+        { next: countsIterator_next, count: countsIterator_count },
+        undefined,
+        dDrop_drop,
       ),
       (value) => {
         dDrop_drop(value[1]);

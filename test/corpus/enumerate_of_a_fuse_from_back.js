@@ -5,6 +5,7 @@ import {
   $collectDropping,
   $dropEach,
   $enumerate,
+  $foldToArray,
   $held,
   $iter,
   $knowing,
@@ -19,7 +20,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $rev,
-  $roomFor,
+  $roomForHint,
   $tryOf,
   $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
@@ -28,6 +29,7 @@ import {
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,8 +41,19 @@ function loudDrop_drop(loud) {
 }
 
 function louds(n) {
-  $roomFor(n, 4);
-  return Array.from({ length: n }, (_, value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 0, end: n },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

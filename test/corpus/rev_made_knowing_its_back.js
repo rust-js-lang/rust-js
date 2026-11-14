@@ -13,15 +13,17 @@ import {
   $iter,
   $iterator,
   $jsIterator,
+  $knowing,
   $lazyChain,
-  $mapEnds,
   $next,
   $nextBack,
   $nthBack,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
+  $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $slicing,
   $tryOf,
@@ -32,6 +34,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  mapExactSizeIterator_len,
   mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -294,9 +297,30 @@ function main() {
 
   let s = $foldBack(
     $rev(
-      $mapEnds(
-        $iterator({ start: 0, end: 5 }, $rangeNext, false, $rangeNextBack),
-        (n) => (n * 2) >>> 0,
+      $knowing(
+        iterator_map({ start: 0, end: 5 }, (n) => (n * 2) >>> 0, { next: $rangeNext }),
+        (iterator) =>
+          mapDoubleEndedIterator_nextBack(iterator, {
+            next_back: $rangeNextBack,
+            nthBack: $rangeNthBack,
+          }),
+        (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
       ),
     ),
     mk(),

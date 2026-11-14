@@ -9,7 +9,6 @@ import {
   $foldToArray,
   $held,
   $iter,
-  $iterator,
   $lazyMapWhile,
   $lazyScan,
   $lazyTakeWhile,
@@ -36,6 +35,10 @@ function restartIterator_next(restart) {
   if (restart.n !== 2 && restart.n < 5) {
     return restart.n;
   }
+}
+
+function restartDrop_drop(restart) {
+  console.log(`drop restart ${restart.n}`);
 }
 
 function ds(from) {
@@ -123,9 +126,7 @@ function main() {
     }
   }
   const again = $held(
-    $closing($iterator({ n: 0 }, restartIterator_next), (it) => {
-      console.log(`drop restart ${it.of.n}`);
-    }).map((x) => (x * 10) >>> 0),
+    iterator_map({ n: 0 }, (x) => (x * 10) >>> 0, { next: restartIterator_next }, restartDrop_drop),
   );
   try {
     const a = $next(again);

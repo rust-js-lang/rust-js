@@ -9,13 +9,14 @@ import {
   $grownBy,
   $iter,
   $keepCapacity,
-  $lazyRange,
   $pop,
+  $rangeNext,
   $reserve,
   $roomFor,
   $someValue,
   $unwrap,
   $withCapacity,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -109,7 +110,7 @@ function main() {
   console.log(
     `${
       pushed(
-        $lazyRange(0, 5).map(() => {}),
+        iterator_map({ start: 0, end: 5 }, () => {}, { next: $rangeNext }),
         0,
       ) === 4294967295
     }`,

@@ -2,12 +2,13 @@
 
 import {
   $catchUnwind,
-  $collectDropping,
   $collectVec,
   $dropEach,
   $foldToArray,
   $intoIter,
-  $lazyRange,
+  $rangeInclusiveNext,
+  $roomForHint,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,11 +27,39 @@ function made(n) {
 }
 
 function concrete() {
-  return $collectDropping($lazyRange(1, 4).map(made), dDrop_drop, true);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 3 },
+        made,
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+    dDrop_drop,
+    true,
+  );
 }
 
 function held() {
-  const v = $collectDropping($lazyRange(1, 5).map(made), dDrop_drop, true);
+  const v = $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 4 },
+        made,
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+    dDrop_drop,
+    true,
+  );
   for (const item of v) {
     dDrop_drop(item);
   }
@@ -58,7 +87,20 @@ function main() {
   console.log(`${panicked(concrete, $dropEach(dDrop_drop))}`);
   console.log(`${panicked(held)}`);
   console.log(
-    `${panicked(() => gathered($lazyRange(1, 6).map(made), "fold"), $dropEach(dDrop_drop))}`,
+    `${panicked(
+      () =>
+        gathered(
+          iterator_map(
+            { start: 1, end: 5 },
+            made,
+            { next: $rangeInclusiveNext },
+            undefined,
+            dDrop_drop,
+          ),
+          "fold",
+        ),
+      $dropEach(dDrop_drop),
+    )}`,
   );
   console.log(
     `${panicked(
@@ -67,7 +109,10 @@ function main() {
     )}`,
   );
   console.log(`${panicked(() => ofVec([1, 2, 3, 4]), $dropEach(dDrop_drop))}`);
-  const fine = gathered($lazyRange(1, 3).map(made), "fold");
+  const fine = gathered(
+    iterator_map({ start: 1, end: 2 }, made, { next: $rangeInclusiveNext }, undefined, dDrop_drop),
+    "fold",
+  );
   console.log(`${fine.length}`);
   for (const item of fine) {
     dDrop_drop(item);

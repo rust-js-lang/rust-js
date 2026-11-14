@@ -196,11 +196,21 @@ function mappedOwn(n) {
     throw error;
   }
   const it = $held(
-    inner.map((l) => {
-      const result = (l[0] * 10) >>> 0;
-      loudDrop_drop(l);
-      return result;
-    }),
+    iterator_map(
+      inner,
+      (l) => {
+        const result = (l[0] * 10) >>> 0;
+        loudDrop_drop(l);
+        return result;
+      },
+      { next: $next, fold: $foldOf },
+      (peekable) => {
+        peekable.return();
+      },
+      undefined,
+      undefined,
+      loudDrop_drop,
+    ),
   );
   let second;
   try {

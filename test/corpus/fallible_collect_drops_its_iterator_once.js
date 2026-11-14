@@ -8,6 +8,7 @@ import {
   $live,
   $some,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,6 +24,10 @@ function sourceIterator_next(source) {
     source[0]--;
     return $some(source[0] !== 5 ? source[0] : undefined);
   }
+}
+
+function sourceDrop_drop(source) {
+  console.log(`drop Source at ${source[0]}`);
 }
 
 function loudsIterator_next(louds) {
@@ -41,7 +46,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Source at ${iter[0]}`);
+      sourceDrop_drop(iter);
     }
   }
   const empty = result;
@@ -54,7 +59,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Source at ${iter$1[0]}`);
+      sourceDrop_drop(iter$1);
     }
   }
   const two = result$1;
@@ -67,16 +72,28 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop Source at ${iter$2[0]}`);
+      sourceDrop_drop(iter$2);
     }
   }
   const stopped = result$2;
   console.log(`${stopped == null ? "None" : `Some([${stopped.join(", ")}])`}`);
-  const results = $collectResults(
-    $closing($iterator([3], sourceIterator_next, true), (it) => {
-      console.log(`drop Source at ${it.of[0]}`);
-    }).map((x) => (x != null ? { TAG: "Ok", _0: x } : { TAG: "Err" })),
+  const iter$3 = iterator_map(
+    [3],
+    (x) => (x != null ? { TAG: "Ok", _0: x } : { TAG: "Err" }),
+    { next: sourceIterator_next },
+    sourceDrop_drop,
   );
+  let result$3;
+  try {
+    result$3 = $collectResults(iter$3);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$3.return();
+    }
+  }
+  const results = result$3;
   console.log(`${results.TAG === "Ok" ? `Ok([${results._0.join(", ")}])` : "Err(())"}`);
   const louds = $collectOptions(
     $closing($iterator([1], loudsIterator_next, true), (it) => {

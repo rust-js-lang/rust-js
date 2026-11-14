@@ -4,7 +4,6 @@ import {
   $cleanup,
   $closing,
   $count,
-  $enumerate,
   $iter,
   $iterator,
   $jsIteratorSome,
@@ -13,7 +12,9 @@ import {
   $live,
   $skipping,
   $unwindsOn,
+  iterator_enumerate,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -89,26 +90,13 @@ function main() {
     `${$count($lazyChain($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count), $iterator([3], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count)))}`,
   );
   console.log(
-    `${$count($enumerate($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count)))}`,
+    `${$count(iterator_enumerate([0], { next: countIterator_next, count: countIterator_count }))}`,
   );
   console.log(
-    `${$iterator(
-      [0],
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_count,
-    )
-      .map((x) => x)
-      .reduce((n) => n + 1, 0)}`,
+    `${iterator_map([0], (x) => x, { next: countIterator_next, count: countIterator_count }).reduce(
+      (n) => n + 1,
+      0,
+    )}`,
   );
   console.log(
     `${$count($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).take(2))}`,
@@ -280,37 +268,29 @@ function main() {
       dDrop_drop,
     )}`,
   );
-  console.log(
-    `${$count(
-      $enumerate(
-        $closing(
-          $iterator(
-            [ds()],
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
-      (value) => {
-        dDrop_drop(value[1]);
-      },
-    )}`,
+  const iter$1 = iterator_enumerate(
+    [ds()],
+    { next: countsIterator_next, count: countsIterator_count },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
   );
+  let result$1;
+  try {
+    result$1 = $count(iter$1, (value) => {
+      dDrop_drop(value[1]);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  console.log(`${result$1}`);
   const it = [0];
   countIterator_next(it);
   console.log(

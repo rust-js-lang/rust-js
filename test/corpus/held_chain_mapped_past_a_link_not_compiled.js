@@ -9,6 +9,7 @@ import {
   $dropItems,
   $enumerate,
   $foldBack,
+  $foldToArray,
   $iter,
   $jsIterator,
   $knowing,
@@ -16,7 +17,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
-  $range,
+  $rangeNext,
   $rev,
   $roomForHint,
   $slicing,
@@ -27,6 +28,7 @@ import {
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -229,7 +231,19 @@ function mapped(src, dropI) {
 }
 
 function ds() {
-  return $range(1, 6).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: 1, end: 6 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        dDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

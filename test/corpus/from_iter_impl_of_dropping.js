@@ -10,10 +10,11 @@ import {
   $foldToArray,
   $intoIter,
   $iter,
-  $lazyRange,
   $live,
+  $rangeInclusiveNext,
   $unwindsOn,
   $vecCollectWay,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,7 +57,13 @@ function reqFromIteratorD_fromIter(iter, IIntoIterVecCollect, dropI, dropIIntoIt
 
 function collected(n, TFromIteratorD) {
   return TFromIteratorD.fromIter(
-    $lazyRange(1, n + 1).map((value) => [value]),
+    iterator_map(
+      { start: 1, end: n },
+      (value) => [value],
+      { next: $rangeInclusiveNext },
+      undefined,
+      dDrop_drop,
+    ),
     true,
   );
 }
@@ -123,13 +130,19 @@ function main() {
   }
   const caught = $catchUnwind(() => {
     for (const item of reqFromIteratorD_fromIter(
-      $lazyRange(1, 4).map((n) => {
-        if (n === 3) {
-          throw new Error(`at ${n}`);
-        } else {
-          return [n];
-        }
-      }),
+      iterator_map(
+        { start: 1, end: 3 },
+        (n) => {
+          if (n === 3) {
+            throw new Error(`at ${n}`);
+          } else {
+            return [n];
+          }
+        },
+        { next: $rangeInclusiveNext },
+        undefined,
+        dDrop_drop,
+      ),
       "fold",
     ).cs) {
       dDrop_drop(item);

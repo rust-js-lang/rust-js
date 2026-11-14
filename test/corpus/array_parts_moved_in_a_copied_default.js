@@ -4,15 +4,18 @@ import {
   $advanceSlice,
   $cleanup,
   $dropEach,
+  $foldToArray,
   $held,
   $iter,
   $live,
   $next,
-  $range,
+  $rangeNext,
+  $roomForHint,
   $some,
   $someValue,
   $traitImpl,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -262,7 +265,19 @@ function firstOrWhole(pair) {
 }
 
 function louds(from) {
-  return $range(from, from + 3, 4).map((value) => [value]);
+  return $foldToArray(
+    $roomForHint(
+      iterator_map(
+        { start: from, end: from + 3 },
+        (value) => [value],
+        { next: $rangeNext },
+        undefined,
+        loudDrop_drop,
+      ),
+      4,
+      true,
+    ),
+  );
 }
 
 function main() {

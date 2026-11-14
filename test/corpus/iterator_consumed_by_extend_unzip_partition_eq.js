@@ -25,6 +25,7 @@ import {
   $sortedKeys,
   $unwindsOn,
   $unzip,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,6 +34,10 @@ export function entry() {
 
 function loudIterator_next(loud, IIterator, dropI, dropIItem) {
   return IIterator.next(loud[0]);
+}
+
+function loudDrop_drop(loud, dropI) {
+  console.log(`drop ${loud[1]}`);
 }
 
 function loud(v, name) {
@@ -66,7 +71,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter[1]}`);
+      loudDrop_drop(iter);
     }
   }
   console.log(`[${v.join(", ")}]`);
@@ -83,7 +88,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$1[1]}`);
+      loudDrop_drop(iter$1);
     }
   }
   console.log(`${s}`);
@@ -98,7 +103,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$2[1]}`);
+      loudDrop_drop(iter$2);
     }
   }
   console.log(`[${d.join(", ")}]`);
@@ -120,7 +125,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$3[1]}`);
+      loudDrop_drop(iter$3);
     }
   }
   console.log(
@@ -140,7 +145,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$4[1]}`);
+      loudDrop_drop(iter$4);
     }
   }
   console.log(`{${Array.from($sortedKeys(t, $cmp)).join(", ")}}`);
@@ -156,7 +161,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$5[1]}`);
+      loudDrop_drop(iter$5);
     }
   }
   console.log(`${h.size}`);
@@ -172,7 +177,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$6[1]}`);
+      loudDrop_drop(iter$6);
     }
   }
   console.log(`${hs.size}`);
@@ -193,7 +198,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$7[1]}`);
+      loudDrop_drop(iter$7);
     }
   }
   const [a, b] = result;
@@ -209,7 +214,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$8[1]}`);
+      loudDrop_drop(iter$8);
     }
   }
   const [even, odd] = result$1;
@@ -226,7 +231,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$9[1]}`);
+      loudDrop_drop(iter$9);
     }
   }
   console.log(`${result$2}`);
@@ -241,7 +246,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${iter$10[1]}`);
+      loudDrop_drop(iter$10);
     }
   }
   console.log(`${result$3}`);
@@ -269,7 +274,7 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          console.log(`drop ${iter[1]}`);
+          loudDrop_drop(iter, $dropEach(dDrop_drop));
         }
       }
     } catch (error) {
@@ -296,7 +301,7 @@ function main() {
           true,
         ),
         (it) => {
-          console.log(`drop ${it.of[1]}`);
+          loudDrop_drop(it.of, $dropEach(dDrop_drop));
           for (const item of it.of[0]) {
             dDrop_drop(item);
           }
@@ -344,7 +349,11 @@ function main() {
                     true,
                   ),
                   (it) => {
-                    console.log(`drop ${it.of[1]}`);
+                    loudDrop_drop(it.of, (intoIter) => {
+                      for (const item of intoIter) {
+                        dDrop_drop(item[0]);
+                      }
+                    });
                     for (const item of it.of[0]) {
                       dDrop_drop(item[0]);
                     }
@@ -371,7 +380,7 @@ function main() {
                         true,
                       ),
                       (it) => {
-                        console.log(`drop ${it.of[1]}`);
+                        loudDrop_drop(it.of, $dropEach(dDrop_drop));
                         for (const item of it.of[0]) {
                           dDrop_drop(item);
                         }
@@ -390,27 +399,29 @@ function main() {
                 let text = ">";
                 try {
                   let caught = $catchUnwind(() => {
-                    $extendText(
-                      $closing(
-                        $iterator(
-                          loud(["a", "b", "c"], "text"),
-                          (iterator) => loudIterator_next(iterator, { next: $next }),
-                          true,
-                        ),
-                        (it) => {
-                          console.log(`drop ${it.of[1]}`);
-                        },
-                      ).map((c) => {
+                    const iter = iterator_map(
+                      loud(["a", "b", "c"], "text"),
+                      (c) => {
                         if (c === "c") {
                           throw new Error("at c");
                         } else {
                           return c;
                         }
-                      }),
-                      (piece) => {
-                        text += piece;
                       },
+                      { next: (iterator) => loudIterator_next(iterator, { next: $next }) },
+                      loudDrop_drop,
                     );
+                    try {
+                      $extendText(iter, (piece) => {
+                        text += piece;
+                      });
+                    } catch (error) {
+                      throw $unwindsOn(error);
+                    } finally {
+                      if ($live()) {
+                        iter.return();
+                      }
+                    }
                   });
                   console.log(`${caught.TAG === "Err"} ${$debugStr(text)}`);
                   caught = $catchUnwind(() => {
