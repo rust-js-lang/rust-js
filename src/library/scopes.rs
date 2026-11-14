@@ -452,7 +452,7 @@ impl ContractField {
                 ClosedWorld(Refuse(
                     "one that writes a `dyn` into a writer a piece at a time is refused, naming #1797 (ADR 1135, step 5)",
                 )),
-                "whether it makes a `dyn` of a formatting trait whose dictionary may carry no `fmtInto`: not of a published type whose impls of its formatting traits are written by hand",
+                "whether a `dyn` of a formatting trait it makes may carry no `fmtInto`: of a value holding a type parameter, or a library's type its contract doesn't list, or whose dictionary its lowering left without one, its writes not followed (`Dependencies::fmt_into_left`); each other value's carries it best-effort (#1797)",
             ),
             LibraryLeavesUnended => (
                 "Library.leaves_unended",

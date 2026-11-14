@@ -697,6 +697,7 @@ pub fn lower_crate<'tcx>(
                 .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),
         );
     let reached = crate::reachability::reachable(roots, edges);
+    let fmt_into_left = lowered_items.iter().any(|(_, item)| item.dependencies.fmt_into_left);
     let mut pass = Pass::default();
     for (def_id, mut lowered) in lowered_items
         .into_iter()
@@ -1298,7 +1299,7 @@ pub fn lower_crate<'tcx>(
                         shown_params: &shown_params.params,
                         dyn_debug_shown: shown_params.dyn_debug(tcx),
                         written: &written_params,
-                        makes_fmt_dyns: written_params.makes_dyns,
+                        makes_fmt_dyns: written_params.makes_dyns || fmt_into_left,
                         given,
                         failing: &failing,
                         writes_may_fail: dictionaries_fail,

@@ -1,6 +1,5 @@
-//! Writes a library's `dyn Debug` into a writer of its own: refused,
-//! naming #1797, as the library's contract says it makes such a `dyn`,
-//! whose dictionary may not write a piece at a time.
+//! Writes a library's `dyn Debug` of a std value into a writer of its own,
+//! a piece at a time, by its pair's dictionary's `fmtInto` (#1797).
 use std::fmt::{self, Write};
 
 struct Log(Vec<String>);

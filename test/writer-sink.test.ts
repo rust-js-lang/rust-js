@@ -440,30 +440,50 @@ test("a library's function given an Arguments, and a library's own write_fmt, wr
   expect(written("relay")).toEqual([1]);
 }, underLoad(300_000));
 
-// A library's `dyn Debug`, whose pair's dictionary its contract doesn't say
-// writes a piece at a time (`makes_fmt_dyns`), written into a writer:
-// refused, naming #1797.
-test("a library's dyn Debug written into a writer is refused", () => {
-  const native = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys", [
-    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
-    "#1797",
-  ]);
-  expect(native).toBe('["Some", "(", "7", ")"]\n');
+// A library's `dyn Debug` of a std value, `Box::new(Some(7))`: its pair's
+// dictionary carries `fmtInto` best-effort, as the library makes the `dyn`
+// and a consumer may write it, its writes followed, so its contract says it
+// makes none that may carry none, and a consumer writes it a piece at a
+// time (#1797).
+test("a library's dyn Debug of a std value written into a writer writes a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys");
+  expect(contract(out).makes_fmt_dyns ?? false).toBe(false);
 }, underLoad(300_000));
 
-// The same `dyn`, written through the consumer's generic code, or given to
-// another library that writes the `dyn`s it's given: refused at compile
-// time, naming #1797, as a direct `write!` is, never thrown by the
-// dictionary with no `fmtInto` as it's written (#1802).
+// A library's `dyn Debug` whose dictionary carries no `fmtInto`, of a
+// derived `Debug`, whose writer the lowering can't write a piece at a time,
+// which it gives back into the contract (`makes_fmt_dyns`, #1797), written
+// through the consumer's generic code, or given to another library that
+// writes the `dyn`s it's given: refused at compile time, naming #1797, as a
+// direct `write!` is, never thrown by the dictionary with no `fmtInto` as
+// it's written (#1802).
 test("a library's dyn Debug written through generic code, or by another library, is refused, not thrown", () => {
   const refusal = [
     "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
     "#1797",
   ];
+  const point = '["[", "Point", " { ", "x", ": ", "1", ", ", "y", ": ", "-", "2", " }", "]"]\n';
   const generic = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys_through_generic_code", refusal);
-  expect(generic).toBe('["[", "Some", "(", "7", ")", "]"]\n');
+  expect(generic).toBe(point);
   const given = chain(piecewisePairs, "dyn_of_a_library_given_to_a_library_that_writes_it", ["dep", "mid", "app"], refusal);
-  expect(given).toBe('["[", "Some", "(", "7", ")", "]"]\n');
+  expect(given).toBe(point);
+}, underLoad(300_000));
+
+// A library's `dyn` of a std value whose `Debug` isn't followed a piece at
+// a time, a `Duration`'s, is left without `fmtInto` at lowering, never
+// refused there, which the lowering gives back into its contract; and of a
+// type parameter's value, which a consumer's may stand for, the analysis
+// says so: a consumer that writes either a piece at a time is refused
+// (`makes_fmt_dyns`, #1797).
+test("a library's dyn left without fmtInto, or of a type parameter, is refused where it's written", () => {
+  const refusal = [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1797",
+  ];
+  const duration = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys_std_value_unfollowed", refusal);
+  expect(duration).toBe('["", "1", ".", "5", "s"]\n');
+  const generic = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys_generic_value", refusal);
+  expect(generic).toBe('["m", "3"]\n');
 }, underLoad(300_000));
 
 // A library's `dyn`s of published types of its own whose formatting impls

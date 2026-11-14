@@ -537,4 +537,12 @@ export const mutations: Mutation[] = [
     replace: "        drops_observed.gather(cx.drops_observed.take());\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "merge what its consumer compares"],
   },
+  {
+    name: "fmt-into-left-ungathered",
+    breaks: "a dictionary the lowering left without `fmtInto` isn't gathered into the contract's `makes_fmt_dyns`, so a consumer's write of the `dyn` isn't refused and throws (#1797)",
+    file: "src/lower/pipeline.rs",
+    find: "    let fmt_into_left = lowered_items.iter().any(|(_, item)| item.dependencies.fmt_into_left);\n",
+    replace: "    let fmt_into_left = false;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
 ];

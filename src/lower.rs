@@ -398,6 +398,10 @@ struct Dependencies {
     /// `js::class::<T>().prototype()`, where an accessor may be defined of
     /// a field's name: its fields undeclared (#568).
     prototypes_read: IndexSet<DefId>,
+    /// Whether it left a dictionary of a value a library makes a `dyn` of
+    /// without `fmtInto`, its writes not followed: what lowering found, which
+    /// the library's contract says (`makes_fmt_dyns`, #1797, ADR 1148).
+    fmt_into_left: bool,
     /// Whether it made a closure the function it passes on to, or an `Rc`'s
     /// closure the function, only as the crate reads no function's
     /// identity: one where Rust has two, which a library's consumer that

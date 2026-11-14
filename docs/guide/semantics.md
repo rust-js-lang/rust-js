@@ -376,7 +376,12 @@ what's held before it, as a browser's console takes whole lines
   `@rust-js/std`'s compiled bodies. A formatting impl of a reference to, a
   `Box` of or a `Pin<Box<..>>` of your own type, `impl Display for
   &ByRef`, is that type's: `{}` of a `&ByRef` calls it, as Rust does,
-  and writes into a writer a piece at a time by it too (#1798).
+  and writes into a writer a piece at a time by it too (#1798). A `dyn` a
+  library gives out, `Box<dyn Debug>` of a std value or of a published type
+  whose impl is written by hand, is written so by its dictionary too; one of
+  a value whose writes the library can't follow so, a private type's, a
+  derived `Debug`'s or a type parameter's, is refused where a consumer
+  writes a `dyn` a piece at a time (#1797).
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`

@@ -2,7 +2,8 @@
 //! Debug`s of them, which only std's `debug_struct_fields_finish` is given
 //! and which never leave it, as chrono's do: it makes no `dyn` a consumer
 //! may write, so a consumer's `dyn` written into a writer isn't refused
-//! (#1688).
+//! (#1688), though a `Duration`'s `Debug` isn't followed a piece at a time
+//! (#1797).
 #[derive(Debug)]
 struct Wide {
     a: i32,
@@ -11,6 +12,7 @@ struct Wide {
     d: Option<u8>,
     e: bool,
     f: u64,
+    g: std::time::Duration,
 }
 
 pub fn described(n: i32) -> String {
@@ -21,6 +23,7 @@ pub fn described(n: i32) -> String {
         d: Some(4),
         e: true,
         f: 6,
+        g: std::time::Duration::from_millis(1500),
     };
     format!("{wide:?}")
 }

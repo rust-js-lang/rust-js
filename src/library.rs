@@ -117,7 +117,8 @@ pub use dependencies::Dependencies;
 /// libraries' too, which a consumer refuses two releases of one binding
 /// crate over (#1799): an older library, recording none, would be read as
 /// binding nothing.
-pub const VERSION: u32 = 40;
+/// 41: `makes_fmt_dyns`, a dictionary the lowering left without it (#1797).
+pub const VERSION: u32 = 41;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -533,9 +534,8 @@ pub struct Library {
     /// carry `fmtInto` (#1652).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub dyn_written_into: bool,
-    /// Whether it makes a `dyn` of a formatting trait whose dictionary may
-    /// carry no `fmtInto`, not one of a published type's hand-written impls:
-    /// a consumer writing a `dyn` a piece at a time is refused (#1797).
+    /// Whether a `dyn` it makes may carry no `fmtInto`, its lowering's
+    /// record: a consumer writing one a piece at a time is refused (#1797).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub makes_fmt_dyns: bool,
     /// A program's, `--tested`'s: the keys of the trait constants its

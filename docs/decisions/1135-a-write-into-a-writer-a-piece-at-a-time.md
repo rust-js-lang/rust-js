@@ -641,6 +641,47 @@ go.
         library-dyn-through-generic-code-unrefused,
         library-dyn-given-to-a-writing-library-unrefused and
         writes-dyns-given-by-none, caught.
+      - Amended later, #1797 (library ABI 41): `makes_fmt_dyns` is what the
+        lowering found, not the analysis's guess. Of a library that writes
+        no `dyn` so itself, each value it makes a pair `dyn` of a formatting
+        trait of, by a coercion or std's conversion, but a derived impl's
+        (#1778), is given best-effort (`WrittenParams::give_made`): the
+        types it reaches carry `fmtInto` where the lowering can write them
+        so. Where it can't, an impl's writer that isn't framed (a private
+        type's, a derived `Debug`'s, a class's) or a std value's writes not
+        followed (a `Duration`'s), `impl_fmt_into` and `std_fmt_into` leave
+        the dictionary without `fmtInto` rather than refuse
+        (`best_effort`, `best_effort_adt`), and say so
+        (`Dependencies::fmt_into_left`), which the pipeline gathers into the
+        contract. A value that holds a type parameter, which a consumer's may
+        stand for, or a library's type its contract doesn't list, is said
+        to by the analysis. `written_as_it_is` goes: a published type's
+        hand-written impl carries `fmtInto` as before, so it's never left
+        without. So `Box::new(Some(7)) as Box<dyn Debug>` is written into a
+        consumer's writer a piece at a time; a private type's, a derived
+        impl's, a `Duration`'s or a `T`'s is refused where a consumer writes
+        a `dyn` so, by every path #1802 covers, never thrown. A program's
+        bodies are unchanged: only a library gives best-effort. Framing a
+        private type's or a derived impl's writer best-effort, so those
+        write so too, is left: a framed writer refuses what it can't
+        follow, at lowering, where it's too late to unframe it. Case (ADR
+        0262): results change, so Rust's; before, a compile error. Proof:
+        every corpus case compiled as a library refuses as before (84 of
+        2,536, the same lines) and the four that broke the analysis-wide try
+        compile; of the 586 that make a `dyn`, 18 libraries' JS changes, 17
+        already `library-differs`, run against native, and
+        catch_unwind_payloads now says so; the pairs dyn_debug_of_a_librarys
+        (as native, its contract flagging none),
+        dyn_debug_of_a_librarys_std_value_unfollowed and
+        dyn_debug_of_a_librarys_generic_value (refused); mutations
+        made-dyns-not-given, made-dyn-of-a-param-unflagged,
+        made-dyns-given-in-a-program, best-effort-adt-of-reached-types,
+        best-effort-impl-refused, best-effort-std-refused and
+        fmt-into-left-ungathered, caught. published-dyn-flagged,
+        derived-dyn-unflagged and private-dyn-unflagged go with
+        `written_as_it_is`, and derived-debug-makes-fmt-dyns with what it
+        held: a derived `Debug`'s `dyn`s of its fields make no dictionary of
+        their own at lowering, so leaving them out changes no output.
       - Amended later, #1745: a `format_args!` the body makes, given to a
         type parameter a call writes into a writer through its dictionary,
         `own(w, &format_args!(..))`'s `T`, is followed at lowering, where

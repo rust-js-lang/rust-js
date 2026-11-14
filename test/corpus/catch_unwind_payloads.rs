@@ -1,3 +1,4 @@
+//@ library-differs
 // `catch_unwind` catches a panic, its payload its message (ADR 0660): a
 // literal one's, a formatted one's, std's own of an index, an `unwrap()`,
 // a division; a payload resumed, of text or of a number, caught again; a

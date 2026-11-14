@@ -1150,8 +1150,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&never_but_through_whats_shown, &failing),
         (library, &written_arguments),
     );
-    let mut written_params =
-        written_params::written_params(&recognition, (all_bodies, &calls), &prints, &foreign, written_arguments);
+    let mut written_params = written_params::written_params(
+        &recognition,
+        (all_bodies, &calls),
+        (&prints, library),
+        &foreign,
+        written_arguments,
+    );
     written_params.arguments.arms = written_params::arms_sinks(
         &recognition,
         all_bodies,

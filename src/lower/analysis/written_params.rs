@@ -59,10 +59,19 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     /// Whether the crate makes a `dyn Display` or a `dyn Error`, a pair of
     /// a value and its dictionary, of a value whose dictionaries may carry
     /// no `fmtInto`, which a library's contract says
-    /// (`Library::makes_fmt_dyns`): not of a published type of its own whose
-    /// impls of the `dyn`'s formatting traits are written by hand, which
-    /// carry it and whose writers are framed (#1688).
+    /// (`Library::makes_fmt_dyns`), as the analysis knows it: of a value
+    /// that holds a type parameter, or a library's type its contract doesn't
+    /// list. Of another, the lowering gives back whether its dictionary was
+    /// left without (the lowering's `fmt_into_left`, #1797).
     pub(in crate::lower) makes_dyns: bool,
+    /// Of a library that writes no `dyn` so itself, the types reached only
+    /// by a value it makes a pair `dyn` of, which a consumer may write a
+    /// piece at a time (`made_types`, `made_adts`), and those values' own
+    /// (`made_given`): their dictionaries carry `fmtInto` best-effort, where
+    /// the lowering can write them so (#1797).
+    made_types: IndexSet<Ty<'tcx>>,
+    made_adts: IndexSet<DefId>,
+    made_given: IndexSet<DefId>,
     /// Each function's `fmt::Arguments` parameters it writes into a
     /// writer a piece at a time (step 6).
     pub(in crate::lower) arguments: WrittenArguments,
@@ -73,14 +82,32 @@ impl<'tcx> WrittenParams<'tcx> {
     /// that reaches such a parameter, or a `dyn` written so, or one made of
     /// one?
     pub(in crate::lower) fn of_type(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-        self.types.contains(&tcx.erase_and_anonymize_regions(ty))
+        let ty = tcx.erase_and_anonymize_regions(ty);
+        self.types.contains(&ty) || self.made_types.contains(&ty)
+    }
+
+    /// Is `ty` reached only by a value a library makes a `dyn` of, so its
+    /// dictionary carries `fmtInto` best-effort: none where its writes
+    /// can't be followed, which the lowering gives back, never refused
+    /// (#1797)?
+    pub(in crate::lower) fn best_effort(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+        let ty = tcx.erase_and_anonymize_regions(ty);
+        !self.types.contains(&ty) && self.made_types.contains(&ty)
+    }
+
+    /// `best_effort`, of an impl of `tr` for `adt`, one of the crate's types:
+    /// given no parameter written so, nor a `dyn` written so (`given_adt`),
+    /// but reached by a value the library makes a `dyn` of, a published
+    /// one's derived `Debug` too, whose writer isn't framed.
+    pub(in crate::lower) fn best_effort_adt(&self, adt: DefId, tr: DefId) -> bool {
+        !self.of_dyn(tr) && !self.given_adts.contains(&adt) && self.made_adts.contains(&adt)
     }
 
     /// Does the dictionary of an impl for `adt`, one of the crate's types,
     /// carry `fmtInto`, as one of its instances reaches such a parameter,
     /// or as a `dyn` is written so?
     pub(in crate::lower) fn of_adt(&self, adt: DefId, tr: DefId) -> bool {
-        self.of_dyn(tr) || self.adts.contains(&adt)
+        self.of_dyn(tr) || self.adts.contains(&adt) || self.made_adts.contains(&adt)
     }
 
     /// May a `dyn` written so be an impl of `tr`: one of `tr`'s, or of a
@@ -94,7 +121,7 @@ impl<'tcx> WrittenParams<'tcx> {
     /// type, whose writer writes it so only where framing frames its writer
     /// too, `Der`'s private `BytesInner`, which its own `Debug` never shows.
     pub(in crate::lower) fn given_adt(&self, adt: DefId, tr: DefId) -> bool {
-        self.of_dyn(tr) || self.given_adts.contains(&adt)
+        self.of_dyn(tr) || self.given_adts.contains(&adt) || self.made_given.contains(&adt)
     }
 
     /// The crate's types whose impls' dictionaries carry `fmtInto`, which a
@@ -156,26 +183,51 @@ impl<'tcx> WrittenParams<'tcx> {
                 changed |= self.params.entry(owner).or_default().insert(index as u32);
             }
         }
-        self.reach(tcx, ty, &mut IndexSet::default());
+        reach(tcx, ty, &mut IndexSet::default(), (&mut self.types, &mut self.adts));
         changed
     }
 
-    /// `ty`, each type it's made of and each field of the crate's structs
-    /// and enums, which their writers may write so in turn, reach it.
-    fn reach(&mut self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) {
-        let ty = tcx.erase_and_anonymize_regions(ty);
-        if !seen.insert(ty) {
-            return;
-        }
-        for part in ty.walk().filter_map(|part| part.as_type()) {
-            let part = tcx.erase_and_anonymize_regions(part);
-            self.types.insert(part);
-            if let ty::Adt(adt, args) = *part.kind() {
-                self.adts.insert(adt.did());
-                if adt.did().is_local() {
-                    for field in adt.all_fields() {
-                        self.reach(tcx, field.ty(tcx, args).skip_normalization(), seen);
-                    }
+    /// A library makes a `dyn` of `ty`, which a consumer may write so: it
+    /// and what it's made of reach it best-effort (`best_effort`, #1797).
+    fn give_made(&mut self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) {
+        let ty = crate::lower::mir::revealed(tcx, ty);
+        let given = (ty.walk().filter_map(|part| part.as_type())).filter_map(|part| part.ty_adt_def());
+        self.made_given.extend(given.map(|adt| adt.did()));
+        reach(
+            tcx,
+            ty,
+            &mut IndexSet::default(),
+            (&mut self.made_types, &mut self.made_adts),
+        );
+    }
+}
+
+/// `ty`, each type it's made of and each field of the crate's structs and
+/// enums, which their writers may write so in turn, reach `types` and
+/// `adts`.
+fn reach<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    seen: &mut IndexSet<Ty<'tcx>>,
+    (types, adts): (&mut IndexSet<Ty<'tcx>>, &mut IndexSet<DefId>),
+) {
+    let ty = tcx.erase_and_anonymize_regions(ty);
+    if !seen.insert(ty) {
+        return;
+    }
+    for part in ty.walk().filter_map(|part| part.as_type()) {
+        let part = tcx.erase_and_anonymize_regions(part);
+        types.insert(part);
+        if let ty::Adt(adt, args) = *part.kind() {
+            adts.insert(adt.did());
+            if adt.did().is_local() {
+                for field in adt.all_fields() {
+                    reach(
+                        tcx,
+                        field.ty(tcx, args).skip_normalization(),
+                        seen,
+                        (&mut *types, &mut *adts),
+                    );
                 }
             }
         }
@@ -192,7 +244,7 @@ impl<'tcx> WrittenParams<'tcx> {
 pub(super) fn written_params<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (all_bodies, graph): (&[&Body<'tcx>], &crate::lower::call_graph::Crate<'_, 'tcx>),
-    prints: &Prints,
+    (prints, library): (&Prints, bool),
     foreign: &Foreign<'_, 'tcx>,
     arguments: WrittenArguments,
 ) -> WrittenParams<'tcx> {
@@ -250,36 +302,12 @@ pub(super) fn written_params<'tcx>(
         }),
         _ => None,
     };
-    // Whether a consumer may write the `dyn` a piece at a time as it is: of a
-    // published type of the crate's own, whose writers are framed and whose
-    // dictionaries carry `fmtInto` (`prints.published`), each formatting
-    // trait the `dyn` may be written by impl'd by hand, not derived, whose
-    // copy a consumer compiles and whose library dictionary carries none
-    // (#1688).
-    let written_as_it_is = |made_of: Ty<'tcx>, made_into: Ty<'tcx>| {
-        let ty::Adt(adt, _) = made_of.kind() else {
-            return false;
-        };
-        let published = adt.did().is_local() && prints.published.contains(&adt.did());
-        let traits = (made_into.walk().filter_map(|part| part.as_type())).flat_map(|part| match part.kind() {
-            ty::Dynamic(traits, ..) => traits.principal_def_id().into_iter().collect::<Vec<_>>(),
-            _ => Vec::new(),
-        });
-        let fmt_traits: Vec<DefId> = traits
-            .flat_map(|principal| ty::elaborate::supertrait_def_ids(tcx, principal))
-            .filter(|&tr| crate::lower::recognition::is_fmt_trait(tcx, tr))
-            .collect();
-        published
-            && fmt_traits.iter().all(|&tr| {
-                let imp = recognition.user_impl(ty::TraitRef::new(tcx, tr, [made_of]));
-                imp.is_some_and(|imp| !tcx.is_automatically_derived(imp))
-            })
-    };
-    found.makes_dyns = all_bodies.iter().filter(|body| !derived(body)).any(|body| {
-        (body.thir.exprs.iter())
-            .filter_map(|expr| makes(body, expr))
-            .any(|(made_of, made_into)| !written_as_it_is(made_of, made_into))
-    });
+    // Each value the crate makes a pair `dyn` of, but a derived impl's,
+    // whose `dyn`s of its fields only std's builder is given (#1778).
+    let made_fmt_dyns: Vec<Ty<'tcx>> = (all_bodies.iter().filter(|body| !derived(body)))
+        .flat_map(|body| (body.thir.exprs.iter()).filter_map(|expr| makes(body, expr)))
+        .map(|(made_of, _)| made_of)
+        .collect();
     // Of each body, what it writes into a writer: a `write!` into one's
     // values, and a writer's shown into one, what it shows; and where a
     // `dyn` is among them, where.
@@ -334,6 +362,25 @@ pub(super) fn written_params<'tcx>(
         for (owner, made_of, span) in dyns_made(tcx, all_bodies) {
             found.give(tcx, owner, made_of);
             refuse_lacked(tcx, foreign, made_of, span);
+        }
+    }
+    // Of a library that writes no `dyn` so itself, each value it makes a
+    // pair `dyn` of, which a consumer may write a piece at a time, is given
+    // best-effort (#1797): its dictionary carries `fmtInto` where the
+    // lowering can write it so, else none, which the lowering gives back
+    // and its contract says (`makes_fmt_dyns`). One that holds a type
+    // parameter, which a consumer's value may stand for, or a library's type
+    // whose dictionary its contract doesn't say carries `fmtInto`, may carry
+    // none: said here.
+    if library && !found.dyn_written {
+        for made_of in made_fmt_dyns {
+            let revealed = crate::lower::mir::revealed(tcx, made_of);
+            let lacked = (revealed.walk().filter_map(|part| part.as_type()))
+                .any(|part| part.ty_adt_def().is_some_and(|adt| foreign.lacks_fmt_into(adt.did())));
+            match rustc_middle::ty::TypeVisitableExt::has_param(&revealed) || lacked {
+                true => found.makes_dyns = true,
+                false => found.give_made(tcx, revealed),
+            }
         }
     }
     // What each call gives a parameter its callee writes so, to a fixed point;

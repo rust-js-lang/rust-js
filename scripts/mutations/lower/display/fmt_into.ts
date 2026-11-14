@@ -166,4 +166,20 @@ export const mutations: Mutation[] = [
     replace: "        let ty = ty.peel_refs();\n        let (dictionary, value)",
     tests: ["test/writer-sink.test.ts", "-t", "a library's formatting impls of a reference"],
   },
+  {
+    name: "best-effort-impl-refused",
+    breaks: "a library's impl dictionary of a value it makes a `dyn` of alone, whose writer isn't framed, is refused, not left without `fmtInto`, so the library is refused (#1797)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            if !(listed || printing) && self.krate.written.best_effort_adt(adt, tr.def_id) {\n",
+    replace: "            if false && !(listed || printing) && self.krate.written.best_effort_adt(adt, tr.def_id) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
+  {
+    name: "best-effort-std-refused",
+    breaks: "a library's std dictionary of a value it makes a `dyn` of alone, whose writes aren't followed, a `Duration`'s, is refused, not left without `fmtInto`, so the library is refused (#1797)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            if !printing && self.krate.written.best_effort(self.tcx, ty) {\n",
+    replace: "            if false && !printing && self.krate.written.best_effort(self.tcx, ty) {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn left without fmtInto"],
+  },
 ];

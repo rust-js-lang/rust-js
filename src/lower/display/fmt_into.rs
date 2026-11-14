@@ -163,6 +163,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let (Some(entry), true) = (entry, writes_through_sink) else {
+            // Of a value a library makes a `dyn` of alone: none, which its
+            // contract says (#1797).
+            if !(listed || printing) && self.krate.written.best_effort_adt(adt, tr.def_id) {
+                self.dependencies.borrow_mut().fmt_into_left = true;
+                return Ok(None);
+            }
             let what = format!(
                 "a `{}` written into a writer through generic code or a `dyn` whose writer doesn't write a piece at a time (#1652)",
                 tr.self_ty()
@@ -282,6 +288,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
         let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (&value, &options), span)? else {
             if !written {
+                return Ok(None);
+            }
+            // Of a value a library makes a `dyn` of alone: none, which its
+            // contract says (#1797).
+            if !printing && self.krate.written.best_effort(self.tcx, ty) {
+                self.dependencies.borrow_mut().fmt_into_left = true;
                 return Ok(None);
             }
             return Err(self.refused_piecewise(span, &format!("a `{ty}` written into a writer through generic code")));
