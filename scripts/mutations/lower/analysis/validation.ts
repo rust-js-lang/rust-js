@@ -307,6 +307,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent.rs$"],
   },
   {
+    name: "flattened-reference-lent-whole",
+    breaks: "a flattened reference lent whole is refused as a type whose `Clone` would read the parent's fields, not as the copy of its referent it would be (#1819)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && expr.ty.is_ref() =>\n",
+    replace: "                        && false =>\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
+  },
+  {
     name: "flattened-lent-mutably",
     breaks: "a flattened field lent mutably, which may replace it whole, is taken as its parent's object",
     file: "src/lower/analysis/validation.rs",

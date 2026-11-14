@@ -270,6 +270,62 @@ pub(in crate::lower) fn flattened<'tcx>(
     found
 }
 
+/// The references a flattened field's value holds whose referents its
+/// parent's object copies, `{ ...item, severity }` (ADR 0204, amended):
+/// a field's own `&Item`. Each is shared with its source in Rust, and a
+/// copy in JS, so each is asked `copy_seen`, and its referent
+/// `copy_seen_in_crate`, which must find nothing that tells them apart
+/// (#1819).
+pub(in crate::lower) fn copied_references<'tcx>(ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Ref(..) => vec![ty],
+        _ => Vec::new(),
+    }
+}
+
+/// Of `reference`, one `copied_references` gives, what of its type alone
+/// would tell its parent's copy from its referent (#1819): a `&mut`,
+/// whose writes through the parent its referent wouldn't see; or a
+/// referent with a cell among its own keys, `Cell` or `RefCell`, whose
+/// writes through either the other wouldn't see, as rustc's `Freeze`
+/// says. A JS object, which Rust reads no key of through its parent, is
+/// neither (ADR 0204, amended). `typing_env` is where the field is
+/// declared.
+pub(in crate::lower) fn copy_seen<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    reference: Ty<'tcx>,
+) -> Option<&'static str> {
+    let ty::Ref(_, referent, mutability) = *reference.kind() else {
+        return None;
+    };
+    if mutability.is_mut() {
+        return Some(
+            "a `&mut`, whose writes through its parent's object, a copy of what it refers to, wouldn't be its referent's",
+        );
+    }
+    let js_object =
+        matches!(referent.kind(), ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args));
+    if !js_object && !referent.is_freeze(tcx, typing_env) {
+        return Some(
+            "of a type with a `Cell` or `RefCell` of its own, which its parent's object would hold a copy of, so a write through either wouldn't be seen through the other",
+        );
+    }
+    None
+}
+
+/// Of `referent`, what a flattened reference refers to, whether the crate
+/// would tell its parent's copy from it (#1819): it changes one in place,
+/// or compares its address, a raw pointer to it, as the mutation owner's
+/// `changed` says, whose copies are another's.
+pub(in crate::lower) fn copy_seen_in_crate<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    changed: &IndexSet<Ty<'tcx>>,
+    referent: Ty<'tcx>,
+) -> bool {
+    (changed.iter()).any(|&changed| crate::lower::copies::instance_of(recognition, referent, changed))
+}
+
 /// That `subject` is a keyed enum's variant `key` tells, `'getter' in
 /// node`: its key is there whatever it holds (#504).
 pub(in crate::lower) fn keyed_test(subject: crate::js::Expr, key: &str) -> crate::js::Expr {

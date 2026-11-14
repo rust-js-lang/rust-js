@@ -37,7 +37,9 @@ pub(super) use effects::{
     reject_unread_parameters, runs_nothing, runs_only_given,
 };
 pub(in crate::lower) use flattened::is_flattened_state_field;
-pub(super) use flattened::{Flattened, Keyed, flattened, flattened_state, keyed_test};
+pub(super) use flattened::{
+    Flattened, Keyed, copied_references, copy_seen, copy_seen_in_crate, flattened, flattened_state, keyed_test,
+};
 pub(super) use forms::{Asked, JsForm, js_form};
 pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;

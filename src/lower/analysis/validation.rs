@@ -301,6 +301,14 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                     ),
                 );
             }
+            // A reference its parent's object copies, which must be seen
+            // to be its referent (#1819).
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, id.to_def_id());
+            for reference in bindings::copied_references(ty) {
+                if let Some(why) = bindings::copy_seen(tcx, typing_env, reference) {
+                    refuse(tcx.def_span(field.did), format!("flattening `{reference}`, {why}"));
+                }
+            }
             // A keyed enum's keys are its parent's, which can't hold one
             // of its own of the same name (#504).
             if let ty::Adt(adt, _) = ty.kind()
@@ -478,6 +486,21 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                         ),
                     );
                 }
+                // A reference lent whole would be its parent's object, a copy
+                // of its referent, not it (#1819): refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && expr.ty.is_ref() =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole: it would be its parent's object, a copy of what it refers to, not its referent",
+                            expr.ty
+                        ),
+                    );
+                }
                 // Lent whole, it's its parent's object, which a clone spreads
                 // and `==` compares whole, the parent's fields too: of a type
                 // that has either, refused.
@@ -512,6 +535,43 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         }
     }
     valid
+}
+
+/// Report each flattened reference whose referent the crate changes in
+/// place or compares the address of, `changed`'s, the mutation owner's
+/// (#1819): its parent's object is a copy of it, which either would tell
+/// from it. Of the crate's structs, and a library's it names, whose
+/// parent this crate makes too.
+pub(super) fn reject_flattened_copies<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    flattened: &bindings::Flattened,
+    changed: &IndexSet<Ty<'tcx>>,
+) {
+    let tcx = recognition.tcx;
+    let local = tcx.hir_crate_items(()).definitions().map(LocalDefId::to_def_id);
+    let named = flattened.params.keys().copied().filter(|id| !id.is_local());
+    for id in local.chain(named) {
+        if tcx.def_kind(id) != DefKind::Struct {
+            continue;
+        }
+        for field in (tcx.adt_def(id).non_enum_variant().fields.iter()).filter(|f| bindings::is_flatten(tcx, f)) {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            for reference in bindings::copied_references(ty) {
+                let ty::Ref(_, referent, _) = *reference.kind() else {
+                    continue;
+                };
+                if bindings::copy_seen_in_crate(recognition, changed, referent) {
+                    refuse(
+                        tcx,
+                        tcx.def_span(field.did),
+                        Refused::Feature(&format!(
+                            "flattening `{reference}`, whose `{referent}` is changed in place or its address compared, which its parent's object, a copy of it, would answer apart from it"
+                        )),
+                    );
+                }
+            }
+        }
+    }
 }
 
 /// A key of `keyed`'s that `parent`, a struct, has as its own field's

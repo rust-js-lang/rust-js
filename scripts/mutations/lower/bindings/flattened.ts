@@ -3,6 +3,38 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-reference-uncopied",
+    breaks: "a flattened reference is no copy of its referent, so a `&mut`'s writes through its parent, or a `Cell`'s through either, are lost to the other (#1819)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "        ty::Ref(..) => vec![ty],\n",
+    replace: "        ty::Ref(..) => Vec::new(),\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
+  },
+  {
+    name: "flattened-reference-mut-allowed",
+    breaks: "a flattened `&mut` is copied into its parent, whose writes through it its referent never sees (#1819)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "    if mutability.is_mut() {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
+  },
+  {
+    name: "flattened-reference-cell-allowed",
+    breaks: "a flattened reference to a struct with a `Cell` is copied into its parent, so a write through either isn't seen through the other (#1819)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "    if !js_object && !referent.is_freeze(tcx, typing_env) {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
+  },
+  {
+    name: "flattened-reference-changed-unasked",
+    breaks: "a flattened reference to a struct whose address is compared is copied into its parent, which `ptr::eq` tells from its referent (#1819)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "    (changed.iter()).any(|&changed| crate::lower::copies::instance_of(recognition, referent, changed))\n",
+    replace: "    (changed.iter()).any(|&changed| changed == referent && false)\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
+  },
+  {
     name: "keyed-units-many",
     breaks: "an enum of two variants without fields, which no key tells apart, is flattened as one told by its keys (#504)",
     file: "src/lower/bindings/flattened.rs",

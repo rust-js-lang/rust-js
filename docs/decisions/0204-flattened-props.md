@@ -9,7 +9,9 @@ amended by [0205](0205-flattened-chains.md), which chains them and gives a
 name both have to the props; and by
 [0674](0674-a-struct-literals-fields-are-in-the-order-written.md): a flattened
 field made outside JSX is found by its name, where it's written. Amended
-below: a flattened field lent whole is its parent's object.
+below: a flattened field lent whole is its parent's object; and a flattened
+reference is refused wherever its parent's copy could be told from its
+referent (#1819).
 
 > **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
 > left-out optional prop is `None`, so the `{..Default::default()}` in this
@@ -181,3 +183,53 @@ its type reads it whole, or lent mutably", and `test/jsx-props.test.ts`'s
 chain lent whole; and mutations `flattened-lent-refused`,
 `flattened-lent-mutably`, `flattened-lent-read-whole` and
 `flattened-lent-shadow-unseen` (`analysis/validation.rs`).
+
+## Amendment: a reference is a copy, refused where it could be told apart (2026-11-15)
+
+A wrong answer (P0, #1819). A flattened field that's a reference to a
+struct, `item: &'a Item`, makes its parent `{ ...item, severity }`: a copy
+of the referent's keys. Rust's parent shares the referent, so what changes
+it after the parent is made, through either, is seen through both, and
+JS's copy sees neither. With a `Cell` in `Item`, `item.hits.set(5)` was
+`0` read through `report.item.hits`, and the other way; with a flattened
+`&'a mut Item`, `report.item.line = 8` left `item.line` 3.
+
+**A flattened reference is allowed only where nothing could tell its
+parent's copy from its referent**, one rule in `bindings::flattened`
+(`copied_references`, `copy_seen`, `copy_seen_in_crate`), refused at the
+field, naming it, otherwise:
+
+- **A `&mut`**, whose writes through the parent the referent wouldn't see.
+- **A referent with a cell among its own keys**, a `Cell` or `RefCell`,
+  whose writes through either the other wouldn't see: what rustc's
+  `Freeze` says. What it holds behind a pointer, an `Rc<RefCell<..>>`, is
+  one object both share, as Rust's are.
+- **A referent the crate changes in place or compares the address of**,
+  `ptr::eq` or a raw pointer to one: the mutation owner's `Mutated.types`
+  (ADR 0407 puts each raw pointer's pointee there), asked after it's
+  found (`validation::reject_flattened_copies`), of the crate's structs and
+  a library's it names.
+- **The reference lent whole**, `&report.item`, which would be the
+  parent's object, not its referent. It was refused before by
+  `reads_whole`'s answer of any type not an ADT, whose message named
+  `Clone` and `PartialEq`; it's refused for what it is now.
+
+Read through, `report.item.line`, it's the parent's key, which holds the
+referent's value. A reference to a JS object is left as before here; it
+is #1822's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where it's allowed,
+since no program can tell the copy from its referent; D where it could,
+a compile error.
+
+Held by the corpus's `flattened_reference_shared` (a referent shared by
+two parents, its `Rc<RefCell<Vec>>` written through the source and a
+parent, against native Rust) and `test/lowering.test.ts`'s "a flattened
+reference is refused wherever its parent's copy could be told from its
+referent" (a `Cell` written through the source, a `RefCell` through the
+parent, a `&mut` through the parent, `ptr::eq`, a raw pointer, lent
+whole, each refused by name; read through alone, compiled); and mutations
+`flattened-reference-uncopied`, `flattened-reference-mut-allowed`,
+`flattened-reference-cell-allowed` and
+`flattened-reference-changed-unasked` (`bindings/flattened.ts`), and
+`flattened-reference-lent-whole` (`analysis/validation.ts`).

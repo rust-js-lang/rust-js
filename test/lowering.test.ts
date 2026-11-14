@@ -576,6 +576,57 @@ pub fn legacy_len(legacy: &mut Legacy) -> usize {
   expect([shadowed.exitCode === 0, shadowed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, whose `prefix` is the parent's yet")]);
 });
 
+// ADR 0204, amended (#1819): a flattened reference's parent's object is a
+// copy of its referent, `{ ...item, severity }`, refused, by name, wherever
+// a program could tell the two apart: a `Cell` or `RefCell` of the
+// referent's own, written through the source and read through the parent
+// or the other way; a `&mut`, written through the parent; its address
+// compared, `ptr::eq`, or taken, a raw pointer; or the reference lent whole.
+// One that can't be told apart compiles (the corpus's
+// flattened_reference_shared runs one against native Rust).
+test("a flattened reference is refused wherever its parent's copy could be told from its referent", () => {
+  const dir = fixture("flattened-reference");
+  const program = (field: string, item: string, body: string) => `${item ? "use std::cell::{Cell, RefCell};\n\n" : ""}pub struct Item {
+    pub line: u32,
+${item}}
+
+pub struct Report<'a> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub item: ${field},
+    pub severity: u32,
+}
+
+${body.includes("same(") ? "fn same(a: &Item, b: &Item) -> bool {\n    std::ptr::eq(a, b)\n}\n\n" : ""}pub fn run() -> u32 {
+${body}
+}
+`;
+  const refusal = (field: string, item: string, body: string) => {
+    writeFileSync(join(dir, "lib.rs"), program(field, item, body));
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+    return [failed.exitCode === 0, failed.stderr.toString()];
+  };
+  const made = (mutable = "") => `    let ${mutable}item = Item { line: 3, hits: Cell::new(0), log: RefCell::new(0) };
+    let report = Report { item: &${mutable && "mut "}item, severity: 1 };`;
+  const cells = "    pub hits: Cell<u32>,\n    pub log: RefCell<u32>,\n";
+  const cell = "of a type with a `Cell` or `RefCell` of its own, which its parent's object would hold a copy of, so a write through either wouldn't be seen through the other";
+  // A `Cell` written through the source, read through the parent.
+  expect(refusal("&'a Item", cells, `${made()}\n    item.hits.set(5);\n    report.item.hits.get()`)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`&'a Item\`, ${cell} yet`)]);
+  // A `RefCell` written through the parent, read through the source.
+  expect(refusal("&'a Item", cells, `${made()}\n    *report.item.log.borrow_mut() = 7;\n    let log = *item.log.borrow();\n    log + report.severity`)).toEqual([false, expect.stringContaining(`flattening \`&'a Item\`, ${cell}`)]);
+  // A `&mut`, written through the parent.
+  expect(refusal("&'a mut Item", cells, `${made("mut ")}\n    report.item.line = 8;\n    item.line`)).toEqual([false, expect.stringContaining("rust-js does not support flattening `&'a mut Item`, a `&mut`, whose writes through its parent's object, a copy of what it refers to, wouldn't be its referent's yet")]);
+  const plain = "    let item = Item { line: 3 };\n    let report = Report { item: &item, severity: 1 };";
+  const compared = "whose `Item` is changed in place or its address compared, which its parent's object, a copy of it, would answer apart from it";
+  // Its address compared, of any two `Item`s.
+  expect(refusal("&'a Item", "", `${plain}\n    let other = Item { line: 3 };\n    u32::from(same(&item, &other)) + report.item.line`)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`&'a Item\`, ${compared} yet`)]);
+  // Its address taken, a raw pointer.
+  expect(refusal("&'a Item", "", `${plain}\n    let p: *const Item = &item;\n    u32::from(p.is_null()) + report.item.line`)).toEqual([false, expect.stringContaining(`flattening \`&'a Item\`, ${compared}`)]);
+  // Lent whole, which would be the parent's object, not its referent.
+  expect(refusal("&'a Item", "", `${plain}\n    u32::from(same(&report.item, &item))`)).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `&Item` whole: it would be its parent's object, a copy of what it refers to, not its referent yet")]);
+  // Read through alone, nothing tells them apart.
+  expect(refusal("&'a Item", "", `${plain}\n    report.item.line + report.severity + item.line`)).toEqual([true, ""]);
+});
+
 // A parameter of a type JS can't hold, a pointer to text (ADR 0390), is
 // refused where MIR declares it.
 test("a parameter of a type JS can't hold is refused from MIR", () => {

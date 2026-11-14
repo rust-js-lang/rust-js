@@ -118,8 +118,8 @@ pub(super) use shown_params::{Shown, ShownParams};
 use std::collections::BTreeMap;
 use type_facts::type_fact_params;
 use validation::{
-    in_thread_local, reject_flatten_misuse, reject_namespace_value_reads, reject_parameter_name_misuse,
-    reject_rest_misuse, reject_static_references, reject_unsupported,
+    in_thread_local, reject_flatten_misuse, reject_flattened_copies, reject_namespace_value_reads,
+    reject_parameter_name_misuse, reject_rest_misuse, reject_static_references, reject_unsupported,
 };
 pub(super) use validation::{init_of, is_thread_local};
 pub(super) use written_params::{WrittenParams, given_to_a_write, holds_arguments};
@@ -1178,6 +1178,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 && !caller_locations.contains(&m)
         })
     });
+    // A flattened reference whose referent the crate changes in place or
+    // compares the address of, which its parent's copy would answer apart
+    // (#1819): the mutation owner's answer.
+    reject_flattened_copies(&recognition, &flattened, &mutated.types);
     // Generic code's `extend` asking the crate's own hint, refused at its caller where none's kept (#849).
     crate::lower::iterators::refuse_unknown_capacity_extends(&recognition, all_bodies, kept.1);
     let generic_consts = generic_consts(tcx, all_bodies);
