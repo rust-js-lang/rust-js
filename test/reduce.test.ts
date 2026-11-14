@@ -87,14 +87,12 @@ test("a program that runs as native Rust does isn't reduced", async () => {
 // no `ulimit` stops. This one holds 400 MB natively for 3 s, by what
 // rust-js refuses, `sleep`: within 2 GB, its refusal; within 200 MB,
 // stopped.
-// Flaky once in CI (run 43516900462, the `BLESS=1` rerun's shard): within
-// 2 GB it came back `"rejected"`, stopped, in 10 s. Likely, not yet proved:
-// the native run went past `runNative`'s 10 s, its binary kept from the
-// first run (a first run gets 60 s). The variant is unoptimized, its 3 s
-// sleep and a count of 400M bytes 5.7 s on an idle M3 Max, slower on a
-// loaded runner. A fix makes it fast and deterministic: the count gone,
-// `held`'s last byte printed, the sleep the one wait the 200 MB cap's
-// one-second watch needs.
+// It prints `held`'s last byte, not a count of its 400M: unoptimized, the
+// count took 2.4 s of an idle M3 Max, and on a loaded runner the native run
+// went past `runNative`'s 10 s for a binary already built, so the 2 GB check
+// came back `"rejected"`, stopped (run 43516900462). The `vec!` of a byte
+// not zero writes each page, so it holds the 400 MB as it is; its sleep is
+// the one wait, which the 200 MB cap's watch of each second needs.
 test("a variant's check past its memory is stopped, and is no failure to keep", async () => {
   const dir = fixture("reduce-memory");
   mkdirSync(dir, { recursive: true });
@@ -104,7 +102,7 @@ test("a variant's check past its memory is stopped, and is no failure to keep", 
     `fn main() {
     let held = vec![1u8; 400 << 20];
     std::thread::sleep(std::time::Duration::from_secs(3));
-    println!("{}", held.iter().filter(|&&b| b == 1).count());
+    println!("{}", held[held.len() - 1]);
 }
 `,
   );
