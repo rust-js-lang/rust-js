@@ -1,12 +1,13 @@
-//! An item's scopes, as JS resolves its names: each scope's declarations,
+//! A tree's scopes, as JS resolves its names: each scope's declarations,
 //! and each read, where it is and the declaration it's of, or a name from
-//! outside the item. A local renamed keeps each read its own where no
-//! declaration of the new name comes between a read and what it reads
-//! (ADR 0357).
+//! outside. The one owner of JS's scoping (#1681 change 3): reclaim asks it
+//! whether a rename keeps each read its own (ADR 0357), `js::validate`
+//! whether each read resolves (ADR 1143), and `alpha_eq` whether two trees
+//! are the same but for what their declarations are named.
 
 use crate::collections::IndexMap;
 
-use crate::js::{self, Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Function, JsxTag, Known, Pattern, Prop, Stmt, StmtKind};
 
 struct Scope {
     parent: Option<usize>,
@@ -14,17 +15,32 @@ struct Scope {
 }
 
 /// A read: the scope it's in, and the scope of the declaration it's of,
-/// `None` of a name from outside.
-struct Read {
+/// `None` of a name from outside; and whether it's a global's, one
+/// `Expr::global` made (`Known::Global`) or the printer writes, `String(x)`'s.
+pub(crate) struct Read {
     scope: usize,
-    of: Option<usize>,
+    pub(crate) of: Option<usize>,
+    pub(crate) global: bool,
+}
+
+/// What the walk met, in its order: a declaration, or a read of the
+/// declaration that many before it, or of a name from outside.
+#[derive(PartialEq, Debug)]
+enum Event {
+    Declared,
+    Read(Option<usize>),
+    Outside(String),
 }
 
 #[derive(Default)]
-pub(super) struct Tree {
+pub(crate) struct Tree {
     scopes: Vec<Scope>,
     /// Each name's reads.
-    reads: IndexMap<String, Vec<Read>>,
+    pub(crate) reads: IndexMap<String, Vec<Read>>,
+    /// Each name a scope declares twice, which JS refuses, in the order met.
+    pub(crate) twice: Vec<String>,
+    /// What the walk met, `alpha_eq`'s.
+    events: Vec<Event>,
     /// The scopes declaring each name: asked of each name renamed, which
     /// a scan of every scope made a function's size times its names.
     declaring: IndexMap<String, Vec<usize>>,
@@ -38,19 +54,48 @@ impl Tree {
     /// the module's (ADR 0267), the scopes inside it, its closures' and
     /// blocks' (ADR 0952); `None` where a scope declares a name twice, which
     /// JS refuses.
-    pub(super) fn of(item: &js::Item) -> Option<Tree> {
+    pub(crate) fn of(item: &js::Item) -> Option<Tree> {
         let mut walk = Walk::default();
         walk.enter();
-        match item {
-            js::Item::Function(function) => walk.function(function, false),
-            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| walk.function(m, false)),
-            js::Item::Const(constant) => walk.expr(&constant.value),
-            js::Item::Statements(stmts) => {
-                walk.tree.module_scope = true;
-                walk.block_in_scope(stmts);
+        walk.item(item, true);
+        walk.tree.twice.is_empty().then_some(walk.tree)
+    }
+
+    /// `module`'s scopes: its imports', its packages' and its items' names
+    /// the outermost's, then each item's own.
+    pub(crate) fn of_module(module: &js::Module) -> Tree {
+        let mut walk = Walk::default();
+        walk.enter();
+        for import in &module.imports {
+            import.named.iter().for_each(|(_, local)| walk.declare(local));
+            import.namespace.iter().for_each(|name| walk.declare(name));
+        }
+        for package in &module.packages {
+            package.named.iter().for_each(|(_, local)| walk.declare(local));
+            package.default.iter().for_each(|name| walk.declare(name));
+            package.namespace.iter().for_each(|name| walk.declare(name));
+        }
+        for item in &module.items {
+            match item {
+                js::Item::Function(function) => walk.declare(&function.name),
+                js::Item::Namespace(namespace) => walk.declare(&namespace.name),
+                js::Item::Const(constant) => walk.declare(&constant.name),
+                js::Item::Statements(stmts) => walk.hoist(stmts),
             }
         }
-        (!walk.twice).then_some(walk.tree)
+        for item in &module.items {
+            walk.item(item, false);
+        }
+        walk.tree
+    }
+
+    /// `body`'s scopes, a function's alone: its reads of its parameters and
+    /// of what's outside it, from outside.
+    pub(crate) fn of_body(body: &[Stmt]) -> Tree {
+        let mut walk = Walk::default();
+        walk.enter();
+        walk.block_in_scope(body);
+        walk.tree
     }
 
     fn declares(&self, scope: usize, name: &str) -> bool {
@@ -61,7 +106,7 @@ impl Tree {
     /// scope that declares `from` declares `to` too; no read of `from`
     /// passes a declaration of `to` before its own; and no read of `to`
     /// passes one of `from` before its own.
-    pub(super) fn renames(&self, from: &str, to: &str) -> bool {
+    pub(crate) fn renames(&self, from: &str, to: &str) -> bool {
         let Some(declaring) = self.declaring.get(from).filter(|d| !d.is_empty()) else {
             return false;
         };
@@ -90,7 +135,7 @@ impl Tree {
     }
 
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
-    pub(super) fn rename(&mut self, from: &str, to: &str) {
+    pub(crate) fn rename(&mut self, from: &str, to: &str) {
         let declaring = self.declaring.swap_remove(from).unwrap_or_default();
         for &scope in &declaring {
             if let Some(id) = self.scopes[scope].names.swap_remove(from) {
@@ -104,15 +149,98 @@ impl Tree {
     }
 }
 
+/// Whether `a` and `b` are the same but for what their declarations are
+/// named: alike with every name left out, and each read of the declaration
+/// the same number of declarations into each, or of the same name from
+/// outside (#1681 change 3). `[(x) => x, x]` and `[(y) => y, y]` aren't:
+/// their last reads are of different names from outside. Where the names
+/// are the same too, by `==` alone.
+pub(crate) fn alpha_eq(a: &Expr, b: &Expr) -> bool {
+    a == b || (unnamed(a) == unnamed(b) && events(a) == events(b))
+}
+
+/// What the walk of `e` meets, in its order.
+fn events(e: &Expr) -> Vec<Event> {
+    let mut walk = Walk::default();
+    walk.enter();
+    walk.expr(e);
+    walk.tree.events
+}
+
+/// `e` with each name it declares or reads left out: what `alpha_eq`
+/// compares besides what each read is of. A name left in, of a kind of
+/// declaration it doesn't know, makes trees unlike that differ in it: never
+/// alike where they aren't.
+fn unnamed(e: &Expr) -> Expr {
+    let mut stmts = vec![StmtKind::Expr(e.clone()).at(js::Span::NONE)];
+    let pattern = |p: &mut Pattern| unnamed_pattern(p);
+    js::each_expr_mut(&mut stmts, &mut |e| match &mut e.kind {
+        ExprKind::Var(name) => name.clear(),
+        ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) => params.iter_mut().for_each(pattern),
+        ExprKind::Function(function) => {
+            function.name.clear();
+            function.params.iter_mut().for_each(pattern);
+        }
+        _ => {}
+    });
+    js::each_block_mut(&mut stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            match &mut stmt.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => name.clear(),
+                StmtKind::TryCatch(_, Some(name), _) => name.clear(),
+                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => unnamed_pattern(pattern),
+                StmtKind::Function(function) => {
+                    function.name.clear();
+                    function.params.iter_mut().for_each(unnamed_pattern);
+                }
+                _ => {}
+            }
+        }
+    });
+    let [stmt] = <[Stmt; 1]>::try_from(stmts).unwrap_or_else(|_| unreachable!("one statement"));
+    match stmt.kind {
+        StmtKind::Expr(e) => e,
+        _ => unreachable!("an expression's statement"),
+    }
+}
+
+fn unnamed_pattern(pattern: &mut Pattern) {
+    match pattern {
+        Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => name.clear(),
+        Pattern::Array(items) => items.iter_mut().flatten().for_each(unnamed_pattern),
+        Pattern::Object(fields, rest) => {
+            fields.iter_mut().for_each(|(_, field, _)| unnamed_pattern(field));
+            if let Some(rest) = rest {
+                rest.clear();
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 struct Walk {
     tree: Tree,
     stack: Vec<usize>,
     declared: usize,
-    twice: bool,
 }
 
 impl Walk {
+    /// `item`, in the scope the walk is in; an `on_load!` body's names the
+    /// module's, where `alone`, of one item's tree (ADR 0267), else hoisted
+    /// with the module's (`of_module`).
+    fn item(&mut self, item: &js::Item, alone: bool) {
+        match item {
+            js::Item::Function(function) => self.function(function, false),
+            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, false)),
+            js::Item::Const(constant) => self.expr(&constant.value),
+            js::Item::Statements(stmts) if alone => {
+                self.tree.module_scope = true;
+                self.block_in_scope(stmts);
+            }
+            js::Item::Statements(stmts) => self.stmts(stmts),
+        }
+    }
+
     fn enter(&mut self) {
         let parent = self.stack.last().copied();
         self.tree.scopes.push(Scope {
@@ -130,18 +258,26 @@ impl Walk {
         let id = self.declared;
         self.declared += 1;
         let scope = *self.stack.last().expect("a declaration is in a scope");
-        self.twice |= self.tree.scopes[scope].names.insert(name.to_string(), id).is_some();
+        if self.tree.scopes[scope].names.insert(name.to_string(), id).is_some() {
+            self.tree.twice.push(name.to_string());
+        }
         self.tree.declaring.entry(name.to_string()).or_default().push(scope);
+        self.tree.events.push(Event::Declared);
     }
 
-    fn read(&mut self, name: &str) {
+    fn read(&mut self, name: &str, global: bool) {
         let scope = *self.stack.last().expect("a read is in a scope");
         let of = self.stack.iter().rev().copied().find(|&s| self.tree.declares(s, name));
+        // Of the declaration it's of, by its number: what it's named apart.
+        self.tree.events.push(match of {
+            Some(s) => Event::Read(self.tree.scopes[s].names.get(name).copied()),
+            None => Event::Outside(name.to_string()),
+        });
         self.tree
             .reads
             .entry(name.to_string())
             .or_default()
-            .push(Read { scope, of });
+            .push(Read { scope, of, global });
     }
 
     /// A function's parameters and its body's own declarations are one scope;
@@ -339,7 +475,7 @@ impl Walk {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Var(name) => self.read(name),
+            ExprKind::Var(name) => self.read(name, e.facts.has(Known::Global)),
             // What it sets is resolved as a read is.
             ExprKind::Assigned(target, a) => {
                 self.expr(target);
@@ -348,12 +484,12 @@ impl Walk {
             // What the printer writes of JS's own: `String(x)`, `undefined`,
             // `NaN` and `Infinity`.
             ExprKind::Stringed(a) => {
-                self.read("String");
+                self.read("String", true);
                 self.expr(a);
             }
-            ExprKind::Undefined | ExprKind::GivenUndefined => self.read("undefined"),
-            ExprKind::Num(n) if n.is_nan() => self.read("NaN"),
-            ExprKind::Num(n) if n.is_infinite() => self.read("Infinity"),
+            ExprKind::Undefined | ExprKind::GivenUndefined => self.read("undefined", true),
+            ExprKind::Num(n) if n.is_nan() => self.read("NaN", true),
+            ExprKind::Num(n) if n.is_infinite() => self.read("Infinity", true),
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)
@@ -412,8 +548,50 @@ impl Walk {
 
 #[cfg(test)]
 mod tests {
-    use super::Tree;
-    use crate::js::{self, Expr, Function, Op, Span, Stmt, StmtKind};
+    use super::{Tree, alpha_eq};
+    use crate::js::{self, Expr, Function, Op, Pattern, Span, Stmt, StmtKind};
+
+    /// `(name) => body`.
+    fn arrow(name: &str, body: Expr) -> Expr {
+        Expr::arrow(vec![Pattern::Name(name.into())], vec![returned(body)])
+    }
+
+    // `(x) => x` and `(y) => y` are one function, named apart.
+    #[test]
+    fn declarations_named_apart_are_alike() {
+        assert!(alpha_eq(&arrow("x", Expr::var("x")), &arrow("y", Expr::var("y"))));
+        assert!(!alpha_eq(&arrow("x", Expr::var("x")), &arrow("y", Expr::var("x"))));
+    }
+
+    // `[(x) => x, x]` and `[(y) => y, y]` aren't: their last reads are of
+    // different names from outside, whatever the closures are.
+    #[test]
+    fn reads_from_outside_are_by_their_names() {
+        let of = |n: &str| Expr::array(vec![arrow(n, Expr::var(n)), Expr::var(n)]);
+        assert!(!alpha_eq(&of("x"), &of("y")));
+        assert!(alpha_eq(&of("x"), &of("x")));
+    }
+
+    // A read is of the innermost declaration of its name: `(x) => (x) => x`
+    // is `(a) => (b) => b`, not `(a) => (b) => a`.
+    #[test]
+    fn a_shadowed_read_is_of_the_innermost() {
+        let shadowed = arrow("x", arrow("x", Expr::var("x")));
+        assert!(alpha_eq(&shadowed, &arrow("a", arrow("b", Expr::var("b")))));
+        assert!(!alpha_eq(&shadowed, &arrow("a", arrow("b", Expr::var("a")))));
+    }
+
+    // A closure's read of what an outer closure declares is of that
+    // declaration: `(x) => () => x` is `(y) => () => y`, and a capture of
+    // a name from outside is of that name, `z` never `w`.
+    #[test]
+    fn a_capture_is_of_what_it_captures() {
+        let capturing = |n: &str, read: &str| arrow(n, Expr::arrow(Vec::new(), vec![returned(Expr::var(read))]));
+        assert!(alpha_eq(&capturing("x", "x"), &capturing("y", "y")));
+        assert!(alpha_eq(&capturing("x", "z"), &capturing("y", "z")));
+        assert!(!alpha_eq(&capturing("x", "z"), &capturing("y", "w")));
+        assert!(!alpha_eq(&capturing("x", "x"), &capturing("y", "x")));
+    }
 
     fn item(body: Vec<Stmt>) -> js::Item {
         js::Item::Function(Function {

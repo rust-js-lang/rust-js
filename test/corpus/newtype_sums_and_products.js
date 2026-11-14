@@ -20,6 +20,18 @@ function multiplied(items, TProduct, TCopy) {
 
 function main() {
   const copy = { copy: (value) => [value[0]] };
+  const wrappingSum$1 = {
+    sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)],
+  };
+  const wrappingSum = {
+    sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) >>> 0, 0)],
+  };
+  const saturatingProduct = {
+    product: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a * b[0], 4294967295), 1)],
+  };
+  const saturatingSum = {
+    sum: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a + b[0], 4294967295), 0)],
+  };
   let w = [[255], [2], [3]];
   let s = [[255], [2], [3]];
   const value = $iter(w);
@@ -68,7 +80,7 @@ function main() {
   sp = [Iterator.from(value$11).reduce((a, b) => Math.min(a * b[0], 4294967295), 1)];
   console.log(`u32 ${ws[0]} ${wp[0]} ${ss[0]} ${sp[0]}`);
   console.log(
-    `${total(w, { sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) >>> 0, 0)] }, copy)[0]} ${totalOfRefs(s, { sum: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a + b[0], 4294967295), 0)] })[0]} ${multiplied(s, { product: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a * b[0], 4294967295), 1)] }, copy)[0]}`,
+    `${total(w, wrappingSum, copy)[0]} ${totalOfRefs(s, saturatingSum)[0]} ${multiplied(s, saturatingProduct, copy)[0]}`,
   );
   none = [];
   console.log(
@@ -136,7 +148,7 @@ function main() {
   sp = [Iterator.from(value$23).reduce((a, b) => Math.min(a * b[0], 4294967295), 1)];
   console.log(`usize ${ws[0]} ${wp[0]} ${ss[0]} ${sp[0]}`);
   console.log(
-    `${total(w, { sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) >>> 0, 0)] }, copy)[0]} ${totalOfRefs(s, { sum: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a + b[0], 4294967295), 0)] })[0]} ${multiplied(s, { product: (items) => [Iterator.from(items).reduce((a, b) => Math.min(a * b[0], 4294967295), 1)] }, copy)[0]}`,
+    `${total(w, wrappingSum, copy)[0]} ${totalOfRefs(s, saturatingSum)[0]} ${multiplied(s, saturatingProduct, copy)[0]}`,
   );
   none = [];
   console.log(
@@ -152,7 +164,7 @@ function main() {
   );
   w = [[-2147483648], [-1], [-2147483648]];
   console.log(
-    `i32 ${((items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)])($iter(w))[0]} ${((items) => [Iterator.from(items).reduce((a, b) => Math.imul(a, b[0]), 1)])($iter(w))[0]} ${total(w, { sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)] }, copy)[0]}`,
+    `i32 ${((items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)])($iter(w))[0]} ${((items) => [Iterator.from(items).reduce((a, b) => Math.imul(a, b[0]), 1)])($iter(w))[0]} ${total(w, wrappingSum$1, copy)[0]}`,
   );
   w = [[-9223372036854775808n], [-1n], [-9223372036854775808n]];
   console.log(
@@ -168,7 +180,7 @@ function main() {
   );
   w = [[-2147483648], [-1], [-2147483648]];
   console.log(
-    `isize ${((items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)])($iter(w))[0]} ${((items) => [Iterator.from(items).reduce((a, b) => Math.imul(a, b[0]), 1)])($iter(w))[0]} ${total(w, { sum: (items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)] }, copy)[0]}`,
+    `isize ${((items) => [Iterator.from(items).reduce((a, b) => (a + b[0]) | 0, 0)])($iter(w))[0]} ${((items) => [Iterator.from(items).reduce((a, b) => Math.imul(a, b[0]), 1)])($iter(w))[0]} ${total(w, wrappingSum$1, copy)[0]}`,
   );
 }
 //# sourceMappingURL=case.js.map

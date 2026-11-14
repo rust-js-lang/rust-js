@@ -29,10 +29,6 @@ export function entry() {
 }
 
 function main() {
-  const vecIntoIterator = {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  };
   const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const v = [[1, 2], [], [3, 4, 5], [6]];
   console.log(`[${Array.from($rev($flattenEnds($iter(v), (item) => $iter(item)))).join(", ")}]`);
@@ -70,7 +66,7 @@ function main() {
       return new Array(n$1).fill(n);
     },
     { next: $rangeNext },
-    vecIntoIterator,
+    intoIterator,
     true,
     undefined,
     false,
@@ -79,7 +75,7 @@ function main() {
     fm,
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-    vecIntoIterator,
+    intoIterator,
     { next_back: $nextBack },
     true,
     false,
@@ -98,7 +94,7 @@ function main() {
               iterator,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              vecIntoIterator,
+              intoIterator,
               { next_back: $nextBack },
               true,
               false,
@@ -113,7 +109,7 @@ function main() {
               f,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              vecIntoIterator,
+              intoIterator,
               { next_back: $nextBack },
               $tryOf(broke),
               true,

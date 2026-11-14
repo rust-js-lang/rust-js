@@ -22,11 +22,6 @@ mod stepped_whiles;
 mod this_handles;
 mod typeofs;
 
-/// A closure's parameter given its name back, preparation's, which a body
-/// lowered from its MIR asks before it's linked, as an import's alias is
-/// chosen around it.
-mod scopes;
-
 /// `module` made readable, leaving out what `passes` leaves out (ADR
 /// 1087): which of its rewrites fired, where `passes` records them.
 pub fn module(module: &mut js::Module, passes: Passes) -> Fired {

@@ -48,6 +48,13 @@ function dDrop_drop(d) {
 }
 
 function main() {
+  const stringExtend = {
+    extend(collection, items) {
+      $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
+        collection.value += piece;
+      });
+    },
+  };
   const v = [0];
   const iter = loud([1, 2], "vec");
   try {
@@ -433,16 +440,7 @@ function main() {
                             return c;
                           }
                         }),
-                        {
-                          extend(collection, items) {
-                            $extendText(
-                              $reserveHint(items, 1, undefined, collection.value),
-                              (piece) => {
-                                collection.value += piece;
-                              },
-                            );
-                          },
-                        },
+                        stringExtend,
                       );
                     } catch (error) {
                       throw $unwindsOn(error);
@@ -459,16 +457,7 @@ function main() {
                   const value = ["s", "t"];
                   const into = { value: text };
                   try {
-                    extendedBy(into, value, {
-                      extend(collection, items) {
-                        $extendText(
-                          $reserveHint(items, 1, undefined, collection.value),
-                          (piece) => {
-                            collection.value += piece;
-                          },
-                        );
-                      },
-                    });
+                    extendedBy(into, value, stringExtend);
                   } catch (error) {
                     throw $unwindsOn(error);
                   } finally {

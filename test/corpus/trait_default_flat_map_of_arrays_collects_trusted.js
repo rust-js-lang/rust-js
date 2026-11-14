@@ -70,12 +70,7 @@ function main() {
   );
   const arg$1 = $capacity(two, 4);
   console.log(`${two.length} ${arg$1}`);
-  const refs = IterExt.flat(
-    $iter([[5, 6, 7]]),
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
-    3,
-    false,
-  );
+  const refs = IterExt.flat($iter([[5, 6, 7]]), intoIterator, 3, false);
   const arg$2 = $capacity(refs, 4);
   console.log(`${refs.length} ${arg$2}`);
   const vecs = tExt({ next: $next }, true, undefined, 4).flat(

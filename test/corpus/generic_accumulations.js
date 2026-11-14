@@ -39,17 +39,14 @@ function main() {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collectResults(items, undefined, undefined, false, 1),
   };
+  const f64Sum = { sum: (items) => Iterator.from(items).reduce((a, b) => a + b, -0) };
   const value = sum1($iter([1, 2, 3]), {
     sum: (items) => Iterator.from(items).reduce((a, b) => (a + b) | 0, 0),
   });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = sum1($iter([]), {
-    sum: (items) => Iterator.from(items).reduce((a, b) => a + b, -0),
-  });
+  const value$1 = sum1($iter([]), f64Sum);
   console.log(`${value$1 == null ? "None" : `Some(${$debugF64(value$1)})`}`);
-  const value$2 = sum1($iter([-0, -0]), {
-    sum: (items) => Iterator.from(items).reduce((a, b) => a + b, -0),
-  });
+  const value$2 = sum1($iter([-0, -0]), f64Sum);
   console.log(`${value$2 == null ? "None" : `Some(${$debugF64(value$2)})`}`);
   const value$3 = product1($iter([2n, 3n, 4n]), {
     product: (items) => Iterator.from(items).reduce((a, b) => BigInt.asUintN(64, a * b), 1n),

@@ -244,10 +244,6 @@ function main() {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: quietIterator_next }),
   };
-  const intoIterator$1 = {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  };
   const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const vecIntoIterator = {
     intoIter: (items) => $iter(items),
@@ -295,11 +291,11 @@ function main() {
         IntoIterIterator: () => ({ next: $next }),
       },
       u32ArrayIs_u32__2_,
-    )} ${count(["a", "b"], intoIterator$1, u32ArrayIs_u32__2_)}`,
+    )} ${count(["a", "b"], intoIterator, u32ArrayIs_u32__2_)}`,
   );
   const out = [];
   fill($cellOf(out), [3], vecExtend, quietIntoIterator, u32ArrayIs_u32__2_);
-  fill($cellOf(out), [9, 8], vecExtend, intoIterator$1, u32ArrayIs_u32__2_);
+  fill($cellOf(out), [9, 8], vecExtend, intoIterator, u32ArrayIs_u32__2_);
   console.log(`[${out.join(", ")}]`);
   // A map of an `IntoIter` held as it is, closed where it's dropped: what
   // it has left dropped by its caller's drop.

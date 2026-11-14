@@ -5,13 +5,13 @@
 //! scope takes; a block declares a name once; each `break` and `continue`
 //! lands on a loop, a `switch` or a label around it, within its function.
 //! It keeps no list of names: what may be read undeclared is what its
-//! owners made so. A tree that breaks one is rust-js's own mistake, refused,
+//! owners made so; what a read resolves to is `js::scopes`'s, the one
+//! owner of JS's scoping (ADR 1145). A tree that breaks one is rust-js's own mistake, refused,
 //! never printed. Each module's tree is checked in every build, about 0.5%
 //! of a compile (ADR 1143); each body between tidy's stages where
 //! `stages_checked()`.
 
-use super::{Case, Expr, ExprKind, Function, Item, JsxTag, Known, Module, Pattern, Prop, Stmt, StmtKind};
-use crate::collections::IndexSet;
+use super::{Case, Expr, ExprKind, Function, Item, JsxTag, Module, Pattern, Prop, Stmt, StmtKind, scopes};
 
 /// What's wrong of a tree, by its rule.
 #[derive(Clone, Debug, PartialEq)]
@@ -54,54 +54,52 @@ pub fn stages_checked() -> bool {
     *ON.get_or_init(|| cfg!(debug_assertions) || std::env::var_os("RUST_JS_VALIDATE").is_some())
 }
 
-/// Each problem of `module`'s tree, its names' too.
+/// Each problem of `module`'s tree, its names' too, of its scopes as JS
+/// resolves them (`js::scopes`, the one owner).
 pub fn module(module: &Module) -> Vec<Problem> {
-    let mut cx = Cx::new(true);
-    let mut top: IndexSet<String> = IndexSet::default();
-    for import in &module.imports {
-        top.extend(import.named.iter().map(|(_, local)| local.clone()));
-        top.extend(import.namespace.iter().cloned());
-    }
-    for package in &module.packages {
-        top.extend(package.named.iter().map(|(_, local)| local.clone()));
-        top.extend(package.default.iter().cloned());
-        top.extend(package.namespace.iter().cloned());
-    }
-    for item in &module.items {
-        match item {
-            Item::Namespace(namespace) => {
-                top.insert(namespace.name.clone());
-            }
-            Item::Const(constant) => {
-                top.insert(constant.name.clone());
-            }
-            Item::Function(function) => {
-                top.insert(function.name.clone());
-            }
-            Item::Statements(stmts) => cx.declared_in(stmts, &mut top),
-        }
-    }
-    cx.scopes.push(top);
+    let mut problems = names(&scopes::Tree::of_module(module));
+    let mut cx = Cx::default();
     for item in &module.items {
         match item {
             Item::Namespace(namespace) => {
                 namespace.constants.iter().for_each(|c| cx.expr(&c.value));
-                namespace.methods.iter().for_each(|m| cx.function(m, false));
+                namespace.methods.iter().for_each(|m| cx.function(m));
             }
             Item::Const(constant) => cx.expr(&constant.value),
-            Item::Function(function) => cx.function(function, true),
+            Item::Function(function) => cx.function(function),
             Item::Statements(stmts) => cx.stmts(stmts),
         }
     }
-    cx.problems
+    problems.extend(cx.problems);
+    problems
 }
 
-/// Each problem of a function's `body` but its names', which only its
+/// Each problem of a function's `body` but its reads', which only its
 /// module resolves: of a body as tidy leaves each stage's (its contracts).
 pub fn body(body: &[Stmt]) -> Vec<Problem> {
-    let mut cx = Cx::new(false);
-    cx.block(body, IndexSet::default());
-    cx.problems
+    let tree = scopes::Tree::of_body(body);
+    let mut problems: Vec<Problem> = tree.twice.into_iter().map(Problem::Twice).collect();
+    let mut cx = Cx::default();
+    cx.stmts(body);
+    problems.extend(cx.problems);
+    problems
+}
+
+/// What `tree`'s names break: a name a scope declares twice; a read of what
+/// nothing declares, made no global and no helper; a global's read of a
+/// name a declaration in scope takes.
+fn names(tree: &scopes::Tree) -> Vec<Problem> {
+    let mut problems: Vec<Problem> = tree.twice.iter().cloned().map(Problem::Twice).collect();
+    for (name, reads) in &tree.reads {
+        for read in reads {
+            match (read.of.is_some(), read.global) {
+                (true, true) => problems.push(Problem::Shadowed(name.clone())),
+                (false, false) if !crate::runtime::exports(name) => problems.push(Problem::Unresolved(name.clone())),
+                _ => {}
+            }
+        }
+    }
+    problems
 }
 
 /// What a label is of: a loop, which `continue` may name, or a block.
@@ -112,11 +110,9 @@ enum Target {
     Block,
 }
 
+/// The walk for where each jump lands.
+#[derive(Default)]
 struct Cx {
-    /// Whether its reads are resolved: of a module, not of a body alone.
-    names: bool,
-    /// The names each scope declares, the innermost last.
-    scopes: Vec<IndexSet<String>>,
     /// The loops, switches and labeled blocks around what's walked, by
     /// their label, within its function.
     labels: Vec<(Option<String>, Target)>,
@@ -124,85 +120,13 @@ struct Cx {
 }
 
 impl Cx {
-    fn new(names: bool) -> Cx {
-        Cx {
-            names,
-            scopes: Vec::new(),
-            labels: Vec::new(),
-            problems: Vec::new(),
-        }
-    }
-
-    /// The names `stmts` declare as a block, each once (a second is a
-    /// problem), hoisted so a read of each anywhere in the block resolves.
-    fn declared_in(&mut self, stmts: &[Stmt], into: &mut IndexSet<String>) {
-        for stmt in stmts {
-            let names: Vec<&str> = match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
-                StmtKind::Destructure { pattern, .. } => pattern.names(),
-                StmtKind::Function(function) => vec![function.name.as_str()],
-                _ => continue,
-            };
-            for name in names {
-                if !into.insert(name.to_string()) {
-                    self.problems.push(Problem::Twice(name.to_string()));
-                }
-            }
-        }
-    }
-
-    fn read(&mut self, name: &str, expr: &Expr) {
-        if !self.names {
-            return;
-        }
-        let declared = self.scopes.iter().any(|scope| scope.contains(name));
-        let global = expr.facts.has(Known::Global);
-        match (declared, global) {
-            (true, true) => self.problems.push(Problem::Shadowed(name.to_string())),
-            (false, false) if !crate::runtime::exports(name) => {
-                self.problems.push(Problem::Unresolved(name.to_string()))
-            }
-            _ => {}
-        }
-    }
-
-    /// `stmts` as a block of their own.
-    fn block(&mut self, stmts: &[Stmt], with: IndexSet<String>) {
-        let mut scope = with;
-        let params = scope.clone();
-        self.declared_in(stmts, &mut scope);
-        // A function's top-level declaration may not repeat a parameter.
-        for name in &params {
-            let again = stmts.iter().any(|stmt| match &stmt.kind {
-                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
-                StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
-                _ => false,
-            });
-            if again {
-                self.problems.push(Problem::Twice(name.clone()));
-            }
-        }
-        self.scopes.push(scope);
-        self.stmts(stmts);
-        self.scopes.pop();
-    }
-
-    /// `function`, named inside itself where `named`: a declaration's or a
-    /// function expression's name, never a type's method's, an object's
-    /// method or a function a prototype's property is given, which bind
-    /// none, so a global of its name is the global inside it,
-    /// `getComputedStyle`'s (#1681).
-    fn function(&mut self, function: &Function, named: bool) {
-        let mut params: IndexSet<String> = IndexSet::default();
+    /// `function`'s body, whose jumps land within it.
+    fn function(&mut self, function: &Function) {
         for param in &function.params {
             self.pattern_defaults(param);
-            params.extend(param.names().into_iter().map(str::to_string));
         }
         let outer = std::mem::take(&mut self.labels);
-        let own: IndexSet<String> = named.then(|| function.name.clone()).into_iter().collect();
-        self.scopes.push(own);
-        self.block(&function.body, params);
-        self.scopes.pop();
+        self.stmts(&function.body);
         self.labels = outer;
     }
 
@@ -218,9 +142,9 @@ impl Cx {
         }
     }
 
-    fn looped(&mut self, label: &Option<String>, body: &[Stmt], with: IndexSet<String>) {
+    fn looped(&mut self, label: &Option<String>, body: &[Stmt]) {
         self.labels.push((label.clone(), Target::Loop));
-        self.block(body, with);
+        self.stmts(body);
         self.labels.pop();
     }
 
@@ -258,14 +182,14 @@ impl Cx {
             }
             StmtKind::If(test, then, els) => {
                 self.expr(test);
-                self.block(then, IndexSet::default());
+                self.stmts(then);
                 if let Some(els) = els {
-                    self.block(els, IndexSet::default());
+                    self.stmts(els);
                 }
             }
             StmtKind::While { label, cond, body } | StmtKind::DoWhile { label, body, cond } => {
                 self.expr(cond);
-                self.looped(label, body, IndexSet::default());
+                self.looped(label, body);
             }
             StmtKind::ForOf {
                 label,
@@ -276,29 +200,26 @@ impl Cx {
             } => {
                 self.expr(iterable);
                 self.pattern_defaults(pattern);
-                let bound = pattern.names().into_iter().map(str::to_string).collect();
-                self.looped(label, body, bound);
+                self.looped(label, body);
             }
             StmtKind::For {
                 label,
-                name,
                 start,
                 test,
                 step,
                 body,
+                ..
             } => {
                 self.expr(start);
-                self.scopes.push([name.clone()].into_iter().collect());
                 self.expr(test);
                 if let Some(value) = step.value() {
                     self.expr(value);
                 }
-                self.looped(label, body, IndexSet::default());
-                self.scopes.pop();
+                self.looped(label, body);
             }
             StmtKind::Labeled(label, body) => {
                 self.labels.push((Some(label.clone()), Target::Block));
-                self.block(body, IndexSet::default());
+                self.stmts(body);
                 self.labels.pop();
             }
             StmtKind::Switch {
@@ -308,26 +229,20 @@ impl Cx {
             } => {
                 self.expr(discriminant);
                 self.labels.push((None, Target::Switch));
-                // Each case a block of its own: one that declares is printed
-                // in braces (`case_body`), and one that doesn't adds no name.
                 for Case { values, body, .. } in cases {
                     values.iter().for_each(|value| self.expr(value));
-                    self.block(body, IndexSet::default());
+                    self.stmts(body);
                 }
                 if let Some(default) = default {
-                    self.block(default, IndexSet::default());
+                    self.stmts(default);
                 }
                 self.labels.pop();
             }
-            StmtKind::Try(body, finally) => {
-                self.block(body, IndexSet::default());
-                self.block(finally, IndexSet::default());
+            StmtKind::Try(body, handler) | StmtKind::TryCatch(body, _, handler) => {
+                self.stmts(body);
+                self.stmts(handler);
             }
-            StmtKind::TryCatch(body, param, handler) => {
-                self.block(body, IndexSet::default());
-                self.block(handler, param.iter().cloned().collect());
-            }
-            StmtKind::Function(function) => self.function(function, true),
+            StmtKind::Function(function) => self.function(function),
             StmtKind::Break(label) => self.jump(label, false),
             StmtKind::Continue(label) => self.jump(label, true),
             StmtKind::Directive(_) | StmtKind::Comments => {}
@@ -355,7 +270,6 @@ impl Cx {
             return;
         }
         match &expr.kind {
-            ExprKind::Var(name) => self.read(name, expr),
             ExprKind::Assigned(target, value) => {
                 self.expr(target);
                 self.expr(value);
@@ -391,16 +305,12 @@ impl Cx {
             }
             ExprKind::Object(fields, ..) => self.props(fields),
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
-                let mut bound: IndexSet<String> = IndexSet::default();
-                for param in params {
-                    self.pattern_defaults(param);
-                    bound.extend(param.names().into_iter().map(str::to_string));
-                }
+                params.iter().for_each(|param| self.pattern_defaults(param));
                 let outer = std::mem::take(&mut self.labels);
-                self.block(body, bound);
+                self.stmts(body);
                 self.labels = outer;
             }
-            ExprKind::Function(function) => self.function(function, true),
+            ExprKind::Function(function) => self.function(function),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &jsx.tag {
                     self.expr(tag);
@@ -408,7 +318,8 @@ impl Cx {
                 self.props(&jsx.props);
                 jsx.children.iter().for_each(|c| self.expr(c));
             }
-            ExprKind::Num(_)
+            ExprKind::Var(_)
+            | ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)

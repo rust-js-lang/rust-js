@@ -204,6 +204,10 @@ function more() {
     IntoIterIterator: () => ({ next: $rangeNext }),
   };
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const itemsIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const v = [7, 8, 9];
   const z = iterator_zip(
@@ -227,12 +231,7 @@ function more() {
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const c = iterator_chain(
-    $iter([1, 2]),
-    [3, 4],
-    { next: $next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-  );
+  const c = iterator_chain($iter([1, 2]), [3, 4], { next: $next }, itemsIntoIterator);
   $next(c);
   $next(c);
   $next(c);
@@ -243,7 +242,7 @@ function more() {
     $iter(v),
     v,
     { next: $next },
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
+    itemsIntoIterator,
     true,
     true,
     true,

@@ -434,6 +434,14 @@ function main() {
     fmt: (value, options) => $formatted(String(value), options, true),
     fmtInto: $writeInteger,
   };
+  const strDebug = {
+    fmt(value, options) {
+      return $debugStr(value);
+    },
+    fmtInto(f, value, options) {
+      $writeDebugStr(f, value);
+    },
+  };
   const DuoDebug = duoDebug(debug);
   const DuoDisplay = duoDisplay(debug);
   const p = { x: -1, y: 2 };
@@ -446,14 +454,7 @@ function main() {
       'é"',
       charsWrite,
       { fmt: $formatted, fmtInto: $writePadded },
-      {
-        fmt(value, options) {
-          return $debugStr(value);
-        },
-        fmtInto(f, value, options) {
-          $writeDebugStr(f, value);
-        },
-      },
+      strDebug,
     ),
   );
   $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
@@ -785,17 +786,7 @@ function main() {
 
   const items = [
     { value: { x: 3 }, impl: dotDebug },
-    {
-      value: "q",
-      impl: {
-        fmt(value, options) {
-          return $debugStr(value);
-        },
-        fmtInto(f, value, options) {
-          $writeDebugStr(f, value);
-        },
-      },
-    },
+    { value: "q", impl: strDebug },
     {
       value: 2,
       impl: {

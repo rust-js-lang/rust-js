@@ -20,7 +20,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut declared: Vec<js::Stmt> = Vec::new();
         for (hint, dictionary) in made {
             let mut count = 0;
-            let mut counting = |e: &mut Expr| count += usize::from(*e == dictionary);
+            // The same dictionary but for what its closures' declarations
+            // are named, each its own (`js::scopes::alpha_eq`, #1681).
+            let mut counting = |e: &mut Expr| count += usize::from(js::scopes::alpha_eq(e, &dictionary));
             js::each_expr_mut(body, &mut counting);
             js::each_expr_mut(&mut declared, &mut counting);
             if count < 2 {
@@ -28,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let name = self.fresh(Base::Named(&hint));
             let mut put = |e: &mut Expr| {
-                if *e == dictionary {
+                if js::scopes::alpha_eq(e, &dictionary) {
                     *e = Expr::var(&name);
                 }
             };
@@ -176,7 +178,7 @@ fn entries_to_declare(
             && let js::ExprKind::Member(_, entry) = &callee.kind
             && root_name(e).is_some_and(|root| present.contains(root))
             && reads_only_at_top(e, given)
-            && !found.iter().any(|(_, seen)| seen == e)
+            && !found.iter().any(|(_, seen)| js::scopes::alpha_eq(seen, e))
         {
             found.push((entry.clone(), e.clone()));
         }

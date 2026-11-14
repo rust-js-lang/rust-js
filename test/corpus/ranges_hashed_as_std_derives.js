@@ -43,6 +43,7 @@ function lineHash_hash(line, state, HHasher) {
 }
 
 function main() {
+  const rangeFullHash = { hash(value, state, H) {}, hashSlice(items, state, H) {} };
   const set = new ($hashedSet(
     {
       hash(value, state, H) {
@@ -262,9 +263,9 @@ function main() {
   console.log(
     `${distinct(
       [undefined, undefined],
-      { hash(value, state, H) {}, hashSlice(items, state, H) {} },
+      rangeFullHash,
       $partialEq({ eq: (a, b) => true }),
-      $hashedSet({ hash(value, state, H) {}, hashSlice(items, state, H) {} }, (a, b) => true),
+      $hashedSet(rangeFullHash, (a, b) => true),
     )}`,
   );
 
@@ -360,7 +361,7 @@ function main() {
       },
     )}`,
   );
-  console.log(`${hashed(undefined, { hash(value, state, H) {}, hashSlice(items, state, H) {} })}`);
+  console.log(`${hashed(undefined, rangeFullHash)}`);
   console.log(
     `${hashed(
       { start: "a", end: "z" },

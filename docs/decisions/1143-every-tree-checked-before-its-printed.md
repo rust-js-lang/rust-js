@@ -112,3 +112,10 @@ printed. Tidy's stage contracts, a check of each body between stages,
 about 2% of std's compile, stay where `stages_checked()`; a module's
 check is of the tree it prints, its jumps' and declarations' too.
 `RUST_JS_VALIDATE` is that flag alone.
+
+## Amendment: its names are the scope resolver's (2026-11-14)
+
+What each read resolves to, and which names a scope declares twice, are
+`js::scopes`'s answers, the one owner of JS's scoping, which reclaim asks
+too (ADR [1145](1145-one-owner-of-js-scopes.md)); `js::validate` keeps the
+check of jumps alone, which isn't scoping.

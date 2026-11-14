@@ -45,10 +45,6 @@ function both(it) {
 }
 
 function main() {
-  const intoIterator$1 = {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  };
   const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const v = [[1, 2, 3], [4], [5, 6]];
   const f = iterator_flatten($iter(v), { next: $next }, intoIterator, true, undefined, false);
@@ -95,7 +91,7 @@ function main() {
       [3, 4],
     ]),
     { next: $next },
-    intoIterator$1,
+    intoIterator,
     true,
     undefined,
     false,
@@ -103,7 +99,7 @@ function main() {
   const value$5 = flattenDoubleEndedIterator_nextBack(
     g,
     { next_back: $nextBack },
-    intoIterator$1,
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -115,7 +111,7 @@ function main() {
   const value$9 = flattenDoubleEndedIterator_nextBack(
     g,
     { next_back: $nextBack },
-    intoIterator$1,
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -169,7 +165,7 @@ function main() {
   const k = iterator_flatten(
     [0],
     { next: flakyIterator_next },
-    intoIterator$1,
+    intoIterator,
     false,
     undefined,
     false,
@@ -178,7 +174,7 @@ function main() {
   const value$20 = flattenDoubleEndedIterator_nextBack(
     k,
     { next_back: flakyDoubleEndedIterator_nextBack },
-    intoIterator$1,
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     false,
@@ -187,7 +183,7 @@ function main() {
   const value$21 = flattenDoubleEndedIterator_nextBack(
     k,
     { next_back: flakyDoubleEndedIterator_nextBack },
-    intoIterator$1,
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     false,

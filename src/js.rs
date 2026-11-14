@@ -16,6 +16,7 @@ mod known;
 mod make;
 mod optional_call;
 pub mod result;
+pub mod scopes;
 mod stmt_walk;
 mod storage;
 mod template;

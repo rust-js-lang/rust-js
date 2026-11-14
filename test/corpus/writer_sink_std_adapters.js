@@ -142,97 +142,46 @@ function written(log, it, IIterator, IClone, IDebug, IItemDebug, IFused) {
 function main() {
   const debug = { fmt: (value, options) => String(value), fmtInto: $writeInteger };
   const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const intoIterDebug = {
+    fmt(value, options) {
+      return options?.alternate
+        ? $pretty(
+            "IntoIter(",
+            [
+              options?.alternate
+                ? $pretty("[", value.items.slice(value.at, value.end), "]")
+                : `[${value.items.slice(value.at, value.end).join(", ")}]`,
+            ],
+            ")",
+          )
+        : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`;
+    },
+    fmtInto(f, value, options) {
+      $writeDebugTuple(
+        f,
+        "IntoIter",
+        [
+          [
+            value,
+            (f, value) => {
+              $writeDebugList(
+                f,
+                value.items.slice(value.at, value.end),
+                (f, value) => {
+                  $writeInteger(f, value, options);
+                },
+                options?.alternate,
+              );
+            },
+          ],
+        ],
+        options?.alternate,
+      );
+    },
+  };
   const log = [[]];
-  written(
-    log,
-    $iter([1, 2]),
-    { next: $next },
-    intoIterClone,
-    {
-      fmt(value, options) {
-        return options?.alternate
-          ? $pretty(
-              "IntoIter(",
-              [
-                options?.alternate
-                  ? $pretty("[", value.items.slice(value.at, value.end), "]")
-                  : `[${value.items.slice(value.at, value.end).join(", ")}]`,
-              ],
-              ")",
-            )
-          : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`;
-      },
-      fmtInto(f, value, options) {
-        $writeDebugTuple(
-          f,
-          "IntoIter",
-          [
-            [
-              value,
-              (f, value) => {
-                $writeDebugList(
-                  f,
-                  value.items.slice(value.at, value.end),
-                  (f, value) => {
-                    $writeInteger(f, value, options);
-                  },
-                  options?.alternate,
-                );
-              },
-            ],
-          ],
-          options?.alternate,
-        );
-      },
-    },
-    debug,
-    true,
-  );
-  written(
-    log,
-    $iter([10, 20]),
-    { next: $next },
-    intoIterClone,
-    {
-      fmt(value, options) {
-        return options?.alternate
-          ? $pretty(
-              "IntoIter(",
-              [
-                options?.alternate
-                  ? $pretty("[", value.items.slice(value.at, value.end), "]")
-                  : `[${value.items.slice(value.at, value.end).join(", ")}]`,
-              ],
-              ")",
-            )
-          : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`;
-      },
-      fmtInto(f, value, options) {
-        $writeDebugTuple(
-          f,
-          "IntoIter",
-          [
-            [
-              value,
-              (f, value) => {
-                $writeDebugList(
-                  f,
-                  value.items.slice(value.at, value.end),
-                  (f, value) => {
-                    $writeInteger(f, value, options);
-                  },
-                  options?.alternate,
-                );
-              },
-            ],
-          ],
-          options?.alternate,
-        );
-      },
-    },
-    debug,
-    true,
-  );
+  written(log, $iter([1, 2]), { next: $next }, intoIterClone, intoIterDebug, debug, true);
+  written(log, $iter([10, 20]), { next: $next }, intoIterClone, intoIterDebug, debug, true);
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
   console.log(
     `${holderDebug_fmt(holder($iter([5]), { next: $next }, intoIterClone, true), undefined, { fmt: (value, options) => (options?.alternate ? $pretty("IntoIter(", [options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`], ")") : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`) })}`,

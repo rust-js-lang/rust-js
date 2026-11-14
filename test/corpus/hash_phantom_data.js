@@ -52,6 +52,7 @@ function digest(value, THash) {
 }
 
 function main() {
+  const hash = { hash(value, state, H) {}, hashSlice(items, state, H) {} };
   const store = [
     [1, 2],
     [3, 4],
@@ -181,12 +182,7 @@ function main() {
     `${$cmpItems(map.values, right$1.values, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])) < 0}`,
   );
   console.log("Equal true");
-  console.log(
-    `${
-      digest(undefined, { hash(value, state, H) {}, hashSlice(items, state, H) {} }) ===
-      digest(undefined, { hash(value, state, H) {}, hashSlice(items, state, H) {} })
-    }`,
-  );
+  console.log(`${digest(undefined, hash) === digest(undefined, hash)}`);
   console.log(
     `${digest(undefined, unitHash)} ${digest([undefined, 5], {
       hash(value, state, H) {

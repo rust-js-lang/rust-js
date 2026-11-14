@@ -81,11 +81,10 @@ function rowsAgain(
 
 function main() {
   // Of `Vec`s, stepped from both ends, what's left counted.
-  const intoIterator$3 = {
+  const intoIterator$2 = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: countdownIterator_next }),
   };
-  const intoIterator$2 = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const intoIterator$1 = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
@@ -157,7 +156,7 @@ function main() {
     [1, 2],
     [3, 4],
   ];
-  const byRef = iterator_flatten($iter(pairs), { next: $next }, intoIterator$2, true, 2, false);
+  const byRef = iterator_flatten($iter(pairs), { next: $next }, intoIterator$1, true, 2, false);
   $next(byRef);
   const value$3 = $sizeHint(byRef);
   console.log(
@@ -193,7 +192,7 @@ function main() {
   const counted = iterator_flatten(
     $iter([[2], [3]]),
     { next: $next },
-    intoIterator$3,
+    intoIterator$2,
     true,
     undefined,
     false,
@@ -202,7 +201,7 @@ function main() {
   const value$8 = flattenDoubleEndedIterator_nextBack(
     counted,
     { next_back: $nextBack },
-    intoIterator$3,
+    intoIterator$2,
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_nextBack },
     true,
@@ -220,7 +219,7 @@ function main() {
             flattenDoubleEndedIterator_nextBack(
               iterator,
               { next_back: $nextBack },
-              intoIterator$3,
+              intoIterator$2,
               { next: countdownIterator_next },
               { next_back: countdownDoubleEndedIterator_nextBack },
               true,
@@ -236,7 +235,7 @@ function main() {
               f,
               { next: $next },
               { next_back: $nextBack },
-              intoIterator$3,
+              intoIterator$2,
               { next: countdownIterator_next },
               { next_back: countdownDoubleEndedIterator_nextBack },
               $tryOf(broke),
@@ -325,7 +324,7 @@ function main() {
         [3, 4],
       ]),
       { next: $next },
-      intoIterator$2,
+      intoIterator$1,
       true,
       2,
       false,

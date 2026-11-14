@@ -5,8 +5,8 @@
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
-use super::scopes;
 use crate::collections::{IndexMap, IndexSet};
+use crate::js::scopes;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {

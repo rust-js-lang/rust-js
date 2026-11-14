@@ -965,7 +965,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.locals.mir.declaring {
             return;
         }
-        match (self.locals.mir.dictionaries.iter_mut()).find(|(_, kept)| kept == made) {
+        match (self.locals.mir.dictionaries.iter_mut()).find(|(_, kept)| js::scopes::alpha_eq(kept, made)) {
             Some((kept, _)) if *kept != name => *kept = shared,
             Some(_) => {}
             None => self.locals.mir.dictionaries.push((name, made.clone())),
