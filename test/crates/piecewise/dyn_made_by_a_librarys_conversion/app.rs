@@ -1,5 +1,5 @@
 //! Writes the library's `dyn Error` into a writer a piece at a time, which
-//! is refused, naming #1688: its dictionary may carry no `fmtInto`.
+//! is refused, naming #1797: its dictionary may carry no `fmtInto`.
 use std::fmt::{self, Write};
 
 struct Log(Vec<String>);

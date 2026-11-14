@@ -444,9 +444,9 @@ impl ContractField {
             LibraryMakesFmtDyns => (
                 "Library.makes_fmt_dyns",
                 ClosedWorld(Refuse(
-                    "one that writes a `dyn` into a writer a piece at a time is refused, naming #1688 (ADR 1135, step 5)",
+                    "one that writes a `dyn` into a writer a piece at a time is refused, naming #1797 (ADR 1135, step 5)",
                 )),
-                "whether it makes a `dyn` of a formatting trait whose dictionary may carry no `fmtInto`",
+                "whether it makes a `dyn` of a formatting trait whose dictionary may carry no `fmtInto`: not of a published type whose impls of its formatting traits are written by hand",
             ),
             LibraryLeavesUnended => (
                 "Library.leaves_unended",

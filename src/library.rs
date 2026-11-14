@@ -110,7 +110,8 @@ pub(crate) mod scopes;
 /// and `@rust-js/std`'s compiled std types, listed in `written_into`; each
 /// writer writes a parameter by `$writeBy`, its dictionary's `fmtInto`
 /// where it has one, else its text where no writer armed the sink (#1712).
-pub const VERSION: u32 = 38;
+/// 39: `makes_fmt_dyns` narrows to a `dyn` that may lack `fmtInto` (#1688).
+pub const VERSION: u32 = 39;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -527,8 +528,8 @@ pub struct Library {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub dyn_written_into: bool,
     /// Whether it makes a `dyn` of a formatting trait whose dictionary may
-    /// carry no `fmtInto`, as it writes none so itself: a consumer that
-    /// writes a `dyn` into a writer a piece at a time is refused (#1688).
+    /// carry no `fmtInto`, not one of a published type's hand-written impls:
+    /// a consumer writing a `dyn` a piece at a time is refused (#1797).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub makes_fmt_dyns: bool,
     /// A program's, `--tested`'s: the keys of the trait constants its

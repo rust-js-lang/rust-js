@@ -442,26 +442,48 @@ test("a library's function given an Arguments, and a library's own write_fmt, wr
 
 // A library's `dyn Debug`, whose pair's dictionary its contract doesn't say
 // writes a piece at a time (`makes_fmt_dyns`), written into a writer:
-// refused, naming #1688.
+// refused, naming #1797.
 test("a library's dyn Debug written into a writer is refused", () => {
   const native = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys", [
     "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
-    "#1688",
+    "#1797",
   ]);
   expect(native).toBe('["Some", "(", "7", ")"]\n');
+}, underLoad(300_000));
+
+// A library's `dyn`s of published types of its own whose formatting impls
+// are written by hand, a `Box<dyn Display>` and `?`'s `Box<dyn Error>`:
+// their dictionaries carry `fmtInto`, so its contract doesn't say it makes
+// one that may carry none, and a consumer writes them a piece at a time
+// (#1688). One of a derived `Debug`, whose copy a consumer compiles, or of
+// a private type, whose writer isn't framed, is still refused, naming
+// #1797.
+test("a library's dyn of a published type written by hand writes a piece at a time; of a derived Debug or a private type, refused", () => {
+  const out = piecewiseChain(piecewisePairs, "dyn_of_a_librarys_published_type");
+  expect(contract(out).makes_fmt_dyns ?? false).toBe(false);
+  const native = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys_derived", [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1797",
+  ]);
+  expect(native).toBe('["Point", " { ", "x", ": ", "1", ", ", "y", ": ", "-", "2", " }"]\n');
+  const private_ = piecewiseChain(piecewisePairs, "dyn_of_a_librarys_private_type", [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1797",
+  ]);
+  expect(private_).toBe('["<", "5", "in", ">"]\n');
 }, underLoad(300_000));
 
 // A library makes a `dyn` by a coercion or std's conversion, `?`'s
 // `From<E> for Box<dyn Error>`, never by passing one on, either's
 // `self.0.source()` (`makes_fmt_dyns`, #1712): a consumer's `dyn` written
 // beside the second is written a piece at a time; one of the first's,
-// refused, naming #1688.
+// refused, naming #1797.
 test("a library that passes a dyn on makes none; one whose ? converts into one does", () => {
   const out = piecewiseChain(piecewisePairs, "dyn_passed_on_by_a_library");
   expect(contract(out).makes_fmt_dyns ?? false).toBe(false);
   const native = piecewiseChain(piecewisePairs, "dyn_made_by_a_librarys_conversion", [
     "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
-    "#1688",
+    "#1797",
   ]);
   expect(native).toBe('["[", "bad ", "12", "]"]\n');
 }, underLoad(300_000));

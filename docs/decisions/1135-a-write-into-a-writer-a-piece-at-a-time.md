@@ -556,6 +556,30 @@ go.
       only a dictionary knows, itertools' `Format`'s `I::Item`, writes by
       `$writeBy`. One given to generic code that writes it is refused
       where it's given, naming #1745.
+      - Amended later, #1688 (library ABI 39): `makes_fmt_dyns` says only
+        a `dyn` whose dictionary may carry no `fmtInto`: not one of a
+        published type of the library's own whose impls of the `dyn`'s
+        formatting traits (its principal's supertraits, `dyn Error`'s
+        `Display` and `Debug`) are written by hand, whose dictionaries
+        already carry `fmtInto` and whose writers are framed. So
+        `pub fn boxed() -> Box<dyn Display>` of a `Meters`, or `?`'s
+        conversion of a published `Bad` into a `Box<dyn Error>`, no longer
+        refuses a consumer that writes a `dyn` a piece at a time. Nothing
+        new is compiled, so no library that compiles now is refused: the
+        refusal only narrows. A `dyn` of a std type, of a private type, or
+        of a derived impl, whose copy a consumer compiles, is still
+        refused, naming #1797. A broad first try gave each value a library
+        makes a `dyn` of `fmtInto` from the analysis, and four corpus
+        cases stopped compiling as libraries (a `rust_js::class`'s
+        `Display`, a `dyn` of a trait with a `Display` supertrait, a
+        derived `Debug`'s field of `&Range`). Whether a value can be
+        written a piece at a time is known only at lowering, so #1797 is a
+        best-effort `fmtInto` there. Proof: the pairs
+        dyn_of_a_librarys_published_type (as native),
+        dyn_debug_of_a_librarys_derived and
+        dyn_of_a_librarys_private_type (refused); mutations
+        published-dyn-flagged, derived-dyn-unflagged and
+        private-dyn-unflagged, caught.
       - Amended later, #1745: a `format_args!` the body makes, given to a
         type parameter a call writes into a writer through its dictionary,
         `own(w, &format_args!(..))`'s `T`, is followed at lowering, where

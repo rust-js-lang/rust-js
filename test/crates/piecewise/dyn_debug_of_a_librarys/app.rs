@@ -1,5 +1,5 @@
 //! Writes a library's `dyn Debug` into a writer of its own: refused,
-//! naming #1688, as the library's contract says it makes such a `dyn`,
+//! naming #1797, as the library's contract says it makes such a `dyn`,
 //! whose dictionary may not write a piece at a time.
 use std::fmt::{self, Write};
 

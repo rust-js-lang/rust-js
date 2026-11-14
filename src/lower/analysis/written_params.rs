@@ -56,8 +56,11 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     dyn_traits: IndexSet<DefId>,
     dyn_any: bool,
     /// Whether the crate makes a `dyn Display` or a `dyn Error`, a pair of
-    /// a value and its dictionary, which a library's contract says
-    /// (`Library::makes_fmt_dyns`).
+    /// a value and its dictionary, of a value whose dictionaries may carry
+    /// no `fmtInto`, which a library's contract says
+    /// (`Library::makes_fmt_dyns`): not of a published type of its own whose
+    /// impls of the `dyn`'s formatting traits are written by hand, which
+    /// carry it and whose writers are framed (#1688).
     pub(in crate::lower) makes_dyns: bool,
     /// Each function's `fmt::Arguments` parameters it writes into a
     /// writer a piece at a time (step 6).
@@ -215,30 +218,67 @@ pub(super) fn written_params<'tcx>(
         })
     };
     let derived = |body: &Body<'tcx>| of_a_derived_impl(tcx, body);
-    // What makes a pair `dyn`: a coercion of what isn't one, `Box::new(e)`
-    // as a `Box<dyn Error>`, or std's conversion into one, `?`'s
-    // `from_residual` or a `From<E> for Box<dyn Error>`; not one passed on,
-    // either's `inner.source()`, which what made it made (#1712).
+    // What makes a pair `dyn`, and of what: a coercion of what isn't one,
+    // `Box::new(e)` as a `Box<dyn Error>`, of `e`; or std's conversion into
+    // one, `?`'s `from_residual` or a `From<E> for Box<dyn Error>`, of `E`;
+    // not one passed on, either's `inner.source()`, which what made it made
+    // (#1712). With the `dyn`'s type.
     let makes = |body: &Body<'tcx>, expr: &rustc_middle::thir::Expr<'tcx>| match expr.kind {
         ExprKind::PointerCoercion {
             cast: PointerCoercion::Unsize,
             source,
             ..
-        } => fmt_dyn(expr.ty) && !fmt_dyn(body.thir[source].ty),
-        ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty).is_some_and(|(callee, args)| {
-            let converts = tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+        } if fmt_dyn(expr.ty) && !fmt_dyn(body.thir[source].ty) => {
+            Some((pointer_target(tcx, body.thir[source].ty), expr.ty))
+        }
+        ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty).and_then(|(callee, args)| {
+            let residual = tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual);
+            let converts = residual
                 || tcx.trait_of_assoc(callee).is_some_and(|tr| {
                     use crate::lower::recognition::{StdItem, is_std_def};
                     is_std_def(tcx, tr, StdItem::From) || is_std_def(tcx, tr, StdItem::Into)
                 });
-            converts && args.types().any(fmt_dyn)
+            let made_into = args.types().find(|&ty| fmt_dyn(ty))?;
+            let given = args.types().find(|&ty| !fmt_dyn(ty))?;
+            // `?`'s residual, a `Result<Infallible, E>`: its `E`.
+            let made_of = match (residual, given.kind()) {
+                (true, ty::Adt(_, parts)) => parts.types().last().unwrap_or(given),
+                _ => given,
+            };
+            converts.then_some((made_of, made_into))
         }),
-        _ => false,
+        _ => None,
     };
-    found.makes_dyns = all_bodies
-        .iter()
-        .filter(|body| !derived(body))
-        .any(|body| body.thir.exprs.iter().any(|expr| makes(body, expr)));
+    // Whether a consumer may write the `dyn` a piece at a time as it is: of a
+    // published type of the crate's own, whose writers are framed and whose
+    // dictionaries carry `fmtInto` (`prints.published`), each formatting
+    // trait the `dyn` may be written by impl'd by hand, not derived, whose
+    // copy a consumer compiles and whose library dictionary carries none
+    // (#1688).
+    let written_as_it_is = |made_of: Ty<'tcx>, made_into: Ty<'tcx>| {
+        let ty::Adt(adt, _) = made_of.kind() else {
+            return false;
+        };
+        let published = adt.did().is_local() && prints.published.contains(&adt.did());
+        let traits = (made_into.walk().filter_map(|part| part.as_type())).flat_map(|part| match part.kind() {
+            ty::Dynamic(traits, ..) => traits.principal_def_id().into_iter().collect::<Vec<_>>(),
+            _ => Vec::new(),
+        });
+        let fmt_traits: Vec<DefId> = traits
+            .flat_map(|principal| ty::elaborate::supertrait_def_ids(tcx, principal))
+            .filter(|&tr| crate::lower::recognition::is_fmt_trait(tcx, tr))
+            .collect();
+        published
+            && fmt_traits.iter().all(|&tr| {
+                let imp = recognition.user_impl(ty::TraitRef::new(tcx, tr, [made_of]));
+                imp.is_some_and(|imp| !tcx.is_automatically_derived(imp))
+            })
+    };
+    found.makes_dyns = all_bodies.iter().filter(|body| !derived(body)).any(|body| {
+        (body.thir.exprs.iter())
+            .filter_map(|expr| makes(body, expr))
+            .any(|(made_of, made_into)| !written_as_it_is(made_of, made_into))
+    });
     // Of each body, what it writes into a writer: a `write!` into one's
     // values, and a writer's shown into one, what it shows; and where a
     // `dyn` is among them, where.
@@ -302,7 +342,7 @@ pub(super) fn written_params<'tcx>(
     {
         let what = "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`";
         let why =
-            "std writes it a piece at a time through its dictionary, which the library's doesn't say it can (#1688)";
+            "std writes it a piece at a time through its dictionary, which the library's doesn't say it can (#1797)";
         crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
     }
     // What each call gives a parameter its callee writes so, to a fixed point;
