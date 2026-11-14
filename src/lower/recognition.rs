@@ -593,6 +593,8 @@ pub(super) enum Std {
     Then,
     ThenWith,
     Reverse,
+    /// An Ordering predicate, a comparison of its numeric representation with zero.
+    OrderingTest(BinOp),
 }
 
 /// What a call does with a standard stream (ADR 0132).

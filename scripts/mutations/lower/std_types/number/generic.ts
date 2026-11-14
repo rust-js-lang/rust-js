@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ordering-predicate-wrong-zero",
+    breaks: "Ordering predicates compare against one instead of zero",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "        self.binary(op, value, Expr::int(0), None, ty, span)\n",
+    replace: "        self.binary(op, value, Expr::int(1), None, ty, span)\n",
+    tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
+  },
+  {
     name: "min-chain-nested",
     breaks:
       "`a.min(b).min(c)` is `Math.min(Math.min(a, b), c)`, not `Math.min(a, b, c)`",

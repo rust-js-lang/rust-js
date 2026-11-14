@@ -503,6 +503,10 @@ export function sortTail(v) {
 
 ## Sorting
 
+An `Ordering` also supports `is_eq`, `is_ne`, `is_lt`, `is_gt`, `is_le` and
+`is_ge`. Each compares its numeric representation with zero, evaluating
+the receiver once. These methods can be passed as function values too.
+
 `sort()` sorts in place, as JS's does, but numbers sort as numbers and
 strings by code point. To sort by something else, `sort_by_key` or
 `sort_by`, whose closure returns an `Ordering`.

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2564
-lines	338476
+files	2565
+lines	338538
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2866	84.7
-Iterator.from	264	7.8
+Iterator.from	266	7.9
 return;	328	9.7
-renamed x$1	16169	477.7
+renamed x$1	16169	477.6
 role fallbacks	8829	260.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
@@ -1579,6 +1579,7 @@ test/corpus/or_pattern_ref_mut.js	45	0	0	0	0	0	1	0	0
 test/corpus/or_pattern_three_values.js	269	0	0	0	0	0	0	0	0
 test/corpus/or_pattern_unreachable_alternative.js	92	0	0	0	0	0	0	0	0
 test/corpus/ordered_searches.js	27	0	0	0	0	0	0	2	2
+test/corpus/ordering_predicates.js	47	0	0	0	0	2	0	0	0
 test/corpus/os_string_into_string_and_bound_clone.js	68	0	0	0	0	0	0	2	5
 test/corpus/overflowing_euclid.js	36	0	0	0	0	0	0	10	7
 test/corpus/overflowing_literals.js	18	0	0	0	0	0	0	0	0
@@ -2571,6 +2572,6 @@ test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0	0
 test/snapshots/values/values.js	265	0	0	0	0	0	4	25	5
 test/snapshots/versions/versions.js	221	0	0	0	3	0	2	4	5
 test/snapshots/web_forms/web_forms.js	290	0	0	0	0	2	0	2	0
-test/snapshots/webapi_events/webapi-events.js	339	0	0	0	0	0	0	3	0
+test/snapshots/webapi_events/webapi-events.js	354	0	0	0	0	0	0	3	0
 test/snapshots/wide/wide.js	250	0	0	0	0	0	0	3	6
 test/snapshots/wire/wire.js	519	0	0	0	0	0	0	2	0

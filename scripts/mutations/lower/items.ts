@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ordering-function-value-wrong-zero",
+    breaks: "Ordering predicates used as function values ignore their actual comparison",
+    file: "src/lower/items.rs",
+    find: "            Std::OrderingTest(op) => self.ordering_test(op, x, input, span)?,\n",
+    replace: "            Std::OrderingTest(_) => Expr::bool(false),\n",
+    tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
+  },
+  {
     name: "binding-pointer-arrow",
     breaks:
       "a binding taken as a `fn` or lent as a `&dyn Fn` is its arrow, which reads the global at each call, a new function each time (ADR 0602)",

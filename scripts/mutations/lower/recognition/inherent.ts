@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ordering-less-includes-equal",
+    breaks: "Ordering::is_lt includes Equal",
+    file: "src/lower/recognition/inherent.rs",
+    find: "        \"is_lt\" => Std::OrderingTest(BinOp::Lt),\n",
+    replace: "        \"is_lt\" => Std::OrderingTest(BinOp::Le),\n",
+    tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
+  },
+  {
     name: "random-state-table-unseen",
     breaks: "a `HashMap` or `HashSet` of a `RandomState` isn't known to hold one, so its `with_hasher` and `hasher()` are refused",
     file: "src/lower/recognition/inherent.rs",

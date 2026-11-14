@@ -76,6 +76,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(clock) = clock_type_of(owner) {
             return clock_method(clock, name.as_str());
         }
+        if ordering {
+            return ordering_method(name.as_str());
+        }
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
             const SECOND: i64 = 1_000_000_000;
@@ -572,9 +575,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "with_borrow" | "with_borrow_mut" if local_key => Std::LocalBorrow {
                 mutable: name.as_str() == "with_borrow_mut",
             },
-            "then" if ordering => Std::Then,
-            "then_with" if ordering => Std::ThenWith,
-            "reverse" if ordering => Std::Reverse,
             "chars" if owner.is_str() => Std::Chars,
             "to_vec" if owner.is_slice() => Std::ToVec,
             "fill" if owner.is_slice() => Std::Slice(SliceOp::Fill),
@@ -806,6 +806,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Not))
             || t.is_ref() && mutable
     }
+}
+
+/// An `Ordering`'s own method, by its `name`: its predicates, each a
+/// comparison of its number with zero (#1827), and its combinators.
+fn ordering_method(name: &str) -> Option<Std> {
+    Some(match name {
+        "then" => Std::Then,
+        "then_with" => Std::ThenWith,
+        "reverse" => Std::Reverse,
+        "is_eq" => Std::OrderingTest(BinOp::Eq),
+        "is_ne" => Std::OrderingTest(BinOp::Ne),
+        "is_lt" => Std::OrderingTest(BinOp::Lt),
+        "is_gt" => Std::OrderingTest(BinOp::Gt),
+        "is_le" => Std::OrderingTest(BinOp::Le),
+        "is_ge" => Std::OrderingTest(BinOp::Ge),
+        _ => return None,
+    })
 }
 
 fn guard_map(name: &str, (shared, mutable): (bool, bool)) -> Option<Std> {

@@ -807,6 +807,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Operator(_)
             | Std::UnaryOperator(_)
             | Std::Reverse
+            | Std::OrderingTest(_)
             | Std::Layout { .. }
             | Std::NeedsDrop => unreachable!("lowered by numeric_call"),
             Std::IterSource(_) => unreachable!("lowered by iter_source_call"),

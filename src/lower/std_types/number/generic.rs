@@ -6,6 +6,12 @@ use crate::lower::temporary_names::Role;
 use rustc_middle::ty::consts::ConstExt as _;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Ordering's representation is negative, zero or positive (ADR 0036).
+    /// Calls and function values share this comparison, evaluating the value once.
+    pub(in crate::lower) fn ordering_test(&mut self, op: BinOp, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.binary(op, value, Expr::int(0), None, ty, span)
+    }
+
     /// A number's conversion, comparison, operator or size (ADRs 0011, 0057): `None` if `known` is another.
     pub(in crate::lower) fn numeric_call(
         &mut self,
@@ -181,6 +187,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.unary(op, a, ty, span)?
             }
             Std::Reverse => Expr::unary(UnaryOp::Neg, arg()),
+            Std::OrderingTest(op) => self.ordering_test(op, arg(), tys[0].peel_refs(), span)?,
             // The size rustc works out for the wasm32 target, which rust-js
             // checks programs for, as a `const` of it has (ADR 0090). A
             // generic function is one JS function for every type, so a type

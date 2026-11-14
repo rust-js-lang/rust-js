@@ -61,6 +61,22 @@ numbers, strings, `char`s and `bool`s is `$cmp(a, b)`. `then(o)` and
 `reverse()` is `-o`. `a.max(b)` and `a.min(b)` of numbers are `Math.max` and
 `Math.min`.
 
+### Amendment: Ordering predicates (#1827)
+
+The six predicates compare the representation with zero: `is_eq`,
+`is_ne`, `is_lt`, `is_gt`, `is_le` and `is_ge` use the corresponding
+comparison operator. The receiver is evaluated once. Methods taken as
+function values use the same numeric lowering, through an arrow parameter.
+Recognition owns the method-to-operator mapping; numeric lowering owns the
+zero representation and delegates to the existing binary operator owner.
+This preserves Rust's result for every Ordering, with no observable Rust/JS
+difference (ADR 0262's first case), and requires no runtime helper.
+
+The `ordering_predicates.rs` corpus case compares native Rust with the
+program, production and library builds, including effectful receivers,
+function values and UTF-16 iterator comparisons. Mutations change the zero
+threshold, predicate recognition and function-value lowering.
+
 Two things came with it:
 - **An operator on references to numbers** (`x % 10` with `x: &i32`, which
   rustc writes as a call of `Rem::rem`) is the operator.

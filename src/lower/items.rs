@@ -651,6 +651,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Leak => self.leaked(x, sig.output()),
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
+            Std::OrderingTest(op) => self.ordering_test(op, x, input, span)?,
             Std::ToBig => Expr::call(Expr::js_global("BigInt"), vec![x]).built_in(),
             // A `Vec` of a slice's or an array's items, and of text's
             // bytes, as their calls make them, `Into<Vec<u8>>`'s (#1284).
