@@ -2,7 +2,7 @@
 //! "rust-js does not support .. yet", of a feature, a call or a type; and
 //! of addressable memory, which JavaScript has none of, that, with why.
 
-use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call, open_evidence, open_item, open_type};
+use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call, open_item, open_type};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{ErrorGuaranteed, Span};
@@ -105,10 +105,9 @@ pub(crate) fn implementing(tcx: TyCtxt<'_>, trait_id: DefId) -> String {
 }
 
 /// What a missing dictionary is called: "implementation evidence for
-/// `<T as Trait>`", and where an open issue covers it, that issue.
-pub(crate) fn evidence<'tcx>(tcx: TyCtxt<'tcx>, tr: rustc_middle::ty::TraitRef<'tcx>) -> String {
-    let issue = open_evidence(tcx, tr).map(issue_of);
-    format!("implementation evidence for `{tr}`{}", issue.unwrap_or_default())
+/// `<T as Trait>`".
+pub(crate) fn evidence(tr: rustc_middle::ty::TraitRef<'_>) -> String {
+    format!("implementation evidence for `{tr}`")
 }
 
 /// The issue or decision an open family of refusals names, ` (#1452)`.
@@ -117,7 +116,6 @@ pub(crate) fn issue_of(open: OpenCall) -> &'static str {
         OpenCall::Conversion => " (#1452)",
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::BuildHasher => " (#1482)",
-        OpenCall::CowBorrow => " (#1481)",
         OpenCall::NewIn1_100 => " (#1656)",
     }
 }

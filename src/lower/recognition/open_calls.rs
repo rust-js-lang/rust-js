@@ -23,9 +23,6 @@ pub(crate) enum OpenCall {
     /// `RandomState`, which are recognised: a type parameter's, generic
     /// code's, or another builder's (#1482).
     BuildHasher,
-    /// `AsRef` or `Borrow` of a `Cow`, given to generic code: std's impl,
-    /// which derefs to what it borrowed or owns, has no dictionary (#1481).
-    CowBorrow,
     /// A std item Rust 1.100 stabilized, the pinned release's, which rust-js
     /// doesn't lower yet: `Vec::from_fn`, `Rc::map`, an impl of `Allocator`
     /// (#1656).
@@ -82,15 +79,4 @@ pub(crate) fn open_type<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> Option<Ope
         _ => return None,
     };
     open_item(tcx, id)
-}
-
-/// The open issue's family a dictionary of `tr` rust-js doesn't make is of,
-/// if one is.
-pub(crate) fn open_evidence<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> Option<OpenCall> {
-    let of_cow = matches!(tr.self_ty().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::borrow::Cow");
-    (of_cow
-        && [StdItem::AsRef, StdItem::Borrow]
-            .into_iter()
-            .any(|item| is_std_def(tcx, tr.def_id, item)))
-    .then_some(OpenCall::CowBorrow)
 }

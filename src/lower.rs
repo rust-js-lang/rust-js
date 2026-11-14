@@ -1055,7 +1055,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 refusal::Refused::Because(&what, "React gives a component no dictionary"),
             )
         } else {
-            self.unsupported(span, &refusal::evidence(self.tcx, tr))
+            self.unsupported(span, &refusal::evidence(tr))
         }
     }
 }

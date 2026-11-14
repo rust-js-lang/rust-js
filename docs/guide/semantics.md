@@ -1893,9 +1893,11 @@ What JS sees of a crate:
   ([0174, amended](../decisions/0174-generic-fmt-traits.md#amendment-a-bound-a-caller-gives-and-a-path-call-of-fmt-1115)).
 - **`FromStr`, `AsRef` and `Borrow` are dictionaries too:** a generic
   `S: AsRef<str>` is given `{ asRef }`, a `K: Borrow<Q>` `{ borrow }`,
-  the value itself for a `String` or a `&str`, and of a counted `Rc`
-  what it points at, its `value`
-  ([0161](../decisions/0161-generic-from-str.md),
+  the value itself for a `String` or a `&str`, of a counted `Rc`
+  what it points at, its `value`, and of a `Cow<B>` as a `B` what it
+  borrowed or owns, its `_0`, `{ asRef: (value) => value._0 }`
+  ([0319, amended](../decisions/0319-cows.md), #1481;
+  [0161](../decisions/0161-generic-from-str.md),
   [0162](../decisions/0162-generic-as-ref.md), [0167](../decisions/0167-borrow.md),
   [0503](../decisions/0503-a-counted-rcs-borrow-is-its-value.md#amendment-generic-codes-borrow-and-asref-of-a-counted-rc-2026-11-12-1503)).
 - **A generic function takes its trait dictionaries after its arguments,**

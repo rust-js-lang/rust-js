@@ -839,6 +839,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 same,
             )]));
         }
+        // std's `AsRef<B>` and `Borrow<B>` of a `Cow<B>`: what it borrowed or
+        // owns, one JS value, its `_0`, as its `Deref` is (`cow_deref`,
+        // ADR 0319, amended, #1481); and its `AsRef` as what that's the same
+        // JS value as, a `Cow<OsStr>`'s `AsRef<Path>`.
+        for (item, method) in [(StdItem::AsRef, "as_ref"), (StdItem::Borrow, "borrow")] {
+            if is_std_def(self.tcx, tr.def_id, item)
+                && let Some((inside, borrowed)) = self.cow_deref(&Expr::var("value"), ty)
+                && (borrowed == tr.args.type_at(1)
+                    || item == StdItem::AsRef && self.recognition().as_ref_is_itself(borrowed, tr.args.type_at(1)))
+            {
+                let f = Expr::arrow(
+                    vec!["value".into()],
+                    vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
+                );
+                return Ok(Expr::object(vec![Prop::Field(
+                    bindings::trait_method_name(self.tcx, tr.def_id, method),
+                    f,
+                )]));
+            }
+        }
         // A path's `Component`'s, as a `Path` or an `OsStr`: its text (ADR 0716).
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
             && self.recognition().as_ref_is_component_text(ty, tr.args.type_at(1))

@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cow-as-ref-unanswered",
+    breaks: "a `Cow<str>` given to generic code as `T: AsRef<str>` has no dictionary, and is refused (#1481)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                && let Some((inside, borrowed)) = self.cow_deref(&Expr::var(\"value\"), ty)\n",
+    replace: "                && let Some((inside, borrowed)) = None::<(Expr, Ty<'tcx>)>\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_given_to_generic_code_as_its_borrowed.rs$"],
+  },
+  {
+    name: "cow-as-ref-of-the-same-value-unanswered",
+    breaks: "a `Cow<OsStr>` given to generic code as `P: AsRef<Path>`, text as its `_0` is, has no dictionary, and is refused (#1481)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    || item == StdItem::AsRef && self.recognition().as_ref_is_itself(borrowed, tr.args.type_at(1)))\n",
+    replace: "                    || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_given_to_generic_code_as_its_borrowed.rs$"],
+  },
+  {
+    name: "cow-borrow-named-as-ref",
+    breaks: "a `Cow`'s `Borrow<str>` dictionary names its method `asRef`, so generic code's `key.borrow()` calls what isn't there (#1481)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        for (item, method) in [(StdItem::AsRef, \"as_ref\"), (StdItem::Borrow, \"borrow\")] {\n",
+    replace: "        for (item, method) in [(StdItem::AsRef, \"as_ref\"), (StdItem::Borrow, \"as_ref\")] {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_given_to_generic_code_as_its_borrowed.rs$"],
+  },
+  {
     name: "deque-a-generic-reader",
     breaks: "a `VecDeque<u8>` given to generic code as its reader is given `$dequeReader`, which has no `read` or `fill_buf`, where it's refused (#1302)",
     file: "src/lower/traits/dictionaries.rs",
