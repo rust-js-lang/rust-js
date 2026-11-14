@@ -26,7 +26,7 @@ import {
   testSet,
   unitTestsModule,
 } from "../scripts/mutations";
-import { jobs, leftToCi, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
+import { jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -1006,3 +1006,23 @@ test("a part the machine kills is said killed, with what it ran and its peak", a
     rmSync(dir, { recursive: true, force: true });
   }
 }, underLoad(60_000));
+
+// check:fast installs again where the manifests changed since its last
+// install (#1817): a rebase over a new workspace, `@rust-js/webapi`, left
+// `node_modules` without it. What it's of: the root's manifest, the
+// lockfile and each workspace's, and nothing else.
+test("check:fast's install is of every manifest and the lockfile", () => {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({ workspaces: ["webapi", "std"] }),
+    "bun.lock": "lock",
+    "webapi/package.json": '{ "name": "@rust-js/webapi-generator" }',
+    "std/package.json": '{ "name": "@rust-js/std" }',
+  };
+  const hashOf = (changed: Record<string, string>) => manifestsHash((file) => ({ ...files, ...changed })[file] ?? "");
+  const now = hashOf({});
+  expect(hashOf({})).toBe(now);
+  expect(hashOf({ "webapi/package.json": '{ "name": "@rust-js/webapi" }' })).not.toBe(now);
+  expect(hashOf({ "bun.lock": "lock 2" })).not.toBe(now);
+  expect(hashOf({ "package.json": JSON.stringify({ workspaces: ["webapi"] }) })).not.toBe(now);
+  expect(hashOf({ "react/package.json": "{}" })).toBe(now);
+});

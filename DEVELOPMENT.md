@@ -830,7 +830,9 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 - **A timeout that fits each local command** ([AGENTS.md](AGENTS.md#making-and-checking-changes)):
   about twice its usual time, so a hang ends; one past it is a hang or a
   slow spot to fix, never retried with more time.
-- **A new worktree runs `bun install --frozen-lockfile` first.** Without a
+- **A new worktree runs `bun install --frozen-lockfile` first**, and
+  check:fast runs it again wherever the manifests changed since its last
+  install, a rebase over a new workspace's (`docs/dev-loop.md`). Without a
   `node_modules` of its own, a worktree under `.claude/worktrees/` finds the
   checkout's above it, so its tests' JS imports that checkout's
   `@rust-js/std`, of another commit; `buildCompiler`

@@ -19,6 +19,7 @@
 // `--all` is the check before a push: `test/ci.test.ts` holds it to
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
+import { createHash } from "node:crypto";
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -744,6 +745,11 @@ if (import.meta.main) {
   // programs' builds grew 23 GB in two days. In a process of its own while
   // the compiler builds, so it takes none of the run's time: 0.1 s of a
   // store of 2,000 programs, a few seconds where it removes many.
+  // The install matches the manifests before anything runs (#1817): a
+  // rebase over a package or workspace change, `@rust-js/webapi`'s, left
+  // `node_modules` without it, and a tsc test failed on its import.
+  installed();
+
   const pruning = Date.now();
   // Every store inside the checkouts, the crate corpus's projects and the
   // temp root too, and a warning where they're near their budget (#1213).
@@ -881,3 +887,32 @@ if (import.meta.main) {
   );
   process.exit(failed.length === 0 ? 0 : 1);
 }
+
+/** What the install is of: the root's manifest, each workspace's and the
+ * lockfile, as `read` gives each, hashed in order. */
+export function manifestsHash(read: (file: string) => string): string {
+  const workspaces: string[] = JSON.parse(read("package.json")).workspaces ?? [];
+  const hash = createHash("sha256");
+  for (const file of ["package.json", "bun.lock", ...workspaces.map((dir) => `${dir}/package.json`)]) hash.update(`${file}\0${read(file)}\0`);
+  return hash.digest("hex");
+}
+
+/** `bun install --frozen-lockfile` where the manifests changed since this
+ * checkout's last install, as a rebase over a new workspace or package
+ * leaves them, else nothing: its stamp, `node_modules/.rust-js-installed`,
+ * the manifests' hash it installed. A lockfile the manifests don't match
+ * fails it, saying what to run. */
+function installed() {
+  const stamp = join(root, "node_modules", ".rust-js-installed");
+  const now = manifestsHash((file) => readFileSync(join(root, file), "utf8"));
+  if (existsSync(stamp) && readFileSync(stamp, "utf8") === now) return;
+  const installing = Date.now();
+  const install = Bun.spawnSync(["bun", "install", "--frozen-lockfile"], { cwd: root, stdout: "inherit", stderr: "inherit" });
+  if (install.exitCode !== 0) {
+    console.error("check:fast: `bun install --frozen-lockfile` failed: bun.lock doesn't match the package.json files; run `bun install` and commit bun.lock");
+    process.exit(1);
+  }
+  writeFileSync(stamp, now);
+  console.log(timed("bun install", (Date.now() - installing) / 1000, "the manifests changed since the last install"));
+}
+
