@@ -113,7 +113,11 @@ pub use dependencies::Dependencies;
 /// writer writes a parameter by `$writeBy`, its dictionary's `fmtInto`
 /// where it has one, else its text where no writer armed the sink (#1712).
 /// 39: `makes_fmt_dyns` narrows to a `dyn` that may lack `fmtInto` (#1688).
-pub const VERSION: u32 = 39;
+/// 40: `bound`, the npm packages its JS imports through bindings, its
+/// libraries' too, which a consumer refuses two releases of one binding
+/// crate over (#1799): an older library, recording none, would be read as
+/// binding nothing.
+pub const VERSION: u32 = 40;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

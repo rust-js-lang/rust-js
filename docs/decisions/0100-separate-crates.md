@@ -428,6 +428,10 @@ alias, `"dom-v0": "npm:@floating-ui/dom@0.5"`, are two packages, and
 build. Two binding crates of other names over one package are each their
 author's. react, webapi and js stay one release each (ADR 0116).
 
+The contract's field is new, so the library ABI is 40: a library an
+older compiler wrote records no `bound`, and would be read as binding
+nothing, so it's refused by its version, as any older library is.
+
 `checkCargo` gives every crate it built, its name, its root module's JS,
 its manifest and its files, two releases of a name each its own, where it
 gave the last of a name: `rust-js build` ran an app's checks of one
