@@ -960,6 +960,15 @@ test("an enumerate's index is below its slice's length", async () => {
     sum
 }
 
+/// The index alone shows terraces[i] in bounds: no other read gives it.
+pub fn alone(terraces: &[f64]) -> f64 {
+    let mut total = 0.0;
+    for (i, _) in terraces.iter().enumerate() {
+        total += terraces[i];
+    }
+    total
+}
+
 pub fn backwards(items: &mut [u32]) {
     for (i, item) in items.iter_mut().enumerate().rev() {
         *item += i as u32;
@@ -1007,6 +1016,7 @@ pub fn skipped(xs: &[u32]) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("sum += levels[i] - terrace + terraces[i];");
+  expect(js).toContain("total += terraces[i];");
   expect(js).toContain("$index(xs, i)");
   expect(js.match(/\$index\(/g)?.length).toBe(4);
   const lib = await import(join(dir, "lib.js"));
