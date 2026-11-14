@@ -226,7 +226,7 @@ for (const [name, source, message, crate] of [
   // whose hint isn't std's as it's made, in a crate that asks one's
   // (#1563), a `Cow`'s `AsRef` given to generic code (#1481), and generic
   // code's `BuildHasher` methods (#1482).
-  ["a dyn Iterator of chars whose size_hint is asked", "pub fn f(s: &str) -> (usize, Option<usize>) { let it: Box<dyn Iterator<Item = u32> + '_> = Box::new(s.chars().map(|c| c as u32)); it.size_hint() }", "made a `dyn Iterator` in a crate that asks a `dyn Iterator`'s `size_hint()`, as its hint isn't std's as it's made (#1563)"],
+  ["a dyn Iterator of chars whose size_hint is asked", "pub fn f(s: &str) -> (usize, Option<usize>) { let it: Box<dyn Iterator<Item = u32> + '_> = Box::new(s.chars().filter(|c| c.is_alphabetic()).map(|c| c as u32)); it.size_hint() }", "made a `dyn Iterator` in a crate that asks a `dyn Iterator`'s `size_hint()`, as its hint isn't std's as it's made (#1563)"],
   ["a Cow given as an AsRef<str>", "use std::borrow::Cow;\nfn upper<T: AsRef<str>>(t: T) -> String { t.as_ref().to_uppercase() }\npub fn f() -> String { upper(Cow::Borrowed(\"cow\")) }", "implementation evidence for `<std::borrow::Cow<'_, str> as std::convert::AsRef<str>>` (#1481)"],
   ["a BuildHasher's method in generic code", "use std::hash::{BuildHasher, BuildHasherDefault, DefaultHasher};\nfn built<B: BuildHasher>(b: &B) -> B::Hasher { b.build_hasher() }\npub fn f() -> DefaultHasher { built(&BuildHasherDefault::<DefaultHasher>::default()) }", "calling `std::hash::BuildHasher::build_hasher` (#1482)"],
   // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now

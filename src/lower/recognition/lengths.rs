@@ -462,7 +462,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `$Steps` that passes its source's on as std's adapter does (#1572). Not an array's iterator, JS's own, nor a map of one,
     /// whose JS `map` knows none, however exactly std counts it; nor a
     /// `skip(n)`, whose JS `drop(n)` keeps none (#1316).
-    fn hint_kept_by_form(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
+    pub(in crate::lower) fn hint_kept_by_form(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {
             return true;

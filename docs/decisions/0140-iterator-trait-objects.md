@@ -127,3 +127,27 @@ Mutations: `dyn-size-hint-unasked`, `dyn-coercions-unmarked` and
 `hint_known_as_made`, and `hint-refusal-names-no-cause` re-anchored;
 `dyn-hint-refusal-names-no-issue` gone with the arm it held, as
 `size_hint_of` answers a `dyn`'s itself. Guide: limitations.md.
+
+## Amendment (2026-11-14, #1563): what keeps std's hint by its form, made a `dyn`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted,
+each hint std's.
+
+Amended above (#1476), a value made a `dyn Iterator` in a crate that asks
+a `dyn`'s hint was refused where its hint isn't known as it's made: a
+`map` of a string's `chars()`, `Box::new(s.chars().map(f))`. But such a
+crate makes a `dyn` of what holds a `Chars`, so it makes every `chars()`
+the runtime's `$chars` (#1186, `chars_whole`), whose hint is std's, and
+`$chars`' own `map`, `rev()` and `take(n)` pass it on: lengths.rs's
+`hint_kept_by_form` says so of a type, the rule a `Vec`'s growth already
+asks (#1572). `hint_known_made_dyn` asks it too, of the crate's
+`chars_whole`, so a `map` of a `chars()`, of a `char_indices()` or of a
+`rev()` of one compiles, its hint std's. A `filter` of one, whose hint the
+form rule doesn't say, and a `skip(n)`, JS's own `drop(n)` of `$chars`,
+which keeps none (#1316), stay refused (#1563).
+
+Held by `test/corpus/dyn_iterator_of_chars_size_hints.rs`, against native
+Rust in both builds, of non-ASCII text, where a hint's lower bound isn't
+its count; the diagnostics' refusal of a `filter`; and the mutation
+`dyn-hint-of-form-unknown`.
+

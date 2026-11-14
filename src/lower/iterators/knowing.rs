@@ -145,7 +145,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// asks a `dyn Iterator`'s: a filter's `$filterEnds` (`stepped_from_its_back`'s
     /// types), a `skip(n)`'s `$skipping` (`made_knowing_its_hint`).
     pub(in crate::lower) fn hint_known_made_dyn(&self, ty: ty::Ty<'tcx>) -> bool {
-        self.hint_known_as_made(ty) || self.stepped_from_its_back(ty) || self.made_knowing_its_hint(ty)
+        self.hint_known_as_made(ty)
+            || self.stepped_from_its_back(ty)
+            || self.made_knowing_its_hint(ty)
+            // What keeps std's hint by its form, a `map` of a string's
+            // `chars()`, which a crate that makes a `dyn` of one makes
+            // `$chars`, whose own `map` passes it on (`chars_whole`, #1563).
+            || self.recognition().hint_kept_by_form(ty, self.krate.chars_whole)
     }
 
     /// Whether a source of type `ty` that an adapter the recognizers make

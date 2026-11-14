@@ -894,4 +894,12 @@ export const mutations: Mutation[] = [
     replace: "        if self.array_source(ty).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapter_hints_of_adapters_made_inside.rs$"],
   },
+  {
+    name: "dyn-hint-of-form-unknown",
+    breaks: "what keeps std's hint by its form, a `map` of a string's `$chars`, made a `dyn Iterator` in a crate that asks a `dyn`'s hint, is refused, its hint taken as JS's own (#1563)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.recognition().hint_kept_by_form(ty, self.krate.chars_whole)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_of_chars_size_hints.rs$"],
+  },
 ];
