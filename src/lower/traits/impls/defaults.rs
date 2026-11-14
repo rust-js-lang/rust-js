@@ -135,8 +135,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // prototype's method, of the MIR its library keeps, which the
             // crate compiles where it's asked (ADR 0914, #1073).
             None if self.asked_of_library(id) => {
-                self.krate.asked.borrow_mut().push((id, self.module));
-                return Ok(Expr::js_undefined());
+                self.asked_of_libraries.borrow_mut().push((id, self.module));
+                return Ok(Expr::hole(js::Hole::Asked));
             }
             None => (self.krate.closures.get(&id).copied())
                 .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,

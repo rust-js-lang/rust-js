@@ -8,11 +8,12 @@ import { join } from "node:path";
 import { root } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
-// In name order, as macOS lists them and Linux, CI's, doesn't.
-const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
-  .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-  .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const sources = files("src").filter((file) => file.endsWith(".rs"));
+// The compiler's sources, in name order, as macOS lists them and Linux,
+// CI's, doesn't.
+const sources = readdirSync(join(root, "src"), { recursive: true, encoding: "utf8" })
+  .filter((file) => file.endsWith(".rs"))
+  .map((file) => `src/${file}`)
+  .sort();
 
 // Each `undefined` says which it is: JS's value, `Expr::js_undefined()`, or
 // what a value was taken out of, `Expr::taken()`, a hole `js::validate`
@@ -38,6 +39,11 @@ test("each undefined says whether it's a value or a hole", () => {
 // lowered again with it: never JS's `undefined`, which a crate that
 // failed to ask again would have printed where its item is called.
 test("a library's item asked for is a hole", () => {
-  const items = read("src/lower/items.rs");
-  expect(items).toContain("self.krate.asked.borrow_mut().push((def_id, self.module));\n            return Expr::hole(js::Hole::Asked);");
+  // Each ask, and what's given back where it's asked: a hole, as the crate
+  // is lowered again with it, never JS's `undefined`.
+  const asks = sources.flatMap((file) =>
+    [...read(file).matchAll(/self\.asked_of_libraries\.borrow_mut\(\)\.push\([^;]*;\n\s*return ([^;]*);/g)].map((m) => [file, m[1]]),
+  );
+  expect(asks.length).toBe(3);
+  expect(asks.filter(([, given]) => !given.includes("Expr::hole(js::Hole::Asked)"))).toEqual([]);
 });

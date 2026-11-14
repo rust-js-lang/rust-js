@@ -502,4 +502,21 @@ export const mutations: Mutation[] = [
     replace: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
+  {
+    name: "field-read-unsettled",
+    breaks: "an untagged enum's method that reads each variant's field, lowered first, isn't settled for its callers, which call it, `Parent.children(parentInstance)`, where its read of the value given is written (rd317; #1671 change 4 M2)",
+    file: "src/lower/pipeline.rs",
+    find: "                    settled.field_reads.insert(def_id, read);\n",
+    replace: "                    _ = (def_id, read);\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "asked-ungathered",
+    breaks: "what of its libraries a body found the crate compiles itself isn't gathered, so the crate isn't lowered again with it, and the hole where it's called is refused, a library's item its JS doesn't export (ADR 0914, amended; ADR 1148)",
+    file: "src/lower/pipeline.rs",
+    find: "        asked.extend(cx.asked_of_libraries.take());\n        drop(cx);\n",
+    replace: "        drop(cx);\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "merge what its consumer compares"],
+  },
 ];

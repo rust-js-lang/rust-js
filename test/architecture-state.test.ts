@@ -55,6 +55,10 @@ const owners: Record<string, string[]> = {
   // and resolves: the drops module's to write, where `CrateFacts` held it
   // in cells every function wrote (the fourth review).
   "self.drops_observed": ["src/lower/drops.rs", "src/lower/drops/uses.rs"],
+  // What of its libraries lowering a function found the crate compiles
+  // itself, which the pipeline gathers, as `drops_observed` (ADR 1148):
+  // asked where an item is named, and of a library's impl or default.
+  "self.asked_of_libraries": ["src/lower/items.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.recursive": ["src/lower/recursive_fns.rs"],
   "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs", "src/lower/traits/routes.rs"],
@@ -102,6 +106,7 @@ const shared: Record<string, string> = {
   names: "each name given, by `fresh`, kept per body by bodies.rs",
   locals: "a body's variables; its MIR facts, `locals.mir`, are mir.rs's",
   dependencies: "what it uses of other crates, noted by items.rs",
+  settled: "what the bodies lowered before it settled, the pipeline's, read only (ADR 1148)",
 };
 // Each field of `FnCx` is an owner's, or the shared context above: a field
 // added with neither is one nothing says who may change (the second review).

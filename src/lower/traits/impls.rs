@@ -1092,8 +1092,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.held_in_box(tr.self_ty())
             && (0..count).all(|i| self.param_is_box(method, i) == self.param_is_box(instance.def_id(), i));
         if !as_entry {
-            self.krate.asked.borrow_mut().push((imp, self.module));
-            return Ok(Some((instance, Expr::js_undefined())));
+            self.asked_of_libraries.borrow_mut().push((imp, self.module));
+            return Ok(Some((instance, Expr::hole(js::Hole::Asked))));
         }
         let dictionary = self.dictionary(tr, span)?;
         Ok(Some((

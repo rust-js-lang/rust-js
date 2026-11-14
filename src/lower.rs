@@ -120,7 +120,7 @@ use representation::{MutRefForm, Num, const_js, eval_const, f32_literal, static_
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
 
 use body_queries::strip;
-use crate_facts::CrateFacts;
+use crate_facts::{CrateFacts, Settled};
 use parameter_names::{default_parameter_name, parameter_name, written_parameter_name};
 
 type R<T> = Result<T, ErrorGuaranteed>;
@@ -402,11 +402,18 @@ struct Dependencies {
 
 struct FnCx<'a, 'tcx> {
     krate: &'a CrateFacts<'a, 'tcx>,
+    /// What the crate's bodies lowered before it settled (`Settled`).
+    settled: &'a Settled,
     dependencies: RefCell<Dependencies>,
     /// What lowering this function found of drops, which the pipeline
     /// gathers, of each function lowered or not, and resolves (ADRs 0190,
     /// 0300).
     drops_observed: RefCell<drops::DropsObserved>,
+    /// The library items this function's lowering found the crate must
+    /// compile itself, which their libraries' JS doesn't export, each with
+    /// the module that asked, which the pipeline gathers: the crate is
+    /// lowered again with them (ADR 0914, amended; ADR 1148).
+    asked_of_libraries: RefCell<Vec<(DefId, LocalModId)>>,
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

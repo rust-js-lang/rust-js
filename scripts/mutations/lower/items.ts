@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
     file: "src/lower/items.rs",
-    find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
+    find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace: "        true\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
   },
@@ -61,9 +61,9 @@ export const mutations: Mutation[] = [
     breaks:
       "what a module's load makes reads its own module's variant as its number, `let state = 3`, where its `const`, made before it, is `Pending`",
     file: "src/lower/items.rs",
-    find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
+    find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace:
-      "        module.is_none() || (module != Some(self.module) && !self.krate.loads_in_cycles.borrow().contains(&self.item))\n",
+      "        module.is_none() || (module != Some(self.module) && !self.settled.loads_in_cycles.contains(&self.item))\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
     snapshots: true,
   },
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     breaks:
       "another module's constant is read as its value, `createCursor(0)`, though its module loads first",
     file: "src/lower/items.rs",
-    find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
+    find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace: "        module.is_none_or(|module| module == self.module)\n",
     tests: [
       "test/lowering-constants.test.ts",

@@ -112,10 +112,6 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// JS is its program's, and a consumer compiles what it needs more of
     /// (ADR 0914, amended).
     pub(in crate::lower) compiled_once: bool,
-    /// The library items the crate's lowering found it must compile itself,
-    /// which their libraries' JS doesn't export, each with the module that
-    /// first asked (ADR 0914, amended): the crate is lowered again with them.
-    pub(in crate::lower) asked: std::cell::RefCell<Vec<(DefId, LocalModId)>>,
     /// Which of its libraries' functions and impls may copy what the crate
     /// changes in place, which it compiles itself (ADR 0914, amended).
     pub(in crate::lower) copying: &'a instances::Copying<'a, 'tcx>,
@@ -177,17 +173,8 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     pub(in crate::lower) struct_literals: &'a IndexMap<DefId, usize>,
     /// The nullable fields present, set first (`classes::set_where_constructed`).
     pub(in crate::lower) constructed: &'a IndexSet<DefId>,
-    /// Each body run where its module loads, a thread-local's value, a
-    /// static's or constant's initializer lowered as code, a `js::on_load!`,
-    /// that reads another of the crate's modules' `const` that may load
-    /// after its own, an import cycle's: it reads their values
-    /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
-    /// Lowered again once it's known.
-    pub(in crate::lower) loads_in_cycles: std::cell::RefCell<IndexSet<DefId>>,
     /// Each module's function of a recursive type's `==`, clone or order.
     pub(in crate::lower) module_fns: RefCell<recursive_fns::ModuleFns<'tcx>>,
-    /// Each method that reads each variant's field, its JS's parameter and read (rd317).
-    pub(in crate::lower) field_reads: RefCell<IndexMap<DefId, (String, Expr)>>,
     /// The own nullable parameters each call gives `null` or a value, as
     /// lowering sees their calls (ADR 0861, amended, rd613).
     pub(in crate::lower) nulled_params: &'a analysis::nulled_params::NulledParams,
@@ -199,4 +186,22 @@ impl CrateFacts<'_, '_> {
     pub(in crate::lower) fn writers_take_options(&self) -> bool {
         self.pretty_debug || self.format_options
     }
+}
+
+/// What lowering the crate's bodies settled so far, which a body lowered
+/// after reads: the pipeline's, between one body and the next, never a
+/// body's own (#1671 change 4, M2). A body reads it, and gives back what it
+/// found in its `LoweredFn`, which the pipeline settles here.
+#[derive(Default)]
+pub(in crate::lower) struct Settled {
+    /// Each method that reads each variant's field, its JS's parameter and
+    /// read, of one lowered (rd317): lowered before its callers.
+    pub(in crate::lower) field_reads: IndexMap<DefId, (String, Expr)>,
+    /// Each body run where its module loads, a thread-local's value, a
+    /// static's or constant's initializer lowered as code, a `js::on_load!`,
+    /// that reads another of the crate's modules' `const` that may load
+    /// after its own, an import cycle's: it reads their values
+    /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
+    /// Lowered again once it's known.
+    pub(in crate::lower) loads_in_cycles: IndexSet<DefId>,
 }

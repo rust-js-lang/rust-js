@@ -87,7 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         let [value] = values else { return Ok(None) };
-        let Some((param, read)) = self.krate.field_reads.borrow().get(&callee).cloned() else {
+        let Some((param, read)) = self.settled.field_reads.get(&callee).cloned() else {
             return Ok(None);
         };
         let value = self.value_expr(value.clone(), span)?;

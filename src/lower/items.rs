@@ -67,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which its library writes of attributes only it sees, and which
         // makes its values anew from JSON, sharing none (#341).
         if self.asked_of_library(def_id) {
-            self.krate.asked.borrow_mut().push((def_id, self.module));
+            self.asked_of_libraries.borrow_mut().push((def_id, self.module));
             return Expr::hole(js::Hole::Asked);
         }
         // A library's, imported by the name it chose (ADR 0100).
@@ -521,7 +521,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 0031, 0722), by its name? Each body does but one run where its own
     /// module loads (`CrateFacts::loads`) that reads another of the crate's
     /// modules' that may load after its own, an import cycle's
-    /// (`CrateFacts::loads_in_cycles`): it would read it before that module
+    /// (`Settled::loads_in_cycles`): it would read it before that module
     /// made it, so it reads the value. A library's is made before the crate
     /// loads, its own module's before what reads it (`js::in_load_order`),
     /// and a module it imports, of no cycle, before it (ADR 0031, amended).
@@ -533,7 +533,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let module = self.krate.fns.get(&def_id).map(|info| info.module);
-        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)
+        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)
     }
 
     /// Is `def_id` a trait's function that a call of runs through the trait:

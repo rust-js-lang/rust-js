@@ -350,7 +350,6 @@ pub fn lower_crate<'tcx>(
         foreign: &foreign,
         library,
         compiled_once: exports_reachable,
-        asked: Default::default(),
         copying: &copying,
         panics_abort,
         sources: &sources,
@@ -416,9 +415,7 @@ pub fn lower_crate<'tcx>(
         local_consts: &local_consts,
         struct_literals: &struct_literals,
         constructed: &constructed,
-        loads_in_cycles: Default::default(),
         module_fns: Default::default(),
-        field_reads: Default::default(),
         nulled_params: &nulled_params,
     };
     // What a library's manifest says of its writers (ADR 0137).
@@ -454,6 +451,12 @@ pub fn lower_crate<'tcx>(
     field_reads::first(&mut work, &field_reads);
     let (mut used, mut queued) = (IndexSet::default(), IndexSet::default());
     let no_facts = super::body_queries::BodyFacts::default();
+    // What the bodies lowered settle, which each lowered after reads: made
+    // anew of what's settled for each body, as no body changes it.
+    let mut settled = super::Settled::default();
+    // What of its libraries the bodies found the crate compiles itself,
+    // which their JS doesn't export, as each gives it back (ADR 1148).
+    let mut asked = Vec::new();
     let shared = contexts::Shared {
         tcx,
         krate: &crate_facts,
@@ -485,7 +488,7 @@ pub fn lower_crate<'tcx>(
                 // module's `const` by its name, where that module may load
                 // after its own: lowered again, reading its values, once
                 // (ADR 0031, amended).
-                if !crate_facts.loads_in_cycles.borrow().is_empty() {
+                if !settled.loads_in_cycles.is_empty() {
                     break;
                 }
                 let lowered = || (lowered_items.iter()).map(|(_, item)| &item.dependencies);
@@ -509,7 +512,7 @@ pub fn lower_crate<'tcx>(
                 let bodies: Vec<_> = (again.iter())
                     .filter_map(|&id| work.iter().find(|&&(at, _, copy)| at == id && copy.is_none()).copied())
                     .collect();
-                crate_facts.loads_in_cycles.borrow_mut().extend(again);
+                settled.loads_in_cycles.extend(again);
                 work.extend(bodies);
             }
         }
@@ -535,7 +538,7 @@ pub fn lower_crate<'tcx>(
             .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
             .collect();
         let mut cx = contexts::fn_cx(
-            &shared,
+            (&shared, &settled),
             (def_id, body, copy),
             (module, &taken[&module]),
             names,
@@ -566,6 +569,8 @@ pub fn lower_crate<'tcx>(
         };
         // Of one that failed too, whose calls are checked as each other's.
         drops_observed.gather(cx.drops_observed.take());
+        asked.extend(cx.asked_of_libraries.take());
+        drop(cx);
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
@@ -578,7 +583,7 @@ pub fn lower_crate<'tcx>(
                 if field_reads.contains(&def_id)
                     && let Some(read) = super::untagged::field_reads::read_of_its_parameter(&lowered.function)
                 {
-                    crate_facts.field_reads.borrow_mut().insert(def_id, read);
+                    settled.field_reads.insert(def_id, read);
                 }
                 // One lowered again, its values read: in its place.
                 match lowered_items.iter_mut().find(|(id, _)| *id == def_id) {
@@ -598,12 +603,13 @@ pub fn lower_crate<'tcx>(
         && let Some(id) = a_struct()
     {
         let given = (CRATE_MOD_ID, &taken[&CRATE_MOD_ID]);
-        contexts::item_cx(&shared, id.to_def_id(), given).ref_cells();
+        let cx = contexts::item_cx((&shared, &settled), id.to_def_id(), given);
+        cx.ref_cells();
+        asked.extend(cx.asked_of_libraries.take());
     }
     // What of its libraries the crate's lowering found it compiles itself,
     // which their JS doesn't export: the crate lowered again with them, as
     // with what its calls give more (ADR 0914, amended).
-    let asked = crate_facts.asked.take();
     // Each module's recursive types' functions (`recursive_fns`).
     let mut module_fns = crate_facts.module_fns.take();
     if !asked.is_empty() && tcx.dcx().has_errors().is_none() {
@@ -1182,7 +1188,7 @@ pub fn lower_crate<'tcx>(
             variables.extend(module_variables.keys().copied());
             // What a `&mut` and a `dyn` in a signature are, as the item's
             // body has them: asked of a context of the item (#619, #620).
-            let context = |owner: DefId| contexts::item_cx(&shared, owner, (module, &taken[&module]));
+            let context = |owner: DefId| contexts::item_cx((&shared, &settled), owner, (module, &taken[&module]));
             let mut_ref = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).mut_ref_form(pointee);
             let pair_trait = |owner: DefId, ty: ty::Ty<'tcx>| context(owner).dynamic_trait(ty);
             let signature = |function: DefId| context(function).js_signature(function);

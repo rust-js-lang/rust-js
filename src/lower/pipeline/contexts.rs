@@ -2,7 +2,7 @@
 //! of the crate's bodies, and, for a library none of whose bodies asked
 //! what its `RefCell`s are, the one its contract's facts are found in.
 
-use super::super::{Body, BodyFrame, CrateFacts, FnCx, Locals, body_queries::BodyFacts};
+use super::super::{Body, BodyFrame, CrateFacts, FnCx, Locals, Settled, body_queries::BodyFacts};
 use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::Thir;
 use rustc_middle::ty;
@@ -20,12 +20,12 @@ pub(super) struct Shared<'a, 'tcx> {
 /// The context of an item, `def_id`, as no body of it: what its signature
 /// is, or a library's contract's facts, with nothing named in it yet.
 pub(super) fn item_cx<'a, 'tcx>(
-    shared: &Shared<'a, 'tcx>,
+    (shared, settled): (&Shared<'a, 'tcx>, &'a Settled),
     def_id: DefId,
     given: (LocalModId, &'a IndexSet<String>),
 ) -> FnCx<'a, 'tcx> {
     fn_cx(
-        shared,
+        (shared, settled),
         (def_id, None, None),
         given,
         IndexSet::default(),
@@ -37,7 +37,7 @@ pub(super) fn item_cx<'a, 'tcx>(
 /// need, is lowered in: `names` its locals may not take, `module_names`
 /// its module's, and its scope struct's methods (ADR 1043).
 pub(super) fn fn_cx<'a, 'tcx>(
-    shared: &Shared<'a, 'tcx>,
+    (shared, settled): (&Shared<'a, 'tcx>, &'a Settled),
     (def_id, body, copy): (DefId, Option<&'a Body<'tcx>>, Option<usize>),
     (module, module_names): (LocalModId, &'a IndexSet<String>),
     names: IndexSet<String>,
@@ -50,8 +50,10 @@ pub(super) fn fn_cx<'a, 'tcx>(
         given: Default::default(),
         codecs: Vec::new(),
         krate: shared.krate,
+        settled,
         dependencies: Default::default(),
         drops_observed: Default::default(),
+        asked_of_libraries: Default::default(),
         frame: BodyFrame {
             thir: body.map_or(shared.no_body, |body| &body.thir),
             facts: body.map_or(shared.no_facts, |body| &body.facts),

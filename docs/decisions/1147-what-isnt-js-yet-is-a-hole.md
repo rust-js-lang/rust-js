@@ -2,7 +2,10 @@
 
 Status: Accepted (2026-11-14, #1671's change 4, M1; the plan the lead
 approved, with `Taken` holes in M1 and every other `undefined` named
-`Expr::js_undefined()`).
+`Expr::js_undefined()`). Amended the same day, ADR 1148's step 3: two more
+asks, a library's impl that isn't its dictionary's entry and a library's
+trait of classes' default, had still given back JS's `undefined`. They give
+`Hole::Asked` too, and the architecture test holds every ask to give one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This is about
 rust-js's own trees, not a difference between Rust and JS. A hole left in
