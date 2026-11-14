@@ -79,6 +79,16 @@ pub(in crate::lower) fn body_proofs<'tcx>(
         true => proofs(tcx, typing_env, body, given),
         false => Proofs::default(),
     };
+    // A body that makes a raw pointer, or lends an integer local `&mut`:
+    // THIR's ranges see neither's write after, a read through the owner
+    // leaving the pointer able to (#1782).
+    proofs.thir_untrusted = (body.basic_blocks.iter()).flat_map(|data| &data.statements).any(|statement| {
+        matches!(&statement.kind, StatementKind::Assign(assign) if match &assign.1 {
+            Rvalue::RawPtr(..) => true,
+            Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => of.as_local().is_some_and(|l| body.local_decls[l].ty.is_integral()),
+            _ => false,
+        })
+    });
     // Of a body that sets a `OnceCell`, which cells are still empty there.
     let sets = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
@@ -211,6 +221,15 @@ pub(in crate::lower) fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.empty_sets.contains(&block))
+}
+
+/// Whether THIR's ranges may be taken for a wrap MIR doesn't prove, of the
+/// body being lowered (the bridge, ADR 1137): not of one that makes a raw
+/// pointer or lends an integer local `&mut` (#1782).
+pub(in crate::lower) fn thir_trusted(tcx: TyCtxt<'_>) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    (intervals.bodies.last()).is_none_or(|(proofs, _)| !proofs.thir_untrusted)
 }
 
 /// Whether MIR proves the integer cast at `location` of `body` is of a

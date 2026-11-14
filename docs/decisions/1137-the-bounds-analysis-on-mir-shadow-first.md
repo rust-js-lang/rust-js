@@ -518,4 +518,28 @@ commit:
   length, an `is_empty()` or an index's read; at a drop that may run code;
   and at a write through a raw pointer, which reaches a cell's value with no
   call. THIR's ranges saw no such write: the bridge left such a site's wrap
-  out, unsound (#1777), until M4 deletes it. 1 site.
+  out, unsound, until #1782 kept the bridge out of such bodies. 1 site.
+
+## Amendment: a local lent `&mut`, then tested (2026-11-14, #1782)
+
+Step 2's rule forgot an integer local lent `&mut` where it's lent, not in
+the whole body, and learned it again by what came after. A test after the
+borrow taught it something, but the `&mut` may have become a raw pointer,
+or been given to a call that keeps one, that writes it later. A read through
+the owner leaves such a pointer able to write. `n - 1` past `n != 0` gave
+`-1` where the pointer had set `n` to 0, and Miri finds no undefined
+behaviour there. THIR's ranges took the same wrong step, so the bridge did
+too.
+
+Now:
+- **No test tells.** A local forgotten at its borrow (`lent_away`) is
+  narrowed by no test, and related by no comparison, until it's assigned
+  again.
+- **The bridge distrusts such bodies.** It doesn't take THIR's verdict in a
+  body that makes a raw pointer or lends an integer local `&mut`
+  (`thir_trusted`).
+
+Corpus case raw_pointer_written_after_its_owner_reads holds both. The
+corpus, snapshots and port are otherwise unchanged. Found with it: #1781,
+where a pointer a callee keeps of a `&mut` writes the caller's box, which
+the caller had copied back out, so the write is never seen.

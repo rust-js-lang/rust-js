@@ -80,6 +80,10 @@ pub(in crate::lower) struct Proofs {
     /// The blocks whose terminator is a `OnceCell`'s `set` of a cell known
     /// empty there (`empty_sets`, ADR 0847, #1672 M3).
     pub(in crate::lower) empty_sets: IndexSet<BasicBlock>,
+    /// Whether the body makes a raw pointer, or lends an integer local
+    /// `&mut`: where THIR's ranges, which see neither's write after, aren't
+    /// to be taken for a wrap MIR doesn't prove (the bridge, #1782).
+    pub(in crate::lower) thir_untrusted: bool,
 }
 
 struct Walk<'a, 'tcx> {
@@ -236,6 +240,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             gets: IndexMap::default(),
             pushed: IndexSet::default(),
             lending: IndexMap::default(),
+            lent_away: IndexSet::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -651,6 +656,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             && lent_where_borrowed(self.body, &mir::Place::from(of))
         {
             state.forget(of);
+            state.lent_away.insert(of);
         }
         let ranged = self.ranged(rvalue, state);
         if self.lent.contains(&local) {

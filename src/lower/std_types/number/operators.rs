@@ -123,8 +123,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which M4 empties and deletes with THIR's ranges (ADR 1137).
         let arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul);
         let thir_exact = arithmetic && self.exact_at(span);
-        let exact = arithmetic && (proved || thir_exact);
-        if thir_exact && !proved {
+        // Not of a body whose raw pointers or integer `&mut`s THIR's ranges
+        // can't see write (#1782).
+        let bridged = thir_exact && !proved && crate::lower::analysis::thir_trusted(self.tcx);
+        let exact = arithmetic && (proved || bridged);
+        if bridged {
             crate::lower::analysis::shadow_bridged(self.tcx, self.frame.owner, span);
         }
         if arithmetic {

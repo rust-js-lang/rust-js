@@ -82,6 +82,12 @@ pub(super) struct State {
     /// Each `&mut` of a `Vec` whole, `&mut _1` or `&mut (*_1)`, by the
     /// local it's held in: what it lends, a `push` of it makes pushed.
     pub(super) lending: IndexMap<Local, Local>,
+    /// Each integer local lent `&mut` where the walk forgets it
+    /// (`lent_where_borrowed`), until it's assigned again: what the borrow
+    /// lends may have become a raw pointer that writes it after, as a read
+    /// through it leaves the pointer able to, so no test of it, nor any
+    /// relation, tells what it is (#1782).
+    pub(super) lent_away: IndexSet<Local>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -178,6 +184,7 @@ impl State {
                 .filter(|&(k, v)| other.gets.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
+            lent_away: self.lent_away.union(&other.lent_away).copied().collect(),
             pushed: (self.pushed.iter())
                 .filter(|l| other.pushed.contains(*l))
                 .copied()
@@ -224,6 +231,7 @@ impl State {
 
     /// `local` written: what it held, and each comparison of it, forgotten.
     pub(super) fn forget(&mut self, local: Local) {
+        self.lent_away.shift_remove(&local);
         self.intervals[local] = None;
         self.comparisons.shift_remove(&local);
         self.comparisons
@@ -251,6 +259,9 @@ impl State {
     /// though the comparison is of `start`, what `i` copies.
     pub(super) fn narrowed_to(&mut self, local: Local, interval: Interval) {
         let root = self.root(local);
+        if self.lent_away.contains(&root) {
+            return;
+        }
         let copies: Vec<Local> = (self.copies.iter())
             .filter(|&(_, &of)| of == root)
             .map(|(&copy, _)| copy)
@@ -263,6 +274,10 @@ impl State {
     /// `x` below `y`, strictly or not: of what `x` copies and of each copy
     /// of that too, as a comparison of one tells of them all.
     pub(super) fn related(&mut self, x: Local, y: Term, strict: bool) {
+        if self.lent_away.contains(&self.root(x)) || matches!(y, Term::Int(l) if self.lent_away.contains(&self.root(l)))
+        {
+            return;
+        }
         let root = self.root(x);
         let copies: Vec<Local> = (self.copies.iter())
             .filter(|&(_, &of)| of == root)

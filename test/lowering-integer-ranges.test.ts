@@ -1068,23 +1068,21 @@ pub fn raw_between(stack: &RefCell<Vec<u32>>) -> usize {
     stack.borrow().len() - 1
 }
 
-pub fn ran() -> (u32, usize, usize, usize) {
+pub fn ran() -> (u32, usize, usize, usize, usize) {
     let stack = RefCell::new(vec![4, 5]);
     let one = || RefCell::new(vec![1]);
-    (last(&stack), cleared(&one(), |s| s.borrow_mut().clear()), mut_between(&one()), dropped_between(&one()))
+    (last(&stack), cleared(&one(), |s| s.borrow_mut().clear()), mut_between(&one()), dropped_between(&one()), raw_between(&one()))
 }
 `);
   // THIR's ranges see no write through a raw pointer, and leave out
-  // `raw_between`'s wrap that MIR keeps: the bridge takes THIR's verdict
-  // there, which M4 deletes with it (#1777, ADR 1137).
-  expect(wrapsDisagreed(dir)).toEqual(["bridged raw_between"]);
+  // `raw_between`'s wrap, which MIR keeps; the bridge doesn't take THIR's
+  // verdict in a body that makes one (#1782).
+  expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("stack[stack.length - 1]");
-  expect(js.match(/\(stack\.length - 1\) >>> 0/g)).toHaveLength(3);
+  expect(js.match(/\(stack\.length - 1\) >>> 0/g)).toHaveLength(4);
   const lib = await import(join(dir, "lib.js"));
-  // `raw_between` isn't run: its write through the pointer doesn't reach
-  // the cell in JS (#1777).
-  expect(lib.ran()).toEqual([5, 4294967295, 4294967295, 4294967295]);
+  expect(lib.ran()).toEqual([5, 4294967295, 4294967295, 4294967295, 4294967295]);
 });
 
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =

@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        let exact = arithmetic && (proved || thir_exact);\n",
+    find: "        let exact = arithmetic && (proved || bridged);\n",
     replace: "        let exact = arithmetic && false;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "bridge-off",
     breaks: "where MIR's intervals don't prove a wrap THIR's ranges know never happens, it's kept, so `flushed`'s `i += 1` past `with_borrow`'s `get(i)` is `(i + 1) >>> 0` and React's port regresses (ADR 1137)",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        let exact = arithmetic && (proved || thir_exact);\n",
+    find: "        let exact = arithmetic && (proved || bridged);\n",
     replace: "        let exact = arithmetic && proved;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index an item is there"],
   },
@@ -285,5 +285,13 @@ export const mutations: Mutation[] = [
     find: "            crate::lower::analysis::shadow_bridged(self.tcx, self.frame.owner, span);\n",
     replace: "",
     tests: ["test/intervals-bridged.test.ts"],
+  },
+  {
+    name: "bridge-trusts-every-body",
+    breaks: "the bridge takes THIR's ranges' verdict in a body that makes a raw pointer, so `n - 1` past `n != 0` is JS's own where the pointer set `n` to 0, and gives `-1` (#1782)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "        let bridged = thir_exact && !proved && crate::lower::analysis::thir_trusted(self.tcx);\n",
+    replace: "        let bridged = thir_exact && !proved;\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointer_written_after_its_owner_reads.rs$"],
   },
 ];

@@ -505,3 +505,11 @@ itself was seen. That way of walking one is gone: a component that calls
 itself is walked to a fixed point now, which `callers-recursion-unknown`,
 `callers-recursion-never-forgets` and `callers-recursion-outside-unjoined`
 hold.
+
+## Amendment: a local lent `&mut` assigned again (2026-11-14, #1782)
+
+`intervals-lent-away-never-assigned` goes. It removed taking a local out
+of `lent_away` when assigned again, and no program shows the difference:
+MIR assigns a local through a temporary, so a test of it narrows that
+temporary, its root, either way. The rule only adds precision; keeping a
+local lent away longer is more conservative, never wrong.

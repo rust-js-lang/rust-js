@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ => None,\n",
     tests: ["test/intervals-shadow.test.ts"],
   },
+  {
+    name: "intervals-lent-away-narrowed",
+    breaks: "a local lent `&mut`, then tested, is taken as what the test showed, so `n - 1` past `n != 0` is JS's own where a raw pointer the borrow became set `n` to 0, and gives `-1` (#1782)",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "        if self.lent_away.contains(&root) {\n            return;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointer_written_after_its_owner_reads.rs$"],
+  },
 ];
