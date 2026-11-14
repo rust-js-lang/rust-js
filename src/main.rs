@@ -800,13 +800,12 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             ));
         }
         // A file's record of its build (ADR 1099): what it wrote too, and
-        // what of it rust-js read itself, its libraries, its settings and
-        // the manifest a build before wrote, which says what's stale, are
-        // what it read.
+        // what of it rust-js read itself, its libraries and the manifest a
+        // build before wrote, which says what's stale, are what it read,
+        // beside what the plan read, its settings among them.
         if let (false, Some((written, path))) = (cargo, &dep_info) {
             let written = written.clone();
             let mut reading: Vec<PathBuf> = callbacks.dependencies.inputs.clone();
-            reading.extend(plan.settings.manifest.clone());
             // And the printer's, of its declarations (`printer_reads`).
             reading.extend(printer_reads.clone().unwrap_or_default());
             if let Some(previous) = plan.manifest.as_ref().filter(|path| path.exists()) {

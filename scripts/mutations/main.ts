@@ -163,14 +163,7 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
   },
-  {
-    name: "file-record-without-settings",
-    breaks: "a file's record doesn't name the Cargo.toml its settings are read from (ADR 1099)",
-    file: "src/main.rs",
-    find: "            reading.extend(plan.settings.manifest.clone());\n",
-    replace: "",
-    tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
-  },
+
   {
     name: "file-record-without-previous-manifest",
     breaks: "a file's record doesn't name the manifest of the build before, which it reads for what's stale, so a cache keyed by it gives a compile that leaves a stale file (ADR 1099)",

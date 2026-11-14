@@ -5,7 +5,7 @@
 // message, a `TypeError` never a panic, a `Result`'s `Err` a failure.
 
 import { beforeAll, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { buildCompiler, rustJsUnits } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
@@ -88,6 +88,25 @@ for (const runner of ["node", "bun", "vitest", "jest"]) {
     expect(written.map((js) => js.includes(`import { test } from "${modules[runner]}";`))).toEqual([true]);
   }, underLoad(180_000));
 }
+
+// #1751: the runner a crate's `Cargo.toml` names, changed alone, no Rust
+// changed, is the next run's: the `Cargo.toml` is what Cargo's record of
+// the build says it read, so Cargo builds it again, its tests written for
+// the runner it names now, not the one remembered.
+test("a runner named in Cargo.toml alone is the next run's", () => {
+  const dir = testCrate("rust-js-test-runner-changed", { "src/lib.rs": "#[test]\nfn runs() {\n    assert_eq!(1 + 1, 2);\n}\n" });
+  const imports = () =>
+    rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"))
+      .filter((unit) => basename(unit).startsWith("app-") && existsSync(join(unit, "lib.test.js")))
+      .map((unit) => /import \{ test \} from "([^"]+)";/.exec(readFileSync(join(unit, "lib.test.js"), "utf8"))?.[1]);
+  const first = rustJsTest(dir);
+  expect([counts("node", first.said), first.code], first.said).toEqual([{ pass: 1, fail: 0, skip: 0 }, 0]);
+  expect(imports()).toEqual(["node:test"]);
+  appendFileSync(join(dir, "Cargo.toml"), '\n[package.metadata.rust-js.test]\nrunner = "bun"\n');
+  const second = rustJsTest(dir);
+  expect([counts("bun", second.said), second.code], second.said).toEqual([{ pass: 1, fail: 0, skip: 0 }, 0]);
+  expect(imports()).toEqual(["bun:test"]);
+}, underLoad(180_000));
 
 test("a runner rust-js doesn't know is refused, naming the four", () => {
   const { code, said } = rustJsTest(testCrate("rust-js-test-by-mocha", { "src/lib.rs": "#[test]\nfn t() {}\n" }, { runner: "mocha" }));

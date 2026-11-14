@@ -439,4 +439,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(problem) = crate::js::validate::module(&js_module).into_iter().next().filter(|_| false) {\n",
     tests: ["test/validate.test.ts"],
   },
+  {
+    name: "settings-manifest-unread",
+    breaks: "neither Cargo's record of a crate it builds nor a file's names the `Cargo.toml` its settings are of: a test runner named there alone, no Rust changed, isn't the next run's, the remembered build's kept (#1751, ADR 1099)",
+    file: "src/output.rs",
+    find: "            .chain(packaged)\n            .chain(settings)\n",
+    replace: "            .chain(packaged)\n",
+    tests: ["test/rust-js-test-runners.test.ts", "test/compiles.test.ts", "-t", "alone is the next run|a file's record of its build"],
+  },
 ];

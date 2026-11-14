@@ -43,8 +43,9 @@ pub struct OutputPlan {
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     /// What the build read besides the crate, once planned: the app's
-    /// Prettier configs (ADR 0381), `bound`, and a library's `package.json`
-    /// and its entries (ADR 1008), which Cargo is told of.
+    /// Prettier configs (ADR 0381), `bound`, a library's `package.json`
+    /// and its entries (ADR 1008), and the `Cargo.toml` its settings are of
+    /// (#1751), which Cargo is told of, and a file's record of its build.
     pub read: Vec<PathBuf>,
     /// The JS files of the program's own the crate's bindings import, and
     /// what they import, which lowering read (`LocalJs`, ADR 0031,
@@ -956,8 +957,15 @@ impl OutputPlan {
         }
 
         let (mut artifacts, configs) = self.generate(lowered.modules, &lowered.sources, &lowered.tests)?;
+        // And the `Cargo.toml` its settings are of, whose
+        // `[package.metadata.rust-js]` says how its JS is made, its tests'
+        // runner too: what Cargo's record of a crate it builds names, so a
+        // change of it alone builds it again, as a file's own record does
+        // (ADR 1099, #1751).
+        let settings = self.settings.manifest.as_deref().map(absolute).transpose()?;
         self.read = (configs.into_iter().chain(self.bound.iter().cloned()))
             .chain(packaged)
+            .chain(settings)
             .collect();
         artifacts.extend(metadata);
         for artifact in &mut artifacts {

@@ -256,3 +256,26 @@ coverage list is. `test/compiles.test.ts` holds both the record naming
 them and a compile given again writing them again. Mutation
 `reports-unrecorded`, caught.
 
+
+## Amendment: Cargo's record of a build names the `Cargo.toml` its settings are of (2026-11-14, #1751)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior is preserved. A test's outcome is its runner's.
+
+`rust-js test --package scene-core` ran its tests by `node:test` again
+after its `Cargo.toml` alone said `[package.metadata.rust-js.test] runner
+= "bun"`: Cargo builds a crate again where a file its record of the build
+names changes, and builds it again for a change of its manifest's
+dependencies or features, but not of its `package.metadata`; and the
+record rust-js gives Cargo (`cargo::dep_info`, of the plan's `read`)
+named the crate's sources, its Prettier configs, its own JS and its
+package, not the `Cargo.toml` its settings are read from. A file's own
+record named it, main.rs adding it apart.
+
+The plan's `read`, what the build read besides the crate, names the
+settings' `Cargo.toml` (`settings.manifest`, the one place they're read
+from): both records name it from there, and main.rs adds it no more. A
+change of any key of `[package.metadata.rust-js]`, its test runner or its
+hooks, builds the crate again. `test/rust-js-test-runners.test.ts` runs a
+crate by node, names bun in its `Cargo.toml` alone, and its next run is
+bun's, its tests importing `bun:test`; mutation `settings-manifest-unread`.
