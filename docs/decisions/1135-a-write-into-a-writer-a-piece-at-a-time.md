@@ -590,6 +590,15 @@ go.
         a derived `Debug` nothing makes a `dyn` of compiles again: the
         Canvas app's `Viewport` and `Region`, and the pair
         derived_debug_beside_a_library_that_writes_a_dyn.
+      - Amended later, #1778: not the `dyn`s a derived `Debug` makes of
+        its fields, which only std's `debug_struct_fields_finish` is
+        given and which never leave it, as `makes_dyns` already left them
+        out. The scan of each coercion read them, so a struct held by
+        another's field, `Nested { region: Region }`, needed `fmtInto` it
+        can't give, and was refused. A struct made a `dyn` by code of the
+        crate's own still gives what its fields hold (`reach`). The pair
+        gains `Nested`, written directly and by generic code; mutation
+        derived-debug-dyn-given-to-a-library, caught.
 
     Measured: the corpus, 2,499 cases, all as native; 6 snapshots of the
     `writer_sink_` cases take `$writeBy`, 15 cases' library form is their

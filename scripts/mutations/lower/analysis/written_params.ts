@@ -7,6 +7,15 @@ const pairs = ["test/writer-sink.test.ts", "-t", "library"];
 
 export const mutations: Mutation[] = [
   {
+    name: "derived-debug-dyn-given-to-a-library",
+    breaks:
+      "a derived `Debug`'s `dyn` of its field, which only std's builder is given, is taken for one a library writing a `dyn` it's given may write, so `Nested { region }`'s `Region` is refused (#1778)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "        for body in all_bodies.iter().filter(|body| !derived(body)) {\n",
+    replace: "        for body in all_bodies.iter() {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: derived_debug_beside_a_library_that_writes_a_dyn"],
+  },
+  {
     name: "written-params-calls-unfollowed",
     breaks: "a generic writer given on to another, `passed_on`'s `T` to `shown_once`, is given a dictionary with no `fmtInto`, which it calls",
     file: "src/lower/analysis/written_params.rs",

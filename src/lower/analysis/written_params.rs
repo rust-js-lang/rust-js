@@ -280,9 +280,11 @@ pub(super) fn written_params<'tcx>(
     // Where a `dyn` is written so, here or by a library given one, each
     // value the crate makes a `dyn` of: its pair's dictionary writes it,
     // the one way a value of the crate's reaches a library's `dyn` (#1772).
+    // Not a derived `Debug`'s, whose `dyn`s of its fields only std's builder
+    // is given, as `makes_dyns` leaves them out (#1778).
     found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();
     if found.dyn_written {
-        for body in all_bodies {
+        for body in all_bodies.iter().filter(|body| !derived(body)) {
             let owner = tcx.typeck_root_def_id(body.def_id);
             for expr in body.thir.exprs.iter() {
                 if let ExprKind::PointerCoercion {
