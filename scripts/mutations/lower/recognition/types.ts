@@ -574,4 +574,12 @@ export const mutations: Mutation[] = [
     replace: "has_aliases(&ty) {",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
   },
+  {
+    name: "row-view-of-any-call",
+    breaks: "any call is taken as only a view of a table's rows, so `board.fill(Vec::new())` leaves `board[0][c]` unchecked (#1849)",
+    file: "src/lower/recognition/types.rs",
+    find: "        return of.is_slice() && matches!(tcx.item_name(def_id).as_str(), \"iter\" | \"iter_mut\");\n",
+    replace: "        return true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_resized_unseen\\.rs$"],
+  },
 ];

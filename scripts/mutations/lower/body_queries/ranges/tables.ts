@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a table whose loop truncates a row, `row.truncate(1)`, is taken to keep its rows' lengths, so a read past its end reads `undefined` where Rust panics (#372)",
     file: "src/lower/body_queries/ranges/tables.rs",
-    find: "            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),\n",
+    find: "            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| resizes(thir[arg].ty)) && !safe(*fun),\n",
     replace: "            ExprKind::Call { .. } => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
   },
@@ -81,5 +81,21 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Assign { lhs, .. } => is_row(thir[*lhs].ty),\n",
     replace: "            ExprKind::Assign { .. } => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+  },
+  {
+    name: "rows-resized-only-by-a-row",
+    breaks: "only a row's `&mut` given to a call is taken to resize one, so `board.fill(Vec::new())` and an `IterMut` given to a function leave `board[0][c]` unchecked, reading past an emptied row where Rust panics (#1849)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| resizes(thir[arg].ty)) && !safe(*fun),\n",
+    replace: "            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_resized_unseen\\.rs$"],
+  },
+  {
+    name: "rows-held-by-a-struct-unseen",
+    breaks: "a struct of the crate's made holding an `IterMut` of the rows isn't taken to resize one, so its method's `row.clear()` leaves `board[0][c]` unchecked (#1849)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "                adt.fields.iter().any(|f| resizes(thir[f.expr].ty))\n",
+    replace: "                false\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_resized_unseen\\.rs$"],
   },
 ];

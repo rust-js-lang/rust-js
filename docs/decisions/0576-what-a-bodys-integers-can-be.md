@@ -446,3 +446,33 @@ A `remove(i)` the code before it doesn't show in bounds was `$removeAt`;
 it's `if (i >= v.length) $removeOutOfBounds(v, i);` where it's called,
 then JS's own `v.splice(i, 1)`, its panic std's as before
 ([1141](1141-checked-where-called.md)).
+
+## Amendment: a row resized unseen (#1849, 2026-11-15)
+
+A table's rows, `vec![vec![1; width]; height]`, were taken to keep their
+length where no call was given a row's `&mut` (`rows_kept`, #370). A row
+also resizes through the table's slice, `board.fill(Vec::new())`, or
+through an `IterMut` of the rows given to a function or held by a struct
+of the crate's, and none of these gives a call a `&mut Vec`. Rust then
+panics at `board[0][c]` past an emptied row, where the JS read past its
+end. Now a table keeps its rows only where no call but a view's, an
+index's or a length's is given what may reach a row's `&mut`
+(`may_resize`): a `&mut` or a raw pointer of what holds a row, the
+table's and its slice's among them, or a value that may hold one unseen,
+an iterator's, a struct's of the crate's, a type parameter's or a `dyn`'s.
+Nor where a struct of the crate's is made holding one. A view is a slice's
+`iter()` or `iter_mut()`, or a method of `Iterator` or `IntoIterator` on
+std's own iterators (`row_view`). It gives each row's `&mut`, which is
+judged where it's used, so `for row in board.iter_mut()` writing cells
+still keeps the rows. A row, or a table owned, isn't one that may reach a
+`&mut`, nor is what's behind a shared reference to what has no cell.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where the rows are
+kept. Elsewhere the check stays, with Rust's message.
+`table_rows_resized_unseen.rs` runs against native Rust each way a row
+may resize: `fill`, an `IterMut` given to a function, one a struct holds,
+a row written whole by an index or `index_mut`, swapped out and taken.
+Each panics as Rust does. A `swap` of two rows keeps their lengths.
+Mutations `rows-resized-only-by-a-row`, `rows-held-by-a-struct-unseen`
+(`ranges/tables.ts`) and `row-view-of-any-call` (`recognition/types.ts`)
+are each caught.

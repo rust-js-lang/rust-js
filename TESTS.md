@@ -3,13 +3,15 @@
 How these suites find wrong answers, and what each has found, is in
 [docs/finding-wrong-answers.md](docs/finding-wrong-answers.md).
 
-Corpus recount on 2026-11-15: 2,547 Rust programs. The new
+Corpus recount on 2026-11-15: 2,552 Rust programs. The new
 `ordering_predicates.rs` covers all six predicates, function values, receiver
 evaluation and UTF-16 ordering against native Rust in both builds (#1827).
 The new `refcell_guard_bounds.rs` covers each way a `RefCell`'s guard's
 length is forgotten, each index checked as Rust panics (#1815).
 The new `map_key_changed_between_test_and_index.rs` covers keys whose lookup a
 call may change, each `m[k]` checked as Rust panics (#1844).
+The new `table_rows_resized_unseen.rs` covers each way a table's row may
+resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.

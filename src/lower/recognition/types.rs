@@ -1183,6 +1183,24 @@ pub(in crate::lower) fn vec_view<'tcx>(
     }
 }
 
+/// Whether a call only makes or steps a view of a table's rows, changing
+/// none: a slice's `iter()` and `iter_mut()`, and the `Iterator` and
+/// `IntoIterator` methods of std's own iterators (#1849). What it gives, a
+/// row's `&mut`, is judged where it's used.
+pub(in crate::lower) fn row_view<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    if let Some(impl_) = tcx.inherent_impl_of_assoc(def_id) {
+        let of = tcx.type_of(impl_).instantiate_identity().skip_normalization();
+        return of.is_slice() && matches!(tcx.item_name(def_id).as_str(), "iter" | "iter_mut");
+    }
+    let Some(trait_) = tcx.trait_of_assoc(def_id) else {
+        return false;
+    };
+    let iterating = is_std_def(tcx, trait_, StdItem::Iterator) || is_std_def(tcx, trait_, StdItem::IntoIterator);
+    iterating
+        && (args.types().next())
+            .is_some_and(|of| matches!(of.peel_refs().kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did())))
+}
+
 /// A bound of a range, `RangeBounds`', of what the range is.
 #[derive(Clone, Copy)]
 pub(crate) enum RangeBound {

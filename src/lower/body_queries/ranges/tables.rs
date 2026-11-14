@@ -4,9 +4,9 @@
 
 use super::known::{ITEM, Known, Range};
 use super::{Slice, Walk};
-use crate::lower::body_queries::strip;
+use crate::lower::body_queries::{LangItem, strip};
 use crate::lower::fn_def;
-use crate::lower::recognition::{SliceLength, is_vec_from_elem, slice_length, vec_view};
+use crate::lower::recognition::{SliceLength, StdItem, is_std_def, is_vec_from_elem, row_view, slice_length, vec_view};
 use rustc_middle::mir::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -51,8 +51,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// Whether a table lent as a view of its rows, `board.iter_mut()`'s
     /// `&mut *board`, keeps its rows' lengths: where nothing the body
     /// does can resize a row of its type, no call but a view's, an index's
-    /// or a length's given a `&mut` of one, no closure holding one or given
-    /// one, and no row assigned whole (#372, #1076).
+    /// or a length's given what may reach a row's `&mut` (`may_resize`):
+    /// a row's `&mut`, the table's or its slice's, `board.fill(..)`, or an
+    /// `IterMut` of its rows given to a function (#1849); no struct of the
+    /// crate's made holding one; no closure holding one or given one; and
+    /// no row assigned whole (#372, #1076).
     pub(super) fn rows_kept(&self, table: ExprId) -> bool {
         let thir = self.thir;
         let ty::Adt(_, args) = thir[strip(thir, table)].ty.peel_refs().kind() else {
@@ -64,12 +67,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let safe = |fun: ExprId| {
             fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
                 vec_view(self.tcx, def_id, generic_args).is_some()
+                    || row_view(self.tcx, def_id, generic_args)
                     || matches!(
                         slice_length(self.tcx, def_id, generic_args),
                         Some(SliceLength::Len | SliceLength::IsEmpty | SliceLength::Index)
                     )
             })
         };
+        let resizes = |t: Ty<'tcx>| self.may_resize(t, row);
         // What's called, which a call's own arguments say of.
         let called: Vec<ExprId> = (thir.exprs.iter())
             .filter_map(|e| match e.kind {
@@ -78,7 +83,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             })
             .collect();
         !(thir.exprs.iter_enumerated()).any(|(id, e)| match &e.kind {
-            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),
+            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| resizes(thir[arg].ty)) && !safe(*fun),
+            // A struct of the crate's made holding what may reach a row's
+            // `&mut`, whose methods may resize it (#1849).
+            ExprKind::Adt(adt) if !crate::lower::recognition::is_std_crate(self.tcx, adt.adt_def.did()) => {
+                adt.fields.iter().any(|f| resizes(thir[f.expr].ty))
+            }
             // A closure that holds a row, or is given one `&mut`, of its
             // type, which says both: what it captures, and its signature's,
             // `board.iter_mut().for_each(|row| row.pop())` (#1076).
@@ -92,6 +102,33 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }
             _ => false,
         })
+    }
+
+    /// Whether a value of `ty` may reach a `row`'s `&mut`, through which a
+    /// row may resize (#1849): a `&mut` or a raw pointer of what holds a
+    /// row, the table's or its slice's among them, or a value that may hold
+    /// one unseen, an iterator's, a struct's of the crate's, a type
+    /// parameter's or a `dyn`'s. Not a row or a table owned, nor what's
+    /// behind a shared reference to what has no cell, which can't change.
+    fn may_resize(&self, ty: Ty<'tcx>, row: Ty<'tcx>) -> bool {
+        let tcx = self.tcx;
+        if !ty.walk().any(|part| part.as_type() == Some(row)) || ty == row {
+            return false;
+        }
+        match *ty.kind() {
+            ty::Ref(_, to, Mutability::Not) => !to.is_freeze(tcx, self.typing_env) || self.may_resize(to, row),
+            ty::Adt(adt, args)
+                if ty.is_box()
+                    || is_std_def(tcx, adt.did(), StdItem::Vec)
+                    || is_std_def(tcx, adt.did(), StdItem::VecDeque)
+                    || tcx.is_lang_item(adt.did(), LangItem::Option) =>
+            {
+                args.types().any(|t| self.may_resize(t, row))
+            }
+            ty::Tuple(parts) => parts.iter().any(|t| self.may_resize(t, row)),
+            ty::Array(item, _) | ty::Slice(item) => self.may_resize(item, row),
+            _ => true,
+        }
     }
 
     /// The rows of a table `items` is one of, `board[r]`: `([ITEM], board)`,
