@@ -366,6 +366,42 @@ pub fn Panel() -> JSX::Element {
   expect([failed.exitCode === 0, failed.stderr.toString().includes("is not text")], failed.stderr.toString()).toEqual([false, true]);
 });
 
+// A vendor's prefixed property is React's, as csstype names it, its case
+// too, and takes what csstype types it as: `WebkitLineClamp` a number,
+// `msUserSelect` text only (#1806).
+test("JSX styles take the vendors' prefixed properties csstype names", async () => {
+  const { dir, args } = compile(`use react::{CSSProperties, JSX, jsx};
+pub fn Poster() -> JSX::Element {
+    jsx! {
+        <div style={CSSProperties::new().webkit_mask_image("none").moz_appearance("none").ms_user_select("none").o_animation_duration("1s").webkit_line_clamp(2)} />
+    }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain('WebkitMaskImage: "none",\n        MozAppearance: "none",\n        msUserSelect: "none",\n        OAnimationDuration: "1s",\n        WebkitLineClamp: 2,');
+  const { Poster } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Poster())).toBe('<div style="-webkit-mask-image:none;-moz-appearance:none;-ms-user-select:none;-o-animation-duration:1s;-webkit-line-clamp:2"></div>');
+  const refused = compile(`use react::{CSSProperties, JSX, jsx};\npub fn Poster() -> JSX::Element {\n    jsx! { <div style={CSSProperties::new().ms_user_select(3)} /> }\n}\n`);
+  const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString().includes("is not text")], failed.stderr.toString()).toEqual([false, true]);
+});
+
+// Codex's regression of #1806, from the port that found it: the element's
+// `style` is React's object of csstype's keys, rendered as React renders
+// the same object given natively.
+test("a vendor-prefixed style is the object React is given natively", async () => {
+  const { dir, args } = compile(`use react::{CSSProperties, JSX, jsx};
+pub fn Panel() -> JSX::Element {
+    jsx! { <div style={CSSProperties::new().webkit_mask_image("none").moz_appearance("none").ms_user_select("none").o_animation_duration("1s")} /> }
+}
+`);
+  run(args);
+  const { Panel } = await import(join(dir, "lib.jsx"));
+  const style = { WebkitMaskImage: "none", MozAppearance: "none", msUserSelect: "none", OAnimationDuration: "1s" };
+  expect(Panel().props.style).toEqual(style);
+  expect(renderToStaticMarkup(Panel())).toBe(renderToStaticMarkup(createElement("div", { style })));
+});
+
 // A style spreads another over its own, as react.dev's console box writes
 // `style={{width, height, ...customStyles}}`; `None` spreads nothing.
 test("JSX styles spread another style over their own", async () => {

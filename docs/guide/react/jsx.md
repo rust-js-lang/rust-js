@@ -151,7 +151,10 @@ error: rust-js: `aria_label` is `aria-label` in JSX, as React names it
   or a `bool`.
 - **`style`** is a `CSSProperties`, built by a method for each CSS
   property, typed as csstype types them: `CSSProperties::new().color("red").font_size(12)`
-  is `{{ color: "red", fontSize: 12 }}`. `.set("--gap", "4px")` sets a
+  is `{{ color: "red", fontSize: 12 }}`. A vendor's prefixed property is
+  csstype's, its case React's: `.webkit_mask_image("none")` is
+  `{{ WebkitMaskImage: "none" }}`, `.ms_user_select("none")`
+  `{{ msUserSelect: "none" }}`. `.set("--gap", "4px")` sets a
   custom property, and `.spread(other)` another style's properties over
   these, `{{ width, ...customStyles }}`. A style kept elsewhere is passed by
   reference, `style={&style}`, or as an `Option` of one.

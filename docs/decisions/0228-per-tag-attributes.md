@@ -97,3 +97,18 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
   an `HTMLTableCellElement`, so each takes the other's `scope`.
 - **A form's `action` and a button's `formAction`**, written by hand, are
   still every tag's.
+
+## Amendment (2026-11-14): the vendors' prefixed CSS properties, of csstype (#1806)
+
+`CSSProperties`' methods were W3C's properties alone, @webref/css's, its
+prefixed names left out, so `.webkit_mask_image("none")` was rustc's
+E0599 where React takes `{{ WebkitMaskImage: "none" }}`. React's
+`CSSProperties` is csstype's `Properties`, its vendors' and its obsolete
+ones too, so the generator adds each property csstype names of a vendor,
+`Webkit`, `Moz`, `Khtml`, `O` or `ms`, from the interfaces it already reads
+for what each takes: `webkit_mask_image`, `moz_appearance`,
+`ms_user_select`, `o_animation_duration`, 326 of them, each by csstype's
+key, its case React's, `msUserSelect`, and typed as csstype types it,
+`webkit_line_clamp(2)` a number. Held by `test/jsx-events.test.ts`'s
+"JSX styles take the vendors' prefixed properties csstype names".
+

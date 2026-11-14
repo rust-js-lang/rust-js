@@ -8407,7 +8407,8 @@ pub mod html {
 
 /// CSS properties: `background_color` is `backgroundColor`. A number is in
 /// pixels where CSS needs a unit, as React makes it. Each takes what
-/// csstype types it as (ADR 0228).
+/// csstype types it as (ADR 0228). A vendor's, `webkit_mask_image`, is
+/// `WebkitMaskImage`, as csstype names it (#1806).
 impl CSSProperties {
     /// `accent-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accentColor")]
@@ -12912,6 +12913,1962 @@ impl CSSProperties {
     /// `zoom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop zoom")]
     pub fn zoom(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxAlign`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxAlign")]
+    pub fn khtml_box_align(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxDirection")]
+    pub fn khtml_box_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxFlex`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxFlex")]
+    pub fn khtml_box_flex(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxFlexGroup`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxFlexGroup")]
+    pub fn khtml_box_flex_group(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxLines`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxLines")]
+    pub fn khtml_box_lines(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxOrdinalGroup`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxOrdinalGroup")]
+    pub fn khtml_box_ordinal_group(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxOrient`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxOrient")]
+    pub fn khtml_box_orient(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlBoxPack`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlBoxPack")]
+    pub fn khtml_box_pack(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlLineBreak`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlLineBreak")]
+    pub fn khtml_line_break(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlOpacity`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlOpacity")]
+    pub fn khtml_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `KhtmlUserSelect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop KhtmlUserSelect")]
+    pub fn khtml_user_select(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimation`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimation")]
+    pub fn moz_animation(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationDelay")]
+    pub fn moz_animation_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationDirection")]
+    pub fn moz_animation_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationDuration")]
+    pub fn moz_animation_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationFillMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationFillMode")]
+    pub fn moz_animation_fill_mode(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationIterationCount`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationIterationCount")]
+    pub fn moz_animation_iteration_count(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationName`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationName")]
+    pub fn moz_animation_name(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationPlayState`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationPlayState")]
+    pub fn moz_animation_play_state(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAnimationTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAnimationTimingFunction")]
+    pub fn moz_animation_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozAppearance`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozAppearance")]
+    pub fn moz_appearance(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBackfaceVisibility`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBackfaceVisibility")]
+    pub fn moz_backface_visibility(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBackgroundClip`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBackgroundClip")]
+    pub fn moz_background_clip(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBackgroundOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBackgroundOrigin")]
+    pub fn moz_background_origin(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBackgroundSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBackgroundSize")]
+    pub fn moz_background_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBinding`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBinding")]
+    pub fn moz_binding(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderBottomColors`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderBottomColors")]
+    pub fn moz_border_bottom_colors(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderEndColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderEndColor")]
+    pub fn moz_border_end_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderEndStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderEndStyle")]
+    pub fn moz_border_end_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderEndWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderEndWidth")]
+    pub fn moz_border_end_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderImage`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderImage")]
+    pub fn moz_border_image(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderLeftColors`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderLeftColors")]
+    pub fn moz_border_left_colors(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRadius")]
+    pub fn moz_border_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRadiusBottomleft`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRadiusBottomleft")]
+    pub fn moz_border_radius_bottomleft(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRadiusBottomright`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRadiusBottomright")]
+    pub fn moz_border_radius_bottomright(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRadiusTopleft`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRadiusTopleft")]
+    pub fn moz_border_radius_topleft(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRadiusTopright`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRadiusTopright")]
+    pub fn moz_border_radius_topright(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderRightColors`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderRightColors")]
+    pub fn moz_border_right_colors(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderStartColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderStartColor")]
+    pub fn moz_border_start_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderStartStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderStartStyle")]
+    pub fn moz_border_start_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBorderTopColors`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBorderTopColors")]
+    pub fn moz_border_top_colors(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxAlign`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxAlign")]
+    pub fn moz_box_align(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxDirection")]
+    pub fn moz_box_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxFlex`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxFlex")]
+    pub fn moz_box_flex(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxOrdinalGroup`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxOrdinalGroup")]
+    pub fn moz_box_ordinal_group(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxOrient`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxOrient")]
+    pub fn moz_box_orient(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxPack`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxPack")]
+    pub fn moz_box_pack(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxShadow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxShadow")]
+    pub fn moz_box_shadow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozBoxSizing`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozBoxSizing")]
+    pub fn moz_box_sizing(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnCount`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnCount")]
+    pub fn moz_column_count(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnFill`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnFill")]
+    pub fn moz_column_fill(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnRule`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnRule")]
+    pub fn moz_column_rule(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnRuleColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnRuleColor")]
+    pub fn moz_column_rule_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnRuleStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnRuleStyle")]
+    pub fn moz_column_rule_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnRuleWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnRuleWidth")]
+    pub fn moz_column_rule_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumnWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumnWidth")]
+    pub fn moz_column_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozColumns`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozColumns")]
+    pub fn moz_columns(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozContextProperties`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozContextProperties")]
+    pub fn moz_context_properties(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozFloatEdge`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozFloatEdge")]
+    pub fn moz_float_edge(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozFontFeatureSettings`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozFontFeatureSettings")]
+    pub fn moz_font_feature_settings(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozFontLanguageOverride`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozFontLanguageOverride")]
+    pub fn moz_font_language_override(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozForceBrokenImageIcon`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozForceBrokenImageIcon")]
+    pub fn moz_force_broken_image_icon(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozHyphens`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozHyphens")]
+    pub fn moz_hyphens(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozMarginEnd`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozMarginEnd")]
+    pub fn moz_margin_end(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozMarginStart`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozMarginStart")]
+    pub fn moz_margin_start(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOpacity`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOpacity")]
+    pub fn moz_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOrient`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOrient")]
+    pub fn moz_orient(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOsxFontSmoothing`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOsxFontSmoothing")]
+    pub fn moz_osx_font_smoothing(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutline`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutline")]
+    pub fn moz_outline(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineColor")]
+    pub fn moz_outline_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineRadius")]
+    pub fn moz_outline_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineRadiusBottomleft`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineRadiusBottomleft")]
+    pub fn moz_outline_radius_bottomleft(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineRadiusBottomright`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineRadiusBottomright")]
+    pub fn moz_outline_radius_bottomright(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineRadiusTopleft`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineRadiusTopleft")]
+    pub fn moz_outline_radius_topleft(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineRadiusTopright`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineRadiusTopright")]
+    pub fn moz_outline_radius_topright(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineStyle")]
+    pub fn moz_outline_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozOutlineWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozOutlineWidth")]
+    pub fn moz_outline_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozPaddingEnd`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozPaddingEnd")]
+    pub fn moz_padding_end(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozPaddingStart`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozPaddingStart")]
+    pub fn moz_padding_start(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozPerspective`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozPerspective")]
+    pub fn moz_perspective(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozPerspectiveOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozPerspectiveOrigin")]
+    pub fn moz_perspective_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozStackSizing`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozStackSizing")]
+    pub fn moz_stack_sizing(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTabSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTabSize")]
+    pub fn moz_tab_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextAlignLast`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextAlignLast")]
+    pub fn moz_text_align_last(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextBlink`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextBlink")]
+    pub fn moz_text_blink(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextDecorationColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextDecorationColor")]
+    pub fn moz_text_decoration_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextDecorationLine`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextDecorationLine")]
+    pub fn moz_text_decoration_line(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextDecorationStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextDecorationStyle")]
+    pub fn moz_text_decoration_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTextSizeAdjust`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTextSizeAdjust")]
+    pub fn moz_text_size_adjust(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransform`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransform")]
+    pub fn moz_transform(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransformOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransformOrigin")]
+    pub fn moz_transform_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransformStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransformStyle")]
+    pub fn moz_transform_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransition")]
+    pub fn moz_transition(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransitionDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransitionDelay")]
+    pub fn moz_transition_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransitionDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransitionDuration")]
+    pub fn moz_transition_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransitionProperty`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransitionProperty")]
+    pub fn moz_transition_property(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozTransitionTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozTransitionTimingFunction")]
+    pub fn moz_transition_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozUserFocus`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozUserFocus")]
+    pub fn moz_user_focus(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozUserInput`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozUserInput")]
+    pub fn moz_user_input(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozUserModify`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozUserModify")]
+    pub fn moz_user_modify(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozUserSelect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozUserSelect")]
+    pub fn moz_user_select(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozWindowDragging`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozWindowDragging")]
+    pub fn moz_window_dragging(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `MozWindowShadow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop MozWindowShadow")]
+    pub fn moz_window_shadow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimation`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimation")]
+    pub fn o_animation(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationDelay")]
+    pub fn o_animation_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationDirection")]
+    pub fn o_animation_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationDuration")]
+    pub fn o_animation_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationFillMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationFillMode")]
+    pub fn o_animation_fill_mode(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationIterationCount`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationIterationCount")]
+    pub fn o_animation_iteration_count(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationName`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationName")]
+    pub fn o_animation_name(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationPlayState`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationPlayState")]
+    pub fn o_animation_play_state(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OAnimationTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OAnimationTimingFunction")]
+    pub fn o_animation_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OBackgroundSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OBackgroundSize")]
+    pub fn o_background_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OBorderImage`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OBorderImage")]
+    pub fn o_border_image(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OObjectFit`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OObjectFit")]
+    pub fn o_object_fit(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OObjectPosition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OObjectPosition")]
+    pub fn o_object_position(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTabSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTabSize")]
+    pub fn o_tab_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTextOverflow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTextOverflow")]
+    pub fn o_text_overflow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransform`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransform")]
+    pub fn o_transform(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransformOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransformOrigin")]
+    pub fn o_transform_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransition")]
+    pub fn o_transition(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransitionDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransitionDelay")]
+    pub fn o_transition_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransitionDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransitionDuration")]
+    pub fn o_transition_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransitionProperty`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransitionProperty")]
+    pub fn o_transition_property(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `OTransitionTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop OTransitionTimingFunction")]
+    pub fn o_transition_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAlignContent`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAlignContent")]
+    pub fn webkit_align_content(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAlignItems`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAlignItems")]
+    pub fn webkit_align_items(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAlignSelf`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAlignSelf")]
+    pub fn webkit_align_self(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimation`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimation")]
+    pub fn webkit_animation(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationDelay")]
+    pub fn webkit_animation_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationDirection")]
+    pub fn webkit_animation_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationDuration")]
+    pub fn webkit_animation_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationFillMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationFillMode")]
+    pub fn webkit_animation_fill_mode(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationIterationCount`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationIterationCount")]
+    pub fn webkit_animation_iteration_count(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationName`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationName")]
+    pub fn webkit_animation_name(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationPlayState`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationPlayState")]
+    pub fn webkit_animation_play_state(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAnimationTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAnimationTimingFunction")]
+    pub fn webkit_animation_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitAppearance`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitAppearance")]
+    pub fn webkit_appearance(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBackdropFilter`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBackdropFilter")]
+    pub fn webkit_backdrop_filter(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBackfaceVisibility`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBackfaceVisibility")]
+    pub fn webkit_backface_visibility(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBackgroundClip`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBackgroundClip")]
+    pub fn webkit_background_clip(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBackgroundOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBackgroundOrigin")]
+    pub fn webkit_background_origin(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBackgroundSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBackgroundSize")]
+    pub fn webkit_background_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBefore`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBefore")]
+    pub fn webkit_border_before(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBeforeColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBeforeColor")]
+    pub fn webkit_border_before_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBeforeStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBeforeStyle")]
+    pub fn webkit_border_before_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBeforeWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBeforeWidth")]
+    pub fn webkit_border_before_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBottomLeftRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBottomLeftRadius")]
+    pub fn webkit_border_bottom_left_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderBottomRightRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderBottomRightRadius")]
+    pub fn webkit_border_bottom_right_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderImage`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderImage")]
+    pub fn webkit_border_image(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderImageSlice`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderImageSlice")]
+    pub fn webkit_border_image_slice(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderRadius")]
+    pub fn webkit_border_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderTopLeftRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderTopLeftRadius")]
+    pub fn webkit_border_top_left_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBorderTopRightRadius`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBorderTopRightRadius")]
+    pub fn webkit_border_top_right_radius(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxAlign`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxAlign")]
+    pub fn webkit_box_align(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxDecorationBreak`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxDecorationBreak")]
+    pub fn webkit_box_decoration_break(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxDirection")]
+    pub fn webkit_box_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxFlex`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxFlex")]
+    pub fn webkit_box_flex(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxFlexGroup`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxFlexGroup")]
+    pub fn webkit_box_flex_group(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxLines`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxLines")]
+    pub fn webkit_box_lines(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxOrdinalGroup`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxOrdinalGroup")]
+    pub fn webkit_box_ordinal_group(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxOrient`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxOrient")]
+    pub fn webkit_box_orient(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxPack`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxPack")]
+    pub fn webkit_box_pack(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxReflect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxReflect")]
+    pub fn webkit_box_reflect(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxShadow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxShadow")]
+    pub fn webkit_box_shadow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitBoxSizing`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitBoxSizing")]
+    pub fn webkit_box_sizing(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitClipPath`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitClipPath")]
+    pub fn webkit_clip_path(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnCount`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnCount")]
+    pub fn webkit_column_count(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnFill`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnFill")]
+    pub fn webkit_column_fill(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnRule`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnRule")]
+    pub fn webkit_column_rule(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnRuleColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnRuleColor")]
+    pub fn webkit_column_rule_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnRuleStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnRuleStyle")]
+    pub fn webkit_column_rule_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnRuleWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnRuleWidth")]
+    pub fn webkit_column_rule_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnSpan`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnSpan")]
+    pub fn webkit_column_span(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumnWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumnWidth")]
+    pub fn webkit_column_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitColumns`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitColumns")]
+    pub fn webkit_columns(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFilter`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFilter")]
+    pub fn webkit_filter(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlex`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlex")]
+    pub fn webkit_flex(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexBasis`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexBasis")]
+    pub fn webkit_flex_basis(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexDirection")]
+    pub fn webkit_flex_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexFlow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexFlow")]
+    pub fn webkit_flex_flow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexGrow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexGrow")]
+    pub fn webkit_flex_grow(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexShrink`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexShrink")]
+    pub fn webkit_flex_shrink(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFlexWrap`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFlexWrap")]
+    pub fn webkit_flex_wrap(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFontFeatureSettings`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFontFeatureSettings")]
+    pub fn webkit_font_feature_settings(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFontKerning`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFontKerning")]
+    pub fn webkit_font_kerning(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFontSmoothing`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFontSmoothing")]
+    pub fn webkit_font_smoothing(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitFontVariantLigatures`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitFontVariantLigatures")]
+    pub fn webkit_font_variant_ligatures(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitHyphenateCharacter`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitHyphenateCharacter")]
+    pub fn webkit_hyphenate_character(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitHyphens`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitHyphens")]
+    pub fn webkit_hyphens(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitInitialLetter`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitInitialLetter")]
+    pub fn webkit_initial_letter(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitJustifyContent`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitJustifyContent")]
+    pub fn webkit_justify_content(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitLineBreak`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitLineBreak")]
+    pub fn webkit_line_break(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitLineClamp`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitLineClamp")]
+    pub fn webkit_line_clamp(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitLogicalHeight`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitLogicalHeight")]
+    pub fn webkit_logical_height(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitLogicalWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitLogicalWidth")]
+    pub fn webkit_logical_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMarginEnd`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMarginEnd")]
+    pub fn webkit_margin_end(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMarginStart`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMarginStart")]
+    pub fn webkit_margin_start(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMask`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMask")]
+    pub fn webkit_mask(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskAttachment`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskAttachment")]
+    pub fn webkit_mask_attachment(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImage`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImage")]
+    pub fn webkit_mask_box_image(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImageOutset`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImageOutset")]
+    pub fn webkit_mask_box_image_outset(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImageRepeat`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImageRepeat")]
+    pub fn webkit_mask_box_image_repeat(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImageSlice`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImageSlice")]
+    pub fn webkit_mask_box_image_slice(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImageSource`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImageSource")]
+    pub fn webkit_mask_box_image_source(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskBoxImageWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskBoxImageWidth")]
+    pub fn webkit_mask_box_image_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskClip`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskClip")]
+    pub fn webkit_mask_clip(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskComposite`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskComposite")]
+    pub fn webkit_mask_composite(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskImage`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskImage")]
+    pub fn webkit_mask_image(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskOrigin")]
+    pub fn webkit_mask_origin(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskPosition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskPosition")]
+    pub fn webkit_mask_position(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskPositionX`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskPositionX")]
+    pub fn webkit_mask_position_x(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskPositionY`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskPositionY")]
+    pub fn webkit_mask_position_y(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskRepeat`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskRepeat")]
+    pub fn webkit_mask_repeat(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskRepeatX`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskRepeatX")]
+    pub fn webkit_mask_repeat_x(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskRepeatY`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskRepeatY")]
+    pub fn webkit_mask_repeat_y(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaskSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaskSize")]
+    pub fn webkit_mask_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitMaxInlineSize`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitMaxInlineSize")]
+    pub fn webkit_max_inline_size(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitOrder`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitOrder")]
+    pub fn webkit_order(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitOverflowScrolling`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitOverflowScrolling")]
+    pub fn webkit_overflow_scrolling(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitPaddingEnd`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitPaddingEnd")]
+    pub fn webkit_padding_end(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitPaddingStart`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitPaddingStart")]
+    pub fn webkit_padding_start(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitPerspective`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitPerspective")]
+    pub fn webkit_perspective(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitPerspectiveOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitPerspectiveOrigin")]
+    pub fn webkit_perspective_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitPrintColorAdjust`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitPrintColorAdjust")]
+    pub fn webkit_print_color_adjust(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitRubyPosition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitRubyPosition")]
+    pub fn webkit_ruby_position(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitScrollSnapType`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitScrollSnapType")]
+    pub fn webkit_scroll_snap_type(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitShapeMargin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitShapeMargin")]
+    pub fn webkit_shape_margin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTapHighlightColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTapHighlightColor")]
+    pub fn webkit_tap_highlight_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextCombine`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextCombine")]
+    pub fn webkit_text_combine(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextDecorationColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextDecorationColor")]
+    pub fn webkit_text_decoration_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextDecorationLine`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextDecorationLine")]
+    pub fn webkit_text_decoration_line(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextDecorationSkip`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextDecorationSkip")]
+    pub fn webkit_text_decoration_skip(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextDecorationStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextDecorationStyle")]
+    pub fn webkit_text_decoration_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextEmphasis`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextEmphasis")]
+    pub fn webkit_text_emphasis(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextEmphasisColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextEmphasisColor")]
+    pub fn webkit_text_emphasis_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextEmphasisPosition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextEmphasisPosition")]
+    pub fn webkit_text_emphasis_position(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextEmphasisStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextEmphasisStyle")]
+    pub fn webkit_text_emphasis_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextFillColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextFillColor")]
+    pub fn webkit_text_fill_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextOrientation`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextOrientation")]
+    pub fn webkit_text_orientation(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextSizeAdjust`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextSizeAdjust")]
+    pub fn webkit_text_size_adjust(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextStroke`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextStroke")]
+    pub fn webkit_text_stroke(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextStrokeColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextStrokeColor")]
+    pub fn webkit_text_stroke_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextStrokeWidth`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextStrokeWidth")]
+    pub fn webkit_text_stroke_width(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTextUnderlinePosition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTextUnderlinePosition")]
+    pub fn webkit_text_underline_position(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTouchCallout`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTouchCallout")]
+    pub fn webkit_touch_callout(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransform`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransform")]
+    pub fn webkit_transform(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransformOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransformOrigin")]
+    pub fn webkit_transform_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransformStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransformStyle")]
+    pub fn webkit_transform_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransition")]
+    pub fn webkit_transition(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransitionDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransitionDelay")]
+    pub fn webkit_transition_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransitionDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransitionDuration")]
+    pub fn webkit_transition_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransitionProperty`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransitionProperty")]
+    pub fn webkit_transition_property(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitTransitionTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitTransitionTimingFunction")]
+    pub fn webkit_transition_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitUserModify`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitUserModify")]
+    pub fn webkit_user_modify(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitUserSelect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitUserSelect")]
+    pub fn webkit_user_select(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `WebkitWritingMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop WebkitWritingMode")]
+    pub fn webkit_writing_mode(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msAccelerator`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msAccelerator")]
+    pub fn ms_accelerator(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msBlockProgression`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msBlockProgression")]
+    pub fn ms_block_progression(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomChaining`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomChaining")]
+    pub fn ms_content_zoom_chaining(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomLimit`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomLimit")]
+    pub fn ms_content_zoom_limit(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomLimitMax`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomLimitMax")]
+    pub fn ms_content_zoom_limit_max(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomLimitMin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomLimitMin")]
+    pub fn ms_content_zoom_limit_min(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomSnap`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomSnap")]
+    pub fn ms_content_zoom_snap(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomSnapPoints`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomSnapPoints")]
+    pub fn ms_content_zoom_snap_points(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZoomSnapType`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZoomSnapType")]
+    pub fn ms_content_zoom_snap_type(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msContentZooming`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msContentZooming")]
+    pub fn ms_content_zooming(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFilter`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFilter")]
+    pub fn ms_filter(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFlex`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFlex")]
+    pub fn ms_flex(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFlexDirection`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFlexDirection")]
+    pub fn ms_flex_direction(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFlexPositive`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFlexPositive")]
+    pub fn ms_flex_positive(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFlowFrom`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFlowFrom")]
+    pub fn ms_flow_from(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msFlowInto`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msFlowInto")]
+    pub fn ms_flow_into(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msGridColumns`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msGridColumns")]
+    pub fn ms_grid_columns(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msGridRows`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msGridRows")]
+    pub fn ms_grid_rows(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msHighContrastAdjust`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msHighContrastAdjust")]
+    pub fn ms_high_contrast_adjust(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msHyphenateLimitChars`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msHyphenateLimitChars")]
+    pub fn ms_hyphenate_limit_chars(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msHyphenateLimitLines`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msHyphenateLimitLines")]
+    pub fn ms_hyphenate_limit_lines(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msHyphenateLimitZone`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msHyphenateLimitZone")]
+    pub fn ms_hyphenate_limit_zone(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msHyphens`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msHyphens")]
+    pub fn ms_hyphens(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msImeAlign`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msImeAlign")]
+    pub fn ms_ime_align(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msImeMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msImeMode")]
+    pub fn ms_ime_mode(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msLineBreak`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msLineBreak")]
+    pub fn ms_line_break(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msOrder`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msOrder")]
+    pub fn ms_order(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msOverflowStyle`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msOverflowStyle")]
+    pub fn ms_overflow_style(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msOverflowX`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msOverflowX")]
+    pub fn ms_overflow_x(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msOverflowY`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msOverflowY")]
+    pub fn ms_overflow_y(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollChaining`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollChaining")]
+    pub fn ms_scroll_chaining(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollLimit`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollLimit")]
+    pub fn ms_scroll_limit(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollLimitXMax`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollLimitXMax")]
+    pub fn ms_scroll_limit_x_max(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollLimitXMin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollLimitXMin")]
+    pub fn ms_scroll_limit_x_min(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollLimitYMax`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollLimitYMax")]
+    pub fn ms_scroll_limit_y_max(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollLimitYMin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollLimitYMin")]
+    pub fn ms_scroll_limit_y_min(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollRails`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollRails")]
+    pub fn ms_scroll_rails(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollSnapPointsX`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollSnapPointsX")]
+    pub fn ms_scroll_snap_points_x(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollSnapPointsY`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollSnapPointsY")]
+    pub fn ms_scroll_snap_points_y(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollSnapType`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollSnapType")]
+    pub fn ms_scroll_snap_type(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollSnapX`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollSnapX")]
+    pub fn ms_scroll_snap_x(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollSnapY`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollSnapY")]
+    pub fn ms_scroll_snap_y(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollTranslation`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollTranslation")]
+    pub fn ms_scroll_translation(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbar3dlightColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbar3dlightColor")]
+    pub fn ms_scrollbar3dlight_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarArrowColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarArrowColor")]
+    pub fn ms_scrollbar_arrow_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarBaseColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarBaseColor")]
+    pub fn ms_scrollbar_base_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarDarkshadowColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarDarkshadowColor")]
+    pub fn ms_scrollbar_darkshadow_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarFaceColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarFaceColor")]
+    pub fn ms_scrollbar_face_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarHighlightColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarHighlightColor")]
+    pub fn ms_scrollbar_highlight_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarShadowColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarShadowColor")]
+    pub fn ms_scrollbar_shadow_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msScrollbarTrackColor`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msScrollbarTrackColor")]
+    pub fn ms_scrollbar_track_color(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTextAutospace`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTextAutospace")]
+    pub fn ms_text_autospace(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTextCombineHorizontal`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTextCombineHorizontal")]
+    pub fn ms_text_combine_horizontal(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTextOverflow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTextOverflow")]
+    pub fn ms_text_overflow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTouchAction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTouchAction")]
+    pub fn ms_touch_action(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTouchSelect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTouchSelect")]
+    pub fn ms_touch_select(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransform`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransform")]
+    pub fn ms_transform(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransformOrigin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransformOrigin")]
+    pub fn ms_transform_origin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransition`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransition")]
+    pub fn ms_transition(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransitionDelay`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransitionDelay")]
+    pub fn ms_transition_delay(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransitionDuration`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransitionDuration")]
+    pub fn ms_transition_duration(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransitionProperty`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransitionProperty")]
+    pub fn ms_transition_property(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msTransitionTimingFunction`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msTransitionTimingFunction")]
+    pub fn ms_transition_timing_function(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msUserSelect`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msUserSelect")]
+    pub fn ms_user_select(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msWordBreak`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msWordBreak")]
+    pub fn ms_word_break(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msWrapFlow`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msWrapFlow")]
+    pub fn ms_wrap_flow(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msWrapMargin`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msWrapMargin")]
+    pub fn ms_wrap_margin(self, value: impl value::NumberOrString) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msWrapThrough`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msWrapThrough")]
+    pub fn ms_wrap_through(self, value: impl value::Text) -> CSSProperties {
+        unreachable!()
+    }
+
+    /// `msWritingMode`
+    #[cfg_attr(rust_js, rust_js::link_name = "prop msWritingMode")]
+    pub fn ms_writing_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 

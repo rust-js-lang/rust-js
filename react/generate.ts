@@ -455,10 +455,25 @@ for (const d of cssDeclarations) {
     cssTypes.set(m.name, kinds.has("number") ? "impl value::NumberOrString" : "impl value::Text");
   }
 }
-lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it. Each takes what", "/// csstype types it as (ADR 0228).", "impl CSSProperties {");
+// And the vendors' prefixed properties, which W3C's specs don't list, as
+// csstype, which React's types are, names them: `WebkitMaskImage`,
+// `MozAppearance`, `msUserSelect`, `OAnimationDuration` (#1806). Its key is
+// React's, its case too.
+const vendored = /^(?:Webkit|Moz|Khtml|O)[A-Z]|^ms[A-Z]/;
+const vendorProperties = [
+  ...new Set(
+    cssDeclarations
+      .filter((d: any) => d.kind === "interface" && /Properties$/.test(d.name) && !/Hyphen|Fallback/.test(d.name))
+      .flatMap((d: any) => d.members.filter((m: any) => m.kind === "property" && vendored.test(m.name)).map((m: any) => m.name as string)),
+  ),
+].sort();
+lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it. Each takes what", "/// csstype types it as (ADR 0228). A vendor's, `webkit_mask_image`, is", "/// `WebkitMaskImage`, as csstype names it (#1806).", "impl CSSProperties {");
 const styleMethods = new Set(["new", "set"]);
-for (const property of properties) {
-  const camel = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+const named: [string, string][] = [
+  ...properties.map((property): [string, string] => [property, property.replace(/-([a-z])/g, (_, c) => c.toUpperCase())]),
+  ...vendorProperties.map((camel): [string, string] => [camel, camel]),
+];
+for (const [property, camel] of named) {
   const method = snake(camel);
   if (styleMethods.has(method)) continue;
   styleMethods.add(method);
