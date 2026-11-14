@@ -265,14 +265,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter's dictionary's where its impl writes one. The one answer
     /// `fill` and `clone_from_slice` ask (ADR 0507).
     fn clone_over(&mut self, item: ty::Ty<'tcx>, what: &str, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
+        let made_i = self.unspelled("i");
+        let made_items = self.unspelled("items");
         let written = |called: Expr| {
             Expr::arrow(
-                vec!["items".into(), "i".into(), "from".into()],
+                vec![made_items.as_str().into(), made_i.as_str().into(), "from".into()],
                 vec![StmtKind::Expr(called).at(js::Span::NONE)],
             )
         };
         if self.recognition().own_clone_from(item) {
-            let place = Expr::index(Expr::var("items"), Expr::var("i"));
+            let place = Expr::index(Expr::var(&made_items), Expr::var(&made_i));
             let target = match self.handles_mut(item) {
                 true => Expr::handle(place),
                 false => place,
@@ -286,24 +288,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(item) {
             let clone = self.clone_arg(item, span)?;
             let clone_from = self.given_clone_from(item, span)?;
-            let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
+            let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var(&made_items), Expr::var(&made_i)]);
             let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
         }
         // A `Vec`'s, a `VecDeque`'s, a map's, std's own, written in place,
         // where its order of clones and drops is seen: `clone_into`'s
         // (#919, #922).
-        let slot = || Expr::index(Expr::var("items"), Expr::var("i"));
+        let slot = || Expr::index(Expr::var(&made_items), Expr::var(&made_i));
         if let Some(into) = self.clone_into(item, span)? {
             return Ok((None, Some(written(into.call(slot(), Expr::var("from"))))));
         }
         // An `Option`'s: its value's, where both are `Some`, and otherwise
         // a clone written over it, what it held dropped (#922).
-        let pointer = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
+        let pointer = Expr::call(Expr::helper("$ptr"), vec![Expr::var(&made_items), Expr::var(&made_i)]);
         if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var("from"), span)? {
             return Ok((
                 None,
-                Some(Expr::arrow(vec!["items".into(), "i".into(), "from".into()], over)),
+                Some(Expr::arrow(
+                    vec![made_items.as_str().into(), made_i.as_str().into(), "from".into()],
+                    over,
+                )),
             ));
         }
         if self.recognition().reaches_clone_from(item) {
@@ -703,13 +708,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         by_ne: bool,
         span: Span,
     ) -> R<Option<Expr>> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         if item == rhs
             && (self.eq_is_identity(item) || (!self.has_cell_layer(item) && Num::of(item.peel_refs()).is_some()))
         {
             return Ok(None);
         }
         let mut body = Vec::new();
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let (a, b) = (Expr::var(&made_a), Expr::var(&made_b));
         let same = match by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {
             true => Expr::unary(js::UnaryOp::Not, self.ne_value(a, b, item, span, &mut body)?),
             false => self.eq_values(a, b, (item, rhs), span, &mut body)?,
@@ -719,12 +726,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, given) = &same.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
             && let [a, b] = given.as_slice()
-            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == "a" && b == "b")
+            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if *a == made_a && *b == made_b)
         {
             return Ok(Some(*callee.clone()));
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
-        Ok(Some(Expr::arrow(vec!["a".into(), "b".into()], body)))
+        Ok(Some(Expr::arrow(
+            vec![made_a.as_str().into(), made_b.as_str().into()],
+            body,
+        )))
     }
 
     /// `value` where it's read more than once: a variable, or a `const`.
@@ -853,6 +863,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let made_b = self.unspelled("b");
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         let item = || generic_args.type_at(0);
         let mut values = values.into_iter();
@@ -1146,9 +1157,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::IsAscii => {
                 let byte = Expr::arrow(
-                    vec!["b".into()],
+                    vec![made_b.as_str().into()],
                     vec![
-                        crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var("b"), Expr::int(128))))
+                        crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var(&made_b), Expr::int(128))))
                             .at(crate::js::Span::NONE),
                     ],
                 );

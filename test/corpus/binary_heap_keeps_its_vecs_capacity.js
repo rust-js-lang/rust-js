@@ -39,8 +39,7 @@ function main() {
   );
   const arg = $capacity(h, 4);
   console.log(`filter ${h.length} ${arg}`);
-  let items;
-  items = iterator_flatMap(
+  const items = iterator_flatMap(
     $iter([1, 2, 3]),
     (x) => new Array(12).fill(x),
     { next: $next },

@@ -330,6 +330,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let made_state = self.unspelled("state");
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         // A flatten's, whose `count` is each inner iterator's own, the
         // crate's where one writes it (#736): `$flatMap`, which counts them so.
         let own_count = self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);
@@ -463,7 +466,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.drop_value(f.clone(), function, span, &mut dropped)?;
                 }
                 if let Some(state) = state_drops {
-                    self.drop_value(Expr::var("state"), state, span, &mut dropped)?;
+                    self.drop_value(Expr::var(&made_state), state, span, &mut dropped)?;
                 }
                 let handle = state_ty.is_none_or(|state| self.handles_mut(state));
                 let mut args = vec![items, init, f];
@@ -471,7 +474,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     args.push(Expr::bool(handle));
                 }
                 if !dropped.is_empty() {
-                    let param = if state_drops.is_some() { "state" } else { "_" };
+                    let param = if state_drops.is_some() {
+                        made_state.as_str()
+                    } else {
+                        "_"
+                    };
                     args.push(Expr::arrow(vec![param.into()], dropped));
                 }
                 // Each `Some` taken out of its box, as `unboxed` does.
@@ -584,15 +591,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "this product"))?;
                 let num = self.num(ty, span)?;
                 let times = match num {
-                    Num::F64 => Expr::bin(Op::Mul, Expr::var("a"), Expr::var("b")),
+                    Num::F64 => Expr::bin(Op::Mul, Expr::var(&made_a), Expr::var(&made_b)),
                     Num::I32 | Num::U32 => num.wrap(Expr::call(
                         Expr::member(Expr::js_global("Math"), "imul"),
-                        vec![Expr::var("a"), Expr::var("b")],
+                        vec![Expr::var(&made_a), Expr::var(&made_b)],
                     )),
-                    _ => num.wrap(Expr::bin(Op::Mul, Expr::var("a"), Expr::var("b"))),
+                    _ => num.wrap(Expr::bin(Op::Mul, Expr::var(&made_a), Expr::var(&made_b))),
                 };
                 let f = Expr::arrow(
-                    vec!["a".into(), "b".into()],
+                    vec![made_a.as_str().into(), made_b.as_str().into()],
                     vec![StmtKind::Return(Some(times)).at(js::Span::NONE)],
                 );
                 method(items, "reduce", vec![f, num.literal(1)])

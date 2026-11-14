@@ -14,13 +14,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// guard, a `map`'s function, whose drop's panic leaks what it
     /// collected (#852).
     pub(super) fn source_iter_steps(&mut self, ty: Ty<'tcx>, span: Span) -> R<Vec<js::Prop>> {
+        let made_iterator = self.unspelled("iterator");
         let ty::Adt(adt, _) = ty.peel_refs().kind() else {
             return Ok(Vec::new());
         };
         let Some(steps) = crate::lower::recognition::source_iter_step(self.tcx, adt.did()) else {
             return Ok(Vec::new());
         };
-        let (mut inner, mut held) = (Expr::var("iterator"), ty.peel_refs());
+        let (mut inner, mut held) = (Expr::var(&made_iterator), ty.peel_refs());
         for step in steps {
             let ty::Adt(of, args) = held.kind() else {
                 unreachable!("`as_inner` reads a field of a struct or an `Option`'s `Some`")
@@ -43,12 +44,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let returned = vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)];
         let mut props = vec![js::Prop::Field(
             "inner".into(),
-            Expr::arrow(vec!["iterator".into()], returned),
+            Expr::arrow(vec![made_iterator.as_str().into()], returned),
         )];
         if !drop.is_empty() {
             props.push(js::Prop::Field(
                 "dropInner".into(),
-                Expr::arrow(vec!["iterator".into()], drop),
+                Expr::arrow(vec![made_iterator.as_str().into()], drop),
             ));
         }
         Ok(props)

@@ -25,6 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterable, and of the box generic code's `&mut` is (ADR 0180). None of
     /// another type, the crate's, whose impl's dictionary is its own.
     fn extend_dictionary(&mut self, ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let made_items = self.unspelled("items");
         let collection = Expr::member(Expr::var("collection"), js::HELD);
         let known = self.recognition().std_extend(ty);
         // What's stepped of what it's given: a collection's or a table's
@@ -35,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stepped = match known {
             Some(Std::Comb(_) | Std::Map(_)) if by_fold => Expr::call_helper("$folded", vec![Expr::var("it")]),
             Some(Std::Comb(_) | Std::Map(_)) => Expr::var("it"),
-            _ => Expr::var("items"),
+            _ => Expr::var(&made_items),
         };
         // Its hint asked first where the collection reserves by it, a
         // `String`'s by `char`s and a hash table's (#849).
@@ -85,7 +86,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => Expr::var("dropIt"),
                     false => Expr::var("dropIter"),
                 };
-                let made = Expr::call_helper("$intoIter", vec![Expr::var("items")]);
+                let made = Expr::call_helper("$intoIter", vec![Expr::var(&made_items)]);
                 body.insert(0, StmtKind::Const("it".into(), made).at(js::Span::NONE));
                 if by_fold {
                     let own = Expr::cond(
@@ -100,14 +101,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let unwound = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dropped())).at(js::Span::NONE)]);
                 body.push(StmtKind::Expr(Expr::call_helper("$unwinds", vec![run, unwound])).at(js::Span::NONE));
                 body.push(StmtKind::Expr(dropped()).at(js::Span::NONE));
-                let params = ["collection", "items", "inPlace", "dropItems", "dropIter"];
+                let params = ["collection", made_items.as_str(), "inPlace", "dropItems", "dropIter"];
                 let extend = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
                 return Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])));
             }
             _ => return Ok(None),
         };
         body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));
-        let extend = Expr::arrow(vec!["collection".into(), "items".into()], body);
+        let extend = Expr::arrow(vec!["collection".into(), made_items.as_str().into()], body);
         Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
     }
 
@@ -235,6 +236,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn dictionary_made(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
+        let made_i = self.unspelled("i");
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
+        let made_items = self.unspelled("items");
         // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`;
         // in a copied default, where the impl's bounds and its own hold, in
         // the impl's terms: `K: Hash` of `<Map<T, F> as Iterator>::Item`.
@@ -394,12 +399,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(num) = Num::of(ty)
             && !self.has_user_impl(tr.def_id, ty)
         {
-            let items = self.js_iterator(Expr::var("items"));
+            let items = self.js_iterator(Expr::var(&made_items));
             let made = self.accumulated_numbers(items, num, name == "sum");
             let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
             return Ok(Expr::object(vec![Prop::Field(
                 name.into(),
-                Expr::arrow(vec!["items".into()], body),
+                Expr::arrow(vec![made_items.as_str().into()], body),
             )]));
         }
         // std's `Sum` or `Product` of a `Wrapping` or a `Saturating`, of
@@ -421,7 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let total = self.newtype_result(Ok(op), Expr::var(&a), item, newtype, span, &mut step)?;
             step.push(StmtKind::Return(Some(total)).at(js::Span::NONE));
             let f = Expr::arrow(vec![a.into(), b.into()], step);
-            let items = self.js_iterator(Expr::var("items"));
+            let items = self.js_iterator(Expr::var(&made_items));
             let made = Expr::array(vec![Expr::call(
                 Expr::member(items, "reduce"),
                 vec![f, num.literal(start)],
@@ -429,7 +434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
             return Ok(Expr::object(vec![Prop::Field(
                 name.into(),
-                Expr::arrow(vec!["items".into()], body),
+                Expr::arrow(vec![made_items.as_str().into()], body),
             )]));
         }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
@@ -446,9 +451,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && tr.args.type_at(1).is_usize()
             && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty))
         {
-            let item = self.index_checked(Expr::var("items"), Expr::var("i"), ty);
+            let item = self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty);
             let index = Expr::arrow(
-                vec!["items".into(), "i".into()],
+                vec![made_items.as_str().into(), made_i.as_str().into()],
                 vec![StmtKind::Return(Some(item)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("index".into(), index)]));
@@ -730,9 +735,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let ty::Param(param) = *ty.kind()
             && !self.param_given_as_it_is(param)
         {
-            let items = crate::lower::iterators::given_into_iter(Expr::var("items"));
+            let items = crate::lower::iterators::given_into_iter(Expr::var(&made_items));
             let itself = Expr::arrow(
-                vec!["items".into()],
+                vec![made_items.as_str().into()],
                 vec![StmtKind::Return(Some(items)).at(js::Span::NONE)],
             );
             let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
@@ -753,8 +758,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
         {
             let itself = Expr::arrow(
-                vec!["items".into()],
-                vec![StmtKind::Return(Some(Expr::var("items"))).at(js::Span::NONE)],
+                vec![made_items.as_str().into()],
+                vec![StmtKind::Return(Some(Expr::var(&made_items))).at(js::Span::NONE)],
             );
             let steps = self.made_steps(tr, true, span)?;
             if self.recognition().iterates_as_itself(ty) {
@@ -781,14 +786,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 into_iter,
                 tr.args,
                 (&[ty], Default::default()),
-                vec![Expr::var("items")],
+                vec![Expr::var(&made_items)],
                 output,
                 span,
                 &mut body,
             )?;
             let made = self.std_iterator(items, output);
             body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-            let f = Expr::arrow(vec!["items".into()], body);
+            let f = Expr::arrow(vec![made_items.as_str().into()], body);
             let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
             props.extend(steps);
             return Ok(Expr::object(props));
@@ -952,11 +957,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(op) = crate::lower::recognition::value_operator(self.tcx, tr.def_id)
             && let Some(newtype) = self.recognition().int_newtype(ty.peel_refs())
         {
-            let a = Expr::index(Expr::var("a"), Expr::int(0));
+            let a = Expr::index(Expr::var(&made_a), Expr::int(0));
             let mut body = Vec::new();
             let (params, rhs) = match op {
-                Ok(_) => (vec!["a".into(), "b".into()], Some((Expr::var("b"), tr.args.type_at(1)))),
-                Err(_) => (vec!["a".into()], None),
+                Ok(_) => (
+                    vec![made_a.as_str().into(), made_b.as_str().into()],
+                    Some((Expr::var(&made_b), tr.args.type_at(1))),
+                ),
+                Err(_) => (vec![made_a.as_str().into()], None),
             };
             let value = self.newtype_result(op, a, rhs, newtype, span, &mut body)?;
             body.push(StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE));
@@ -972,11 +980,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let param = self.unspelled("value");
             let params: Vec<js::Pattern> = match op {
-                Ok(_) => vec!["a".into(), "b".into()],
+                Ok(_) => vec![made_a.as_str().into(), made_b.as_str().into()],
                 Err(_) => vec![param.as_str().into()],
             };
             let (a, b) = match op {
-                Ok(_) => (Expr::var("a"), Some(Expr::var("b"))),
+                Ok(_) => (Expr::var(&made_a), Some(Expr::var(&made_b))),
                 Err(_) => (Expr::var(&param), None),
             };
             let value = self.number_operator(op, a, b, tr, span)?;
@@ -994,13 +1002,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let place = Expr::member(Expr::var("cell"), js::HELD);
             let value = match self.primitive_operands(tr) {
-                true => self.number_operator(Ok(op), place.clone(), Some(Expr::var("b")), tr, span)?,
-                false => Expr::bin(Op::Add, place.clone(), Expr::var("b")),
+                true => self.number_operator(Ok(op), place.clone(), Some(Expr::var(&made_b)), tr, span)?,
+                false => Expr::bin(Op::Add, place.clone(), Expr::var(&made_b)),
             };
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(
-                    vec!["cell".into(), "b".into()],
+                    vec!["cell".into(), made_b.as_str().into()],
                     vec![StmtKind::Assign(place, value).at(js::Span::NONE)],
                 ),
             )]));

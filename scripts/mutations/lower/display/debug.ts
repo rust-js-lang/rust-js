@@ -453,9 +453,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display/debug.rs",
-    find: "pretty: &Pretty) -> R<Expr> {\n        let (value, ty) = self.shown_through(value, ty);",
+    find: "pretty: &Pretty) -> R<Expr> {\n        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = self.shown_through(value, ty);",
     replace:
-      "pretty: &Pretty) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
+      "pretty: &Pretty) -> R<Expr> {\n        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {

@@ -212,22 +212,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(a, b) => <a != b>` for a dictionary's `ne`, of two `ty`s, as
     /// `ne_value` has it, or the function itself.
     pub(in crate::lower) fn ne_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         let mut body = Vec::new();
-        let differ = self.ne_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
-        Ok(self.compare_fn(differ, body))
+        let differ = self.ne_value(Expr::var(&made_a), Expr::var(&made_b), ty, span, &mut body)?;
+        Ok(self.compare_fn((&made_a, &made_b), differ, body))
     }
 
-    /// `(a, b) => <compared>`, `body` its statements first; of a function
-    /// of both, as they're given, `$eq` or an impl's `eq`: it.
-    pub(in crate::lower) fn compare_fn(&self, compared: Expr, mut body: Vec<Stmt>) -> Expr {
+    /// `(a, b) => <compared>` of its parameters `a` and `b`, the names
+    /// its caller compared, `body` its statements first; of a function of
+    /// both, as they're given, `$eq` or an impl's `eq`: it.
+    pub(in crate::lower) fn compare_fn(&self, (a, b): (&str, &str), compared: Expr, mut body: Vec<Stmt>) -> Expr {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &compared.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
-            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == "a" && y == "b"))
+            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == a && y == b))
         {
             return (**callee).clone();
         }
         body.push(StmtKind::Return(Some(compared)).at(js::Span::NONE));
-        Expr::arrow(vec!["a".into(), "b".into()], body)
+        Expr::arrow(vec![a.into(), b.into()], body)
     }
 }

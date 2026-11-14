@@ -743,8 +743,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         drop: Option<Expr>,
         span: Span,
     ) -> R<Expr> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         let item = item.peel_refs();
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let (a, b) = (Expr::var(&made_a), Expr::var(&made_b));
         let le = match super::representation::Num::of(item) {
             Some(_) => Expr::bin(Op::Le, a, b),
             None => {
@@ -753,7 +755,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let in_order = Expr::arrow(
-            vec!["a".into(), "b".into()],
+            vec![made_a.as_str().into(), made_b.as_str().into()],
             vec![StmtKind::Return(Some(le)).at(js::Span::NONE)],
         );
         let mut args = vec![items, in_order];
@@ -766,17 +768,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(a, b) => <their Ordering>`, or the function itself: `$cmp`,
     /// `wordOrd_cmp`, or a dictionary's, `TOrd.cmp`, which needs no `this`.
     pub(super) fn cmp_fn(&mut self, ty: Ty<'tcx>, partial: bool, span: Span) -> R<Expr> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         let mut body = Vec::new();
-        let order = self.cmp_value(Expr::var("a"), Expr::var("b"), ty, partial, span, &mut body)?;
+        let order = self.cmp_value(Expr::var(&made_a), Expr::var(&made_b), ty, partial, span, &mut body)?;
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, "a") && is_var(y, "b"))
+            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
         {
             return Ok((**callee).clone());
         }
         body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
+        Ok(Expr::arrow(vec![made_a.as_str().into(), made_b.as_str().into()], body))
     }
 
     /// Whether `Iterator::max` of `ty`s, or `min`, is by their own `Ord::max`
@@ -802,11 +806,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// where it writes one, else std's `other < self` (`ordering_call`),
     /// which `Iterator::max` reduces by since 1.100 (ADR 0109, amended).
     pub(super) fn extreme_fn(&mut self, ty: Ty<'tcx>, max: bool, span: Span) -> R<Expr> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         let ord = super::recognition::std_item(self.tcx, super::recognition::StdItem::Ord);
         let name = if max { "max" } else { "min" };
         let method = trait_method(self.tcx, ord, name);
         let tr = ty::TraitRef::new(self.tcx, ord, [ty]);
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let (a, b) = (Expr::var(&made_a), Expr::var(&made_b));
         let mut body = Vec::new();
         let order = match self.recognition().user_impl(tr) {
             Some(imp) if self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {
@@ -818,12 +824,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, "a") && is_var(y, "b"))
+            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
         {
             return Ok((**callee).clone());
         }
         body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
+        Ok(Expr::arrow(vec![made_a.as_str().into(), made_b.as_str().into()], body))
     }
 
     /// `a < b` and the rest, `a.cmp(&b)`, `a.partial_cmp(&b)`, `a.max(b)`

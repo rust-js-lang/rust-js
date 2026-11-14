@@ -75,13 +75,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `double_ended`, or its length: its `next_back`, `$nextBack`, or
     /// `$nextBackSome` where its items are boxed, or its `len()`.
     fn knowing_entry(&self, double_ended: bool, ty: ty::Ty<'tcx>) -> Expr {
+        let made_iterator = self.unspelled("iterator");
         if double_ended {
             let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
             return Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" });
         }
-        let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
+        let len = Expr::call(Expr::member(Expr::var(&made_iterator), "len"), Vec::new());
         Expr::arrow(
-            vec!["iterator".into()],
+            vec![made_iterator.as_str().into()],
             vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
         )
     }
@@ -100,6 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
+        let made_iterator = self.unspelled("iterator");
         // A `&mut` to one is it, whose impls pass on to its own: its
         // `next_back` and `nth_back`, not its `rfold`, which std's `&mut I`
         // folds by `I`'s `try_rfold` (ADR 0928).
@@ -110,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
         let returned = |value: Expr| {
             Expr::arrow(
-                vec!["iterator".into()],
+                vec![made_iterator.as_str().into()],
                 vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
             )
         };
@@ -130,7 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
             (false, None) if self.is_user_iterator(ty) => {
                 let mut made = Vec::new();
-                let len = self.exact_len_of(Expr::var("iterator"), ty, span, &mut made)?;
+                let len = self.exact_len_of(Expr::var(&made_iterator), ty, span, &mut made)?;
                 made.is_empty().then(|| returned(len))
             }
             // And a `repeat_n`'s or a `take(n)` of a `repeat`'s, whose runtime
@@ -225,6 +227,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drop, of one with a destructor, which drops each it replaces, and
     /// both it holds as it's closed.
     pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made_iterator = self.unspelled("iterator");
         let (next, boxed) = match self.range_kind(ty) {
             Some(_) => match self.range_stepper(ty, false) {
                 Some(step) => (step, false),
@@ -260,11 +263,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Clone`; another, the JS iterator it is.
         let mut body = Vec::new();
         let cloned = match self.compiled_struct(ty, &it) {
-            true => self.clone_value(Expr::var("iterator"), ty, span, &mut body)?,
-            false => self.clone_in_place(Expr::var("iterator"), ty, span, &mut body)?,
+            true => self.clone_value(Expr::var(&made_iterator), ty, span, &mut body)?,
+            false => self.clone_in_place(Expr::var(&made_iterator), ty, span, &mut body)?,
         };
         body.push(StmtKind::Return(Some(cloned)).at(js::Span::NONE));
-        let clone = Expr::arrow(vec!["iterator".into()], body);
+        let clone = Expr::arrow(vec![made_iterator.as_str().into()], body);
         let clone = passed_on(&clone, Taker::Made, &[]).unwrap_or(clone);
         let drop = self.drop_function(ty, span)?;
         let mut args = vec![it, clone, next];

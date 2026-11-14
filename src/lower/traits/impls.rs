@@ -139,6 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{ next: $next }`, `{ next_back: $nextBack }`, `{ len }` its own
     /// `len()`, each giving a `Some` that looks like `None` boxed (ADR 0051).
     fn made_iterator_dictionary(&self, trait_id: DefId, ty: Ty<'tcx>) -> Option<Expr> {
+        let made_iterator = self.unspelled("iterator");
         let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
         let (entry, value) = if is_std_def(self.tcx, trait_id, StdItem::Iterator) {
             (
@@ -153,9 +154,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         } else if self.recognition().exact_size_iterator() == Some(trait_id) {
             let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
-            let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
+            let len = Expr::call(Expr::member(Expr::var(&made_iterator), "len"), Vec::new());
             let len = Expr::arrow(
-                vec!["iterator".into()],
+                vec![made_iterator.as_str().into()],
                 vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
             );
             (name.to_string(), len)

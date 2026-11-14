@@ -16,6 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it, so the call keeps its shape; and, where it's std's `try_process`,
     /// the drop of what's given after those, `dropI` (#1588).
     pub(super) fn collecting_entry(&mut self, output: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made_items = self.unspelled("items");
         let tcx = self.tcx;
         let iterator = std_item(tcx, StdItem::Iterator);
         let from_iterator = std_item(tcx, StdItem::FromIterator);
@@ -41,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let clauses = self.typing_env.param_env.caller_bounds().chain(bounds);
         let typing_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, clauses), self.typing_env.typing_mode());
         let facts = crate::lower::traits::std_method_facts(tcx, self.krate.foreign, from_iter);
-        let mut params: Vec<String> = vec!["items".into()];
+        let mut params: Vec<String> = vec![made_items.as_str().into()];
         let given: Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact, Expr)> = (facts.iter())
             .map(|&(_, fact)| {
                 let name = format!("I{}", fact.word());
@@ -57,7 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made = self.with_given_facts(typing_env, given, |cx| {
             let shunted = cx.try_processed_into(output, param)?.is_some();
             let lent = shunted.then(|| cx.lend_drop_param("dropI".into(), param));
-            let made = cx.collected_into((Expr::var("items"), None), output, Some(item), Some(param), span);
+            let made = cx.collected_into((Expr::var(&made_items), None), output, Some(item), Some(param), span);
             if let Some(lent) = lent {
                 cx.return_drop_param(lent);
             }

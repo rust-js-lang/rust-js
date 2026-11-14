@@ -29,6 +29,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `debug_string_with`'s text, which may leave the value unread, a
     /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
     fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
+        let made_tuple = self.unspelled("tuple");
         let (value, ty) = self.shown_through(value, ty);
         // A part whose writer may stop part-way, by an `Err`, or by a panic
         // where it may be caught, which a line keeps the parts before of
@@ -515,8 +516,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if i > 0 {
                         parts.push(Expr::str(", "));
                     }
-                    let item =
-                        self.debug_string_with(Expr::index(Expr::var("tuple"), Expr::int(i as i128)), t, span, pretty)?;
+                    let item = self.debug_string_with(
+                        Expr::index(Expr::var(&made_tuple), Expr::int(i as i128)),
+                        t,
+                        span,
+                        pretty,
+                    )?;
                     parts.push(item.clone());
                     items.push(item);
                 }
@@ -526,7 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 parts.push(Expr::str(")"));
                 let shown = self.pretty_or(pretty, join(parts), "(", Expr::array(items), ")");
                 let f = Expr::arrow(
-                    vec!["tuple".into()],
+                    vec![made_tuple.as_str().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, value))

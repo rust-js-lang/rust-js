@@ -199,3 +199,25 @@ tidy starts, 141 of the corpus's: a tree used again where it's needed
 twice, a drop function given three arguments, each copy declaring the
 same names; giving a copy names of its own is M3's, by its `VarId`s.
 Mutation `given-apart-of-an-unspelled-name`, caught; eight retargeted.
+
+## Amendment: the sixth batch, eight names at once (2026-11-14)
+
+The lead's pace, once the fourth and fifth families had shown the step:
+several names a commit. A helper's `iterator`, `items`, `a` and `b`, `i`,
+`error`, `tuple` and `state`, each written as it is where an arrow lowering
+makes declares and reads it, is made not spelled yet, by function, of 23
+functions of 12 files. Tidy's own (`mir/tidy`), which has no `FnCx`, and three
+functions of no lowering, `aborting_finally`'s `error`, `enumerating`'s `i`
+and a flattened state's `state`, keep theirs: M3's.
+
+The validator found what a function at a time split: `compare_fn` declared
+`(a, b)` of its own where `eq_fn` and `ne_fn` read theirs, so it's given its
+callers' names; a scan's dropping arrow wrote `state` apart from its read; a
+collection's `extend` listed `"items"` among its parameters. And three
+`(a, b) => f(a, b)` of `f` alone, `cmp_fn`'s, `extreme_fn`'s and `item_eq`'s,
+asked their arguments by the literal names, or `$sortedEntries(m, $cmp)` was
+`(a, b) => $cmp(a, b)` and a dictionary the runtime's `$BTreeMap` a module's
+own: each asks its own parameters now.
+
+The corpus is what it was but one case, `binary_heap_keeps_its_vecs_capacity`,
+whose `let items; items = ..` is `const items = ..`, still native's.

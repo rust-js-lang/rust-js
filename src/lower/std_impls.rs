@@ -857,8 +857,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dictionary, never one made here (`of_other`), so its `Rhs` is `ty`,
     /// but for references, which JS doesn't have.
     pub(super) fn eq_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made_b = self.unspelled("b");
+        let made_a = self.unspelled("a");
         let mut body = Vec::new();
-        let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
-        Ok(self.compare_fn(same, body))
+        let same = self.eq_value(Expr::var(&made_a), Expr::var(&made_b), ty, span, &mut body)?;
+        Ok(self.compare_fn((&made_a, &made_b), same, body))
     }
 }

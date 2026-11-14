@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
     name: "lazy-scan-state-undropped",
     breaks: "a lazy `scan()`'s state with a destructor is never dropped, where Rust drops it with the `Scan` (#760)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                if let Some(state) = state_drops {\n                    self.drop_value(Expr::var(\"state\"), state, span, &mut dropped)?;\n                }\n",
+    find: "                if let Some(state) = state_drops {\n                    self.drop_value(Expr::var(&made_state), state, span, &mut dropped)?;\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },

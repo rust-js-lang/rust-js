@@ -798,16 +798,16 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Index<usize>` dictionary reads `items[i]` unchecked, so an index past the end gives `undefined` where Rust panics, \"index out of bounds: the len is 3 but the index is 5\" (#1420)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let item = self.index_checked(Expr::var(\"items\"), Expr::var(\"i\"), ty);\n",
-    replace: "            let item = Expr::index(Expr::var(\"items\"), Expr::var(\"i\"));\n",
+    find: "            let item = self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty);\n",
+    replace: "            let item = Expr::index(Expr::var(&made_items), Expr::var(&made_i));\n",
     tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
   },
   {
     name: "wrapping-dictionary-rhs-unread",
     breaks: "generic code's operator given a `Wrapping` takes its right side's `Wrapping` as a number, `[x]` where `x` goes (#1439)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                Ok(_) => (vec![\"a\".into(), \"b\".into()], Some((Expr::var(\"b\"), tr.args.type_at(1)))),\n",
-    replace: "                Ok(_) => (vec![\"a\".into(), \"b\".into()], Some((Expr::var(\"b\"), self.tcx.types.u8))),\n",
+    find: "                    Some((Expr::var(&made_b), tr.args.type_at(1))),\n",
+    replace: "                    Some((Expr::var(&made_b), self.tcx.types.u8)),\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_ops_by_its_number_and_past_its_range.rs$"],
   },
   {

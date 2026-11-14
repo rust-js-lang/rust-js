@@ -137,6 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl's, and its `hint`, its `size_hint`, the compiled impl's, or the
     /// rewrite of one whose body reaches memory, `$peekableHint`.
     pub(in crate::lower) fn std_iterator_steps(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let made_iterator = self.unspelled("iterator");
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let (next, _) = self.user_next(ty, iterator, "next", span)?;
         let mut props = vec![crate::js::Prop::Field("next".into(), next)];
@@ -256,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .tcx
                         .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
                     let value = Expr::member(
-                        Expr::var("iterator"),
+                        Expr::var(&made_iterator),
                         crate::lower::bindings::field_key(self.tcx, field).text(),
                     );
                     (value, field_ty)
@@ -266,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !body.is_empty() {
                 props.push(crate::js::Prop::Field(
                     "close".into(),
-                    Expr::arrow(vec!["iterator".into()], body),
+                    Expr::arrow(vec![made_iterator.as_str().into()], body),
                 ));
             }
         }
@@ -290,12 +291,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `Peekable`'s was refused that, so a `skip()` of one stepped from
     /// its back read a length it didn't have (#706).
     pub(in crate::lower) fn default_len(&self, ty: ty::Ty<'tcx>, exact_size: DefId) -> Option<Expr> {
+        let made_iterator = self.unspelled("iterator");
         let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, exact_size, [ty]));
         let exact = crate::lower::traits::select(self.tcx, self.typing_env, tr).is_ok();
         (exact && self.hinted_by_its_struct(ty)).then(|| {
-            let hint = Expr::call_helper("$sizeHint", vec![Expr::var("iterator")]);
+            let hint = Expr::call_helper("$sizeHint", vec![Expr::var(&made_iterator)]);
             Expr::arrow(
-                vec!["iterator".into()],
+                vec![made_iterator.as_str().into()],
                 vec![StmtKind::Return(Some(Expr::call_helper("$exactLen", vec![hint]))).at(js::Span::NONE)],
             )
         })
