@@ -532,4 +532,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copy_given_to_a_function_that_only_reads_it.rs$"],
     snapshots: true,
   },
+  {
+    name: "moved-apart-of-a-flattened-field",
+    breaks: "a struct of a flattened field moved apart from a place a raw pointer is taken to is copied of its declared fields, reading a key of the field's name its object lacks (#1847)",
+    file: "src/lower/copies.rs",
+    find: "                let fields = match self.own_object_fields(ty) {\n                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),\n                    None => Self::named_fields(fields),\n                };\n                for (name, t) in fields {\n                    if inline(t) {",
+    replace: "                let fields = match self.own_object_fields(ty).filter(|_| false) {\n                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),\n                    None => Self::named_fields(fields),\n                };\n                for (name, t) in fields {\n                    if inline(t) {",
+    tests: ["test/lowering.test.ts", "-t", "a copy of a struct with a flattened field reads its own keys alone"],
+  },
 ];

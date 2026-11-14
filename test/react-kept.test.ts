@@ -225,3 +225,51 @@ pub fn Stepped() -> JSX::Element {
   expect(ran.stderr).toContain("`use_reducer` gives this function again what it gives it, which it keeps, so what the function changes in place of it is copied first (#1723)");
   expect(ran.stderr).toContain("one rust-js can't see is #1727");
 });
+
+// A component's props of a flattened field, changed in place: its copy
+// reads its object's own keys, the flattened one's among them, never a key
+// of the field's name, which its object lacks (#1847): given an object
+// whose \`range\` throws, as React's own lacks one.
+test("a component's kept copy of flattened props reads its own keys alone", async () => {
+  const dir = fixture("react-kept-flattened");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct StepRange {
+    pub min: f64,
+    pub step: f64,
+}
+
+pub struct Depth {
+    pub at: f64,
+}
+
+pub struct RangedProps {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub range: StepRange,
+    pub depth: Depth,
+}
+
+pub fn Ranged(mut props: RangedProps) -> JSX::Element {
+    props.range.step += 1.0;
+    props.depth.at += props.range.step + props.range.min;
+    jsx! { <i>{props.depth.at}</i> }
+}
+`,
+  );
+  run([compiler, ...flags(dir)]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("props = { ...props, depth: { ...props.depth } };");
+  expect(js).not.toContain("props.range");
+  const lib = await import(join(dir, "lib.jsx"));
+  const props = Object.create({
+    get range() {
+      throw new Error("a nested range read");
+    },
+  });
+  Object.assign(props, { min: 1, step: 2, depth: { at: 0 } });
+  expect(lib.Ranged(props).props.children).toBe(4);
+  expect([props.step, props.depth.at]).toEqual([2, 0]);
+});

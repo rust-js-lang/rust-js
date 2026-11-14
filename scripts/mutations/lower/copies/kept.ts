@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && copy.kind != Expr::var(&name).kind {\n",
     tests: ["test/react-compiler.test.ts", "-t", "compiles every component"],
   },
+  {
+    name: "kept-copy-of-a-flattened-field",
+    breaks: "a component's props of a flattened field, changed in place, are copied of their declared fields, reading a key of the field's name React's object lacks (#1847)",
+    file: "src/lower/copies/kept.rs",
+    find: "                let fields = match self.own_object_fields(ty) {\n",
+    replace: "                let fields = match self.own_object_fields(ty).filter(|_| false) {\n",
+    tests: ["test/react-kept.test.ts", "-t", "a component's kept copy of flattened props reads its own keys alone"],
+  },
 ];

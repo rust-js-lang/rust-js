@@ -706,6 +706,24 @@ pub fn relabeled(labeled: &Labeled) -> Labeled {
     next.label.push('!');
     next
 }
+
+pub struct Depth {
+    pub at: f64,
+}
+
+pub struct Placed {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub range: StepRange,
+    pub depth: Depth,
+}
+
+pub fn moved(placed: Placed) -> f64 {
+    let pointer = &raw const placed;
+    let mut kept = placed;
+    kept.depth.at += 1.0;
+    let _ = pointer;
+    kept.depth.at + kept.range.step
+}
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
@@ -742,6 +760,16 @@ pub fn relabeled(labeled: &Labeled) -> Labeled {
   const relabeled = lib.relabeled(labeled);
   expect(Object.keys(relabeled).sort()).toEqual(["label", "max", "min", "step"]);
   expect(relabeled).toEqual({ min: 0, max: 10, step: 3, label: "a!" });
+  // Moved apart from a place a raw pointer is taken to, its copy the same.
+  expect(js).toContain("  const kept = { ...placed, depth: { ...placed.depth } };\n");
+  const placed = Object.create({
+    get range() {
+      throw new Error("a nested range read");
+    },
+  });
+  Object.assign(placed, { min: 0, max: 10, step: 2, depth: { at: 1 } });
+  expect(lib.moved(placed)).toBe(4);
+  expect(placed.depth.at).toBe(1);
 });
 
 // ADR 0204, amended (#1819): a flattened reference's parent's object is a
